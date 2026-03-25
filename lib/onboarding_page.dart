@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_models.dart';
+import 'l10n/l10n.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key, required this.onComplete});
@@ -116,6 +117,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     return Scaffold(
       backgroundColor: appBackground,
       body: Stack(
@@ -210,7 +212,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              '步骤 ${_currentPage + 1}/3',
+                              l10n.stepProgress(_currentPage + 1, 3),
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -235,9 +237,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       });
                     },
                     children: [
-                      _buildGoalStep(),
-                      _buildLevelStep(),
-                      _buildDailyGoalStep(),
+                      _buildGoalStep(l10n),
+                      _buildLevelStep(l10n),
+                      _buildDailyGoalStep(l10n),
                     ],
                   ),
                 ),
@@ -258,7 +260,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         elevation: 0,
                       ),
                       child: Text(
-                        _currentPage == 2 ? '开始学习' : '下一步',
+                        _currentPage == 2 ? l10n.startLearning : l10n.nextStep,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -275,11 +277,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
-  Widget _buildGoalStep() {
+  Widget _buildGoalStep(AppLocalizations l10n) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
       children: [
-        const _StepHeader(title: '你最想解决哪个问题？', subtitle: '可以多选，我们会为你定制学习路径'),
+        _StepHeader(title: l10n.goalStepTitle, subtitle: l10n.goalStepSubtitle),
         const SizedBox(height: 24),
         ...intents.asMap().entries.map((MapEntry<int, IntentData> entry) {
           final bool selected = _selectedGoalIndexes.contains(entry.key);
@@ -287,7 +289,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
             padding: const EdgeInsets.only(bottom: 14),
             child: _GoalCard(
               data: entry.value,
-              description: _goalDescriptions[entry.value.label] ?? '',
+              description: l10n.onboardingGoalDescription(
+                _goalDescriptions[entry.value.label] ?? '',
+              ),
               selected: selected,
               onTap: () {
                 setState(() {
@@ -305,11 +309,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
-  Widget _buildLevelStep() {
+  Widget _buildLevelStep(AppLocalizations l10n) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
       children: [
-        const _StepHeader(title: '你目前的英语水平？', subtitle: '诚实评估，帮助我们匹配合适内容'),
+        _StepHeader(
+          title: l10n.levelStepTitle,
+          subtitle: l10n.levelStepSubtitle,
+        ),
         const SizedBox(height: 24),
         ..._levelOptions.map((_LevelOption option) {
           final bool selected = _selectedLevel == option.level;
@@ -330,11 +337,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
-  Widget _buildDailyGoalStep() {
+  Widget _buildDailyGoalStep(AppLocalizations l10n) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
       children: [
-        const _StepHeader(title: '每天打算学多久？', subtitle: '坚持才是关键，选个能坚持的目标'),
+        _StepHeader(
+          title: l10n.dailyGoalStepTitle,
+          subtitle: l10n.dailyGoalStepSubtitle,
+        ),
         const SizedBox(height: 24),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,6 +426,7 @@ class _GoalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -456,7 +467,7 @@ class _GoalCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      data.label,
+                      l10n.intentLabel(data.label),
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
@@ -517,6 +528,7 @@ class _LevelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -553,7 +565,7 @@ class _LevelCard extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    option.label,
+                    l10n.difficultyLabel(option.label),
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
@@ -568,7 +580,7 @@ class _LevelCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      option.label,
+                      l10n.difficultyLabel(option.label),
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -577,7 +589,7 @@ class _LevelCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      option.description,
+                      l10n.levelDescription(option.description),
                       style: const TextStyle(
                         fontSize: 13,
                         color: textSecondary,
@@ -632,6 +644,7 @@ class _DailyGoalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -673,7 +686,7 @@ class _DailyGoalCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      option.badge!,
+                      l10n.dailyGoalBadge(option.badge!),
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -685,7 +698,7 @@ class _DailyGoalCard extends StatelessWidget {
                   const SizedBox(height: 26),
                 const Spacer(),
                 Text(
-                  option.label,
+                  l10n.dailyGoalLabel(option.label),
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
@@ -695,7 +708,7 @@ class _DailyGoalCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  option.description,
+                  l10n.dailyGoalDescription(option.description),
                   style: const TextStyle(
                     fontSize: 13,
                     color: textSecondary,

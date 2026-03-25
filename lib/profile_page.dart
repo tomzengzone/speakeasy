@@ -3,9 +3,17 @@ import 'package:flutter/material.dart';
 import 'app_models.dart';
 import 'app_session.dart';
 import 'edit_profile_page.dart';
+import 'l10n/l10n.dart';
 import 'login_page.dart';
 import 'membership_page.dart';
+import 'models/learning_stats_model.dart';
 import 'notification_service.dart';
+import 'pages/achievements_page.dart';
+import 'pages/favorites_page.dart';
+import 'pages/learning_report_page.dart';
+import 'pages/offline_content_page.dart';
+import 'pages/privacy_policy_page.dart';
+import 'utils/app_cached_network_image.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -25,68 +33,177 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _soundEnabled = true;
   int _activeSection = 0;
 
-  static const _skillLevels = <_SkillLevel>[
-    _SkillLevel(label: '开口能力', level: 72, color: Color(0xFF4A7C6F)),
-    _SkillLevel(label: '表达能力', level: 58, color: Color(0xFF5A6FA8)),
-    _SkillLevel(label: '持续能力', level: 45, color: Color(0xFFA0622A)),
-    _SkillLevel(label: '应变能力', level: 63, color: Color(0xFF7B4EA0)),
-    _SkillLevel(label: '地道程度', level: 35, color: Color(0xFF3D7FA8)),
+  Future<void> _openMembership(AppSession session) async {
+    setState(() => _showMembership = true);
+    await session.refreshMembershipStatus();
+  }
+
+  static const List<Color> _skillPalette = <Color>[
+    Color(0xFF4A7C6F),
+    Color(0xFF5A6FA8),
+    Color(0xFFA0622A),
+    Color(0xFF7B4EA0),
+    Color(0xFF3D7FA8),
   ];
 
-  static const _recentPractices = <_PracticeItem>[
-    _PracticeItem(title: '咖啡店点单', time: '今天 09:30', score: 92, emoji: '☕'),
-    _PracticeItem(title: '机场值机对话', time: '昨天 20:15', score: 85, emoji: '✈️'),
-    _PracticeItem(title: '工作会议发言', time: '昨天 14:00', score: 78, emoji: '💼'),
-    _PracticeItem(title: '餐厅预订', time: '3月14日', score: 88, emoji: '🍽️'),
-  ];
+  List<_SkillLevel> _buildSkillLevels(LearningStatsModel stats) {
+    return stats.skillLevels
+        .asMap()
+        .entries
+        .map((entry) {
+          final SkillLevelModel item = entry.value;
+          return _SkillLevel(
+            label: item.label,
+            level: item.level,
+            color:
+                item.color ?? _skillPalette[entry.key % _skillPalette.length],
+          );
+        })
+        .toList(growable: false);
+  }
+
+  List<_PracticeItem> _buildPracticeItems(
+    LearningStatsModel stats,
+    AppLocalizations l10n,
+  ) {
+    return stats.recentPractices
+        .map((PracticeHistoryModel item) {
+          return _PracticeItem(
+            title: item.title.isEmpty ? l10n.practiceRecord : item.title,
+            time: _formatPracticeTime(item, l10n),
+            scoreLabel: item.score == null ? '--' : '${item.score}',
+            emoji: item.emoji.isEmpty ? '🎯' : item.emoji,
+          );
+        })
+        .toList(growable: false);
+  }
+
+  String _formatCountValue(
+    int value, {
+    required bool isStatsLoading,
+    required bool hasStats,
+    String suffix = '',
+  }) {
+    if (isStatsLoading && !hasStats) {
+      return '...';
+    }
+    if (!hasStats && value == 0) {
+      return '--';
+    }
+    return '$value$suffix';
+  }
+
+  String _formatPercentValue(
+    int? value, {
+    required bool isStatsLoading,
+    required bool hasStats,
+  }) {
+    if (isStatsLoading && !hasStats) {
+      return '...';
+    }
+    if (value == null) {
+      return '--';
+    }
+    return '$value%';
+  }
+
+  String _formatPracticeTime(PracticeHistoryModel item, AppLocalizations l10n) {
+    if (item.timeLabel != null && item.timeLabel!.trim().isNotEmpty) {
+      return item.timeLabel!;
+    }
+    final DateTime? practicedAt = item.practicedAt;
+    if (practicedAt == null) {
+      return l10n.unknownTime;
+    }
+
+    final DateTime now = DateTime.now();
+    final Duration diff = now.difference(practicedAt);
+    final String hh = practicedAt.hour.toString().padLeft(2, '0');
+    final String mm = practicedAt.minute.toString().padLeft(2, '0');
+    if (diff.inDays == 0) {
+      return l10n.todayTime('$hh:$mm');
+    }
+    if (diff.inDays == 1) {
+      return l10n.yesterdayTime('$hh:$mm');
+    }
+    return l10n.monthDayTime(practicedAt.month, practicedAt.day, '$hh:$mm');
+  }
+
+  String _levelChipLabel(LearningStatsModel stats, AppLocalizations l10n) {
+    final int? level = stats.level;
+    if (level != null && level > 0) {
+      return 'Lv.$level';
+    }
+    if (stats.experiencePoints > 0) {
+      return '${stats.experiencePoints} XP';
+    }
+    return l10n.learningStatsTitle;
+  }
 
   @override
   Widget build(BuildContext context) {
     final AppSession session = AppSessionScope.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final LearningStatsModel stats = session.stats;
     _darkMode = session.themeMode == ThemeMode.dark;
     final bool isPro = session.isPro;
+    final bool isStatsLoading = session.isStatsLoading;
+    final bool hasStats = stats.hasOverviewData;
+    final List<_SkillLevel> skillLevels = _buildSkillLevels(stats);
+    final List<_PracticeItem> recentPractices = _buildPracticeItems(
+      stats,
+      l10n,
+    );
     final List<({String label, bool active, bool today})> weekDays =
         List<({String label, bool active, bool today})>.generate(7, (int i) {
-          const List<String> labels = <String>[
-            '一',
-            '二',
-            '三',
-            '四',
-            '五',
-            '六',
-            '日',
-          ];
           final bool today = DateTime.now().weekday - 1 == i;
           return (
-            label: labels[i],
-            active: session.stats.weekActivity[i],
+            label: l10n.weekdayShort(i),
+            active: hasStats && stats.weekActivity[i],
             today: today,
           );
         });
     final List<_StatItem> learningStats = <_StatItem>[
       _StatItem(
-        label: '学习天数',
-        value: session.stats.currentStreak.toString(),
+        label: l10n.learningDays,
+        value: _formatCountValue(
+          stats.displayLearningDays,
+          isStatsLoading: isStatsLoading,
+          hasStats: hasStats,
+        ),
         color: const Color(0xFF4A7244),
         icon: Icons.calendar_month_rounded,
       ),
       _StatItem(
-        label: '总练习数',
-        value: session.stats.totalSessions.toString(),
+        label: l10n.totalPracticeCount,
+        value: _formatCountValue(
+          stats.totalSessions,
+          isStatsLoading: isStatsLoading,
+          hasStats: hasStats,
+        ),
         color: const Color(0xFF5A6FA8),
         icon: Icons.mic_rounded,
       ),
       _StatItem(
-        label: '总时长',
-        value: '${(session.stats.totalMinutes / 60).toStringAsFixed(1)}h',
+        label: l10n.accuracyRate,
+        value: _formatPercentValue(
+          stats.accuracyRate,
+          isStatsLoading: isStatsLoading,
+          hasStats: hasStats,
+        ),
         color: const Color(0xFFA0622A),
-        icon: Icons.schedule_rounded,
+        icon: Icons.verified_rounded,
       ),
       _StatItem(
-        label: '掌握句型',
-        value: session.stats.masteredPhrases.toString(),
+        label: l10n.currentStreak,
+        value: _formatCountValue(
+          stats.currentStreak,
+          isStatsLoading: isStatsLoading,
+          hasStats: hasStats,
+          suffix: l10n.dayUnit,
+        ),
         color: const Color(0xFFC8955A),
-        icon: Icons.star_rounded,
+        icon: Icons.local_fire_department_rounded,
       ),
     ];
 
@@ -111,6 +228,7 @@ class _ProfilePageState extends State<ProfilePage> {
             _showMembership = false;
           });
         },
+        onRestorePurchases: session.restoreMembershipPurchases,
         isLoading: session.isUpdatingMembership,
         errorMessage: session.membershipErrorMessage,
       );
@@ -153,24 +271,21 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(22),
-                        child: Image.network(
-                          session.avatarUrl,
+                        child: AppCachedNetworkImage(
+                          imageUrl: session.avatarUrl,
                           fit: BoxFit.cover,
-                          errorBuilder:
-                              (
-                                BuildContext context,
-                                Object error,
-                                StackTrace? stackTrace,
-                              ) {
-                                return const ColoredBox(
-                                  color: Color(0xFF87B076),
-                                  child: Icon(
-                                    Icons.person_rounded,
-                                    color: Colors.white,
-                                    size: 34,
-                                  ),
-                                );
-                              },
+                          placeholder: const AppImagePlaceholder(
+                            color: Color(0xFFDBE7D4),
+                            icon: Icons.person_rounded,
+                            iconColor: Colors.white,
+                            iconSize: 34,
+                          ),
+                          errorWidget: const AppImagePlaceholder(
+                            color: Color(0xFF87B076),
+                            icon: Icons.person_rounded,
+                            iconColor: Colors.white,
+                            iconSize: 34,
+                          ),
                         ),
                       ),
                     ),
@@ -190,7 +305,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            isPro ? 'SpeakEasy Pro 会员' : '免费版用户',
+                            isPro ? l10n.speakEasyProMember : l10n.freeUser,
                             style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xD6FFFFFF),
@@ -202,11 +317,13 @@ class _ProfilePageState extends State<ProfilePage> {
                             runSpacing: 8,
                             children: [
                               _HeaderChip(
-                                label: 'Lv.3',
+                                label: _levelChipLabel(stats, l10n),
                                 icon: Icons.auto_awesome_rounded,
                               ),
                               _HeaderChip(
-                                label: isPro ? '已开通 Pro' : '升级到 Pro',
+                                label: isPro
+                                    ? l10n.proActivated
+                                    : l10n.upgradeToPro,
                                 icon: Icons.workspace_premium_rounded,
                               ),
                             ],
@@ -256,20 +373,32 @@ class _ProfilePageState extends State<ProfilePage> {
                         children: [
                           Expanded(
                             child: _HeaderMetric(
-                              value: session.stats.totalSessions.toString(),
-                              label: '总练习',
+                              value: _formatCountValue(
+                                stats.totalSessions,
+                                isStatsLoading: isStatsLoading,
+                                hasStats: hasStats,
+                              ),
+                              label: l10n.totalPracticeShort,
                             ),
                           ),
                           Expanded(
                             child: _HeaderMetric(
-                              value: session.stats.currentStreak.toString(),
-                              label: '连续天数',
+                              value: _formatCountValue(
+                                stats.currentStreak,
+                                isStatsLoading: isStatsLoading,
+                                hasStats: hasStats,
+                              ),
+                              label: l10n.consecutiveDays,
                             ),
                           ),
                           Expanded(
                             child: _HeaderMetric(
-                              value: session.stats.bestScore.toString(),
-                              label: '最佳分数',
+                              value: _formatCountValue(
+                                stats.bestScore,
+                                isStatsLoading: isStatsLoading,
+                                hasStats: hasStats,
+                              ),
+                              label: l10n.bestScore,
                             ),
                           ),
                         ],
@@ -333,12 +462,12 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Row(
               children: [
                 _SegmentChip(
-                  label: '概览',
+                  label: l10n.overview,
                   active: _activeSection == 0,
                   onTap: () => setState(() => _activeSection = 0),
                 ),
                 _SegmentChip(
-                  label: '设置',
+                  label: l10n.settings,
                   active: _activeSection == 1,
                   onTap: () => setState(() => _activeSection = 1),
                 ),
@@ -349,7 +478,15 @@ class _ProfilePageState extends State<ProfilePage> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
               children: _activeSection == 0
-                  ? _buildOverview(isPro: isPro, learningStats: learningStats)
+                  ? _buildOverview(
+                      session: session,
+                      isPro: isPro,
+                      learningStats: learningStats,
+                      isStatsLoading: isStatsLoading,
+                      hasStats: hasStats,
+                      skillLevels: skillLevels,
+                      recentPractices: recentPractices,
+                    )
                   : _buildSettings(),
             ),
           ),
@@ -359,204 +496,285 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   List<Widget> _buildOverview({
+    required AppSession session,
     required bool isPro,
     required List<_StatItem> learningStats,
+    required bool isStatsLoading,
+    required bool hasStats,
+    required List<_SkillLevel> skillLevels,
+    required List<_PracticeItem> recentPractices,
   }) {
     return <Widget>[
-      _SectionLabel(title: '学习概览'),
-      GridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 1.45,
-        children: learningStats.map((item) => _StatCard(item: item)).toList(),
-      ),
-      const SizedBox(height: 20),
-      _SectionLabel(title: '能力分布'),
-      Container(
-        decoration: _panelDecoration(),
-        child: Column(
-          children: _skillLevels.map((item) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        item.label,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: textPrimary,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${item.level}%',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: item.color,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      value: item.level / 100,
-                      minHeight: 7,
-                      backgroundColor: const Color(0xFFF2EFEA),
-                      valueColor: AlwaysStoppedAnimation<Color>(item.color),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
+      _SectionLabel(title: context.l10n.learningOverview),
+      if (isStatsLoading && !hasStats)
+        _StatsPanelState(
+          icon: Icons.sync_rounded,
+          title: context.l10n.learningStatsLoading,
+          subtitle: context.l10n.syncingLearningData,
+        )
+      else if (!hasStats)
+        _StatsPanelState(
+          icon: session.statsErrorMessage == null
+              ? Icons.insights_outlined
+              : Icons.cloud_off_rounded,
+          title: session.statsErrorMessage == null
+              ? context.l10n.noLearningStats
+              : context.l10n.learningStatsUnavailable,
+          subtitle:
+              session.statsErrorMessage ??
+              context.l10n.learningStatsAfterPracticeHint,
+        )
+      else
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 1.45,
+          children: learningStats.map((item) => _StatCard(item: item)).toList(),
         ),
-      ),
       const SizedBox(height: 20),
-      _SectionLabel(title: '最近练习'),
-      Container(
-        decoration: _panelDecoration(),
-        child: Column(
-          children: List<Widget>.generate(_recentPractices.length, (int index) {
-            final item = _recentPractices[index];
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(
-                    color: index == 0 ? Colors.transparent : separatorColor,
-                    width: 0.5,
-                  ),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF6F3EE),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Text(
-                        item.emoji,
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+      _SectionLabel(title: context.l10n.skillDistribution),
+      if (skillLevels.isEmpty)
+        _StatsPanelState(
+          icon: isStatsLoading && !hasStats
+              ? Icons.sync_rounded
+              : Icons.bar_chart_rounded,
+          title: isStatsLoading && !hasStats
+              ? context.l10n.skillDistributionLoading
+              : context.l10n.noSkillDistribution,
+          subtitle: context.l10n.skillDistributionHint,
+        )
+      else
+        Container(
+          decoration: _panelDecoration(),
+          child: Column(
+            children: skillLevels.map((item) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                child: Column(
+                  children: [
+                    Row(
                       children: [
                         Text(
-                          item.title,
+                          item.label,
                           style: const TextStyle(
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        const Spacer(),
                         Text(
-                          item.time,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: textSecondary,
+                          '${item.level}%',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: item.color,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6EE),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${item.score}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: primaryGreen,
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: item.level / 100,
+                        minHeight: 7,
+                        backgroundColor: const Color(0xFFF2EFEA),
+                        valueColor: AlwaysStoppedAnimation<Color>(item.color),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          }),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
         ),
-      ),
+      const SizedBox(height: 20),
+      _SectionLabel(title: context.l10n.recentPractice),
+      if (recentPractices.isEmpty)
+        _StatsPanelState(
+          icon: isStatsLoading && !hasStats
+              ? Icons.sync_rounded
+              : Icons.history_rounded,
+          title: isStatsLoading && !hasStats
+              ? context.l10n.recentPracticeLoading
+              : context.l10n.noPracticeRecords,
+          subtitle: context.l10n.recentPracticeHint,
+        )
+      else
+        Container(
+          decoration: _panelDecoration(),
+          child: Column(
+            children: List<Widget>.generate(recentPractices.length, (
+              int index,
+            ) {
+              final item = recentPractices[index];
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: index == 0 ? Colors.transparent : separatorColor,
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF6F3EE),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(
+                          item.emoji,
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            item.time,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6EE),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        item.scoreLabel,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: primaryGreen,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
+        ),
       const SizedBox(height: 20),
       _MenuGroup(
-        title: '账户与会员',
+        title: context.l10n.accountAndMembership,
         children: [
           _MenuTile(
             icon: Icons.workspace_premium_rounded,
             color: isPro ? const Color(0xFFC8955A) : const Color(0xFFABA39A),
-            label: isPro ? 'Pro 会员' : '升级到 Pro',
-            subtitle: isPro ? '查看会员权益与管理' : '解锁全部功能',
-            badge: isPro ? '已开通' : '升级',
+            label: isPro ? context.l10n.proMember : context.l10n.upgradeToPro,
+            subtitle: isPro
+                ? context.l10n.viewMembershipBenefits
+                : context.l10n.unlockAllFeatures,
+            badge: isPro ? context.l10n.proActivated : context.l10n.upgrade,
             badgeColor: isPro ? const Color(0xFFC8955A) : primaryGreen,
-            onTap: () => setState(() => _showMembership = true),
+            onTap: () => _openMembership(session),
           ),
           _MenuTile(
             icon: Icons.credit_card_rounded,
             color: const Color(0xFF5A6FA8),
-            label: '订阅管理',
-            subtitle: isPro ? '管理自动续费与账单' : '查看订阅方案',
-            onTap: () => setState(() => _showMembership = true),
+            label: context.l10n.subscriptionManagement,
+            subtitle: isPro
+                ? context.l10n.manageSubscriptionBilling
+                : context.l10n.viewSubscriptionPlans,
+            onTap: () => _openMembership(session),
           ),
-          const _MenuTile(
+          _MenuTile(
             icon: Icons.person_outline_rounded,
             color: Color(0xFF4A7244),
-            label: '编辑资料',
-            subtitle: '修改头像、昵称',
+            label: context.l10n.editProfile,
+            subtitle: context.l10n.editAvatarNickname,
           ),
         ],
       ),
       _MenuGroup(
-        title: '学习相关',
-        children: const [
+        title: context.l10n.learningRelated,
+        children: [
           _MenuTile(
             icon: Icons.bar_chart_rounded,
-            color: Color(0xFF4A7244),
-            label: '学习报告',
-            subtitle: '查看详细学习数据',
+            color: const Color(0xFF4A7244),
+            label: context.l10n.learningReport,
+            subtitle: context.l10n.viewDetailedLearningData,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (BuildContext context) => const LearningReportPage(),
+                ),
+              );
+            },
           ),
           _MenuTile(
             icon: Icons.favorite_border_rounded,
-            color: Color(0xFFE06B6B),
-            label: '我的收藏',
-            subtitle: '收藏的句型和场景',
-            badge: '12',
-            badgeColor: Color(0xFFE06B6B),
+            color: const Color(0xFFE06B6B),
+            label: context.l10n.myFavorites,
+            subtitle: context.l10n.favoritePatternsAndScenes,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (BuildContext context) => const FavoritesPage(),
+                ),
+              );
+            },
           ),
           _MenuTile(
             icon: Icons.download_rounded,
-            color: Color(0xFF5A6FA8),
-            label: '离线内容',
-            subtitle: '已下载 3 个场景包',
+            color: const Color(0xFF5A6FA8),
+            label: context.l10n.offlineContent,
+            subtitle: context.l10n.manageOfflineScenePacks,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (BuildContext context) => const OfflineContentPage(),
+                ),
+              );
+            },
           ),
           _MenuTile(
             icon: Icons.emoji_events_outlined,
-            color: Color(0xFFC8955A),
-            label: '成就徽章',
-            subtitle: '已解锁 8 个成就',
+            color: const Color(0xFFC8955A),
+            label: context.l10n.achievements,
+            subtitle: context.l10n.viewUnlockedAchievements,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (BuildContext context) => const AchievementsPage(),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -566,12 +784,12 @@ class _ProfilePageState extends State<ProfilePage> {
   List<Widget> _buildSettings() {
     return <Widget>[
       _MenuGroup(
-        title: '偏好设置',
+        title: context.l10n.preferences,
         children: [
           _MenuTile(
             icon: Icons.notifications_none_rounded,
             color: const Color(0xFF4A7244),
-            label: '每日提醒',
+            label: context.l10n.dailyReminder,
             trailing: Switch.adaptive(
               value: _reminderEnabled,
               activeThumbColor: primaryGreen,
@@ -588,8 +806,9 @@ class _ProfilePageState extends State<ProfilePage> {
             _MenuTile(
               icon: Icons.access_time_rounded,
               color: const Color(0xFF4A7244),
-              label:
-                  '提醒时间  ${_reminderTime.hour.toString().padLeft(2, '0')}:${_reminderTime.minute.toString().padLeft(2, '0')}',
+              label: context.l10n.reminderTime(
+                '${_reminderTime.hour.toString().padLeft(2, '0')}:${_reminderTime.minute.toString().padLeft(2, '0')}',
+              ),
               trailing: const Icon(
                 Icons.chevron_right_rounded,
                 size: 18,
@@ -616,7 +835,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _MenuTile(
             icon: Icons.dark_mode_outlined,
             color: const Color(0xFF7B4EA0),
-            label: '深色模式',
+            label: context.l10n.darkMode,
             trailing: Switch(
               value: _darkMode,
               onChanged: (bool value) async {
@@ -632,48 +851,55 @@ class _ProfilePageState extends State<ProfilePage> {
           _MenuTile(
             icon: Icons.volume_up_outlined,
             color: const Color(0xFF3D7FA8),
-            label: '音效',
+            label: context.l10n.soundEffects,
             trailing: Switch(
               value: _soundEnabled,
               onChanged: (bool value) => setState(() => _soundEnabled = value),
               activeThumbColor: primaryGreen,
             ),
           ),
-          const _MenuTile(
+          _MenuTile(
             icon: Icons.language_rounded,
             color: Color(0xFFA0622A),
-            label: '界面语言',
-            value: '简体中文',
+            label: context.l10n.interfaceLanguage,
+            value: context.l10n.simplifiedChinese,
           ),
-          const _MenuTile(
+          _MenuTile(
             icon: Icons.shield_outlined,
             color: Color(0xFF5A6FA8),
-            label: '隐私设置',
+            label: context.l10n.privacySettings,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (BuildContext context) => const PrivacyPolicyPage(),
+                ),
+              );
+            },
           ),
         ],
       ),
       _MenuGroup(
-        title: '帮助与支持',
+        title: context.l10n.helpAndSupport,
         children: [
-          const _MenuTile(
+          _MenuTile(
             icon: Icons.help_outline_rounded,
             color: Color(0xFF9A9289),
-            label: '帮助与反馈',
+            label: context.l10n.helpFeedback,
           ),
-          const _MenuTile(
+          _MenuTile(
             icon: Icons.message_outlined,
             color: Color(0xFF9A9289),
-            label: '联系我们',
+            label: context.l10n.contactUs,
           ),
-          const _MenuTile(
+          _MenuTile(
             icon: Icons.star_border_rounded,
             color: Color(0xFFFFB83C),
-            label: '给个好评',
+            label: context.l10n.rateUs,
           ),
           _MenuTile(
             icon: Icons.logout_rounded,
             color: const Color(0xFFD46B6B),
-            label: '退出登录',
+            label: context.l10n.logout,
             danger: true,
             onTap: () {
               AppSessionScope.of(context).logout();
@@ -878,6 +1104,71 @@ class _StatCard extends StatelessWidget {
   }
 }
 
+class _StatsPanelState extends StatelessWidget {
+  const _StatsPanelState({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF0ECE6)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 12,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF6F3EE),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: primaryGreen, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(fontSize: 12, color: textSecondary),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MenuGroup extends StatelessWidget {
   const _MenuGroup({required this.title, required this.children});
 
@@ -1056,12 +1347,12 @@ class _PracticeItem {
   const _PracticeItem({
     required this.title,
     required this.time,
-    required this.score,
+    required this.scoreLabel,
     required this.emoji,
   });
 
   final String title;
   final String time;
-  final int score;
+  final String scoreLabel;
   final String emoji;
 }

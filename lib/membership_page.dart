@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'app_models.dart';
+import 'config/payment_config.dart';
+import 'l10n/l10n.dart';
 
 class MembershipPage extends StatefulWidget {
   const MembershipPage({
@@ -8,6 +10,7 @@ class MembershipPage extends StatefulWidget {
     required this.onBack,
     required this.currentPlan,
     required this.onSubscribe,
+    required this.onRestorePurchases,
     required this.isLoading,
     this.errorMessage,
   });
@@ -15,6 +18,7 @@ class MembershipPage extends StatefulWidget {
   final VoidCallback onBack;
   final String currentPlan;
   final Future<void> Function(String planId) onSubscribe;
+  final Future<void> Function() onRestorePurchases;
   final bool isLoading;
   final String? errorMessage;
 
@@ -23,9 +27,7 @@ class MembershipPage extends StatefulWidget {
 }
 
 class _MembershipPageState extends State<MembershipPage> {
-  late String _selectedPlan = widget.currentPlan == 'free'
-      ? 'yearly'
-      : widget.currentPlan;
+  late String _selectedPlan = _defaultSelectedPlan(widget.currentPlan);
 
   bool get _isPro => widget.currentPlan != 'free';
 
@@ -33,40 +35,11 @@ class _MembershipPageState extends State<MembershipPage> {
   void didUpdateWidget(covariant MembershipPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.currentPlan != widget.currentPlan) {
-      _selectedPlan = widget.currentPlan == 'free'
-          ? 'yearly'
-          : widget.currentPlan;
+      _selectedPlan = _defaultSelectedPlan(widget.currentPlan);
     }
   }
 
-  static const _plans = <_MemberPlan>[
-    _MemberPlan(
-      id: 'monthly',
-      name: '月度会员',
-      price: 28,
-      unit: '月',
-      billingNote: '按月计费，随时取消',
-    ),
-    _MemberPlan(
-      id: 'yearly',
-      name: '年度会员',
-      price: 168,
-      originalPrice: 336,
-      unit: '年',
-      billingNote: '相当于 ¥14/月',
-      badge: '省 50%',
-      popular: true,
-    ),
-    _MemberPlan(
-      id: 'lifetime',
-      name: '终身会员',
-      price: 398,
-      originalPrice: 672,
-      unit: '永久',
-      billingNote: '一次购买，终身使用',
-      badge: '最划算',
-    ),
-  ];
+  static const _plans = PaymentConfig.plans;
 
   static const _proFeatures = <_MemberFeature>[
     _MemberFeature(
@@ -114,6 +87,7 @@ class _MembershipPageState extends State<MembershipPage> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     return Container(
       color: appBackground,
       child: Column(
@@ -219,7 +193,7 @@ class _MembershipPageState extends State<MembershipPage> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      _isPro ? '你已是 Pro 会员' : '升级到 Pro',
+                      _isPro ? l10n.youAreProMember : l10n.upgradeToPro,
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
@@ -236,7 +210,9 @@ class _MembershipPageState extends State<MembershipPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _isPro ? '感谢你的支持，享受所有高级功能' : '解锁全部功能，加速你的口语进步',
+                      _isPro
+                          ? l10n.youAreProSubtitle
+                          : l10n.upgradeToProSubtitle,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 13,
@@ -253,7 +229,7 @@ class _MembershipPageState extends State<MembershipPage> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
               children: [
-                _SectionTitle(title: 'Pro 会员权益'),
+                _SectionTitle(title: l10n.proBenefits),
                 Container(
                   decoration: _panelDecoration(),
                   child: Column(
@@ -297,7 +273,7 @@ class _MembershipPageState extends State<MembershipPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    feature.title,
+                                    l10n.membershipFeatureTitle(feature.title),
                                     style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
@@ -306,7 +282,9 @@ class _MembershipPageState extends State<MembershipPage> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    feature.desc,
+                                    l10n.membershipFeatureDescription(
+                                      feature.desc,
+                                    ),
                                     style: const TextStyle(
                                       fontSize: 11,
                                       color: textSecondary,
@@ -322,24 +300,24 @@ class _MembershipPageState extends State<MembershipPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                _SectionTitle(title: '选择会员方案'),
+                _SectionTitle(title: l10n.chooseMembershipPlan),
                 ..._plans.map(
                   (plan) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: GestureDetector(
-                      onTap: () => setState(() => _selectedPlan = plan.id),
+                      onTap: () => setState(() => _selectedPlan = plan.planId),
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: _selectedPlan == plan.id
+                          color: _selectedPlan == plan.planId
                               ? const Color(0xFFFFFAF1)
                               : Colors.white,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: _selectedPlan == plan.id
+                            color: _selectedPlan == plan.planId
                                 ? const Color(0xFFC8955A)
                                 : const Color(0xFFF0ECE6),
-                            width: _selectedPlan == plan.id ? 1.5 : 1,
+                            width: _selectedPlan == plan.planId ? 1.5 : 1,
                           ),
                           boxShadow: const [
                             BoxShadow(
@@ -359,7 +337,7 @@ class _MembershipPageState extends State<MembershipPage> {
                                   Row(
                                     children: [
                                       Text(
-                                        plan.name,
+                                        l10n.planName(plan.name),
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w700,
@@ -382,7 +360,7 @@ class _MembershipPageState extends State<MembershipPage> {
                                             ),
                                           ),
                                           child: Text(
-                                            plan.badge!,
+                                            l10n.planBadge(plan.badge!),
                                             style: TextStyle(
                                               fontSize: 10,
                                               fontWeight: FontWeight.w700,
@@ -397,7 +375,7 @@ class _MembershipPageState extends State<MembershipPage> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    plan.billingNote,
+                                    l10n.planNote(plan.billingNote),
                                     style: const TextStyle(
                                       fontSize: 12,
                                       color: textSecondary,
@@ -406,7 +384,9 @@ class _MembershipPageState extends State<MembershipPage> {
                                   if (plan.originalPrice != null) ...[
                                     const SizedBox(height: 6),
                                     Text(
-                                      '原价 ¥${plan.originalPrice}',
+                                      l10n.originalPriceLabel(
+                                        plan.displayOriginalPrice!,
+                                      ),
                                       style: const TextStyle(
                                         fontSize: 12,
                                         color: textTertiary,
@@ -422,7 +402,7 @@ class _MembershipPageState extends State<MembershipPage> {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
-                                  '¥${plan.price}',
+                                  plan.displayPrice,
                                   style: const TextStyle(
                                     fontSize: 26,
                                     fontWeight: FontWeight.w700,
@@ -432,7 +412,7 @@ class _MembershipPageState extends State<MembershipPage> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '/${plan.unit}',
+                                  '/${l10n.planUnit(plan.unit)}',
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: textSecondary,
@@ -466,18 +446,36 @@ class _MembershipPageState extends State<MembershipPage> {
                   ),
                   child: Text(
                     widget.isLoading
-                        ? '处理中...'
+                        ? l10n.processing
                         : (_isPro && widget.currentPlan == _selectedPlan)
-                        ? '当前方案'
-                        : (_isPro ? '切换方案' : '立即开通'),
+                        ? l10n.currentPlan
+                        : (_isPro ? l10n.switchPlan : l10n.subscribeNow),
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
+                const SizedBox(height: 10),
+                OutlinedButton(
+                  onPressed: widget.isLoading
+                      ? null
+                      : widget.onRestorePurchases,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF2E4A2C),
+                    minimumSize: const Size.fromHeight(48),
+                    side: const BorderSide(color: Color(0xFFD9E3D2)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    l10n.restorePurchases,
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                ),
                 const SizedBox(height: 24),
-                _SectionTitle(title: '免费版 vs Pro'),
+                _SectionTitle(title: l10n.freeVsPro),
                 Container(
                   decoration: _panelDecoration(),
                   child: Column(
@@ -485,12 +483,12 @@ class _MembershipPageState extends State<MembershipPage> {
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
                         child: Row(
-                          children: const [
+                          children: [
                             Expanded(child: SizedBox()),
                             SizedBox(
                               width: 64,
                               child: Text(
-                                '免费版',
+                                l10n.freeVersion,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 11,
@@ -503,7 +501,7 @@ class _MembershipPageState extends State<MembershipPage> {
                             SizedBox(
                               width: 64,
                               child: Text(
-                                'Pro',
+                                l10n.pro,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 11,
@@ -538,7 +536,7 @@ class _MembershipPageState extends State<MembershipPage> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  item.label,
+                                  l10n.membershipCompareLabel(item.label),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: textPrimary,
@@ -600,6 +598,13 @@ class _MembershipPageState extends State<MembershipPage> {
       ],
     );
   }
+
+  String _defaultSelectedPlan(String currentPlan) {
+    final String normalizedPlan = PaymentConfig.normalizePlanId(currentPlan);
+    return normalizedPlan == PaymentConfig.freePlanId
+        ? PaymentConfig.yearlyPlanId
+        : normalizedPlan;
+  }
 }
 
 class _SectionTitle extends StatelessWidget {
@@ -622,28 +627,6 @@ class _SectionTitle extends StatelessWidget {
       ),
     );
   }
-}
-
-class _MemberPlan {
-  const _MemberPlan({
-    required this.id,
-    required this.name,
-    required this.price,
-    required this.unit,
-    required this.billingNote,
-    this.originalPrice,
-    this.badge,
-    this.popular = false,
-  });
-
-  final String id;
-  final String name;
-  final int price;
-  final int? originalPrice;
-  final String unit;
-  final String billingNote;
-  final String? badge;
-  final bool popular;
 }
 
 class _MemberFeature {

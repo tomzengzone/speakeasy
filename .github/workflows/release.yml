@@ -1,0 +1,132 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: "3.x"
+  JAVA_VERSION: "17"
+
+jobs:
+  build-release:
+    name: Build Release Artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle*', 'android/**/*.kts', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # Optional GitHub Secrets placeholders:
+      # - APP_ENV_FILE: production .env content
+      # - APP_ENV_DEV_FILE: development .env.dev content
+      # - ANDROID_KEYSTORE_BASE64: base64-encoded release keystore (.jks/.keystore)
+      # - ANDROID_KEYSTORE_PASSWORD: keystore password
+      # - ANDROID_KEY_ALIAS: key alias
+      # - ANDROID_KEY_PASSWORD: key password
+      # If Android signing secrets are not configured, CI generates a temporary keystore
+      # so the workflow can still produce testable release artifacts.
+      - name: Prepare environment files
+        shell: bash
+        run: |
+          if [[ -n "${{ secrets.APP_ENV_FILE }}" ]]; then
+            printf '%s' "${{ secrets.APP_ENV_FILE }}" > .env
+          else
+            cat <<'EOF' > .env
+          API_BASE_URL=https://example.invalid
+          OPENAI_API_KEY=release-placeholder
+          ENV=production
+          EOF
+          fi
+
+          if [[ -n "${{ secrets.APP_ENV_DEV_FILE }}" ]]; then
+            printf '%s' "${{ secrets.APP_ENV_DEV_FILE }}" > .env.dev
+          else
+            cat <<'EOF' > .env.dev
+          API_BASE_URL=https://example.invalid
+          OPENAI_API_KEY=release-placeholder
+          ENV=development
+          EOF
+          fi
+
+      - name: Configure Android signing
+        shell: bash
+        run: |
+          if [[ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]]; then
+            printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+            cat <<EOF > android/key.properties
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          storeFile=upload-keystore.jks
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          EOF
+          else
+            keytool -genkeypair \
+              -alias upload \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storetype PKCS12 \
+              -keystore android/app/upload-keystore.jks \
+              -storepass android \
+              -keypass android \
+              -dname "CN=GitHub Actions,O=CI,L=CI,S=CI,C=US"
+
+            cat <<'EOF' > android/key.properties
+          keyAlias=upload
+          keyPassword=android
+          storeFile=upload-keystore.jks
+          storePassword=android
+          EOF
+          fi
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Android APK
+        run: flutter build apk --release
+
+      - name: Build Android App Bundle
+        run: flutter build appbundle --release
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: speakeasy-${{ github.ref_name }}
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 30

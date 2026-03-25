@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_models.dart';
 import 'app_session.dart';
 import 'audio_service.dart';
+import 'l10n/l10n.dart';
 
 class LearningPage extends StatefulWidget {
   const LearningPage({
@@ -21,40 +22,13 @@ class LearningPage extends StatefulWidget {
 }
 
 class _LearningPageState extends State<LearningPage> {
+  static const int _stepCount = 4;
+
   int _step = 0;
   int? _recordingPhrase;
   int _selectedVariation = 0;
   final Map<int, String> _recordingPaths = <int, String>{};
   final Map<int, PronunciationScore> _scores = <int, PronunciationScore>{};
-
-  static const List<String> _titles = <String>[
-    '先理解场景',
-    '先学这 3 句',
-    '跟我一起说',
-    '换一种说法并自己输出',
-  ];
-
-  static const List<String> _bodies = <String>[
-    '先理解为什么这类场景容易卡住，再建立“自然开场”的直觉。',
-    '先拿走 3 句最顺手的表达，知道它们分别适合什么语气。',
-    '先跟着说，稳住语调和节奏，再慢慢提高自然度。',
-    '把固定结构换词，最后完成一次你自己的表达。',
-  ];
-
-  static const List<({String en, String cn, String note})> _phrases =
-      <({String en, String cn, String note})>[
-        (
-          en: 'Good morning, everyone. Thanks for joining.',
-          cn: '大家早上好，感谢加入。',
-          note: '适合会议开场',
-        ),
-        (en: 'Let\'s get started.', cn: '我们开始吧。', note: '推进节奏最自然'),
-        (
-          en: 'Today, we\'re here to discuss this week\'s priorities.',
-          cn: '今天我们来聊一下本周的优先事项。',
-          note: '说明目的更清楚',
-        ),
-      ];
 
   static const List<String> _variations = <String>[
     'Thanks for joining on short notice.',
@@ -62,6 +36,46 @@ class _LearningPageState extends State<LearningPage> {
     'Let me walk you through the current timeline.',
     'First, here is the recovery plan.',
   ];
+
+  List<String> _titles(AppLocalizations l10n) {
+    return <String>[
+      l10n.learningStepUnderstandScene,
+      l10n.learningStepLearn3Phrases,
+      l10n.learningStepRepeatAfterMe,
+      l10n.learningStepVariationOutput,
+    ];
+  }
+
+  List<String> _bodies(AppLocalizations l10n) {
+    return <String>[
+      l10n.learningBodyUnderstandScene,
+      l10n.learningBodyLearn3Phrases,
+      l10n.learningBodyRepeatAfterMe,
+      l10n.learningBodyVariationOutput,
+    ];
+  }
+
+  List<({String en, String translation, String note})> _phrases(
+    AppLocalizations l10n,
+  ) {
+    return <({String en, String translation, String note})>[
+      (
+        en: 'Good morning, everyone. Thanks for joining.',
+        translation: l10n.learningPhraseTranslationMorning,
+        note: l10n.phraseNoteMeetingOpening,
+      ),
+      (
+        en: 'Let\'s get started.',
+        translation: l10n.learningPhraseTranslationStart,
+        note: l10n.phraseNoteNaturalPacing,
+      ),
+      (
+        en: 'Today, we\'re here to discuss this week\'s priorities.',
+        translation: l10n.learningPhraseTranslationPriorities,
+        note: l10n.phraseNoteClearPurpose,
+      ),
+    ];
+  }
 
   void _handleBack() {
     if (_step == 0) {
@@ -74,7 +88,7 @@ class _LearningPageState extends State<LearningPage> {
   }
 
   void _handleNext() {
-    if (_step == _titles.length - 1) {
+    if (_step == _stepCount - 1) {
       (widget.onComplete ?? widget.onBack).call();
       return;
     }
@@ -87,6 +101,9 @@ class _LearningPageState extends State<LearningPage> {
   Widget build(BuildContext context) {
     final Color color = widget.card.color;
     final AudioService audioService = AudioServiceScope.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final List<String> titles = _titles(l10n);
+    final List<String> bodies = _bodies(l10n);
 
     return Material(
       color: appBackground,
@@ -135,7 +152,7 @@ class _LearningPageState extends State<LearningPage> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '步骤 ${_step + 1} / ${_titles.length}',
+                            l10n.stepProgress(_step + 1, _stepCount),
                             style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xCFFFFFFF),
@@ -147,7 +164,7 @@ class _LearningPageState extends State<LearningPage> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                _LearningProgress(current: _step + 1, total: _titles.length),
+                _LearningProgress(current: _step + 1, total: _stepCount),
               ],
             ),
           ),
@@ -173,7 +190,7 @@ class _LearningPageState extends State<LearningPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'STEP ${_step + 1}',
+                        l10n.stepProgress(_step + 1, _stepCount),
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -183,7 +200,7 @@ class _LearningPageState extends State<LearningPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _titles[_step],
+                        titles[_step],
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
@@ -193,7 +210,7 @@ class _LearningPageState extends State<LearningPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _bodies[_step],
+                        bodies[_step],
                         style: const TextStyle(
                           fontSize: 14,
                           height: 1.7,
@@ -201,7 +218,7 @@ class _LearningPageState extends State<LearningPage> {
                         ),
                       ),
                       const SizedBox(height: 18),
-                      _buildStepContent(color, audioService),
+                      _buildStepContent(color, audioService, l10n),
                     ],
                   ),
                 ),
@@ -226,7 +243,7 @@ class _LearningPageState extends State<LearningPage> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      child: const Text('上一步'),
+                      child: Text(l10n.previousStep),
                     ),
                   ),
                 if (_step > 0) const SizedBox(width: 10),
@@ -241,7 +258,9 @@ class _LearningPageState extends State<LearningPage> {
                       ),
                     ),
                     child: Text(
-                      _step == _titles.length - 1 ? '完成本课' : '下一步',
+                      _step == _stepCount - 1
+                          ? l10n.completeLesson
+                          : l10n.nextStep,
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -254,7 +273,13 @@ class _LearningPageState extends State<LearningPage> {
     );
   }
 
-  Widget _buildStepContent(Color color, AudioService audioService) {
+  Widget _buildStepContent(
+    Color color,
+    AudioService audioService,
+    AppLocalizations l10n,
+  ) {
+    final List<({String en, String translation, String note})> phrases =
+        _phrases(l10n);
     return switch (_step) {
       0 => Container(
         padding: const EdgeInsets.all(18),
@@ -267,7 +292,7 @@ class _LearningPageState extends State<LearningPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '真实场景',
+              l10n.realScenario,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -293,19 +318,20 @@ class _LearningPageState extends State<LearningPage> {
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              '先把场景理解清楚，再进入表达和跟读，后面会更顺。',
+            Text(
+              l10n.understandSceneBeforePractice,
               style: TextStyle(fontSize: 13, height: 1.6, color: textSecondary),
             ),
           ],
         ),
       ),
       1 => Column(
-        children: List<Widget>.generate(_phrases.length, (int index) {
-          final item = _phrases[index];
+        children: List<Widget>.generate(phrases.length, (int index) {
+          final item = phrases[index];
           final String ttsKey = 'tts_${item.en.hashCode}';
           final bool playing =
-              audioService.isPlaying && audioService.playingUrl != null &&
+              audioService.isPlaying &&
+              audioService.playingUrl != null &&
               audioService.playingUrl!.contains(ttsKey);
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
@@ -352,7 +378,7 @@ class _LearningPageState extends State<LearningPage> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          item.cn,
+                          item.translation,
                           style: const TextStyle(
                             fontSize: 13,
                             color: textSecondary,
@@ -401,8 +427,8 @@ class _LearningPageState extends State<LearningPage> {
         }),
       ),
       2 => Column(
-        children: List<Widget>.generate(_phrases.length, (int index) {
-          final item = _phrases[index];
+        children: List<Widget>.generate(phrases.length, (int index) {
+          final item = phrases[index];
           final bool recording =
               audioService.isRecording && _recordingPhrase == index;
           return Padding(
@@ -498,8 +524,8 @@ class _LearningPageState extends State<LearningPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '现在轮到你了',
+            Text(
+              l10n.yourTurn,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -552,8 +578,8 @@ class _LearningPageState extends State<LearningPage> {
               }),
             ),
             const SizedBox(height: 14),
-            const Text(
-              '选一个最顺口的版本，大声说一遍，然后用它完成你自己的场景开口。',
+            Text(
+              l10n.chooseSmoothestVariationHint,
               style: TextStyle(
                 fontSize: 13,
                 height: 1.65,
@@ -586,7 +612,7 @@ class _LearningProgress extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'STEP $current OF $total',
+            context.l10n.stepProgress(current, total),
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,

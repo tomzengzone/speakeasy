@@ -1,4 +1,4 @@
-package com.example.speakeasy
+package com.speakeasy.app
 
 import io.flutter.embedding.android.FlutterActivity
 

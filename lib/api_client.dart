@@ -3,25 +3,25 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+
+import 'config/app_config.dart';
+import 'models/learning_stats_model.dart';
+import 'models/storage_models.dart';
+import 'services/storage_service.dart';
 
 class ApiClient {
-  static const String _base = 'http://47.98.225.160/api';
-  static const String _tokenKey = 'auth_token';
-
   static Future<String?> getToken() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_tokenKey);
+    return StorageService.instance.getAuthSession()?.token;
   }
 
   static Future<void> saveToken(String token) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_tokenKey, token);
+    await StorageService.instance.saveAuthSession(
+      AuthSessionStorageModel(token: token, updatedAt: DateTime.now()),
+    );
   }
 
   static Future<void> clearToken() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tokenKey);
+    await StorageService.instance.clearAuthSession();
   }
 
   static Future<Map<String, String>> _headers({bool includeJson = true}) async {
@@ -58,23 +58,27 @@ class ApiClient {
 
   static Future<Map<String, dynamic>> _get(String path) async {
     final http.Response response = await http
-        .get(Uri.parse('$_base$path'), headers: await _headers())
+        .get(
+          Uri.parse('${AppConfig.apiBaseUrl}$path'),
+          headers: await _headers(),
+        )
         .timeout(const Duration(seconds: 15));
     return _decodeResponse(response);
   }
 
   static Future<Map<String, dynamic>> _post(
     String path,
-    Map<String, dynamic> body,
-  ) async {
+    Map<String, dynamic> body, {
+    bool allowEmpty = false,
+  }) async {
     final http.Response response = await http
         .post(
-          Uri.parse('$_base$path'),
+          Uri.parse('${AppConfig.apiBaseUrl}$path'),
           headers: await _headers(),
           body: jsonEncode(body),
         )
         .timeout(const Duration(seconds: 15));
-    return _decodeResponse(response);
+    return _decodeResponse(response, allowEmpty: allowEmpty);
   }
 
   static Future<Map<String, dynamic>> _put(
@@ -83,7 +87,7 @@ class ApiClient {
   ) async {
     final http.Response response = await http
         .put(
-          Uri.parse('$_base$path'),
+          Uri.parse('${AppConfig.apiBaseUrl}$path'),
           headers: await _headers(),
           body: jsonEncode(body),
         )
@@ -102,6 +106,31 @@ class ApiClient {
     'code': code,
   });
 
+  static Future<Map<String, dynamic>> signInWithApple({
+    required String authorizationCode,
+    required String identityToken,
+    String? userIdentifier,
+    String? email,
+    String? givenName,
+    String? familyName,
+  }) => _post('/auth/apple', <String, dynamic>{
+    'authorizationCode': authorizationCode,
+    'identityToken': identityToken,
+    if (userIdentifier != null && userIdentifier.isNotEmpty)
+      'userIdentifier': userIdentifier,
+    if (email != null && email.isNotEmpty) 'email': email,
+    if (givenName != null && givenName.isNotEmpty) 'givenName': givenName,
+    if (familyName != null && familyName.isNotEmpty) 'familyName': familyName,
+  });
+
+  static Future<Map<String, dynamic>> signInWithWeChat({
+    required String code,
+    String? state,
+  }) => _post('/auth/wechat', <String, dynamic>{
+    'code': code,
+    if (state != null && state.isNotEmpty) 'state': state,
+  });
+
   static Future<Map<String, dynamic>> refreshToken() =>
       _post('/auth/refresh', const <String, dynamic>{});
 
@@ -110,20 +139,37 @@ class ApiClient {
   static Future<Map<String, dynamic>> updateMe(Map<String, dynamic> data) =>
       _put('/user/me', data);
 
-  static Future<Map<String, dynamic>> getStats() => _get('/user/stats');
+  static Future<LearningStatsModel> getLearningStats() async {
+    final Map<String, dynamic> res = await _get('/user/stats');
+    if (res['code'] != 0) {
+      throw Exception(res['message'] ?? '获取学习统计失败');
+    }
+    return LearningStatsModel.fromJson(_asMap(res['data']));
+  }
 
-  static Future<Map<String, dynamic>> recordSession({
+  static Future<LearningStatsModel?> recordPracticeSession({
     required int durationSeconds,
     required int score,
-  }) => _post('/user/stats/session', <String, dynamic>{
-    'durationSeconds': durationSeconds,
-    'score': score,
-  });
+  }) async {
+    final Map<String, dynamic> res = await _post(
+      '/user/stats/session',
+      <String, dynamic>{'durationSeconds': durationSeconds, 'score': score},
+      allowEmpty: true,
+    );
+    if (res['code'] != 0) {
+      throw Exception(res['message'] ?? '记录练习失败');
+    }
+    final Map<String, dynamic> data = _asMap(res['data']);
+    if (data.isEmpty) {
+      return null;
+    }
+    return LearningStatsModel.fromJson(data);
+  }
 
   static Future<String> uploadAvatar(File imageFile) async {
     final http.MultipartRequest request = http.MultipartRequest(
       'POST',
-      Uri.parse('$_base/user/me/avatar'),
+      Uri.parse('${AppConfig.apiBaseUrl}/user/me/avatar'),
     );
     final String? token = await getToken();
     if (token != null && token.isNotEmpty) {
@@ -194,7 +240,7 @@ class ApiClient {
   static Future<Uint8List> tts(String text, {String voice = 'Cherry'}) async {
     final http.Response response = await http
         .post(
-          Uri.parse('$_base/ai/tts'),
+          Uri.parse('${AppConfig.apiBaseUrl}/ai/tts'),
           headers: await _headers(),
           body: jsonEncode(<String, dynamic>{'text': text, 'voice': voice}),
         )
@@ -209,7 +255,7 @@ class ApiClient {
   }) async {
     final http.MultipartRequest request = http.MultipartRequest(
       'POST',
-      Uri.parse('$_base/ai/score'),
+      Uri.parse('${AppConfig.apiBaseUrl}/ai/score'),
     );
     final String? token = await getToken();
     if (token != null && token.isNotEmpty) {

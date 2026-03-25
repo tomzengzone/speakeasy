@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_models.dart';
+import 'l10n/l10n.dart';
 
 class LessonDetailPage extends StatelessWidget {
   const LessonDetailPage({
@@ -14,26 +15,25 @@ class LessonDetailPage extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback onStart;
 
-  List<String> _masterGoals() {
-    return <String>['1 个可直接套用的开口框架', '2 个自然不僵硬的变体表达', '1 次完整的场景开口输出'];
+  List<String> _masterGoals(AppLocalizations l10n) {
+    return <String>[
+      l10n.takeawayFramework,
+      l10n.takeawayVariations,
+      l10n.takeawaySceneOutput,
+    ];
   }
 
-  String _sceneSummary() {
-    return switch (card.category) {
-      '不会开口' => '你知道大概要说什么，但第一句总是卡住。这节课先帮你理解什么样的开场更自然、更安全。',
-      '不会表达' => '你脑子里有想法，但说出来时不够清楚。这节课会先给你一个更顺的表达路径。',
-      '说不下去' => '你能开头，但一两句之后就接不下去。这里会先帮你建立继续往下说的结构感。',
-      '一慌就乱' => '你不是不会，而是一紧张就丢掉顺序。这节课会先帮你把稳定表达的骨架搭起来。',
-      _ => '这节课会先给你一个能马上用起来的场景表达方式，再带你完成一次完整练习。',
-    };
+  String _sceneSummary(AppLocalizations l10n) {
+    return l10n.lessonSummary(card.category);
   }
 
   @override
   Widget build(BuildContext context) {
     final Color color = card.color;
+    final AppLocalizations l10n = context.l10n;
     final List<String> tags = <String>[
-      card.category,
-      '场景理解',
+      l10n.intentLabel(card.category),
+      l10n.sceneUnderstanding,
       'Lv.${card.difficultyLevel}',
     ];
 
@@ -83,8 +83,8 @@ class LessonDetailPage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
-                            '课程介绍',
+                          Text(
+                            l10n.courseIntroduction,
                             style: TextStyle(
                               fontSize: 12,
                               color: Color(0xD9FFFFFF),
@@ -174,7 +174,7 @@ class LessonDetailPage extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  _sceneSummary(),
+                                  _sceneSummary(l10n),
                                   style: const TextStyle(
                                     fontSize: 13,
                                     color: Color(0xE8FFFFFF),
@@ -186,7 +186,7 @@ class LessonDetailPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            '这节课你会拿走',
+                            l10n.lessonTakeaways,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -195,7 +195,7 @@ class LessonDetailPage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          ..._masterGoals().map(
+                          ..._masterGoals(l10n).map(
                             (item) => Padding(
                               padding: const EdgeInsets.only(bottom: 10),
                               child: Row(
@@ -254,8 +254,8 @@ class LessonDetailPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                child: const Text(
-                  '开始学习',
+                child: Text(
+                  l10n.startLearning,
                   style: TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),

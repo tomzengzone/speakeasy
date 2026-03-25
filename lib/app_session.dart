@@ -1,13 +1,27 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ai_repository.dart';
 import 'api_client.dart';
 import 'app_models.dart';
+import 'auth_models.dart';
+import 'config/app_config.dart';
+import 'config/payment_config.dart';
+import 'models/learning_stats_model.dart';
+import 'models/storage_models.dart';
+import 'services/apple_auth_service.dart';
+import 'services/apple_payment_service.dart';
+import 'services/android_payment_service.dart';
+import 'services/auth_service.dart';
+import 'services/payment_service.dart';
+import 'services/storage_service.dart';
+import 'services/stats_service.dart';
+import 'services/wechat_auth_service.dart';
+import 'utils/error_handler.dart';
+
+export 'auth_models.dart';
 
 const List<String> defaultAvatarUrls = <String>[
   'https://images.unsplash.com/photo-1725887150031-d353e5c4ce3a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=160',
@@ -17,8 +31,6 @@ const List<String> defaultAvatarUrls = <String>[
   'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=160',
   'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=160',
 ];
-
-enum LoginProvider { wechat, apple, phone, email }
 
 class SceneHistoryTurn {
   const SceneHistoryTurn({required this.role, required this.text});
@@ -90,129 +102,6 @@ class SceneFeedback {
   final List<(String, String, String)> improvements;
 }
 
-class LoginSubmission {
-  const LoginSubmission({
-    required this.provider,
-    this.phone,
-    this.code,
-    this.email,
-    this.password,
-    this.nickname,
-    this.isRegister = false,
-  });
-
-  final LoginProvider provider;
-  final String? phone;
-  final String? code;
-  final String? email;
-  final String? password;
-  final String? nickname;
-  final bool isRegister;
-}
-
-class AppUser {
-  const AppUser({
-    required this.nickname,
-    required this.avatarUrl,
-    required this.memberPlan,
-    this.onboardingDone = false,
-  });
-
-  final String nickname;
-  final String avatarUrl;
-  final String memberPlan;
-  final bool onboardingDone;
-
-  factory AppUser.fromJson(Map<String, dynamic> json) {
-    return AppUser(
-      nickname: (json['nickname'] as String?)?.trim().isNotEmpty == true
-          ? (json['nickname'] as String).trim()
-          : '用户',
-      avatarUrl:
-          (json['avatarUrl'] as String?) ?? (json['avatar'] as String?) ?? '',
-      memberPlan:
-          (json['memberPlan'] as String?) ??
-          (json['plan'] as String?) ??
-          'free',
-      onboardingDone: json['onboardingDone'] as bool? ?? false,
-    );
-  }
-
-  AppUser copyWith({
-    String? nickname,
-    String? avatarUrl,
-    String? memberPlan,
-    bool? onboardingDone,
-  }) {
-    return AppUser(
-      nickname: nickname ?? this.nickname,
-      avatarUrl: avatarUrl ?? this.avatarUrl,
-      memberPlan: memberPlan ?? this.memberPlan,
-      onboardingDone: onboardingDone ?? this.onboardingDone,
-    );
-  }
-}
-
-class LearningStats {
-  const LearningStats({
-    this.totalSessions = 0,
-    this.currentStreak = 0,
-    this.bestScore = 0,
-    this.totalMinutes = 0,
-    this.masteredPhrases = 0,
-    this.weekActivity = const [false, false, false, false, false, false, false],
-  });
-
-  final int totalSessions;
-  final int currentStreak;
-  final int bestScore;
-  final int totalMinutes;
-  final int masteredPhrases;
-  final List<bool> weekActivity;
-
-  LearningStats copyWith({
-    int? totalSessions,
-    int? currentStreak,
-    int? bestScore,
-    int? totalMinutes,
-    int? masteredPhrases,
-    List<bool>? weekActivity,
-  }) {
-    return LearningStats(
-      totalSessions: totalSessions ?? this.totalSessions,
-      currentStreak: currentStreak ?? this.currentStreak,
-      bestScore: bestScore ?? this.bestScore,
-      totalMinutes: totalMinutes ?? this.totalMinutes,
-      masteredPhrases: masteredPhrases ?? this.masteredPhrases,
-      weekActivity: weekActivity ?? this.weekActivity,
-    );
-  }
-
-  Map<String, dynamic> toJson() => <String, dynamic>{
-    'totalSessions': totalSessions,
-    'currentStreak': currentStreak,
-    'bestScore': bestScore,
-    'totalMinutes': totalMinutes,
-    'masteredPhrases': masteredPhrases,
-    'weekActivity': weekActivity,
-  };
-
-  factory LearningStats.fromJson(Map<String, dynamic> json) {
-    return LearningStats(
-      totalSessions: (json['totalSessions'] as int?) ?? 0,
-      currentStreak: (json['currentStreak'] as int?) ?? 0,
-      bestScore: (json['bestScore'] as int?) ?? 0,
-      totalMinutes: (json['totalMinutes'] as int?) ?? 0,
-      masteredPhrases: (json['masteredPhrases'] as int?) ?? 0,
-      weekActivity:
-          (json['weekActivity'] as List<dynamic>?)
-              ?.map((dynamic e) => e as bool)
-              .toList() ??
-          List<bool>.filled(7, false),
-    );
-  }
-}
-
 abstract class AppRepository {
   Future<AppUser> signIn(LoginSubmission submission);
 
@@ -243,10 +132,7 @@ class DemoAppRepository implements AppRepository {
   const DemoAppRepository();
 
   static const Set<String> _validPlans = <String>{
-    'free',
-    'monthly',
-    'yearly',
-    'lifetime',
+    ...PaymentConfig.validPlanIds,
   };
 
   @override
@@ -297,7 +183,12 @@ class DemoAppRepository implements AppRepository {
         if (reply.trim().isNotEmpty) {
           return SceneReply(npcText: reply.trim());
         }
-      } catch (_) {
+      } catch (error, stackTrace) {
+        ErrorHandler.handleError(
+          error,
+          stackTrace: stackTrace,
+          context: 'Scene message proxy request failed',
+        );
         // Fall back to the local demo response below.
       }
     }
@@ -348,7 +239,12 @@ class DemoAppRepository implements AppRepository {
         fluency: (score['fluency'] as num?)?.toInt(),
         completeness: (score['completeness'] as num?)?.toInt(),
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      ErrorHandler.handleError(
+        error,
+        stackTrace: stackTrace,
+        context: 'Pronunciation scoring request failed',
+      );
       // Keep the demo scoring fallback when the backend is unavailable.
     }
 
@@ -414,36 +310,77 @@ class DemoAppRepository implements AppRepository {
 AppRepository _defaultRepository() {
   // 优先使用后端 API（ApiClient），OpenAI key 为空时后端直接处理 AI
   // 只有在明确传入 OPENAI_API_KEY 时才走 OpenAI 直连
-  const String key = String.fromEnvironment('OPENAI_API_KEY');
+  final String key = AppConfig.openAiApiKey;
   return OpenAiAppRepository(apiKey: key);
 }
 
+PaymentService _defaultPaymentService() {
+  if (Platform.isIOS || Platform.isMacOS) {
+    return ApplePaymentService();
+  }
+  if (Platform.isAndroid) {
+    return const AndroidPaymentService();
+  }
+  return const UnsupportedPaymentService();
+}
+
 class AppSession extends ChangeNotifier {
-  AppSession({AppRepository? repository})
-    : _repository = repository ?? _defaultRepository() {
-    Future.microtask(_loadFromPrefs);
-    Future.microtask(_loadStatsFromPrefs);
+  factory AppSession({
+    AppRepository? repository,
+    PaymentService? paymentService,
+    StatsService? statsService,
+    AuthService? authService,
+  }) {
+    final AppRepository resolvedRepository = repository ?? _defaultRepository();
+    return AppSession._(
+      repository: resolvedRepository,
+      paymentService: paymentService ?? _defaultPaymentService(),
+      statsService: statsService ?? const StatsService(),
+      authService:
+          authService ??
+          AuthService(signInWithEmail: resolvedRepository.signIn),
+    );
+  }
+
+  AppSession._({
+    required AppRepository repository,
+    required PaymentService paymentService,
+    required StatsService statsService,
+    required AuthService authService,
+  }) : _repository = repository,
+       _paymentService = paymentService,
+       _statsService = statsService,
+       _authService = authService {
+    Future.microtask(_loadFromStorage);
+    Future.microtask(_loadCachedStats);
     Future.microtask(_hydrateFromBackend);
   }
 
   final AppRepository _repository;
+  final PaymentService _paymentService;
+  final StatsService _statsService;
+  final AuthService _authService;
 
   AppUser? _user;
-  LearningStats _stats = const LearningStats();
+  LearningStatsModel _stats = const LearningStatsModel();
   bool _onboardingDone = false;
   ThemeMode _themeMode = ThemeMode.light;
   bool _isAuthenticating = false;
   bool _isUpdatingMembership = false;
+  bool _isStatsLoading = true;
   String? _authErrorMessage;
   String? _membershipErrorMessage;
+  String? _statsErrorMessage;
 
   bool get isLoggedIn => _user != null;
   bool get onboardingDone => _onboardingDone;
   bool get isAuthenticating => _isAuthenticating;
   bool get isUpdatingMembership => _isUpdatingMembership;
+  bool get isStatsLoading => _isStatsLoading;
   String? get authErrorMessage => _authErrorMessage;
   String? get membershipErrorMessage => _membershipErrorMessage;
-  LearningStats get stats => _stats;
+  String? get statsErrorMessage => _statsErrorMessage;
+  LearningStatsModel get stats => _stats;
   ThemeMode get themeMode => _themeMode;
 
   String get nickname => _user?.nickname ?? '学习者';
@@ -456,11 +393,13 @@ class AppSession extends ChangeNotifier {
   bool get isPro => memberPlan != 'free';
 
   Future<void> signIn(LoginSubmission submission) async {
-    if (submission.provider == LoginProvider.phone) {
-      await signInWithCode(
-        phone: submission.phone ?? '',
-        code: submission.code ?? '',
-      );
+    if (submission.provider == LoginProvider.apple) {
+      await signInWithApple();
+      return;
+    }
+
+    if (submission.provider == LoginProvider.wechat) {
+      await signInWithWeChat();
       return;
     }
 
@@ -469,10 +408,61 @@ class AppSession extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _user = await _repository.signIn(submission);
-      unawaited(_saveToPrefs());
+      final AuthSession session = await _authService.signIn(submission);
+      if (session.hasToken) {
+        await _completeAuthenticatedSession(
+          token: session.token!,
+          userJson: session.userJson,
+        );
+      } else {
+        _user = session.user;
+        unawaited(_saveToStorage());
+      }
     } catch (error) {
       _authErrorMessage = _messageFromError(error, fallback: '登录失败，请稍后重试');
+    } finally {
+      _isAuthenticating = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> signInWithApple({AppleAuthService? service}) async {
+    _isAuthenticating = true;
+    _authErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final AppleAuthResult result = await (service ?? const AppleAuthService())
+          .signInWithApple();
+      await _completeAuthenticatedSession(
+        token: result.token,
+        userJson: result.userJson,
+      );
+    } catch (error) {
+      _authErrorMessage = _messageFromError(
+        error,
+        fallback: 'Apple 登录失败，请稍后重试',
+      );
+    } finally {
+      _isAuthenticating = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> signInWithWeChat({WeChatAuthService? service}) async {
+    _isAuthenticating = true;
+    _authErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final WeChatAuthResult result =
+          await (service ?? WeChatAuthService.instance).sendWeChatAuth();
+      await _completeAuthenticatedSession(
+        token: result.token,
+        userJson: result.userJson,
+      );
+    } catch (error) {
+      _authErrorMessage = _messageFromError(error, fallback: '微信登录失败，请稍后重试');
     } finally {
       _isAuthenticating = false;
       notifyListeners();
@@ -502,13 +492,10 @@ class AppSession extends ChangeNotifier {
         throw Exception('登录凭证无效');
       }
 
-      await ApiClient.saveToken(token);
-      _applyUserJson(_asMap(data['user']));
-      unawaited(_saveToPrefs());
-      try {
-        await _refreshStats(notify: false);
-        unawaited(_saveStatsToPrefs());
-      } catch (_) {}
+      await _completeAuthenticatedSession(
+        token: token,
+        userJson: _asMap(data['user']),
+      );
     } catch (error) {
       _authErrorMessage = _messageFromError(error, fallback: '登录失败，请稍后重试');
     } finally {
@@ -530,11 +517,20 @@ class AppSession extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final PaymentResult paymentResult = await _paymentService.purchasePlan(
+        planId,
+      );
+      if (!paymentResult.success) {
+        _membershipErrorMessage = paymentResult.displayMessage;
+        return;
+      }
+
+      final String appliedPlanId = paymentResult.planId ?? planId;
       _user = await _repository.changeMembership(
         user: currentUser,
-        planId: planId,
+        planId: appliedPlanId,
       );
-      unawaited(_saveToPrefs());
+      unawaited(_saveToStorage());
     } catch (error) {
       _membershipErrorMessage = _messageFromError(
         error,
@@ -543,6 +539,94 @@ class AppSession extends ChangeNotifier {
     } finally {
       _isUpdatingMembership = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> restoreMembershipPurchases() async {
+    final AppUser? currentUser = _user;
+    if (currentUser == null) {
+      _membershipErrorMessage = '请先登录';
+      notifyListeners();
+      return;
+    }
+
+    _isUpdatingMembership = true;
+    _membershipErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final PaymentResult result = await _paymentService.restorePurchases();
+      if (!result.success || result.planId == null) {
+        _membershipErrorMessage = result.displayMessage;
+        return;
+      }
+
+      _user = await _repository.changeMembership(
+        user: currentUser,
+        planId: result.planId!,
+      );
+      unawaited(_saveToStorage());
+    } catch (error) {
+      _membershipErrorMessage = _messageFromError(
+        error,
+        fallback: '恢复购买失败，请稍后重试',
+      );
+    } finally {
+      _isUpdatingMembership = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshMembershipStatus({bool silent = true}) async {
+    final AppUser? currentUser = _user;
+    if (currentUser == null) {
+      return;
+    }
+
+    if (!silent) {
+      _isUpdatingMembership = true;
+      _membershipErrorMessage = null;
+      notifyListeners();
+    }
+
+    try {
+      final PaymentResult result = await _paymentService
+          .checkSubscriptionStatus();
+      if (result.success && result.planId != null) {
+        if (result.planId != currentUser.memberPlan) {
+          _user = await _repository.changeMembership(
+            user: currentUser,
+            planId: result.planId!,
+          );
+          unawaited(_saveToStorage());
+          notifyListeners();
+        }
+        return;
+      }
+
+      if (result.status == PaymentStatus.inactive &&
+          currentUser.memberPlan != PaymentConfig.freePlanId) {
+        _user = await _repository.changeMembership(
+          user: currentUser,
+          planId: PaymentConfig.freePlanId,
+        );
+        unawaited(_saveToStorage());
+        notifyListeners();
+      } else if (!silent) {
+        _membershipErrorMessage = result.displayMessage;
+      }
+    } catch (error) {
+      if (!silent) {
+        _membershipErrorMessage = _messageFromError(
+          error,
+          fallback: '订阅状态检查失败，请稍后重试',
+        );
+      }
+    } finally {
+      if (!silent) {
+        _isUpdatingMembership = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -584,25 +668,21 @@ class AppSession extends ChangeNotifier {
     }
     _user = currentUser.copyWith(avatarUrl: avatarUrl);
     notifyListeners();
-    unawaited(_saveToPrefs());
+    unawaited(_saveToStorage());
   }
 
   Future<void> recordPracticeSession({
     required int durationSeconds,
     required int score,
   }) async {
-    final DateTime now = DateTime.now();
-    final int todayIndex = now.weekday - 1;
-    final List<bool> newActivity = List<bool>.from(_stats.weekActivity);
-    newActivity[todayIndex] = true;
-    _stats = _stats.copyWith(
-      totalSessions: _stats.totalSessions + 1,
-      bestScore: score > _stats.bestScore ? score : _stats.bestScore,
-      totalMinutes: _stats.totalMinutes + (durationSeconds ~/ 60),
-      weekActivity: newActivity,
+    _stats = _stats.recordLocalSession(
+      durationSeconds: durationSeconds,
+      score: score,
+      practicedAt: DateTime.now(),
     );
+    _statsErrorMessage = null;
     notifyListeners();
-    await _saveStatsToPrefs();
+    await _statsService.cacheStats(_stats);
     unawaited(
       _recordRemoteSession(durationSeconds: durationSeconds, score: score),
     );
@@ -613,13 +693,18 @@ class AppSession extends ChangeNotifier {
     required int level,
     required int dailyMinutes,
   }) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final StorageService storage = StorageService.instance;
     _onboardingDone = true;
     _user = _user?.copyWith(onboardingDone: true);
-    await prefs.setString('user_goals', goals.join(','));
-    await prefs.setInt('user_level', level);
-    await prefs.setInt('daily_goal_minutes', dailyMinutes);
-    await prefs.setBool('onboarding_done', true);
+    await storage.saveUserPreferences(
+      storage.getUserPreferences().copyWith(
+        onboardingDone: true,
+        goals: goals,
+        level: level,
+        dailyGoalMinutes: dailyMinutes,
+      ),
+    );
+    await _saveToStorage();
     notifyListeners();
     unawaited(
       _syncUserPatch(<String, dynamic>{
@@ -634,8 +719,10 @@ class AppSession extends ChangeNotifier {
   Future<void> setThemeMode(ThemeMode mode) async {
     _themeMode = mode;
     notifyListeners();
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('theme_mode', mode.name);
+    final StorageService storage = StorageService.instance;
+    await storage.saveUserPreferences(
+      storage.getUserPreferences().copyWith(themeMode: mode),
+    );
     unawaited(
       _syncUserPatch(<String, dynamic>{
         'themeMode': switch (mode) {
@@ -655,83 +742,77 @@ class AppSession extends ChangeNotifier {
     if (trimmed.isEmpty) return;
     _user = _user?.copyWith(nickname: trimmed, avatarUrl: avatarUrl);
     notifyListeners();
-    unawaited(_saveToPrefs());
+    unawaited(_saveToStorage());
     unawaited(_syncUserPatch(<String, dynamic>{'nickname': trimmed}));
   }
 
   Future<void> logout() async {
     _user = null;
-    _stats = const LearningStats();
+    _stats = const LearningStatsModel();
     _onboardingDone = false;
     _themeMode = ThemeMode.light;
+    _isStatsLoading = false;
     _authErrorMessage = null;
     _membershipErrorMessage = null;
+    _statsErrorMessage = null;
     notifyListeners();
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('learning_stats');
-    await prefs.remove('user_nickname');
-    await prefs.remove('user_avatar_url');
-    await prefs.remove('user_member_plan');
-    await prefs.remove('user_goals');
-    await prefs.remove('user_level');
-    await prefs.remove('daily_goal_minutes');
-    await prefs.remove('onboarding_done');
-    await prefs.remove('theme_mode');
+    await StorageService.instance.clearUserProfile();
+    await StorageService.instance.clearUserPreferences();
+    await _statsService.clearCache();
     await ApiClient.clearToken();
   }
 
-  Future<void> _saveToPrefs() async {
+  Future<void> _saveToStorage() async {
     final AppUser? user = _user;
     if (user == null) return;
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_nickname', user.nickname);
-    await prefs.setString('user_avatar_url', user.avatarUrl);
-    await prefs.setString('user_member_plan', user.memberPlan);
-    await prefs.setBool('onboarding_done', user.onboardingDone);
+    final StorageService storage = StorageService.instance;
+    await storage.saveUserProfile(StoredUserProfileModel.fromAppUser(user));
+    await storage.saveUserPreferences(
+      storage.getUserPreferences().copyWith(
+        onboardingDone: user.onboardingDone,
+      ),
+    );
   }
 
-  Future<void> _saveStatsToPrefs() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('learning_stats', jsonEncode(_stats.toJson()));
-  }
-
-  Future<void> _loadFromPrefs() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
+  Future<void> _loadFromStorage() async {
+    final StorageService storage = StorageService.instance;
+    final AuthSessionStorageModel? authSession = storage.getAuthSession();
+    final StoredUserProfileModel? userProfile = storage.getUserProfile();
+    final UserPreferencesStorageModel preferences = storage
+        .getUserPreferences();
     // 只有存在 JWT token 时才恢复用户，避免"假登录"状态导致 API 401
-    final String? token = prefs.getString('auth_token');
+    final String? token = authSession?.token;
     if (token != null && token.isNotEmpty) {
-      final String nickname = (prefs.getString('user_nickname') ?? '').trim();
+      final String nickname = (userProfile?.nickname ?? '').trim();
       if (nickname.isNotEmpty) {
-        _user = AppUser(
-          nickname: nickname,
-          avatarUrl:
-              prefs.getString('user_avatar_url') ?? defaultAvatarUrls.first,
-          memberPlan: prefs.getString('user_member_plan') ?? 'free',
-          onboardingDone: prefs.getBool('onboarding_done') ?? false,
+        _user = userProfile!.toAppUser().copyWith(
+          avatarUrl: userProfile.avatarUrl.isEmpty
+              ? defaultAvatarUrls.first
+              : userProfile.avatarUrl,
+          memberPlan: PaymentConfig.normalizePlanId(userProfile.memberPlan),
         );
       }
     }
-    _onboardingDone = prefs.getBool('onboarding_done') ?? false;
-    final String? themeName = prefs.getString('theme_mode');
-    if (themeName != null) {
-      _themeMode = ThemeMode.values.firstWhere(
-        (ThemeMode m) => m.name == themeName,
-        orElse: () => ThemeMode.light,
-      );
-    }
+    _onboardingDone = preferences.onboardingDone;
+    _themeMode = preferences.themeMode;
     notifyListeners();
   }
 
-  Future<void> _loadStatsFromPrefs() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? raw = prefs.getString('learning_stats');
-    if (raw != null) {
-      try {
-        _stats = LearningStats.fromJson(
-          jsonDecode(raw) as Map<String, dynamic>,
-        );
-        notifyListeners();
-      } catch (_) {}
+  Future<void> _loadCachedStats() async {
+    try {
+      final LearningStatsModel? cached = await _statsService.loadCachedStats();
+      if (cached != null) {
+        _stats = cached;
+      }
+    } catch (error, stackTrace) {
+      ErrorHandler.handleError(
+        error,
+        stackTrace: stackTrace,
+        context: 'Cached learning stats could not be parsed',
+      );
+    } finally {
+      _isStatsLoading = false;
+      notifyListeners();
     }
   }
 
@@ -757,26 +838,86 @@ class AppSession extends ChangeNotifier {
         }
         _applyUserJson(_asMap(meRes['data']));
       }
+      final bool hadStats = _stats.hasOverviewData;
+      if (!hadStats) {
+        _isStatsLoading = true;
+      }
       notifyListeners();
-      unawaited(_saveToPrefs());
+      unawaited(_saveToStorage());
       try {
-        await _refreshStats(notify: false);
-        unawaited(_saveStatsToPrefs());
-      } catch (_) {}
+        await _refreshStats(notify: false, silent: hadStats);
+      } catch (error, stackTrace) {
+        ErrorHandler.handleError(
+          error,
+          stackTrace: stackTrace,
+          context: 'Learning stats refresh after hydration failed',
+        );
+      }
       notifyListeners();
-    } catch (_) {
+    } catch (error, stackTrace) {
+      ErrorHandler.handleError(
+        error,
+        stackTrace: stackTrace,
+        context: 'Session hydration from backend failed',
+      );
       // Keep the local cache when the backend is temporarily unavailable.
     }
   }
 
-  Future<void> _refreshStats({bool notify = true}) async {
-    final Map<String, dynamic> res = await ApiClient.getStats();
-    if (res['code'] != 0) {
-      throw Exception(res['message'] ?? '获取学习统计失败');
+  Future<void> _completeAuthenticatedSession({
+    required String token,
+    required Map<String, dynamic> userJson,
+  }) async {
+    await ApiClient.saveToken(token);
+    if (userJson.isNotEmpty) {
+      _applyUserJson(userJson);
+    } else {
+      final Map<String, dynamic> meRes = await ApiClient.getMe();
+      if (meRes['code'] != 0) {
+        throw Exception(meRes['message'] ?? '获取用户信息失败');
+      }
+      _applyUserJson(_asMap(meRes['data']));
     }
-    _stats = LearningStats.fromJson(_asMap(res['data']));
-    if (notify) {
-      notifyListeners();
+    final bool hadStats = _stats.hasOverviewData;
+    if (!hadStats) {
+      _isStatsLoading = true;
+    }
+    unawaited(_saveToStorage());
+    try {
+      await _refreshStats(notify: false, silent: hadStats);
+    } catch (error, stackTrace) {
+      ErrorHandler.handleError(
+        error,
+        stackTrace: stackTrace,
+        context: 'Learning stats refresh after sign-in failed',
+      );
+    }
+  }
+
+  Future<void> refreshStats({bool silent = false}) {
+    return _refreshStats(silent: silent);
+  }
+
+  Future<void> _refreshStats({bool notify = true, bool silent = false}) async {
+    if (!silent && !_stats.hasOverviewData) {
+      _isStatsLoading = true;
+      _statsErrorMessage = null;
+      if (notify) {
+        notifyListeners();
+      }
+    }
+
+    try {
+      _stats = await _statsService.refreshStats();
+      _statsErrorMessage = null;
+    } catch (error) {
+      _statsErrorMessage = _messageFromError(error, fallback: '获取学习统计失败，请稍后重试');
+      rethrow;
+    } finally {
+      _isStatsLoading = false;
+      if (notify) {
+        notifyListeners();
+      }
     }
   }
 
@@ -790,13 +931,19 @@ class AppSession extends ChangeNotifier {
     }
 
     try {
-      await ApiClient.recordSession(
+      _stats = await _statsService.recordSession(
         durationSeconds: durationSeconds,
         score: score,
       );
-      await _refreshStats();
-      unawaited(_saveStatsToPrefs());
-    } catch (_) {}
+      _statsErrorMessage = null;
+      notifyListeners();
+    } catch (error, stackTrace) {
+      ErrorHandler.handleError(
+        error,
+        stackTrace: stackTrace,
+        context: 'Remote practice session sync failed',
+      );
+    }
   }
 
   Future<void> _syncUserPatch(Map<String, dynamic> patch) async {
@@ -816,10 +963,16 @@ class AppSession extends ChangeNotifier {
         if (data.isNotEmpty) {
           _applyUserJson(data);
           notifyListeners();
-          unawaited(_saveToPrefs());
+          unawaited(_saveToStorage());
         }
       }
-    } catch (_) {}
+    } catch (error, stackTrace) {
+      ErrorHandler.handleError(
+        error,
+        stackTrace: stackTrace,
+        context: 'User profile patch sync failed',
+      );
+    }
   }
 
   void _applyUserJson(Map<String, dynamic> json) {

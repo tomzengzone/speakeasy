@@ -1,10 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart' as apple_sign_in;
 
 import 'api_client.dart';
 import 'app_models.dart';
 import 'app_session.dart';
+import 'l10n/l10n.dart';
+import 'pages/privacy_policy_page.dart';
+import 'pages/terms_of_service_page.dart';
+import 'services/wechat_auth_service.dart';
 
 enum LoginMethod { main, phone, email }
 
@@ -72,9 +77,50 @@ class _LoginPageState extends State<LoginPage> {
     await widget.onSubmit(submission);
   }
 
+  Future<void> _submitAppleLogin() async {
+    const LoginSubmission submission = LoginSubmission(
+      provider: LoginProvider.apple,
+    );
+    final String? validationError = _validate(submission);
+    if (validationError != null) {
+      setState(() {
+        _localErrorMessage = validationError;
+      });
+      return;
+    }
+
+    setState(() {
+      _localErrorMessage = null;
+    });
+
+    await AppSessionScope.of(context).signInWithApple();
+  }
+
+  Future<void> _submitWeChatLogin() async {
+    const LoginSubmission submission = LoginSubmission(
+      provider: LoginProvider.wechat,
+    );
+    final String? validationError = _validate(submission);
+    if (validationError != null) {
+      setState(() {
+        _localErrorMessage = validationError;
+      });
+      return;
+    }
+
+    setState(() {
+      _localErrorMessage = null;
+    });
+
+    await AppSessionScope.of(
+      context,
+    ).signInWithWeChat(service: WeChatAuthService.instance);
+  }
+
   String? _validate(LoginSubmission submission) {
+    final AppLocalizations l10n = context.l10n;
     if (!_agreeTerms) {
-      return '请先同意用户协议和隐私政策';
+      return l10n.pleaseAgreeTerms;
     }
 
     switch (submission.provider) {
@@ -83,22 +129,22 @@ class _LoginPageState extends State<LoginPage> {
         return null;
       case LoginProvider.phone:
         if ((submission.phone ?? '').trim().length < 11) {
-          return '请输入正确的手机号';
+          return l10n.enterValidPhoneNumber;
         }
         if ((submission.code ?? '').trim().length < 4) {
-          return '请输入验证码';
+          return l10n.enterVerificationCode;
         }
         return null;
       case LoginProvider.email:
         if (submission.isRegister &&
             (submission.nickname ?? '').trim().isEmpty) {
-          return '请先设置昵称';
+          return l10n.setNicknameFirst;
         }
         if (!(submission.email ?? '').contains('@')) {
-          return '请输入正确的邮箱地址';
+          return l10n.enterValidEmailAddress;
         }
         if ((submission.password ?? '').trim().length < 6) {
-          return '密码至少 6 位';
+          return l10n.passwordMinLength;
         }
         return null;
     }
@@ -106,10 +152,11 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _sendCode() async {
     final String phone = _phoneController.text.trim();
+    final AppLocalizations l10n = context.l10n;
     if (phone.length < 11 || _countdown > 0 || _isSendingCode) {
       if (phone.length < 11) {
         setState(() {
-          _localErrorMessage = '请输入正确的手机号';
+          _localErrorMessage = l10n.enterValidPhoneNumber;
         });
       }
       return;
@@ -123,7 +170,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final Map<String, dynamic> res = await ApiClient.sendSmsCode(phone);
       if (res['code'] != 0) {
-        throw Exception(res['message'] ?? '验证码发送失败');
+        throw Exception(res['message'] ?? l10n.verificationCodeSendFailed);
       }
       if (!mounted) {
         return;
@@ -185,6 +232,22 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  void _openPrivacyPolicy() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => const PrivacyPolicyPage(),
+      ),
+    );
+  }
+
+  void _openTermsOfService() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => const TermsOfServicePage(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -198,6 +261,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildMainView() {
+    final AppLocalizations l10n = context.l10n;
     return ListView(
       padding: const EdgeInsets.fromLTRB(28, 0, 28, 28),
       children: [
@@ -267,10 +331,10 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                '让英语口语练习变得自然',
+              Text(
+                l10n.tagline,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   color: textSecondary,
                   height: 1.5,
@@ -284,26 +348,13 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 16),
         ],
         _PrimarySocialButton(
-          label: '微信登录',
+          label: widget.isLoading ? l10n.wechatLoggingIn : l10n.wechatLogin,
           backgroundColor: const Color(0xFF07C160),
           icon: Icons.chat_bubble_rounded,
-          onTap: widget.isLoading
-              ? null
-              : () => _submit(
-                  const LoginSubmission(provider: LoginProvider.wechat),
-                ),
+          onTap: widget.isLoading ? null : _submitWeChatLogin,
         ),
         const SizedBox(height: 12),
-        _PrimarySocialButton(
-          label: 'Apple 登录',
-          backgroundColor: Colors.black,
-          icon: Icons.apple_rounded,
-          onTap: widget.isLoading
-              ? null
-              : () => _submit(
-                  const LoginSubmission(provider: LoginProvider.apple),
-                ),
-        ),
+        _AppleSignInButton(onTap: widget.isLoading ? null : _submitAppleLogin),
         const SizedBox(height: 28),
         Row(
           children: [
@@ -311,7 +362,7 @@ class _LoginPageState extends State<LoginPage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Text(
-                '或',
+                l10n.orText,
                 style: TextStyle(
                   fontSize: 12,
                   color: textTertiary.withValues(alpha: 0.9),
@@ -324,8 +375,8 @@ class _LoginPageState extends State<LoginPage> {
         const SizedBox(height: 22),
         _MethodButton(
           icon: Icons.phone_iphone_rounded,
-          title: '手机号登录',
-          subtitle: '验证码快速登录',
+          title: l10n.phoneLogin,
+          subtitle: l10n.phoneLoginSubtitle,
           onTap: widget.isLoading
               ? null
               : () => setState(() => _method = LoginMethod.phone),
@@ -333,8 +384,8 @@ class _LoginPageState extends State<LoginPage> {
         const SizedBox(height: 12),
         _MethodButton(
           icon: Icons.mail_outline_rounded,
-          title: '邮箱登录',
-          subtitle: '支持登录与注册',
+          title: l10n.emailLogin,
+          subtitle: l10n.emailLoginSubtitle,
           onTap: widget.isLoading
               ? null
               : () => setState(() => _method = LoginMethod.email),
@@ -368,14 +419,34 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                '登录即表示你同意《用户协议》和《隐私政策》',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: textSecondary,
-                  height: 1.5,
-                ),
+            Expanded(
+              child: Wrap(
+                children: [
+                  Text(
+                    l10n.agreementPrefix,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                  _AgreementLink(
+                    label: '《${l10n.termsOfService}》',
+                    onTap: widget.isLoading ? null : _openTermsOfService,
+                  ),
+                  Text(
+                    l10n.andText,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                  _AgreementLink(
+                    label: '《${l10n.privacyPolicy}》',
+                    onTap: widget.isLoading ? null : _openPrivacyPolicy,
+                  ),
+                ],
               ),
             ),
           ],
@@ -385,18 +456,19 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildPhoneView() {
+    final AppLocalizations l10n = context.l10n;
     return ListView(
       padding: const EdgeInsets.fromLTRB(28, 54, 28, 28),
       children: [
         _BackHeader(
-          title: '手机号登录',
+          title: l10n.phoneLogin,
           onTap: widget.isLoading
               ? null
               : () => setState(() => _method = LoginMethod.main),
         ),
         const SizedBox(height: 32),
-        const Text(
-          '欢迎回来',
+        Text(
+          l10n.welcomeBack,
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w700,
@@ -405,8 +477,8 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          '输入手机号和验证码继续',
+        Text(
+          l10n.phoneLoginContinue,
           style: TextStyle(fontSize: 14, color: textSecondary),
         ),
         const SizedBox(height: 28),
@@ -416,7 +488,7 @@ class _LoginPageState extends State<LoginPage> {
         ],
         _InputBlock(
           controller: _phoneController,
-          hint: '输入手机号',
+          hint: l10n.enterPhoneNumber,
           icon: Icons.phone_iphone_rounded,
           keyboardType: TextInputType.phone,
         ),
@@ -426,7 +498,7 @@ class _LoginPageState extends State<LoginPage> {
             Expanded(
               child: _InputBlock(
                 controller: _codeController,
-                hint: '验证码',
+                hint: l10n.verificationCode,
                 icon: Icons.verified_user_outlined,
                 keyboardType: TextInputType.number,
               ),
@@ -451,8 +523,8 @@ class _LoginPageState extends State<LoginPage> {
                   _countdown > 0
                       ? '${_countdown}s'
                       : _isSendingCode
-                      ? '发送中...'
-                      : (_codeSent ? '重新发送' : '发送验证码'),
+                      ? l10n.sending
+                      : (_codeSent ? l10n.resend : l10n.sendVerificationCode),
                 ),
               ),
             ),
@@ -469,7 +541,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
           child: Text(
-            widget.isLoading ? '登录中...' : '登录',
+            widget.isLoading ? l10n.loggingIn : l10n.login,
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
         ),
@@ -478,18 +550,19 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildEmailView() {
+    final AppLocalizations l10n = context.l10n;
     return ListView(
       padding: const EdgeInsets.fromLTRB(28, 54, 28, 28),
       children: [
         _BackHeader(
-          title: _isRegister ? '邮箱注册' : '邮箱登录',
+          title: _isRegister ? l10n.emailRegister : l10n.emailLogin,
           onTap: widget.isLoading
               ? null
               : () => setState(() => _method = LoginMethod.main),
         ),
         const SizedBox(height: 32),
         Text(
-          _isRegister ? '创建你的账号' : '邮箱登录',
+          _isRegister ? l10n.createYourAccount : l10n.emailLogin,
           style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w700,
@@ -499,7 +572,9 @@ class _LoginPageState extends State<LoginPage> {
         ),
         const SizedBox(height: 8),
         Text(
-          _isRegister ? '用邮箱和密码注册 SpeakEasy' : '输入邮箱和密码继续',
+          _isRegister
+              ? l10n.registerWithEmailSubtitle
+              : l10n.loginWithEmailSubtitle,
           style: const TextStyle(fontSize: 14, color: textSecondary),
         ),
         const SizedBox(height: 28),
@@ -510,21 +585,21 @@ class _LoginPageState extends State<LoginPage> {
         if (_isRegister) ...[
           _InputBlock(
             controller: _nicknameController,
-            hint: '设置昵称',
+            hint: l10n.setNickname,
             icon: Icons.badge_outlined,
           ),
           const SizedBox(height: 12),
         ],
         _InputBlock(
           controller: _emailController,
-          hint: '输入邮箱地址',
+          hint: l10n.inputEmailAddress,
           icon: Icons.mail_outline_rounded,
           keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: 12),
         _InputBlock(
           controller: _passwordController,
-          hint: _isRegister ? '设置密码' : '输入密码',
+          hint: _isRegister ? l10n.setPassword : l10n.inputPassword,
           icon: Icons.lock_outline_rounded,
           obscureText: !_showPassword,
           trailing: IconButton(
@@ -561,8 +636,8 @@ class _LoginPageState extends State<LoginPage> {
           ),
           child: Text(
             widget.isLoading
-                ? (_isRegister ? '创建中...' : '登录中...')
-                : (_isRegister ? '创建账号' : '登录'),
+                ? (_isRegister ? l10n.creating : l10n.loggingIn)
+                : (_isRegister ? l10n.createAccount : l10n.login),
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
         ),
@@ -572,7 +647,7 @@ class _LoginPageState extends State<LoginPage> {
               ? null
               : () => setState(() => _isRegister = !_isRegister),
           child: Text(
-            _isRegister ? '已有账号，去登录' : '没有账号？先注册',
+            _isRegister ? l10n.haveAccountGoLogin : l10n.noAccountRegisterFirst,
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
         ),
@@ -632,22 +707,95 @@ class _PrimarySocialButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color effectiveBackgroundColor = onTap == null
+        ? backgroundColor.withValues(alpha: isDark ? 0.55 : 0.7)
+        : backgroundColor;
+
     return SizedBox(
       width: double.infinity,
       height: 54,
-      child: FilledButton.icon(
-        onPressed: onTap,
-        style: FilledButton.styleFrom(
-          backgroundColor: backgroundColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          elevation: 0,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: isDark
+              ? <BoxShadow>[
+                  BoxShadow(
+                    color: effectiveBackgroundColor.withValues(alpha: 0.22),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : const <BoxShadow>[
+                  BoxShadow(
+                    color: Color(0x14000000),
+                    blurRadius: 14,
+                    offset: Offset(0, 6),
+                  ),
+                ],
         ),
-        icon: Icon(icon, color: Colors.white),
-        label: Text(
-          label,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        child: FilledButton.icon(
+          onPressed: onTap,
+          style: FilledButton.styleFrom(
+            backgroundColor: effectiveBackgroundColor,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: effectiveBackgroundColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: isDark
+                  ? BorderSide(color: Colors.white.withValues(alpha: 0.08))
+                  : BorderSide.none,
+            ),
+            elevation: 0,
+          ),
+          icon: Icon(icon, color: Colors.white),
+          label: Text(
+            label,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AppleSignInButton extends StatelessWidget {
+  const _AppleSignInButton({required this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: isDark
+            ? Border.all(color: Colors.white.withValues(alpha: 0.12))
+            : null,
+        boxShadow: isDark
+            ? const <BoxShadow>[]
+            : const <BoxShadow>[
+                BoxShadow(
+                  color: Color(0x14000000),
+                  blurRadius: 12,
+                  offset: Offset(0, 4),
+                ),
+              ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: SizedBox(
+          width: double.infinity,
+          height: 54,
+          child: apple_sign_in.SignInWithAppleButton(
+            onPressed: onTap,
+            text: 'Sign in with Apple',
+            height: 54,
+            style: apple_sign_in.SignInWithAppleButtonStyle.black,
+            borderRadius: const BorderRadius.all(Radius.circular(14)),
+            iconAlignment: apple_sign_in.IconAlignment.left,
+          ),
         ),
       ),
     );
@@ -729,6 +877,29 @@ class _MethodButton extends StatelessWidget {
   }
 }
 
+class _AgreementLink extends StatelessWidget {
+  const _AgreementLink({required this.label, this.onTap});
+
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          height: 1.5,
+          fontWeight: FontWeight.w600,
+          color: onTap == null ? textSecondary : primaryGreen,
+        ),
+      ),
+    );
+  }
+}
+
 class _InputBlock extends StatelessWidget {
   const _InputBlock({
     required this.controller,
@@ -782,12 +953,15 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF0EE),
+        color: isDark ? const Color(0xFF412726) : const Color(0xFFFFF0EE),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFF4C9C2)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF7F4A4A) : const Color(0xFFF4C9C2),
+        ),
       ),
       child: Row(
         children: [

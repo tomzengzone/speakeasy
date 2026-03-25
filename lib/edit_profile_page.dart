@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'app_models.dart';
 import 'app_session.dart';
+import 'l10n/l10n.dart';
+import 'utils/app_cached_network_image.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -51,6 +53,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     final TextEditingController? nameController = _nameController;
     final String? selectedAvatar = _selectedAvatar;
     if (nameController == null || selectedAvatar == null) {
@@ -66,8 +69,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
         backgroundColor: const Color(0xFFFDFCF9),
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          '编辑资料',
+        title: Text(
+          l10n.editProfile,
           style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w700,
@@ -87,8 +90,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text(
-                    '保存',
+                : Text(
+                    l10n.save,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF4A7244),
@@ -100,8 +103,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         children: [
-          const Text(
-            '选择头像',
+          Text(
+            l10n.chooseAvatar,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -135,7 +138,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Image.network(url, fit: BoxFit.cover),
+                        AppCachedNetworkImage(
+                          imageUrl: url,
+                          fit: BoxFit.cover,
+                          placeholder: const AppImagePlaceholder(
+                            color: Color(0xFFDBE7D4),
+                            icon: Icons.person_rounded,
+                            iconColor: Colors.white,
+                          ),
+                          errorWidget: const AppImagePlaceholder(
+                            color: Color(0xFF87B076),
+                            icon: Icons.person_rounded,
+                            iconColor: Colors.white,
+                          ),
+                        ),
                         if (selected)
                           const ColoredBox(
                             color: Color(0x33000000),
@@ -153,8 +169,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
             }).toList(),
           ),
           const SizedBox(height: 28),
-          const Text(
-            '昵称',
+          Text(
+            l10n.nickname,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -166,7 +182,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             controller: nameController,
             maxLength: 20,
             decoration: InputDecoration(
-              hintText: '输入你的昵称',
+              hintText: l10n.enterNickname,
               hintStyle: const TextStyle(color: Color(0xFF9A9289)),
               filled: true,
               fillColor: Colors.white,

@@ -1,7 +1,9 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+
+import 'models/storage_models.dart';
+import 'services/storage_service.dart';
 
 class NotificationService {
   NotificationService._();
@@ -9,9 +11,6 @@ class NotificationService {
   static final NotificationService instance = NotificationService._();
 
   static const int _dailyReminderId = 1001;
-  static const String _prefEnabled = 'notif_enabled';
-  static const String _prefHour = 'notif_hour';
-  static const String _prefMinute = 'notif_minute';
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -27,8 +26,9 @@ class NotificationService {
   Future<void> init() async {
     tz.initializeTimeZones();
 
-    const AndroidInitializationSettings android =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const AndroidInitializationSettings android = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const DarwinInitializationSettings ios = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -38,10 +38,11 @@ class NotificationService {
       const InitializationSettings(android: android, iOS: ios),
     );
 
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    _enabled = prefs.getBool(_prefEnabled) ?? false;
-    _hour = prefs.getInt(_prefHour) ?? 20;
-    _minute = prefs.getInt(_prefMinute) ?? 0;
+    final NotificationSettingsStorageModel settings = StorageService.instance
+        .getNotificationSettings();
+    _enabled = settings.enabled;
+    _hour = settings.hour;
+    _minute = settings.minute;
 
     if (_enabled) {
       await _schedule();
@@ -59,8 +60,13 @@ class NotificationService {
 
   Future<void> setEnabled({required bool value}) async {
     _enabled = value;
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_prefEnabled, value);
+    await StorageService.instance.saveNotificationSettings(
+      NotificationSettingsStorageModel(
+        enabled: value,
+        hour: _hour,
+        minute: _minute,
+      ),
+    );
     if (value) {
       await requestPermission();
       await _schedule();
@@ -72,9 +78,13 @@ class NotificationService {
   Future<void> setTime({required int hour, required int minute}) async {
     _hour = hour;
     _minute = minute;
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_prefHour, hour);
-    await prefs.setInt(_prefMinute, minute);
+    await StorageService.instance.saveNotificationSettings(
+      NotificationSettingsStorageModel(
+        enabled: _enabled,
+        hour: hour,
+        minute: minute,
+      ),
+    );
     if (_enabled) {
       await _schedule();
     }
@@ -104,8 +114,10 @@ class NotificationService {
       priority: Priority.high,
     );
     const DarwinNotificationDetails ios = DarwinNotificationDetails();
-    const NotificationDetails details =
-        NotificationDetails(android: android, iOS: ios);
+    const NotificationDetails details = NotificationDetails(
+      android: android,
+      iOS: ios,
+    );
 
     await _plugin.zonedSchedule(
       _dailyReminderId,

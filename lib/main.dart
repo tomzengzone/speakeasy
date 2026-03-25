@@ -1,21 +1,47 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'audio_service.dart';
 import 'app_session.dart';
+import 'config/sentry_config.dart';
 import 'content_repository.dart';
 import 'home_page.dart';
+import 'l10n/l10n.dart';
 import 'login_page.dart';
 import 'notification_service.dart';
 import 'onboarding_page.dart';
+import 'services/storage_service.dart';
+import 'utils/error_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await NotificationService.instance.init();
-  } catch (_) {
-    // 通知初始化失败不影响主流程
-  }
-  runApp(SpeakEasyApp(session: AppSession(), audioService: AudioService()));
+  await StorageService.instance.init();
+  await dotenv.load(fileName: kDebugMode ? '.env.dev' : '.env');
+  final SentryConfig sentryConfig = await SentryConfig.load();
+
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = sentryConfig.dsn;
+      options.environment = sentryConfig.environment;
+      options.release = sentryConfig.release;
+    },
+    appRunner: () async {
+      try {
+        await NotificationService.instance.init();
+      } catch (error, stackTrace) {
+        ErrorHandler.handleError(
+          error,
+          stackTrace: stackTrace,
+          context: 'Notification service initialization failed',
+        );
+        // 通知初始化失败不影响主流程
+      }
+
+      runApp(SpeakEasyApp(session: AppSession(), audioService: AudioService()));
+    },
+  );
 }
 
 class SpeakEasyApp extends StatelessWidget {
@@ -41,8 +67,10 @@ class SpeakEasyApp extends StatelessWidget {
             builder: (BuildContext context, Widget? _) {
               return MaterialApp(
                 debugShowCheckedModeBanner: false,
-                title: 'SpeakEasy',
+                onGenerateTitle: (BuildContext context) => context.l10n.appName,
                 themeMode: session.themeMode,
+                localizationsDelegates: L10n.localizationsDelegates,
+                supportedLocales: L10n.supportedLocales,
                 theme: ThemeData(
                   useMaterial3: true,
                   colorScheme: ColorScheme.fromSeed(
@@ -70,8 +98,9 @@ class SpeakEasyApp extends StatelessWidget {
                 home: !session.isLoggedIn
                     ? _LoginGate(session: session)
                     : !session.onboardingDone
-                        ? OnboardingPage(
-                            onComplete: ({
+                    ? OnboardingPage(
+                        onComplete:
+                            ({
                               required List<String> goals,
                               required int level,
                               required int dailyMinutes,
@@ -82,9 +111,8 @@ class SpeakEasyApp extends StatelessWidget {
                                 dailyMinutes: dailyMinutes,
                               );
                             },
-                          )
-                        : const SpeakEasyHomePage(),
-
+                      )
+                    : const SpeakEasyHomePage(),
               );
             },
           ),
@@ -104,42 +132,18 @@ class _LoginGate extends StatefulWidget {
 }
 
 class _LoginGateState extends State<_LoginGate> {
-  bool _isLoading = false;
-  String? _errorMessage;
+  String? _localErrorMessage;
 
   @override
   Widget build(BuildContext context) {
     return LoginPage(
-      isLoading: _isLoading,
-      errorMessage: _errorMessage,
+      isLoading: widget.session.isAuthenticating,
+      errorMessage: _localErrorMessage ?? widget.session.authErrorMessage,
       onSubmit: (submission) async {
-        // WeChat / Apple 登录尚未接入 SDK，给友好提示
-        if (submission.provider == LoginProvider.wechat ||
-            submission.provider == LoginProvider.apple) {
-          setState(() {
-            _errorMessage = submission.provider == LoginProvider.wechat
-                ? '微信登录正在接入中，请使用手机号登录'
-                : 'Apple 登录正在接入中，请使用手机号登录';
-          });
-          return;
-        }
         setState(() {
-          _isLoading = true;
-          _errorMessage = null;
+          _localErrorMessage = null;
         });
-        try {
-          await widget.session.signInWithCode(
-            phone: submission.phone ?? '',
-            code: submission.password ?? '',
-          );
-        } catch (e) {
-          if (mounted) {
-            setState(() {
-              _isLoading = false;
-              _errorMessage = e.toString().replaceFirst('Exception: ', '');
-            });
-          }
-        }
+        await widget.session.signIn(submission);
       },
     );
   }

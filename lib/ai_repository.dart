@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'api_client.dart';
 import 'app_models.dart';
 import 'app_session.dart';
+import 'utils/error_handler.dart';
 
 class OpenAiAppRepository implements AppRepository {
   OpenAiAppRepository({required this.apiKey});
@@ -54,7 +55,12 @@ Rules:
         if (reply.trim().isNotEmpty) {
           return SceneReply(npcText: reply.trim());
         }
-      } catch (_) {
+      } catch (error, stackTrace) {
+        ErrorHandler.handleError(
+          error,
+          stackTrace: stackTrace,
+          context: 'Scene message proxy request failed',
+        );
         // Fall through to the direct OpenAI call when the proxy fails.
       }
     }
@@ -267,7 +273,8 @@ Respond with exactly this JSON shape (all strings in Chinese, scores 0-100):
         coachHint = meta['coach'] as String?;
         eventLabel = meta['event'] as String?;
       } catch (_) {
-        // ignore malformed JSON
+        // Trailing metadata is optional; keep the NPC text when the JSON
+        // decoration is malformed.
       }
     }
 

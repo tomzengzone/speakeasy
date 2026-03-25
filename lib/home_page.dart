@@ -2,15 +2,19 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_client.dart';
 import 'app_models.dart';
 import 'app_session.dart';
 import 'learning_page.dart';
 import 'lesson_detail_page.dart';
+import 'l10n/l10n.dart';
+import 'models/storage_models.dart';
 import 'profile_page.dart';
 import 'scene_page.dart';
+import 'services/storage_service.dart';
+import 'utils/app_cached_network_image.dart';
+import 'utils/error_handler.dart';
 
 class SpeakEasyHomePage extends StatefulWidget {
   const SpeakEasyHomePage({super.key});
@@ -41,6 +45,7 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
   void initState() {
     super.initState();
     _loadSavedState();
+    _loadCachedCards();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadCards());
   }
 
@@ -51,25 +56,30 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
   }
 
   Future<void> _loadSavedState() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final Set<int> savedIds = _parseIds(prefs.getString('saved_ids') ?? '');
-    final Set<int> dismissedIds = _parseIds(
-      prefs.getString('dismissed_ids') ?? '',
-    );
-    final Set<int> completedIds = _parseIds(
-      prefs.getString('completed_ids') ?? '',
-    );
+    final LearningProgressStorageModel progress = StorageService.instance
+        .getLearningProgress();
     if (!mounted) return;
     setState(() {
       _savedIds
         ..clear()
-        ..addAll(savedIds);
+        ..addAll(progress.savedIds);
       _dismissedIds
         ..clear()
-        ..addAll(dismissedIds);
+        ..addAll(progress.dismissedIds);
       _completedIds
         ..clear()
-        ..addAll(completedIds);
+        ..addAll(progress.completedIds);
+    });
+  }
+
+  Future<void> _loadCachedCards() async {
+    final CachedCourseDataStorageModel? cache = StorageService.instance
+        .getCachedCourseData();
+    if (cache == null || !mounted) {
+      return;
+    }
+    setState(() {
+      _allCards = cache.toCards();
     });
   }
 
@@ -110,21 +120,27 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
         _dismissedIds = dismissedIds;
         _completedIds = completedIds;
       });
-    } catch (_) {
+      await StorageService.instance.saveCachedCourseData(
+        CachedCourseDataStorageModel.fromCards(cards, cachedAt: DateTime.now()),
+      );
+    } catch (error, stackTrace) {
+      ErrorHandler.handleError(
+        error,
+        stackTrace: stackTrace,
+        context: 'Expression cards request failed',
+      );
       // Keep the local compile-time fallback when the backend is unavailable.
     }
   }
 
   Future<void> _persistState() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('saved_ids', _savedIds.join(','));
-    await prefs.setString('dismissed_ids', _dismissedIds.join(','));
-    await prefs.setString('completed_ids', _completedIds.join(','));
-  }
-
-  Set<int> _parseIds(String value) {
-    if (value.isEmpty) return <int>{};
-    return value.split(',').map(int.tryParse).whereType<int>().toSet();
+    await StorageService.instance.saveLearningProgress(
+      LearningProgressStorageModel(
+        savedIds: (_savedIds.toList()..sort()),
+        dismissedIds: (_dismissedIds.toList()..sort()),
+        completedIds: (_completedIds.toList()..sort()),
+      ),
+    );
   }
 
   List<ExpressionCardData> get _learnCards {
@@ -311,6 +327,7 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
   }
 
   Widget _buildLearnTab() {
+    final AppLocalizations l10n = context.l10n;
     return Column(
       children: [
         _HomeHeader(
@@ -331,7 +348,7 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
                 final IntentData item = intents[index];
                 final bool selected = _activeIntentIndex == index;
                 return _IntentTab(
-                  label: item.label,
+                  label: l10n.intentLabel(item.label),
                   icon: item.icon,
                   color: item.color,
                   selected: selected,
@@ -371,7 +388,7 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
                             ),
                           ),
                           child: Text(
-                            sections[index],
+                            l10n.sectionLabel(sections[index]),
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: active
@@ -414,7 +431,9 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        difficultyOptions[_activeDifficultyIndex].label,
+                        l10n.difficultyLabel(
+                          difficultyOptions[_activeDifficultyIndex].label,
+                        ),
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -461,7 +480,7 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
                                     ),
                             ),
                             Text(
-                              item.label,
+                              l10n.difficultyLabel(item.label),
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: active
@@ -502,7 +521,7 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
                 allCards: _allCards,
                 onTapCard: _openLesson,
                 emptyEmoji: _emptyEmoji,
-                emptyText: _emptyText,
+                emptyText: _emptyText(l10n),
                 savedIds: _savedIds,
                 onSaveCard: (ExpressionCardData card) {
                   final int idx = _allCards.indexOf(card);
@@ -542,6 +561,7 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
   }
 
   Widget _buildSearchOverlay() {
+    final AppLocalizations l10n = context.l10n;
     return Container(
       color: appBackground,
       child: Column(
@@ -570,8 +590,8 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
                       _searchController.clear();
                     });
                   },
-                  child: const Text(
-                    '取消',
+                  child: Text(
+                    l10n.cancel,
                     style: TextStyle(fontSize: 14, color: Colors.white),
                   ),
                 ),
@@ -599,10 +619,10 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
                             controller: _searchController,
                             autofocus: true,
                             onChanged: (_) => setState(() {}),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               isCollapsed: true,
-                              hintText: '搜索表达 / 场景',
-                              hintStyle: TextStyle(
+                              hintText: l10n.searchExpressionsScenes,
+                              hintStyle: const TextStyle(
                                 fontSize: 13,
                                 color: Color(0xFFB8C0B0),
                               ),
@@ -638,17 +658,17 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
               padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
               children: [
                 if (_searchController.text.trim().isEmpty)
-                  const _SearchPlaceholder(
+                  _SearchPlaceholder(
                     icon: Icons.search_rounded,
-                    title: '输入关键词搜索',
+                    title: l10n.searchByKeyword,
                   )
                 else if (_searchCards.isEmpty)
-                  const _SearchPlaceholder(emoji: '🔍', title: '未找到相关内容')
+                  _SearchPlaceholder(emoji: '🔍', title: l10n.noResultsFound)
                 else ...[
                   Padding(
                     padding: const EdgeInsets.only(left: 4, bottom: 12),
                     child: Text(
-                      '找到 ${_searchCards.length} 个结果',
+                      l10n.foundResults(_searchCards.length),
                       style: const TextStyle(
                         fontSize: 12,
                         color: textSecondary,
@@ -686,14 +706,16 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
     return '🌿';
   }
 
-  String get _emptyText {
-    if (_activeSectionIndex == 2) return '还没有收藏的卡片';
-    if (_activeSectionIndex == 3) return '没有标记不感兴趣的卡片';
-    if (_activeSectionIndex == 4) return '还没有完成的卡片';
+  String _emptyText(AppLocalizations l10n) {
+    if (_activeSectionIndex == 2) return l10n.noSavedCards;
+    if (_activeSectionIndex == 3) return l10n.noDismissedCards;
+    if (_activeSectionIndex == 4) return l10n.noCompletedCards;
     if (_activeDifficultyIndex > 0) {
-      return '暂无「${difficultyOptions[_activeDifficultyIndex].label}」难度卡片';
+      return l10n.noDifficultyCards(
+        l10n.difficultyLabel(difficultyOptions[_activeDifficultyIndex].label),
+      );
     }
-    return '暂无卡片';
+    return l10n.noCards;
   }
 
   String _cardIdFor(ExpressionCardData card, int index) {
@@ -710,15 +732,15 @@ class _HomeHeader extends StatelessWidget {
 
   final VoidCallback onSearchTap;
 
-  static String _timeGreeting() {
+  static String _timeGreeting(AppLocalizations l10n) {
     final int hour = DateTime.now().hour;
     if (hour >= 5 && hour < 11) {
-      return '早上好，今天继续学习吧';
+      return l10n.greetingMorning;
     }
     if (hour >= 11 && hour < 18) {
-      return '中午好，今天继续学习吧';
+      return l10n.greetingAfternoon;
     }
-    return '晚上好，今天继续学习吧';
+    return l10n.greetingEvening;
   }
 
   Future<void> _showAvatarPicker(
@@ -730,6 +752,7 @@ class _HomeHeader extends StatelessWidget {
       backgroundColor: appBackground,
       showDragHandle: true,
       builder: (BuildContext context) {
+        final AppLocalizations l10n = context.l10n;
         return SafeArea(
           top: false,
           child: Padding(
@@ -738,8 +761,8 @@ class _HomeHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '选择头像',
+                Text(
+                  l10n.chooseAvatar,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -747,8 +770,8 @@ class _HomeHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  '点击即可立即替换首页和个人页头像',
+                Text(
+                  l10n.chooseAvatarSubtitle,
                   style: TextStyle(fontSize: 12, color: textSecondary),
                 ),
                 const SizedBox(height: 18),
@@ -772,29 +795,21 @@ class _HomeHeader extends StatelessWidget {
                           ),
                         ),
                         child: ClipOval(
-                          child: Image.network(
-                            avatarUrl,
+                          child: AppCachedNetworkImage(
+                            imageUrl: avatarUrl,
                             width: 56,
                             height: 56,
                             fit: BoxFit.cover,
-                            errorBuilder:
-                                (
-                                  BuildContext context,
-                                  Object error,
-                                  StackTrace? stackTrace,
-                                ) {
-                                  return const ColoredBox(
-                                    color: Color(0xFF87B076),
-                                    child: SizedBox(
-                                      width: 56,
-                                      height: 56,
-                                      child: Icon(
-                                        Icons.person_rounded,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  );
-                                },
+                            placeholder: const AppImagePlaceholder(
+                              color: Color(0xFFDBE7D4),
+                              icon: Icons.person_rounded,
+                              iconColor: Colors.white,
+                            ),
+                            errorWidget: const AppImagePlaceholder(
+                              color: Color(0xFF87B076),
+                              icon: Icons.person_rounded,
+                              iconColor: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -812,6 +827,31 @@ class _HomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppSession session = AppSessionScope.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final bool isStatsLoading = session.isStatsLoading;
+    final bool hasStats = session.stats.hasOverviewData;
+    final int? level = session.stats.level;
+    final String trailingLabel = switch ((
+      level,
+      session.stats.experiencePoints,
+    )) {
+      (final int value?, _) when value > 0 => 'Lv.$value',
+      (_, final int xp) when xp > 0 => '$xp XP',
+      _ when session.stats.totalMinutes > 0 => l10n.totalHoursAccumulated(
+        session.stats.totalHours.toStringAsFixed(1),
+      ),
+      _ => l10n.startPractice,
+    };
+    final String accuracyLabel = switch ((
+      session.stats.accuracyRate,
+      session.stats.bestScore,
+    )) {
+      (final int accuracy?, _) => l10n.accuracyRateValue(accuracy),
+      (_, final int bestScore) when bestScore > 0 => l10n.bestScoreValue(
+        bestScore,
+      ),
+      _ => l10n.waitingSync,
+    };
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(22, 54, 22, 20),
@@ -825,7 +865,7 @@ class _HomeHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${_timeGreeting()} 👋',
+                      '${_timeGreeting(l10n)} 👋',
                       style: const TextStyle(
                         fontSize: 12,
                         color: Color(0x9EFFFFFF),
@@ -883,24 +923,21 @@ class _HomeHeader extends StatelessWidget {
                         width: 2,
                       ),
                     ),
-                    child: Image.network(
-                      session.avatarUrl,
+                    child: AppCachedNetworkImage(
+                      imageUrl: session.avatarUrl,
                       fit: BoxFit.cover,
-                      errorBuilder:
-                          (
-                            BuildContext context,
-                            Object error,
-                            StackTrace? stackTrace,
-                          ) {
-                            return const ColoredBox(
-                              color: Color(0xFF87B076),
-                              child: Icon(
-                                Icons.person_rounded,
-                                color: Colors.white,
-                                size: 24,
-                              ),
-                            );
-                          },
+                      placeholder: const AppImagePlaceholder(
+                        color: Color(0xFFDBE7D4),
+                        icon: Icons.person_rounded,
+                        iconColor: Colors.white,
+                        iconSize: 24,
+                      ),
+                      errorWidget: const AppImagePlaceholder(
+                        color: Color(0xFF87B076),
+                        icon: Icons.person_rounded,
+                        iconColor: Colors.white,
+                        iconSize: 24,
+                      ),
                     ),
                   ),
                 ),
@@ -908,27 +945,40 @@ class _HomeHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 11),
-          const Row(
-            children: [
-              _StatPill(
-                icon: Icons.local_fire_department_rounded,
-                value: '7',
-                suffix: '天连续',
-                iconColor: Color(0xFFFFB83C),
-              ),
-              SizedBox(width: 7),
-              _StatPill(
-                icon: Icons.bolt_rounded,
-                value: '248',
-                suffix: 'XP',
-                iconColor: Color(0xFFE9D48A),
-              ),
-              SizedBox(width: 7),
-              _MiniPill(label: 'Lv.3'),
-              Spacer(),
-              _MiniPill(label: 'Today'),
-            ],
-          ),
+          if (isStatsLoading && !hasStats)
+            _StatsStatusPill(
+              icon: Icons.sync_rounded,
+              label: l10n.learningStatsLoading,
+            )
+          else if (!hasStats)
+            _StatsStatusPill(
+              icon: session.statsErrorMessage == null
+                  ? Icons.insights_outlined
+                  : Icons.cloud_off_rounded,
+              label: session.statsErrorMessage ?? l10n.noLearningStats,
+            )
+          else
+            Row(
+              children: [
+                _StatPill(
+                  icon: Icons.local_fire_department_rounded,
+                  value: '${session.stats.currentStreak}',
+                  suffix: l10n.daysStreakSuffix,
+                  iconColor: const Color(0xFFFFB83C),
+                ),
+                const SizedBox(width: 7),
+                _StatPill(
+                  icon: Icons.mic_rounded,
+                  value: '${session.stats.totalSessions}',
+                  suffix: l10n.practiceCountSuffix,
+                  iconColor: const Color(0xFFE9D48A),
+                ),
+                const SizedBox(width: 7),
+                _MiniPill(label: accuracyLabel),
+                const Spacer(),
+                _MiniPill(label: trailingLabel),
+              ],
+            ),
           const SizedBox(height: 20),
           GestureDetector(
             onTap: onSearchTap,
@@ -945,17 +995,20 @@ class _HomeHeader extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.search_rounded,
                     size: 14,
                     color: Color(0xFF8EAA80),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(
-                    '搜索表达 / 场景',
-                    style: TextStyle(fontSize: 13, color: Color(0xFFB8C0B0)),
+                    l10n.searchExpressionsScenes,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFFB8C0B0),
+                    ),
                   ),
                 ],
               ),
@@ -1034,6 +1087,41 @@ class _MiniPill extends StatelessWidget {
           fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
+      ),
+    );
+  }
+}
+
+class _StatsStatusPill extends StatelessWidget {
+  const _StatsStatusPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0x2E000000),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0x2EFFFFFF)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 14, color: const Color(0xE6FFFFFF)),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1264,18 +1352,12 @@ class _ExpressionCard extends StatelessWidget {
                       ),
                     ),
                     Positioned.fill(
-                      child: Image.network(
-                        card.image,
+                      child: AppCachedNetworkImage(
+                        imageUrl: card.image,
                         fit: BoxFit.cover,
                         alignment: Alignment.topCenter,
-                        errorBuilder:
-                            (
-                              BuildContext context,
-                              Object error,
-                              StackTrace? stackTrace,
-                            ) {
-                              return const SizedBox.shrink();
-                            },
+                        placeholder: const ColoredBox(color: Color(0x12000000)),
+                        errorWidget: const ColoredBox(color: Color(0x12000000)),
                       ),
                     ),
                     const Positioned.fill(
@@ -1395,7 +1477,7 @@ class _ExpressionCard extends StatelessWidget {
                       const SizedBox(width: 3),
                       Expanded(
                         child: Text(
-                          '${card.learnerCount} 人学习',
+                          context.l10n.learnersCount(card.learnerCount),
                           style: const TextStyle(
                             fontSize: 10,
                             color: textSecondary,
@@ -1524,7 +1606,7 @@ class _BottomBar extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        item.label,
+                        context.l10n.bottomTabLabel(item.label),
                         style: TextStyle(
                           fontSize: 10,
                           letterSpacing: 0.3,

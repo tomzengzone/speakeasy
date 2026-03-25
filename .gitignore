@@ -12,6 +12,17 @@
 .swiftpm/
 migrate_working_dir/
 
+# Sensitive files
+.claude/
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.jks
+*.keystore
+key.properties
+
 # IntelliJ related
 *.iml
 *.ipr
@@ -43,3 +54,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Keep launcher icon source assets tracked.
+!/assets/icon/
+!/assets/icon/**

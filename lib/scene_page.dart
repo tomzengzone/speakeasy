@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'api_client.dart';
 import 'app_models.dart';
 import 'app_session.dart';
+import 'l10n/l10n.dart';
+import 'utils/app_cached_network_image.dart';
 
 enum SceneFlowView { home, draft, edit, chat, feedback }
 
@@ -870,24 +872,21 @@ class _ScenePageState extends State<ScenePage> {
                                     width: 2,
                                   ),
                                 ),
-                                child: Image.network(
-                                  session.avatarUrl,
+                                child: AppCachedNetworkImage(
+                                  imageUrl: session.avatarUrl,
                                   fit: BoxFit.cover,
-                                  errorBuilder:
-                                      (
-                                        BuildContext context,
-                                        Object error,
-                                        StackTrace? stackTrace,
-                                      ) {
-                                        return const ColoredBox(
-                                          color: Color(0xFF87B076),
-                                          child: Icon(
-                                            Icons.person_rounded,
-                                            color: Colors.white,
-                                            size: 24,
-                                          ),
-                                        );
-                                      },
+                                  placeholder: const AppImagePlaceholder(
+                                    color: Color(0xFFDBE7D4),
+                                    icon: Icons.person_rounded,
+                                    iconColor: Colors.white,
+                                    iconSize: 24,
+                                  ),
+                                  errorWidget: const AppImagePlaceholder(
+                                    color: Color(0xFF87B076),
+                                    icon: Icons.person_rounded,
+                                    iconColor: Colors.white,
+                                    iconSize: 24,
+                                  ),
                                 ),
                               ),
                             ),
@@ -2739,11 +2738,15 @@ class _ScenePageState extends State<ScenePage> {
   }
 
   Widget _buildFeedback() {
+    final AppLocalizations l10n = context.l10n;
+    final int rounds = _messages
+        .where((m) => m.role == _MessageRole.user)
+        .length;
     if (_isFeedbackLoading || _feedback == null) {
       return _SceneScaffold(
         key: const ValueKey('scene-feedback-loading'),
-        title: '练后反馈',
-        subtitle: '正在生成分析...',
+        title: l10n.practiceFeedback,
+        subtitle: l10n.generatingAnalysis,
         onBack: () => _setView(SceneFlowView.chat),
         child: const Center(
           child: Padding(
@@ -2754,11 +2757,23 @@ class _ScenePageState extends State<ScenePage> {
       );
     }
     final SceneFeedback fb = _feedback!;
-    const List<(String, String, String)> suggestions =
+    final List<(String, String, String)> suggestions =
         <(String, String, String)>[
-          ('🔁', '再练一次同场景', '保留当前难度，再打一轮把节奏练顺。'),
-          ('⚡', '提高追问强度', '让对方更强势，专门训练高压追问。'),
-          ('🛠️', '调整场景设定', '保留目标，但改成客户电话或周会汇报。'),
+          (
+            '🔁',
+            l10n.feedbackSuggestionRetryTitle,
+            l10n.feedbackSuggestionRetryBody,
+          ),
+          (
+            '⚡',
+            l10n.feedbackSuggestionPressureTitle,
+            l10n.feedbackSuggestionPressureBody,
+          ),
+          (
+            '🛠️',
+            l10n.feedbackSuggestionAdjustTitle,
+            l10n.feedbackSuggestionAdjustBody,
+          ),
         ];
     const List<Color> impColors = <Color>[
       Color(0xFFC4743A),
@@ -2768,8 +2783,8 @@ class _ScenePageState extends State<ScenePage> {
 
     return _SceneScaffold(
       key: const ValueKey('scene-feedback'),
-      title: '练后反馈',
-      subtitle: '对应导出仓库里的 FeedbackPage',
+      title: l10n.practiceFeedback,
+      subtitle: l10n.feedbackPageSubtitle,
       onBack: () => _setView(SceneFlowView.chat),
       child: ListView(
         padding: const EdgeInsets.fromLTRB(18, 18, 18, 32),
@@ -2786,7 +2801,7 @@ class _ScenePageState extends State<ScenePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  fb.headline,
+                  l10n.sceneFeedbackHeadline(fb.headline),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -2805,7 +2820,7 @@ class _ScenePageState extends State<ScenePage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  fb.summary,
+                  l10n.sceneFeedbackSummary(rounds, _draft.npcName),
                   style: const TextStyle(
                     fontSize: 14,
                     color: Color(0xFFD2EEE7),
@@ -2817,20 +2832,38 @@ class _ScenePageState extends State<ScenePage> {
           ),
           const SizedBox(height: 16),
           ...fb.metrics.map(
-            (m) =>
-                _FeedbackMetric(label: m.label, score: m.score, color: m.color),
+            (m) => _FeedbackMetric(
+              label: l10n.sceneFeedbackMetric(m.label),
+              score: m.score,
+              color: m.color,
+            ),
           ),
           const SizedBox(height: 18),
-          const _FeedbackTaskCard(
-            title: '任务拆解',
+          _FeedbackTaskCard(
+            title: l10n.taskBreakdown,
             items: [
-              ('解释延期原因', '完成', Color(0xFF4A7C6F)),
-              ('避免显得推责', '部分完成', Color(0xFFC4743A)),
-              ('提出后续方案', '较弱', Color(0xFFA04A4A)),
+              (
+                l10n.feedbackTaskExplainDelay,
+                l10n.feedbackStatusDone,
+                const Color(0xFF4A7C6F),
+              ),
+              (
+                l10n.feedbackTaskAvoidBlame,
+                l10n.feedbackStatusPartial,
+                const Color(0xFFC4743A),
+              ),
+              (
+                l10n.feedbackTaskNextSteps,
+                l10n.feedbackStatusWeak,
+                const Color(0xFFA04A4A),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          _CoachCard(title: '教练建议', body: fb.coachTip),
+          _CoachCard(
+            title: l10n.coachAdvice,
+            body: l10n.sceneFeedbackCoach(fb.coachTip),
+          ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(16),
@@ -2842,8 +2875,8 @@ class _ScenePageState extends State<ScenePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '模块 B · 这轮最该改的 3 个点',
+                Text(
+                  l10n.feedbackTopFixes,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -2859,8 +2892,8 @@ class _ScenePageState extends State<ScenePage> {
                     child: _ImprovementCard(
                       index: entry.$1 + 1,
                       emoji: entry.$2.$1,
-                      title: entry.$2.$2,
-                      detail: entry.$2.$3,
+                      title: l10n.sceneFeedbackImprovementTitle(entry.$2.$2),
+                      detail: l10n.sceneFeedbackImprovementDetail(entry.$2.$3),
                       color: impColors[entry.$1 % impColors.length],
                     ),
                   ),
@@ -2879,8 +2912,8 @@ class _ScenePageState extends State<ScenePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '模块 D · 下一轮建议',
+                Text(
+                  l10n.feedbackNextRoundSuggestions,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -2895,8 +2928,8 @@ class _ScenePageState extends State<ScenePage> {
                     ),
                     child: _SuggestionActionCard(
                       emoji: entry.$2.$1,
-                      title: entry.$2.$2,
-                      body: entry.$2.$3,
+                      title: l10n.sceneFeedbackSuggestionTitle(entry.$2.$2),
+                      body: l10n.sceneFeedbackSuggestionBody(entry.$2.$3),
                       primary: entry.$1 == 0,
                     ),
                   ),
@@ -2916,7 +2949,7 @@ class _ScenePageState extends State<ScenePage> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Text('再练一次'),
+                  child: Text(l10n.practiceAgain),
                 ),
               ),
               const SizedBox(width: 10),
@@ -2930,7 +2963,7 @@ class _ScenePageState extends State<ScenePage> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Text('回到首页'),
+                  child: Text(l10n.backToHome),
                 ),
               ),
             ],
