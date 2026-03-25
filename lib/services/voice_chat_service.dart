@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'package:speakeasy/config/app_config.dart';
@@ -12,16 +14,24 @@ class VoiceChatService extends ChangeNotifier {
   WebSocketChannel? _channel;
   bool _isConnected = false;
   bool _isSpeaking = false;
-  String _connectionState = 'disconnected'; // disconnected | connecting | connected | error
+  String _connectionState =
+      'disconnected'; // disconnected | connecting | connected | error
 
   /// 识别出的文本流
-  final StreamController<String> _textController = StreamController<String>.broadcast();
+  final StreamController<String> _textController =
+      StreamController<String>.broadcast();
+
   /// 音频流（后端返回的 PCM/Opus 音频数据）
-  final StreamController<Uint8List> _audioController = StreamController<Uint8List>.broadcast();
+  final StreamController<Uint8List> _audioController =
+      StreamController<Uint8List>.broadcast();
+
   /// 连接状态变更流
-  final StreamController<String> _connectionController = StreamController<String>.broadcast();
+  final StreamController<String> _connectionController =
+      StreamController<String>.broadcast();
+
   /// NPC 是否正在说话
-  final StreamController<bool> _speakingController = StreamController<bool>.broadcast();
+  final StreamController<bool> _speakingController =
+      StreamController<bool>.broadcast();
 
   Stream<String> get textStream => _textController.stream;
   Stream<Uint8List> get audioStream => _audioController.stream;
@@ -38,6 +48,7 @@ class VoiceChatService extends ChangeNotifier {
     String? sessionId,
     String? systemPrompt,
     String? model,
+    required String token,
   }) async {
     if (_isConnected || _connectionState == 'connecting') return;
 
@@ -50,32 +61,35 @@ class VoiceChatService extends ChangeNotifier {
       String wsBase = AppConfig.apiBaseUrl
           .replaceFirst('https://', 'wss://')
           .replaceFirst('http://', 'ws://');
-      final Uri wsUri = Uri.parse('$wsBase/ai/voice-chat');
+      final Uri wsUri = Uri.parse('$wsBase/ai/voice-chat?token=$token');
+      debugPrint('[VoiceChat] Connecting to: $wsUri');
 
-      _channel = WebSocketChannel.connect(
-        wsUri,
-      );
+      // 用 dart:io WebSocket 直接连接，确保连接成功后再发数据
+      final WebSocket socket = await WebSocket.connect(
+        wsUri.toString(),
+      ).timeout(const Duration(seconds: 15));
+      debugPrint('[VoiceChat] WebSocket connected');
+
+      _channel = IOWebSocketChannel(socket);
+
+      // 先设置监听，再发送数据
+      _channel!.stream.listen(_onMessage, onError: _onError, onDone: _onDone);
 
       // 发送连接配置
       final Map<String, dynamic> config = <String, dynamic>{
         'type': 'config',
         'model': model ?? AppConfig.realtimeVoiceModel,
         if (sessionId != null && sessionId.isNotEmpty) 'sessionId': sessionId,
-        if (systemPrompt != null && systemPrompt.isNotEmpty) 'systemPrompt': systemPrompt,
+        if (systemPrompt != null && systemPrompt.isNotEmpty)
+          'systemPrompt': systemPrompt,
       };
       _channel!.sink.add(jsonEncode(config));
+      debugPrint('[VoiceChat] Config sent, waiting for DashScope...');
 
       _isConnected = true;
       _connectionState = 'connected';
       _connectionController.add(_connectionState);
       notifyListeners();
-
-      // 监听消息
-      _channel!.stream.listen(
-        _onMessage,
-        onError: _onError,
-        onDone: _onDone,
-      );
     } catch (e) {
       _connectionState = 'error';
       _connectionController.add(_connectionState);
@@ -88,7 +102,8 @@ class VoiceChatService extends ChangeNotifier {
   void _onMessage(dynamic message) {
     if (message is String) {
       try {
-        final Map<String, dynamic> data = jsonDecode(message) as Map<String, dynamic>;
+        final Map<String, dynamic> data =
+            jsonDecode(message) as Map<String, dynamic>;
         final String type = data['type'] as String? ?? '';
 
         switch (type) {
@@ -131,6 +146,7 @@ class VoiceChatService extends ChangeNotifier {
 
   void _onError(Object error) {
     debugPrint('[VoiceChat] WebSocket error: $error');
+    debugPrint('[VoiceChat] Error type: ${error.runtimeType}');
     _connectionState = 'error';
     _connectionController.add(_connectionState);
     _isConnected = false;
@@ -139,6 +155,7 @@ class VoiceChatService extends ChangeNotifier {
   }
 
   void _onDone() {
+    debugPrint('[VoiceChat] WebSocket closed (onDone)');
     _connectionState = 'disconnected';
     _connectionController.add(_connectionState);
     _isConnected = false;
@@ -149,19 +166,20 @@ class VoiceChatService extends ChangeNotifier {
   /// 发送用户音频数据（base64 编码的 PCM）
   void sendAudio(Uint8List audioBytes) {
     if (!_isConnected || _channel == null) return;
-    _channel!.sink.add(jsonEncode(<String, dynamic>{
-      'type': 'audio',
-      'data': base64Encode(audioBytes),
-    }));
+    _channel!.sink.add(
+      jsonEncode(<String, dynamic>{
+        'type': 'audio',
+        'data': base64Encode(audioBytes),
+      }),
+    );
   }
 
   /// 发送用户文本消息
   void sendText(String text) {
     if (!_isConnected || _channel == null) return;
-    _channel!.sink.add(jsonEncode(<String, dynamic>{
-      'type': 'text',
-      'text': text,
-    }));
+    _channel!.sink.add(
+      jsonEncode(<String, dynamic>{'type': 'text', 'text': text}),
+    );
   }
 
   /// 中断 AI 当前说话

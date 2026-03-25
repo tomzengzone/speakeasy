@@ -186,6 +186,79 @@ class AudioService extends ChangeNotifier {
     }
   }
 
+  /// 播放 PCM 音频数据用于实时语音（Qwen3-Omni 输出 24kHz 16bit mono PCM）
+  Future<void> playRealtimeAudio(Uint8List pcmBytes) async {
+    await _player.stop();
+    _isPlaying = true;
+    notifyListeners();
+
+    try {
+      final String dirPath = (await getTemporaryDirectory()).path;
+      final String wavPath =
+          '$dirPath/rt_${DateTime.now().millisecondsSinceEpoch}.wav';
+
+      // PCM -> WAV：写 44 字节 header
+      const int sampleRate = 24000;
+      const int bitsPerSample = 16;
+      const int channels = 1;
+      final int dataSize = pcmBytes.length;
+      final int byteRate = sampleRate * channels * bitsPerSample ~/ 8;
+      final int blockAlign = channels * bitsPerSample ~/ 8;
+
+      final ByteData header = ByteData(44);
+      header.setUint8(0, 0x52);
+      header.setUint8(1, 0x49);
+      header.setUint8(2, 0x46);
+      header.setUint8(3, 0x46);
+      header.setUint32(4, 36 + dataSize, Endian.little);
+      header.setUint8(8, 0x57);
+      header.setUint8(9, 0x41);
+      header.setUint8(10, 0x56);
+      header.setUint8(11, 0x45);
+      header.setUint8(12, 0x66);
+      header.setUint8(13, 0x6D);
+      header.setUint8(14, 0x74);
+      header.setUint8(15, 0x20);
+      header.setUint32(16, 16, Endian.little);
+      header.setUint16(20, 1, Endian.little);
+      header.setUint16(22, channels, Endian.little);
+      header.setUint32(24, sampleRate, Endian.little);
+      header.setUint32(28, byteRate, Endian.little);
+      header.setUint16(32, blockAlign, Endian.little);
+      header.setUint16(34, bitsPerSample, Endian.little);
+      header.setUint8(36, 0x64);
+      header.setUint8(37, 0x61);
+      header.setUint8(38, 0x74);
+      header.setUint8(39, 0x61);
+      header.setUint32(40, dataSize, Endian.little);
+
+      final dart_io.File wavFile = dart_io.File(wavPath);
+      final dart_io.IOSink sink = wavFile.openWrite();
+      sink.add(header.buffer.asUint8List());
+      sink.add(pcmBytes);
+      await sink.close();
+
+      await _player.setFilePath(wavPath);
+      await _player.play();
+
+      try {
+        await _player.playerStateStream
+            .firstWhere(
+              (PlayerState state) =>
+                  state.processingState == ProcessingState.completed,
+            )
+            .timeout(const Duration(seconds: 120));
+      } on TimeoutException {
+        await _player.stop();
+      }
+    } catch (e) {
+      debugPrint('[AudioService] playRealtimeAudio error: $e');
+    } finally {
+      _isPlaying = false;
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
     unawaited(_recorder.dispose());

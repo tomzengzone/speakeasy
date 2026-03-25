@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
@@ -7,6 +8,7 @@ import 'package:speakeasy/services/api_client.dart';
 import 'package:speakeasy/models/app_models.dart';
 import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/services/audio_service.dart';
+import 'package:speakeasy/services/voice_chat_service.dart';
 import 'package:speakeasy/l10n/l10n.dart';
 import 'package:speakeasy/utils/app_cached_network_image.dart';
 
@@ -54,6 +56,13 @@ class _ScenePageState extends State<ScenePage> {
   bool _showTextComposer = false;
   bool _showCoachAssistant = false;
   bool _realtimeMode = false;
+  VoiceChatService? _voiceChatService;
+  bool _voiceChatConnecting = false;
+  StreamSubscription<String>? _voiceChatTextSub;
+  StreamSubscription<Uint8List>? _voiceChatAudioSub;
+  StreamSubscription<String>? _voiceChatConnSub;
+  StreamSubscription<bool>? _voiceChatSpeakingSub;
+  String _voiceChatBufferedText = '';
   String _sessionId = '';
   final Set<_DraftDetailSection> _expandedDraftSections =
       <_DraftDetailSection>{};
@@ -120,6 +129,12 @@ class _ScenePageState extends State<ScenePage> {
   void dispose() {
     _promptTimer?.cancel();
     _mockInputTimer?.cancel();
+    _voiceChatTextSub?.cancel();
+    _voiceChatAudioSub?.cancel();
+    _voiceChatConnSub?.cancel();
+    _voiceChatSpeakingSub?.cancel();
+    _voiceChatService?.dispose();
+    _voiceChatService = null;
     _controller.removeListener(_handleControllerChanged);
     _scenePromptFocusNode.removeListener(_handleScenePromptFocusChanged);
     _chatScrollController.dispose();
@@ -655,11 +670,313 @@ class _ScenePageState extends State<ScenePage> {
   }
 
   void _toggleChatRecording() {
+    if (_realtimeMode) {
+      // 实时通话模式
+      if (_isRecording || _voiceChatConnecting) {
+        // 挂断或处理录音
+        if (_voiceChatConnecting) {
+          // 还在连接中，取消
+          _cleanupRealtimeCall();
+          setState(() {
+            _voiceChatConnecting = false;
+          });
+          return;
+        }
+        // 通话中：停止录音→STT→发送→继续录音（或挂断如果连接已断）
+        if (_voiceChatService != null && _voiceChatService!.isConnected) {
+          // 停止当前录音，STT 后发送，然后自动重新录音
+          final AudioService audioService = AudioServiceScope.of(context);
+          audioService.stopRecording().then((String? path) async {
+            if (!mounted || path == null || path.isEmpty) {
+              if (mounted) {
+                setState(() {
+                  _isRecording = true;
+                });
+              }
+              return;
+            }
+            setState(() {
+              _controller.text = '正在识别...';
+            });
+            try {
+              final String sttText = await ApiClient.transcribeAudio(
+                File(path),
+              );
+              if (sttText.trim().isNotEmpty) {
+                setState(() {
+                  _controller.text = '';
+                });
+                await _handleRealtimeUserText(sttText);
+              } else {
+                if (mounted) {
+                  setState(() {
+                    _controller.text = '';
+                    _isRecording = true;
+                  });
+                  final AudioService audioService = AudioServiceScope.of(
+                    context,
+                  );
+                  audioService.startRecording();
+                }
+              }
+            } catch (e) {
+              if (mounted) {
+                setState(() {
+                  _controller.text = '';
+                  _isRecording = true;
+                });
+                final AudioService audioService = AudioServiceScope.of(context);
+                audioService.startRecording();
+              }
+            }
+          });
+        } else {
+          // WebSocket 已断开，停止录音并挂断
+          _stopRealtimeCall();
+        }
+      } else {
+        // 接通
+        _startRealtimeCall();
+      }
+      return;
+    }
     if (_isRecording) {
       _finishChatRecording(send: true);
       return;
     }
     _startChatRecording();
+  }
+
+  /// 构建 WebSocket 实时通话的 system prompt
+  String _buildRealtimeSystemPrompt() {
+    return 'You are ${_draft.npcName}, a ${_draft.npcRole}.\n'
+        'Setting: ${_draft.environment}.\n'
+        'Scene goal: ${_draft.goal}.\n'
+        'Challenge: ${_draft.challenge}.\n'
+        'Rules:\n'
+        '- Speak naturally as your character, stay in role.\n'
+        '- Keep responses concise (1-3 sentences).\n'
+        '- Respond ONLY in English.\n'
+        '- This is a real-time voice conversation, speak naturally.';
+  }
+
+  /// 开始实时语音通话（WebSocket）
+  Future<void> _startRealtimeCall() async {
+    if (_voiceChatService != null && _voiceChatService!.isConnected) return;
+
+    final String? token = await ApiClient.getToken();
+    if (token == null || token.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('请先登录'), duration: Duration(seconds: 2)),
+        );
+      }
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+
+    final AudioService audioService = AudioServiceScope.of(context);
+
+    setState(() {
+      _voiceChatConnecting = true;
+      _voiceChatBufferedText = '';
+    });
+
+    final VoiceChatService service = VoiceChatService();
+    _voiceChatService = service;
+
+    // 监听连接状态
+    _voiceChatConnSub = service.connectionStream.listen((String state) {
+      if (!mounted) return;
+      if (state == 'connected') {
+        setState(() {
+          _voiceChatConnecting = false;
+          _isRecording = true;
+        });
+        // 连接成功，自动开始录音
+        audioService.startRecording();
+      } else if (state == 'error') {
+        setState(() {
+          _isRecording = false;
+          _voiceChatConnecting = false;
+        });
+        _cleanupRealtimeCall();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('实时通话连接失败'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else if (state == 'disconnected') {
+        setState(() {
+          _isRecording = false;
+          _voiceChatConnecting = false;
+        });
+      }
+    });
+
+    // 监听 AI 文本回复 → 缓冲
+    _voiceChatTextSub = service.textStream.listen((String text) {
+      _voiceChatBufferedText += text;
+    });
+
+    // 监听 AI 音频回复 → 先保存缓冲文本为消息，然后播放音频
+    _voiceChatAudioSub = service.audioStream.listen((
+      Uint8List audioBytes,
+    ) async {
+      if (_voiceChatBufferedText.trim().isNotEmpty) {
+        final String bufferedText = _voiceChatBufferedText.trim();
+        _voiceChatBufferedText = '';
+        if (mounted) {
+          setState(() {
+            _messages.add(
+              _ChatMessage(
+                role: _MessageRole.npc,
+                text: bufferedText,
+                inputType: _ChatInputType.voice,
+                voiceDuration: 6,
+              ),
+            );
+          });
+          _scrollChatToLatest();
+        }
+      }
+      // 播放 AI 音频
+      try {
+        await audioService.playRealtimeAudio(audioBytes);
+      } catch (e) {
+        debugPrint('[Realtime] Audio play error: $e');
+      }
+    });
+
+    // 监听 AI 说话状态变化
+    _voiceChatSpeakingSub = service.speakingStream.listen((bool speaking) {
+      if (!mounted) return;
+      if (!speaking && _voiceChatBufferedText.trim().isNotEmpty) {
+        // AI 停止说话，将剩余缓冲文本写入消息
+        final String bufferedText = _voiceChatBufferedText.trim();
+        _voiceChatBufferedText = '';
+        setState(() {
+          _messages.add(
+            _ChatMessage(
+              role: _MessageRole.npc,
+              text: bufferedText,
+              inputType: _ChatInputType.voice,
+              voiceDuration: 6,
+            ),
+          );
+        });
+        _scrollChatToLatest();
+      }
+    });
+
+    try {
+      await service.connect(
+        sessionId: _sessionId,
+        systemPrompt: _buildRealtimeSystemPrompt(),
+        token: token,
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _voiceChatConnecting = false;
+          _isRecording = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('连接失败: ${e.toString()}'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      _cleanupRealtimeCall();
+    }
+  }
+
+  /// 清理 VoiceChatService 资源（不更新 UI）
+  void _cleanupRealtimeCall() {
+    _voiceChatTextSub?.cancel();
+    _voiceChatAudioSub?.cancel();
+    _voiceChatConnSub?.cancel();
+    _voiceChatSpeakingSub?.cancel();
+    _voiceChatTextSub = null;
+    _voiceChatAudioSub = null;
+    _voiceChatConnSub = null;
+    _voiceChatSpeakingSub = null;
+    _voiceChatService?.dispose();
+    _voiceChatService = null;
+  }
+
+  /// 停止实时语音通话
+  Future<void> _stopRealtimeCall() async {
+    // 停止录音
+    try {
+      final AudioService audioService = AudioServiceScope.of(context);
+      await audioService.stopRecording();
+    } catch (_) {}
+
+    // 断开 WebSocket
+    await _voiceChatService?.disconnect();
+    _cleanupRealtimeCall();
+
+    // 保存剩余缓冲文本
+    if (_voiceChatBufferedText.trim().isNotEmpty) {
+      final String bufferedText = _voiceChatBufferedText.trim();
+      _voiceChatBufferedText = '';
+      if (mounted) {
+        setState(() {
+          _messages.add(
+            _ChatMessage(
+              role: _MessageRole.npc,
+              text: bufferedText,
+              inputType: _ChatInputType.voice,
+              voiceDuration: 6,
+            ),
+          );
+        });
+        _scrollChatToLatest();
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _isRecording = false;
+        _voiceChatConnecting = false;
+      });
+    }
+  }
+
+  /// 实时模式下：STT 完成后发送文本到 WebSocket，然后自动重新开始录音
+  Future<void> _handleRealtimeUserText(String text) async {
+    if (text.trim().isEmpty || _voiceChatService == null) return;
+
+    // 显示用户消息
+    setState(() {
+      _messages.add(
+        _ChatMessage(
+          role: _MessageRole.user,
+          text: text.trim(),
+          inputType: _ChatInputType.voice,
+          voiceDuration: 5,
+        ),
+      );
+      _isNpcThinking = false;
+    });
+    _scrollChatToLatest();
+
+    // 发送到 WebSocket
+    _voiceChatService!.sendText(text.trim());
+
+    // 自动重新开始录音
+    if (mounted) {
+      setState(() {
+        _isRecording = true;
+      });
+      final AudioService audioService = AudioServiceScope.of(context);
+      audioService.startRecording();
+    }
   }
 
   void _toggleCoachAssistant() {
@@ -2199,8 +2516,15 @@ class _ScenePageState extends State<ScenePage> {
                         ),
                         const SizedBox(width: 4),
                         IconButton(
-                          onPressed: () =>
-                              setState(() => _realtimeMode = !_realtimeMode),
+                          onPressed: () async {
+                            if (_realtimeMode) {
+                              await _stopRealtimeCall();
+                            }
+                            if (!mounted) {
+                              return;
+                            }
+                            setState(() => _realtimeMode = !_realtimeMode);
+                          },
                           style: IconButton.styleFrom(
                             backgroundColor: const Color(0x12FFFFFF),
                             minimumSize: const Size(34, 34),
@@ -2635,6 +2959,11 @@ class _ScenePageState extends State<ScenePage> {
                                               Color(0xFFE8855A),
                                               Color(0xFFF39966),
                                             ]
+                                          : _voiceChatConnecting
+                                          ? const [
+                                              Color(0xFF5ECE92),
+                                              Color(0xFF6FE89E),
+                                            ]
                                           : _realtimeMode
                                           ? const [
                                               Color(0xFF5ECE92),
@@ -2651,6 +2980,8 @@ class _ScenePageState extends State<ScenePage> {
                                           ? const Color(0xFFF2AAA2)
                                           : _isRecording
                                           ? const Color(0xFFF7A37F)
+                                          : _voiceChatConnecting
+                                          ? const Color(0xFF7CF2AE)
                                           : _realtimeMode
                                           ? const Color(0xFF7CF2AE)
                                           : const Color(0xFF7ACFBD),
@@ -2663,6 +2994,8 @@ class _ScenePageState extends State<ScenePage> {
                                                     ? const Color(0xFFC95D52)
                                                     : _isRecording
                                                     ? const Color(0xFFE8855A)
+                                                    : _voiceChatConnecting
+                                                    ? const Color(0xFF5ECE92)
                                                     : _realtimeMode
                                                     ? const Color(0xFF5ECE92)
                                                     : const Color(0xFF4A7C6F))
@@ -2675,7 +3008,9 @@ class _ScenePageState extends State<ScenePage> {
                                   alignment: Alignment.center,
                                   child: Icon(
                                     _realtimeMode
-                                        ? (_isRecording
+                                        ? (_voiceChatConnecting
+                                              ? Icons.call_rounded
+                                              : _isRecording
                                               ? Icons.call_end_rounded
                                               : Icons.call_rounded)
                                         : (_chatRecordingWillCancel
@@ -2691,7 +3026,11 @@ class _ScenePageState extends State<ScenePage> {
                               const SizedBox(height: 10),
                               Text(
                                 _realtimeMode
-                                    ? (_isRecording ? '点击挂断' : '点击接通')
+                                    ? (_voiceChatConnecting
+                                          ? '连接中...'
+                                          : _isRecording
+                                          ? '点击挂断'
+                                          : '点击接通')
                                     : (_chatRecordingWillCancel
                                           ? '松开取消'
                                           : _isRecording
