@@ -29,11 +29,15 @@ class StorageService {
   late final Box<dynamic> _box;
   bool _initialized = false;
 
-  Future<void> init() async {
+  Future<void> init({String? hivePath}) async {
     if (_initialized) {
       return;
     }
-    await Hive.initFlutter();
+    if (hivePath == null || hivePath.trim().isEmpty) {
+      await Hive.initFlutter();
+    } else {
+      Hive.init(hivePath);
+    }
     _box = await Hive.openBox<dynamic>(_boxName);
     await _migrateFromSharedPreferences();
     _initialized = true;
