@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 
 import 'app_models.dart';
+import 'app_session.dart';
+import 'audio_service.dart';
 
 class LearningPage extends StatefulWidget {
-  const LearningPage({super.key, required this.card, required this.onBack});
+  const LearningPage({
+    super.key,
+    required this.card,
+    required this.onBack,
+    this.onComplete,
+  });
 
   final ExpressionCardData card;
   final VoidCallback onBack;
+  final VoidCallback? onComplete;
 
   @override
   State<LearningPage> createState() => _LearningPageState();
@@ -14,9 +22,10 @@ class LearningPage extends StatefulWidget {
 
 class _LearningPageState extends State<LearningPage> {
   int _step = 0;
-  int? _playingPhrase;
   int? _recordingPhrase;
   int _selectedVariation = 0;
+  final Map<int, String> _recordingPaths = <int, String>{};
+  final Map<int, PronunciationScore> _scores = <int, PronunciationScore>{};
 
   static const List<String> _titles = <String>[
     '先理解场景',
@@ -66,7 +75,7 @@ class _LearningPageState extends State<LearningPage> {
 
   void _handleNext() {
     if (_step == _titles.length - 1) {
-      widget.onBack();
+      (widget.onComplete ?? widget.onBack).call();
       return;
     }
     setState(() {
@@ -77,6 +86,7 @@ class _LearningPageState extends State<LearningPage> {
   @override
   Widget build(BuildContext context) {
     final Color color = widget.card.color;
+    final AudioService audioService = AudioServiceScope.of(context);
 
     return Material(
       color: appBackground,
@@ -191,7 +201,7 @@ class _LearningPageState extends State<LearningPage> {
                         ),
                       ),
                       const SizedBox(height: 18),
-                      _buildStepContent(color),
+                      _buildStepContent(color, audioService),
                     ],
                   ),
                 ),
@@ -244,7 +254,7 @@ class _LearningPageState extends State<LearningPage> {
     );
   }
 
-  Widget _buildStepContent(Color color) {
+  Widget _buildStepContent(Color color, AudioService audioService) {
     return switch (_step) {
       0 => Container(
         padding: const EdgeInsets.all(18),
@@ -293,7 +303,10 @@ class _LearningPageState extends State<LearningPage> {
       1 => Column(
         children: List<Widget>.generate(_phrases.length, (int index) {
           final item = _phrases[index];
-          final bool playing = _playingPhrase == index;
+          final String ttsKey = 'tts_${item.en.hashCode}';
+          final bool playing =
+              audioService.isPlaying && audioService.playingUrl != null &&
+              audioService.playingUrl!.contains(ttsKey);
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Container(
@@ -369,8 +382,7 @@ class _LearningPageState extends State<LearningPage> {
                   ),
                   const SizedBox(width: 12),
                   IconButton(
-                    onPressed: () =>
-                        setState(() => _playingPhrase = playing ? null : index),
+                    onPressed: () => audioService.playTts(item.en),
                     style: IconButton.styleFrom(
                       backgroundColor: playing
                           ? color
@@ -391,12 +403,35 @@ class _LearningPageState extends State<LearningPage> {
       2 => Column(
         children: List<Widget>.generate(_phrases.length, (int index) {
           final item = _phrases[index];
-          final bool recording = _recordingPhrase == index;
+          final bool recording =
+              audioService.isRecording && _recordingPhrase == index;
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: InkWell(
-              onTap: () =>
-                  setState(() => _recordingPhrase = recording ? null : index),
+              onTap: () async {
+                if (audioService.isRecording && _recordingPhrase == index) {
+                  final String? path = await audioService.stopRecording();
+                  if (!mounted) return;
+                  setState(() {
+                    _recordingPhrase = null;
+                    if (path != null) _recordingPaths[index] = path;
+                  });
+                  if (path != null && mounted) {
+                    final AppSession session = AppSessionScope.of(context);
+                    final PronunciationScore score = await session
+                        .scorePronunciation(
+                          audioPath: path,
+                          expectedText: item.en,
+                        );
+                    if (mounted) {
+                      setState(() => _scores[index] = score);
+                    }
+                  }
+                } else {
+                  setState(() => _recordingPhrase = index);
+                  await audioService.startRecording();
+                }
+              },
               borderRadius: BorderRadius.circular(16),
               child: Container(
                 padding: const EdgeInsets.all(16),
@@ -433,6 +468,14 @@ class _LearningPageState extends State<LearningPage> {
                         color: recording ? Colors.white : textSecondary,
                       ),
                     ),
+                    if (_scores[index] != null)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: _ScoreBadge(
+                          score: _scores[index]!.overall,
+                          color: color,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -570,6 +613,34 @@ class _LearningProgress extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ScoreBadge extends StatelessWidget {
+  const _ScoreBadge({required this.score, required this.color});
+
+  final int score;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg = score >= 80
+        ? const Color(0xFF4A7244)
+        : score >= 60
+        ? const Color(0xFFA0622A)
+        : const Color(0xFFB0404A);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: bg.withValues(alpha: 0.35)),
+      ),
+      child: Text(
+        '$score',
+        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: bg),
       ),
     );
   }

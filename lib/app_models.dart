@@ -27,7 +27,8 @@ class DifficultyOption {
 }
 
 class ExpressionCardData {
-  const ExpressionCardData({
+  ExpressionCardData({
+    this.id,
     required this.category,
     required this.title,
     required this.pattern,
@@ -39,6 +40,26 @@ class ExpressionCardData {
     required this.color,
   });
 
+  factory ExpressionCardData.fromJson(Map<String, dynamic> json) {
+    return ExpressionCardData(
+      id: json['id'] as String?,
+      category: json['category'] as String,
+      title: json['title'] as String,
+      pattern: json['pattern'] as String,
+      image: json['image'] as String,
+      learnerCount: '${json['learnerCount'] ?? ''}',
+      difficultyLevel: (json['difficultyLevel'] as num?)?.toInt() ?? 1,
+      progress:
+          ((json['progress'] as List<dynamic>?) ??
+                  const <dynamic>['idle', 'locked', 'locked', 'locked'])
+              .map((dynamic s) => ProgressState.values.byName('$s'))
+              .toList(),
+      thumbHeight: (json['thumbHeight'] as num).toDouble(),
+      color: _parseColor(json['colorHex'] as String?),
+    );
+  }
+
+  final String? id;
   final String category;
   final String title;
   final String pattern;
@@ -48,6 +69,19 @@ class ExpressionCardData {
   final List<ProgressState> progress;
   final double thumbHeight;
   final Color color;
+
+  static Color _parseColor(String? raw) {
+    final String normalized = (raw ?? '4A7244')
+        .replaceFirst(RegExp('^0x', caseSensitive: false), '')
+        .replaceAll('#', '')
+        .trim();
+    final String hex = switch (normalized.length) {
+      6 => 'FF$normalized',
+      8 => normalized,
+      _ => 'FF4A7244',
+    };
+    return Color(int.parse(hex, radix: 16));
+  }
 }
 
 class SceneDraft {
@@ -123,7 +157,7 @@ const bottomTabs = <({String label, IconData icon})>[
   (label: '我的', icon: Icons.person_outline_rounded),
 ];
 
-const expressionCards = <ExpressionCardData>[
+final expressionCards = <ExpressionCardData>[
   ExpressionCardData(
     category: '不会开口',
     title: '自然地说出第一句',

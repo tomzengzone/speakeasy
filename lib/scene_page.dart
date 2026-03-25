@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'api_client.dart';
 import 'app_models.dart';
 import 'app_session.dart';
 
@@ -32,55 +33,20 @@ class _ScenePageState extends State<ScenePage> {
   final FocusNode _scenePromptFocusNode = FocusNode();
   final FocusNode _coachQuestionFocusNode = FocusNode();
   final ScrollController _chatScrollController = ScrollController();
-  final List<_ChatMessage> _messages = <_ChatMessage>[
-    const _ChatMessage(
-      role: _MessageRole.event,
-      text: '对话已接通 · David 正在等待',
-      accent: Color(0xFF7ACFBD),
-    ),
-    const _ChatMessage(
-      role: _MessageRole.npc,
-      text:
-          'Thanks for joining on short notice. I need a clear explanation for the delay.',
-      inputType: _ChatInputType.voice,
-      voiceDuration: 8,
-      mood: '冷静施压中',
-    ),
-    const _ChatMessage(
-      role: _MessageRole.coach,
-      text: '先说结论',
-      note: '再补原因和补救动作',
-    ),
-    const _ChatMessage(
-      role: _MessageRole.user,
-      text:
-          'The launch is slipping by three days because the QA fixes took longer than expected.',
-      inputType: _ChatInputType.voice,
-      voiceDuration: 6,
-    ),
-    const _ChatMessage(
-      role: _MessageRole.event,
-      text: 'David 打断了你',
-      accent: Color(0xFFE8855A),
-    ),
-    const _ChatMessage(
-      role: _MessageRole.npc,
-      text:
-          'Three days is manageable. What are you doing to keep the client calm?',
-      inputType: _ChatInputType.voice,
-      voiceDuration: 5,
-      mood: '等待你的直接回答',
-    ),
-  ];
+  final List<_ChatMessage> _messages = <_ChatMessage>[];
 
   SceneFlowView _view = SceneFlowView.home;
   int _activePromptIndex = 0;
   bool _inputFocused = false;
   bool _isRecording = false;
+  bool _isNpcThinking = false;
+  SceneFeedback? _feedback;
+  bool _isFeedbackLoading = false;
   bool _chatRecordingWillCancel = false;
   bool _showTextComposer = false;
   bool _showCoachAssistant = false;
   bool _realtimeMode = false;
+  String _sessionId = '';
   final Set<_DraftDetailSection> _expandedDraftSections =
       <_DraftDetailSection>{};
   final Set<int> _expandedVoiceMessageIndexes = <int>{};
@@ -123,6 +89,7 @@ class _ScenePageState extends State<ScenePage> {
   @override
   void initState() {
     super.initState();
+    _resetChatSession();
     _controller.addListener(_handleControllerChanged);
     _scenePromptFocusNode.addListener(_handleScenePromptFocusChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -217,6 +184,38 @@ class _ScenePageState extends State<ScenePage> {
     });
   }
 
+  List<_ChatMessage> _initialMessagesForDraft() {
+    return <_ChatMessage>[
+      _ChatMessage(
+        role: _MessageRole.event,
+        text: '对话已接通 · ${_draft.npcName} 正在等待',
+        accent: const Color(0xFF7ACFBD),
+      ),
+      const _ChatMessage(
+        role: _MessageRole.npc,
+        text:
+            'Thanks for joining on short notice. I need a clear summary of the situation and your next step.',
+        inputType: _ChatInputType.voice,
+        voiceDuration: 8,
+        mood: '冷静施压中',
+      ),
+      const _ChatMessage(
+        role: _MessageRole.coach,
+        text: '先说结论',
+        note: '再补原因和补救动作',
+      ),
+    ];
+  }
+
+  void _resetChatSession() {
+    _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+    _messages
+      ..clear()
+      ..addAll(_initialMessagesForDraft());
+    _feedback = null;
+    _isFeedbackLoading = false;
+  }
+
   void _generateDraft([String? prompt]) {
     final input = (prompt ?? _controller.text).trim();
     if (input.isEmpty) {
@@ -233,11 +232,31 @@ class _ScenePageState extends State<ScenePage> {
         environment: '工作会议',
         challenge: '对方会继续追问具体影响、下一步动作和承诺时间。',
       );
+      _feedback = null;
+      _isFeedbackLoading = false;
     });
     _setView(SceneFlowView.draft);
   }
 
-  void _startConversation() {
+  Future<void> _startConversation() async {
+    setState(() {
+      _resetChatSession();
+    });
+    try {
+      _sessionId = await ApiClient.createAiSession(
+        sceneTitle: _draft.title,
+        sceneGoal: _draft.goal,
+        npcName: _draft.npcName,
+        npcRole: _draft.npcRole,
+        environment: _draft.environment,
+        challenge: _draft.challenge,
+      );
+    } catch (_) {
+      _sessionId = '';
+    }
+    if (!mounted) {
+      return;
+    }
     _setView(SceneFlowView.chat);
   }
 
@@ -266,11 +285,45 @@ class _ScenePageState extends State<ScenePage> {
     }
     setState(() {
       _view = view;
+      if (view == SceneFlowView.feedback && _feedback == null) {
+        _isFeedbackLoading = true;
+        _generateFeedback();
+      }
     });
     _notifyBottomBarVisibility();
     if (view == SceneFlowView.chat) {
       _scrollChatToLatest(animated: false);
     }
+  }
+
+  void _generateFeedback() {
+    final AppSession session = AppSessionScope.of(context);
+    final List<SceneHistoryTurn> history = _messages
+        .where((m) => m.role == _MessageRole.user || m.role == _MessageRole.npc)
+        .map(
+          (m) => SceneHistoryTurn(
+            role: m.role == _MessageRole.user ? 'user' : 'npc',
+            text: m.text,
+          ),
+        )
+        .toList();
+    session
+        .generateSceneFeedback(draft: _draft, history: history)
+        .then((SceneFeedback f) {
+          if (!mounted || !_isFeedbackLoading) {
+            return;
+          }
+          setState(() {
+            _feedback = f;
+            _isFeedbackLoading = false;
+          });
+        })
+        .catchError((Object _) {
+          if (!mounted || !_isFeedbackLoading) {
+            return;
+          }
+          setState(() => _isFeedbackLoading = false);
+        });
   }
 
   void _scrollChatToLatest({bool animated = true}) {
@@ -617,24 +670,21 @@ class _ScenePageState extends State<ScenePage> {
 
   void _sendMessage({bool asVoice = false, int? voiceDuration}) {
     final input = _controller.text.trim();
-    if (input.isEmpty) {
-      return;
-    }
-    const List<String> npcReplies = <String>[
-      'Understood. Be specific about the recovery plan and give me one concrete milestone.',
-      'That is clearer. Now tell me what you will say if the client asks who is accountable.',
-      'Better. I still need a date, an owner, and the message you will send after this call.',
-    ];
-    const List<String> coachHints = <String>['不要过度解释', '直接给时间点', '先稳住，再给动作'];
-    const List<(String, Color)> events = <(String, Color)>[
-      ('对方要求直接回答', Color(0xFF8BA8E0)),
-      ('对方继续追问责任归属', Color(0xFFE8855A)),
-      ('对话节奏正在变快', Color(0xFF7ACFBD)),
-    ];
-    final int round = _messages
-        .where((m) => m.role == _MessageRole.user)
-        .length;
+    if (input.isEmpty || _isNpcThinking) return;
+
+    final List<SceneHistoryTurn> history = _messages
+        .where((m) => m.role == _MessageRole.user || m.role == _MessageRole.npc)
+        .map(
+          (m) => SceneHistoryTurn(
+            role: m.role == _MessageRole.user ? 'user' : 'npc',
+            text: m.text,
+          ),
+        )
+        .toList();
+
     setState(() {
+      _feedback = null;
+      _isFeedbackLoading = false;
       _messages.add(
         _ChatMessage(
           role: _MessageRole.user,
@@ -645,34 +695,67 @@ class _ScenePageState extends State<ScenePage> {
               : null,
         ),
       );
-      if (round.isEven) {
-        final (String label, Color color) = events[round % events.length];
-        _messages.add(
-          _ChatMessage(role: _MessageRole.event, text: label, accent: color),
-        );
-      } else {
-        _messages.add(
-          _ChatMessage(
-            role: _MessageRole.coach,
-            text: coachHints[round % coachHints.length],
-            note: '保持一句话一个动作',
-          ),
-        );
-      }
-      _messages.add(
-        _ChatMessage(
-          role: _MessageRole.npc,
-          text: npcReplies[round % npcReplies.length],
-          inputType: _ChatInputType.voice,
-          voiceDuration: 6 + (round % 3),
-          mood: round.isEven ? '变得不耐烦' : '等待你的直接回答',
-        ),
-      );
+      _isNpcThinking = true;
       _controller.clear();
       _showTextComposer = false;
       _isRecording = false;
     });
     _scrollChatToLatest();
+
+    final AppSession session = AppSessionScope.of(context);
+    session
+        .sendSceneMessage(
+          sessionId: _sessionId,
+          userText: input,
+          draft: _draft,
+          history: history,
+        )
+        .then((SceneReply reply) {
+          if (!mounted) return;
+          setState(() {
+            _isNpcThinking = false;
+            if (reply.eventLabel != null && reply.eventColor != null) {
+              _messages.add(
+                _ChatMessage(
+                  role: _MessageRole.event,
+                  text: reply.eventLabel!,
+                  accent: reply.eventColor!,
+                ),
+              );
+            } else if (reply.coachHint != null) {
+              _messages.add(
+                _ChatMessage(
+                  role: _MessageRole.coach,
+                  text: reply.coachHint!,
+                  note: '保持一句话一个动作',
+                ),
+              );
+            }
+            _messages.add(
+              _ChatMessage(
+                role: _MessageRole.npc,
+                text: reply.npcText,
+                inputType: _ChatInputType.voice,
+                voiceDuration: 6,
+                mood: reply.mood,
+              ),
+            );
+          });
+          _scrollChatToLatest();
+        })
+        .catchError((Object error) {
+          if (!mounted) return;
+          setState(() {
+            _isNpcThinking = false;
+            _messages.add(
+              const _ChatMessage(
+                role: _MessageRole.event,
+                text: '网络异常，请重试',
+                accent: Color(0xFFE8855A),
+              ),
+            );
+          });
+        });
   }
 
   @override
@@ -984,6 +1067,8 @@ class _ScenePageState extends State<ScenePage> {
                               environment: '真实工作语境',
                               challenge: '回答不能太模糊，需要给出明确动作。',
                             );
+                            _feedback = null;
+                            _isFeedbackLoading = false;
                           });
                           _setView(SceneFlowView.feedback);
                         },
@@ -1000,6 +1085,8 @@ class _ScenePageState extends State<ScenePage> {
                               environment: '延续之前的场景',
                               challenge: '对方会继续往下追问。',
                             );
+                            _feedback = null;
+                            _isFeedbackLoading = false;
                           });
                           _setView(SceneFlowView.draft);
                         },
@@ -2111,9 +2198,53 @@ class _ScenePageState extends State<ScenePage> {
             child: ListView.builder(
               controller: _chatScrollController,
               padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
-              itemCount: _messages.length + (_isRecording ? 1 : 0),
+              itemCount:
+                  _messages.length +
+                  (_isNpcThinking ? 1 : 0) +
+                  (_isRecording ? 1 : 0),
               itemBuilder: (context, index) {
-                if (_isRecording && index == _messages.length) {
+                if (_isNpcThinking && index == _messages.length) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFEBE4),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const SizedBox(
+                            width: 36,
+                            height: 16,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _ThinkingDot(delay: Duration.zero),
+                                _ThinkingDot(
+                                  delay: Duration(milliseconds: 200),
+                                ),
+                                _ThinkingDot(
+                                  delay: Duration(milliseconds: 400),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                final int recordingIndex =
+                    _messages.length + (_isNpcThinking ? 1 : 0);
+                if (_isRecording && index == recordingIndex) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Align(
@@ -2608,50 +2739,32 @@ class _ScenePageState extends State<ScenePage> {
   }
 
   Widget _buildFeedback() {
-    const List<(String, String, String, Color)> improvements =
-        <(String, String, String, Color)>[
-          (
-            '🎯',
-            '先说补救动作',
-            '你先解释了原因，但导出稿里更强调“先给结论，再给恢复计划”。把动作提前，压力会明显下降。',
-            Color(0xFFC4743A),
+    if (_isFeedbackLoading || _feedback == null) {
+      return _SceneScaffold(
+        key: const ValueKey('scene-feedback-loading'),
+        title: '练后反馈',
+        subtitle: '正在生成分析...',
+        onBack: () => _setView(SceneFlowView.chat),
+        child: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(48),
+            child: CircularProgressIndicator(),
           ),
-          (
-            '🧭',
-            '给出具体时间点',
-            '当对方追问时，时间承诺要比背景细节更有用。下一轮把“今晚 6 点前”直接说出来。',
-            Color(0xFF8BA8E0),
-          ),
-          (
-            '🗣️',
-            '减少解释腔',
-            '“because” 连续出现会显得在辩解。拆成两句，先担责，再给恢复方案，会更像真实职场表达。',
-            Color(0xFF4A7C6F),
-          ),
-        ];
-    const List<({String original, String better, String tag, String why})>
-    swaps = <({String original, String better, String tag, String why})>[
-      (
-        original: 'It was delayed because QA took longer.',
-        better:
-            'We slipped by three days because the final QA fixes took longer than expected, but the recovery plan is already in motion.',
-        tag: '更稳',
-        why: '后半句直接带恢复动作，避免只解释原因。',
-      ),
-      (
-        original: 'We are still discussing the next step.',
-        better:
-            'I have two recovery options ready, and I will confirm the final path with the team before 6 PM today.',
-        tag: '更具体',
-        why: '把模糊讨论改成具体动作和时间点。',
-      ),
-    ];
+        ),
+      );
+    }
+    final SceneFeedback fb = _feedback!;
     const List<(String, String, String)> suggestions =
         <(String, String, String)>[
           ('🔁', '再练一次同场景', '保留当前难度，再打一轮把节奏练顺。'),
           ('⚡', '提高追问强度', '让对方更强势，专门训练高压追问。'),
           ('🛠️', '调整场景设定', '保留目标，但改成客户电话或周会汇报。'),
         ];
+    const List<Color> impColors = <Color>[
+      Color(0xFFC4743A),
+      Color(0xFF8BA8E0),
+      Color(0xFF4A7C6F),
+    ];
 
     return _SceneScaffold(
       key: const ValueKey('scene-feedback'),
@@ -2669,31 +2782,31 @@ class _ScenePageState extends State<ScenePage> {
               ),
               borderRadius: BorderRadius.circular(24),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '核心任务完成，细节还可以打磨 ✨',
-                  style: TextStyle(
+                  fb.headline,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
                 ),
-                SizedBox(height: 14),
+                const SizedBox(height: 14),
                 Text(
-                  '82',
-                  style: TextStyle(
+                  '${fb.overallScore}',
+                  style: const TextStyle(
                     fontSize: 46,
                     height: 1,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
                   ),
                 ),
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
                 Text(
-                  '整体表现不错，开场清楚，但补救动作还能更具体。你已经完成核心表达，但在追问下还可以更稳。',
-                  style: TextStyle(
+                  fb.summary,
+                  style: const TextStyle(
                     fontSize: 14,
                     color: Color(0xFFD2EEE7),
                     height: 1.5,
@@ -2703,11 +2816,10 @@ class _ScenePageState extends State<ScenePage> {
             ),
           ),
           const SizedBox(height: 16),
-          ...const [
-            _FeedbackMetric(label: '清晰度', score: 88, color: Color(0xFF4A7C6F)),
-            _FeedbackMetric(label: '结构感', score: 84, color: Color(0xFF5A6FA8)),
-            _FeedbackMetric(label: '临场应对', score: 73, color: Color(0xFFA0622A)),
-          ],
+          ...fb.metrics.map(
+            (m) =>
+                _FeedbackMetric(label: m.label, score: m.score, color: m.color),
+          ),
           const SizedBox(height: 18),
           const _FeedbackTaskCard(
             title: '任务拆解',
@@ -2718,16 +2830,7 @@ class _ScenePageState extends State<ScenePage> {
             ],
           ),
           const SizedBox(height: 12),
-          const _CoachCard(
-            title: '教练建议',
-            body: '下一轮把补救方案提前说出来，再补一句“我会在今晚 6 点前同步修订版时间线”。这样更像真实职场表达。',
-          ),
-          const SizedBox(height: 12),
-          const _CoachCard(
-            title: '更自然的替换',
-            body:
-                '把 “It was delayed because QA took longer.” 换成 “We slipped by three days because the final QA fixes took longer than expected, but the recovery plan is already in motion.”',
-          ),
+          _CoachCard(title: '教练建议', body: fb.coachTip),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(16),
@@ -2748,53 +2851,17 @@ class _ScenePageState extends State<ScenePage> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                ...improvements.indexed.map(
+                ...fb.improvements.indexed.map(
                   (entry) => Padding(
                     padding: EdgeInsets.only(
-                      bottom: entry.$1 == improvements.length - 1 ? 0 : 12,
+                      bottom: entry.$1 == fb.improvements.length - 1 ? 0 : 12,
                     ),
                     child: _ImprovementCard(
                       index: entry.$1 + 1,
                       emoji: entry.$2.$1,
                       title: entry.$2.$2,
                       detail: entry.$2.$3,
-                      color: entry.$2.$4,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: borderColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '模块 C · 更自然的表达替换',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ...swaps.indexed.map(
-                  (entry) => Padding(
-                    padding: EdgeInsets.only(
-                      bottom: entry.$1 == swaps.length - 1 ? 0 : 12,
-                    ),
-                    child: _ExpressionSwapCard(
-                      original: entry.$2.original,
-                      better: entry.$2.better,
-                      tag: entry.$2.tag,
-                      why: entry.$2.why,
+                      color: impColors[entry.$1 % impColors.length],
                     ),
                   ),
                 ),
@@ -4330,183 +4397,6 @@ class _ImprovementCard extends StatelessWidget {
   }
 }
 
-class _ExpressionSwapCard extends StatelessWidget {
-  const _ExpressionSwapCard({
-    required this.original,
-    required this.better,
-    required this.tag,
-    required this.why,
-  });
-
-  final String original;
-  final String better;
-  final String tag;
-  final String why;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F5F0),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFEDE9E3)),
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
-            decoration: const BoxDecoration(
-              color: Color(0xFFFAFAF8),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '你说的',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFFA05850),
-                  ),
-                ),
-                const SizedBox(height: 7),
-                Text(
-                  '"$original"',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontStyle: FontStyle.italic,
-                    color: Color(0xFF8A7870),
-                    height: 1.65,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-            color: const Color(0xFFF2EFE8),
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 11,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: const Color(0xFFE4E0D8)),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 12,
-                      color: Color(0xFF4A7C6F),
-                    ),
-                    SizedBox(width: 5),
-                    Text(
-                      '换成这样说',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF4A7C6F),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
-            color: const Color(0x0A4A7C6F),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text(
-                      '更自然',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF4A7C6F),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0x114A7C6F),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: const Color(0x384A7C6F)),
-                      ),
-                      child: Text(
-                        tag,
-                        style: const TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF4A7C6F),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 7),
-                Text(
-                  '"$better"',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF1A3530),
-                    height: 1.72,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-            decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: Color(0xFFEDE9E3))),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.lightbulb_outline_rounded,
-                  size: 13,
-                  color: Color(0xFFC4743A),
-                ),
-                const SizedBox(width: 7),
-                Expanded(
-                  child: Text(
-                    why,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF8A7060),
-                      height: 1.55,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SuggestionActionCard extends StatelessWidget {
   const _SuggestionActionCard({
     required this.emoji,
@@ -4822,4 +4712,56 @@ class _ChatMessage {
   final _ChatInputType? inputType;
   final int? voiceDuration;
   final Color? accent;
+}
+
+class _ThinkingDot extends StatefulWidget {
+  const _ThinkingDot({required this.delay});
+
+  final Duration delay;
+
+  @override
+  State<_ThinkingDot> createState() => _ThinkingDotState();
+}
+
+class _ThinkingDotState extends State<_ThinkingDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    Future.delayed(widget.delay, () {
+      if (mounted) _ctrl.repeat(reverse: true);
+    });
+    _anim = Tween<double>(
+      begin: 0.3,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _anim,
+      child: Container(
+        width: 6,
+        height: 6,
+        decoration: const BoxDecoration(
+          color: Color(0xFF9A9289),
+          shape: BoxShape.circle,
+        ),
+      ),
+    );
+  }
 }

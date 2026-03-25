@@ -1,0 +1,173 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:path_provider/path_provider.dart'; // still used by startRecording
+import 'package:record/record.dart';
+
+class AudioService extends ChangeNotifier {
+  final AudioRecorder _recorder = AudioRecorder();
+  final AudioPlayer _player = AudioPlayer();
+  final FlutterTts _tts = FlutterTts();
+
+  bool _isRecording = false;
+  bool _isPlaying = false;
+  String? _playingUrl;
+  String? _lastRecordingPath;
+
+  AudioService() {
+    _tts.setLanguage('en-US');
+    _tts.setSpeechRate(0.85);
+    _tts.setVolume(1.0);
+    _tts.setCompletionHandler(() {
+      _isPlaying = false;
+      _playingUrl = null;
+      notifyListeners();
+    });
+    _tts.setErrorHandler((msg) {
+      _isPlaying = false;
+      _playingUrl = null;
+      notifyListeners();
+    });
+  }
+
+  bool get isRecording => _isRecording;
+  bool get isPlaying => _isPlaying;
+  String? get playingUrl => _playingUrl;
+  String? get lastRecordingPath => _lastRecordingPath;
+
+  Future<bool> requestPermission() {
+    return _recorder.hasPermission();
+  }
+
+  Future<void> startRecording() async {
+    final bool hasPermission = await requestPermission();
+    if (!hasPermission) return;
+
+    final String directoryPath = (await getTemporaryDirectory()).path;
+    final String path =
+        '$directoryPath/speakeasy_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+    await _recorder.start(
+      const RecordConfig(encoder: AudioEncoder.aacLc),
+      path: path,
+    );
+
+    _isRecording = true;
+    notifyListeners();
+  }
+
+  Future<String?> stopRecording() async {
+    final String? path = await _recorder.stop();
+    _isRecording = false;
+    _lastRecordingPath = path;
+    notifyListeners();
+    return path;
+  }
+
+  Future<void> playUrl(String url) async {
+    if (_isPlaying && _playingUrl == url) {
+      await _player.stop();
+      _isPlaying = false;
+      _playingUrl = null;
+      notifyListeners();
+      return;
+    }
+
+    await _player.stop();
+    await _player.setUrl(url);
+    _isPlaying = true;
+    _playingUrl = url;
+    notifyListeners();
+
+    try {
+      await _player.play();
+    } finally {
+      if (_playingUrl == url) {
+        _isPlaying = false;
+        _playingUrl = null;
+        notifyListeners();
+      }
+    }
+  }
+
+  /// 使用设备原生 TTS 播放英文文本（AVSpeechSynthesizer on iOS）
+  Future<void> playTts(String text) async {
+    final String ttsKey = 'tts_${text.hashCode}';
+
+    // 再次点击同一段文字 → 停止
+    if (_isPlaying && _playingUrl == ttsKey) {
+      await _tts.stop();
+      _isPlaying = false;
+      _playingUrl = null;
+      notifyListeners();
+      return;
+    }
+
+    // 停止其他正在播放的内容
+    await _player.stop();
+    await _tts.stop();
+
+    _isPlaying = true;
+    _playingUrl = ttsKey;
+    notifyListeners();
+
+    try {
+      await _tts.speak(text);
+    } catch (_) {
+      _isPlaying = false;
+      _playingUrl = null;
+      notifyListeners();
+    }
+  }
+
+  Future<void> playFile(String path) async {
+    if (_isPlaying && _playingUrl == path) {
+      await _player.stop();
+      _isPlaying = false;
+      _playingUrl = null;
+      notifyListeners();
+      return;
+    }
+
+    await _player.stop();
+    await _player.setFilePath(path);
+    _isPlaying = true;
+    _playingUrl = path;
+    notifyListeners();
+
+    try {
+      await _player.play();
+    } finally {
+      if (_playingUrl == path) {
+        _isPlaying = false;
+        _playingUrl = null;
+        notifyListeners();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    unawaited(_recorder.dispose());
+    unawaited(_player.dispose());
+    unawaited(_tts.stop());
+    super.dispose();
+  }
+}
+
+class AudioServiceScope extends InheritedNotifier<AudioService> {
+  const AudioServiceScope({
+    super.key,
+    required AudioService service,
+    required super.child,
+  }) : super(notifier: service);
+
+  static AudioService of(BuildContext context) {
+    final AudioServiceScope? scope =
+        context.dependOnInheritedWidgetOfExactType<AudioServiceScope>();
+    assert(scope != null, 'AudioServiceScope not found in context');
+    return scope!.notifier!;
+  }
+}

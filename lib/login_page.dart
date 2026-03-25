@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'api_client.dart';
 import 'app_models.dart';
 import 'app_session.dart';
 
@@ -31,6 +32,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _isRegister = false;
   bool _agreeTerms = false;
   bool _codeSent = false;
+  bool _isSendingCode = false;
   int _countdown = 0;
   Timer? _timer;
   String? _localErrorMessage;
@@ -102,32 +104,90 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void _sendCode() {
-    if (_phoneController.text.trim().length < 11 || _countdown > 0) {
+  Future<void> _sendCode() async {
+    final String phone = _phoneController.text.trim();
+    if (phone.length < 11 || _countdown > 0 || _isSendingCode) {
+      if (phone.length < 11) {
+        setState(() {
+          _localErrorMessage = '请输入正确的手机号';
+        });
+      }
       return;
     }
+
     setState(() {
-      _codeSent = true;
-      _countdown = 60;
+      _isSendingCode = true;
+      _localErrorMessage = null;
     });
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (Timer timer) {
-      if (_countdown <= 1) {
-        timer.cancel();
-        setState(() {
-          _countdown = 0;
-        });
+
+    try {
+      final Map<String, dynamic> res = await ApiClient.sendSmsCode(phone);
+      if (res['code'] != 0) {
+        throw Exception(res['message'] ?? '验证码发送失败');
+      }
+      if (!mounted) {
         return;
       }
       setState(() {
-        _countdown -= 1;
+        _codeSent = true;
+        _countdown = 60;
       });
+      _timer?.cancel();
+      _timer = Timer.periodic(const Duration(seconds: 1), (Timer timer) {
+        if (_countdown <= 1) {
+          timer.cancel();
+          setState(() {
+            _countdown = 0;
+          });
+          return;
+        }
+        setState(() {
+          _countdown -= 1;
+        });
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _localErrorMessage = error.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSendingCode = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _submitPhoneLogin() async {
+    final LoginSubmission submission = LoginSubmission(
+      provider: LoginProvider.phone,
+      phone: _phoneController.text,
+      code: _codeController.text,
+    );
+    final String? validationError = _validate(submission);
+    if (validationError != null) {
+      setState(() {
+        _localErrorMessage = validationError;
+      });
+      return;
+    }
+
+    setState(() {
+      _localErrorMessage = null;
     });
+
+    await AppSessionScope.of(context).signInWithCode(
+      phone: submission.phone ?? '',
+      code: submission.code ?? '',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Material(
       color: appBackground,
       child: switch (_method) {
         LoginMethod.main => _buildMainView(),
@@ -376,7 +436,9 @@ class _LoginPageState extends State<LoginPage> {
               width: 110,
               height: 54,
               child: FilledButton(
-                onPressed: widget.isLoading ? null : _sendCode,
+                onPressed: widget.isLoading || _isSendingCode
+                    ? null
+                    : _sendCode,
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFFE9F3EF),
                   foregroundColor: primaryGreen,
@@ -388,6 +450,8 @@ class _LoginPageState extends State<LoginPage> {
                 child: Text(
                   _countdown > 0
                       ? '${_countdown}s'
+                      : _isSendingCode
+                      ? '发送中...'
                       : (_codeSent ? '重新发送' : '发送验证码'),
                 ),
               ),
@@ -396,15 +460,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         const SizedBox(height: 20),
         FilledButton(
-          onPressed: widget.isLoading
-              ? null
-              : () => _submit(
-                  LoginSubmission(
-                    provider: LoginProvider.phone,
-                    phone: _phoneController.text,
-                    code: _codeController.text,
-                  ),
-                ),
+          onPressed: widget.isLoading ? null : _submitPhoneLogin,
           style: FilledButton.styleFrom(
             backgroundColor: primaryGreen,
             minimumSize: const Size.fromHeight(54),
@@ -613,9 +669,8 @@ class _MethodButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         decoration: BoxDecoration(

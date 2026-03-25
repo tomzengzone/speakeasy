@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'app_models.dart';
 import 'app_session.dart';
+import 'edit_profile_page.dart';
 import 'login_page.dart';
 import 'membership_page.dart';
+import 'notification_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -14,47 +16,14 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   bool _showMembership = false;
-  bool _notifyEnabled = true;
+  bool _reminderEnabled = NotificationService.instance.enabled;
+  TimeOfDay _reminderTime = TimeOfDay(
+    hour: NotificationService.instance.hour,
+    minute: NotificationService.instance.minute,
+  );
   bool _darkMode = false;
   bool _soundEnabled = true;
   int _activeSection = 0;
-
-  static const _weekDays = <({String label, bool active, bool today})>[
-    (label: '一', active: true, today: false),
-    (label: '二', active: true, today: false),
-    (label: '三', active: true, today: false),
-    (label: '四', active: true, today: false),
-    (label: '五', active: false, today: false),
-    (label: '六', active: true, today: false),
-    (label: '日', active: false, today: true),
-  ];
-
-  static const _learningStats = <_StatItem>[
-    _StatItem(
-      label: '学习天数',
-      value: '42',
-      color: Color(0xFF4A7244),
-      icon: Icons.calendar_month_rounded,
-    ),
-    _StatItem(
-      label: '总练习数',
-      value: '156',
-      color: Color(0xFF5A6FA8),
-      icon: Icons.mic_rounded,
-    ),
-    _StatItem(
-      label: '总时长',
-      value: '18.5h',
-      color: Color(0xFFA0622A),
-      icon: Icons.schedule_rounded,
-    ),
-    _StatItem(
-      label: '掌握句型',
-      value: '89',
-      color: Color(0xFFC8955A),
-      icon: Icons.star_rounded,
-    ),
-  ];
 
   static const _skillLevels = <_SkillLevel>[
     _SkillLevel(label: '开口能力', level: 72, color: Color(0xFF4A7C6F)),
@@ -74,7 +43,52 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final AppSession session = AppSessionScope.of(context);
+    _darkMode = session.themeMode == ThemeMode.dark;
     final bool isPro = session.isPro;
+    final List<({String label, bool active, bool today})> weekDays =
+        List<({String label, bool active, bool today})>.generate(7, (int i) {
+          const List<String> labels = <String>[
+            '一',
+            '二',
+            '三',
+            '四',
+            '五',
+            '六',
+            '日',
+          ];
+          final bool today = DateTime.now().weekday - 1 == i;
+          return (
+            label: labels[i],
+            active: session.stats.weekActivity[i],
+            today: today,
+          );
+        });
+    final List<_StatItem> learningStats = <_StatItem>[
+      _StatItem(
+        label: '学习天数',
+        value: session.stats.currentStreak.toString(),
+        color: const Color(0xFF4A7244),
+        icon: Icons.calendar_month_rounded,
+      ),
+      _StatItem(
+        label: '总练习数',
+        value: session.stats.totalSessions.toString(),
+        color: const Color(0xFF5A6FA8),
+        icon: Icons.mic_rounded,
+      ),
+      _StatItem(
+        label: '总时长',
+        value: '${(session.stats.totalMinutes / 60).toStringAsFixed(1)}h',
+        color: const Color(0xFFA0622A),
+        icon: Icons.schedule_rounded,
+      ),
+      _StatItem(
+        label: '掌握句型',
+        value: session.stats.masteredPhrases.toString(),
+        color: const Color(0xFFC8955A),
+        icon: Icons.star_rounded,
+      ),
+    ];
 
     if (!session.isLoggedIn) {
       return LoginPage(
@@ -201,6 +215,22 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                     IconButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const EditProfilePage(),
+                          ),
+                        );
+                      },
+                      style: IconButton.styleFrom(
+                        backgroundColor: const Color(0x1AFFFFFF),
+                      ),
+                      icon: const Icon(
+                        Icons.edit_outlined,
+                        color: Colors.white,
+                      ),
+                    ),
+                    IconButton(
                       onPressed: () => setState(() => _activeSection = 1),
                       style: IconButton.styleFrom(
                         backgroundColor: const Color(0x1AFFFFFF),
@@ -223,22 +253,31 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Column(
                     children: [
                       Row(
-                        children: const [
+                        children: [
                           Expanded(
-                            child: _HeaderMetric(value: '28', label: '总练习'),
+                            child: _HeaderMetric(
+                              value: session.stats.totalSessions.toString(),
+                              label: '总练习',
+                            ),
                           ),
                           Expanded(
-                            child: _HeaderMetric(value: '7', label: '连续天数'),
+                            child: _HeaderMetric(
+                              value: session.stats.currentStreak.toString(),
+                              label: '连续天数',
+                            ),
                           ),
                           Expanded(
-                            child: _HeaderMetric(value: '82', label: '最佳分数'),
+                            child: _HeaderMetric(
+                              value: session.stats.bestScore.toString(),
+                              label: '最佳分数',
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 14),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: _weekDays.map((day) {
+                        children: weekDays.map((day) {
                           final Color bg = day.today
                               ? const Color(0xFFFFF0C4)
                               : day.active
@@ -310,7 +349,7 @@ class _ProfilePageState extends State<ProfilePage> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
               children: _activeSection == 0
-                  ? _buildOverview(isPro: isPro)
+                  ? _buildOverview(isPro: isPro, learningStats: learningStats)
                   : _buildSettings(),
             ),
           ),
@@ -319,7 +358,10 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  List<Widget> _buildOverview({required bool isPro}) {
+  List<Widget> _buildOverview({
+    required bool isPro,
+    required List<_StatItem> learningStats,
+  }) {
     return <Widget>[
       _SectionLabel(title: '学习概览'),
       GridView.count(
@@ -329,7 +371,7 @@ class _ProfilePageState extends State<ProfilePage> {
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
         childAspectRatio: 1.45,
-        children: _learningStats.map((item) => _StatCard(item: item)).toList(),
+        children: learningStats.map((item) => _StatCard(item: item)).toList(),
       ),
       const SizedBox(height: 20),
       _SectionLabel(title: '能力分布'),
@@ -529,20 +571,61 @@ class _ProfilePageState extends State<ProfilePage> {
           _MenuTile(
             icon: Icons.notifications_none_rounded,
             color: const Color(0xFF4A7244),
-            label: '学习提醒',
-            trailing: Switch(
-              value: _notifyEnabled,
-              onChanged: (bool value) => setState(() => _notifyEnabled = value),
+            label: '每日提醒',
+            trailing: Switch.adaptive(
+              value: _reminderEnabled,
               activeThumbColor: primaryGreen,
+              onChanged: (bool value) async {
+                await NotificationService.instance.setEnabled(value: value);
+                if (!mounted) {
+                  return;
+                }
+                setState(() => _reminderEnabled = value);
+              },
             ),
           ),
+          if (_reminderEnabled)
+            _MenuTile(
+              icon: Icons.access_time_rounded,
+              color: const Color(0xFF4A7244),
+              label:
+                  '提醒时间  ${_reminderTime.hour.toString().padLeft(2, '0')}:${_reminderTime.minute.toString().padLeft(2, '0')}',
+              trailing: const Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: textSecondary,
+              ),
+              onTap: () async {
+                final TimeOfDay? picked = await showTimePicker(
+                  context: context,
+                  initialTime: _reminderTime,
+                );
+                if (picked == null) {
+                  return;
+                }
+                await NotificationService.instance.setTime(
+                  hour: picked.hour,
+                  minute: picked.minute,
+                );
+                if (!mounted) {
+                  return;
+                }
+                setState(() => _reminderTime = picked);
+              },
+            ),
           _MenuTile(
             icon: Icons.dark_mode_outlined,
             color: const Color(0xFF7B4EA0),
             label: '深色模式',
             trailing: Switch(
               value: _darkMode,
-              onChanged: (bool value) => setState(() => _darkMode = value),
+              onChanged: (bool value) async {
+                final AppSession session = AppSessionScope.of(context);
+                await session.setThemeMode(
+                  value ? ThemeMode.dark : ThemeMode.light,
+                );
+                setState(() => _darkMode = value);
+              },
               activeThumbColor: primaryGreen,
             ),
           ),

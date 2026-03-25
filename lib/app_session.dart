@@ -1,4 +1,13 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'ai_repository.dart';
+import 'api_client.dart';
+import 'app_models.dart';
 
 const List<String> defaultAvatarUrls = <String>[
   'https://images.unsplash.com/photo-1725887150031-d353e5c4ce3a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=160',
@@ -10,6 +19,76 @@ const List<String> defaultAvatarUrls = <String>[
 ];
 
 enum LoginProvider { wechat, apple, phone, email }
+
+class SceneHistoryTurn {
+  const SceneHistoryTurn({required this.role, required this.text});
+
+  final String role;
+  final String text;
+}
+
+class SceneReply {
+  const SceneReply({
+    required this.npcText,
+    this.coachHint,
+    this.eventLabel,
+    this.eventColor,
+    this.mood,
+  });
+
+  final String npcText;
+  final String? coachHint;
+  final String? eventLabel;
+  final Color? eventColor;
+  final String? mood;
+}
+
+class PronunciationScore {
+  const PronunciationScore({
+    required this.overall,
+    this.accuracy,
+    this.fluency,
+    this.completeness,
+  });
+
+  /// 0–100 overall score
+  final int overall;
+  final int? accuracy;
+  final int? fluency;
+  final int? completeness;
+}
+
+class SceneFeedbackMetric {
+  const SceneFeedbackMetric({
+    required this.label,
+    required this.score,
+    required this.color,
+  });
+
+  final String label;
+  final int score;
+  final Color color;
+}
+
+class SceneFeedback {
+  const SceneFeedback({
+    required this.overallScore,
+    required this.headline,
+    required this.summary,
+    required this.metrics,
+    required this.coachTip,
+    required this.improvements,
+  });
+
+  final int overallScore;
+  final String headline;
+  final String summary;
+  final List<SceneFeedbackMetric> metrics;
+  final String coachTip;
+
+  /// Each item: (emoji, title, detail)
+  final List<(String, String, String)> improvements;
+}
 
 class LoginSubmission {
   const LoginSubmission({
@@ -36,17 +115,100 @@ class AppUser {
     required this.nickname,
     required this.avatarUrl,
     required this.memberPlan,
+    this.onboardingDone = false,
   });
 
   final String nickname;
   final String avatarUrl;
   final String memberPlan;
+  final bool onboardingDone;
 
-  AppUser copyWith({String? nickname, String? avatarUrl, String? memberPlan}) {
+  factory AppUser.fromJson(Map<String, dynamic> json) {
+    return AppUser(
+      nickname: (json['nickname'] as String?)?.trim().isNotEmpty == true
+          ? (json['nickname'] as String).trim()
+          : '用户',
+      avatarUrl:
+          (json['avatarUrl'] as String?) ?? (json['avatar'] as String?) ?? '',
+      memberPlan:
+          (json['memberPlan'] as String?) ??
+          (json['plan'] as String?) ??
+          'free',
+      onboardingDone: json['onboardingDone'] as bool? ?? false,
+    );
+  }
+
+  AppUser copyWith({
+    String? nickname,
+    String? avatarUrl,
+    String? memberPlan,
+    bool? onboardingDone,
+  }) {
     return AppUser(
       nickname: nickname ?? this.nickname,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       memberPlan: memberPlan ?? this.memberPlan,
+      onboardingDone: onboardingDone ?? this.onboardingDone,
+    );
+  }
+}
+
+class LearningStats {
+  const LearningStats({
+    this.totalSessions = 0,
+    this.currentStreak = 0,
+    this.bestScore = 0,
+    this.totalMinutes = 0,
+    this.masteredPhrases = 0,
+    this.weekActivity = const [false, false, false, false, false, false, false],
+  });
+
+  final int totalSessions;
+  final int currentStreak;
+  final int bestScore;
+  final int totalMinutes;
+  final int masteredPhrases;
+  final List<bool> weekActivity;
+
+  LearningStats copyWith({
+    int? totalSessions,
+    int? currentStreak,
+    int? bestScore,
+    int? totalMinutes,
+    int? masteredPhrases,
+    List<bool>? weekActivity,
+  }) {
+    return LearningStats(
+      totalSessions: totalSessions ?? this.totalSessions,
+      currentStreak: currentStreak ?? this.currentStreak,
+      bestScore: bestScore ?? this.bestScore,
+      totalMinutes: totalMinutes ?? this.totalMinutes,
+      masteredPhrases: masteredPhrases ?? this.masteredPhrases,
+      weekActivity: weekActivity ?? this.weekActivity,
+    );
+  }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'totalSessions': totalSessions,
+    'currentStreak': currentStreak,
+    'bestScore': bestScore,
+    'totalMinutes': totalMinutes,
+    'masteredPhrases': masteredPhrases,
+    'weekActivity': weekActivity,
+  };
+
+  factory LearningStats.fromJson(Map<String, dynamic> json) {
+    return LearningStats(
+      totalSessions: (json['totalSessions'] as int?) ?? 0,
+      currentStreak: (json['currentStreak'] as int?) ?? 0,
+      bestScore: (json['bestScore'] as int?) ?? 0,
+      totalMinutes: (json['totalMinutes'] as int?) ?? 0,
+      masteredPhrases: (json['masteredPhrases'] as int?) ?? 0,
+      weekActivity:
+          (json['weekActivity'] as List<dynamic>?)
+              ?.map((dynamic e) => e as bool)
+              .toList() ??
+          List<bool>.filled(7, false),
     );
   }
 }
@@ -58,9 +220,28 @@ abstract class AppRepository {
     required AppUser user,
     required String planId,
   });
+
+  Future<SceneReply> sendSceneMessage({
+    required String sessionId,
+    required String userText,
+    required SceneDraft draft,
+    required List<SceneHistoryTurn> history,
+  });
+
+  Future<PronunciationScore> scorePronunciation({
+    required String audioPath,
+    required String expectedText,
+  });
+
+  Future<SceneFeedback> generateSceneFeedback({
+    required SceneDraft draft,
+    required List<SceneHistoryTurn> history,
+  });
 }
 
 class DemoAppRepository implements AppRepository {
+  const DemoAppRepository();
+
   static const Set<String> _validPlans = <String>{
     'free',
     'monthly',
@@ -103,6 +284,111 @@ class DemoAppRepository implements AppRepository {
     return user.copyWith(memberPlan: planId);
   }
 
+  @override
+  Future<SceneReply> sendSceneMessage({
+    required String sessionId,
+    required String userText,
+    required SceneDraft draft,
+    required List<SceneHistoryTurn> history,
+  }) async {
+    if (sessionId.isNotEmpty) {
+      try {
+        final String reply = await ApiClient.sendMessage(sessionId, userText);
+        if (reply.trim().isNotEmpty) {
+          return SceneReply(npcText: reply.trim());
+        }
+      } catch (_) {
+        // Fall back to the local demo response below.
+      }
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    final int round = history.where((t) => t.role == 'user').length;
+    const List<String> npcReplies = <String>[
+      'Understood. Be specific about the recovery plan and give me one concrete milestone.',
+      'That is clearer. Now tell me what you will say if the client asks who is accountable.',
+      'Better. I still need a date, an owner, and the message you will send after this call.',
+    ];
+    const List<String> coachHints = <String>['不要过度解释', '直接给时间点', '先稳住，再给动作'];
+    const List<(String, Color)> events = <(String, Color)>[
+      ('对方要求直接回答', Color(0xFF8BA8E0)),
+      ('对方继续追问责任归属', Color(0xFFE8855A)),
+      ('对话节奏正在变快', Color(0xFF7ACFBD)),
+    ];
+    if (round.isEven) {
+      final (String label, Color color) = events[round % events.length];
+      return SceneReply(
+        npcText: npcReplies[round % npcReplies.length],
+        eventLabel: label,
+        eventColor: color,
+        mood: round.isEven ? '变得不耐烦' : '等待你的直接回答',
+      );
+    } else {
+      return SceneReply(
+        npcText: npcReplies[round % npcReplies.length],
+        coachHint: coachHints[round % coachHints.length],
+        mood: '等待你的直接回答',
+      );
+    }
+  }
+
+  @override
+  Future<PronunciationScore> scorePronunciation({
+    required String audioPath,
+    required String expectedText,
+  }) async {
+    try {
+      final Map<String, dynamic> score = await ApiClient.scoreAudio(
+        File(audioPath),
+        expectedText,
+      );
+      return PronunciationScore(
+        overall: (score['overall'] as num?)?.toInt() ?? 0,
+        accuracy: (score['accuracy'] as num?)?.toInt(),
+        fluency: (score['fluency'] as num?)?.toInt(),
+        completeness: (score['completeness'] as num?)?.toInt(),
+      );
+    } catch (_) {
+      // Keep the demo scoring fallback when the backend is unavailable.
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    final int base = 68 + (expectedText.length % 28);
+    return PronunciationScore(
+      overall: base,
+      accuracy: base + 4 > 100 ? 100 : base + 4,
+      fluency: base - 6 < 0 ? 0 : base - 6,
+      completeness: base + 2 > 100 ? 100 : base + 2,
+    );
+  }
+
+  @override
+  Future<SceneFeedback> generateSceneFeedback({
+    required SceneDraft draft,
+    required List<SceneHistoryTurn> history,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 800));
+    final int rounds = history.where((t) => t.role == 'user').length;
+    final int overall = (62 + rounds * 4).clamp(62, 95);
+    return SceneFeedback(
+      overallScore: overall,
+      headline: rounds >= 4 ? '核心任务完成，细节还可以打磨 ✨' : '已经开了个好头，继续练习会更流畅 💪',
+      summary:
+          '你完成了 $rounds 轮对话，整体表达清楚。在 ${draft.npcName} 的追问下保持了基本节奏，继续多练高压场景会更稳。',
+      metrics: const <SceneFeedbackMetric>[
+        SceneFeedbackMetric(label: '清晰度', score: 85, color: Color(0xFF4A7C6F)),
+        SceneFeedbackMetric(label: '结构感', score: 78, color: Color(0xFF5A6FA8)),
+        SceneFeedbackMetric(label: '临场应对', score: 72, color: Color(0xFFA0622A)),
+      ],
+      coachTip: '下一轮把恢复方案提前说出来，再补一句具体时间点，表达会更像真实职场风格。',
+      improvements: const <(String, String, String)>[
+        ('🎯', '先说补救动作', '先解释原因容易让对方觉得在推卸责任，把行动方案放在句子开头压力会明显下降。'),
+        ('🧭', '给出具体时间点', '模糊的"稍后""很快"远不如"今晚 6 点前"有说服力，时间承诺让对方更有安全感。'),
+        ('🗣️', '减少解释腔', '连续使用 because 会显得在辩解，拆成两句先担责再给方案会更自然。'),
+      ],
+    );
+  }
+
   String _phoneNickname(String? phone) {
     final String value = (phone ?? '').trim();
     if (value.length < 4) {
@@ -125,36 +411,104 @@ class DemoAppRepository implements AppRepository {
   }
 }
 
+AppRepository _defaultRepository() {
+  // 优先使用后端 API（ApiClient），OpenAI key 为空时后端直接处理 AI
+  // 只有在明确传入 OPENAI_API_KEY 时才走 OpenAI 直连
+  const String key = String.fromEnvironment('OPENAI_API_KEY');
+  return OpenAiAppRepository(apiKey: key);
+}
+
 class AppSession extends ChangeNotifier {
   AppSession({AppRepository? repository})
-    : _repository = repository ?? DemoAppRepository();
+    : _repository = repository ?? _defaultRepository() {
+    Future.microtask(_loadFromPrefs);
+    Future.microtask(_loadStatsFromPrefs);
+    Future.microtask(_hydrateFromBackend);
+  }
 
   final AppRepository _repository;
 
   AppUser? _user;
+  LearningStats _stats = const LearningStats();
+  bool _onboardingDone = false;
+  ThemeMode _themeMode = ThemeMode.light;
   bool _isAuthenticating = false;
   bool _isUpdatingMembership = false;
   String? _authErrorMessage;
   String? _membershipErrorMessage;
 
   bool get isLoggedIn => _user != null;
+  bool get onboardingDone => _onboardingDone;
   bool get isAuthenticating => _isAuthenticating;
   bool get isUpdatingMembership => _isUpdatingMembership;
   String? get authErrorMessage => _authErrorMessage;
   String? get membershipErrorMessage => _membershipErrorMessage;
+  LearningStats get stats => _stats;
+  ThemeMode get themeMode => _themeMode;
 
   String get nickname => _user?.nickname ?? '学习者';
-  String get avatarUrl => _user?.avatarUrl ?? defaultAvatarUrls.first;
+  String get avatarUrl {
+    final String value = _user?.avatarUrl ?? '';
+    return value.isEmpty ? defaultAvatarUrls.first : value;
+  }
+
   String get memberPlan => _user?.memberPlan ?? 'free';
   bool get isPro => memberPlan != 'free';
 
   Future<void> signIn(LoginSubmission submission) async {
+    if (submission.provider == LoginProvider.phone) {
+      await signInWithCode(
+        phone: submission.phone ?? '',
+        code: submission.code ?? '',
+      );
+      return;
+    }
+
     _isAuthenticating = true;
     _authErrorMessage = null;
     notifyListeners();
 
     try {
       _user = await _repository.signIn(submission);
+      unawaited(_saveToPrefs());
+    } catch (error) {
+      _authErrorMessage = _messageFromError(error, fallback: '登录失败，请稍后重试');
+    } finally {
+      _isAuthenticating = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> signInWithCode({
+    required String phone,
+    required String code,
+  }) async {
+    _isAuthenticating = true;
+    _authErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final Map<String, dynamic> res = await ApiClient.verifySmsCode(
+        phone.trim(),
+        code.trim(),
+      );
+      if (res['code'] != 0) {
+        throw Exception(res['message'] ?? '登录失败');
+      }
+
+      final Map<String, dynamic> data = _asMap(res['data']);
+      final String token = (data['token'] as String?) ?? '';
+      if (token.isEmpty) {
+        throw Exception('登录凭证无效');
+      }
+
+      await ApiClient.saveToken(token);
+      _applyUserJson(_asMap(data['user']));
+      unawaited(_saveToPrefs());
+      try {
+        await _refreshStats(notify: false);
+        unawaited(_saveStatsToPrefs());
+      } catch (_) {}
     } catch (error) {
       _authErrorMessage = _messageFromError(error, fallback: '登录失败，请稍后重试');
     } finally {
@@ -180,6 +534,7 @@ class AppSession extends ChangeNotifier {
         user: currentUser,
         planId: planId,
       );
+      unawaited(_saveToPrefs());
     } catch (error) {
       _membershipErrorMessage = _messageFromError(
         error,
@@ -191,6 +546,37 @@ class AppSession extends ChangeNotifier {
     }
   }
 
+  Future<SceneReply> sendSceneMessage({
+    required String sessionId,
+    required String userText,
+    required SceneDraft draft,
+    required List<SceneHistoryTurn> history,
+  }) {
+    return _repository.sendSceneMessage(
+      sessionId: sessionId,
+      userText: userText,
+      draft: draft,
+      history: history,
+    );
+  }
+
+  Future<PronunciationScore> scorePronunciation({
+    required String audioPath,
+    required String expectedText,
+  }) {
+    return _repository.scorePronunciation(
+      audioPath: audioPath,
+      expectedText: expectedText,
+    );
+  }
+
+  Future<SceneFeedback> generateSceneFeedback({
+    required SceneDraft draft,
+    required List<SceneHistoryTurn> history,
+  }) {
+    return _repository.generateSceneFeedback(draft: draft, history: history);
+  }
+
   void updateAvatar(String avatarUrl) {
     final AppUser? currentUser = _user;
     if (currentUser == null || currentUser.avatarUrl == avatarUrl) {
@@ -198,13 +584,276 @@ class AppSession extends ChangeNotifier {
     }
     _user = currentUser.copyWith(avatarUrl: avatarUrl);
     notifyListeners();
+    unawaited(_saveToPrefs());
   }
 
-  void logout() {
+  Future<void> recordPracticeSession({
+    required int durationSeconds,
+    required int score,
+  }) async {
+    final DateTime now = DateTime.now();
+    final int todayIndex = now.weekday - 1;
+    final List<bool> newActivity = List<bool>.from(_stats.weekActivity);
+    newActivity[todayIndex] = true;
+    _stats = _stats.copyWith(
+      totalSessions: _stats.totalSessions + 1,
+      bestScore: score > _stats.bestScore ? score : _stats.bestScore,
+      totalMinutes: _stats.totalMinutes + (durationSeconds ~/ 60),
+      weekActivity: newActivity,
+    );
+    notifyListeners();
+    await _saveStatsToPrefs();
+    unawaited(
+      _recordRemoteSession(durationSeconds: durationSeconds, score: score),
+    );
+  }
+
+  Future<void> completeOnboarding({
+    required List<String> goals,
+    required int level,
+    required int dailyMinutes,
+  }) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    _onboardingDone = true;
+    _user = _user?.copyWith(onboardingDone: true);
+    await prefs.setString('user_goals', goals.join(','));
+    await prefs.setInt('user_level', level);
+    await prefs.setInt('daily_goal_minutes', dailyMinutes);
+    await prefs.setBool('onboarding_done', true);
+    notifyListeners();
+    unawaited(
+      _syncUserPatch(<String, dynamic>{
+        'onboardingDone': true,
+        'goals': goals,
+        'level': level,
+        'dailyMinutes': dailyMinutes,
+      }),
+    );
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    _themeMode = mode;
+    notifyListeners();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('theme_mode', mode.name);
+    unawaited(
+      _syncUserPatch(<String, dynamic>{
+        'themeMode': switch (mode) {
+          ThemeMode.dark => 'dark',
+          ThemeMode.light => 'light',
+          ThemeMode.system => 'system',
+        },
+      }),
+    );
+  }
+
+  Future<void> updateProfile({
+    required String nickname,
+    required String avatarUrl,
+  }) async {
+    final String trimmed = nickname.trim();
+    if (trimmed.isEmpty) return;
+    _user = _user?.copyWith(nickname: trimmed, avatarUrl: avatarUrl);
+    notifyListeners();
+    unawaited(_saveToPrefs());
+    unawaited(_syncUserPatch(<String, dynamic>{'nickname': trimmed}));
+  }
+
+  Future<void> logout() async {
     _user = null;
+    _stats = const LearningStats();
+    _onboardingDone = false;
+    _themeMode = ThemeMode.light;
     _authErrorMessage = null;
     _membershipErrorMessage = null;
     notifyListeners();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('learning_stats');
+    await prefs.remove('user_nickname');
+    await prefs.remove('user_avatar_url');
+    await prefs.remove('user_member_plan');
+    await prefs.remove('user_goals');
+    await prefs.remove('user_level');
+    await prefs.remove('daily_goal_minutes');
+    await prefs.remove('onboarding_done');
+    await prefs.remove('theme_mode');
+    await ApiClient.clearToken();
+  }
+
+  Future<void> _saveToPrefs() async {
+    final AppUser? user = _user;
+    if (user == null) return;
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_nickname', user.nickname);
+    await prefs.setString('user_avatar_url', user.avatarUrl);
+    await prefs.setString('user_member_plan', user.memberPlan);
+    await prefs.setBool('onboarding_done', user.onboardingDone);
+  }
+
+  Future<void> _saveStatsToPrefs() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('learning_stats', jsonEncode(_stats.toJson()));
+  }
+
+  Future<void> _loadFromPrefs() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    // 只有存在 JWT token 时才恢复用户，避免"假登录"状态导致 API 401
+    final String? token = prefs.getString('auth_token');
+    if (token != null && token.isNotEmpty) {
+      final String nickname = (prefs.getString('user_nickname') ?? '').trim();
+      if (nickname.isNotEmpty) {
+        _user = AppUser(
+          nickname: nickname,
+          avatarUrl:
+              prefs.getString('user_avatar_url') ?? defaultAvatarUrls.first,
+          memberPlan: prefs.getString('user_member_plan') ?? 'free',
+          onboardingDone: prefs.getBool('onboarding_done') ?? false,
+        );
+      }
+    }
+    _onboardingDone = prefs.getBool('onboarding_done') ?? false;
+    final String? themeName = prefs.getString('theme_mode');
+    if (themeName != null) {
+      _themeMode = ThemeMode.values.firstWhere(
+        (ThemeMode m) => m.name == themeName,
+        orElse: () => ThemeMode.light,
+      );
+    }
+    notifyListeners();
+  }
+
+  Future<void> _loadStatsFromPrefs() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? raw = prefs.getString('learning_stats');
+    if (raw != null) {
+      try {
+        _stats = LearningStats.fromJson(
+          jsonDecode(raw) as Map<String, dynamic>,
+        );
+        notifyListeners();
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _hydrateFromBackend() async {
+    final String? token = await ApiClient.getToken();
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
+    try {
+      final Map<String, dynamic> refreshRes = await ApiClient.refreshToken();
+      if (refreshRes['code'] == 0) {
+        final Map<String, dynamic> data = _asMap(refreshRes['data']);
+        final String refreshedToken = (data['token'] as String?) ?? '';
+        if (refreshedToken.isNotEmpty) {
+          await ApiClient.saveToken(refreshedToken);
+        }
+        _applyUserJson(_asMap(data['user']));
+      } else {
+        final Map<String, dynamic> meRes = await ApiClient.getMe();
+        if (meRes['code'] != 0) {
+          throw Exception(meRes['message'] ?? refreshRes['message']);
+        }
+        _applyUserJson(_asMap(meRes['data']));
+      }
+      notifyListeners();
+      unawaited(_saveToPrefs());
+      try {
+        await _refreshStats(notify: false);
+        unawaited(_saveStatsToPrefs());
+      } catch (_) {}
+      notifyListeners();
+    } catch (_) {
+      // Keep the local cache when the backend is temporarily unavailable.
+    }
+  }
+
+  Future<void> _refreshStats({bool notify = true}) async {
+    final Map<String, dynamic> res = await ApiClient.getStats();
+    if (res['code'] != 0) {
+      throw Exception(res['message'] ?? '获取学习统计失败');
+    }
+    _stats = LearningStats.fromJson(_asMap(res['data']));
+    if (notify) {
+      notifyListeners();
+    }
+  }
+
+  Future<void> _recordRemoteSession({
+    required int durationSeconds,
+    required int score,
+  }) async {
+    final String? token = await ApiClient.getToken();
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
+    try {
+      await ApiClient.recordSession(
+        durationSeconds: durationSeconds,
+        score: score,
+      );
+      await _refreshStats();
+      unawaited(_saveStatsToPrefs());
+    } catch (_) {}
+  }
+
+  Future<void> _syncUserPatch(Map<String, dynamic> patch) async {
+    if (patch.isEmpty) {
+      return;
+    }
+
+    final String? token = await ApiClient.getToken();
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
+    try {
+      final Map<String, dynamic> res = await ApiClient.updateMe(patch);
+      if (res['code'] == 0 && res['data'] != null) {
+        final Map<String, dynamic> data = _asMap(res['data']);
+        if (data.isNotEmpty) {
+          _applyUserJson(data);
+          notifyListeners();
+          unawaited(_saveToPrefs());
+        }
+      }
+    } catch (_) {}
+  }
+
+  void _applyUserJson(Map<String, dynamic> json) {
+    final AppUser remoteUser = AppUser.fromJson(json);
+    final AppUser? currentUser = _user;
+    _user = remoteUser.copyWith(
+      avatarUrl: remoteUser.avatarUrl.isEmpty
+          ? (currentUser?.avatarUrl ?? '')
+          : remoteUser.avatarUrl,
+    );
+    _onboardingDone = _user!.onboardingDone;
+    final String? themeMode = json['themeMode'] as String?;
+    if (themeMode != null && themeMode.isNotEmpty) {
+      _themeMode = _themeModeFromName(themeMode);
+    }
+  }
+
+  ThemeMode _themeModeFromName(String name) {
+    return switch (name) {
+      'dark' => ThemeMode.dark,
+      'light' => ThemeMode.light,
+      'system' => ThemeMode.system,
+      _ => ThemeMode.light,
+    };
+  }
+
+  Map<String, dynamic> _asMap(Object? value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    if (value is Map) {
+      return value.cast<String, dynamic>();
+    }
+    return <String, dynamic>{};
   }
 
   String _messageFromError(Object error, {required String fallback}) {

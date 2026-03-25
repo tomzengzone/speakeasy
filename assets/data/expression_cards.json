@@ -1,0 +1,90 @@
+[
+  {
+    "category": "不会开口",
+    "title": "自然地说出第一句",
+    "pattern": "Mind if I join you? I'm ___.",
+    "image": "https://images.unsplash.com/photo-1678345201361-f070f85b62a5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
+    "learnerCount": "47.4w",
+    "difficultyLevel": 1,
+    "progress": ["idle", "locked", "locked", "locked"],
+    "thumbHeight": 140.0,
+    "colorHex": "FF4A7C6F"
+  },
+  {
+    "category": "不会开口",
+    "title": "和陌生人搭话",
+    "pattern": "I couldn't help but notice — ___.",
+    "image": "https://images.unsplash.com/photo-1770565280770-57448f53f8dc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
+    "learnerCount": "32.1w",
+    "difficultyLevel": 2,
+    "progress": ["done", "current", "locked", "locked"],
+    "thumbHeight": 115.0,
+    "colorHex": "FF4A7C6F"
+  },
+  {
+    "category": "不会开口",
+    "title": "在第一次见面时开口",
+    "pattern": "I don't think we've met. I'm ___.",
+    "image": "https://images.unsplash.com/photo-1763739530672-4aadafbd81ff?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
+    "learnerCount": "18.5w",
+    "difficultyLevel": 2,
+    "progress": ["done", "done", "current", "locked"],
+    "thumbHeight": 155.0,
+    "colorHex": "FF4A7C6F"
+  },
+  {
+    "category": "不会表达",
+    "title": "表达自己的看法",
+    "pattern": "Honestly, I feel like ___.",
+    "image": "https://images.unsplash.com/photo-1766867257943-0665537fb2dd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
+    "learnerCount": "25.0w",
+    "difficultyLevel": 2,
+    "progress": ["done", "current", "locked", "locked"],
+    "thumbHeight": 145.0,
+    "colorHex": "FF5A6FA8"
+  },
+  {
+    "category": "不会表达",
+    "title": "说出你想要什么",
+    "pattern": "What I mean is ___.",
+    "image": "https://images.unsplash.com/photo-1690192435015-319c1d5065b2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
+    "learnerCount": "15.7w",
+    "difficultyLevel": 3,
+    "progress": ["done", "done", "current", "locked"],
+    "thumbHeight": 130.0,
+    "colorHex": "FF5A6FA8"
+  },
+  {
+    "category": "说不下去",
+    "title": "把一句话说完整",
+    "pattern": "And the reason is ___.",
+    "image": "https://images.unsplash.com/photo-1714942179079-4fddb552d41d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
+    "learnerCount": "22.4w",
+    "difficultyLevel": 1,
+    "progress": ["idle", "locked", "locked", "locked"],
+    "thumbHeight": 140.0,
+    "colorHex": "FFA0622A"
+  },
+  {
+    "category": "一慌就乱",
+    "title": "没听清时请对方再说一遍",
+    "pattern": "Could you say that again? I want to make sure I got it.",
+    "image": "https://images.unsplash.com/photo-1689857659236-157790e6d4c2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
+    "learnerCount": "35.0w",
+    "difficultyLevel": 2,
+    "progress": ["done", "current", "locked", "locked"],
+    "thumbHeight": 155.0,
+    "colorHex": "FF7B4EA0"
+  },
+  {
+    "category": "说得更好",
+    "title": "礼貌地拒绝别人",
+    "pattern": "I really appreciate it — though ___.",
+    "image": "https://images.unsplash.com/photo-1645753573116-0b515ae0b7ea?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600",
+    "learnerCount": "41.2w",
+    "difficultyLevel": 2,
+    "progress": ["done", "done", "current", "locked"],
+    "thumbHeight": 145.0,
+    "colorHex": "FF3D7FA8"
+  }
+]

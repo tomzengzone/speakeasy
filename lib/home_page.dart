@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'api_client.dart';
 import 'app_models.dart';
 import 'app_session.dart';
 import 'learning_page.dart';
@@ -23,9 +26,10 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
   int _activeDifficultyIndex = 0;
   bool _showSceneBottomBar = true;
 
-  final Set<int> _savedIds = <int>{};
-  final Set<int> _dismissedIds = <int>{};
-  final Set<int> _completedIds = <int>{};
+  Set<int> _savedIds = <int>{};
+  Set<int> _dismissedIds = <int>{};
+  Set<int> _completedIds = <int>{};
+  List<ExpressionCardData> _allCards = expressionCards;
 
   ExpressionCardData? _activeLessonCard;
   bool _showLessonIntro = false;
@@ -34,16 +38,98 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _loadSavedState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadCards());
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
+  Future<void> _loadSavedState() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final Set<int> savedIds = _parseIds(prefs.getString('saved_ids') ?? '');
+    final Set<int> dismissedIds = _parseIds(
+      prefs.getString('dismissed_ids') ?? '',
+    );
+    final Set<int> completedIds = _parseIds(
+      prefs.getString('completed_ids') ?? '',
+    );
+    if (!mounted) return;
+    setState(() {
+      _savedIds
+        ..clear()
+        ..addAll(savedIds);
+      _dismissedIds
+        ..clear()
+        ..addAll(dismissedIds);
+      _completedIds
+        ..clear()
+        ..addAll(completedIds);
+    });
+  }
+
+  Future<void> _loadCards() async {
+    try {
+      final Map<String, dynamic> res = await ApiClient.getCards();
+      if (res['code'] != 0 || !mounted) {
+        return;
+      }
+      final List<dynamic> list = res['data'] as List<dynamic>;
+      final List<ExpressionCardData> cards = list
+          .map(
+            (dynamic e) =>
+                ExpressionCardData.fromJson(e as Map<String, dynamic>),
+          )
+          .toList();
+      final Set<int> savedIds = <int>{};
+      final Set<int> dismissedIds = <int>{};
+      final Set<int> completedIds = <int>{};
+      for (int i = 0; i < cards.length; i++) {
+        final Map<String, dynamic> cardJson = list[i] as Map<String, dynamic>;
+        if (cardJson['saved'] == true) {
+          savedIds.add(i);
+        }
+        if (cardJson['dismissed'] == true) {
+          dismissedIds.add(i);
+        }
+        if (cardJson['completed'] == true) {
+          completedIds.add(i);
+        }
+      }
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _allCards = cards;
+        _savedIds = savedIds;
+        _dismissedIds = dismissedIds;
+        _completedIds = completedIds;
+      });
+    } catch (_) {
+      // Keep the local compile-time fallback when the backend is unavailable.
+    }
+  }
+
+  Future<void> _persistState() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('saved_ids', _savedIds.join(','));
+    await prefs.setString('dismissed_ids', _dismissedIds.join(','));
+    await prefs.setString('completed_ids', _completedIds.join(','));
+  }
+
+  Set<int> _parseIds(String value) {
+    if (value.isEmpty) return <int>{};
+    return value.split(',').map(int.tryParse).whereType<int>().toSet();
+  }
+
   List<ExpressionCardData> get _learnCards {
     final String category = intents[_activeIntentIndex].label;
-    var cards = expressionCards
-        .where((card) => card.category == category)
-        .toList();
+    var cards = _allCards.where((card) => card.category == category).toList();
 
     if (_activeDifficultyIndex > 0) {
       final int level = difficultyOptions[_activeDifficultyIndex].level;
@@ -52,26 +138,22 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
 
     if (_activeSectionIndex == 2) {
       return cards
-          .where((card) => _savedIds.contains(expressionCards.indexOf(card)))
+          .where((card) => _savedIds.contains(_allCards.indexOf(card)))
           .toList();
     }
     if (_activeSectionIndex == 3) {
       return cards
-          .where(
-            (card) => _dismissedIds.contains(expressionCards.indexOf(card)),
-          )
+          .where((card) => _dismissedIds.contains(_allCards.indexOf(card)))
           .toList();
     }
     if (_activeSectionIndex == 4) {
       return cards
-          .where(
-            (card) => _completedIds.contains(expressionCards.indexOf(card)),
-          )
+          .where((card) => _completedIds.contains(_allCards.indexOf(card)))
           .toList();
     }
 
     return cards.where((card) {
-      final int index = expressionCards.indexOf(card);
+      final int index = _allCards.indexOf(card);
       return !_savedIds.contains(index) &&
           !_dismissedIds.contains(index) &&
           !_completedIds.contains(index);
@@ -83,7 +165,7 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
     if (query.isEmpty) {
       return const <ExpressionCardData>[];
     }
-    return expressionCards.where((card) {
+    return _allCards.where((card) {
       return card.title.toLowerCase().contains(query) ||
           card.pattern.toLowerCase().contains(query) ||
           card.category.toLowerCase().contains(query);
@@ -189,6 +271,27 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
                   _showLearningFlow = false;
                   _showLessonIntro = true;
                 }),
+                onComplete: () {
+                  final ExpressionCardData? card = _activeLessonCard;
+                  final int idx = card != null ? _allCards.indexOf(card) : -1;
+                  if (idx >= 0) {
+                    _completedIds.add(idx);
+                    unawaited(
+                      ApiClient.updateCardState(
+                        _cardIdFor(card!, idx),
+                        completed: true,
+                      ),
+                    );
+                  }
+                  setState(() {
+                    _showLearningFlow = false;
+                    _activeLessonCard = null;
+                  });
+                  _persistState();
+                  AppSessionScope.of(
+                    context,
+                  ).recordPracticeSession(durationSeconds: 300, score: 80);
+                },
               ),
             ),
           if (_searchExpanded) Positioned.fill(child: _buildSearchOverlay()),
@@ -396,9 +499,40 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
             children: [
               _CardMasonry(
                 cards: _learnCards,
+                allCards: _allCards,
                 onTapCard: _openLesson,
                 emptyEmoji: _emptyEmoji,
                 emptyText: _emptyText,
+                savedIds: _savedIds,
+                onSaveCard: (ExpressionCardData card) {
+                  final int idx = _allCards.indexOf(card);
+                  final bool shouldSave = !_savedIds.contains(idx);
+                  setState(() {
+                    if (shouldSave) {
+                      _savedIds.add(idx);
+                    } else {
+                      _savedIds.remove(idx);
+                    }
+                  });
+                  unawaited(
+                    ApiClient.updateCardState(
+                      _cardIdFor(card, idx),
+                      saved: shouldSave,
+                    ),
+                  );
+                  _persistState();
+                },
+                onDismissCard: (ExpressionCardData card) {
+                  final int idx = _allCards.indexOf(card);
+                  setState(() => _dismissedIds.add(idx));
+                  unawaited(
+                    ApiClient.updateCardState(
+                      _cardIdFor(card, idx),
+                      dismissed: true,
+                    ),
+                  );
+                  _persistState();
+                },
               ),
             ],
           ),
@@ -523,6 +657,7 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
                   ),
                   _CardMasonry(
                     cards: _searchCards,
+                    allCards: _allCards,
                     onTapCard: (ExpressionCardData card) {
                       setState(() {
                         _searchExpanded = false;
@@ -559,6 +694,14 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
       return '暂无「${difficultyOptions[_activeDifficultyIndex].label}」难度卡片';
     }
     return '暂无卡片';
+  }
+
+  String _cardIdFor(ExpressionCardData card, int index) {
+    final String? remoteId = card.id;
+    if (remoteId != null && remoteId.isNotEmpty) {
+      return remoteId;
+    }
+    return 'card_${(index + 1).toString().padLeft(3, '0')}';
   }
 }
 
@@ -962,13 +1105,21 @@ class _IntentTab extends StatelessWidget {
 class _CardMasonry extends StatelessWidget {
   const _CardMasonry({
     required this.cards,
+    required this.allCards,
     required this.onTapCard,
     required this.emptyEmoji,
     required this.emptyText,
+    this.onSaveCard,
+    this.onDismissCard,
+    this.savedIds,
   });
 
   final List<ExpressionCardData> cards;
+  final List<ExpressionCardData> allCards;
   final ValueChanged<ExpressionCardData> onTapCard;
+  final ValueChanged<ExpressionCardData>? onSaveCard;
+  final ValueChanged<ExpressionCardData>? onDismissCard;
+  final Set<int>? savedIds;
   final String emptyEmoji;
   final String emptyText;
 
@@ -1012,7 +1163,14 @@ class _CardMasonry extends StatelessWidget {
                 .map(
                   (ExpressionCardData card) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: _ExpressionCard(card: card, onTap: onTapCard),
+                    child: _ExpressionCard(
+                      card: card,
+                      onTap: onTapCard,
+                      onSave: onSaveCard,
+                      onDismiss: onDismissCard,
+                      isSaved:
+                          savedIds?.contains(allCards.indexOf(card)) ?? false,
+                    ),
                   ),
                 )
                 .toList(),
@@ -1025,7 +1183,14 @@ class _CardMasonry extends StatelessWidget {
                 .map(
                   (ExpressionCardData card) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: _ExpressionCard(card: card, onTap: onTapCard),
+                    child: _ExpressionCard(
+                      card: card,
+                      onTap: onTapCard,
+                      onSave: onSaveCard,
+                      onDismiss: onDismissCard,
+                      isSaved:
+                          savedIds?.contains(allCards.indexOf(card)) ?? false,
+                    ),
                   ),
                 )
                 .toList(),
@@ -1037,10 +1202,19 @@ class _CardMasonry extends StatelessWidget {
 }
 
 class _ExpressionCard extends StatelessWidget {
-  const _ExpressionCard({required this.card, required this.onTap});
+  const _ExpressionCard({
+    required this.card,
+    required this.onTap,
+    this.onSave,
+    this.onDismiss,
+    this.isSaved = false,
+  });
 
   final ExpressionCardData card;
   final ValueChanged<ExpressionCardData> onTap;
+  final ValueChanged<ExpressionCardData>? onSave;
+  final ValueChanged<ExpressionCardData>? onDismiss;
+  final bool isSaved;
 
   @override
   Widget build(BuildContext context) {
@@ -1219,13 +1393,37 @@ class _ExpressionCard extends StatelessWidget {
                         color: Color(0xFFFF8A20),
                       ),
                       const SizedBox(width: 3),
-                      Text(
-                        '${card.learnerCount} 人学习',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: textSecondary,
+                      Expanded(
+                        child: Text(
+                          '${card.learnerCount} 人学习',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: textSecondary,
+                          ),
                         ),
                       ),
+                      if (onDismiss != null)
+                        GestureDetector(
+                          onTap: () => onDismiss!(card),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            size: 14,
+                            color: textTertiary,
+                          ),
+                        ),
+                      if (onSave != null) ...[
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => onSave!(card),
+                          child: Icon(
+                            isSaved
+                                ? Icons.bookmark_rounded
+                                : Icons.bookmark_border_rounded,
+                            size: 14,
+                            color: isSaved ? card.color : textTertiary,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ],
