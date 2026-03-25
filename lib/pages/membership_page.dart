@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'app_models.dart';
-import 'config/payment_config.dart';
-import 'l10n/l10n.dart';
+import 'package:speakeasy/models/app_models.dart';
+import 'package:speakeasy/config/payment_config.dart';
+import 'package:speakeasy/l10n/l10n.dart';
 
 class MembershipPage extends StatefulWidget {
   const MembershipPage({

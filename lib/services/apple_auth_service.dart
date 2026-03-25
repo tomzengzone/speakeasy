@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
-import '../api_client.dart';
+import 'package:speakeasy/services/api_client.dart';
 
 class AppleAuthResult {
   const AppleAuthResult({required this.token, required this.userJson});

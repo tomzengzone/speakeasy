@@ -3,13 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart' as apple_sign_in;
 
-import 'api_client.dart';
-import 'app_models.dart';
-import 'app_session.dart';
-import 'l10n/l10n.dart';
-import 'pages/privacy_policy_page.dart';
-import 'pages/terms_of_service_page.dart';
-import 'services/wechat_auth_service.dart';
+import 'package:speakeasy/services/api_client.dart';
+import 'package:speakeasy/models/app_models.dart';
+import 'package:speakeasy/services/app_session.dart';
+import 'package:speakeasy/l10n/l10n.dart';
+import 'package:speakeasy/pages/privacy_policy_page.dart';
+import 'package:speakeasy/pages/terms_of_service_page.dart';
+import 'package:speakeasy/services/wechat_auth_service.dart';
 
 enum LoginMethod { main, phone, email }
 

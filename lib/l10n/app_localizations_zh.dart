@@ -419,13 +419,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get takeawaySceneOutput => '1 次完整的场景开口输出';
 
   @override
-  String get lessonSummaryNoOpening => '你知道大概要说什么，但第一句总是卡住。这节课先帮你理解什么样的开场更自然、更安全。';
+  String get lessonSummaryNoOpening =>
+      '你知道大概要说什么，但第一句总是卡住。这节课先帮你理解什么样的开场更自然、更安全。';
 
   @override
-  String get lessonSummaryCannotExpress => '你脑子里有想法，但说出来时不够清楚。这节课会先给你一个更顺的表达路径。';
+  String get lessonSummaryCannotExpress =>
+      '你脑子里有想法，但说出来时不够清楚。这节课会先给你一个更顺的表达路径。';
 
   @override
-  String get lessonSummaryCannotContinue => '你能开头，但一两句之后就接不下去。这里会先帮你建立继续往下说的结构感。';
+  String get lessonSummaryCannotContinue =>
+      '你能开头，但一两句之后就接不下去。这里会先帮你建立继续往下说的结构感。';
 
   @override
   String get lessonSummaryPanic => '你不是不会，而是一紧张就丢掉顺序。这节课会先帮你把稳定表达的骨架搭起来。';
@@ -953,19 +956,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sceneFeedbackImproveActionTitle => '先说补救动作';
 
   @override
-  String get sceneFeedbackImproveActionDetail => '先解释原因容易让对方觉得在推卸责任，把行动方案放在句子开头压力会明显下降。';
+  String get sceneFeedbackImproveActionDetail =>
+      '先解释原因容易让对方觉得在推卸责任，把行动方案放在句子开头压力会明显下降。';
 
   @override
   String get sceneFeedbackImproveTimeTitle => '给出具体时间点';
 
   @override
-  String get sceneFeedbackImproveTimeDetail => '模糊的\"稍后\"\"很快\"远不如\"今晚 6 点前\"有说服力，时间承诺让对方更有安全感。';
+  String get sceneFeedbackImproveTimeDetail =>
+      '模糊的\"稍后\"\"很快\"远不如\"今晚 6 点前\"有说服力，时间承诺让对方更有安全感。';
 
   @override
   String get sceneFeedbackImproveToneTitle => '减少解释腔';
 
   @override
-  String get sceneFeedbackImproveToneDetail => '连续使用 because 会显得在辩解，拆成两句先担责再给方案会更自然。';
+  String get sceneFeedbackImproveToneDetail =>
+      '连续使用 because 会显得在辩解，拆成两句先担责再给方案会更自然。';
 
   @override
   String get feedbackSuggestionRetryTitle => '再练一次同场景';

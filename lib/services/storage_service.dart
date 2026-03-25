@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/storage_models.dart';
+import 'package:speakeasy/models/storage_models.dart';
 
 typedef JsonFactory<T> = T Function(Map<String, dynamic> json);
 typedef JsonSerializer<T> = Map<String, dynamic> Function(T value);

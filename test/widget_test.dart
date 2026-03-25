@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:speakeasy/app_session.dart';
-import 'package:speakeasy/audio_service.dart';
 import 'package:speakeasy/main.dart';
+import 'package:speakeasy/services/app_session.dart';
+import 'package:speakeasy/services/audio_service.dart';
 
 void main() {
   testWidgets('renders the static home UI', (tester) async {

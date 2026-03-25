@@ -3,25 +3,25 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import 'ai_repository.dart';
-import 'api_client.dart';
-import 'app_models.dart';
-import 'auth_models.dart';
-import 'config/app_config.dart';
-import 'config/payment_config.dart';
-import 'models/learning_stats_model.dart';
-import 'models/storage_models.dart';
-import 'services/apple_auth_service.dart';
-import 'services/apple_payment_service.dart';
-import 'services/android_payment_service.dart';
-import 'services/auth_service.dart';
-import 'services/payment_service.dart';
-import 'services/storage_service.dart';
-import 'services/stats_service.dart';
-import 'services/wechat_auth_service.dart';
-import 'utils/error_handler.dart';
+import 'package:speakeasy/services/ai_repository.dart';
+import 'package:speakeasy/services/api_client.dart';
+import 'package:speakeasy/models/app_models.dart';
+import 'package:speakeasy/models/auth_models.dart';
+import 'package:speakeasy/config/app_config.dart';
+import 'package:speakeasy/config/payment_config.dart';
+import 'package:speakeasy/models/learning_stats_model.dart';
+import 'package:speakeasy/models/storage_models.dart';
+import 'package:speakeasy/services/apple_auth_service.dart';
+import 'package:speakeasy/services/apple_payment_service.dart';
+import 'package:speakeasy/services/android_payment_service.dart';
+import 'package:speakeasy/services/auth_service.dart';
+import 'package:speakeasy/services/payment_service.dart';
+import 'package:speakeasy/services/storage_service.dart';
+import 'package:speakeasy/services/stats_service.dart';
+import 'package:speakeasy/services/wechat_auth_service.dart';
+import 'package:speakeasy/utils/error_handler.dart';
 
-export 'auth_models.dart';
+export 'package:speakeasy/models/auth_models.dart';
 
 const List<String> defaultAvatarUrls = <String>[
   'https://images.unsplash.com/photo-1725887150031-d353e5c4ce3a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=160',

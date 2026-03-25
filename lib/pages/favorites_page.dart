@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'feature_placeholder_page.dart';
-import '../l10n/l10n.dart';
+import 'package:speakeasy/pages/feature_placeholder_page.dart';
+import 'package:speakeasy/l10n/l10n.dart';
 
 class FavoritesPage extends StatelessWidget {
   const FavoritesPage({super.key, this.isLoading = false});

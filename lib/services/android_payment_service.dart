@@ -1,4 +1,4 @@
-import '../config/payment_config.dart';
+import 'package:speakeasy/config/payment_config.dart';
 import 'payment_service.dart';
 
 class AndroidPaymentService implements PaymentService {

@@ -165,8 +165,8 @@ class AudioServiceScope extends InheritedNotifier<AudioService> {
   }) : super(notifier: service);
 
   static AudioService of(BuildContext context) {
-    final AudioServiceScope? scope =
-        context.dependOnInheritedWidgetOfExactType<AudioServiceScope>();
+    final AudioServiceScope? scope = context
+        .dependOnInheritedWidgetOfExactType<AudioServiceScope>();
     assert(scope != null, 'AudioServiceScope not found in context');
     return scope!.notifier!;
   }

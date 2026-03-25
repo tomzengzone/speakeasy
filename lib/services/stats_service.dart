@@ -1,6 +1,6 @@
-import '../api_client.dart';
-import '../models/learning_stats_model.dart';
-import '../models/storage_models.dart';
+import 'package:speakeasy/services/api_client.dart';
+import 'package:speakeasy/models/learning_stats_model.dart';
+import 'package:speakeasy/models/storage_models.dart';
 import 'storage_service.dart';
 
 class StatsService {

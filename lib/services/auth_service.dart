@@ -1,5 +1,5 @@
-import '../api_client.dart';
-import '../auth_models.dart';
+import 'package:speakeasy/services/api_client.dart';
+import 'package:speakeasy/models/auth_models.dart';
 
 typedef EmailSignIn = Future<AppUser> Function(LoginSubmission submission);
 

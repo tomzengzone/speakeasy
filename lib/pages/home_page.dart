@@ -3,18 +3,18 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-import 'api_client.dart';
-import 'app_models.dart';
-import 'app_session.dart';
-import 'learning_page.dart';
-import 'lesson_detail_page.dart';
-import 'l10n/l10n.dart';
-import 'models/storage_models.dart';
-import 'profile_page.dart';
-import 'scene_page.dart';
-import 'services/storage_service.dart';
-import 'utils/app_cached_network_image.dart';
-import 'utils/error_handler.dart';
+import 'package:speakeasy/services/api_client.dart';
+import 'package:speakeasy/models/app_models.dart';
+import 'package:speakeasy/services/app_session.dart';
+import 'package:speakeasy/pages/learning_page.dart';
+import 'package:speakeasy/pages/lesson_detail_page.dart';
+import 'package:speakeasy/l10n/l10n.dart';
+import 'package:speakeasy/models/storage_models.dart';
+import 'package:speakeasy/pages/profile_page.dart';
+import 'package:speakeasy/features/scenario/scene_page.dart';
+import 'package:speakeasy/services/storage_service.dart';
+import 'package:speakeasy/utils/app_cached_network_image.dart';
+import 'package:speakeasy/utils/error_handler.dart';
 
 class SpeakEasyHomePage extends StatefulWidget {
   const SpeakEasyHomePage({super.key});

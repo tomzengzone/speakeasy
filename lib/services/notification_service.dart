@@ -2,8 +2,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-import 'models/storage_models.dart';
-import 'services/storage_service.dart';
+import 'package:speakeasy/models/storage_models.dart';
+import 'package:speakeasy/services/storage_service.dart';
 
 class NotificationService {
   NotificationService._();

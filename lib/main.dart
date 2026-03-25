@@ -3,17 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-import 'audio_service.dart';
-import 'app_session.dart';
-import 'config/sentry_config.dart';
-import 'content_repository.dart';
-import 'home_page.dart';
-import 'l10n/l10n.dart';
-import 'login_page.dart';
-import 'notification_service.dart';
-import 'onboarding_page.dart';
-import 'services/storage_service.dart';
-import 'utils/error_handler.dart';
+import 'package:speakeasy/services/audio_service.dart';
+import 'package:speakeasy/services/app_session.dart';
+import 'package:speakeasy/config/sentry_config.dart';
+import 'package:speakeasy/services/content_repository.dart';
+import 'package:speakeasy/pages/home_page.dart';
+import 'package:speakeasy/l10n/l10n.dart';
+import 'package:speakeasy/pages/login_page.dart';
+import 'package:speakeasy/services/notification_service.dart';
+import 'package:speakeasy/pages/onboarding_page.dart';
+import 'package:speakeasy/services/storage_service.dart';
+import 'package:speakeasy/utils/error_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

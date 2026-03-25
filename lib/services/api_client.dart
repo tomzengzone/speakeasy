@@ -4,10 +4,10 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
-import 'config/app_config.dart';
-import 'models/learning_stats_model.dart';
-import 'models/storage_models.dart';
-import 'services/storage_service.dart';
+import 'package:speakeasy/config/app_config.dart';
+import 'package:speakeasy/models/learning_stats_model.dart';
+import 'package:speakeasy/models/storage_models.dart';
+import 'package:speakeasy/services/storage_service.dart';
 
 class ApiClient {
   static Future<String?> getToken() async {

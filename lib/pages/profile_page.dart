@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 
-import 'app_models.dart';
-import 'app_session.dart';
-import 'edit_profile_page.dart';
-import 'l10n/l10n.dart';
-import 'login_page.dart';
-import 'membership_page.dart';
-import 'models/learning_stats_model.dart';
-import 'notification_service.dart';
-import 'pages/achievements_page.dart';
-import 'pages/favorites_page.dart';
-import 'pages/learning_report_page.dart';
-import 'pages/offline_content_page.dart';
-import 'pages/privacy_policy_page.dart';
-import 'utils/app_cached_network_image.dart';
+import 'package:speakeasy/models/app_models.dart';
+import 'package:speakeasy/services/app_session.dart';
+import 'package:speakeasy/pages/edit_profile_page.dart';
+import 'package:speakeasy/l10n/l10n.dart';
+import 'package:speakeasy/pages/login_page.dart';
+import 'package:speakeasy/pages/membership_page.dart';
+import 'package:speakeasy/models/learning_stats_model.dart';
+import 'package:speakeasy/services/notification_service.dart';
+import 'package:speakeasy/pages/achievements_page.dart';
+import 'package:speakeasy/pages/favorites_page.dart';
+import 'package:speakeasy/pages/learning_report_page.dart';
+import 'package:speakeasy/pages/offline_content_page.dart';
+import 'package:speakeasy/pages/privacy_policy_page.dart';
+import 'package:speakeasy/utils/app_cached_network_image.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});

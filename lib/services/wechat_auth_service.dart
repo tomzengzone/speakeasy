@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:fluwx/fluwx.dart';
 import 'package:http/http.dart' as http;
 
-import '../api_client.dart';
-import '../config/social_config.dart';
+import 'package:speakeasy/services/api_client.dart';
+import 'package:speakeasy/config/social_config.dart';
 
 class WeChatAuthResult {
   const WeChatAuthResult({

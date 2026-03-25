@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'app_models.dart';
-import 'app_session.dart';
-import 'audio_service.dart';
-import 'l10n/l10n.dart';
+import 'package:speakeasy/models/app_models.dart';
+import 'package:speakeasy/services/app_session.dart';
+import 'package:speakeasy/services/audio_service.dart';
+import 'package:speakeasy/l10n/l10n.dart';
 
 class LearningPage extends StatefulWidget {
   const LearningPage({

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'app_models.dart';
-import 'l10n/l10n.dart';
+import 'package:speakeasy/models/app_models.dart';
+import 'package:speakeasy/l10n/l10n.dart';
 
 class LessonDetailPage extends StatelessWidget {
   const LessonDetailPage({

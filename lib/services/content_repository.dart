@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'app_models.dart';
+import 'package:speakeasy/models/app_models.dart';
 
 abstract class ContentRepository {
   Future<List<ExpressionCardData>> loadExpressionCards();

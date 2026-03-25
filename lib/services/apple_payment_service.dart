@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:in_app_purchase/in_app_purchase.dart';
 
-import '../config/payment_config.dart';
+import 'package:speakeasy/config/payment_config.dart';
 import 'payment_service.dart';
 
 class ApplePaymentService implements PaymentService {

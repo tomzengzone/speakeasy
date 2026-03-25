@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:speakeasy/app_session.dart';
 import 'package:speakeasy/services/auth_service.dart';
+import 'package:speakeasy/services/app_session.dart';
 
 class MockAuthApi extends Mock implements AuthApi {}
 

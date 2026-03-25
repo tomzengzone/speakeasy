@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../app_models.dart';
-import '../auth_models.dart';
+import 'package:speakeasy/models/app_models.dart';
+import 'package:speakeasy/models/auth_models.dart';
 import 'learning_stats_model.dart';
 
 class UserPreferencesStorageModel {

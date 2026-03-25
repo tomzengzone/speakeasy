@@ -4,10 +4,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import 'api_client.dart';
-import 'app_models.dart';
-import 'app_session.dart';
-import 'utils/error_handler.dart';
+import 'package:speakeasy/services/api_client.dart';
+import 'package:speakeasy/models/app_models.dart';
+import 'package:speakeasy/services/app_session.dart';
+import 'package:speakeasy/utils/error_handler.dart';
 
 class OpenAiAppRepository implements AppRepository {
   OpenAiAppRepository({required this.apiKey});

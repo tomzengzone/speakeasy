@@ -1,4 +1,4 @@
-import 'config/payment_config.dart';
+import 'package:speakeasy/config/payment_config.dart';
 
 enum LoginProvider { wechat, apple, phone, email }
 
