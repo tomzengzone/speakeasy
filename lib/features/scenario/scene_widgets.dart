@@ -1228,6 +1228,14 @@ class _ConversationBubble extends StatelessWidget {
                       ? _VoiceMessageCard(
                           isNpc: isNpc,
                           duration: message.voiceDuration ?? (isNpc ? 5 : 4),
+                          onTap: isNpc
+                              ? () {
+                                  // NPC 语音消息：点击播放 TTS
+                                  final AudioService audioService =
+                                      AudioServiceScope.of(context);
+                                  audioService.playTts(message.text);
+                                }
+                              : null,
                         )
                       : Text(
                           message.text,
@@ -1274,15 +1282,21 @@ class _ConversationBubble extends StatelessWidget {
 }
 
 class _VoiceMessageCard extends StatelessWidget {
-  const _VoiceMessageCard({required this.isNpc, required this.duration});
+  const _VoiceMessageCard({
+    required this.isNpc,
+    required this.duration,
+    this.onTap,
+  });
 
   final bool isNpc;
   final int duration;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    Widget child;
     if (isNpc) {
-      return Row(
+      child = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(
@@ -1320,47 +1334,51 @@ class _VoiceMessageCard extends StatelessWidget {
           ),
         ],
       );
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          '${duration}s',
-          style: const TextStyle(
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-            color: Color(0x80FFFFFF),
+    } else {
+      child = Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '${duration}s',
+            style: const TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: Color(0x80FFFFFF),
+            ),
           ),
-        ),
-        const SizedBox(width: 6),
-        SizedBox(
-          width: 64,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: List<Widget>.generate(
-              8,
-              (int index) => Container(
-                width: 4,
-                height: index.isEven ? 6 : 10,
-                margin: EdgeInsets.only(left: index == 0 ? 0 : 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xB2D4F3EB),
-                  borderRadius: BorderRadius.circular(999),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 64,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: List<Widget>.generate(
+                8,
+                (int index) => Container(
+                  width: 4,
+                  height: index.isEven ? 6 : 10,
+                  margin: EdgeInsets.only(left: index == 0 ? 0 : 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xB2D4F3EB),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 5),
-        const Icon(
-          Icons.graphic_eq_rounded,
-          size: 13,
-          color: Color(0xFFD4F3EB),
-        ),
-      ],
-    );
+          const SizedBox(width: 5),
+          const Icon(
+            Icons.graphic_eq_rounded,
+            size: 13,
+            color: Color(0xFFD4F3EB),
+          ),
+        ],
+      );
+    }
+
+    return onTap != null
+        ? GestureDetector(onTap: onTap, child: child)
+        : child;
   }
 }
 

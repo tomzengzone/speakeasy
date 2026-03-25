@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 
 import 'package:speakeasy/services/api_client.dart';
 import 'package:speakeasy/models/app_models.dart';
 import 'package:speakeasy/services/app_session.dart';
+import 'package:speakeasy/services/audio_service.dart';
 import 'package:speakeasy/l10n/l10n.dart';
 import 'package:speakeasy/utils/app_cached_network_image.dart';
 
@@ -155,39 +157,68 @@ class _ScenePageState extends State<ScenePage> {
 
   void _toggleRecording() {
     if (_isRecording) {
-      _mockInputTimer?.cancel();
-      setState(() {
-        _isRecording = false;
+      final AudioService audioService = AudioServiceScope.of(context);
+      audioService.stopRecording().then((String? path) async {
+        if (!mounted || path == null || path.isEmpty) {
+          if (mounted) {
+            setState(() {
+              _isRecording = false;
+            });
+          }
+          return;
+        }
+
+        setState(() {
+          _isRecording = false;
+          _controller.text = '正在识别...';
+        });
+
+        try {
+          final String text = await ApiClient.transcribeAudio(File(path));
+          if (text.trim().isNotEmpty) {
+            if (mounted) {
+              setState(() {
+                _controller.text = text.trim();
+              });
+            }
+          } else {
+            if (mounted) {
+              setState(() {
+                _controller.text = '';
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('未能识别语音，请重试'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+          }
+        } catch (e) {
+          if (mounted) {
+            setState(() {
+              _controller.text = '';
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('语音识别失败: ${e.toString().split(':').last}'),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        }
       });
       return;
     }
 
-    final String target = examplePrompts[_activePromptIndex];
-    int cursor = 0;
     _mockInputTimer?.cancel();
     setState(() {
       _isRecording = true;
       _showTextComposer = false;
       _controller.clear();
     });
-    _mockInputTimer = Timer.periodic(const Duration(milliseconds: 55), (
-      Timer timer,
-    ) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      cursor += 1;
-      setState(() {
-        _controller.text = target.substring(0, cursor.clamp(0, target.length));
-      });
-      if (cursor >= target.length) {
-        timer.cancel();
-        setState(() {
-          _isRecording = false;
-        });
-      }
-    });
+    final AudioService audioService = AudioServiceScope.of(context);
+    audioService.startRecording();
   }
 
   List<_ChatMessage> _initialMessagesForDraft() {
@@ -530,38 +561,19 @@ class _ScenePageState extends State<ScenePage> {
     if (_isRecording) {
       return;
     }
-    final List<String> voiceReplies = <String>[
-      'We slipped by three days, but the revised QA plan is already locked and I will send the updated timeline before 6 PM.',
-      'The main risk is already contained, and the client will get a concrete recovery schedule from me today.',
-      'I should have raised the dependency risk earlier, and I am now owning the recovery plan with two checkpoints.',
-    ];
-    final String target = voiceReplies[_messages.length % voiceReplies.length];
-    int cursor = 0;
     _mockInputTimer?.cancel();
+    _coachQuestionFocusNode.unfocus();
+    _scrollChatToLatest(animated: false);
     setState(() {
       _isRecording = true;
       _chatRecordingWillCancel = false;
       _showCoachAssistant = false;
       _controller.clear();
     });
-    _coachQuestionFocusNode.unfocus();
-    _scrollChatToLatest(animated: false);
-    _mockInputTimer = Timer.periodic(const Duration(milliseconds: 32), (
-      Timer timer,
-    ) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      cursor += 1;
-      setState(() {
-        _controller.text = target.substring(0, cursor.clamp(0, target.length));
-      });
-      _scrollChatToLatest(animated: false);
-      if (cursor >= target.length) {
-        timer.cancel();
-      }
-    });
+
+    // 真实录音
+    final AudioService audioService = AudioServiceScope.of(context);
+    audioService.startRecording();
   }
 
   void _updateChatRecordingDrag(LongPressMoveUpdateDetails details) {
@@ -582,16 +594,64 @@ class _ScenePageState extends State<ScenePage> {
       return;
     }
     _mockInputTimer?.cancel();
-    final String captured = _controller.text.trim();
     setState(() {
       _isRecording = false;
       _chatRecordingWillCancel = false;
     });
-    if (send && captured.isNotEmpty) {
-      _sendMessage(asVoice: true, voiceDuration: 7);
+
+    if (!send) {
+      final AudioService audioService = AudioServiceScope.of(context);
+      audioService.stopRecording();
+      _controller.clear();
       return;
     }
-    _controller.clear();
+
+    // 停止录音，获取音频文件，用 STT 转文字后发送
+    final AudioService audioService = AudioServiceScope.of(context);
+    audioService.stopRecording().then((String? path) async {
+      if (!mounted || path == null || path.isEmpty) return;
+
+      // 显示"正在识别"状态
+      setState(() {
+        _controller.text = '正在识别...';
+      });
+
+      try {
+        final String text = await ApiClient.transcribeAudio(File(path));
+        if (text.trim().isNotEmpty) {
+          setState(() {
+            _controller.text = text.trim();
+          });
+          _sendMessage(asVoice: true, voiceDuration: 7);
+        } else {
+          // STT 没识别出内容
+          setState(() {
+            _controller.text = '';
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('未能识别语音，请重试'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        // STT 请求失败
+        setState(() {
+          _controller.text = '';
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('语音识别失败: ${e.toString().split(':').last}'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    });
   }
 
   void _toggleChatRecording() {
@@ -708,6 +768,10 @@ class _ScenePageState extends State<ScenePage> {
             );
           });
           _scrollChatToLatest();
+
+          // NPC 回复后自动 TTS 播放
+          final AudioService audioService = AudioServiceScope.of(context);
+          audioService.playTts(reply.npcText);
         })
         .catchError((Object error) {
           if (!mounted) return;
@@ -1213,7 +1277,7 @@ class _ScenePageState extends State<ScenePage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
-                          Icons.mic_rounded,
+                          _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
                           size: 15,
                           color: _isRecording
                               ? Colors.white
@@ -1227,7 +1291,7 @@ class _ScenePageState extends State<ScenePage> {
                 Expanded(
                   child: Text(
                     _isRecording
-                        ? '正在聆听…'
+                        ? '点击结束录音'
                         : _controller.text.isNotEmpty
                         ? '${_controller.text.length} 字'
                         : '描述你真实的沟通场景',

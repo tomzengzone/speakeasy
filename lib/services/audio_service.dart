@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'dart:io' as dart_io;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart'; // still used by startRecording
 import 'package:record/record.dart';
+
+import 'package:speakeasy/services/api_client.dart';
 
 class AudioService extends ChangeNotifier {
   final AudioRecorder _recorder = AudioRecorder();
@@ -92,12 +96,13 @@ class AudioService extends ChangeNotifier {
     }
   }
 
-  /// 使用设备原生 TTS 播放英文文本（AVSpeechSynthesizer on iOS）
+  /// 播放 TTS：优先调用后端 CosyVoice API，失败时回退到系统 TTS
   Future<void> playTts(String text) async {
     final String ttsKey = 'tts_${text.hashCode}';
 
     // 再次点击同一段文字 → 停止
     if (_isPlaying && _playingUrl == ttsKey) {
+      await _player.stop();
       await _tts.stop();
       _isPlaying = false;
       _playingUrl = null;
@@ -114,11 +119,44 @@ class AudioService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _tts.speak(text);
+      // 优先调用后端 CosyVoice API
+      final Uint8List audioBytes = await ApiClient.tts(text);
+      if (audioBytes.isNotEmpty) {
+        final String directoryPath = (await getTemporaryDirectory()).path;
+        final String filePath =
+            '$directoryPath/tts_${DateTime.now().millisecondsSinceEpoch}.wav';
+        final dart_io.File file = dart_io.File(filePath);
+        await file.writeAsBytes(audioBytes);
+        await _player.setFilePath(filePath);
+        await _player.play();
+        // 等待播放完成（加超时防止异常音频卡死）
+        try {
+          await _player.playerStateStream
+              .firstWhere(
+                (PlayerState state) =>
+                    state.processingState == ProcessingState.completed,
+              )
+              .timeout(const Duration(seconds: 120));
+        } on TimeoutException {
+          await _player.stop();
+        }
+      } else {
+        // 后端无数据，回退到系统 TTS
+        await _tts.speak(text);
+      }
     } catch (_) {
-      _isPlaying = false;
-      _playingUrl = null;
-      notifyListeners();
+      // CosyVoice 失败，回退到系统 TTS
+      try {
+        await _tts.speak(text);
+      } catch (_) {
+        // ignore
+      }
+    } finally {
+      if (_playingUrl == ttsKey) {
+        _isPlaying = false;
+        _playingUrl = null;
+        notifyListeners();
+      }
     }
   }
 

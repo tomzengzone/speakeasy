@@ -237,7 +237,7 @@ class ApiClient {
     return (data['reply'] as String?) ?? '';
   }
 
-  static Future<Uint8List> tts(String text, {String voice = 'Cherry'}) async {
+  static Future<Uint8List> tts(String text, {String voice = 'Ethan'}) async {
     final http.Response response = await http
         .post(
           Uri.parse('${AppConfig.apiBaseUrl}/ai/tts'),
@@ -245,7 +245,53 @@ class ApiClient {
           body: jsonEncode(<String, dynamic>{'text': text, 'voice': voice}),
         )
         .timeout(const Duration(seconds: 20));
+    // 非 200 视为失败，返回空字节让上层回退到系统 TTS
+    if (response.statusCode != 200) {
+      return Uint8List(0);
+    }
     return response.bodyBytes;
+  }
+
+  /// 语音转文字（Paraformer）——上传音频文件，返回识别文本
+  static Future<String> transcribeAudio(File audioFile) async {
+    final http.MultipartRequest request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${AppConfig.apiBaseUrl}/ai/transcribe'),
+    );
+    final String? token = await getToken();
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+    request.files.add(
+      await http.MultipartFile.fromPath('audio', audioFile.path),
+    );
+    final http.StreamedResponse response = await request.send().timeout(
+      const Duration(seconds: 30),
+    );
+    final Map<String, dynamic> body = _decodeResponse(
+      http.Response(
+        await response.stream.bytesToString(),
+        response.statusCode,
+        headers: response.headers,
+      ),
+    );
+    final Map<String, dynamic> data = _asMap(body['data']);
+    return (data['text'] as String?) ?? '';
+  }
+
+  /// 生成场景反馈（通过后端 LLM）
+  static Future<Map<String, dynamic>> generateFeedback({
+    required String title,
+    required String goal,
+    required String npcName,
+    required List<Map<String, dynamic>> history,
+  }) async {
+    return _post('/ai/feedback', <String, dynamic>{
+      'title': title,
+      'goal': goal,
+      'npcName': npcName,
+      'history': history,
+    });
   }
 
   static Future<Map<String, dynamic>> scoreAudio(

@@ -7,11 +7,10 @@ import 'package:speakeasy/services/ai_repository.dart';
 import 'package:speakeasy/services/api_client.dart';
 import 'package:speakeasy/models/app_models.dart';
 import 'package:speakeasy/models/auth_models.dart';
-import 'package:speakeasy/config/app_config.dart';
+import 'package:speakeasy/services/apple_auth_service.dart';
 import 'package:speakeasy/config/payment_config.dart';
 import 'package:speakeasy/models/learning_stats_model.dart';
 import 'package:speakeasy/models/storage_models.dart';
-import 'package:speakeasy/services/apple_auth_service.dart';
 import 'package:speakeasy/services/apple_payment_service.dart';
 import 'package:speakeasy/services/android_payment_service.dart';
 import 'package:speakeasy/services/auth_service.dart';
@@ -308,10 +307,8 @@ class DemoAppRepository implements AppRepository {
 }
 
 AppRepository _defaultRepository() {
-  // 优先使用后端 API（ApiClient），OpenAI key 为空时后端直接处理 AI
-  // 只有在明确传入 OPENAI_API_KEY 时才走 OpenAI 直连
-  final String key = AppConfig.openAiApiKey;
-  return OpenAiAppRepository(apiKey: key);
+  // 所有 AI 调用通过后端代理（DashScope），apiKey 参数已不再使用直连
+  return OpenAiAppRepository(apiKey: '');
 }
 
 PaymentService _defaultPaymentService() {
