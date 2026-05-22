@@ -199,6 +199,37 @@ class LearningProgressStorageModel {
   }
 }
 
+class InterviewHomeSceneSelectionStorageModel {
+  const InterviewHomeSceneSelectionStorageModel({
+    this.selectedSceneIds = const <String>[],
+    this.activeSceneId,
+  });
+
+  final List<String> selectedSceneIds;
+  final String? activeSceneId;
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'selectedSceneIds': selectedSceneIds,
+      'activeSceneId': activeSceneId,
+    };
+  }
+
+  factory InterviewHomeSceneSelectionStorageModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final List<String> selectedSceneIds = _readStringList(
+      json['selectedSceneIds'],
+    );
+    final String activeSceneId = (json['activeSceneId'] as String? ?? '')
+        .trim();
+    return InterviewHomeSceneSelectionStorageModel(
+      selectedSceneIds: selectedSceneIds,
+      activeSceneId: activeSceneId.isEmpty ? null : activeSceneId,
+    );
+  }
+}
+
 class StoredExpressionCardModel {
   const StoredExpressionCardModel({
     required this.id,
@@ -211,6 +242,7 @@ class StoredExpressionCardModel {
     required this.progress,
     required this.thumbHeight,
     required this.colorHex,
+    this.lessonContent,
   });
 
   final String? id;
@@ -223,6 +255,7 @@ class StoredExpressionCardModel {
   final List<String> progress;
   final double thumbHeight;
   final String colorHex;
+  final LessonContentData? lessonContent;
 
   factory StoredExpressionCardModel.fromCard(ExpressionCardData card) {
     return StoredExpressionCardModel(
@@ -238,6 +271,7 @@ class StoredExpressionCardModel {
           .toList(growable: false),
       thumbHeight: card.thumbHeight,
       colorHex: _colorToHex(card.color),
+      lessonContent: card.lessonContent,
     );
   }
 
@@ -260,6 +294,7 @@ class StoredExpressionCardModel {
           .toList(growable: false),
       thumbHeight: thumbHeight,
       color: _parseColor(colorHex),
+      lessonContent: lessonContent,
     );
   }
 
@@ -275,6 +310,7 @@ class StoredExpressionCardModel {
       'progress': progress,
       'thumbHeight': thumbHeight,
       'colorHex': colorHex,
+      'lessonContent': lessonContent?.toJson(),
     };
   }
 
@@ -290,6 +326,95 @@ class StoredExpressionCardModel {
       progress: _readStringList(json['progress']),
       thumbHeight: (json['thumbHeight'] as num?)?.toDouble() ?? 0,
       colorHex: json['colorHex'] as String? ?? 'FF4A7244',
+      lessonContent: _readLessonContent(
+        json['lessonContent'] ?? json['lesson_content'],
+      ),
+    );
+  }
+}
+
+class FavoriteExpressionStorageModel {
+  const FavoriteExpressionStorageModel({
+    required this.id,
+    required this.sceneId,
+    required this.targetLevel,
+    required this.nodeId,
+    required this.kind,
+    required this.practiceText,
+    required this.translation,
+    required this.sourceLabel,
+    required this.savedAt,
+    this.variantOfNodeId = '',
+    this.contextNote = '',
+  });
+
+  final String id;
+  final String sceneId;
+  final String targetLevel;
+  final String nodeId;
+  final String kind;
+  final String practiceText;
+  final String translation;
+  final String sourceLabel;
+  final DateTime savedAt;
+  final String variantOfNodeId;
+  final String contextNote;
+
+  static String stableId({
+    required String sceneId,
+    required String targetLevel,
+    required String nodeId,
+    required String practiceText,
+  }) {
+    return <String>[
+      sceneId.trim(),
+      targetLevel.trim(),
+      nodeId.trim(),
+      _stableTextHash(practiceText.trim().toLowerCase()),
+    ].join('|');
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'sceneId': sceneId,
+      'targetLevel': targetLevel,
+      'nodeId': nodeId,
+      'kind': kind,
+      'practiceText': practiceText,
+      'translation': translation,
+      'sourceLabel': sourceLabel,
+      'savedAt': savedAt.toIso8601String(),
+      'variantOfNodeId': variantOfNodeId,
+      'contextNote': contextNote,
+    };
+  }
+
+  factory FavoriteExpressionStorageModel.fromJson(Map<String, dynamic> json) {
+    final String practiceText = (json['practiceText'] as String? ?? '').trim();
+    final String sceneId = (json['sceneId'] as String? ?? '').trim();
+    final String targetLevel = (json['targetLevel'] as String? ?? '').trim();
+    final String nodeId = (json['nodeId'] as String? ?? '').trim();
+    final String id = (json['id'] as String? ?? '').trim();
+    return FavoriteExpressionStorageModel(
+      id: id.isEmpty
+          ? stableId(
+              sceneId: sceneId,
+              targetLevel: targetLevel,
+              nodeId: nodeId,
+              practiceText: practiceText,
+            )
+          : id,
+      sceneId: sceneId,
+      targetLevel: targetLevel,
+      nodeId: nodeId,
+      kind: (json['kind'] as String? ?? '').trim(),
+      practiceText: practiceText,
+      translation: (json['translation'] as String? ?? '').trim(),
+      sourceLabel: (json['sourceLabel'] as String? ?? '').trim(),
+      savedAt: _readDateTime(json['savedAt']) ?? DateTime.now(),
+      variantOfNodeId: (json['variantOfNodeId'] as String? ?? '').trim(),
+      contextNote: (json['contextNote'] as String? ?? '').trim(),
     );
   }
 }
@@ -393,6 +518,7 @@ class ConversationHistoryStorageModel {
     this.sceneTitle,
     this.npcName,
     this.updatedAt,
+    this.debugData,
   });
 
   final String sessionId;
@@ -400,6 +526,7 @@ class ConversationHistoryStorageModel {
   final String? sceneTitle;
   final String? npcName;
   final DateTime? updatedAt;
+  final Map<String, dynamic>? debugData;
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
@@ -410,6 +537,7 @@ class ConversationHistoryStorageModel {
           .map((ConversationHistoryTurnStorageModel turn) => turn.toJson())
           .toList(growable: false),
       'updatedAt': updatedAt?.toIso8601String(),
+      if (debugData != null) 'debugData': debugData,
     };
   }
 
@@ -421,6 +549,75 @@ class ConversationHistoryStorageModel {
       messages: _readMapList(json['messages'])
           .map(ConversationHistoryTurnStorageModel.fromJson)
           .toList(growable: false),
+      updatedAt: _readDateTime(json['updatedAt']),
+      debugData: json['debugData'] is Map<String, dynamic>
+          ? json['debugData'] as Map<String, dynamic>
+          : json['debugData'] is Map
+          ? (json['debugData'] as Map).cast<String, dynamic>()
+          : null,
+    );
+  }
+}
+
+class VirtualFriendStorageModel {
+  const VirtualFriendStorageModel({
+    required this.id,
+    required this.name,
+    required this.avatarEmoji,
+    required this.role,
+    required this.personality,
+    required this.profession,
+    this.hobbies = const <String>[],
+    this.relationship = '',
+    this.preferredScene = '',
+    this.lastMessage = '',
+    this.isCustom = false,
+    this.updatedAt,
+  });
+
+  final String id;
+  final String name;
+  final String avatarEmoji;
+  final String role;
+  final String personality;
+  final String profession;
+  final List<String> hobbies;
+  final String relationship;
+  final String preferredScene;
+  final String lastMessage;
+  final bool isCustom;
+  final DateTime? updatedAt;
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'name': name,
+      'avatarEmoji': avatarEmoji,
+      'role': role,
+      'personality': personality,
+      'profession': profession,
+      'hobbies': hobbies,
+      'relationship': relationship,
+      'preferredScene': preferredScene,
+      'lastMessage': lastMessage,
+      'isCustom': isCustom,
+      'updatedAt': updatedAt?.toIso8601String(),
+    };
+  }
+
+  factory VirtualFriendStorageModel.fromJson(Map<String, dynamic> json) {
+    return VirtualFriendStorageModel(
+      id: (json['id'] as String? ?? '').trim(),
+      name: (json['name'] as String? ?? '').trim(),
+      avatarEmoji: (json['avatarEmoji'] as String? ?? '🙂').trim(),
+      role: (json['role'] as String? ?? '').trim(),
+      personality: (json['personality'] as String? ?? '').trim(),
+      profession: (json['profession'] as String? ?? '').trim(),
+      hobbies: _readStringList(json['hobbies']),
+      relationship: (json['relationship'] as String? ?? '').trim(),
+      preferredScene: (json['preferredScene'] as String? ?? '').trim(),
+      lastMessage: (json['lastMessage'] as String? ?? '').trim(),
+      isCustom: json['isCustom'] as bool? ?? false,
       updatedAt: _readDateTime(json['updatedAt']),
     );
   }
@@ -516,6 +713,15 @@ String _colorToHex(Color color) {
   return color.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase();
 }
 
+String _stableTextHash(String value) {
+  int hash = 0x811c9dc5;
+  for (final int codeUnit in value.codeUnits) {
+    hash ^= codeUnit;
+    hash = (hash * 0x01000193) & 0xFFFFFFFF;
+  }
+  return hash.toRadixString(16).padLeft(8, '0');
+}
+
 Color _parseColor(String raw) {
   final String normalized = raw
       .replaceFirst(RegExp('^0x', caseSensitive: false), '')
@@ -527,4 +733,14 @@ Color _parseColor(String raw) {
     _ => 'FF4A7244',
   };
   return Color(int.parse(hex, radix: 16));
+}
+
+LessonContentData? _readLessonContent(Object? value) {
+  if (value is Map<String, dynamic>) {
+    return LessonContentData.fromJson(value);
+  }
+  if (value is Map) {
+    return LessonContentData.fromJson(value.cast<String, dynamic>());
+  }
+  return null;
 }

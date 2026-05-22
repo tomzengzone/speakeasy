@@ -15,6 +15,10 @@ permissions:
 env:
   FLUTTER_VERSION: "3.x"
   JAVA_VERSION: "17"
+  APP_API_BASE_URL: ${{ secrets.APP_API_BASE_URL }}
+  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+  WECHAT_APP_ID: ${{ secrets.WECHAT_APP_ID }}
+  WECHAT_UNIVERSAL_LINK: ${{ secrets.WECHAT_UNIVERSAL_LINK }}
 
 jobs:
   build-release:
@@ -49,77 +53,54 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Optional GitHub Secrets placeholders:
-      # - APP_ENV_FILE: production .env content
-      # - APP_ENV_DEV_FILE: development .env.dev content
+      # Required for store release:
+      # - APP_API_BASE_URL: production API base URL.
       # - ANDROID_KEYSTORE_BASE64: base64-encoded release keystore (.jks/.keystore)
       # - ANDROID_KEYSTORE_PASSWORD: keystore password
       # - ANDROID_KEY_ALIAS: key alias
       # - ANDROID_KEY_PASSWORD: key password
-      # If Android signing secrets are not configured, CI generates a temporary keystore
-      # so the workflow can still produce testable release artifacts.
-      - name: Prepare environment files
-        shell: bash
-        run: |
-          if [[ -n "${{ secrets.APP_ENV_FILE }}" ]]; then
-            printf '%s' "${{ secrets.APP_ENV_FILE }}" > .env
-          else
-            cat <<'EOF' > .env
-          API_BASE_URL=https://example.invalid
-          OPENAI_API_KEY=release-placeholder
-          ENV=production
-          EOF
-          fi
-
-          if [[ -n "${{ secrets.APP_ENV_DEV_FILE }}" ]]; then
-            printf '%s' "${{ secrets.APP_ENV_DEV_FILE }}" > .env.dev
-          else
-            cat <<'EOF' > .env.dev
-          API_BASE_URL=https://example.invalid
-          OPENAI_API_KEY=release-placeholder
-          ENV=development
-          EOF
-          fi
 
       - name: Configure Android signing
         shell: bash
         run: |
-          if [[ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]]; then
-            printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
-            cat <<EOF > android/key.properties
+          if [[ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]]; then
+            echo "ANDROID_KEYSTORE_BASE64 is required for release builds" >&2
+            exit 1
+          fi
+          printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          cat <<EOF > android/key.properties
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
           storeFile=upload-keystore.jks
           storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           EOF
-          else
-            keytool -genkeypair \
-              -alias upload \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -storetype PKCS12 \
-              -keystore android/app/upload-keystore.jks \
-              -storepass android \
-              -keypass android \
-              -dname "CN=GitHub Actions,O=CI,L=CI,S=CI,C=US"
-
-            cat <<'EOF' > android/key.properties
-          keyAlias=upload
-          keyPassword=android
-          storeFile=upload-keystore.jks
-          storePassword=android
-          EOF
-          fi
 
       - name: Install dependencies
         run: flutter pub get
 
       - name: Build Android APK
-        run: flutter build apk --release
+        shell: bash
+        run: |
+          if [[ -z "$APP_API_BASE_URL" ]]; then
+            echo "APP_API_BASE_URL is required for release builds" >&2
+            exit 1
+          fi
+          flutter build apk --release \
+            --dart-define=API_BASE_URL="$APP_API_BASE_URL" \
+            --dart-define=ENV=production \
+            --dart-define=SENTRY_DSN="$SENTRY_DSN" \
+            --dart-define=WECHAT_APP_ID="$WECHAT_APP_ID" \
+            --dart-define=WECHAT_UNIVERSAL_LINK="$WECHAT_UNIVERSAL_LINK"
 
       - name: Build Android App Bundle
-        run: flutter build appbundle --release
+        shell: bash
+        run: |
+          flutter build appbundle --release \
+            --dart-define=API_BASE_URL="$APP_API_BASE_URL" \
+            --dart-define=ENV=production \
+            --dart-define=SENTRY_DSN="$SENTRY_DSN" \
+            --dart-define=WECHAT_APP_ID="$WECHAT_APP_ID" \
+            --dart-define=WECHAT_UNIVERSAL_LINK="$WECHAT_UNIVERSAL_LINK"
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4

@@ -11,6 +11,10 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+.codex_tmp_remote_patch/
+.server_edit/
+.workbuddy/
+exports/
 
 # Sensitive files
 .claude/

@@ -1,0 +1,1869 @@
+{
+  "meta": {
+    "title": "职场英文面试口语表达库",
+    "source_markdown": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+  },
+  "summary": {
+    "expression_count": 141,
+    "correction_count": 30,
+    "tag_count": 9,
+    "tags": [
+      "自我介绍",
+      "经历阐述",
+      "优势说明",
+      "岗位认知",
+      "职业规划",
+      "劣势应答",
+      "薪资沟通",
+      "压力回应",
+      "反问提问"
+    ],
+    "levels": {
+      "beginner": 42,
+      "intermediate": 48,
+      "advanced": 51
+    }
+  },
+  "expressions": [
+    {
+      "id": "public-expression-beginner-001",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "🗣️ 自我介绍",
+      "text": "Hi, I'm [Name]. Thanks for having me today.",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "面试开场",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-002",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "🗣️ 自我介绍",
+      "text": "I'm [Name], and I'm based in [City].",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "说明所在城市",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-003",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "🗣️ 自我介绍",
+      "text": "I have [X] years of experience in [field].",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "简述经验年限",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-004",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "🗣️ 自我介绍",
+      "text": "Most recently, I worked at [Company] as [Role].",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "介绍最近一份工作",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-005",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "🗣️ 自我介绍",
+      "text": "My background is in [field/industry].",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "概括专业方向",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-006",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "🗣️ 自我介绍",
+      "text": "I specialize in [skill/area].",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "强调专长",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-007",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "🗣️ 自我介绍",
+      "text": "Before that, I was with [Company] for [X] years.",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "补充前一份经历",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-008",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "🗣️ 自我介绍",
+      "text": "I'm excited about this opportunity.",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "表达面试热情",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-009",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "💬 简单应答",
+      "text": "That's a great question.",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "争取思考时间",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-010",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "💬 简单应答",
+      "text": "Let me think about that for a second.",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "需要停顿组织语言",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-011",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "💬 简单应答",
+      "text": "Sure, I can walk you through that.",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "引导进入具体说明",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-012",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "💬 简单应答",
+      "text": "Could you say that again, please?",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "没听清，请对方重复",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-013",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "💬 简单应答",
+      "text": "Just to make sure I understand — you're asking about [topic]?",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "确认理解问题",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-014",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "💬 简单应答",
+      "text": "That's right. / Exactly.",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "确认对方说法",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-015",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "💬 简单应答",
+      "text": "I see what you mean.",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "表示理解对方意思",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-016",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "💬 简单应答",
+      "text": "Good point.",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "认可对方观点",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-017",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "📋 基础信息说明",
+      "text": "I graduated from [University] with a degree in [Major].",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "说明学历",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-018",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "📋 基础信息说明",
+      "text": "I'm currently based in [City], but I'm open to relocating.",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "说明地点灵活性",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-019",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "📋 基础信息说明",
+      "text": "I'm available to start in [timeframe].",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "说明到岗时间",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-020",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "📋 基础信息说明",
+      "text": "I'm authorized to work in [Country].",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "说明工作签证/权限",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-021",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "📋 基础信息说明",
+      "text": "I've been working in [industry] since [year].",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "说明入行时间",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-022",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "📋 基础信息说明",
+      "text": "I hold a [certification] certificate.",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "提及资格认证",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-023",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "📋 基础信息说明",
+      "text": "My English level is [fluent/conversational/business-level].",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "自评英语水平",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-024",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "📋 基础信息说明",
+      "text": "I'm comfortable working in a bilingual environment.",
+      "tag": "自我介绍",
+      "tag_slug": "自我介绍",
+      "use_case": "表达双语工作能力",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-025",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "🔄 过渡与衔接",
+      "text": "Moving on to my experience...",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "从介绍转向经历",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-026",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "🔄 过渡与衔接",
+      "text": "One thing I'd like to highlight is...",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "强调某个亮点",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-027",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "🔄 过渡与衔接",
+      "text": "To give you a bit more context...",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "补充背景信息",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-028",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "🔄 过渡与衔接",
+      "text": "The main takeaway from that experience was...",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "总结经验要点",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-029",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "🔄 过渡与衔接",
+      "text": "In terms of my day-to-day work...",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "描述日常工作",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-030",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "🔄 过渡与衔接",
+      "text": "I'd say the biggest thing I learned was...",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "总结收获",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-031",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "🔄 过渡与衔接",
+      "text": "That actually ties into why I'm here today.",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "连接到面试动机",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-032",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "🔄 过渡与衔接",
+      "text": "Let me give you a quick example.",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "引入举例",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-033",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "✅ 积极态度表达",
+      "text": "I'm a quick learner.",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "强调学习能力",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-034",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "✅ 积极态度表达",
+      "text": "I work well in a team.",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "强调团队协作",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-035",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "✅ 积极态度表达",
+      "text": "I'm very detail-oriented.",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "强调细心",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-036",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "✅ 积极态度表达",
+      "text": "I enjoy taking on new challenges.",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "表达积极态度",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-037",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "✅ 积极态度表达",
+      "text": "I'm someone who likes to get things done.",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "强调执行力",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-038",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "✅ 积极态度表达",
+      "text": "I always try to go the extra mile.",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "表达主动性",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-039",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "✅ 积极态度表达",
+      "text": "I'm comfortable working under pressure.",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "表达抗压能力",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-040",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "✅ 积极态度表达",
+      "text": "I'm open to feedback and always looking to improve.",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "表达成长心态",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-041",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "✅ 积极态度表达",
+      "text": "I take ownership of my work.",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "强调责任感",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-beginner-042",
+      "level": "beginner",
+      "level_label": "入门级",
+      "section": "✅ 积极态度表达",
+      "text": "I'm self-motivated and don't need a lot of hand-holding.",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "强调自驱力",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-043",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🏗️ 经历阐述",
+      "text": "In my last role, I was responsible for [task/area].",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "说明职责范围",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-044",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🏗️ 经历阐述",
+      "text": "I led a team of [X] people.",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "说明团队规模",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-045",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🏗️ 经历阐述",
+      "text": "One project I'm proud of is [project name].",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "引入亮点项目",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-046",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🏗️ 经历阐述",
+      "text": "We managed to [result] within [timeframe].",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "强调成果+时间",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-047",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🏗️ 经历阐述",
+      "text": "That project taught me how to [skill].",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "从项目提炼能力",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-048",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🏗️ 经历阐述",
+      "text": "I was promoted from [Role A] to [Role B] in [year].",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "说明晋升轨迹",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-049",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🏗️ 经历阐述",
+      "text": "I reported directly to the [title/department].",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "说明汇报线",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-050",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🏗️ 经历阐述",
+      "text": "My key contribution was [specific thing].",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "突出核心贡献",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-051",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🏗️ 经历阐述",
+      "text": "I handled everything from [A] to [B].",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "说明工作覆盖面",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-052",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🏗️ 经历阐述",
+      "text": "We grew [metric] by [X]% over [period].",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "量化成果",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-053",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🏗️ 经历阐述",
+      "text": "I was the go-to person for [area] on my team.",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "强调不可替代性",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-054",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🏗️ 经历阐述",
+      "text": "After that, I was given more responsibility to [task].",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "说明被信任/被认可",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-055",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "💪 优势说明",
+      "text": "My biggest strength is [skill/quality].",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "直球说明优势",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-056",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "💪 优势说明",
+      "text": "I'm really good at breaking down complex problems.",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "强调分析能力",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-057",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "💪 优势说明",
+      "text": "I'm the kind of person who [habit/behavior].",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "用行为说明特质",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-058",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "💪 优势说明",
+      "text": "People often come to me when they need [help with X].",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "借他人视角佐证",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-059",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "💪 优势说明",
+      "text": "Where I really shine is [area].",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "强调突出之处",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-060",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "💪 优势说明",
+      "text": "I have a track record of [achievement].",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "用成果背书",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-061",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "💪 优势说明",
+      "text": "One thing my manager always praised me for is [quality].",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "引用上级评价",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-062",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "💪 优势说明",
+      "text": "I bring a unique perspective because [reason].",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "说明差异化价值",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-063",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "💪 优势说明",
+      "text": "I'm not just a [role title] — I also [cross-functional skill].",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "展示复合能力",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-064",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "💪 优势说明",
+      "text": "I'm good at bridging the gap between [team A] and [team B].",
+      "tag": "优势说明",
+      "tag_slug": "优势说明",
+      "use_case": "强调跨部门协作",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-065",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🎯 岗位认知",
+      "text": "From the job description, I understand this role focuses on [area].",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "复述岗位重点",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-066",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🎯 岗位认知",
+      "text": "What excites me most about this role is [aspect].",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "表达对岗位的热情",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-067",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🎯 岗位认知",
+      "text": "I see this role as a natural next step for me.",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "说明岗位契合度",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-068",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🎯 岗位认知",
+      "text": "I've been following [Company] for a while, and I really admire [thing].",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "展示对公司的了解",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-069",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🎯 岗位认知",
+      "text": "I think my experience in [area] lines up well with what you're looking for.",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "对齐经历与需求",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-070",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🎯 岗位认知",
+      "text": "The reason I applied is [specific motivation].",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "说明申请动机",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-071",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🎯 岗位认知",
+      "text": "I like that this role involves [task/responsibility].",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "表达对具体职责的兴趣",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-072",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🎯 岗位认知",
+      "text": "I know [Company] has been expanding into [area], which is exciting.",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "展示对公司的调研",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-073",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🚪 离职原因解释",
+      "text": "I'm looking for a new challenge.",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "最通用说法",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-074",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🚪 离职原因解释",
+      "text": "I've learned a lot at my current company, but I'm ready for the next step.",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "肯定现公司+求发展",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-075",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🚪 离职原因解释",
+      "text": "I'm looking for a role with more [scope/impact/responsibility].",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "说明期望空间",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-076",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🚪 离职原因解释",
+      "text": "I want to move into [industry/field], and this role is a perfect fit.",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "说明转行/转岗原因",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-077",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🚪 离职原因解释",
+      "text": "I've hit a ceiling in my current role.",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "坦言发展瓶颈",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-078",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🚪 离职原因解释",
+      "text": "The company went through a restructuring, and my role was impacted.",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "公司变动导致离职",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-079",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🚪 离职原因解释",
+      "text": "I'm looking for a company that [value/culture trait].",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "寻找更匹配的文化",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-080",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🚪 离职原因解释",
+      "text": "I've been there for [X] years and I feel it's time for a change.",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "时间到了想变化",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-081",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🚪 离职原因解释",
+      "text": "To be honest, I'm looking for better growth opportunities.",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "坦率说明成长需求",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-082",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🚪 离职原因解释",
+      "text": "Nothing went wrong — I just feel I've outgrown the role.",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "不是现公司问题，是个人成长",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-083",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🚪 离职原因解释",
+      "text": "I want to work on a larger scale.",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "说明更大平台的诉求",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-084",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🚪 离职原因解释",
+      "text": "I'm looking for a role that's more aligned with my long-term goals.",
+      "tag": "岗位认知",
+      "tag_slug": "岗位认知",
+      "use_case": "对齐长期目标",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-085",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🔗 STAR 叙事框架句式",
+      "text": "The situation was [context].",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "S - 设定背景",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-086",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🔗 STAR 叙事框架句式",
+      "text": "My task was to [objective].",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "T - 说明任务",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-087",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🔗 STAR 叙事框架句式",
+      "text": "What I did was [action].",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "A - 描述行动",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-088",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🔗 STAR 叙事框架句式",
+      "text": "The result was [outcome].",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "R - 亮出结果",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-089",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🔗 STAR 叙事框架句式",
+      "text": "If I had to do it again, I'd probably [improvement].",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "R+ - 反思改进",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-intermediate-090",
+      "level": "intermediate",
+      "level_label": "进阶级",
+      "section": "🔗 STAR 叙事框架句式",
+      "text": "Looking back, that experience really shaped how I approach [area].",
+      "tag": "经历阐述",
+      "tag_slug": "经历阐述",
+      "use_case": "R+ - 升华意义",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-091",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🧭 职业规划",
+      "text": "In the next 2-3 years, I see myself deepening my expertise in [area].",
+      "tag": "职业规划",
+      "tag_slug": "职业规划",
+      "use_case": "短期方向",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-092",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🧭 职业规划",
+      "text": "I'd like to move into a leadership role eventually.",
+      "tag": "职业规划",
+      "tag_slug": "职业规划",
+      "use_case": "表达管理意愿",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-093",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🧭 职业规划",
+      "text": "My long-term goal is to become a [title/expert] in [field].",
+      "tag": "职业规划",
+      "tag_slug": "职业规划",
+      "use_case": "长期目标",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-094",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🧭 职业规划",
+      "text": "I'm not just looking for a job — I'm looking for a career path.",
+      "tag": "职业规划",
+      "tag_slug": "职业规划",
+      "use_case": "强调长期主义",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-095",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🧭 职业规划",
+      "text": "I want to keep growing as a [role], not just doing the same thing.",
+      "tag": "职业规划",
+      "tag_slug": "职业规划",
+      "use_case": "表达成长渴望",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-096",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🧭 职业规划",
+      "text": "Ideally, I'd like to build and lead a team.",
+      "tag": "职业规划",
+      "tag_slug": "职业规划",
+      "use_case": "表达团队管理方向",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-097",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🧭 职业规划",
+      "text": "I'm interested in both the IC track and the management track.",
+      "tag": "职业规划",
+      "tag_slug": "职业规划",
+      "use_case": "两条路都考虑",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-098",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🧭 职业规划",
+      "text": "What matters most to me is impact — I want my work to matter.",
+      "tag": "职业规划",
+      "tag_slug": "职业规划",
+      "use_case": "强调价值驱动",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-099",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🧭 职业规划",
+      "text": "I see this role as a stepping stone toward [bigger goal].",
+      "tag": "职业规划",
+      "tag_slug": "职业规划",
+      "use_case": "将当前岗位纳入规划",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-100",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔻 劣势应答",
+      "text": "One thing I'm working on is [real weakness + action].",
+      "tag": "劣势应答",
+      "tag_slug": "劣势应答",
+      "use_case": "真实弱点+正在改进",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-101",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔻 劣势应答",
+      "text": "I used to struggle with [X], but I've been improving by [action].",
+      "tag": "劣势应答",
+      "tag_slug": "劣势应答",
+      "use_case": "过去的问题+已有进步",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-102",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔻 劣势应答",
+      "text": "I sometimes [tendency], so I've started to [countermeasure].",
+      "tag": "劣势应答",
+      "tag_slug": "劣势应答",
+      "use_case": "倾向性问题+对冲措施",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-103",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔻 劣势应答",
+      "text": "Honestly, [area] hasn't been my strongest suit, but I'm taking steps to change that.",
+      "tag": "劣势应答",
+      "tag_slug": "劣势应答",
+      "use_case": "坦诚+行动",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-104",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔻 劣势应答",
+      "text": "In the past, I had a tendency to [X]. I've gotten much better at it.",
+      "tag": "劣势应答",
+      "tag_slug": "劣势应答",
+      "use_case": "过去式+已改善",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-105",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔻 劣势应答",
+      "text": "I wouldn't call it a weakness, but I'm definitely still growing in [area].",
+      "tag": "劣势应答",
+      "tag_slug": "劣势应答",
+      "use_case": "弱化措辞+成长心态",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-106",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔻 劣势应答",
+      "text": "I've learned that [lesson] the hard way, and now I always [new habit].",
+      "tag": "劣势应答",
+      "tag_slug": "劣势应答",
+      "use_case": "踩坑经验+新习惯",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-107",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔻 劣势应答",
+      "text": "Something I'm actively improving is [X] — for example, I recently [action].",
+      "tag": "劣势应答",
+      "tag_slug": "劣势应答",
+      "use_case": "进行时+具体行动",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-108",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔻 劣势应答",
+      "text": "If I had to pick one area, it would be [X]. Here's what I'm doing about it: [action].",
+      "tag": "劣势应答",
+      "tag_slug": "劣势应答",
+      "use_case": "选一个+给方案",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-109",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "💰 薪资沟通",
+      "text": "Could you share the salary range for this role?",
+      "tag": "薪资沟通",
+      "tag_slug": "薪资沟通",
+      "use_case": "主动了解范围",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-110",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "💰 薪资沟通",
+      "text": "I'm open to discussing compensation based on the full package.",
+      "tag": "薪资沟通",
+      "tag_slug": "薪资沟通",
+      "use_case": "不急着亮底牌",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-111",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "💰 薪资沟通",
+      "text": "My current package is around [range], and I'm looking for a reasonable increase.",
+      "tag": "薪资沟通",
+      "tag_slug": "薪资沟通",
+      "use_case": "说明现薪+期望增幅",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-112",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "💰 薪资沟通",
+      "text": "To be upfront, I'm targeting something in the [range] range.",
+      "tag": "薪资沟通",
+      "tag_slug": "薪资沟通",
+      "use_case": "直接给期望范围",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-113",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "💰 薪资沟通",
+      "text": "Compensation is important, but it's not my only consideration.",
+      "tag": "薪资沟通",
+      "tag_slug": "薪资沟通",
+      "use_case": "表达不只看钱",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-114",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "💰 薪资沟通",
+      "text": "I'd like to understand the full compensation package — base, bonus, equity, benefits.",
+      "tag": "薪资沟通",
+      "tag_slug": "薪资沟通",
+      "use_case": "要求了解完整包",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-115",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "💰 薪资沟通",
+      "text": "I'm flexible, but I want to make sure we're in the same ballpark.",
+      "tag": "薪资沟通",
+      "tag_slug": "薪资沟通",
+      "use_case": "表达弹性但要有基本盘",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-116",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "💰 薪资沟通",
+      "text": "What's the typical bonus structure for this role?",
+      "tag": "薪资沟通",
+      "tag_slug": "薪资沟通",
+      "use_case": "追问奖金机制",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-117",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "💰 薪资沟通",
+      "text": "Is there room for negotiation?",
+      "tag": "薪资沟通",
+      "tag_slug": "薪资沟通",
+      "use_case": "试探谈判空间",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-118",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "💰 薪资沟通",
+      "text": "I appreciate the offer. Can I take a day to review it?",
+      "tag": "薪资沟通",
+      "tag_slug": "薪资沟通",
+      "use_case": "拿到offer后不急着回答",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-119",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔥 压力面试回应",
+      "text": "I understand why you're asking that.",
+      "tag": "压力回应",
+      "tag_slug": "压力回应",
+      "use_case": "认可压力问题合理性",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-120",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔥 压力面试回应",
+      "text": "That's fair — let me address it directly.",
+      "tag": "压力回应",
+      "tag_slug": "压力回应",
+      "use_case": "正面迎接挑战",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-121",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔥 压力面试回应",
+      "text": "I can see how it might look that way, but here's the full picture.",
+      "tag": "压力回应",
+      "tag_slug": "压力回应",
+      "use_case": "纠正误解",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-122",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔥 压力面试回应",
+      "text": "I won't sugarcoat it — [honest answer].",
+      "tag": "压力回应",
+      "tag_slug": "压力回应",
+      "use_case": "坦诚面对",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-123",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔥 压力面试回应",
+      "text": "That's a tough one, but I'll give you my honest take.",
+      "tag": "压力回应",
+      "tag_slug": "压力回应",
+      "use_case": "面对刁难问题",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-124",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔥 压力面试回应",
+      "text": "I've actually thought about that before, and here's where I stand.",
+      "tag": "压力回应",
+      "tag_slug": "压力回应",
+      "use_case": "展示有备而来",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-125",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔥 压力面试回应",
+      "text": "I don't have all the answers, but here's how I'd approach it.",
+      "tag": "压力回应",
+      "tag_slug": "压力回应",
+      "use_case": "不会也要有思路",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-126",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔥 压力面试回应",
+      "text": "I'd rather be upfront than try to spin it.",
+      "tag": "压力回应",
+      "tag_slug": "压力回应",
+      "use_case": "表达真诚态度",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-127",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔥 压力面试回应",
+      "text": "Let me reframe that — I think the real question is [reframed version].",
+      "tag": "压力回应",
+      "tag_slug": "压力回应",
+      "use_case": "重新定义问题",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-128",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔥 压力面试回应",
+      "text": "I've been in similar situations, and here's what I've learned.",
+      "tag": "压力回应",
+      "tag_slug": "压力回应",
+      "use_case": "用经验化解质疑",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-129",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "🔥 压力面试回应",
+      "text": "I respect the pushback — it shows you care about the right fit.",
+      "tag": "压力回应",
+      "tag_slug": "压力回应",
+      "use_case": "把压力解读为正面信号",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-130",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "❓ 反问面试官",
+      "text": "What does a typical day look like in this role?",
+      "tag": "反问提问",
+      "tag_slug": "反问提问",
+      "use_case": "了解日常工作",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-131",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "❓ 反问面试官",
+      "text": "How would you describe the team culture?",
+      "tag": "反问提问",
+      "tag_slug": "反问提问",
+      "use_case": "了解团队氛围",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-132",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "❓ 反问面试官",
+      "text": "What are the biggest challenges someone in this role would face?",
+      "tag": "反问提问",
+      "tag_slug": "反问提问",
+      "use_case": "了解痛点",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-133",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "❓ 反问面试官",
+      "text": "How do you measure success in this position?",
+      "tag": "反问提问",
+      "tag_slug": "反问提问",
+      "use_case": "了解考核标准",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-134",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "❓ 反问面试官",
+      "text": "What's the career path for someone in this role?",
+      "tag": "反问提问",
+      "tag_slug": "反问提问",
+      "use_case": "了解发展空间",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-135",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "❓ 反问面试官",
+      "text": "Is there anything about my background that gives you hesitation?",
+      "tag": "反问提问",
+      "tag_slug": "反问提问",
+      "use_case": "主动寻找顾虑+当场澄清",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-136",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "❓ 反问面试官",
+      "text": "What do you enjoy most about working here?",
+      "tag": "反问提问",
+      "tag_slug": "反问提问",
+      "use_case": "建立个人连接",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-137",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "❓ 反问面试官",
+      "text": "How would you describe the management style here?",
+      "tag": "反问提问",
+      "tag_slug": "反问提问",
+      "use_case": "了解管理风格",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-138",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "❓ 反问面试官",
+      "text": "What are the team's top priorities for the next 6 months?",
+      "tag": "反问提问",
+      "tag_slug": "反问提问",
+      "use_case": "了解业务方向",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-139",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "❓ 反问面试官",
+      "text": "Is there anything else I can clarify about my experience?",
+      "tag": "反问提问",
+      "tag_slug": "反问提问",
+      "use_case": "主动补位",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-140",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "❓ 反问面试官",
+      "text": "What's the next step in the process?",
+      "tag": "反问提问",
+      "tag_slug": "反问提问",
+      "use_case": "确认流程",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "public-expression-advanced-141",
+      "level": "advanced",
+      "level_label": "高阶商务级",
+      "section": "❓ 反问面试官",
+      "text": "How long have you been with the company, if you don't mind me asking?",
+      "tag": "反问提问",
+      "tag_slug": "反问提问",
+      "use_case": "拉近距离",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    }
+  ],
+  "corrections": [
+    {
+      "id": "correction-001",
+      "category": "语法类",
+      "wrong": "My company is doing education.",
+      "better": "My company is in the education industry.",
+      "reason": "doing ≠ 行业；用 in the ... industry",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-002",
+      "category": "语法类",
+      "wrong": "I have worked there for 3 years ago.",
+      "better": "I've been working there for 3 years.",
+      "reason": "ago 不能和完成时连用",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-003",
+      "category": "语法类",
+      "wrong": "My work is very busy.",
+      "better": "I've been really busy at work. / My schedule's been pretty packed.",
+      "reason": "work 不能用 busy 形容，人忙不是工作忙",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-004",
+      "category": "语法类",
+      "wrong": "I am come from Beijing.",
+      "better": "I'm from Beijing. / I'm based in Beijing.",
+      "reason": "be + come 语法错误",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-005",
+      "category": "语法类",
+      "wrong": "I have many experiences.",
+      "better": "I have a lot of experience.",
+      "reason": "experience 作\"经验\"不可数",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-006",
+      "category": "语法类",
+      "wrong": "I want to find a job which can improve my ability.",
+      "better": "I'm looking for a role where I can grow and develop.",
+      "reason": "improve ability 生硬；which → where 更自然",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-007",
+      "category": "语法类",
+      "wrong": "My salary expectation is not high.",
+      "better": "I'm flexible on compensation — I care more about the role.",
+      "reason": "not high 不专业，且主动贬低自己",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-008",
+      "category": "用词类",
+      "wrong": "I want to join your company because it is very famous.",
+      "better": "I'm drawn to [Company] because of [specific reason].",
+      "reason": "famous 太笼统，像背模板",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-009",
+      "category": "用词类",
+      "wrong": "I am very interesting in this position.",
+      "better": "I'm very interested in this position.",
+      "reason": "interesting ≠ interested，主被动搞反",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-010",
+      "category": "用词类",
+      "wrong": "I can do the work well.",
+      "better": "I'm confident I can do a great job. / I'd hit the ground running.",
+      "reason": "can do well 太弱，缺乏自信感",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-011",
+      "category": "用词类",
+      "wrong": "My English is poor.",
+      "better": "I'm still working on my English, but I communicate effectively.",
+      "reason": "poor 自我否定；换成正在进步+已有能力",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-012",
+      "category": "用词类",
+      "wrong": "I will try my best.",
+      "better": "I'm committed to making it happen. / You can count on me.",
+      "reason": "try my best 像学生作文，缺乏力度",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-013",
+      "category": "用词类",
+      "wrong": "I have strong ability of communication.",
+      "better": "I'm a strong communicator.",
+      "reason": "ability of 表达冗余，直接用名词",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-014",
+      "category": "用词类",
+      "wrong": "I graduated from a famous university.",
+      "better": "I got my degree from [University Name].",
+      "reason": "famous 没信息量，直接说学校名",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-015",
+      "category": "用词类",
+      "wrong": "I can under pressure.",
+      "better": "I work well under pressure.",
+      "reason": "can under 语法错误；work well 更地道",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-016",
+      "category": "逻辑类",
+      "wrong": "Because I like this job, so I come here.",
+      "better": "I'm here because I'm genuinely excited about this role.",
+      "reason": "Because...so 不能同时用",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-017",
+      "category": "逻辑类",
+      "wrong": "Although the work is hard, but I like it.",
+      "better": "The work is challenging, but I enjoy it.",
+      "reason": "Although...but 不能同时用",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-018",
+      "category": "逻辑类",
+      "wrong": "I think I can do this job. I have experience. I worked 3 years.",
+      "better": "With 3 years of hands-on experience, I'm confident I can step into this role.",
+      "reason": "中式短句堆砌，缺乏连接词",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-019",
+      "category": "礼貌类",
+      "wrong": "Can you give me a chance?",
+      "better": "I'd love the opportunity to contribute to the team.",
+      "reason": "give me a chance 像求人，不专业",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-020",
+      "category": "礼貌类",
+      "wrong": "I will study hard if you hire me.",
+      "better": "I'm eager to learn and I pick things up quickly.",
+      "reason": "study hard 像学生；换成职场化表达",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-021",
+      "category": "礼貌类",
+      "wrong": "Please tell me the salary.",
+      "better": "Could you share the salary range for this position?",
+      "reason": "直接要信息太生硬，用 could you 礼貌化",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-022",
+      "category": "礼貌类",
+      "wrong": "I have no questions.",
+      "better": "Actually, I do have a couple of questions.",
+      "reason": "直接说没问题显得不感兴趣",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-023",
+      "category": "冗余类",
+      "wrong": "In my opinion, I think this company is good.",
+      "better": "I think [Company] is a great fit for me.",
+      "reason": "in my opinion + I think 重复",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-024",
+      "category": "冗余类",
+      "wrong": "I am a person who is very hardworking.",
+      "better": "I'm hardworking. / I'm a hard worker.",
+      "reason": "a person who is 完全多余",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-025",
+      "category": "冗余类",
+      "wrong": "The reason why I left is because...",
+      "better": "I left because... / The reason I left was...",
+      "reason": "the reason why...because 三重冗余",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-026",
+      "category": "冗余类",
+      "wrong": "I have the ability to be able to...",
+      "better": "I can... / I'm able to...",
+      "reason": "ability + able 重复",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-027",
+      "category": "冗余类",
+      "wrong": "As for me, personally, I feel that...",
+      "better": "I feel... / Personally, I think...",
+      "reason": "三重铺垫删两个",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-028",
+      "category": "时态类",
+      "wrong": "I work there since 2022.",
+      "better": "I've been working there since 2022.",
+      "reason": "since 要配现在完成进行时",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-029",
+      "category": "时态类",
+      "wrong": "I already finished the project.",
+      "better": "I've already finished the project. / I just wrapped it up.",
+      "reason": "已完成的近期动作用现在完成时",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    },
+    {
+      "id": "correction-030",
+      "category": "时态类",
+      "wrong": "Last year I have joined the company.",
+      "better": "I joined the company last year.",
+      "reason": "过去时间 + have 语法矛盾",
+      "source_path": "/Users/tang/english_wiki/data/raw/interview_expression_library.md"
+    }
+  ],
+  "usage_suggestions": [
+    {
+      "stage": "开场30秒",
+      "recommended_level": "① 入门级",
+      "core_expression": "#1-8 自我介绍"
+    },
+    {
+      "stage": "经历深挖",
+      "recommended_level": "② 进阶级",
+      "core_expression": "#1-12 经历阐述 + #43-48 STAR框架"
+    },
+    {
+      "stage": "优势展示",
+      "recommended_level": "② 进阶级",
+      "core_expression": "#13-22 优势说明"
+    },
+    {
+      "stage": "动机与匹配",
+      "recommended_level": "② 进阶级",
+      "core_expression": "#23-30 岗位认知 + #31-42 离职原因"
+    },
+    {
+      "stage": "深度追问",
+      "recommended_level": "③ 高阶级",
+      "core_expression": "#10-18 劣势应答 + #29-39 压力回应"
+    },
+    {
+      "stage": "职业愿景",
+      "recommended_level": "③ 高阶级",
+      "core_expression": "#1-9 职业规划"
+    },
+    {
+      "stage": "薪资谈判",
+      "recommended_level": "③ 高阶级",
+      "core_expression": "#19-28 薪资沟通"
+    },
+    {
+      "stage": "反向提问",
+      "recommended_level": "③ 高阶级",
+      "core_expression": "#40-51 反问面试官"
+    },
+    {
+      "stage": "全程避坑",
+      "recommended_level": "🔧 纠错",
+      "core_expression": "所有30条中式英语改写"
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io' as io;
 
+import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,8 +24,12 @@ class StorageService {
   static const String _authSessionKey = 'auth_session';
   static const String _userProfileKey = 'user_profile';
   static const String _learningProgressKey = 'learning_progress';
+  static const String _interviewHomeSceneSelectionKey =
+      'interview_home_scene_selection';
   static const String _courseCacheKey = 'course_cache';
   static const String _learningStatsCacheKey = 'learning_stats_cache';
+  static const String _virtualFriendsKey = 'virtual_friends';
+  static const String _favoriteExpressionsKey = 'favorite_expressions';
   static const String _conversationHistoryPrefix = 'conversation_history/';
 
   late final Box<dynamic> _box;
@@ -33,14 +39,24 @@ class StorageService {
     if (_initialized) {
       return;
     }
-    if (hivePath == null || hivePath.trim().isEmpty) {
-      await Hive.initFlutter();
-    } else {
-      Hive.init(hivePath);
-    }
+    final String resolvedHivePath = hivePath == null || hivePath.trim().isEmpty
+        ? await _resolveDefaultHivePath()
+        : hivePath.trim();
+    Hive.init(resolvedHivePath);
     _box = await Hive.openBox<dynamic>(_boxName);
     await _migrateFromSharedPreferences();
     _initialized = true;
+  }
+
+  Future<String> _resolveDefaultHivePath() async {
+    final String home = io.Platform.environment['HOME'] ?? '';
+    final io.Directory directory = home.trim().isNotEmpty
+        ? io.Directory('$home/Library/Application Support/speakeasy/hive')
+        : io.Directory('${io.Directory.systemTemp.path}/speakeasy_hive');
+    if (!await directory.exists()) {
+      await directory.create(recursive: true);
+    }
+    return directory.path;
   }
 
   Future<void> saveObject<T>(
@@ -180,6 +196,28 @@ class StorageService {
 
   Future<void> clearLearningProgress() => remove(_learningProgressKey);
 
+  Future<void> saveInterviewHomeSceneSelection(
+    InterviewHomeSceneSelectionStorageModel selection,
+  ) {
+    return saveObject<InterviewHomeSceneSelectionStorageModel>(
+      _interviewHomeSceneSelectionKey,
+      selection,
+      (InterviewHomeSceneSelectionStorageModel value) => value.toJson(),
+    );
+  }
+
+  InterviewHomeSceneSelectionStorageModel getInterviewHomeSceneSelection() {
+    return getObject<InterviewHomeSceneSelectionStorageModel>(
+          _interviewHomeSceneSelectionKey,
+          InterviewHomeSceneSelectionStorageModel.fromJson,
+        ) ??
+        const InterviewHomeSceneSelectionStorageModel();
+  }
+
+  Future<void> clearInterviewHomeSceneSelection() {
+    return remove(_interviewHomeSceneSelectionKey);
+  }
+
   Future<void> saveCachedCourseData(CachedCourseDataStorageModel cache) {
     return saveObject<CachedCourseDataStorageModel>(
       _courseCacheKey,
@@ -234,6 +272,42 @@ class StorageService {
 
   Future<void> clearLearningStatsCache() => remove(_learningStatsCacheKey);
 
+  Future<void> saveVirtualFriends(List<VirtualFriendStorageModel> friends) {
+    return saveList<VirtualFriendStorageModel>(
+      _virtualFriendsKey,
+      friends,
+      (VirtualFriendStorageModel value) => value.toJson(),
+    );
+  }
+
+  List<VirtualFriendStorageModel> getVirtualFriends() {
+    return getList<VirtualFriendStorageModel>(
+      _virtualFriendsKey,
+      VirtualFriendStorageModel.fromJson,
+    );
+  }
+
+  Future<void> clearVirtualFriends() => remove(_virtualFriendsKey);
+
+  Future<void> saveFavoriteExpressions(
+    List<FavoriteExpressionStorageModel> expressions,
+  ) {
+    return saveList<FavoriteExpressionStorageModel>(
+      _favoriteExpressionsKey,
+      expressions,
+      (FavoriteExpressionStorageModel value) => value.toJson(),
+    );
+  }
+
+  List<FavoriteExpressionStorageModel> getFavoriteExpressions() {
+    return getList<FavoriteExpressionStorageModel>(
+      _favoriteExpressionsKey,
+      FavoriteExpressionStorageModel.fromJson,
+    );
+  }
+
+  Future<void> clearFavoriteExpressions() => remove(_favoriteExpressionsKey);
+
   Future<void> saveConversationHistory(
     ConversationHistoryStorageModel history,
   ) {
@@ -276,7 +350,16 @@ class StorageService {
       return;
     }
 
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final SharedPreferences prefs;
+    try {
+      prefs = await SharedPreferences.getInstance();
+    } on MissingPluginException {
+      await _box.put(_migrationVersionKey, _migrationVersion);
+      return;
+    } on PlatformException {
+      await _box.put(_migrationVersionKey, _migrationVersion);
+      return;
+    }
 
     final String? token = prefs.getString('auth_token');
     if (!_box.containsKey(_authSessionKey) &&

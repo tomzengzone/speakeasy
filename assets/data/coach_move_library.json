@@ -1,0 +1,270 @@
+{
+  "schemaVersion": 1,
+  "moves": [
+    {
+      "moveId": "target_activation",
+      "description": "Activate the communicative purpose before asking the learner to answer.",
+      "runtimeTemplate": "Briefly tell the learner what communicative job this answer must do, then invite a natural attempt.",
+      "applicableStages": [
+        "activate",
+        "first_attempt"
+      ],
+      "defaultPlannerPolicy": {
+        "maxAttempts": 1,
+        "afterSuccess": "ask_followup",
+        "afterFail": "scaffold"
+      },
+      "generatorGuidance": {
+        "coachTone": "patient_specific_human_coach",
+        "maxChineseChars": 48,
+        "separateFormalQuestion": true
+      }
+    },
+    {
+      "moveId": "expression_reshape",
+      "description": "Recast the learner's intended meaning into a clearer natural expression.",
+      "runtimeTemplate": "Keep the learner's meaning, repair one expression issue, and avoid forcing the target sentence.",
+      "applicableStages": [
+        "recast",
+        "retry"
+      ],
+      "defaultPlannerPolicy": {
+        "maxAttempts": 2,
+        "afterSuccess": "ask_followup",
+        "afterFail": "sentence_bridge"
+      },
+      "generatorGuidance": {
+        "coachTone": "specific_recast",
+        "maxChineseChars": 56,
+        "separateFormalQuestion": true
+      }
+    },
+    {
+      "moveId": "sentence_bridge",
+      "description": "Offer a reusable sentence frame that helps the learner express the intent.",
+      "runtimeTemplate": "Give one short frame and ask the learner to fill it with their own facts.",
+      "applicableStages": [
+        "scaffold",
+        "retry"
+      ],
+      "defaultPlannerPolicy": {
+        "maxAttempts": 2,
+        "afterSuccess": "ask_followup",
+        "afterFail": "model_then_retry"
+      },
+      "generatorGuidance": {
+        "coachTone": "calm_scaffold",
+        "maxChineseChars": 58,
+        "separateFormalQuestion": true
+      }
+    },
+    {
+      "moveId": "choice_prompt",
+      "description": "Reduce speaking anxiety by giving two possible starts.",
+      "runtimeTemplate": "Offer no more than two short starts and ask the learner to choose one.",
+      "applicableStages": [
+        "scaffold",
+        "micro_drill"
+      ],
+      "defaultPlannerPolicy": {
+        "maxAttempts": 2,
+        "afterSuccess": "ask_followup",
+        "afterFail": "chunk_shadowing"
+      },
+      "generatorGuidance": {
+        "coachTone": "low_pressure_choice",
+        "maxChineseChars": 50,
+        "separateFormalQuestion": true
+      }
+    },
+    {
+      "moveId": "chunk_shadowing",
+      "description": "Train one short phrase chunk before the learner retries the whole intent.",
+      "runtimeTemplate": "Pick one 3-8 word chunk from nodeInputs.chunks and ask for a short repeat or reuse.",
+      "applicableStages": [
+        "micro_drill",
+        "retry"
+      ],
+      "defaultPlannerPolicy": {
+        "maxAttempts": 2,
+        "afterSuccess": "coach_retry",
+        "afterFail": "choice_prompt"
+      },
+      "generatorGuidance": {
+        "coachTone": "micro_drill",
+        "maxChineseChars": 46,
+        "separateFormalQuestion": true
+      }
+    },
+    {
+      "moveId": "naturalness_tuning",
+      "description": "Improve tone and pragmatic naturalness without over-correcting.",
+      "runtimeTemplate": "Point out one tone/naturalness issue and provide one natural alternative.",
+      "applicableStages": [
+        "recast",
+        "followup"
+      ],
+      "defaultPlannerPolicy": {
+        "maxAttempts": 1,
+        "afterSuccess": "ask_followup",
+        "afterFail": "expression_reshape"
+      },
+      "generatorGuidance": {
+        "coachTone": "naturalness_coach",
+        "maxChineseChars": 58,
+        "separateFormalQuestion": true
+      }
+    },
+    {
+      "moveId": "transfer_practice",
+      "description": "Move mastered intent to a nearby context.",
+      "runtimeTemplate": "Ask one short transfer question only after mastery or ready_for_transfer.",
+      "applicableStages": [
+        "transfer"
+      ],
+      "defaultPlannerPolicy": {
+        "maxAttempts": 1,
+        "afterSuccess": "advance",
+        "afterFail": "adaptive_support"
+      },
+      "generatorGuidance": {
+        "coachTone": "realistic_transfer",
+        "maxChineseChars": 44,
+        "separateFormalQuestion": true
+      }
+    },
+    {
+      "moveId": "similar_expression_contrast",
+      "description": "Contrast two close expressions when the learner chooses an unnatural option.",
+      "runtimeTemplate": "Contrast the learner's wording with a more natural option in one point.",
+      "applicableStages": [
+        "recast"
+      ],
+      "defaultPlannerPolicy": {
+        "maxAttempts": 1,
+        "afterSuccess": "ask_followup",
+        "afterFail": "expression_reshape"
+      },
+      "generatorGuidance": {
+        "coachTone": "clear_contrast",
+        "maxChineseChars": 58,
+        "separateFormalQuestion": true
+      }
+    },
+    {
+      "moveId": "error_diagnosis",
+      "description": "Diagnose the main error type and repair misunderstanding or off-topic turns.",
+      "runtimeTemplate": "Name the main issue simply and redirect to the current communicative task.",
+      "applicableStages": [
+        "scaffold",
+        "retry"
+      ],
+      "defaultPlannerPolicy": {
+        "maxAttempts": 1,
+        "afterSuccess": "coach_retry",
+        "afterFail": "choice_prompt"
+      },
+      "generatorGuidance": {
+        "coachTone": "direct_but_kind",
+        "maxChineseChars": 56,
+        "separateFormalQuestion": true
+      }
+    },
+    {
+      "moveId": "instant_recast_followup",
+      "description": "Acknowledge partial success, recast one phrase, then ask a precise follow-up.",
+      "runtimeTemplate": "Credit what is correct, repair one missing signal, and ask for one added detail.",
+      "applicableStages": [
+        "followup",
+        "recast"
+      ],
+      "defaultPlannerPolicy": {
+        "maxAttempts": 2,
+        "afterSuccess": "ask_followup",
+        "afterFail": "sentence_bridge"
+      },
+      "generatorGuidance": {
+        "coachTone": "responsive_followup",
+        "maxChineseChars": 60,
+        "separateFormalQuestion": true
+      }
+    },
+    {
+      "moveId": "difficulty_progression",
+      "description": "Increase or simplify difficulty based on mastery and capability state.",
+      "runtimeTemplate": "Adjust the next task one notch up or down; never add multiple requirements.",
+      "applicableStages": [
+        "followup",
+        "transfer"
+      ],
+      "defaultPlannerPolicy": {
+        "maxAttempts": 1,
+        "afterSuccess": "advance",
+        "afterFail": "adaptive_support"
+      },
+      "generatorGuidance": {
+        "coachTone": "adaptive_progression",
+        "maxChineseChars": 48,
+        "separateFormalQuestion": true
+      }
+    },
+    {
+      "moveId": "adaptive_support",
+      "description": "Adapt support using weakness memory and repeated attempts.",
+      "runtimeTemplate": "Use weaknessProfile to reduce load and pick one support path.",
+      "applicableStages": [
+        "scaffold",
+        "micro_drill",
+        "retry"
+      ],
+      "defaultPlannerPolicy": {
+        "maxAttempts": 2,
+        "afterSuccess": "coach_retry",
+        "afterFail": "choice_prompt"
+      },
+      "generatorGuidance": {
+        "coachTone": "supportive_adaptive",
+        "maxChineseChars": 52,
+        "separateFormalQuestion": true
+      }
+    },
+    {
+      "moveId": "pronunciation_fluency_feedback",
+      "description": "Give one pronunciation or fluency adjustment tied to the current expression.",
+      "runtimeTemplate": "Use scoring signals to focus on one sound, stress, pause, or rhythm issue.",
+      "applicableStages": [
+        "micro_drill",
+        "retry"
+      ],
+      "defaultPlannerPolicy": {
+        "maxAttempts": 1,
+        "afterSuccess": "coach_retry",
+        "afterFail": "chunk_shadowing"
+      },
+      "generatorGuidance": {
+        "coachTone": "speech_feedback",
+        "maxChineseChars": 54,
+        "separateFormalQuestion": true
+      }
+    },
+    {
+      "moveId": "mastery_assessment",
+      "description": "Confirm capability mastery and decide whether to advance or transfer.",
+      "runtimeTemplate": "Confirm the completed intent briefly; do not ask the learner to repeat the same target.",
+      "applicableStages": [
+        "completed",
+        "followup"
+      ],
+      "defaultPlannerPolicy": {
+        "maxAttempts": 1,
+        "afterSuccess": "advance",
+        "afterFail": "ask_followup"
+      },
+      "generatorGuidance": {
+        "coachTone": "concise_mastery",
+        "maxChineseChars": 42,
+        "separateFormalQuestion": true
+      }
+    }
+  ]
+}

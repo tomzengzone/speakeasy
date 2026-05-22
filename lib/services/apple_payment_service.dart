@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import 'package:speakeasy/config/payment_config.dart';
+import 'package:speakeasy/services/api_client.dart';
 import 'payment_service.dart';
 
 class ApplePaymentService implements PaymentService {
@@ -239,9 +240,22 @@ class ApplePaymentService implements PaymentService {
       return false;
     }
 
-    // TODO: 改为服务端收据校验，并在服务端使用 App Store Server API
-    // 或 verifyReceipt 接口做真实验签。
-    return true;
+    final Map<String, dynamic> data = await ApiClient.verifyAppleReceipt(
+      productId: purchase.productID,
+      transactionId: purchase.purchaseID,
+      serverVerificationData: receipt,
+      localVerificationData: purchase.verificationData.localVerificationData,
+    );
+    final String verifiedProductId =
+        (data['productId'] as String? ?? data['productID'] as String? ?? '')
+            .trim();
+    final bool productMatches =
+        verifiedProductId.isEmpty || verifiedProductId == purchase.productID;
+    final bool active =
+        data['active'] == true ||
+        data['valid'] == true ||
+        data['entitlementActive'] == true;
+    return productMatches && active;
   }
 
   String _errorMessageFromPurchase(PurchaseDetails purchase) {
@@ -257,9 +271,6 @@ class ApplePaymentService implements PaymentService {
       'transactionDate': purchase.transactionDate,
       'status': purchase.status.name,
       'source': purchase.verificationData.source,
-      'serverVerificationData':
-          purchase.verificationData.serverVerificationData,
-      'localVerificationData': purchase.verificationData.localVerificationData,
     };
   }
 }

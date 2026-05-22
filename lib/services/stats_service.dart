@@ -35,10 +35,26 @@ class StatsService {
   Future<LearningStatsModel> recordSession({
     required int durationSeconds,
     required int score,
+    String? title,
+    String? emoji,
+    List<String>? tags,
+    Map<String, dynamic>? feedbackJson,
+    String? promptText,
+    Map<String, dynamic>? sceneDraftJson,
+    String feedbackStatus = 'ready',
+    Map<String, dynamic>? feedbackContextJson,
   }) async {
     final LearningStatsModel? stats = await ApiClient.recordPracticeSession(
       durationSeconds: durationSeconds,
       score: score,
+      title: title,
+      emoji: emoji,
+      tags: tags,
+      feedback: feedbackJson,
+      promptText: promptText,
+      sceneDraft: sceneDraftJson,
+      feedbackStatus: feedbackStatus,
+      feedbackContext: feedbackContextJson,
     );
     final LearningStatsModel resolved = stats ?? await refreshStats();
     await cacheStats(resolved);
@@ -47,5 +63,39 @@ class StatsService {
 
   Future<void> clearCache() async {
     await StorageService.instance.clearLearningStatsCache();
+  }
+
+  Future<LearningStatsModel> upsertPracticeFeedback({
+    required int durationSeconds,
+    required int score,
+    required String title,
+    String? emoji,
+    List<String>? tags,
+    required Map<String, dynamic> feedbackJson,
+    String? promptText,
+    Map<String, dynamic>? sceneDraftJson,
+    Map<String, dynamic>? feedbackContextJson,
+  }) async {
+    final LearningStatsModel? stats = await ApiClient.upsertPracticeFeedback(
+      durationSeconds: durationSeconds,
+      score: score,
+      title: title,
+      emoji: emoji,
+      tags: tags,
+      feedback: feedbackJson,
+      promptText: promptText,
+      sceneDraft: sceneDraftJson,
+      feedbackContext: feedbackContextJson,
+    );
+    final LearningStatsModel resolved = stats ?? await refreshStats();
+    await cacheStats(resolved);
+    return resolved;
+  }
+
+  Future<LearningStatsModel> deletePracticeSceneGroup(String title) async {
+    final LearningStatsModel? stats = await ApiClient.deletePracticeSceneGroup(title);
+    final LearningStatsModel resolved = stats ?? await refreshStats();
+    await cacheStats(resolved);
+    return resolved;
   }
 }

@@ -3,13 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart' as apple_sign_in;
 
-import 'package:speakeasy/services/api_client.dart';
+import 'package:speakeasy/application/login/login_actions_coordinator.dart';
+import 'package:speakeasy/config/app_config.dart';
+import 'package:speakeasy/core/routing/app_routes.dart';
 import 'package:speakeasy/models/app_models.dart';
 import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/l10n/l10n.dart';
-import 'package:speakeasy/pages/privacy_policy_page.dart';
-import 'package:speakeasy/pages/terms_of_service_page.dart';
-import 'package:speakeasy/services/wechat_auth_service.dart';
 
 enum LoginMethod { main, phone, email }
 
@@ -32,6 +31,9 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  static const LoginActionsCoordinator _loginCoordinator =
+      LoginActionsCoordinator();
+
   LoginMethod _method = LoginMethod.main;
   bool _showPassword = false;
   bool _isRegister = false;
@@ -93,7 +95,9 @@ class _LoginPageState extends State<LoginPage> {
       _localErrorMessage = null;
     });
 
-    await AppSessionScope.of(context).signInWithApple();
+    await _loginCoordinator.signInWithApple(
+      signIn: AppSessionScope.of(context).signInWithApple,
+    );
   }
 
   Future<void> _submitWeChatLogin() async {
@@ -112,9 +116,9 @@ class _LoginPageState extends State<LoginPage> {
       _localErrorMessage = null;
     });
 
-    await AppSessionScope.of(
-      context,
-    ).signInWithWeChat(service: WeChatAuthService.instance);
+    await _loginCoordinator.signInWithWeChat(
+      signIn: AppSessionScope.of(context).signInWithWeChat,
+    );
   }
 
   String? _validate(LoginSubmission submission) {
@@ -168,10 +172,7 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      final Map<String, dynamic> res = await ApiClient.sendSmsCode(phone);
-      if (res['code'] != 0) {
-        throw Exception(res['message'] ?? l10n.verificationCodeSendFailed);
-      }
+      await _loginCoordinator.sendCode(phone: phone);
       if (!mounted) {
         return;
       }
@@ -197,7 +198,10 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
       setState(() {
-        _localErrorMessage = error.toString().replaceFirst('Exception: ', '');
+        final String message = error.toString().replaceFirst('Exception: ', '');
+        _localErrorMessage = message.trim().isEmpty
+            ? l10n.verificationCodeSendFailed
+            : message;
       });
     } finally {
       if (mounted) {
@@ -226,26 +230,43 @@ class _LoginPageState extends State<LoginPage> {
       _localErrorMessage = null;
     });
 
-    await AppSessionScope.of(context).signInWithCode(
+    await _loginCoordinator.signInWithPhoneCode(
       phone: submission.phone ?? '',
       code: submission.code ?? '',
+      signIn: AppSessionScope.of(context).signInWithCode,
+    );
+  }
+
+  Future<void> _submitTestPhoneLogin() async {
+    final String phone = _phoneController.text.trim();
+    final AppLocalizations l10n = context.l10n;
+    if (!_agreeTerms) {
+      setState(() {
+        _localErrorMessage = l10n.pleaseAgreeTerms;
+      });
+      return;
+    }
+    if (phone.length < 11) {
+      setState(() {
+        _localErrorMessage = l10n.enterValidPhoneNumber;
+      });
+      return;
+    }
+    setState(() {
+      _localErrorMessage = null;
+    });
+    await _loginCoordinator.signInWithTestPhone(
+      phone: phone,
+      signIn: AppSessionScope.of(context).signInWithTestPhone,
     );
   }
 
   void _openPrivacyPolicy() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (BuildContext context) => const PrivacyPolicyPage(),
-      ),
-    );
+    Navigator.of(context).pushNamed(AppRoutes.privacyPolicy);
   }
 
   void _openTermsOfService() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (BuildContext context) => const TermsOfServicePage(),
-      ),
-    );
+    Navigator.of(context).pushNamed(AppRoutes.termsOfService);
   }
 
   @override
@@ -530,6 +551,26 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ],
         ),
+        if (AppConfig.enableTestPhoneLogin) ...[
+          const SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: widget.isLoading ? null : _submitTestPhoneLogin,
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+              foregroundColor: primaryGreen,
+              side: const BorderSide(color: Color(0xFFBFD5CD)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: const Text('测试环境直接登录'),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '测试环境入口，依赖服务端测试开关。',
+            style: TextStyle(fontSize: 12, color: textSecondary, height: 1.5),
+          ),
+        ],
         const SizedBox(height: 20),
         FilledButton(
           onPressed: widget.isLoading ? null : _submitPhoneLogin,

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 2,
+  "defaultSceneId": "job_interview",
+  "scenes": [
+    {
+      "id": "job_interview",
+      "titleCn": "英语面试",
+      "titleEn": "Job Interview in English",
+      "description": "英语面试 v2 分级场景表达 Wiki，包含 L1/L2/L3 三条练习主线。",
+      "tags": ["面试", "求职", "口语", "L1", "L2", "L3"],
+      "assetPath": "assets/data/interview_scene_wikis/job_interview.json"
+    },
+    {
+      "id": "onboarding_introduction",
+      "titleCn": "入职介绍",
+      "titleEn": "Onboarding Introduction",
+      "description": "入职介绍分级场景表达 Wiki，覆盖入职欢迎、自我介绍、职责说明、优先级确认和团队协作沟通。",
+      "tags": ["入职", "职场", "工作", "团队沟通", "自我介绍", "口语", "L1", "L2", "L3"],
+      "assetPath": "assets/data/interview_scene_wikis/onboarding_introduction.json"
+    }
+  ]
+}

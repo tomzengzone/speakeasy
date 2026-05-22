@@ -125,7 +125,7 @@ class NotificationService {
       '今天还没练习，点击开始今日任务',
       scheduled,
       details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,

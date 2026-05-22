@@ -1,0 +1,394 @@
+{
+  "schemaVersion": 1,
+  "capabilities": [
+    {
+      "id": "professional_opening",
+      "description": "Open an interview with gratitude, positive energy, and a professional tone.",
+      "relatedSkills": [
+        "gratitude",
+        "positive_energy",
+        "professional_tone",
+        "company_awareness"
+      ],
+      "equivalentCapabilities": [
+        "rapport_building"
+      ],
+      "upgradePaths": [
+        "professional_opening_with_context"
+      ]
+    },
+    {
+      "id": "role_summary",
+      "description": "Summarize current role, scope, and professional identity clearly.",
+      "relatedSkills": [
+        "current_role",
+        "domain_focus",
+        "scope_summary",
+        "professional_identity"
+      ],
+      "equivalentCapabilities": [
+        "self_introduction"
+      ],
+      "upgradePaths": [
+        "role_summary_with_impact"
+      ]
+    },
+    {
+      "id": "experience_summary",
+      "description": "State experience length and domain expertise in a concise interview answer.",
+      "relatedSkills": [
+        "experience_length",
+        "domain_expertise",
+        "specialization"
+      ],
+      "equivalentCapabilities": [
+        "background_summary"
+      ],
+      "upgradePaths": [
+        "career_growth_narrative"
+      ]
+    },
+    {
+      "id": "achievement_storytelling",
+      "description": "Describe a project or achievement with action, responsibility, and result.",
+      "relatedSkills": [
+        "project_context",
+        "action_taken",
+        "result_framing",
+        "leadership_signal"
+      ],
+      "equivalentCapabilities": [
+        "star_storytelling"
+      ],
+      "upgradePaths": [
+        "impact_storytelling"
+      ]
+    },
+    {
+      "id": "problem_solving_impact",
+      "description": "Explain a problem, solution, and measurable improvement.",
+      "relatedSkills": [
+        "problem_identification",
+        "solution_action",
+        "impact_result",
+        "quantification"
+      ],
+      "equivalentCapabilities": [
+        "solution_storytelling"
+      ],
+      "upgradePaths": [
+        "systems_thinking_impact"
+      ]
+    },
+    {
+      "id": "strength_positioning",
+      "description": "Position a strength with relevance, evidence, and a credible tone.",
+      "relatedSkills": [
+        "strength_claim",
+        "evidence_signal",
+        "role_relevance",
+        "confidence_tone"
+      ],
+      "equivalentCapabilities": [
+        "value_proposition"
+      ],
+      "upgradePaths": [
+        "cross_functional_influence"
+      ]
+    },
+    {
+      "id": "pressure_response",
+      "description": "Answer pressure questions with calmness, method, and resilience.",
+      "relatedSkills": [
+        "calm_response",
+        "focus_strategy",
+        "resilience",
+        "method_explanation"
+      ],
+      "equivalentCapabilities": [
+        "stress_management"
+      ],
+      "upgradePaths": [
+        "pressure_methodology"
+      ]
+    },
+    {
+      "id": "role_motivation",
+      "description": "Explain motivation for the next role through growth, role fit, and contribution.",
+      "relatedSkills": [
+        "motivation",
+        "growth_goal",
+        "role_fit",
+        "contribution_signal"
+      ],
+      "equivalentCapabilities": [
+        "career_motivation"
+      ],
+      "upgradePaths": [
+        "strategic_role_fit"
+      ]
+    },
+    {
+      "id": "career_planning",
+      "description": "Describe a future plan with ambition, growth path, and contribution.",
+      "relatedSkills": [
+        "future_goal",
+        "leadership_growth",
+        "contribution",
+        "realistic_timeline"
+      ],
+      "equivalentCapabilities": [
+        "future_vision"
+      ],
+      "upgradePaths": [
+        "talent_development_vision"
+      ]
+    },
+    {
+      "id": "candidate_questioning",
+      "description": "Ask thoughtful candidate questions about responsibilities, success, or process.",
+      "relatedSkills": [
+        "role_discovery",
+        "success_criteria",
+        "hiring_process",
+        "curiosity_tone"
+      ],
+      "equivalentCapabilities": [
+        "interviewer_questioning"
+      ],
+      "upgradePaths": [
+        "strategic_candidate_questions"
+      ]
+    },
+    {
+      "id": "growth_mindset_gap",
+      "description": "Handle gaps honestly while showing learning agility and recovery.",
+      "relatedSkills": [
+        "honest_gap",
+        "learning_agility",
+        "positive_recovery",
+        "strategic_humility"
+      ],
+      "equivalentCapabilities": [
+        "weakness_reframing"
+      ],
+      "upgradePaths": [
+        "strategic_gap_reframe"
+      ]
+    },
+    {
+      "id": "professional_closing",
+      "description": "Close the interview with gratitude, interest, and proactive next-step energy.",
+      "relatedSkills": [
+        "closing_gratitude",
+        "interest_signal",
+        "proactive_next_step",
+        "professional_tone"
+      ],
+      "equivalentCapabilities": [
+        "closing_rapport"
+      ],
+      "upgradePaths": [
+        "confident_closing"
+      ]
+    },
+    {
+      "id": "onboarding_welcome_response",
+      "description": "Respond to a team welcome with a friendly greeting, positive energy, and natural teammate tone.",
+      "relatedSkills": [
+        "welcome_greeting",
+        "team_joining_positive_energy",
+        "friendly_tone"
+      ],
+      "equivalentCapabilities": [
+        "professional_opening",
+        "rapport_building"
+      ],
+      "upgradePaths": [
+        "confident_team_opening"
+      ]
+    },
+    {
+      "id": "onboarding_role_intro",
+      "description": "Introduce a new role, work focus, and onboarding context clearly.",
+      "relatedSkills": [
+        "role_title",
+        "role_focus",
+        "onboarding_context"
+      ],
+      "equivalentCapabilities": [
+        "role_summary",
+        "self_introduction"
+      ],
+      "upgradePaths": [
+        "role_intro_with_scope"
+      ]
+    },
+    {
+      "id": "onboarding_background_summary",
+      "description": "Summarize prior experience in a way that helps new teammates understand the learner's background.",
+      "relatedSkills": [
+        "prior_experience",
+        "role_relevance",
+        "internal_collaboration"
+      ],
+      "equivalentCapabilities": [
+        "experience_summary",
+        "background_summary"
+      ],
+      "upgradePaths": [
+        "background_with_collaboration_value"
+      ]
+    },
+    {
+      "id": "onboarding_responsibility_scope",
+      "description": "Explain responsibilities, process ownership, and team alignment during onboarding.",
+      "relatedSkills": [
+        "responsibility_scope",
+        "process_support",
+        "team_alignment"
+      ],
+      "equivalentCapabilities": [
+        "role_summary"
+      ],
+      "upgradePaths": [
+        "cross_functional_scope_alignment"
+      ]
+    },
+    {
+      "id": "onboarding_experience_link",
+      "description": "Connect a previous work experience to the new team's needs with one useful example.",
+      "relatedSkills": [
+        "coordination_experience",
+        "issue_resolution",
+        "role_relevance"
+      ],
+      "equivalentCapabilities": [
+        "achievement_storytelling"
+      ],
+      "upgradePaths": [
+        "experience_link_with_impact"
+      ]
+    },
+    {
+      "id": "onboarding_learning_mindset",
+      "description": "Show willingness to learn, ask questions, take notes, and adapt quickly.",
+      "relatedSkills": [
+        "learning_mindset",
+        "question_asking",
+        "note_taking"
+      ],
+      "equivalentCapabilities": [
+        "growth_mindset_gap"
+      ],
+      "upgradePaths": [
+        "proactive_learning_plan"
+      ]
+    },
+    {
+      "id": "onboarding_priority_alignment",
+      "description": "Ask for first-week priorities and success expectations without sounding passive.",
+      "relatedSkills": [
+        "priority_discovery",
+        "first_week_focus",
+        "expectation_alignment"
+      ],
+      "equivalentCapabilities": [
+        "candidate_questioning"
+      ],
+      "upgradePaths": [
+        "priority_alignment_with_ownership"
+      ]
+    },
+    {
+      "id": "onboarding_workflow_tools",
+      "description": "Ask about communication channels, task tracking, documentation, and team workflows.",
+      "relatedSkills": [
+        "tool_discovery",
+        "communication_channels",
+        "documentation_workflow"
+      ],
+      "equivalentCapabilities": [
+        "candidate_questioning"
+      ],
+      "upgradePaths": [
+        "workflow_alignment"
+      ]
+    },
+    {
+      "id": "onboarding_proactive_contribution",
+      "description": "Offer early help and contribution while staying aligned with team needs.",
+      "relatedSkills": [
+        "proactive_help",
+        "early_contribution",
+        "ownership_signal"
+      ],
+      "equivalentCapabilities": [
+        "strength_positioning"
+      ],
+      "upgradePaths": [
+        "early_ownership_signal"
+      ]
+    },
+    {
+      "id": "onboarding_collaboration_style",
+      "description": "Learn teammates' working styles and communication preferences to collaborate smoothly.",
+      "relatedSkills": [
+        "collaboration_preference",
+        "working_style_awareness",
+        "team_alignment"
+      ],
+      "equivalentCapabilities": [
+        "rapport_building"
+      ],
+      "upgradePaths": [
+        "collaboration_norms_alignment"
+      ]
+    },
+    {
+      "id": "onboarding_next_step_alignment",
+      "description": "Clarify next onboarding steps and immediate actions after an introduction.",
+      "relatedSkills": [
+        "next_step_clarity",
+        "onboarding_sequence",
+        "expectation_alignment"
+      ],
+      "equivalentCapabilities": [
+        "candidate_questioning"
+      ],
+      "upgradePaths": [
+        "next_step_with_timeline"
+      ]
+    },
+    {
+      "id": "onboarding_clarification_path",
+      "description": "Ask who to align with when a process, decision, or responsibility is unclear.",
+      "relatedSkills": [
+        "ambiguity_flag",
+        "escalation_path",
+        "alignment_before_action"
+      ],
+      "equivalentCapabilities": [
+        "growth_mindset_gap"
+      ],
+      "upgradePaths": [
+        "ambiguity_management"
+      ]
+    },
+    {
+      "id": "onboarding_warm_closing",
+      "description": "Close an onboarding introduction with gratitude, warmth, and a collaborative forward-looking tone.",
+      "relatedSkills": [
+        "warm_gratitude",
+        "collaboration_expectation",
+        "friendly_tone"
+      ],
+      "equivalentCapabilities": [
+        "professional_closing"
+      ],
+      "upgradePaths": [
+        "collaborative_closing"
+      ]
+    }
+  ]
+}

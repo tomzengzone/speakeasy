@@ -1,120 +1,158 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
+import 'dart:async';
 
-import 'package:speakeasy/services/audio_service.dart';
-import 'package:speakeasy/services/app_session.dart';
-import 'package:speakeasy/config/sentry_config.dart';
-import 'package:speakeasy/services/content_repository.dart';
-import 'package:speakeasy/pages/home_page.dart';
-import 'package:speakeasy/l10n/l10n.dart';
-import 'package:speakeasy/pages/login_page.dart';
-import 'package:speakeasy/services/notification_service.dart';
-import 'package:speakeasy/pages/onboarding_page.dart';
-import 'package:speakeasy/services/storage_service.dart';
+import 'package:flutter/material.dart';
+
+import 'package:speakeasy/core/bootstrap/app_bootstrapper.dart';
+import 'package:speakeasy/core/bootstrap/app_root.dart';
 import 'package:speakeasy/utils/error_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await StorageService.instance.init();
-  await dotenv.load(fileName: kDebugMode ? '.env.dev' : '.env');
-  final SentryConfig sentryConfig = await SentryConfig.load();
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('[FlutterError] ${details.exceptionAsString()}');
+    if (details.stack != null) {
+      debugPrintStack(stackTrace: details.stack);
+    }
+  };
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return _BootErrorView(title: '界面加载失败', detail: details.exceptionAsString());
+  };
 
-  await SentryFlutter.init(
-    (options) {
-      options.dsn = sentryConfig.dsn;
-      options.environment = sentryConfig.environment;
-      options.release = sentryConfig.release;
-    },
-    appRunner: () async {
-      try {
-        await NotificationService.instance.init();
-      } catch (error, stackTrace) {
-        ErrorHandler.handleError(
-          error,
-          stackTrace: stackTrace,
-          context: 'Notification service initialization failed',
-        );
-        // 通知初始化失败不影响主流程
-      }
-
-      runApp(SpeakEasyApp(session: AppSession(), audioService: AudioService()));
-    },
-  );
+  runApp(const _BootstrapApp());
 }
 
-class SpeakEasyApp extends StatelessWidget {
-  const SpeakEasyApp({
-    super.key,
-    required this.session,
-    required this.audioService,
-  });
+class _BootstrapApp extends StatefulWidget {
+  const _BootstrapApp();
 
-  final AppSession session;
-  final AudioService audioService;
+  @override
+  State<_BootstrapApp> createState() => _BootstrapAppState();
+}
+
+class _BootstrapAppState extends State<_BootstrapApp> {
+  static const AppBootstrapper _bootstrapper = AppBootstrapper();
+
+  Widget? _app;
+  String _status = '正在启动…';
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_bootstrap());
+  }
+
+  Future<void> _bootstrap() async {
+    setState(() {
+      _error = null;
+      _status = '正在启动…';
+    });
+    try {
+      final AppBootstrapBundle bundle = await _bootstrapper.bootstrap(
+        onStatus: (String status) {
+          if (!mounted) {
+            return;
+          }
+          setState(() => _status = status);
+        },
+      );
+      final Widget app = SpeakEasyAppRoot(
+        session: bundle.createSession(),
+        audioService: bundle.createAudioService(),
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _app = app;
+      });
+    } catch (error, stackTrace) {
+      ErrorHandler.handleError(
+        error,
+        stackTrace: stackTrace,
+        context: 'App bootstrap failed',
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = '$error';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ContentRepositoryScope(
-      repository: const AssetContentRepository(),
-      child: AudioServiceScope(
-        service: audioService,
-        child: AppSessionScope(
-          session: session,
-          child: ListenableBuilder(
-            listenable: session,
-            builder: (BuildContext context, Widget? _) {
-              return MaterialApp(
-                debugShowCheckedModeBanner: false,
-                onGenerateTitle: (BuildContext context) => context.l10n.appName,
-                themeMode: session.themeMode,
-                localizationsDelegates: L10n.localizationsDelegates,
-                supportedLocales: L10n.supportedLocales,
-                theme: ThemeData(
-                  useMaterial3: true,
-                  colorScheme: ColorScheme.fromSeed(
-                    seedColor: const Color(0xFF4A6B57),
-                    brightness: Brightness.light,
-                  ),
-                  scaffoldBackgroundColor: const Color(0xFFF3EFE8),
-                  textTheme: ThemeData.light().textTheme.apply(
-                    bodyColor: const Color(0xFF241F1A),
-                    displayColor: const Color(0xFF241F1A),
-                  ),
+    final Widget? app = _app;
+    if (app != null) {
+      return app;
+    }
+    final String? error = _error;
+    if (error != null) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: _BootErrorView(
+          title: '应用启动失败',
+          detail: error,
+          onRetry: () => unawaited(_bootstrap()),
+        ),
+      );
+    }
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: _BootLoadingView(status: _status),
+    );
+  }
+}
+
+class _BootLoadingView extends StatelessWidget {
+  const _BootLoadingView({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F2EC),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 76,
+                height: 76,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x14000000),
+                      blurRadius: 24,
+                      offset: Offset(0, 12),
+                    ),
+                  ],
                 ),
-                darkTheme: ThemeData(
-                  useMaterial3: true,
-                  colorScheme: ColorScheme.fromSeed(
-                    seedColor: const Color(0xFF4A6B57),
-                    brightness: Brightness.dark,
-                  ),
-                  scaffoldBackgroundColor: const Color(0xFF1A1A1A),
-                  textTheme: ThemeData.dark().textTheme.apply(
-                    bodyColor: const Color(0xFFEDEAE3),
-                    displayColor: const Color(0xFFEDEAE3),
-                  ),
+                alignment: Alignment.center,
+                child: const CircularProgressIndicator(strokeWidth: 3),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'SpeakEasy',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1F1F1F),
                 ),
-                home: !session.isLoggedIn
-                    ? _LoginGate(session: session)
-                    : !session.onboardingDone
-                    ? OnboardingPage(
-                        onComplete:
-                            ({
-                              required List<String> goals,
-                              required int level,
-                              required int dailyMinutes,
-                            }) {
-                              session.completeOnboarding(
-                                goals: goals,
-                                level: level,
-                                dailyMinutes: dailyMinutes,
-                              );
-                            },
-                      )
-                    : const SpeakEasyHomePage(),
-              );
-            },
+              ),
+              const SizedBox(height: 10),
+              Text(
+                status,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, color: Color(0xFF7B7B7B)),
+              ),
+            ],
           ),
         ),
       ),
@@ -122,29 +160,68 @@ class SpeakEasyApp extends StatelessWidget {
   }
 }
 
-/// 登录页包装器：管理 loading 状态和错误信息，调用 AppSession.signInWithCode
-class _LoginGate extends StatefulWidget {
-  const _LoginGate({required this.session});
-  final AppSession session;
+class _BootErrorView extends StatelessWidget {
+  const _BootErrorView({
+    required this.title,
+    required this.detail,
+    this.onRetry,
+  });
 
-  @override
-  State<_LoginGate> createState() => _LoginGateState();
-}
-
-class _LoginGateState extends State<_LoginGate> {
-  String? _localErrorMessage;
+  final String title;
+  final String detail;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
-    return LoginPage(
-      isLoading: widget.session.isAuthenticating,
-      errorMessage: _localErrorMessage ?? widget.session.authErrorMessage,
-      onSubmit: (submission) async {
-        setState(() {
-          _localErrorMessage = null;
-        });
-        await widget.session.signIn(submission);
-      },
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F3EE),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.error_outline_rounded,
+                  size: 34,
+                  color: Color(0xFFB25555),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1F1F1F),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                detail,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.5,
+                  color: Color(0xFF7A6F67),
+                ),
+              ),
+              if (onRetry != null) ...[
+                const SizedBox(height: 20),
+                FilledButton(onPressed: onRetry, child: const Text('重试')),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import 'package:speakeasy/models/app_models.dart';
@@ -29,8 +32,9 @@ class _LearningPageState extends State<LearningPage> {
   int _selectedVariation = 0;
   final Map<int, String> _recordingPaths = <int, String>{};
   final Map<int, PronunciationScore> _scores = <int, PronunciationScore>{};
+  AudioService? _audioService;
 
-  static const List<String> _variations = <String>[
+  static const List<String> _fallbackVariations = <String>[
     'Thanks for joining on short notice.',
     'I\'d like to start with a quick update.',
     'Let me walk you through the current timeline.',
@@ -38,6 +42,17 @@ class _LearningPageState extends State<LearningPage> {
   ];
 
   List<String> _titles(AppLocalizations l10n) {
+    final List<LessonStepData> steps = widget.card.lessonContent?.steps ??
+        const <LessonStepData>[];
+    if (steps.length >= _stepCount &&
+        steps.take(_stepCount).every((LessonStepData step) {
+          return step.title.trim().isNotEmpty;
+        })) {
+      return steps
+          .take(_stepCount)
+          .map((LessonStepData step) => step.title.trim())
+          .toList(growable: false);
+    }
     return <String>[
       l10n.learningStepUnderstandScene,
       l10n.learningStepLearn3Phrases,
@@ -47,6 +62,17 @@ class _LearningPageState extends State<LearningPage> {
   }
 
   List<String> _bodies(AppLocalizations l10n) {
+    final List<LessonStepData> steps = widget.card.lessonContent?.steps ??
+        const <LessonStepData>[];
+    if (steps.length >= _stepCount &&
+        steps.take(_stepCount).every((LessonStepData step) {
+          return step.body.trim().isNotEmpty;
+        })) {
+      return steps
+          .take(_stepCount)
+          .map((LessonStepData step) => step.body.trim())
+          .toList(growable: false);
+    }
     return <String>[
       l10n.learningBodyUnderstandScene,
       l10n.learningBodyLearn3Phrases,
@@ -55,21 +81,26 @@ class _LearningPageState extends State<LearningPage> {
     ];
   }
 
-  List<({String en, String translation, String note})> _phrases(
-    AppLocalizations l10n,
-  ) {
-    return <({String en, String translation, String note})>[
-      (
+  List<LessonPhraseData> _phrases(AppLocalizations l10n) {
+    final List<LessonPhraseData> phrases = widget.card.lessonContent?.phrases
+            .where((LessonPhraseData phrase) => phrase.en.trim().isNotEmpty)
+            .toList(growable: false) ??
+        const <LessonPhraseData>[];
+    if (phrases.isNotEmpty) {
+      return phrases;
+    }
+    return <LessonPhraseData>[
+      LessonPhraseData(
         en: 'Good morning, everyone. Thanks for joining.',
         translation: l10n.learningPhraseTranslationMorning,
         note: l10n.phraseNoteMeetingOpening,
       ),
-      (
+      LessonPhraseData(
         en: 'Let\'s get started.',
         translation: l10n.learningPhraseTranslationStart,
         note: l10n.phraseNoteNaturalPacing,
       ),
-      (
+      LessonPhraseData(
         en: 'Today, we\'re here to discuss this week\'s priorities.',
         translation: l10n.learningPhraseTranslationPriorities,
         note: l10n.phraseNoteClearPurpose,
@@ -77,7 +108,49 @@ class _LearningPageState extends State<LearningPage> {
     ];
   }
 
+  String _sceneNote(AppLocalizations l10n) {
+    final String? sceneNote = widget.card.lessonContent?.sceneNote?.trim();
+    if (sceneNote != null && sceneNote.isNotEmpty) {
+      return sceneNote;
+    }
+    return l10n.understandSceneBeforePractice;
+  }
+
+  List<String> _variationOptions() {
+    final List<String> variations = widget.card.lessonContent?.variations
+            .where((String item) => item.trim().isNotEmpty)
+            .toList(growable: false) ??
+        const <String>[];
+    if (variations.isNotEmpty) {
+      return variations;
+    }
+    return _fallbackVariations;
+  }
+
+  String _variationPrompt() {
+    final String? prompt = widget.card.lessonContent?.variationPrompt?.trim();
+    if (prompt != null && prompt.isNotEmpty) {
+      return prompt;
+    }
+    return 'Nice to finally ___ you.';
+  }
+
+  String _variationHint(AppLocalizations l10n) {
+    final String? hint = widget.card.lessonContent?.variationHint?.trim();
+    if (hint != null && hint.isNotEmpty) {
+      return hint;
+    }
+    return l10n.chooseSmoothestVariationHint;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _audioService = AudioServiceScope.of(context);
+  }
+
   void _handleBack() {
+    unawaited(_stopLearningPlayback());
     if (_step == 0) {
       widget.onBack();
       return;
@@ -88,6 +161,7 @@ class _LearningPageState extends State<LearningPage> {
   }
 
   void _handleNext() {
+    unawaited(_stopLearningPlayback());
     if (_step == _stepCount - 1) {
       (widget.onComplete ?? widget.onBack).call();
       return;
@@ -95,6 +169,16 @@ class _LearningPageState extends State<LearningPage> {
     setState(() {
       _step += 1;
     });
+  }
+
+  Future<void> _stopLearningPlayback() async {
+    await _audioService?.stopPlayback(clearRealtimeBuffer: false);
+  }
+
+  @override
+  void dispose() {
+    unawaited(_stopLearningPlayback());
+    super.dispose();
   }
 
   @override
@@ -278,8 +362,8 @@ class _LearningPageState extends State<LearningPage> {
     AudioService audioService,
     AppLocalizations l10n,
   ) {
-    final List<({String en, String translation, String note})> phrases =
-        _phrases(l10n);
+    final List<LessonPhraseData> phrases = _phrases(l10n);
+    final List<String> variations = _variationOptions();
     return switch (_step) {
       0 => Container(
         padding: const EdgeInsets.all(18),
@@ -319,7 +403,7 @@ class _LearningPageState extends State<LearningPage> {
             ),
             const SizedBox(height: 12),
             Text(
-              l10n.understandSceneBeforePractice,
+              _sceneNote(l10n),
               style: TextStyle(fontSize: 13, height: 1.6, color: textSecondary),
             ),
           ],
@@ -328,11 +412,13 @@ class _LearningPageState extends State<LearningPage> {
       1 => Column(
         children: List<Widget>.generate(phrases.length, (int index) {
           final item = phrases[index];
-          final String ttsKey = 'tts_${item.en.hashCode}';
+          final String playKey = item.audioUrl?.trim().isNotEmpty == true
+              ? item.audioUrl!.trim()
+              : 'tts_${item.en.hashCode}';
           final bool playing =
               audioService.isPlaying &&
               audioService.playingUrl != null &&
-              audioService.playingUrl!.contains(ttsKey);
+              audioService.playingUrl == playKey;
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Container(
@@ -408,7 +494,14 @@ class _LearningPageState extends State<LearningPage> {
                   ),
                   const SizedBox(width: 12),
                   IconButton(
-                    onPressed: () => audioService.playTts(item.en),
+                    onPressed: () {
+                      final String? audioUrl = item.audioUrl?.trim();
+                      if (audioUrl != null && audioUrl.isNotEmpty) {
+                        audioService.playUrl(audioUrl);
+                        return;
+                      }
+                      audioService.playTts(item.en);
+                    },
                     style: IconButton.styleFrom(
                       backgroundColor: playing
                           ? color
@@ -444,13 +537,30 @@ class _LearningPageState extends State<LearningPage> {
                   });
                   if (path != null && mounted) {
                     final AppSession session = AppSessionScope.of(context);
-                    final PronunciationScore score = await session
-                        .scorePronunciation(
-                          audioPath: path,
-                          expectedText: item.en,
+                    try {
+                      final PronunciationScore score = await session
+                          .scorePronunciation(
+                            audioPath: path,
+                            expectedText: item.en,
+                          );
+                      if (mounted) {
+                        setState(() => _scores[index] = score);
+                      }
+                    } catch (error) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '评分失败: ${error.toString().split(':').last.trim()}',
+                            ),
+                            duration: const Duration(seconds: 2),
+                          ),
                         );
-                    if (mounted) {
-                      setState(() => _scores[index] = score);
+                      }
+                    } finally {
+                      unawaited(
+                        File(path).delete().catchError((Object _) => File(path)),
+                      );
                     }
                   }
                 } else {
@@ -533,9 +643,9 @@ class _LearningPageState extends State<LearningPage> {
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'Nice to finally ___ you.',
-              style: TextStyle(
+            Text(
+              _variationPrompt(),
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: textPrimary,
@@ -545,7 +655,7 @@ class _LearningPageState extends State<LearningPage> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: List<Widget>.generate(_variations.length, (int index) {
+              children: List<Widget>.generate(variations.length, (int index) {
                 final bool active = _selectedVariation == index;
                 return GestureDetector(
                   onTap: () => setState(() => _selectedVariation = index),
@@ -566,7 +676,7 @@ class _LearningPageState extends State<LearningPage> {
                       ),
                     ),
                     child: Text(
-                      _variations[index],
+                      variations[index],
                       style: TextStyle(
                         fontSize: 12,
                         color: active ? color : textPrimary,
@@ -579,7 +689,7 @@ class _LearningPageState extends State<LearningPage> {
             ),
             const SizedBox(height: 14),
             Text(
-              l10n.chooseSmoothestVariationHint,
+              _variationHint(l10n),
               style: TextStyle(
                 fontSize: 13,
                 height: 1.65,

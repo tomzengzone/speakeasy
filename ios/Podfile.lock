@@ -1,6 +1,9 @@
 PODS:
   - audio_session (0.0.1):
     - Flutter
+  - CwlCatchException (2.2.1):
+    - CwlCatchExceptionSupport (~> 2.2.1)
+  - CwlCatchExceptionSupport (2.2.1)
   - Flutter (1.0.0)
   - flutter_local_notifications (0.0.1):
     - Flutter
@@ -20,6 +23,9 @@ PODS:
     - FlutterMacOS
   - package_info_plus (0.4.5):
     - Flutter
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
   - record_ios (1.2.0):
     - Flutter
   - Sentry/HybridSDK (8.58.0)
@@ -32,6 +38,11 @@ PODS:
     - FlutterMacOS
   - sign_in_with_apple (0.0.1):
     - Flutter
+  - SingSoundSDK (1.5.0)
+  - speech_to_text (7.2.0):
+    - CwlCatchException
+    - Flutter
+    - FlutterMacOS
   - sqflite_darwin (0.0.4):
     - Flutter
     - FlutterMacOS
@@ -46,14 +57,21 @@ DEPENDENCIES:
   - in_app_purchase_storekit (from `.symlinks/plugins/in_app_purchase_storekit/darwin`)
   - just_audio (from `.symlinks/plugins/just_audio/darwin`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
+  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - record_ios (from `.symlinks/plugins/record_ios/ios`)
   - sentry_flutter (from `.symlinks/plugins/sentry_flutter/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sign_in_with_apple (from `.symlinks/plugins/sign_in_with_apple/ios`)
+  - SingSoundSDK
+  - speech_to_text (from `.symlinks/plugins/speech_to_text/darwin`)
   - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
 
 SPEC REPOS:
+  https://pt.singsound.com:10081/singsound-public/SingSoundSDKCocoaPodRepo.git:
+    - SingSoundSDK
   trunk:
+    - CwlCatchException
+    - CwlCatchExceptionSupport
     - Sentry
     - WechatOpenSDK-XCFramework
 
@@ -74,6 +92,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/just_audio/darwin"
   package_info_plus:
     :path: ".symlinks/plugins/package_info_plus/ios"
+  path_provider_foundation:
+    :path: ".symlinks/plugins/path_provider_foundation/darwin"
   record_ios:
     :path: ".symlinks/plugins/record_ios/ios"
   sentry_flutter:
@@ -82,11 +102,15 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
   sign_in_with_apple:
     :path: ".symlinks/plugins/sign_in_with_apple/ios"
+  speech_to_text:
+    :path: ".symlinks/plugins/speech_to_text/darwin"
   sqflite_darwin:
     :path: ".symlinks/plugins/sqflite_darwin/darwin"
 
 SPEC CHECKSUMS:
   audio_session: 9bb7f6c970f21241b19f5a3658097ae459681ba0
+  CwlCatchException: 7acc161b299a6de7f0a46a6ed741eae2c8b4d75a
+  CwlCatchExceptionSupport: 54ccab8d8c78907b57f99717fb19d4cc3bce02dc
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_local_notifications: 395056b3175ba4f08480a7c5de30cd36d69827e4
   flutter_tts: 35ac3c7d42412733e795ea96ad2d7e05d0a75113
@@ -94,14 +118,17 @@ SPEC CHECKSUMS:
   in_app_purchase_storekit: 22cca7d08eebca9babdf4d07d0baccb73325d3c8
   just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
+  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   record_ios: 412daca2350b228e698fffcd08f1f94ceb1e3844
   Sentry: d587a8fe91ca13503ecd69a1905f3e8a0fcf61be
   sentry_flutter: 8939e491bc1511868118c96cae47d945e6f69798
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
   sign_in_with_apple: c5dcc141574c8c54d5ac99dd2163c0c72ad22418
+  SingSoundSDK: e47b938bb2c3c92072c65ccd7abfbda91c1f57ad
+  speech_to_text: 3b313d98516d3d0406cea424782ec25470c59d19
   sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
   WechatOpenSDK-XCFramework: ff342ae616bb86df3d236aca38059dfd4bc4a949
 
-PODFILE CHECKSUM: 3c63482e143d1b91d2d2560aee9fb04ecc74ac7e
+PODFILE CHECKSUM: e358fd84defaabb6de2dd36891929772e952cc94
 
 COCOAPODS: 1.16.2

@@ -16,6 +16,13 @@ class LessonDetailPage extends StatelessWidget {
   final VoidCallback onStart;
 
   List<String> _masterGoals(AppLocalizations l10n) {
+    final List<String> takeaways = card.lessonContent?.takeaways
+            .where((String item) => item.trim().isNotEmpty)
+            .toList(growable: false) ??
+        const <String>[];
+    if (takeaways.isNotEmpty) {
+      return takeaways;
+    }
     return <String>[
       l10n.takeawayFramework,
       l10n.takeawayVariations,
@@ -24,6 +31,10 @@ class LessonDetailPage extends StatelessWidget {
   }
 
   String _sceneSummary(AppLocalizations l10n) {
+    final String? summary = card.lessonContent?.summary?.trim();
+    if (summary != null && summary.isNotEmpty) {
+      return summary;
+    }
     return l10n.lessonSummary(card.category);
   }
 

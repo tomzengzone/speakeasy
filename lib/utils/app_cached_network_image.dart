@@ -29,13 +29,32 @@ class AppCachedNetworkImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final Widget placeholderWidget = placeholder ?? const AppImagePlaceholder();
     final Widget errorFallback = errorWidget ?? placeholderWidget;
+    final String resolvedImageUrl = imageUrl.trim();
 
-    if (imageUrl.trim().isEmpty) {
+    if (resolvedImageUrl.isEmpty) {
       return SizedBox(width: width, height: height, child: errorFallback);
     }
 
+    if (resolvedImageUrl.startsWith('assets/')) {
+      return Image.asset(
+        resolvedImageUrl,
+        width: width,
+        height: height,
+        fit: fit,
+        alignment: alignment,
+        errorBuilder:
+            (BuildContext context, Object error, StackTrace? stackTrace) {
+              return SizedBox(
+                width: width,
+                height: height,
+                child: errorFallback,
+              );
+            },
+      );
+    }
+
     return CachedNetworkImage(
-      imageUrl: imageUrl,
+      imageUrl: resolvedImageUrl,
       cacheManager: AppImageCacheManager.instance,
       width: width,
       height: height,

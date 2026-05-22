@@ -20,10 +20,10 @@ class AndroidPaymentService implements PaymentService {
       status: PaymentStatus.error,
       planId: planId,
       productId: PaymentConfig.productIdForPlan(planId),
-      errorMessage: 'Android 支付通道暂未接入，请补充微信支付和支付宝实现',
+      errorMessage: 'Android 订阅暂未接入，请先完成 Google Play Billing 和服务端权益校验',
       rawData: const <String, dynamic>{
-        'wechatPay': 'pending',
-        'alipay': 'pending',
+        'googlePlayBilling': 'pending',
+        'serverEntitlementVerification': 'pending',
       },
     );
   }
@@ -33,7 +33,7 @@ class AndroidPaymentService implements PaymentService {
     return const PaymentResult(
       success: false,
       status: PaymentStatus.error,
-      errorMessage: 'Android 恢复购买暂未接入，请在微信支付/支付宝实现后补齐',
+      errorMessage: 'Android 恢复购买暂未接入，请在 Google Play Billing 实现后补齐',
     );
   }
 

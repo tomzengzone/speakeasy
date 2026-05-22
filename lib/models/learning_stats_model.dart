@@ -100,6 +100,7 @@ class LearningStatsModel {
     required int durationSeconds,
     required int score,
     required DateTime practicedAt,
+    PracticeHistoryModel? recentPractice,
   }) {
     final int todayIndex = practicedAt.weekday - 1;
     final List<bool> nextWeekActivity = List<bool>.from(
@@ -107,6 +108,17 @@ class LearningStatsModel {
     );
     final bool alreadyActiveToday = nextWeekActivity[todayIndex];
     nextWeekActivity[todayIndex] = true;
+    final List<PracticeHistoryModel> nextRecentPractices =
+        recentPractice == null
+        ? recentPractices
+        : <PracticeHistoryModel>[
+            recentPractice,
+            ...recentPractices.where(
+              (PracticeHistoryModel item) =>
+                  item.title != recentPractice.title ||
+                  item.practicedAt != recentPractice.practicedAt,
+            ),
+          ].take(12).toList(growable: false);
 
     return copyWith(
       totalSessions: totalSessions + 1,
@@ -117,6 +129,7 @@ class LearningStatsModel {
       bestScore: score > bestScore ? score : bestScore,
       totalMinutes: totalMinutes + (durationSeconds ~/ 60),
       weekActivity: nextWeekActivity,
+      recentPractices: nextRecentPractices,
       updatedAt: practicedAt,
     );
   }
@@ -245,37 +258,103 @@ class SkillLevelModel {
 
 class PracticeHistoryModel {
   const PracticeHistoryModel({
+    this.id,
     required this.title,
     this.timeLabel,
     this.score,
     this.emoji = '🎯',
     this.practicedAt,
+    this.tags = const <String>[],
+    this.feedbackStatus,
+    this.feedbackData,
+    this.promptText,
+    this.sceneDraftData,
+    this.feedbackContextData,
   });
 
+  final String? id;
   final String title;
   final String? timeLabel;
   final int? score;
   final String emoji;
   final DateTime? practicedAt;
+  final List<String> tags;
+  final String? feedbackStatus;
+  final Map<String, dynamic>? feedbackData;
+  final String? promptText;
+  final Map<String, dynamic>? sceneDraftData;
+  final Map<String, dynamic>? feedbackContextData;
+
+  PracticeHistoryModel copyWith({
+    String? id,
+    String? title,
+    String? timeLabel,
+    int? score,
+    String? emoji,
+    DateTime? practicedAt,
+    List<String>? tags,
+    String? feedbackStatus,
+    bool clearFeedbackStatus = false,
+    Map<String, dynamic>? feedbackData,
+    bool clearFeedbackData = false,
+    String? promptText,
+    bool clearPromptText = false,
+    Map<String, dynamic>? sceneDraftData,
+    bool clearSceneDraftData = false,
+    Map<String, dynamic>? feedbackContextData,
+    bool clearFeedbackContextData = false,
+  }) {
+    return PracticeHistoryModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      timeLabel: timeLabel ?? this.timeLabel,
+      score: score ?? this.score,
+      emoji: emoji ?? this.emoji,
+      practicedAt: practicedAt ?? this.practicedAt,
+      tags: tags ?? this.tags,
+      feedbackStatus: clearFeedbackStatus
+          ? null
+          : feedbackStatus ?? this.feedbackStatus,
+      feedbackData: clearFeedbackData
+          ? null
+          : feedbackData ?? this.feedbackData,
+      promptText: clearPromptText ? null : promptText ?? this.promptText,
+      sceneDraftData: clearSceneDraftData
+          ? null
+          : sceneDraftData ?? this.sceneDraftData,
+      feedbackContextData: clearFeedbackContextData
+          ? null
+          : feedbackContextData ?? this.feedbackContextData,
+    );
+  }
 
   bool get hasContent =>
       title.trim().isNotEmpty ||
       (timeLabel?.trim().isNotEmpty ?? false) ||
       score != null ||
-      practicedAt != null;
+      practicedAt != null ||
+      tags.isNotEmpty;
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'title': title,
+      if (id != null) 'id': id,
       'timeLabel': timeLabel,
       'score': score,
       'emoji': emoji,
       'practicedAt': practicedAt?.toIso8601String(),
+      if (tags.isNotEmpty) 'tags': tags,
+      if (feedbackStatus != null) 'feedbackStatus': feedbackStatus,
+      if (feedbackData != null) 'feedback': feedbackData,
+      if (promptText != null) 'promptText': promptText,
+      if (sceneDraftData != null) 'sceneDraft': sceneDraftData,
+      if (feedbackContextData != null) 'feedbackContext': feedbackContextData,
     };
   }
 
   factory PracticeHistoryModel.fromJson(Map<String, dynamic> json) {
     return PracticeHistoryModel(
+      id: _readNullableString(json, <String>['id', 'practiceId', 'sessionId']),
       title: _readString(json, <String>[
         'title',
         'sceneTitle',
@@ -294,6 +373,63 @@ class PracticeHistoryModel {
         'completedAt',
         'createdAt',
       ]),
+      tags: _readStringList(json['tags']),
+      feedbackStatus: _readNullableString(
+        json,
+        <String>['feedbackStatus', 'reviewStatus'],
+      ),
+      feedbackData: _asMap(json['feedback']),
+      promptText: _readNullableString(
+        json,
+        <String>['promptText', 'prompt', 'scenePrompt'],
+      ),
+      sceneDraftData: _asMap(
+        json['sceneDraft'] ?? json['sceneDraftSnapshot'] ?? json['draft'],
+      ),
+      feedbackContextData: _asMap(
+        json['feedbackContext'] ?? json['feedbackPayload'] ?? json['reviewContext'],
+      ),
+    );
+  }
+}
+
+extension LearningStatsRecentPracticeX on LearningStatsModel {
+  LearningStatsModel upsertRecentPractice(PracticeHistoryModel practice) {
+    final String practiceTitle = practice.title.trim();
+    if (practiceTitle.isEmpty) {
+      return this;
+    }
+
+    final List<PracticeHistoryModel> next = <PracticeHistoryModel>[practice];
+    final String practiceId = practice.id?.trim() ?? '';
+    for (final PracticeHistoryModel item in recentPractices) {
+      final bool sameId =
+          practiceId.isNotEmpty &&
+          (item.id?.trim().isNotEmpty ?? false) &&
+          item.id!.trim() == practiceId;
+      final bool sameTitlePending =
+          practiceId.isEmpty &&
+          item.title.trim() == practiceTitle &&
+          (item.feedbackStatus == 'pending' || practice.feedbackStatus == 'pending');
+      if (sameId || sameTitlePending) {
+        continue;
+      }
+      next.add(item);
+    }
+    return copyWith(
+      recentPractices: next.take(12).toList(growable: false),
+    );
+  }
+
+  LearningStatsModel removeRecentPracticeGroup(String title) {
+    final String trimmed = title.trim();
+    if (trimmed.isEmpty) {
+      return this;
+    }
+    return copyWith(
+      recentPractices: recentPractices
+          .where((PracticeHistoryModel item) => item.title.trim() != trimmed)
+          .toList(growable: false),
     );
   }
 }
@@ -388,6 +524,16 @@ String? _readNullableString(Map<String, dynamic> json, List<String> keys) {
     }
   }
   return null;
+}
+
+List<String> _readStringList(Object? value) {
+  if (value is! List) {
+    return const <String>[];
+  }
+  return value
+      .map((dynamic item) => item.toString().trim())
+      .where((String item) => item.isNotEmpty)
+      .toList(growable: false);
 }
 
 DateTime? _readDateTime(Map<String, dynamic> json, List<String> keys) {

@@ -18,6 +18,7 @@ permissions:
 env:
   FLUTTER_VERSION: "3.x"
   JAVA_VERSION: "17"
+  APP_API_BASE_URL: ${{ secrets.APP_API_BASE_URL }}
 
 jobs:
   flutter-ci:
@@ -52,32 +53,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Optional GitHub Secrets placeholders:
-      # - APP_ENV_FILE: production .env content
-      # - APP_ENV_DEV_FILE: development .env.dev content
-      - name: Prepare environment files
-        shell: bash
-        run: |
-          if [[ -n "${{ secrets.APP_ENV_FILE }}" ]]; then
-            printf '%s' "${{ secrets.APP_ENV_FILE }}" > .env
-          else
-            cat <<'EOF' > .env
-          API_BASE_URL=https://example.invalid
-          OPENAI_API_KEY=ci-placeholder
-          ENV=production
-          EOF
-          fi
-
-          if [[ -n "${{ secrets.APP_ENV_DEV_FILE }}" ]]; then
-            printf '%s' "${{ secrets.APP_ENV_DEV_FILE }}" > .env.dev
-          else
-            cat <<'EOF' > .env.dev
-          API_BASE_URL=https://example.invalid
-          OPENAI_API_KEY=ci-placeholder
-          ENV=development
-          EOF
-          fi
-
       - name: Install dependencies
         run: flutter pub get
 
@@ -88,4 +63,9 @@ jobs:
         run: flutter test
 
       - name: Build Android APK
-        run: flutter build apk --debug
+        shell: bash
+        run: |
+          API_BASE_URL="${APP_API_BASE_URL:-https://example.invalid}"
+          flutter build apk --debug \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --dart-define=ENV=ci

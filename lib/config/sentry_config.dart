@@ -10,7 +10,7 @@ class SentryConfig {
     required this.release,
   });
 
-  static const String _dsn = 'https://examplePublicKey@o0.ingest.sentry.io/0';
+  static const String _dsn = String.fromEnvironment('SENTRY_DSN');
 
   final String dsn;
   final String environment;

@@ -54,6 +54,7 @@ extension AppLocalizationsMappings on AppLocalizations {
   String bottomTabLabel(String value) {
     return switch (value) {
       '学习' => learning,
+      '表达' => '表达',
       '场景' => scene,
       '我的' => profile,
       _ => value,
