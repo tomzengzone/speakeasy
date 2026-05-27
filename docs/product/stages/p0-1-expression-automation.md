@@ -1,0 +1,41 @@
+# P0.1 阶段范围：表达自动化训练闭环
+
+## 状态
+Draft - 当前 active stage。
+
+## 阶段目标
+在当前 APP 基线之上，把现有语音场景模拟升级为训练型 Agent：用户只完成听一句、选一个、回一句、跟一句、补一句、在追问下继续说等小动作；agent 在 session 内接管训练组织、节奏控制、难度拆解、重复推进、即时反馈和轻量场景施压。
+
+## 入口条件
+- 当前 APP 基线已记录在 `docs/product/baselines/current-mvp.md`。
+- 稳定 feature 已登记在 `docs/product/feature_registry.md`。
+- P0.1 change request 已 accepted：`docs/process/change_request.md`。
+- legacy P0.1 spec 可作为迁移来源：`docs/product/features/mvp-learning-loop-spec.md`。
+
+## 阶段范围
+- 以 `job_interview` 和 `onboarding_introduction` 两个官方场景验证。
+- 引入 session 内训练 planner。
+- 引入 action chain 和 micro-action flow。
+- 引入 hint ladder。
+- 引入 in-session pressure check。
+- 语音作为主路径，文本作为 ASR 失败、麦克风拒绝或调试兜底。
+- 发音评分进入反馈，但不作为唯一通关条件。
+- 每轮训练写回学习证据。
+
+## 阶段非目标
+- 不新增第三个官方场景。
+- 不承诺任意场景生成或用户自定义公开场景。
+- 不实现完整 A1/A2/B1/B2/C1/C2 内容体系。
+- 不实现跨 session、跨天、跨场景的长期训练调度。
+- 不实现完整 L0-L5 掌握阶梯。
+- 不把任意短语/单词查询和笔记本产品化放入 P0.1。
+- 不把完整评分体系、学习报告或商业权益 gating 作为 P0.1 阻塞项。
+
+## 纳入 increment
+- `p0-1-expression-automation-training`：表达自动化训练 Agent 增量。
+
+## 出口条件
+- P0.1 increment definition、requirements、spec、acceptance、traceability 均存在或明确不适用。
+- 必要的 domain/API/AI/UX contract 已完成或记录不适用原因。
+- 实现计划、代码、测试、实现报告和质量报告能追踪到 P0.1 increment。
+- 不把 P0.2/P1/P2 范围误标为 P0.1 完成。

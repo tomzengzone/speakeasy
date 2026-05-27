@@ -1,0 +1,24 @@
+{
+  "name": "speakeasy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tooling for SpeakEasy project contracts.",
+  "scripts": {
+    "lint:openapi": "redocly lint speakeasy@v1 --config redocly.yaml",
+    "check:openapi-contract": "python scripts/check_openapi_contract.py",
+    "check:dart-client-drift": "python scripts/check_openapi_dart_drift.py",
+    "check:api-contract": "npm run lint:openapi && npm run check:openapi-contract && npm run check:dart-client-drift"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tomzengzone/speakeasy.git"
+  },
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/tomzengzone/speakeasy/issues"
+  },
+  "homepage": "https://github.com/tomzengzone/speakeasy#readme",
+  "devDependencies": {
+    "@redocly/cli": "^2.31.4"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "mode": "pre_client_generation_gate",
+  "openapi_path": "docs/architecture/openapi/speakeasy-api.yaml",
+  "target_directory": "lib/generated/api",
+  "generator": "dart-dio (planned generated client target)",
+  "openapi_sha256": "4c23dc5a893071b7a435423182c6e17fbfc753e5005ffed3e7d1c6bdaff61526",
+  "status": "No generated Dart client is committed yet. This gate pins the canonical OpenAPI hash and validates Dart-safe generation inputs until lib/generated/api is introduced."
+}

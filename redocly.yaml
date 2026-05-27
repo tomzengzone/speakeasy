@@ -1,0 +1,10 @@
+apis:
+  speakeasy@v1:
+    root: docs/architecture/openapi/speakeasy-api.yaml
+
+extends:
+  - recommended
+
+rules:
+  info-license-strict: off
+  no-unused-components: warn

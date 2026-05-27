@@ -1,0 +1,185 @@
+# Entity Relationship
+
+## 状态
+
+Proposed - Domain Schema Baseline + P0/P0.1 Extension companion document。
+
+本文描述 Product Base accepted domain、P0 commercial extension、P0.1 training extension 的实体关系、ownership、cardinality 和跨域约束。本文不定义 API response shape，不写 database migration SQL，不修改 Flutter/backend 代码。
+
+## Relationship Principles
+
+- User 是账号、学习、订阅、用量、删除和审计链路的根实体。
+- Scenario / ScenarioVersion / TargetExpression 是官方内容和训练目标的稳定引用。
+- PracticeSession 保留 Product Base 语音场景模拟语义；TrainingSession 是 P0.1 训练型 Agent 的更严格 session 内训练事实。
+- LearningEvidence 是学习沉淀的核心事实；LLM 只能产生 candidate，accepted evidence 必须由 deterministic evidence rules 写入。
+- Subscription / EntitlementSnapshot / UsageLedger 是 P0 商业化可信边界，不能由 Flutter 本地状态最终决定。
+- AccountDeletionJob 负责处理 User 相关数据删除或匿名化；AuditLog 保留最小脱敏审计事实。
+- P0.2/P1/P2 对象不进入当前关系图，只作为 deferred boundary。
+
+## High-Level Ownership Graph
+
+```mermaid
+flowchart LR
+  User["User"] --> Identity["AuthIdentity / UserProfile / OnboardingAssessment"]
+  User --> Route["LearningRoute"]
+  Route --> Scenario["Scenario / ScenarioVersion / ScenarioLevel"]
+  Scenario --> Expression["TargetExpression / DialogueAsset / ActionChainStep"]
+
+  User --> Practice["PracticeSession / DialogueTurn"]
+  Practice --> Feedback["CoachFeedback / Correction / ScoreSignal"]
+  Practice --> Evidence["LearningEvidence / EvidenceRuleTrace"]
+  Evidence --> Mastery["MasteryRecord / ReviewItem / SessionSummary"]
+
+  User --> Queue["PracticeQueueItem / ExpressionPracticeAttempt"]
+  Queue --> Expression
+  User --> Favorites["FavoriteExpression / SavedExpression"]
+  Favorites --> Expression
+
+  User --> Commerce["Purchase / Subscription / EntitlementSnapshot"]
+  Commerce --> Usage["UsageLedger / UsageReservation / ProviderUsageEvent"]
+  User --> Deletion["AccountLifecycle / AccountDeletionJob"]
+  Deletion --> Audit["AuditLog"]
+
+  User --> Training["TrainingSession / TrainingTurn"]
+  Training --> Planner["PlannerDecision / HintState / PressureCheck"]
+  Planner --> Expression
+  Planner --> EvidenceCandidate["LearningEvidenceCandidate / AIResultRef"]
+  EvidenceCandidate --> Evidence
+```
+
+## Product Base Accepted Relationships
+
+| From | Relationship | To | Cardinality | Owner / source of truth | Notes |
+| --- | --- | --- | --- | --- | --- |
+| User | has | AuthIdentity | 1 -> many | Identity backend | 多登录方式绑定；生产身份由后端校验。 |
+| User | has | UserProfile | 1 -> 1 | Identity backend, Flutter cache | Flutter 可缓存展示，不拥有最终账号事实。 |
+| User | completes | OnboardingAssessment | 1 -> many | Onboarding domain | 支持后续重评；当前门禁只需要 completed 状态。 |
+| OnboardingAssessment | creates or updates | LearningRoute | 1 -> 0..1 current route | Onboarding + Content domain | 只写入当前真实官方场景。 |
+| LearningRoute | selects | Scenario | many -> many via route items | Content domain | 当前可选真实场景为 `job_interview`、`onboarding_introduction`。 |
+| Scenario | has | ScenarioVersion | 1 -> many | Content domain | 练习和证据应引用版本，避免内容漂移。 |
+| ScenarioVersion | has | ScenarioLevel | 1 -> many | Content domain | 当前 L1/L2/L3，不等同完整 A1-C2。 |
+| ScenarioVersion | has | TargetExpression | 1 -> many | Content domain | 表达需要稳定 ID。 |
+| ScenarioVersion | has | DialogueAsset | 1 -> many | Content domain | 听力热身和示范输入来源。 |
+| ScenarioVersion | has | ActionChainStep | 1 -> many | Content + Training domain | Product Base 草案已有 action chain；P0.1 强化为 planner 输入。 |
+| User | joins | Scenario | many -> many via LearningRoute or membership state | Content + Identity domain | 加入、移除、设为当前影响首页和练习入口。 |
+| User | starts/resumes | PracticeSession | 1 -> many | Training domain | 同用户、场景、等级可恢复未完成会话。 |
+| PracticeSession | contains | DialogueTurn | 1 -> many | Training domain | Turn 顺序必须稳定。 |
+| DialogueTurn | may produce | CoachFeedback | 1 -> 0..many | AI Gateway + Training domain | 反馈可能来自 AI 或 deterministic fallback。 |
+| DialogueTurn | may produce | Correction | 1 -> 0..many | Learning Evidence domain | Correction 必须引用 source turn。 |
+| DialogueTurn | may produce | ScoreSignal | 1 -> 0..many | AI Gateway domain | 分数不单独决定最终掌握。 |
+| User | owns | PracticeQueueItem | 1 -> many | Training / Review domain | 队列来自复习、薄弱和变体，需去重。 |
+| PracticeQueueItem | targets | TargetExpression | many -> 1 | Content + Training domain | 任务目标必须可追溯。 |
+| PracticeQueueItem | receives | ExpressionPracticeAttempt | 1 -> many | Training domain | attempt 结果影响进度、复习或掌握关联。 |
+| User | owns | FavoriteExpression | 1 -> many | Learning Assets domain | user + expression/normalized_text 去重。 |
+| FavoriteExpression | references | TargetExpression | many -> 0..1 | Learning Assets + Content domain | 用户自由保存时也可只保留 normalized text 和 source。 |
+| User | owns | SavedExpression | 1 -> many | Learning Assets domain | P1 notebook 扩展后置。 |
+| PracticeSession | ends with | SessionSummary | 1 -> 0..1 | Learning Evidence domain | 完成练习后展示 recap 并影响后续入口。 |
+| PracticeSession / DialogueTurn / Correction / Attempt | generates | LearningEvidence | many -> many via source refs | Learning Evidence domain | Product Base 可本地优先；P0.1 后服务端 accepted evidence 为事实。 |
+| LearningEvidence | updates | MasteryRecord | many -> 1 target record | Learning Evidence domain | 掌握变化必须保留 last evidence。 |
+| LearningEvidence | may create | ReviewItem | 1 -> many | Review domain | 收藏本身不等于自动复习，必须有规则。 |
+| User | owns | LearningHistoryEntry | 1 -> many | Profile / Learning domain | 历史删除是用户历史管理，不等同账号删除。 |
+
+## P0 Commercial Relationships
+
+| From | Relationship | To | Cardinality | Owner / source of truth | Notes |
+| --- | --- | --- | --- | --- | --- |
+| User | may purchase | Purchase | 1 -> many | Commerce backend | Purchase 由后端校验商店凭据后记录。 |
+| Purchase | refers to | SubscriptionPlan | many -> 1 | Commerce backend | plan/product_id 必须与商店和会员文案一致。 |
+| Purchase | creates or updates | Subscription | many -> 0..1 active projection | Commerce backend | provider transaction id 去重。 |
+| Subscription | produces | EntitlementSnapshot | 1 -> many | Entitlement backend | 当前 snapshot 是客户端展示缓存来源。 |
+| EntitlementSnapshot | evaluates | EntitlementRule | many -> many | Entitlement backend | 规则可引用 feature_key、quota、scenario scope。 |
+| EntitlementRule | may gate | Scenario | many -> many | Entitlement + Content domain | 如果场景包是权益，场景列表/详情/训练入口必须一致。 |
+| EntitlementRule | may gate | AI/provider usage | many -> many | Entitlement + Usage domain | 高成本能力先过权益和用量。 |
+| User | owns | UsageLedger | 1 -> many | Usage Control backend | 按 usage family 和周期聚合。 |
+| UsageLedger | has | UsageReservation | 1 -> many | Usage Control backend | reserve 必须 commit/release/expire。 |
+| UsageReservation | records | ProviderUsageEvent | 1 -> 0..many | Usage Control + AI Gateway | provider failure 也需可审计。 |
+| Subscription | receives | PaymentProviderEvent | 1 -> many | Commerce backend | webhook/provider event 去重并幂等处理。 |
+| User | has | AccountLifecycle | 1 -> 1 | Identity backend | 删除中或已删除账号不得继续产生新业务事实。 |
+| AccountLifecycle | starts | AccountDeletionJob | 1 -> many | Admin/Ops backend | 删除 job 状态机独立运行。 |
+| AccountDeletionJob | affects | PracticeSession / TrainingSession / LearningEvidence / FavoriteExpression / SavedExpression / Profile data | 1 -> many | Admin/Ops + owning domains | 按 hard delete、anonymize、retain-for-audit 分类处理。 |
+| Purchase / Subscription / UsageReservation / AccountDeletionJob | writes | AuditLog | many -> many | Admin/Ops backend | 审计为 append-only、脱敏最小字段。 |
+
+## P0.1 Training Relationships
+
+| From | Relationship | To | Cardinality | Owner / source of truth | Notes |
+| --- | --- | --- | --- | --- | --- |
+| User | starts/resumes | TrainingSession | 1 -> many | Training Planner domain | P0.1 session 只限两个官方场景。 |
+| TrainingSession | references | ScenarioVersion | many -> 1 | Content domain | 内容版本必须可追溯。 |
+| TrainingSession | targets | ScenarioLevel | many -> 1 | Content domain | 当前训练等级来自用户选择。 |
+| TrainingSession | progresses through | ActionChainStep | many -> many ordered | Content + Training domain | step 限定为开场、说明目的、表达观点、回应追问、确认下一步、结束。 |
+| ActionChainStep | uses | TargetExpression | many -> many | Content domain | 当前 step 可有目标表达或表达簇。 |
+| TrainingSession | contains | TrainingTurn | 1 -> many | Training Planner domain | 每次 micro-action 尝试形成 turn。 |
+| TrainingTurn | performs | MicroAction | many -> 1 current action | Training Planner domain | 听一句、选一个、回一句、跟一句、补一句、追问继续说。 |
+| TrainingSession | has | HintState | 1 -> 0..1 current | Training Planner domain | hint ladder 随失败/通过升降。 |
+| TrainingTurn | leads to | PlannerDecision | 1 -> 0..many | Training Planner domain | 决策必须 deterministic，可测试和可回放。 |
+| PlannerDecision | selects | MicroAction | many -> 1 next action | Training Planner domain | 下一步动作不能由自由 LLM 直接决定。 |
+| PlannerDecision | may trigger | PressureCheck | 1 -> 0..1 | Training Planner domain | 只限 session 内轻量追问或近场景复现。 |
+| TrainingTurn | may call | AIResultRef | 1 -> 0..many | AI Gateway domain | AI 输出必须 schema validation。 |
+| AIResultRef | may create | LearningEvidenceCandidate | 1 -> many | Learning Evidence domain | candidate 不直接更新 mastery。 |
+| PlannerDecision / Evidence rules | accept or reject | LearningEvidenceCandidate | many -> many | Learning Evidence domain | accepted 后才成为 LearningEvidence。 |
+| LearningEvidence | updates | MasteryRecord | many -> 1 | Learning Evidence domain | rule trace 必须保留。 |
+| LearningEvidence | may schedule | ReviewItem | 1 -> many | Review domain | P0.1 只写回本轮证据，不承诺跨天调度。 |
+| TrainingSession | ends with | TrainingRecap | 1 -> 0..1 | Training + Learning Evidence | recap 不得因 evidence 写回失败而丢失。 |
+
+## Deletion / Retention Relationship Rules
+
+| Data class | Relationship under account deletion |
+| --- | --- |
+| UserProfile / OnboardingAssessment / LearningRoute | 删除或匿名化，删除后不得恢复为可登录账号。 |
+| PracticeSession / TrainingSession / DialogueTurn / TrainingTurn | 删除或匿名化用户关联；如需保留聚合质量数据，必须去标识化。 |
+| Audio refs / Transcript refs | 按 Security/DevOps 后续 retention policy 删除或失效引用。 |
+| FavoriteExpression / SavedExpression / LearningHistoryEntry | 用户自有学习资产，应随账号删除清理。 |
+| LearningEvidence / MasteryRecord / ReviewItem | 删除或匿名化，且不得破坏必要脱敏审计可读性。 |
+| Purchase / Subscription / PaymentProviderEvent | 按财务、商店争议和合规要求保留最小脱敏审计字段。 |
+| AuditLog | 保留最小必要字段；target_ref 可匿名化；不得包含完整凭据、token、raw audio 或敏感对话。 |
+
+## No-Cycle Ownership Rules
+
+| Rule | Explanation |
+| --- | --- |
+| Content owns authored content | Scenario、ScenarioVersion、ScenarioLevel、TargetExpression、DialogueAsset、ActionChainStep 不由用户学习记录反向拥有。 |
+| Session owns turns | PracticeSession/TrainingSession 拥有 DialogueTurn/TrainingTurn；turn 不拥有 session。 |
+| Evidence references source | LearningEvidence 引用 source turn/attempt/correction，但不拥有 source。 |
+| Mastery is aggregate | MasteryRecord 由 evidence 更新，不反向拥有 evidence。 |
+| Entitlement gates access, not content truth | EntitlementRule 可限制场景或 AI 能力访问，但不改变 Scenario 内容本身。 |
+| Usage records consumption, not provider truth | ProviderUsageEvent 记录调用事实和成本，不保存 provider secret 或完整 raw payload。 |
+| Deletion orchestrates, not owns business history | AccountDeletionJob 管理删除流程，但被处理数据仍归各 domain 定义处理策略。 |
+
+## API Contract Inputs From Relationships
+
+| API family | Relationship inputs needed |
+| --- | --- |
+| Auth / User | User、AuthIdentity、UserProfile、AccountLifecycle、AccountDeletionJob |
+| Scenario | Scenario、ScenarioVersion、ScenarioLevel、TargetExpression、DialogueAsset、ActionChainStep |
+| Training / Practice | PracticeSession、DialogueTurn、TrainingSession、TrainingTurn、MicroAction、PlannerDecision、HintState、PressureCheck |
+| Learning / Review | LearningEvidence、EvidenceRuleTrace、MasteryRecord、ReviewItem、FavoriteExpression、SavedExpression、SessionSummary |
+| Subscription / Entitlement | SubscriptionPlan、Purchase、Subscription、EntitlementSnapshot、EntitlementRule、PaymentProviderEvent |
+| Usage / AI Gateway | UsageLedger、UsageReservation、ProviderUsageEvent、AIResultRef、ScoreSignal |
+| Admin / Ops | AuditLog、AccountDeletionJob、PaymentProviderEvent |
+
+API Contract/OpenAPI 阶段必须从这些关系定义 authentication、authorization、idempotency、error codes、schema version 和 generated Dart client policy。本文不定义 request/response shape。
+
+## Test Relationship Map
+
+| Relationship area | Required test focus |
+| --- | --- |
+| User -> gate -> onboarding -> route | 启动门禁、首评完成条件、场景映射和日常服务排除。 |
+| Scenario -> level -> expression -> practice | 双官方场景、等级切换、表达队列、听力热身和语音练习回归。 |
+| Session -> turn -> feedback -> evidence | 会话恢复、turn 顺序、反馈失败、证据写回和 recap 保留。 |
+| Favorite / saved expression -> review | 收藏去重、取消收藏、收藏不自动生成复习任务。 |
+| Subscription -> entitlement -> gating | 购买/恢复/退款/过期、权益刷新、场景/AI gating 一致性。 |
+| Usage ledger -> reservation -> provider event | reserve/commit/release、provider timeout、额度耗尽和滥用审计。 |
+| Training session -> planner -> hint/pressure | micro-action 单步训练、hint ladder、pressure check、ASR fallback。 |
+| Candidate evidence -> accepted evidence -> mastery/review | LLM 不直接写 mastery、rule trace、低置信度拒绝、去重。 |
+| Account deletion -> owned data -> audit | 云端删除/匿名化、本地清理、token 撤销、审计脱敏。 |
+
+## Explicit Deferred Relationships
+
+| Deferred relationship | Reason |
+| --- | --- |
+| DailyPlan -> CrossSessionSchedule -> TrainingSession | P0.2 long-term planner。 |
+| MasteryRecord -> L0/L1/L2/L3/L4/L5 ladder | P0.2 完整掌握阶梯。 |
+| NotebookItem -> VocabularyLookup -> arbitrary phrase notes | P1 notebook-vocabulary。 |
+| ScoreSignal -> ProductizedScoringRubric -> performance card | P1 scoring productization。 |
+| ScenarioPackage -> CMSContentWorkflow -> CEFRMapping | P1/P2 content expansion and CMS。 |
+| PublicUserScenario -> community sharing | Not now / non-goal。 |
