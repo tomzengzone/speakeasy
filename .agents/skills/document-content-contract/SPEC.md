@@ -34,7 +34,7 @@
 - 文档内容不越过 workflow 阶段边界。
 - 审查结论能指导具体修订。
 - 不和路径治理、追踪检查职责重叠。
-- `docs/product/base/acceptance.md` and legacy `docs/product/acceptance_criteria.md` only define observable acceptance behavior; `docs/product/base/traceability.md` and legacy `docs/product/traceability_matrix.md` record FR, User Story, AC, Code Evidence, Test Evidence, and Status.
+- `docs/product/base/acceptance.md` and legacy `docs/product/acceptance_criteria.md` only define observable acceptance behavior; `docs/product/base/traceability.md` and legacy `docs/product/traceability_matrix.md` record FR, User Story, AC, Test Case ID, Code Evidence, Test Evidence, and Status.
 - 100% 覆盖只表示需求覆盖完整性，不表述为代码行覆盖率或线上零缺陷保证。
 - Committed stage scope must be expressed as stable Stage Scope Item IDs, not prose-only bullets; increment definitions must preserve those IDs as covered or excluded scope.
 

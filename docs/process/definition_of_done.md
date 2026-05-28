@@ -4,6 +4,7 @@ A feature is done only when:
 
 - [ ] Feature spec exists.
 - [ ] Acceptance criteria exist and are mapped to tests.
+- [ ] Increment test case library exists before implementation starts and maps every approved AC to stable TC IDs or explicit exceptions.
 - [ ] Domain schema is updated if data changed.
 - [ ] API contract is updated if frontend/backend boundary changed.
 - [ ] Screen spec is updated if UI changed.
@@ -18,4 +19,3 @@ A feature is done only when:
 
 ## Completion Rule
 Do not mark a feature complete if any required checkbox is unchecked without an explicit documented exception.
-

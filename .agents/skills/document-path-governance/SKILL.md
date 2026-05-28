@@ -62,6 +62,7 @@ description: Use when project documentation needs a canonical path, document own
 - 增量需求：`docs/product/increments/<increment-id>/requirements.md`
 - 增量规格：`docs/product/increments/<increment-id>/spec.md`
 - 增量验收：`docs/product/increments/<increment-id>/acceptance.md`
+- 增量测试用例库：`docs/product/increments/<increment-id>/test_cases.md`
 - 增量追踪：`docs/product/increments/<increment-id>/traceability.md`
 - 用户故事：`docs/product/user_stories.md`
 - 功能级需求收敛：`docs/product/features/<feature-slug>-requirements.md`
@@ -102,7 +103,7 @@ description: Use when project documentation needs a canonical path, document own
 - 新增产品工作必须先判断对象类型：feature、stage、increment、baseline、change request 或 artifact。
 - Feature 是 APP 长期稳定能力，只能使用稳定功能路径，不得用 MVP、P0.1、P0.2、Now、Next、Later 等阶段名作为 feature slug。
 - Stage 只描述阶段目标、入口/出口和纳入/排除的 increment，不承载 feature requirements 或 implementation plan。
-- Increment 是实际交付切片，需求、规格、验收和追踪优先写入 `docs/product/increments/<increment-id>/`。
+- Increment 是实际交付切片，需求、规格、验收、测试用例库和追踪优先写入 `docs/product/increments/<increment-id>/`。
 - Product Base 是活的总需求库，记录已接受稳定产品行为；increment 完成并通过验收后才能合并回 `docs/product/base/`。
 - Baseline 是从 Product Base 冻结出的阶段、版本、发布或审计快照，只记录该冻结点的事实和回归边界，不得替代活的 Product Base。
 - 旧的扁平 feature 文档路径可作为历史兼容路径；新文档类别或新 increment 默认使用对象化路径。

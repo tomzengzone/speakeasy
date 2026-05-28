@@ -105,7 +105,7 @@ Own product development planning, user-facing intake, and progress tracking from
 Every active stage must expose committed scope as stable IDs before an increment can be treated as execution-ready:
 
 ```text
-Stage Scope ID -> Increment ID -> Requirement ID -> Spec section/state -> Acceptance Criteria ID -> Contract ID -> Work Package ID -> Code Evidence -> Test Evidence -> Release Evidence
+Stage Scope ID -> Increment ID -> Requirement ID -> Spec section/state -> Acceptance Criteria ID -> Test Case ID -> Contract ID -> Work Package ID -> Code Evidence -> Test Evidence -> Release Evidence
 ```
 
 Minimum stage scope fields:
@@ -122,7 +122,7 @@ Minimum increment definition fields:
 - `Excluded Stage Scope Items`: relevant stage scope items deliberately out of scope for the increment.
 - Coverage note for any required stage item not yet assigned to an increment.
 
-Product Manager may accept `100% traceability` only when every required Stage Scope Item ID is assigned to at least one increment and every assigned increment has downstream requirements, specs, acceptance criteria, traceability, and evidence or explicit documented exceptions appropriate to its workflow state.
+Product Manager may accept `100% traceability` only when every required Stage Scope Item ID is assigned to at least one increment and every assigned increment has downstream requirements, specs, acceptance criteria, stable AC-to-TC mapping, traceability, and evidence or explicit documented exceptions appropriate to its workflow state.
 
 ## Architecture Intake Gate
 When the request asks for system architecture, front-end/back-end/database technology strategy, commercial launch architecture, platform architecture, or full APP architecture:

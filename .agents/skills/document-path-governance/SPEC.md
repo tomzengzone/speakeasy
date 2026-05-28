@@ -30,6 +30,7 @@
 - 必要时写入 `docs/reports/quality_report.md` 的路径审查摘要。
 - API 契约总览路径为 `docs/architecture/api_contract.md`；机器可执行 OpenAPI source-of-truth 路径为 `docs/architecture/openapi/speakeasy-api.yaml`。
 - Product Base paths are `docs/product/base/requirements.md`, `docs/product/base/spec.md`, `docs/product/base/acceptance.md`, and `docs/product/base/traceability.md`.
+- Increment test case libraries use `docs/product/increments/<increment-id>/test_cases.md` and remain the canonical AC-to-TC design artifact before implementation starts.
 - Baseline snapshot paths use `docs/product/baselines/<baseline-slug>/` or `docs/product/baselines/<baseline-slug>.md` for legacy single-file snapshots.
 - Legacy global acceptance and traceability paths remain compatibility sources only after Product Base exists.
 

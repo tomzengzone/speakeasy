@@ -62,7 +62,7 @@ description: Use when a project document needs a content boundary, required sect
 - `docs/product/base/requirements.md`：写已接受稳定产品行为的 FR、用户目标、用户路径、成功标准、非目标、假设和来源；不写阶段计划、API schema、prompt schema、UI 布局或代码实现。
 - `docs/product/base/spec.md`：写已接受稳定产品行为的用户流程、状态、输入输出、失败路径、模块影响和测试期望；不写代码实现或产品优先级决策。
 - `docs/product/base/acceptance.md`：写已接受稳定产品行为的可观察 pass/fail 行为；不写类名、函数名、数据库字段或测试实现。
-- `docs/product/base/traceability.md`：写 Product Base 的 `Requirement -> AC -> Code Evidence -> Test Evidence -> Status`；不新增需求，不替代验收标准。
+- `docs/product/base/traceability.md`：写 Product Base 的 `Requirement -> AC -> Test Case ID -> Code Evidence -> Test Evidence -> Status`；不新增需求，不替代验收标准。
 - `docs/product/baselines/<baseline-slug>.md`：写当前已实现能力快照、事实来源、代码/资产证据、回归边界和不承诺项；不写未来新增需求或未批准计划。
 - `docs/product/stages/<stage-id>.md`：写阶段目标、入口条件、出口条件、纳入/排除的 increments，并用稳定 Stage Scope Item ID 表表达阶段范围；不写 API schema、UI 布局、prompt schema 或代码实现。
 - `docs/product/features/<feature-slug>/README.md`：写稳定 feature 的定义、用户价值、长期边界、owner 和相关 increments；不写阶段交付细节。
@@ -71,11 +71,11 @@ description: Use when a project document needs a content boundary, required sect
 - `docs/product/increments/<increment-id>/requirements.md`：写本次增量的用户目标、用户路径、成功标准、非目标、假设和开放问题；不写 API 字段、prompt schema、UI 布局或代码实现。
 - `docs/product/increments/<increment-id>/spec.md`：写本次增量的状态、输入输出、状态、依赖、失败路径、模块影响和测试映射；不写代码实现或产品优先级决策。
 - `docs/product/increments/<increment-id>/acceptance.md`：写本次增量可观察 pass/fail 行为；不写类名、函数名、数据库字段或测试实现。
-- `docs/product/increments/<increment-id>/traceability.md`：写本次增量的 `Requirement -> AC -> Contract -> Code Evidence -> Test Evidence -> Status`；不新增需求或替代验收标准。
+- `docs/product/increments/<increment-id>/traceability.md`：写本次增量的 `Requirement -> AC -> Test Case ID -> Contract -> Code Evidence -> Test Evidence -> Status`；不新增需求或替代验收标准。
 - `docs/product/features/<feature-slug>-requirements.md`：写假设、目标、用户路径、入口、涉及数据、成功标准、非目标、开放问题；不写实现细节。
 - `docs/product/features/<feature-slug>-spec.md`：写功能规格、状态、输入输出、依赖、失败情况、模块影响和测试映射；不写代码实现。
 - `docs/product/acceptance_criteria.md`：写可通过/失败判断的用户可观察行为；不写类名、函数名或数据库字段。
-- `docs/product/traceability_matrix.md`：写 `FR -> User Story -> AC -> Code Evidence -> Test Evidence -> Status`，用于证明需求覆盖完整性；不新增需求、不替代验收标准、不把 100% 覆盖表述为代码行覆盖率或线上零缺陷保证。
+- `docs/product/traceability_matrix.md`：写 `FR -> User Story -> AC -> Test Case ID -> Code Evidence -> Test Evidence -> Status`，用于证明需求覆盖完整性；不新增需求、不替代验收标准、不把 100% 覆盖表述为代码行覆盖率或线上零缺陷保证。
 - `docs/domain/<domain>_model.md`：写实体、关系、生命周期、状态机和约束；不写 API response 或 UI 布局。
 - `docs/architecture/api_contract.md`：写接口路径、请求、响应、错误、兼容性和示例；不写数据库实现或 prompt 文案。
 - `docs/ai_runtime/prompt_contract.md`：写 LLM 输入、输出、禁止决策、fallback 和示例；不让 LLM 拥有持久状态更新权。
@@ -96,7 +96,7 @@ description: Use when a project document needs a content boundary, required sect
 - 需求文档写 API 字段、数据库表或 UI 布局。
 - feature spec 补写产品愿景，导致产品级 source of truth 分散。
 - 验收标准描述实现方式而不是可观察行为。
-- 追溯矩阵缺少 FR、AC、Code Evidence 或 Test Evidence，或把缺测试项写成已覆盖而没有人工验收/外部服务依赖/暂不可自动化说明。
+- 追溯矩阵缺少 FR、AC、Test Case ID、Code Evidence 或 Test Evidence，或把缺测试项写成已覆盖而没有人工验收/外部服务依赖/暂不可自动化说明。
 - 把测试报告、feature spec 或验收标准正文当作追溯矩阵 source of truth。
 - 实现报告补写需求或跳过缺失的验收标准。
 - Prompt 契约允许 LLM 直接更新持久状态。

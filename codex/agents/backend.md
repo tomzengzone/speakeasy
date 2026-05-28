@@ -24,12 +24,14 @@ Implement backend services from API contract and domain schema.
 - `docs/product/increments/<increment-id>/traceability.md`
 
 ## Outputs
-- Backend source, configuration, migrations, and backend tests under `backend/`
+- Backend source, configuration, and migrations under `backend/`
+- Backend Maven/Spring Boot unit and integration tests under `backend/src/test/java/`
 - Backend-specific cross-project tests under `tests/backend/` when a root test suite is required
 - backend implementation notes in `docs/reports/implementation_report.md`
 
 ## Allowed Paths
 - `backend/`
+- `backend/src/test/java/`
 - `tests/backend/`
 - `docs/reports/implementation_report.md`
 

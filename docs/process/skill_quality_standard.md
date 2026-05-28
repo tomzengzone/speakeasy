@@ -29,6 +29,7 @@ The old flat `codex/skills/*.md` layout is deprecated for active project skills 
 - Increment requirements: `docs/product/increments/<increment-id>/requirements.md`
 - Increment specs: `docs/product/increments/<increment-id>/spec.md`
 - Increment acceptance criteria: `docs/product/increments/<increment-id>/acceptance.md`
+- Increment test case library: `docs/product/increments/<increment-id>/test_cases.md`
 - Increment traceability: `docs/product/increments/<increment-id>/traceability.md`
 - Feature requirements: `docs/product/features/<feature-slug>-requirements.md`
 - Feature specs: `docs/product/features/<feature-slug>-spec.md`
@@ -43,6 +44,13 @@ The old flat `codex/skills/*.md` layout is deprecated for active project skills 
 `docs/architecture/api_contract.md` records API families, product-object traceability, unified error semantics, versioning, compatibility policy, and generation boundaries. `docs/architecture/openapi/speakeasy-api.yaml` is the only machine-readable source of truth for OpenAPI paths, components, request/response schemas, examples, and lint checks. These two documents must not duplicate ownership of implementation-level schema.
 
 Product Manager owns roadmap, development status, and backlog priority. Requirement Development owns feature requirements, user stories, and acceptance criteria.
+
+## Executable Test Paths
+
+- Flutter/Dart tests: `test/`
+- Backend Maven/Spring Boot tests: `backend/src/test/java/`
+- Cross-service or repository-level tests: `tests/`
+- Backend-specific cross-project tests: `tests/backend/`
 
 ## Product Object Governance
 
@@ -83,6 +91,10 @@ Rules:
 - Requirement artifacts for new increment work must cite the Stage Scope Item IDs they refine.
 - Specs and acceptance criteria must preserve the Stage Scope Item IDs rather than replacing them with prose-only references.
 - Traceability matrices must prove 100% coverage for committed scope: every required Stage Scope Item ID is covered by an increment or has an explicit deferred/not-applicable decision, every increment requirement traces to at least one Stage Scope Item ID, every FR has at least one AC, and every AC has code/test evidence or a documented exception when implementation has started.
+- Increment test case libraries must assign stable `TC-<scope-prefix>-<NNN>` IDs. For MVP backend work, use `TC-MVP-BE-001`, `TC-MVP-BE-002`, and continue sequentially without renumbering or reuse.
+- Published TC IDs remain in the library even when retired; retired rows must record status `retired` and a replacement TC ID or retirement reason.
+- Each increment test case must include: `Stage Scope ID`, `FR`, `Spec`, `AC`, `Traceability Row`, `Gap`, `测试层级`, `自动化状态`, `测试脚本路径`, `执行命令`, `结果状态`, and `证据报告`. Blank required fields are not allowed; use `N/A - <reason>` only when the field is genuinely not applicable.
+- QA may update traceability Test Evidence only for test evidence, test status, QA gap notes, and evidence report links. Traceability check must review `AC -> TC -> test script path -> execution command -> result status -> evidence report -> Test Evidence` before completion.
 - Future roadmap placeholders may be traced only to feature/stage boundaries and architecture compatibility notes until Product Manager accepts them into an increment; they must not be represented as implementation-ready requirements.
 
 ## Naming

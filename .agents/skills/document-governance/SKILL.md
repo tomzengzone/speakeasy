@@ -54,7 +54,7 @@ description: Use when a documentation request needs routing across path governan
 - 路径、owner、Allowed Paths、source of truth、路径模板：使用 `document-path-governance`。
 - 文档目的、读者、必需章节、禁止内容、内容越界：使用 `document-content-contract`。
 - 需求、规格、验收、契约、测试、报告、发布之间的断链：使用 `document-traceability-check`。
-- 强制追溯矩阵相关问题按类型拆分：路径归属交给 `document-path-governance`，内容边界交给 `document-content-contract`，FR/AC/Code Evidence/Test Evidence 完整性交给 `document-traceability-check`。
+- 强制追溯矩阵相关问题按类型拆分：路径归属交给 `document-path-governance`，内容边界交给 `document-content-contract`，FR/AC/TC/Code Evidence/Test Evidence 完整性交给 `document-traceability-check`。
 - 产品对象治理问题先确认对象类型：feature、stage、increment、baseline、change request 或 artifact；路径归属交给 `document-path-governance`，内容边界交给 `document-content-contract`，链路完整性交给 `document-traceability-check`。
 - 当文档同时混用 feature 和 stage，或把 baseline 当作新功能 requirements 时，先阻断并拆成对象分类、路径决策、内容边界、追踪检查四步。
 - 同时涉及多个治理面：先用本 skill 拆分，再按顺序调用子 skill。

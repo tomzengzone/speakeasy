@@ -20,12 +20,13 @@ Product Base = living source of truth for accepted product requirements, specs, 
 Stage = delivery horizon or priority window
 Stage Scope Item = stable, ID-addressable capability or obligation committed, deferred, or marked not applicable inside a stage
 Increment = scoped delivery slice inside a stage
+Test Case Library = canonical AC-to-TC design artifact for an increment before implementation starts
 Baseline = frozen snapshot of Product Base at a stage, version, release, or audit point
 Change Request = decision record for scope change
 Artifact = requirements, spec, acceptance, contracts, tests, reports, release evidence
 ```
 
-Feature and stage are separate axes. A feature is not a stage, and a stage is not a feature. The Product Base is the living product requirement library. Requirements, specs, acceptance criteria, and traceability for accepted stable behavior live in `docs/product/base/`. Increment artifacts live in `docs/product/increments/<increment-id>/` until they are done and approved to merge back into Product Base. Baselines under `docs/product/baselines/` are frozen snapshots and must not replace Product Base.
+Feature and stage are separate axes. A feature is not a stage, and a stage is not a feature. The Product Base is the living product requirement library. Requirements, specs, acceptance criteria, and traceability for accepted stable behavior live in `docs/product/base/`. Increment artifacts live in `docs/product/increments/<increment-id>/` until they are done and approved to merge back into Product Base. Increment test case libraries live at `docs/product/increments/<increment-id>/test_cases.md` and are the source of truth for AC-to-TC design before implementation. Baselines under `docs/product/baselines/` are frozen snapshots and must not replace Product Base.
 
 ## Execution Layer
 ```text
@@ -43,6 +44,7 @@ idea/change intake
 -> requirement development
 -> increment spec
 -> acceptance criteria
+-> test case library / AC-to-TC mapping
 -> architecture/domain/API/screen/AI specs
 -> implementation plan
 -> code
@@ -61,12 +63,13 @@ Requirement Development owns requirement quality for a scoped feature or change.
 2. No requirements/spec/acceptance artifact before feature registry and stage scope are confirmed.
 3. No committed stage work may proceed without stable Stage Scope Item IDs and an increment coverage decision for each required item.
 4. No implementation before increment spec.
-5. No cross-layer implementation before contract updates.
-6. No AI UI rendering before schema definition.
-7. No completion without tests or documented test gap.
-8. No release without release checklist.
-9. No increment may merge into Product Base until acceptance, traceability, implementation, test, and report evidence are complete or explicitly excepted.
-10. No multi-step product or documentation governance task may proceed to the next step until an independent checker agent returns a pass finding for the completed step.
+5. No implementation before approved ACs map to stable TC IDs or explicit exceptions in `docs/product/increments/<increment-id>/test_cases.md`.
+6. No cross-layer implementation before contract updates.
+7. No AI UI rendering before schema definition.
+8. No completion without tests or documented test gap.
+9. No release without release checklist.
+10. No increment may merge into Product Base until acceptance, traceability, implementation, test, and report evidence are complete or explicitly excepted.
+11. No multi-step product or documentation governance task may proceed to the next step until an independent checker agent returns a pass finding for the completed step.
 
 ## Product Classification Gate
 Every incoming request must be classified before requirements or specs are created:
@@ -95,6 +98,11 @@ Before requirement development starts, the active increment must state:
 
 If the work is product-base consolidation, the artifact must update `docs/product/base/` and must only include accepted stable behavior. If the work is baseline consolidation, the artifact must be marked as a frozen baseline snapshot and must not replace the living Product Base.
 
+## AC-To-TC Implementation Gate
+Committed increment implementation may not start until the owning increment has a canonical test case library at `docs/product/increments/<increment-id>/test_cases.md`. The library must map every approved AC to at least one stable TC ID or to an explicit allowed exception before Backend, Frontend, AI Runtime, DevOps, or QA execution work begins.
+
+The allowed exceptions are `manual-verification`, `external-dependency`, or `not-automatable-yet`, and each exception must include the reason, owner, and evidence plan. Missing AC-to-TC mapping is a workflow blocker, not a QA follow-up.
+
 ## Stage Scope Traceability Gate
 Every active stage must expose committed scope as stable Stage Scope Items before downstream increment artifacts are generated. Each stage scope file should include a table with:
 
@@ -112,6 +120,7 @@ Stage Scope ID
 -> Requirement ID
 -> Spec section/state ID
 -> Acceptance Criteria ID
+-> Test Case ID
 -> Contract ID, when applicable
 -> Work Package ID, when available
 -> Code Evidence
@@ -119,7 +128,11 @@ Stage Scope ID
 -> Release Evidence
 ```
 
-`100% traceability` means every required Stage Scope Item ID is covered by at least one increment or has an explicit deferred/not-applicable decision, every increment requirement traces back to at least one Stage Scope Item ID, every FR has at least one AC, every AC traces to implementation and test evidence or a documented exception, and release evidence exists when release scope is affected.
+`100% traceability` means every required Stage Scope Item ID is covered by at least one increment or has an explicit deferred/not-applicable decision, every increment requirement traces back to at least one Stage Scope Item ID, every FR has at least one AC, every AC maps to at least one stable TC ID or explicit exception, every AC traces to implementation and test evidence or a documented exception, and release evidence exists when release scope is affected.
+
+Each increment test case must carry the minimum traceability fields required to prove that chain: `Stage Scope ID`, `FR`, `Spec`, `AC`, `Traceability Row`, `Gap`, `测试层级`, `自动化状态`, `测试脚本路径`, `执行命令`, `结果状态`, and `证据报告`. A blank field is a traceability gap unless it contains an explicit `N/A - <reason>`.
+
+After test execution, QA may update only the Test Evidence, test status, QA gap notes, and evidence report links in the owning Product Base or increment traceability file. Traceability check must be able to review the full `AC -> TC -> test script path -> execution command -> result status -> evidence report -> Test Evidence` chain before completion.
 
 ## Product Base Gate
 `docs/product/base/` is the living source of truth for accepted product behavior:

@@ -50,6 +50,7 @@ description: Use when project documentation needs a workflow traceability audit 
 - 缺失文档、断链、重复引用、过期引用和状态不一致清单。
 - 下一步 workflow 建议。
 - 用户要求持久化时，将追踪检查摘要写入 `docs/reports/quality_report.md`。
+- Increment Test Evidence 复核结论：确认 `AC -> TC -> 测试脚本/执行命令/结果/证据报告 -> traceability Test Evidence` 链路是否完整。
 
 ## 文档语言
 - 本 skill 创建或更新的项目文档默认使用中文，除非用户明确要求英文或其他语言。
@@ -80,7 +81,7 @@ docs/product/mvp_scope.md
   -> docs/architecture/api_contract.md
   -> docs/ai_runtime/prompt_contract.md
   -> docs/ux/screen_spec.md
-  -> test/ 或 tests/
+  -> test/、backend/src/test/java/ 或 tests/
   -> docs/reports/implementation_report.md
   -> docs/reports/quality_report.md
   -> docs/release/release_checklist.md
@@ -96,15 +97,23 @@ Stage Scope ID
   -> docs/product/increments/<increment-id>/requirements.md
   -> docs/product/increments/<increment-id>/spec.md
   -> docs/product/increments/<increment-id>/acceptance.md
+  -> docs/product/increments/<increment-id>/test_cases.md
   -> docs/product/increments/<increment-id>/traceability.md
   -> docs/domain/ 或 docs/architecture/ 或 docs/ai_runtime/ 或 docs/ux/ when applicable
-  -> test/ 或 tests/
+  -> test/、backend/src/test/java/ 或 tests/
   -> docs/reports/implementation_report.md
   -> docs/reports/quality_report.md
   -> docs/release/release_checklist.md when release scope is affected
 ```
 
-`100% traceability` for committed stage work means every required Stage Scope Item ID is covered by at least one increment or has an explicit deferred/not-applicable decision, every increment requirement traces back to at least one Stage Scope Item ID, every FR has at least one AC, every AC has code/test evidence or a documented exception once implementation has started, and release evidence exists when the increment affects release scope.
+`100% traceability` for committed stage work means every required Stage Scope Item ID is covered by at least one increment or has an explicit deferred/not-applicable decision, every increment requirement traces back to at least one Stage Scope Item ID, every FR has at least one AC, every AC maps to stable TC IDs or explicit exceptions, every AC has code/test evidence or a documented exception once implementation has started, and release evidence exists when the increment affects release scope.
+
+Increment Test Evidence review must verify:
+- every AC listed in increment acceptance appears in the increment test case library or has an allowed exception;
+- every TC row cites the owning traceability row;
+- every automated or planned automated TC has a test script path and execution command;
+- every executed TC has result status and evidence report;
+- the owning increment traceability row has Test Evidence that cites the TC ID, script path, command, result status, and evidence report, or a documented exception.
 
 ## Architecture Traceability Gate
 当检查系统架构、技术栈、前后端数据库方案、商业化架构或全量 APP 架构时，必须增加以下检查：
@@ -123,12 +132,13 @@ Stage Scope ID
 4. 对标准 increment workflow，先检查 active stage 是否有稳定 Stage Scope Item IDs，以及 increment definition 是否列出 `Covered Stage Scope Items` 和 `Excluded Stage Scope Items`。
 5. 当前 MVP 代码基线固化时，检查 AC 是否基于主需求文档、MVP scope、用户故事和实际代码证据；P0/新增功能时，检查 AC 是否以已批准 increment spec 为直接输入，并保留 Stage Scope Item IDs。
 6. 沿 workflow 检查是否存在 feature/increment spec、验收标准、强制追溯矩阵、相关契约、测试和报告。
-7. 检查新 increment 链路是否完整：每个 required Stage Scope ID 有 increment 覆盖或明确 deferred/not applicable；每个 FR 至少有 1 个 AC；每个 AC 反向引用 1 个或多个 FR 和上游 Stage Scope ID；Code Evidence 不为空；Test Evidence 不为空或有明确例外。
-8. 检查 Product Base 链路时，检查 `FR -> User Story -> AC -> Code Evidence -> Test Evidence -> Status` 是否完整。
-9. 标记缺失、不适用、重复、过期或状态冲突。
-10. 检查 accepted/proposed/deferred 等状态是否和实际推进阶段一致。
-11. 输出断链清单和下一步建议；不直接生成缺失文档。
-12. 若修改 skill 或质量标准，运行 `python scripts/validate_agent_skills.py`。
+7. 检查新 increment 链路是否完整：每个 required Stage Scope ID 有 increment 覆盖或明确 deferred/not applicable；每个 FR 至少有 1 个 AC；每个 AC 反向引用 1 个或多个 FR 和上游 Stage Scope ID；每个 AC 映射到 stable TC ID 或明确例外；Code Evidence 不为空；Test Evidence 不为空或有明确例外。
+8. 对 increment Test Evidence 执行 `AC -> TC -> 测试脚本/执行命令/结果/证据报告 -> traceability Test Evidence` 复核；缺少 TC ID、脚本路径、执行命令、结果状态或证据报告时，不得通过完成审查。
+9. 检查 Product Base 链路时，检查 `FR -> User Story -> AC -> Code Evidence -> Test Evidence -> Status` 是否完整。
+10. 标记缺失、不适用、重复、过期或状态冲突。
+11. 检查 accepted/proposed/deferred 等状态是否和实际推进阶段一致。
+12. 输出断链清单和下一步建议；不直接生成缺失文档。
+13. 若修改 skill 或质量标准，运行 `python scripts/validate_agent_skills.py`。
 
 ## Red Flags
 - P0 或新增功能代码实现存在，但没有 feature spec 或验收标准；当前 MVP 反向固化任务必须显式标记为代码基线例外。
@@ -141,6 +151,7 @@ Stage Scope ID
 - Stage scope is written only as bullets with no stable Stage Scope Item IDs for committed work.
 - Increment definition lacks `Covered Stage Scope Items`, or requirements/spec/AC drop those IDs downstream.
 - 100% traceability is claimed while a required Stage Scope Item ID is uncovered, deferred without reason, or not represented in the increment traceability matrix.
+- Increment traceability Test Evidence cites a test report but not the owning TC ID, script path, execution command, or result status.
 - prompt/schema/API 变更没有对应契约文档。
 - implementation report 声称完成，但没有验证命令或测试缺口说明。
 - 全量架构只基于最新 change request 或 active stage，没有覆盖 Product Base、baseline、feature registry 和 future stages。
@@ -156,6 +167,7 @@ Stage Scope ID
 - AC 来源模式被明确判定，且不和当前 phase 冲突。
 - 需求覆盖完整性已通过追溯矩阵检查；该结论不被表述为代码行覆盖率或线上零缺陷保证。
 - 新 increment 追溯检查确认 Stage Scope ID coverage、increment coverage、FR coverage、AC coverage 和 evidence status 均有结论。
+- Increment Test Evidence 复核确认 AC-to-TC mapping、script path、execution command、result status、evidence report 和 traceability Test Evidence 一致。
 - 架构检查已明确范围模式，并给出 coverage matrix 通过、条件通过或阻塞结论。
 - 全量架构没有把 future-stage、P1/P2 或商业发布门禁遗漏为隐性非目标。
 
