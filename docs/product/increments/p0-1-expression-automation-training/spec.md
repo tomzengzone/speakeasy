@@ -6,7 +6,7 @@ Draft - 可作为 P0.1 acceptance criteria 的直接上游输入。
 ## 上游引用
 - Increment definition: `docs/product/increments/p0-1-expression-automation-training/definition.md`
 - Increment requirements: `docs/product/increments/p0-1-expression-automation-training/requirements.md`
-- Current APP baseline: `docs/product/baselines/current-mvp.md`
+- Product Base: `docs/product/base/requirements.md`, `docs/product/base/spec.md`, `docs/product/base/acceptance.md`, `docs/product/base/traceability.md`
 - Feature registry: `docs/product/feature_registry.md`
 - Change request: `docs/process/change_request.md`
 - Legacy source: `docs/product/features/mvp-learning-loop-spec.md`
@@ -15,6 +15,21 @@ Draft - 可作为 P0.1 acceptance criteria 的直接上游输入。
 - Active stage: P0.1 表达自动化训练闭环
 - Primary feature: `expression-automation-training`
 - Affected features: `voice-scenario-practice`, `official-scenario-library`, `listening-shadowing`, `expression-practice-queue`, `learning-memory-review`, `scoring-feedback`
+
+## Spec Trace IDs
+| Spec ID | Stage Scope ID | Requirement ID | Spec area |
+| --- | --- | --- | --- |
+| P01-SPEC-001 | P01-SI-001 | P01-FR-001 | Inputs, State Model `Loading` / `Ready`, official scene entry assumptions |
+| P01-SPEC-002 | P01-SI-003 | P01-FR-002 | Inputs `actionChainStep`, State Model, Planner Rules |
+| P01-SPEC-003 | P01-SI-004 | P01-FR-003 | Micro-action Contract |
+| P01-SPEC-004 | P01-SI-002 | P01-FR-004 | Planner Rules, State Model transitions |
+| P01-SPEC-005 | P01-SI-005 | P01-FR-005 | Planner Rules, hint level transitions |
+| P01-SPEC-006 | P01-SI-007 | P01-FR-006 | Inputs `asrStatus`, Micro-action Contract fallback, Failure Handling |
+| P01-SPEC-007 | P01-SI-008 | P01-FR-007 | Outputs, Planner Rules, Module Impact |
+| P01-SPEC-008 | P01-SI-006 | P01-FR-008 | State Model `PressureCheck`, Planner Rules |
+| P01-SPEC-009 | P01-SI-009 | P01-FR-009 | State Model `Recap`, Outputs, Failure Handling |
+| P01-SPEC-010 | P01-SI-011 | P01-FR-010 | State Model `RecoverableError`, Failure Handling |
+| P01-SPEC-011 | P01-SI-010 | P0.1 非目标边界 | Non-goals |
 
 ## Goal
 把现有语音场景模拟升级为训练型 Agent：系统在 session 内接管训练组织、节奏控制、难度拆解、重复推进、即时反馈和轻量场景施压，用户只完成可快速响应的小动作。

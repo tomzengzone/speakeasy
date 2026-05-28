@@ -7,6 +7,21 @@ Draft - 基于 P0.1 increment spec 生成，供 QA、测试用例和实现计划
 - `docs/product/increments/p0-1-expression-automation-training/requirements.md`
 - `docs/product/increments/p0-1-expression-automation-training/spec.md`
 
+## Stage Scope Acceptance Coverage
+| Stage Scope ID | Requirement ID | Spec ID | Acceptance Criteria |
+| --- | --- | --- | --- |
+| P01-SI-001 | P01-FR-001 | P01-SPEC-001 | AC-P01-001 |
+| P01-SI-002 | P01-FR-004 | P01-SPEC-004 | AC-P01-004 |
+| P01-SI-003 | P01-FR-002 | P01-SPEC-002 | AC-P01-002 |
+| P01-SI-004 | P01-FR-003 | P01-SPEC-003 | AC-P01-003 |
+| P01-SI-005 | P01-FR-005 | P01-SPEC-005 | AC-P01-005 |
+| P01-SI-006 | P01-FR-008 | P01-SPEC-008 | AC-P01-009 |
+| P01-SI-007 | P01-FR-006 | P01-SPEC-006 | AC-P01-006, AC-P01-007 |
+| P01-SI-008 | P01-FR-007 | P01-SPEC-007 | AC-P01-008 |
+| P01-SI-009 | P01-FR-009 | P01-SPEC-009 | AC-P01-010 |
+| P01-SI-010 | P0.1 非目标边界 | P01-SPEC-011 | AC-P01-012 |
+| P01-SI-011 | P01-FR-010 | P01-SPEC-010 | AC-P01-011 |
+
 ## AC-P01-001 官方场景入口
 - 给定用户打开 `job_interview` 或 `onboarding_introduction` 的当前等级，当用户进入训练入口时，必须进入训练型 Agent session。
 - 给定用户打开非 P0.1 官方场景或不存在的场景 id，当用户尝试进入 P0.1 训练时，系统不得创建训练 session，并必须显示不可用或回退提示。

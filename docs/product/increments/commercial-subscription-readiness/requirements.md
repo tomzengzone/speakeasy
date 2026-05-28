@@ -12,8 +12,24 @@ Draft - 由 Product Manager 接受的 P0 商业化发布阻塞增量需求。
 ## 上游来源
 - `docs/product/increments/commercial-subscription-readiness/definition.md`
 - `docs/process/change_request.md`：`CR-20260524-001 商业化订阅上线准备`
-- `docs/product/baselines/current-mvp.md`
+- Product Base：`docs/product/base/requirements.md`、`docs/product/base/spec.md`、`docs/product/base/acceptance.md`、`docs/product/base/traceability.md`
 - Product Manager 商业化就绪审查结论
+
+## Stage Scope Coverage
+| Stage Scope ID | Requirement ID | Coverage status |
+| --- | --- | --- |
+| COM-SI-001 | FR-COM-001 | Covered |
+| COM-SI-002 | FR-COM-002 | Covered |
+| COM-SI-003 | FR-COM-003 | Covered |
+| COM-SI-004 | FR-COM-004 | Covered |
+| COM-SI-005 | FR-COM-005 | Covered |
+| COM-SI-006 | FR-COM-008 | Covered |
+| COM-SI-007 | FR-COM-006 | Covered |
+| COM-SI-008 | FR-COM-007 | Covered |
+| COM-SI-009 | FR-COM-009 | Covered |
+| COM-SI-010 | FR-COM-010 | Covered |
+| COM-SI-011 | FR-COM-011 | Covered |
+| COM-SI-012 | FR-COM-012 | Covered |
 
 ## 目标用户与业务目标
 - 作为学习者，我希望购买订阅后权益能立即生效、跨设备恢复、过期后有清晰提示，以便放心付费使用。
@@ -78,4 +94,3 @@ Draft - 由 Product Manager 接受的 P0 商业化发布阻塞增量需求。
 - 账号注销后，用户数据删除或匿名化范围可追踪。
 - 会员页和商店文案不承诺未完成能力。
 - 商业发布前有可执行测试矩阵和 release checklist。
-

@@ -19,6 +19,16 @@ Draft - future stage，用于明确 P0.1 非目标。
 - 到期复习、薄弱表达、未完成 session 和当前目标场景的跨天编排。
 - 训练证据进入首页推荐、表达队列和个人 Wiki。
 
+## Stage Scope Items
+| Stage Scope ID | Capability / obligation | Required status | Target increment | Current status |
+| --- | --- | --- | --- | --- |
+| P02-SI-001 | Daily training planner | deferred | 待 P0.1 验收后定义 | Future stage |
+| P02-SI-002 | Cross-session pressure ladder | deferred | 待 P0.1 验收后定义 | Future stage |
+| P02-SI-003 | L0-L5 mastery ladder | deferred | 待 P0.1 验收后定义 | Future stage |
+| P02-SI-004 | Long-term session planner | deferred | 待 P0.1 验收后定义 | Future stage |
+| P02-SI-005 | 到期复习、薄弱表达、未完成 session 和当前目标场景的跨天编排 | deferred | 待 P0.1 验收后定义 | Future stage |
+| P02-SI-006 | 训练证据进入首页推荐、表达队列和个人 Wiki | deferred | 待 P0.1 验收后定义 | Future stage |
+
 ## 阶段非目标
 - 不在 P0.2 承诺完整 A1-C2 内容体系。
 - 不在 P0.2 承诺任意公开场景生成。

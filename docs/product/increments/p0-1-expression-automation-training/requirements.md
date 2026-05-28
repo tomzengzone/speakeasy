@@ -12,10 +12,25 @@ Draft - 从 legacy P0.1 spec 迁移生成，作为本 increment 的标准 requir
 
 ## 上游来源
 - `docs/product/increments/p0-1-expression-automation-training/definition.md`
-- `docs/product/baselines/current-mvp.md`
+- Product Base：`docs/product/base/requirements.md`、`docs/product/base/spec.md`、`docs/product/base/acceptance.md`、`docs/product/base/traceability.md`
 - `docs/product/feature_registry.md`
 - `docs/process/change_request.md`
 - Legacy source: `docs/product/features/mvp-learning-loop-spec.md`
+
+## Stage Scope Coverage
+| Stage Scope ID | Requirement ID | Coverage status |
+| --- | --- | --- |
+| P01-SI-001 | P01-FR-001 | Covered |
+| P01-SI-002 | P01-FR-004 | Covered |
+| P01-SI-003 | P01-FR-002 | Covered |
+| P01-SI-004 | P01-FR-003 | Covered |
+| P01-SI-005 | P01-FR-005 | Covered |
+| P01-SI-006 | P01-FR-008 | Covered |
+| P01-SI-007 | P01-FR-006 | Covered |
+| P01-SI-008 | P01-FR-007 | Covered |
+| P01-SI-009 | P01-FR-009 | Covered |
+| P01-SI-010 | P0.1 非目标边界 | Covered by non-goals and AC-P01-012 |
+| P01-SI-011 | P01-FR-010 | Covered |
 
 ## 用户目标
 学习者在现有官方场景中不再面对开放式“大任务”，而是在训练型 Agent 引导下完成一个个小动作，通过语音优先、文本兜底的训练闭环，把目标表达练到能在场景中自然说出。

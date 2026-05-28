@@ -9,6 +9,22 @@ Draft - 可作为 acceptance criteria 的直接上游输入；实现前仍需下
 - Active stage：`docs/product/stages/p0-commercial-readiness.md`
 - Primary feature：`commercial-subscription`
 
+## Spec Trace IDs
+| Spec ID | Stage Scope ID | Requirement ID | Spec area |
+| --- | --- | --- | --- |
+| COM-SPEC-001 | COM-SI-001 | FR-COM-001 | Flow-COM-001, Flow-COM-002, Flow-COM-004, Required States |
+| COM-SPEC-002 | COM-SI-002 | FR-COM-002 | Flow-COM-001, Flow-COM-002, Flow-COM-004, Required States |
+| COM-SPEC-003 | COM-SI-003 | FR-COM-003 | Flow-COM-001, Flow-COM-002, Flow-COM-004, Required States |
+| COM-SPEC-004 | COM-SI-004 | FR-COM-004 | Required States, Required Downstream Contracts, Module Impact |
+| COM-SPEC-005 | COM-SI-005 | FR-COM-005 | Required States, Required Downstream Contracts, Module Impact |
+| COM-SPEC-006 | COM-SI-006 | FR-COM-008 | Flow-COM-005 |
+| COM-SPEC-007 | COM-SI-007 | FR-COM-006 | Flow-COM-003, Required States |
+| COM-SPEC-008 | COM-SI-008 | FR-COM-007 | Flow-COM-003, Module Impact |
+| COM-SPEC-009 | COM-SI-009 | FR-COM-009 | UX / Screen Spec contract, Rollout Notes |
+| COM-SPEC-010 | COM-SI-010 | FR-COM-010 | Flow-COM-003, Required Downstream Contracts, Module Impact |
+| COM-SPEC-011 | COM-SI-011 | FR-COM-011 | QA / Test Plan contract, Rollout Notes |
+| COM-SPEC-012 | COM-SI-012 | FR-COM-012 | DevOps / Release contract, Required States, Rollout Notes |
+
 ## Feature Goal
 让 SpeakEasy 从“会员入口和前端支付雏形”升级为可真实收费、可恢复、可降级、可审计、可发布的订阅系统。
 
@@ -79,4 +95,3 @@ Draft - 可作为 acceptance criteria 的直接上游输入；实现前仍需下
 - 商业化能力不得在缺少服务端权益和商业边界测试时对真实用户开放。
 - 若离线内容、成就、500+ 句型库或专属学习报告无法在发布前完成，必须从会员页和商店文案中移除。
 - 任何商业化实现完成后都不得直接 merge Product Base，必须先补齐验收、测试、实现报告和质量报告。
-

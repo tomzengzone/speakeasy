@@ -22,7 +22,7 @@ Draft - active increment definition。
 
 ## 上游决策
 - `docs/process/change_request.md`：`CR-20260523-001 表达自动化训练 Agent`
-- `docs/product/baselines/current-mvp.md`
+- Product Base：`docs/product/base/requirements.md`、`docs/product/base/spec.md`、`docs/product/base/acceptance.md`、`docs/product/base/traceability.md`
 - `docs/product/feature_registry.md`
 - `docs/product/features/mvp-learning-loop-spec.md`：legacy P0.1 spec source，已作为本 increment requirements/spec/acceptance/traceability 的迁移来源。
 
@@ -35,6 +35,27 @@ Draft - active increment definition。
 - 定义 in-session pressure check：连续通过后减少提示并进入轻量追问。
 - 语音为主路径，文本为 ASR 失败、麦克风拒绝或调试兜底。
 - 训练结束写回学习证据：掌握、薄弱、复习、个人素材、下一步建议。
+
+## Covered Stage Scope Items
+| Stage Scope ID | Coverage note |
+| --- | --- |
+| P01-SI-001 | 通过 `P01-FR-001` 覆盖两个现有官方场景入口和恢复边界。 |
+| P01-SI-002 | 通过 `P01-FR-004` 覆盖 session planner 决策。 |
+| P01-SI-003 | 通过 `P01-FR-002` 覆盖 action chain。 |
+| P01-SI-004 | 通过 `P01-FR-003` 覆盖 micro-action flow。 |
+| P01-SI-005 | 通过 `P01-FR-005` 覆盖 hint ladder。 |
+| P01-SI-006 | 通过 `P01-FR-008` 覆盖 in-session pressure check。 |
+| P01-SI-007 | 通过 `P01-FR-006` 覆盖语音主路径与文本兜底。 |
+| P01-SI-008 | 通过 `P01-FR-007` 覆盖即时反馈与评分边界。 |
+| P01-SI-009 | 通过 `P01-FR-009` 覆盖学习证据写回。 |
+| P01-SI-010 | 通过非目标和 `AC-P01-012` 覆盖 P0.1 范围边界守护。 |
+| P01-SI-011 | 通过 `P01-FR-010` 覆盖可恢复失败。 |
+
+## Excluded Stage Scope Items
+- 无。本 increment 是 P0.1 当前唯一 planned increment，覆盖 P0.1 stage 的全部 required Stage Scope Items。
+
+## Uncovered Required Stage Scope Items
+- 无。下游契约、实现和测试缺口记录在 `docs/product/increments/p0-1-expression-automation-training/traceability.md`。
 
 ## Non-goals
 - 不新增第三个官方场景。

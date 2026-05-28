@@ -8,6 +8,22 @@ Draft - 来自 `commercial-subscription-readiness` spec 的增量验收标准。
 - Spec：`docs/product/increments/commercial-subscription-readiness/spec.md`
 - Change request：`CR-20260524-001`
 
+## Stage Scope Acceptance Coverage
+| Stage Scope ID | Requirement ID | Spec ID | Acceptance Criteria |
+| --- | --- | --- | --- |
+| COM-SI-001 | FR-COM-001 | COM-SPEC-001 | AC-COM-001, AC-COM-005, AC-COM-006 |
+| COM-SI-002 | FR-COM-002 | COM-SPEC-002 | AC-COM-001, AC-COM-002, AC-COM-003, AC-COM-004, AC-COM-005 |
+| COM-SI-003 | FR-COM-003 | COM-SPEC-003 | AC-COM-001, AC-COM-002, AC-COM-003, AC-COM-004, AC-COM-005 |
+| COM-SI-004 | FR-COM-004 | COM-SPEC-004 | AC-COM-008 |
+| COM-SI-005 | FR-COM-005 | COM-SPEC-005 | AC-COM-009 |
+| COM-SI-006 | FR-COM-008 | COM-SPEC-006 | AC-COM-010 |
+| COM-SI-007 | FR-COM-006 | COM-SPEC-007 | AC-COM-006, AC-COM-012 |
+| COM-SI-008 | FR-COM-007 | COM-SPEC-008 | AC-COM-007 |
+| COM-SI-009 | FR-COM-009 | COM-SPEC-009 | AC-COM-011 |
+| COM-SI-010 | FR-COM-010 | COM-SPEC-010 | AC-COM-012 |
+| COM-SI-011 | FR-COM-011 | COM-SPEC-011 | AC-COM-013 |
+| COM-SI-012 | FR-COM-012 | COM-SPEC-012 | AC-COM-014 |
+
 ## AC-COM-001 购买后权益生效
 给定已登录用户购买有效 Apple 或 Google Play 订阅，当后端校验通过后，客户端必须从服务端权益状态刷新为付费状态，并展示订阅已生效。
 
@@ -49,4 +65,3 @@ Draft - 来自 `commercial-subscription-readiness` spec 的增量验收标准。
 
 ## AC-COM-014 发布材料齐备
 给定商业化发布候选版本，App Store Connect / Play Console 元数据、订阅条款、隐私 URL、支持 URL、审核账号、release secrets、签名、符号表和回滚方案必须齐备。
-
