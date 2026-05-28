@@ -1,7 +1,7 @@
 # 功能 Backlog
 
 ## 状态
-基于当前已实现 MVP 基线、P0.1 训练闭环和商业化订阅审查重新规划。
+基于当前 Product Base、MVP 后端补齐、P0.1 训练闭环和商业化订阅审查重新规划。
 
 ## Owner
 Product Manager Agent
@@ -10,6 +10,16 @@ Product Manager Agent
 - 进入 Backlog 的功能必须能说明用户价值、阶段归属、范围边界和下游工件。
 - 当前已实现能力不重复作为未实现 backlog；只记录需要产品化、扩展或重构的后续能力。
 - 新功能进入实现前必须经过 Product Manager 接受范围，并由 Requirement Development 输出需求或 feature spec。
+
+## MVP - 后端与数据库全量补齐（当前开发重点）
+- `mvp-backend-foundation-auth`：后端 runtime、PostgreSQL/Flyway、统一错误、auth/session/current user/profile。
+- `mvp-backend-onboarding-content`：首评、learning route、官方场景内容、场景状态和首页状态 API。
+- `mvp-backend-practice-ai`：practice session lifecycle、ASR/TTS/pronunciation/LLM provider gateway、coach feedback 和可恢复失败。
+- `mvp-backend-learning-memory`：推荐表达队列、复习、收藏、learning evidence、mastery、weakness、history 和 personal wiki。
+- `mvp-backend-membership-boundary`：账号删除、云端学习数据处理、会员/报告/占位页 MVP 边界。
+- `mvp-backend-client-qa-release`：OpenAPI/Dart client/Flutter integration、契约测试、实现报告、质量报告和 release evidence。
+- Canonical scope：`docs/product/stages/mvp-backend-foundation.md`。
+- 强制追溯：`MVP-SI-* -> MVP-BE-FR-* -> MVP-BE-SPEC-* -> AC-MVP-BE-* -> MVP-BE-TR-*`。
 
 ## P0 - 商业化订阅上线准备
 - `commercial-subscription-readiness`：真实商业订阅上线准备，canonical scope 见 `docs/product/stages/p0-commercial-readiness.md` 和 `docs/product/increments/commercial-subscription-readiness/`。
