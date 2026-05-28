@@ -25,7 +25,7 @@ Proposed - Domain Schema Baseline + P0/P0.1 Extension。
 | Product Base spec | `docs/product/base/spec.md` | 稳定 flow、状态和模块影响 |
 | Product Base acceptance | `docs/product/base/acceptance.md` | 可观察验收边界 |
 | Product Base traceability | `docs/product/base/traceability.md` | Product Base 到代码/测试证据链路 |
-| Current baseline | `docs/product/baselines/current-mvp.md` | 当前 Flutter APP 能力事实 |
+| Product Base implementation evidence | `docs/product/base/traceability.md` | 当前 Flutter APP 能力事实、代码证据和测试证据 |
 | Feature registry | `docs/product/feature_registry.md` | 长期 feature 边界 |
 | P0 increment | `docs/product/increments/commercial-subscription-readiness/` | 商业化领域扩展来源 |
 | P0.1 increment | `docs/product/increments/p0-1-expression-automation-training/` | 训练编排领域扩展来源 |

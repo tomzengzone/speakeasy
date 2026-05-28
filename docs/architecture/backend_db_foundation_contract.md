@@ -17,7 +17,7 @@ Proposed - P0/P0.1 共同技术前置。
 | 来源 | 路径 | 用途 |
 | --- | --- | --- |
 | PM handoff | `.codex_tmp_remote_patch/agent-handoffs/foundation_contract_pm_brief.md` | 确认本轮是 P0/P0.1 共同技术前置，不是新 feature |
-| 当前基线 | `docs/product/baselines/current-mvp.md` | 确认当前是 Flutter APP，已有会员入口和本地学习闭环，但无真实后端/DB |
+| Product Base | `docs/product/base/requirements.md`, `docs/product/base/spec.md`, `docs/product/base/acceptance.md`, `docs/product/base/traceability.md` | 确认当前稳定能力、会员入口、本地学习闭环和后端/DB 缺口 |
 | Feature registry | `docs/product/feature_registry.md` | 确认受影响 feature 与 P0/P0.1 边界 |
 | P0 stage | `docs/product/stages/p0-commercial-readiness.md` | 确认商业化账号、订阅、权益、用量、合规、发布门禁 |
 | P0.1 stage | `docs/product/stages/p0-1-expression-automation.md` | 确认 session 内 planner、micro-action、hint、学习证据写回 |

@@ -6,7 +6,7 @@ Draft - 用于治理 feature、stage、increment、baseline、change request 和
 ## 背景
 当前项目已经具备 roadmap、feature backlog、MVP scope、change request、feature requirements、feature spec、acceptance criteria 和 traceability matrix，但这些文档把“APP 稳定功能结构”和“开发阶段/交付增量”混在了一起。
 
-典型问题是 `mvp-learning-loop-requirements.md` 实际描述当前 MVP 基线，却位于 feature requirements 路径下；P0.1 表达自动化训练闭环是一个开发阶段增量，却被直接写成 `mvp-learning-loop-spec.md`。这类问题不能靠单次重命名解决，必须补齐产品对象治理规则。
+典型问题是 `mvp-learning-loop-requirements.md` 实际描述当前 MVP 稳定能力，却位于 feature requirements 路径下；P0.1 表达自动化训练闭环是一个开发阶段增量，却被直接写成 `mvp-learning-loop-spec.md`。这类问题不能靠单次重命名解决，必须补齐产品对象治理规则。
 
 ## 治理目标
 - Feature 代表 APP 长期稳定功能域，不代表开发阶段。
@@ -65,7 +65,7 @@ idea/change intake
 
 ## 迁移建议
 规则落地后，再单独发起文档迁移 increment：
-- 将当前 MVP 基线迁移到 `docs/product/baselines/current-mvp.md` 或等价路径。
+- 将当前 MVP 稳定能力迁移到 `docs/product/base/` 活需求库；需要冻结版本时再从 Product Base 生成 baseline 快照。
 - 将 P0.1 表达自动化训练闭环迁移到 increment 路径。
 - 建立 `docs/product/feature_registry.md`，把训练 Agent、语音场景模拟、表达练习、学习记忆、评分、笔记本、场景库等登记为稳定 feature。
 - 更新 roadmap、development status、change request 和 traceability matrix 的引用。

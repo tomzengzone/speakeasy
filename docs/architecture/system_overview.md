@@ -4,13 +4,13 @@
 Proposed - whole-app architecture。本文基于 PM execution brief 进入第二轮架构产物更新，必须在 `document-traceability-check` 和 Product Object Governance Check Agent 通过后，才能作为下游实现依据。
 
 ## 架构范围模式
-`whole-app`。范围覆盖 Product Base、当前 APP baseline、feature registry、P0 商业化订阅上线准备、P0.1 表达自动化训练、P0.2/P1/P2 未来边界和明确非目标。
+`whole-app`。范围覆盖 Product Base、feature registry、P0 商业化订阅上线准备、P0.1 表达自动化训练、P0.2/P1/P2 未来边界和明确非目标。
 
 ## Source Inventory
 | 来源 | 路径 | 架构用途 |
 | --- | --- | --- |
 | Product Base | `docs/product/base/` | 稳定 MVP 能力和回归边界 |
-| 当前 APP baseline | `docs/product/baselines/current-mvp.md` | 已实现 Flutter 能力事实 |
+| Product Base traceability | `docs/product/base/traceability.md` | 已实现 Flutter 能力事实、代码证据和测试证据 |
 | Feature registry | `docs/product/feature_registry.md` | 稳定 feature、planned feature 和长期边界 |
 | Roadmap / status | `docs/product/roadmap.md`, `docs/product/development_status.md` | P0/P0.1 并行主线和 P0.2/P1/P2 边界 |
 | P0 商业化 | `docs/product/stages/p0-commercial-readiness.md`, `docs/product/increments/commercial-subscription-readiness/` | 订阅、权益、账号、合规、风控和发布门禁 |
@@ -21,7 +21,7 @@ Proposed - whole-app architecture。本文基于 PM execution brief 进入第二
 
 ## Scope Inventory
 - Product Base：启动/登录/首评、官方双场景、听力热身、推荐表达、收藏、语音场景模拟、学习沉淀、个人中心、会员入口。
-- Current baseline：Flutter APP 已具备 TTS、录音、ASR/转写、LLM 教练反馈、基础评分、个人 Wiki、Apple IAP 前端雏形；尚无真实商业订阅闭环、后端权益事实、生产账号闭环和数据库迁移。
+- Product Base traceability：Flutter APP 已具备 TTS、录音、ASR/转写、LLM 教练反馈、基础评分、个人 Wiki、Apple IAP 前端雏形；尚无真实商业订阅闭环、后端权益事实、生产账号闭环和数据库迁移。
 - Active stages：P0 商业化订阅上线准备；P0.1 session 内表达自动化训练闭环。
 - Planned/future boundaries：P0.2 跨 session 训练编排和记忆引擎；P1 笔记本、评分产品化、场景包扩展；P2 A1-C2 内容体系和 CMS。
 - Commercial/release constraints：付费发布前必须具备服务端权益、支付校验、用量风控、账号删除、审计日志、发布密钥、商店审核材料、测试矩阵和回滚路径。
@@ -36,7 +36,7 @@ Proposed - whole-app architecture。本文基于 PM execution brief 进入第二
 | `expression-practice-queue` | expression queue/coordinator/pages | Training Planner, Review | PracticeQueueItem, ReviewItem | `/review/due`, `/training/tasks` | P0.1 可用结构化建议生成任务候选 | 防止无来源任务和越权内容 | queue 生成/去重测试 | Covered, planner contract needed |
 | `voice-scenario-practice` | interview practice page, engine, scheduler | Training Session, AI Gateway | PracticeSession, DialogueTurn, Correction | `/training/sessions`, `/training/sessions/{id}/turns` | LLM 只返回 schema 化反馈和下一步候选 | 音频、转写、敏感对话脱敏 | 会话恢复、schema/fallback 测试 | Covered, P0.1 refactor needed |
 | `expression-automation-training` | 新 training session view 或改造 practice page | Training Planner | ActionChainStep, MicroAction, HintLevel, PlannerDecision, LearningEvidence | `/training/planner/next`, `/training/evidence` | prompt/schema 支持 hint、retry、pressure prompt | LLM 不直接写掌握状态 | planner unit、widget、AI eval | In-scope blocker |
-| `learning-memory-review` | Wiki/store, home cards, profile results | Learning Evidence, Review | LearningEvidence, MasteryRecord, ReviewSchedule | `/learning/evidence`, `/review/due`, `/review/result` | P0.1 只生成候选证据；P0.2 长期调度后置 | 个人学习数据 retention/deletion | evidence write-back 和删除回归 | Covered for baseline, P0.2 deferred |
+| `learning-memory-review` | Wiki/store, home cards, profile results | Learning Evidence, Review | LearningEvidence, MasteryRecord, ReviewSchedule | `/learning/evidence`, `/review/due`, `/review/result` | P0.1 只生成候选证据；P0.2 长期调度后置 | 个人学习数据 retention/deletion | evidence write-back 和删除回归 | Covered for Product Base, P0.2 deferred |
 | `scoring-feedback` | oral assessment service, shadow scoring, feedback UI | AI Gateway, Training | ScoreSignal, FeedbackRecord | `/ai/pronunciation`, `/ai/feedback` | 评分不作为唯一通关条件 | provider cost、滥用控制 | score unavailable fallback | Covered, P1 score productization deferred |
 | `profile-membership` | profile/membership/settings pages | Commerce/Entitlement, Identity | EntitlementSnapshot, AccountLifecycle | `/entitlements`, `/subscriptions/*`, `/user/delete` | 权益不足时 AI 调用降级 | 支付、账号删除、文案一致性 | 商业边界测试矩阵 | In-scope blocker |
 | `commercial-subscription` | 付费墙、权益刷新、超限态、恢复购买 UI | Commerce/Entitlement, Usage Control, Audit | Subscription, Purchase, Entitlement, UsageLedger, AuditLog | `/subscriptions/apple/verify`, `/subscriptions/google/verify`, `/usage/*` | AI quota 在可信边界执行 | 收据校验、退款/过期/宽限期、审计 | 沙盒/内测、release secrets、回滚 | In-scope blocker |
