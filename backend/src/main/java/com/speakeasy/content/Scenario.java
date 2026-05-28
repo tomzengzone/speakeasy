@@ -41,4 +41,24 @@ public class Scenario {
   public String getScenarioId() {
     return scenarioId;
   }
+
+  public String getSlug() {
+    return slug;
+  }
+
+  public String getTitle() {
+    return title;
+  }
+
+  public String getSummary() {
+    return summary;
+  }
+
+  public String getCategory() {
+    return category;
+  }
+
+  public String getStatus() {
+    return status;
+  }
 }

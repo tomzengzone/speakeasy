@@ -41,6 +41,18 @@ public class AccountDeletionJob {
     this.requestedAt = requestedAt;
   }
 
+  public void complete(Instant completedAt) {
+    this.status = "completed";
+    this.completedAt = completedAt;
+    this.failureReason = null;
+  }
+
+  public void fail(String failureReason) {
+    this.status = "failed";
+    this.failureReason = failureReason;
+    this.retryCount += 1;
+  }
+
   public UUID getDeletionJobId() {
     return deletionJobId;
   }
@@ -59,6 +71,10 @@ public class AccountDeletionJob {
 
   public Instant getCompletedAt() {
     return completedAt;
+  }
+
+  public String getFailureReason() {
+    return failureReason;
   }
 
   public int getRetryCount() {

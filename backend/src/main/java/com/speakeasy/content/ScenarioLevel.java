@@ -34,4 +34,24 @@ public class ScenarioLevel {
     this.targetLevel = levelCode;
     this.expressionCount = expressionCount;
   }
+
+  public UUID getScenarioLevelId() {
+    return scenarioLevelId;
+  }
+
+  public String getScenarioId() {
+    return scenarioId;
+  }
+
+  public String getLevelCode() {
+    return levelCode;
+  }
+
+  public String getTargetLevel() {
+    return targetLevel;
+  }
+
+  public int getExpressionCount() {
+    return expressionCount;
+  }
 }

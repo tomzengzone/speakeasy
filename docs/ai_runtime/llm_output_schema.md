@@ -26,6 +26,18 @@
   "next_action": {
     "type": "continue_dialogue",
     "prompt": "string"
+  },
+  "score_signal": {
+    "score_kind": "pronunciation",
+    "value": 0.85,
+    "confidence": 0.85,
+    "status": "available",
+    "source": "server_side_adapter"
+  },
+  "recoverable_error": {
+    "code": "string",
+    "message": "string",
+    "retryable": true
   }
 }
 ```
@@ -54,4 +66,6 @@
 - `coach_reply` and `next_action.prompt` must not be empty.
 - `main_issue.type` must be from the allowed set.
 - If `main_issue.type` is not `none`, `original`, `better`, and `explanation_cn` are required.
-
+- `score_signal.source` must be `server_side_adapter` when present.
+- `recoverable_error` is allowed only with `next_action.type = fallback` or provider/schema fallback handling.
+- The schema cannot write final mastery status; it may only emit candidate feedback or learning evidence candidates.

@@ -42,4 +42,53 @@ public class LearningRoute {
     this.createdAt = now;
     this.updatedAt = now;
   }
+
+  public LearningRoute(
+      UUID routeId,
+      UUID userId,
+      String currentScenarioId,
+      String targetLevel,
+      UUID sourceAssessmentId,
+      Instant now) {
+    this(routeId, userId, currentScenarioId, targetLevel, now);
+    this.sourceAssessmentId = sourceAssessmentId;
+  }
+
+  public UUID getRouteId() {
+    return routeId;
+  }
+
+  public UUID getUserId() {
+    return userId;
+  }
+
+  public String getCurrentScenarioId() {
+    return currentScenarioId;
+  }
+
+  public String getTargetLevel() {
+    return targetLevel;
+  }
+
+  public UUID getSourceAssessmentId() {
+    return sourceAssessmentId;
+  }
+
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
+
+  public Instant getUpdatedAt() {
+    return updatedAt;
+  }
+
+  public void updateCurrentScenario(String currentScenarioId, String targetLevel, Instant updatedAt) {
+    this.currentScenarioId = currentScenarioId;
+    this.targetLevel = targetLevel;
+    this.updatedAt = updatedAt;
+  }
+
+  public void linkAssessment(UUID sourceAssessmentId) {
+    this.sourceAssessmentId = sourceAssessmentId;
+  }
 }

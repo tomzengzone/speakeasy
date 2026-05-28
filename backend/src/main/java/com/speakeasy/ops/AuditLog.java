@@ -43,4 +43,23 @@ public class AuditLog {
     this.eventType = eventType;
     this.createdAt = createdAt;
   }
+
+  public AuditLog(
+      UUID auditLogId,
+      String actorType,
+      String actorId,
+      String eventType,
+      String targetRef,
+      String redactedDetails,
+      String requestId,
+      Instant createdAt) {
+    this.auditLogId = auditLogId;
+    this.actorType = actorType;
+    this.actorId = actorId;
+    this.eventType = eventType;
+    this.targetRef = targetRef;
+    this.redactedDetails = redactedDetails;
+    this.requestId = requestId;
+    this.createdAt = createdAt;
+  }
 }

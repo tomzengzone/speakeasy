@@ -23,6 +23,8 @@ tags:
   description: Assessment and initial learning route.
 - name: Scenario
   description: Official scenario content and levels.
+- name: Home
+  description: Server-backed home summary and learning entry state.
 - name: Practice
   description: Product Base voice scenario practice.
 - name: Training
@@ -328,6 +330,31 @@ paths:
           $ref: '#/components/responses/Conflict'
     parameters:
     - $ref: '#/components/parameters/RequestId'
+  /user/deletion-status:
+    get:
+      tags:
+      - User
+      operationId: getAccountDeletionStatus
+      summary: Get latest account deletion job status.
+      x-traceability:
+        product_objects:
+        - mvp-backend-membership-boundary
+        requirements:
+        - MVP-BE-FR-011
+      responses:
+        '200':
+          description: Latest deletion job status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountDeletionJobResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/AccountDeletionJobResponseExample'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
   /onboarding/assessment:
     post:
       tags:
@@ -466,6 +493,143 @@ paths:
                   $ref: '#/components/examples/ScenarioLevelResponseExample'
         '403':
           $ref: '#/components/responses/EntitlementRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /user/scenarios/{scenario_id}:
+    put:
+      tags:
+      - Scenario
+      operationId: joinScenario
+      summary: Join an official scenario and optionally make it current.
+      x-traceability:
+        product_objects:
+        - product-base
+        requirements:
+        - FR-003
+        - FR-005
+      parameters:
+      - $ref: '#/components/parameters/ScenarioId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserScenarioStateRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/UserScenarioStateRequestExample'
+      responses:
+        '200':
+          description: User scenario state after join.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserScenarioStateResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/UserScenarioStateResponseExample'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+    delete:
+      tags:
+      - Scenario
+      operationId: removeScenario
+      summary: Remove an official scenario from the user's active learning state.
+      x-traceability:
+        product_objects:
+        - product-base
+        requirements:
+        - FR-003
+        - FR-005
+      parameters:
+      - $ref: '#/components/parameters/ScenarioId'
+      responses:
+        '200':
+          description: User scenario state after removal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserScenarioStateResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/UserScenarioRemovedResponseExample'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /user/scenarios/current:
+    patch:
+      tags:
+      - Scenario
+      operationId: setCurrentScenario
+      summary: Set the current scenario and target level for practice entry.
+      x-traceability:
+        product_objects:
+        - product-base
+        requirements:
+        - FR-003
+        - FR-005
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CurrentScenarioRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/CurrentScenarioRequestExample'
+      responses:
+        '200':
+          description: Current user scenario state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserScenarioStateResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/UserScenarioStateResponseExample'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /home/summary:
+    get:
+      tags:
+      - Home
+      operationId: getHomeSummary
+      summary: Get server-backed home state for current scenario and next action.
+      x-traceability:
+        product_objects:
+        - product-base
+        requirements:
+        - FR-002
+        - FR-003
+        - FR-005
+      responses:
+        '200':
+          description: Home learning summary.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomeSummaryResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/HomeSummaryResponseExample'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/ErrorResponseExample'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /practice/sessions:
@@ -868,6 +1032,76 @@ paths:
                   $ref: '#/components/examples/ErrorResponseExample'
     parameters:
     - $ref: '#/components/parameters/RequestId'
+  /expressions/queue:
+    get:
+      tags:
+      - Learning
+      operationId: listExpressionQueue
+      summary: List user expression practice queue.
+      x-traceability:
+        product_objects:
+        - product-base
+        requirements:
+        - MVP-BE-FR-007
+      responses:
+        '200':
+          description: Expression queue with explicit empty or ready state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpressionQueueResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/ExpressionQueueResponseExample'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/ErrorResponseExample'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /expressions/tasks/{queue_item_id}/complete:
+    post:
+      tags:
+      - Learning
+      operationId: completeExpressionTask
+      summary: Complete an expression practice task and persist progress.
+      x-traceability:
+        product_objects:
+        - product-base
+        requirements:
+        - MVP-BE-FR-007
+      parameters:
+      - $ref: '#/components/parameters/QueueItemId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteExpressionTaskRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/CompleteExpressionTaskRequestExample'
+      responses:
+        '200':
+          description: Expression task progress.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpressionTaskProgressResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/ExpressionTaskProgressResponseExample'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
   /learning/evidence:
     get:
       tags:
@@ -966,6 +1200,115 @@ paths:
               examples:
                 default:
                   $ref: '#/components/examples/ErrorResponseExample'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /learning/wiki:
+    get:
+      tags:
+      - Learning
+      operationId: listPersonalWiki
+      summary: List saved personal wiki expressions.
+      x-traceability:
+        product_objects:
+        - product-base
+        requirements:
+        - MVP-BE-FR-010
+      responses:
+        '200':
+          description: Personal wiki entries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalWikiResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/PersonalWikiResponseExample'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/ErrorResponseExample'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /learning/history:
+    get:
+      tags:
+      - Learning
+      operationId: listLearningHistory
+      summary: List learning history entries.
+      x-traceability:
+        product_objects:
+        - product-base
+        requirements:
+        - MVP-BE-FR-010
+      responses:
+        '200':
+          description: Learning history entries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningHistoryResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/LearningHistoryResponseExample'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/ErrorResponseExample'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /learning/history/{history_entry_id}:
+    delete:
+      tags:
+      - Learning
+      operationId: deleteLearningHistoryEntry
+      summary: Delete one learning history entry.
+      x-traceability:
+        product_objects:
+        - product-base
+        requirements:
+        - MVP-BE-FR-010
+      parameters:
+      - $ref: '#/components/parameters/HistoryEntryId'
+      responses:
+        '204':
+          description: History entry deleted.
+        '404':
+          $ref: '#/components/responses/NotFound'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /learning/report/summary:
+    get:
+      tags:
+      - Learning
+      operationId: getMvpLearningReportSummary
+      summary: Get MVP-safe learning report placeholder state.
+      x-traceability:
+        product_objects:
+        - mvp-backend-membership-boundary
+        requirements:
+        - MVP-BE-FR-012
+      responses:
+        '200':
+          description: Empty or placeholder report summary.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningReportBoundaryResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/LearningReportBoundaryResponseExample'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /review/items:
@@ -1133,6 +1476,131 @@ paths:
           description: Favorite removed.
         '404':
           $ref: '#/components/responses/NotFound'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /membership/boundary:
+    get:
+      tags:
+      - Subscription
+      operationId: getMvpMembershipBoundary
+      summary: Get MVP membership boundary state without claiming commercial readiness.
+      x-traceability:
+        product_objects:
+        - mvp-backend-membership-boundary
+        requirements:
+        - MVP-BE-FR-012
+      responses:
+        '200':
+          description: MVP membership boundary.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipBoundaryResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/MembershipBoundaryResponseExample'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /membership/android/purchase:
+    post:
+      tags:
+      - Subscription
+      operationId: requestAndroidMembershipPurchase
+      summary: Return Android purchase platform-limited MVP boundary.
+      x-traceability:
+        product_objects:
+        - mvp-backend-membership-boundary
+        requirements:
+        - MVP-BE-FR-012
+      responses:
+        '200':
+          description: Android billing is not connected in the MVP backend boundary.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformLimitResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/AndroidPurchaseBoundaryResponseExample'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /membership/android/restore:
+    post:
+      tags:
+      - Subscription
+      operationId: restoreAndroidMembershipPurchase
+      summary: Return Android restore platform-limited MVP boundary.
+      x-traceability:
+        product_objects:
+        - mvp-backend-membership-boundary
+        requirements:
+        - MVP-BE-FR-012
+      responses:
+        '200':
+          description: Android restore is not connected in the MVP backend boundary.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformLimitResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/AndroidRestoreBoundaryResponseExample'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /offline-content/status:
+    get:
+      tags:
+      - Subscription
+      operationId: getOfflineContentStatus
+      summary: Get MVP offline content placeholder state.
+      x-traceability:
+        product_objects:
+        - mvp-backend-membership-boundary
+        requirements:
+        - MVP-BE-FR-012
+      responses:
+        '200':
+          description: Offline content placeholder.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceholderResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/OfflineContentStatusResponseExample'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /achievements/status:
+    get:
+      tags:
+      - Subscription
+      operationId: getAchievementsStatus
+      summary: Get MVP achievements placeholder state.
+      x-traceability:
+        product_objects:
+        - mvp-backend-membership-boundary
+        requirements:
+        - MVP-BE-FR-012
+      responses:
+        '200':
+          description: Achievements placeholder.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceholderResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/AchievementsStatusResponseExample'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /entitlements:
@@ -1958,6 +2426,12 @@ components:
       required: true
       schema:
         type: string
+    QueueItemId:
+      name: queue_item_id
+      in: path
+      required: true
+      schema:
+        type: string
     ReviewItemId:
       name: review_item_id
       in: path
@@ -1966,6 +2440,12 @@ components:
         type: string
     FavoriteId:
       name: favorite_id
+      in: path
+      required: true
+      schema:
+        type: string
+    HistoryEntryId:
+      name: history_entry_id
       in: path
       required: true
       schema:
@@ -2280,6 +2760,9 @@ components:
           type: string
           format: date-time
           nullable: true
+        failure_reason:
+          type: string
+          nullable: true
     OnboardingAssessmentRequest:
       type: object
       required:
@@ -2325,7 +2808,11 @@ components:
       - scenario_ids
       properties:
         current_scenario_id:
-          $ref: '#/components/schemas/ScenarioId'
+          type: string
+          nullable: true
+          enum:
+          - job_interview
+          - onboarding_introduction
         target_level:
           $ref: '#/components/schemas/LevelCode'
         scenario_ids:
@@ -2435,6 +2922,162 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ActionChainStep'
+    UserScenarioStateRequest:
+      type: object
+      required:
+      - schema_version
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        target_level:
+          $ref: '#/components/schemas/LevelCode'
+        set_current:
+          type: boolean
+          default: true
+    CurrentScenarioRequest:
+      type: object
+      required:
+      - schema_version
+      - scenario_id
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        scenario_id:
+          $ref: '#/components/schemas/ScenarioId'
+        target_level:
+          $ref: '#/components/schemas/LevelCode'
+    UserScenarioStateResponse:
+      type: object
+      required:
+      - schema_version
+      - state
+      - home_summary
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        state:
+          $ref: '#/components/schemas/UserScenarioState'
+        home_summary:
+          $ref: '#/components/schemas/HomeSummary'
+    UserScenarioState:
+      type: object
+      required:
+      - scenario_id
+      - state
+      - current
+      - target_level
+      properties:
+        scenario_id:
+          $ref: '#/components/schemas/ScenarioId'
+        state:
+          type: string
+          enum:
+          - joined
+          - removed
+        current:
+          type: boolean
+        target_level:
+          $ref: '#/components/schemas/LevelCode'
+        updated_at:
+          type: string
+          format: date-time
+    HomeSummaryResponse:
+      type: object
+      required:
+      - schema_version
+      - summary
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        summary:
+          $ref: '#/components/schemas/HomeSummary'
+    HomeSummary:
+      type: object
+      required:
+      - onboarding_status
+      - joined_scenarios
+      - review_status
+      - weakness_status
+      - unfinished_session_status
+      - next_action
+      properties:
+        onboarding_status:
+          type: string
+          enum:
+          - incomplete
+          - complete
+        current_scenario:
+          type: object
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/HomeScenarioSummary'
+        joined_scenarios:
+          type: array
+          items:
+            $ref: '#/components/schemas/HomeScenarioSummary'
+        review_status:
+          type: string
+          enum:
+          - not_available
+          - ready
+        weakness_status:
+          type: string
+          enum:
+          - not_available
+          - ready
+        unfinished_session_status:
+          type: string
+          enum:
+          - none
+          - available
+        next_action:
+          $ref: '#/components/schemas/HomeNextAction'
+    HomeScenarioSummary:
+      type: object
+      required:
+      - scenario_id
+      - title
+      - target_level
+      - current
+      properties:
+        scenario_id:
+          $ref: '#/components/schemas/ScenarioId'
+        title:
+          type: string
+        target_level:
+          $ref: '#/components/schemas/LevelCode'
+        current:
+          type: boolean
+        version:
+          type: string
+          nullable: true
+    HomeNextAction:
+      type: object
+      required:
+      - action_type
+      - label
+      properties:
+        action_type:
+          type: string
+          enum:
+          - complete_onboarding
+          - choose_scenario
+          - start_practice
+        scenario_id:
+          type: string
+          nullable: true
+          enum:
+          - job_interview
+          - onboarding_introduction
+        level_code:
+          type: string
+          nullable: true
+          enum:
+          - L1
+          - L2
+          - L3
+        label:
+          type: string
     DialogueAsset:
       type: object
       required:
@@ -2543,9 +3186,11 @@ components:
         status:
           type: string
           enum:
+          - active
           - idle
           - recording
           - submitting
+          - awaiting_feedback
           - feedback
           - recoverable_error
           - completed
@@ -2578,6 +3223,13 @@ components:
           $ref: '#/components/schemas/SchemaVersion'
         session_id:
           type: string
+        session_status:
+          type: string
+          enum:
+          - active
+          - feedback
+          - recoverable_error
+          - completed
         user_message:
           $ref: '#/components/schemas/ConversationMessage'
         coach_feedback:
@@ -2586,6 +3238,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LearningEvidenceCandidate'
+        recoverable_error:
+          $ref: '#/components/schemas/RecoverableProviderError'
     ConversationMessage:
       type: object
       required:
@@ -2618,6 +3272,14 @@ components:
       properties:
         summary:
           type: string
+        feedback_type:
+          type: string
+          enum:
+          - next_question
+          - retry
+          - expression_suggestion
+          - score_signal
+          - recoverable_error
         main_issue_type:
           type: string
         suggested_expression:
@@ -2626,11 +3288,38 @@ components:
           type: string
         score_signal:
           $ref: '#/components/schemas/ScoreSignal'
+        validation_status:
+          type: string
+          enum:
+          - valid
+          - invalid_schema
+          - fallback
+        provider_status:
+          type: string
+          enum:
+          - success
+          - timeout
+          - provider_unavailable
+          - invalid_schema
+    RecoverableProviderError:
+      type: object
+      required:
+      - code
+      - message
+      - retryable
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        retryable:
+          type: boolean
     ScoreSignal:
       type: object
       required:
       - score_kind
       - status
+      - source
       properties:
         score_kind:
           type: string
@@ -2639,6 +3328,7 @@ components:
           - completeness
           - grammar
           - task_completion
+          - fluency
         value:
           type: number
           minimum: 0
@@ -2655,6 +3345,10 @@ components:
           - available
           - low_confidence
           - unavailable
+        source:
+          type: string
+          enum:
+          - server_side_adapter
     SessionSummaryResponse:
       type: object
       required:
@@ -2885,6 +3579,121 @@ components:
             type: array
             items:
               type: string
+    ExpressionQueueResponse:
+      type: object
+      required:
+      - schema_version
+      - state
+      - queue_items
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        state:
+          type: string
+          enum:
+          - ready
+          - empty_no_scene
+          - empty_no_due_items
+        queue_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpressionQueueItem'
+    ExpressionQueueItem:
+      type: object
+      required:
+      - queue_item_id
+      - source_type
+      - target_expression_id
+      - expression_text
+      - task_type
+      - priority
+      - status
+      properties:
+        queue_item_id:
+          type: string
+        source_type:
+          type: string
+          enum:
+          - variant
+          - mastered_expression
+          - weak_expression
+        target_expression_id:
+          type: string
+        expression_text:
+          type: string
+        meaning_cn:
+          type: string
+        task_type:
+          type: string
+          enum:
+          - practice_expression
+          - review_expression
+        priority:
+          type: integer
+        status:
+          type: string
+          enum:
+          - ready
+          - in_progress
+          - completed
+          - dismissed
+        due_at:
+          type: string
+          format: date-time
+    CompleteExpressionTaskRequest:
+      type: object
+      required:
+      - schema_version
+      - result
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        result:
+          type: string
+          enum:
+          - completed
+          - skipped
+        score:
+          type: number
+          minimum: 0
+          maximum: 1
+        answer_text:
+          type: string
+        transcript_ref:
+          type: string
+    ExpressionTaskProgressResponse:
+      type: object
+      required:
+      - schema_version
+      - progress
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        progress:
+          $ref: '#/components/schemas/ExpressionTaskProgress'
+    ExpressionTaskProgress:
+      type: object
+      required:
+      - attempt_id
+      - queue_item_id
+      - target_expression_id
+      - result
+      - evidence_id
+      properties:
+        attempt_id:
+          type: string
+        queue_item_id:
+          type: string
+        target_expression_id:
+          type: string
+        result:
+          type: string
+        best_score:
+          type: number
+          minimum: 0
+          maximum: 1
+        evidence_id:
+          type: string
     LearningEvidenceCandidate:
       type: object
       required:
@@ -3109,6 +3918,7 @@ components:
       type: object
       required:
       - schema_version
+      - target_expression_id
       - expression_text
       properties:
         schema_version:
@@ -3151,6 +3961,215 @@ components:
           enum:
           - active
           - removed
+    PersonalWikiResponse:
+      type: object
+      required:
+      - schema_version
+      - entries
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/SavedExpression'
+    SavedExpression:
+      type: object
+      required:
+      - saved_expression_id
+      - target_expression_id
+      - expression_text
+      - status
+      properties:
+        saved_expression_id:
+          type: string
+        target_expression_id:
+          type: string
+        expression_text:
+          type: string
+        meaning_cn:
+          type: string
+        example:
+          type: string
+        status:
+          type: string
+          enum:
+          - active
+          - archived
+    LearningHistoryResponse:
+      type: object
+      required:
+      - schema_version
+      - entries
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/LearningHistoryEntry'
+    LearningHistoryEntry:
+      type: object
+      required:
+      - history_entry_id
+      - title
+      - status
+      - created_at
+      properties:
+        history_entry_id:
+          type: string
+        source_session_id:
+          type: string
+          nullable: true
+        title:
+          type: string
+        status:
+          type: string
+          enum:
+          - recorded
+          - deleted
+        created_at:
+          type: string
+          format: date-time
+    LearningReportBoundaryResponse:
+      type: object
+      required:
+      - schema_version
+      - report_status
+      - sections
+      - placeholder
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        report_status:
+          type: string
+          enum:
+          - empty
+          - placeholder
+          - available
+        sections:
+          type: array
+          items:
+            type: string
+        placeholder:
+          $ref: '#/components/schemas/Placeholder'
+    MembershipBoundaryResponse:
+      type: object
+      required:
+      - schema_version
+      - membership
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        membership:
+          $ref: '#/components/schemas/MembershipBoundary'
+    MembershipBoundary:
+      type: object
+      required:
+      - state
+      - commercial_status
+      - current_plan
+      - platform_limits
+      - capabilities
+      properties:
+        state:
+          type: string
+          enum:
+          - entry-only
+          - platform-limited
+          - active-from-commercial
+        commercial_status:
+          type: string
+          enum:
+          - commercial-not-ready
+          - active-from-commercial
+        current_plan:
+          type: string
+        platform_limits:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlatformLimit'
+        capabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapabilityBoundary'
+    PlatformLimitResponse:
+      type: object
+      required:
+      - schema_version
+      - platform_limit
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        platform_limit:
+          $ref: '#/components/schemas/PlatformLimit'
+    PlatformLimit:
+      type: object
+      required:
+      - platform
+      - action
+      - status
+      - reason_code
+      properties:
+        platform:
+          type: string
+          enum:
+          - android
+          - ios
+        action:
+          type: string
+        status:
+          type: string
+          enum:
+          - platform-limited
+          - available-entry
+        reason_code:
+          type: string
+    CapabilityBoundary:
+      type: object
+      required:
+      - capability
+      - status
+      - message
+      properties:
+        capability:
+          type: string
+        status:
+          type: string
+          enum:
+          - available-entry
+          - platform-limited
+          - placeholder
+          - future-scope
+        message:
+          type: string
+    PlaceholderResponse:
+      type: object
+      required:
+      - schema_version
+      - placeholder
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        placeholder:
+          $ref: '#/components/schemas/Placeholder'
+    Placeholder:
+      type: object
+      required:
+      - surface
+      - status
+      - reason_code
+      properties:
+        surface:
+          type: string
+        status:
+          type: string
+          enum:
+          - empty
+          - not-implemented
+          - future-scope
+        reason_code:
+          type: string
     EntitlementSnapshotResponse:
       type: object
       required:
@@ -3465,6 +4484,7 @@ components:
           format: date-time
     TranscribeRequest:
       type: object
+      additionalProperties: false
       required:
       - schema_version
       properties:
@@ -3497,6 +4517,7 @@ components:
           - provider_unavailable
     TtsRequest:
       type: object
+      additionalProperties: false
       required:
       - schema_version
       - text
@@ -3525,6 +4546,7 @@ components:
           - provider_unavailable
     CoachTurnRequest:
       type: object
+      additionalProperties: false
       required:
       - schema_version
       - session_id
@@ -3562,6 +4584,7 @@ components:
           - fallback
     PronunciationRequest:
       type: object
+      additionalProperties: false
       required:
       - schema_version
       - audio_ref
@@ -3720,9 +4743,10 @@ components:
       value:
         schema_version: 1
         deletion_job_id: deletion_job_id_sample
-        status: requested
+        status: completed
         requested_at: '2026-05-26T12:00:00Z'
         completed_at: '2026-05-26T12:00:00Z'
+        failure_reason: null
     OnboardingAssessmentRequestExample:
       summary: submitOnboardingAssessment request example
       value:
@@ -3800,6 +4824,95 @@ components:
           learner_task: sample
           success_condition: sample
           order_index: 1
+    UserScenarioStateRequestExample:
+      summary: joinScenario request example
+      value:
+        schema_version: 1
+        target_level: L2
+        set_current: true
+    CurrentScenarioRequestExample:
+      summary: setCurrentScenario request example
+      value:
+        schema_version: 1
+        scenario_id: onboarding_introduction
+        target_level: L2
+    UserScenarioStateResponseExample:
+      summary: user scenario state response example
+      value:
+        schema_version: 1
+        state:
+          scenario_id: onboarding_introduction
+          state: joined
+          current: true
+          target_level: L2
+          updated_at: '2026-05-26T12:00:00Z'
+        home_summary:
+          onboarding_status: complete
+          current_scenario:
+            scenario_id: onboarding_introduction
+            title: 入职介绍
+            target_level: L2
+            current: true
+            version: 2026.05-mvp-seed
+          joined_scenarios:
+          - scenario_id: onboarding_introduction
+            title: 入职介绍
+            target_level: L2
+            current: true
+            version: 2026.05-mvp-seed
+          review_status: not_available
+          weakness_status: not_available
+          unfinished_session_status: none
+          next_action:
+            action_type: start_practice
+            scenario_id: onboarding_introduction
+            level_code: L2
+            label: 开始当前场景练习
+    UserScenarioRemovedResponseExample:
+      summary: removeScenario response example
+      value:
+        schema_version: 1
+        state:
+          scenario_id: job_interview
+          state: removed
+          current: false
+          target_level: L1
+          updated_at: '2026-05-26T12:00:00Z'
+        home_summary:
+          onboarding_status: complete
+          joined_scenarios: []
+          review_status: not_available
+          weakness_status: not_available
+          unfinished_session_status: none
+          next_action:
+            action_type: choose_scenario
+            label: 选择一个官方场景
+    HomeSummaryResponseExample:
+      summary: getHomeSummary response 200 example
+      value:
+        schema_version: 1
+        summary:
+          onboarding_status: complete
+          current_scenario:
+            scenario_id: job_interview
+            title: 英语面试
+            target_level: L1
+            current: true
+            version: 2026.05-mvp-seed
+          joined_scenarios:
+          - scenario_id: job_interview
+            title: 英语面试
+            target_level: L1
+            current: true
+            version: 2026.05-mvp-seed
+          review_status: not_available
+          weakness_status: not_available
+          unfinished_session_status: none
+          next_action:
+            action_type: start_practice
+            scenario_id: job_interview
+            level_code: L1
+            label: 开始当前场景练习
     StartSessionRequestExample:
       summary: startPracticeSession request example
       value:
@@ -3815,7 +4928,7 @@ components:
           session_id: session_id_sample
           scenario_id: job_interview
           level_code: L1
-          status: idle
+          status: active
           current_turn_index: 1
           messages:
           - message_id: message_id_sample
@@ -3835,6 +4948,7 @@ components:
       value:
         schema_version: 1
         session_id: session_id_sample
+        session_status: feedback
         user_message:
           message_id: message_id_sample
           role: learner
@@ -3843,14 +4957,18 @@ components:
           created_at: '2026-05-26T12:00:00Z'
         coach_feedback:
           summary: sample
+          feedback_type: next_question
           main_issue_type: sample
           suggested_expression: sample
           next_prompt: sample
+          validation_status: valid
+          provider_status: success
           score_signal:
             score_kind: pronunciation
             value: 0.85
             confidence: 0.85
             status: available
+            source: server_side_adapter
         learning_evidence_candidates:
         - candidate_id: candidate_id_sample
           evidence_type: mastered_expression
@@ -3915,6 +5033,7 @@ components:
             value: 0.85
             confidence: 0.85
             status: available
+            source: server_side_adapter
         learning_evidence_candidates:
         - candidate_id: candidate_id_sample
           evidence_type: mastered_expression
@@ -3961,6 +5080,40 @@ components:
           next_focus: sample
           accepted_evidence_ids:
           - accepted_evidence_ids-sample
+    ExpressionQueueResponseExample:
+      summary: listExpressionQueue response 200 example
+      value:
+        schema_version: 1
+        state: ready
+        queue_items:
+        - queue_item_id: queue_item_id_sample
+          source_type: variant
+          target_expression_id: target_expression_id_sample
+          expression_text: I worked on a small project.
+          meaning_cn: 我参与过一个小项目。
+          task_type: practice_expression
+          priority: 300
+          status: ready
+          due_at: '2026-05-26T12:00:00Z'
+    CompleteExpressionTaskRequestExample:
+      summary: completeExpressionTask request example
+      value:
+        schema_version: 1
+        result: completed
+        score: 0.92
+        answer_text: I worked on a small project.
+        transcript_ref: manual
+    ExpressionTaskProgressResponseExample:
+      summary: completeExpressionTask response 200 example
+      value:
+        schema_version: 1
+        progress:
+          attempt_id: attempt_id_sample
+          queue_item_id: queue_item_id_sample
+          target_expression_id: target_expression_id_sample
+          result: completed
+          best_score: 0.92
+          evidence_id: evidence_id_sample
     LearningEvidenceListResponseExample:
       summary: listLearningEvidence response 200 example
       value:
@@ -4056,6 +5209,91 @@ components:
           expression_text: Sample text.
           meaning_cn: sample
           status: active
+    PersonalWikiResponseExample:
+      summary: listPersonalWiki response 200 example
+      value:
+        schema_version: 1
+        entries:
+        - saved_expression_id: saved_expression_id_sample
+          target_expression_id: target_expression_id_sample
+          expression_text: I worked on a small project.
+          meaning_cn: 我参与过一个小项目。
+          example: Use this to describe prior experience.
+          status: active
+    LearningHistoryResponseExample:
+      summary: listLearningHistory response 200 example
+      value:
+        schema_version: 1
+        entries:
+        - history_entry_id: history_entry_id_sample
+          source_session_id: null
+          title: 已掌握表达：I worked on a small project.
+          status: recorded
+          created_at: '2026-05-26T12:00:00Z'
+    LearningReportBoundaryResponseExample:
+      summary: getMvpLearningReportSummary response 200 example
+      value:
+        schema_version: 1
+        report_status: empty
+        sections: []
+        placeholder:
+          surface: learning_report
+          status: not-implemented
+          reason_code: REPORT_NOT_IMPLEMENTED
+    MembershipBoundaryResponseExample:
+      summary: getMvpMembershipBoundary response 200 example
+      value:
+        schema_version: 1
+        membership:
+          state: entry-only
+          commercial_status: commercial-not-ready
+          current_plan: free
+          platform_limits:
+          - platform: android
+            action: purchase
+            status: platform-limited
+            reason_code: ANDROID_BILLING_NOT_CONNECTED
+          capabilities:
+          - capability: membership_entry
+            status: available-entry
+            message: MVP entry is available.
+          - capability: full_entitlement_gating
+            status: future-scope
+            message: Owned by commercial-subscription-readiness.
+    AndroidPurchaseBoundaryResponseExample:
+      summary: requestAndroidMembershipPurchase response 200 example
+      value:
+        schema_version: 1
+        platform_limit:
+          platform: android
+          action: purchase
+          status: platform-limited
+          reason_code: ANDROID_BILLING_NOT_CONNECTED
+    AndroidRestoreBoundaryResponseExample:
+      summary: restoreAndroidMembershipPurchase response 200 example
+      value:
+        schema_version: 1
+        platform_limit:
+          platform: android
+          action: restore
+          status: platform-limited
+          reason_code: ANDROID_BILLING_NOT_CONNECTED
+    OfflineContentStatusResponseExample:
+      summary: getOfflineContentStatus response 200 example
+      value:
+        schema_version: 1
+        placeholder:
+          surface: offline_content
+          status: not-implemented
+          reason_code: OFFLINE_CONTENT_NOT_IMPLEMENTED
+    AchievementsStatusResponseExample:
+      summary: getAchievementsStatus response 200 example
+      value:
+        schema_version: 1
+        placeholder:
+          surface: achievements
+          status: not-implemented
+          reason_code: ACHIEVEMENTS_NOT_IMPLEMENTED
     EntitlementSnapshotResponseExample:
       summary: getEntitlements response 200 example
       value:
@@ -4203,14 +5441,18 @@ components:
         schema_version: 1
         feedback:
           summary: sample
+          feedback_type: next_question
           main_issue_type: sample
           suggested_expression: sample
           next_prompt: sample
+          validation_status: valid
+          provider_status: success
           score_signal:
             score_kind: pronunciation
             value: 0.85
             confidence: 0.85
             status: available
+            source: server_side_adapter
         validation_status: valid
     FeedbackRequestExample:
       summary: generateFeedback request example
@@ -4235,6 +5477,7 @@ components:
           value: 0.85
           confidence: 0.85
           status: available
+          source: server_side_adapter
     AuditEventListResponseExample:
       summary: listAuditEvents response 200 example
       value:

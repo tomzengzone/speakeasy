@@ -35,11 +35,51 @@ public class OnboardingAssessment {
   protected OnboardingAssessment() {}
 
   public OnboardingAssessment(UUID assessmentId, UUID userId, String goalDirection, String outputLevel, int dailyMinutes, Instant completedAt) {
+    this(assessmentId, userId, goalDirection, null, outputLevel, dailyMinutes, completedAt);
+  }
+
+  public OnboardingAssessment(
+      UUID assessmentId,
+      UUID userId,
+      String goalDirection,
+      String painPoints,
+      String outputLevel,
+      int dailyMinutes,
+      Instant completedAt) {
     this.assessmentId = assessmentId;
     this.userId = userId;
     this.goalDirection = goalDirection;
+    this.painPoints = painPoints;
     this.outputLevel = outputLevel;
     this.dailyMinutes = dailyMinutes;
     this.completedAt = completedAt;
+  }
+
+  public UUID getAssessmentId() {
+    return assessmentId;
+  }
+
+  public UUID getUserId() {
+    return userId;
+  }
+
+  public String getGoalDirection() {
+    return goalDirection;
+  }
+
+  public String getPainPoints() {
+    return painPoints;
+  }
+
+  public String getOutputLevel() {
+    return outputLevel;
+  }
+
+  public int getDailyMinutes() {
+    return dailyMinutes;
+  }
+
+  public Instant getCompletedAt() {
+    return completedAt;
   }
 }

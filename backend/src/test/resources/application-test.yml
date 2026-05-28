@@ -13,3 +13,5 @@ spring:
     open-in-view: false
   jackson:
     property-naming-strategy: SNAKE_CASE
+    deserialization:
+      fail-on-unknown-properties: true

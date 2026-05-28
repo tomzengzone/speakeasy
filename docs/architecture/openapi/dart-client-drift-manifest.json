@@ -1,8 +1,28 @@
 {
-  "mode": "pre_client_generation_gate",
+  "mode": "generated_client_drift",
   "openapi_path": "docs/architecture/openapi/speakeasy-api.yaml",
   "target_directory": "lib/generated/api",
-  "generator": "dart-dio (planned generated client target)",
-  "openapi_sha256": "4c23dc5a893071b7a435423182c6e17fbfc753e5005ffed3e7d1c6bdaff61526",
-  "status": "No generated Dart client is committed yet. This gate pins the canonical OpenAPI hash and validates Dart-safe generation inputs until lib/generated/api is introduced."
+  "generator": "project-local OpenAPI Dart path registry",
+  "openapi_sha256": "506282ac758a37269df95e12ca6752de9c201eb162fd4cc0e227b13c287ab082",
+  "status": "Generated Dart OpenAPI boundary is committed under lib/generated/api and pinned by .openapi-sha256. Active MVP backend calls must use generated path constants or be listed as explicit handwritten client exceptions.",
+  "handwritten_client_exceptions": {
+    "/payments/apple/verify-receipt": "Legacy payment wrapper retained outside mvp-backend-membership-boundary; real provider verify remains commercial-subscription-readiness scope.",
+    "/user/stats": "Legacy local learning-stats sync retained until frontend migrates to learning history/report APIs.",
+    "/user/stats/session": "Legacy local learning-stats sync retained until frontend migrates practice completion to /practice and /learning evidence APIs.",
+    "/user/stats/session/feedback": "Legacy local feedback stats sync retained until frontend migrates practice completion to /practice and /learning evidence APIs.",
+    "/user/stats/session-group/delete": "Legacy local stats cleanup retained until frontend migrates history deletion to /learning/history/{history_entry_id}.",
+    "/cards": "Legacy card feed outside MVP backend active endpoint set.",
+    "/cards/$cardId/state": "Legacy card state endpoint outside MVP backend active endpoint set.",
+    "/ai/scene-draft": "Legacy freeform scene draft endpoint outside the two-scenario MVP backend stage.",
+    "/ai/sessions": "Legacy freeform AI scene session endpoint outside the MVP backend practice-session API.",
+    "/ai/sessions/$sessionId/message": "Legacy freeform AI scene message endpoint outside the MVP backend practice-session API.",
+    "/user/roles/sync": "Legacy role-memory endpoint outside Product Base MVP backend scope.",
+    "/user/roles/$trimmedRoleId/memory": "Legacy role-memory endpoint outside Product Base MVP backend scope.",
+    "/user/learning-profile": "Legacy learning profile endpoint retained until learning-memory projections are wired to frontend.",
+    "/ai/scene-turn-meta": "Legacy scene metadata endpoint outside MVP backend practice-session API.",
+    "/ai/translate": "Legacy translation helper outside MVP backend active endpoint set.",
+    "/ai/conversation-summary": "Legacy freeform scene summary endpoint outside MVP backend practice-session API.",
+    "/ai/oral-assessment/auth": "External provider auth helper retained as platform/provider exception.",
+    "/ai/grammar-score": "Legacy grammar score helper outside current OpenAPI pronunciation/coach-turn boundary."
+  }
 }

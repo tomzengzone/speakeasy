@@ -82,4 +82,17 @@ public class UserAccount {
     this.accountStatus = "deletion_requested";
     this.updatedAt = updatedAt;
   }
+
+  public void markDeleted(Instant updatedAt) {
+    this.displayName = "Deleted User";
+    this.avatarRef = null;
+    this.accountStatus = "deleted";
+    this.onboardingStatus = "deleted";
+    this.updatedAt = updatedAt;
+  }
+
+  public void completeOnboarding(Instant updatedAt) {
+    this.onboardingStatus = "complete";
+    this.updatedAt = updatedAt;
+  }
 }

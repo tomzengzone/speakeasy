@@ -4,6 +4,7 @@ import com.speakeasy.common.SchemaResponse;
 import com.speakeasy.identity.AuthService;
 import com.speakeasy.identity.IdentityService;
 import com.speakeasy.ops.AccountDeletionJob;
+import com.speakeasy.ops.AccountDeletionService;
 import com.speakeasy.security.CurrentUser;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
@@ -18,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,10 +30,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
   private final AuthService authService;
   private final IdentityService identityService;
+  private final AccountDeletionService accountDeletionService;
 
-  public AuthController(AuthService authService, IdentityService identityService) {
+  public AuthController(AuthService authService, IdentityService identityService, AccountDeletionService accountDeletionService) {
     this.authService = authService;
     this.identityService = identityService;
+    this.accountDeletionService = accountDeletionService;
   }
 
   @PostMapping("/auth/login/phone")
@@ -75,8 +79,17 @@ public class AuthController {
 
   @DeleteMapping("/user/me")
   @ResponseStatus(HttpStatus.ACCEPTED)
-  public AccountDeletionJobResponse requestAccountDeletion(@AuthenticationPrincipal CurrentUser currentUser) {
-    return AccountDeletionJobResponse.from(1, identityService.requestAccountDeletion(currentUser.userId()));
+  public AccountDeletionJobResponse requestAccountDeletion(
+      @AuthenticationPrincipal CurrentUser currentUser,
+      @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+      @RequestHeader(value = "X-Request-Id", required = false) String requestId) {
+    return AccountDeletionJobResponse.from(
+        1, accountDeletionService.requestDeletion(currentUser.userId(), idempotencyKey, requestId));
+  }
+
+  @GetMapping("/user/deletion-status")
+  public AccountDeletionJobResponse deletionStatus(@AuthenticationPrincipal CurrentUser currentUser) {
+    return AccountDeletionJobResponse.from(1, accountDeletionService.latestDeletionJob(currentUser.userId()));
   }
 
   public record PhoneLoginRequest(
@@ -152,14 +165,20 @@ public class AuthController {
   }
 
   public record AccountDeletionJobResponse(
-      int schemaVersion, UUID deletionJobId, String status, Instant requestedAt, Instant completedAt) implements SchemaResponse {
+      int schemaVersion,
+      UUID deletionJobId,
+      String status,
+      Instant requestedAt,
+      Instant completedAt,
+      String failureReason) implements SchemaResponse {
     static AccountDeletionJobResponse from(int schemaVersion, AccountDeletionJob deletionJob) {
       return new AccountDeletionJobResponse(
           schemaVersion,
           deletionJob.getDeletionJobId(),
           deletionJob.getStatus(),
           deletionJob.getRequestedAt(),
-          deletionJob.getCompletedAt());
+          deletionJob.getCompletedAt(),
+          deletionJob.getFailureReason());
     }
   }
 }

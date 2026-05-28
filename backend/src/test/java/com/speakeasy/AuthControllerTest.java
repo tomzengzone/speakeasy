@@ -12,8 +12,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jayway.jsonpath.JsonPath;
 import com.speakeasy.commerce.EntitlementSnapshotRepository;
 import com.speakeasy.commerce.SubscriptionPlanRepository;
+import com.speakeasy.content.UserScenarioStateRepository;
 import com.speakeasy.identity.AuthIdentityRepository;
 import com.speakeasy.identity.AuthSessionRepository;
+import com.speakeasy.identity.LearningRouteRepository;
+import com.speakeasy.identity.OnboardingAssessmentRepository;
 import com.speakeasy.identity.UserAccountRepository;
 import com.speakeasy.identity.UserProfileRepository;
 import com.speakeasy.ops.AccountDeletionJobRepository;
@@ -35,6 +38,9 @@ import org.springframework.test.web.servlet.MvcResult;
 class AuthControllerTest {
   @Autowired MockMvc mvc;
   @Autowired AccountDeletionJobRepository deletionJobs;
+  @Autowired UserScenarioStateRepository userScenarioStates;
+  @Autowired LearningRouteRepository routes;
+  @Autowired OnboardingAssessmentRepository assessments;
   @Autowired AuthSessionRepository sessions;
   @Autowired AuthIdentityRepository identities;
   @Autowired UserProfileRepository profiles;
@@ -46,6 +52,9 @@ class AuthControllerTest {
   @BeforeEach
   void setUp() {
     deletionJobs.deleteAll();
+    userScenarioStates.deleteAll();
+    routes.deleteAll();
+    assessments.deleteAll();
     sessions.deleteAll();
     identities.deleteAll();
     profiles.deleteAll();

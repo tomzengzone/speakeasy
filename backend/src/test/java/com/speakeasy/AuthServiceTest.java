@@ -6,9 +6,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.speakeasy.common.ApiException;
 import com.speakeasy.commerce.EntitlementSnapshotRepository;
 import com.speakeasy.commerce.SubscriptionPlanRepository;
+import com.speakeasy.content.UserScenarioStateRepository;
 import com.speakeasy.identity.AuthIdentityRepository;
 import com.speakeasy.identity.AuthService;
 import com.speakeasy.identity.AuthSessionRepository;
+import com.speakeasy.identity.LearningRouteRepository;
+import com.speakeasy.identity.OnboardingAssessmentRepository;
 import com.speakeasy.identity.UserAccountRepository;
 import com.speakeasy.identity.UserProfileRepository;
 import com.speakeasy.ops.AccountDeletionJobRepository;
@@ -30,11 +33,17 @@ class AuthServiceTest {
   @Autowired EntitlementSnapshotRepository entitlements;
   @Autowired UsageLedgerRepository ledgers;
   @Autowired SubscriptionPlanRepository plans;
+  @Autowired UserScenarioStateRepository userScenarioStates;
+  @Autowired LearningRouteRepository routes;
+  @Autowired OnboardingAssessmentRepository assessments;
   @Autowired UserAccountRepository users;
 
   @BeforeEach
   void setUp() {
     deletionJobs.deleteAll();
+    userScenarioStates.deleteAll();
+    routes.deleteAll();
+    assessments.deleteAll();
     sessions.deleteAll();
     identities.deleteAll();
     profiles.deleteAll();

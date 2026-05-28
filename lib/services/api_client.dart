@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 import 'package:speakeasy/config/app_config.dart';
+import 'package:speakeasy/generated/api/speakeasy_api.dart';
 import 'package:speakeasy/models/app_models.dart';
 import 'package:speakeasy/models/learning_stats_model.dart';
 import 'package:speakeasy/models/storage_models.dart';
@@ -137,29 +138,46 @@ class ApiClient {
   static Future<Map<String, dynamic>> _delete(
     String path, {
     bool allowEmpty = false,
+    Map<String, String> headers = const <String, String>{},
   }) async {
+    final Map<String, String> requestHeaders = await _headers();
+    requestHeaders.addAll(headers);
     final http.Response response = await http
         .delete(
           Uri.parse('${AppConfig.apiBaseUrl}$path'),
-          headers: await _headers(),
+          headers: requestHeaders,
         )
         .timeout(const Duration(seconds: 15));
     return _decodeResponse(response, allowEmpty: allowEmpty);
   }
 
-  static Future<Map<String, dynamic>> sendSmsCode(String phone) =>
-      _post('/auth/sms/send', <String, dynamic>{'phone': phone});
+  static Future<Map<String, dynamic>> sendSmsCode(String phone) async {
+    return <String, dynamic>{
+      'code': 0,
+      'data': <String, dynamic>{
+        'status': 'not_required',
+        'phone_number': phone.trim(),
+      },
+    };
+  }
 
   static Future<Map<String, dynamic>> verifySmsCode(
     String phone,
     String code,
-  ) => _post('/auth/sms/verify', <String, dynamic>{
-    'phone': phone,
-    'code': code,
-  });
+  ) async {
+    final Map<String, dynamic> response =
+        await _post(SpeakeasyApiPaths.authLoginPhone, <String, dynamic>{
+          'schema_version': 1,
+          'phone_number': phone.trim(),
+          'verification_code': code.trim(),
+          'terms_accepted': true,
+        });
+    return _authSessionEnvelope(response);
+  }
 
-  static Future<Map<String, dynamic>> testPhoneLogin(String phone) =>
-      _post('/auth/test-login', <String, dynamic>{'phone': phone});
+  static Future<Map<String, dynamic>> testPhoneLogin(String phone) {
+    return verifySmsCode(phone, '000000');
+  }
 
   static Future<Map<String, dynamic>> signInWithApple({
     required String authorizationCode,
@@ -168,39 +186,69 @@ class ApiClient {
     String? email,
     String? givenName,
     String? familyName,
-  }) => _post('/auth/apple', <String, dynamic>{
-    'authorizationCode': authorizationCode,
-    'identityToken': identityToken,
-    if (userIdentifier != null && userIdentifier.isNotEmpty)
-      'userIdentifier': userIdentifier,
-    if (email != null && email.isNotEmpty) 'email': email,
-    if (givenName != null && givenName.isNotEmpty) 'givenName': givenName,
-    if (familyName != null && familyName.isNotEmpty) 'familyName': familyName,
-  });
+  }) async {
+    final Map<String, dynamic> response =
+        await _post(SpeakeasyApiPaths.authLoginApple, <String, dynamic>{
+          'schema_version': 1,
+          'provider_token': identityToken.trim().isNotEmpty
+              ? identityToken.trim()
+              : authorizationCode.trim(),
+          if (authorizationCode.trim().isNotEmpty)
+            'nonce': authorizationCode.trim(),
+          'terms_accepted': true,
+        });
+    return _authSessionEnvelope(response);
+  }
 
   static Future<Map<String, dynamic>> signInWithWeChat({
     required String code,
     String? state,
-  }) => _post('/auth/wechat', <String, dynamic>{
-    'code': code,
-    if (state != null && state.isNotEmpty) 'state': state,
-  });
+  }) async {
+    final Map<String, dynamic> response =
+        await _post(SpeakeasyApiPaths.authLoginWechat, <String, dynamic>{
+          'schema_version': 1,
+          'provider_token': code.trim(),
+          if (state != null && state.trim().isNotEmpty) 'nonce': state.trim(),
+          'terms_accepted': true,
+        });
+    return _authSessionEnvelope(response);
+  }
 
-  static Future<Map<String, dynamic>> refreshToken() =>
-      _post('/auth/refresh', const <String, dynamic>{});
+  static Future<Map<String, dynamic>> refreshToken() async {
+    return <String, dynamic>{
+      'code': 401,
+      'message': '本地未保存 OpenAPI refresh_token，回退到当前 access token 校验。',
+    };
+  }
 
-  static Future<Map<String, dynamic>> getMe() => _get('/user/me');
+  static Future<Map<String, dynamic>> getMe() async {
+    final Map<String, dynamic> response = await _get(SpeakeasyApiPaths.userMe);
+    _ensureSuccess(response, fallback: '获取用户信息失败');
+    return _okEnvelope(_appUserJson(_asMap(response['user'])));
+  }
 
-  static Future<Map<String, dynamic>> updateMe(Map<String, dynamic> data) =>
-      _put('/user/me', data);
+  static Future<Map<String, dynamic>> updateMe(
+    Map<String, dynamic> data,
+  ) async {
+    final Map<String, dynamic> response = await _put(
+      SpeakeasyApiPaths.userMe,
+      _updateProfilePayload(data),
+    );
+    _ensureSuccess(response, fallback: '更新用户信息失败');
+    return _okEnvelope(_appUserJson(_asMap(response['user'])));
+  }
 
   static Future<Map<String, dynamic>> deleteAccount() async {
     final Map<String, dynamic> response = await _delete(
-      '/user/me',
+      SpeakeasyApiPaths.userMe,
       allowEmpty: true,
+      headers: <String, String>{
+        'Idempotency-Key':
+            'account-delete-${DateTime.now().millisecondsSinceEpoch}',
+      },
     );
     _ensureSuccess(response, fallback: '注销账号失败');
-    return _asMap(response['data']);
+    return _okEnvelope(response);
   }
 
   static Future<Map<String, dynamic>> verifyAppleReceipt({
@@ -660,21 +708,22 @@ class ApiClient {
     final String resolvedVoice = (voice?.trim().isNotEmpty ?? false)
         ? voice!.trim()
         : AppConfig.ttsVoice;
-    final http.Response response = await http
-        .post(
-          Uri.parse('${AppConfig.apiBaseUrl}/ai/tts'),
-          headers: await _headers(),
-          body: jsonEncode(<String, dynamic>{
-            'text': text,
-            'voice': resolvedVoice,
-          }),
-        )
-        .timeout(timeout);
-    // 非 200 视为失败，返回空字节让上层回退到系统 TTS
-    if (response.statusCode != 200) {
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.aiTts,
+      <String, dynamic>{
+        'schema_version': 1,
+        'text': text,
+        'voice': resolvedVoice,
+      },
+      timeout: timeout,
+    );
+    final String status = (response['status'] as String? ?? '').trim();
+    if (status != 'available') {
       return Uint8List(0);
     }
-    return response.bodyBytes;
+    // OpenAPI now returns a backend audio_ref instead of raw bytes; callers that
+    // need bytes fall back to on-device TTS until streaming media is routed.
+    return Uint8List(0);
   }
 
   static Future<String?> ttsCacheUrl(
@@ -692,21 +741,16 @@ class ApiClient {
         ? voice!.trim()
         : AppConfig.ttsVoice;
     final Map<String, dynamic> response = await _post(
-      '/ai/tts/cache',
+      SpeakeasyApiPaths.aiTts,
       <String, dynamic>{
+        'schema_version': 1,
         'text': cleanedText,
         'voice': resolvedVoice,
-        if (sceneId != null && sceneId.trim().isNotEmpty)
-          'sceneId': sceneId.trim(),
-        if (targetLevel != null && targetLevel.trim().isNotEmpty)
-          'targetLevel': targetLevel.trim(),
-        if (nodeId != null && nodeId.trim().isNotEmpty) 'nodeId': nodeId.trim(),
       },
       timeout: const Duration(seconds: 25),
     );
     _ensureSuccess(response, fallback: 'TTS 缓存获取失败');
-    final Map<String, dynamic> data = _asMap(response['data']);
-    final String audioUrl = (data['audioUrl'] as String? ?? '').trim();
+    final String audioUrl = (response['audio_ref'] as String? ?? '').trim();
     return audioUrl.isEmpty ? null : audioUrl;
   }
 
@@ -718,43 +762,15 @@ class ApiClient {
     String repairMode = 'background',
     bool preferRawText = false,
   }) async {
-    final http.MultipartRequest request = http.MultipartRequest(
-      'POST',
-      Uri.parse('${AppConfig.apiBaseUrl}/ai/transcribe'),
-    );
-    final String? token = await getToken();
-    if (token != null && token.isNotEmpty) {
-      request.headers['Authorization'] = 'Bearer $token';
-    }
-    request.files.add(
-      await http.MultipartFile.fromPath('audio', audioFile.path),
-    );
-    if (hintText != null && hintText.trim().isNotEmpty) {
-      request.fields['hintText'] = hintText.trim();
-    }
-    if (sceneDraft != null && sceneDraft.isNotEmpty) {
-      request.fields['sceneDraft'] = jsonEncode(sceneDraft);
-    }
-    request.fields['repairMode'] = repairMode;
-    final http.StreamedResponse response = await request.send().timeout(
-      const Duration(seconds: 30),
-    );
-    final Map<String, dynamic> body = _decodeResponse(
-      http.Response(
-        await response.stream.bytesToString(),
-        response.statusCode,
-        headers: response.headers,
-      ),
-    );
+    final Map<String, dynamic> body =
+        await _post(SpeakeasyApiPaths.aiTranscribe, <String, dynamic>{
+          'schema_version': 1,
+          'audio_ref': audioFile.path,
+          if (hintText != null && hintText.trim().isNotEmpty)
+            'language_hint': hintText.trim(),
+        }, timeout: const Duration(seconds: 30));
     _ensureSuccess(body, fallback: '语音识别失败');
-    final Map<String, dynamic> data = _asMap(body['data']);
-    final String rawText = (data['rawText'] as String? ?? '').trim();
-    final String text = preferRawText && rawText.isNotEmpty
-        ? rawText
-        : (data['text'] as String? ??
-                  data['correctedText'] as String? ??
-                  rawText)
-              .trim();
+    final String text = (body['transcript'] as String? ?? '').trim();
     if (text.isEmpty) {
       throw Exception('语音识别结果为空');
     }
@@ -787,13 +803,13 @@ class ApiClient {
     required List<Map<String, dynamic>> history,
     List<Map<String, dynamic>> voiceTurns = const <Map<String, dynamic>>[],
   }) async {
-    return _post('/ai/feedback', <String, dynamic>{
-      'title': title,
-      'goal': goal,
-      'npcName': npcName,
-      'history': history,
-      if (voiceTurns.isNotEmpty) 'voiceTurns': voiceTurns,
-    }, timeout: const Duration(seconds: 60));
+    return _okEnvelope(<String, dynamic>{
+      'summary': '当前版本使用本地复盘占位；服务端 /ai/feedback 需要已创建的 practice session。',
+      'turnReviews': const <Map<String, dynamic>>[],
+      'suggestions': const <Map<String, dynamic>>[],
+      'validationStatus': 'fallback',
+      'providerStatus': 'not_routed',
+    });
   }
 
   static Future<Map<String, dynamic>> scoreAudio(
@@ -801,33 +817,25 @@ class ApiClient {
     String refText, {
     String? cardId,
   }) async {
-    final http.MultipartRequest request = http.MultipartRequest(
-      'POST',
-      Uri.parse('${AppConfig.apiBaseUrl}/ai/score'),
-    );
-    final String? token = await getToken();
-    if (token != null && token.isNotEmpty) {
-      request.headers['Authorization'] = 'Bearer $token';
-    }
-    request.files.add(
-      await http.MultipartFile.fromPath('audio', audioFile.path),
-    );
-    request.fields['refText'] = refText;
-    if (cardId != null && cardId.isNotEmpty) {
-      request.fields['cardId'] = cardId;
-    }
-    final http.StreamedResponse response = await request.send().timeout(
-      const Duration(seconds: 30),
-    );
-    final Map<String, dynamic> body = _decodeResponse(
-      http.Response(
-        await response.stream.bytesToString(),
-        response.statusCode,
-        headers: response.headers,
-      ),
+    final Map<String, dynamic> body = await _post(
+      SpeakeasyApiPaths.aiPronunciation,
+      <String, dynamic>{
+        'schema_version': 1,
+        'audio_ref': audioFile.path,
+        'reference_text': refText,
+      },
+      timeout: const Duration(seconds: 30),
     );
     _ensureSuccess(body, fallback: '发音评测失败');
-    return _asMap(body['data']);
+    final Map<String, dynamic> signal = _asMap(body['score_signal']);
+    final int overall = (((signal['value'] as num?)?.toDouble() ?? 0) * 100)
+        .round()
+        .clamp(0, 100);
+    return <String, dynamic>{
+      'overall': overall,
+      'source': signal['source'] ?? 'server_side_adapter',
+      'status': signal['status'],
+    };
   }
 
   static Future<Map<String, dynamic>> fetchOralAssessmentAuth() async {
@@ -860,13 +868,102 @@ class ApiClient {
   static Future<Map<String, dynamic>> interviewCoachTurn(
     Map<String, dynamic> payload,
   ) async {
-    final Map<String, dynamic> response = await _post(
-      '/ai/interview/coach-turn',
-      payload,
-      timeout: const Duration(seconds: 8),
-    );
+    final String sessionId =
+        (payload['session_id'] as String? ??
+                payload['sessionId'] as String? ??
+                '')
+            .trim();
+    final String transcript =
+        (payload['transcript'] as String? ??
+                payload['text'] as String? ??
+                payload['answer'] as String? ??
+                '')
+            .trim();
+    if (sessionId.isEmpty || transcript.isEmpty) {
+      return <String, dynamic>{
+        'summary': '当前会话尚未接入后端 practice session，使用本地教练兜底。',
+        'feedbackType': 'fallback',
+        'validationStatus': 'fallback',
+        'providerStatus': 'not_routed',
+      };
+    }
+    final Map<String, dynamic> response =
+        await _post(SpeakeasyApiPaths.aiCoachTurn, <String, dynamic>{
+          'schema_version': 1,
+          'session_id': sessionId,
+          'transcript': transcript,
+          if (payload['target_expression_ids'] is List)
+            'target_expression_ids': payload['target_expression_ids'],
+        }, timeout: const Duration(seconds: 8));
     _ensureSuccess(response, fallback: '口语教练决策失败');
-    return _asMap(response['data']);
+    return _asMap(response['feedback']);
+  }
+
+  static Map<String, dynamic> _okEnvelope(Map<String, dynamic> data) {
+    return <String, dynamic>{'code': 0, 'data': data};
+  }
+
+  static Map<String, dynamic> _authSessionEnvelope(
+    Map<String, dynamic> response,
+  ) {
+    _ensureSuccess(response, fallback: '登录失败');
+    final Map<String, dynamic> user = _appUserJson(_asMap(response['user']));
+    return _okEnvelope(<String, dynamic>{
+      'token': (response['access_token'] as String? ?? '').trim(),
+      'refreshToken': (response['refresh_token'] as String? ?? '').trim(),
+      'expiresAt': response['expires_at'],
+      'user': user,
+    });
+  }
+
+  static Map<String, dynamic> _appUserJson(Map<String, dynamic> user) {
+    final String displayName =
+        (user['display_name'] as String? ??
+                user['displayName'] as String? ??
+                user['nickname'] as String? ??
+                '')
+            .trim();
+    final String avatarRef =
+        (user['avatar_ref'] as String? ??
+                user['avatarRef'] as String? ??
+                user['avatarUrl'] as String? ??
+                user['avatar'] as String? ??
+                '')
+            .trim();
+    final String onboardingStatus =
+        (user['onboarding_status'] as String? ??
+                user['onboardingStatus'] as String? ??
+                '')
+            .trim();
+    return <String, dynamic>{
+      ...user,
+      'nickname': displayName.isEmpty ? '用户' : displayName,
+      'avatarUrl': avatarRef,
+      'memberPlan': user['member_plan'] ?? user['memberPlan'] ?? 'free',
+      'onboardingDone': onboardingStatus == 'complete',
+    };
+  }
+
+  static Map<String, dynamic> _updateProfilePayload(Map<String, dynamic> data) {
+    final Map<String, dynamic> payload = <String, dynamic>{'schema_version': 1};
+    void copy(String source, String target) {
+      final Object? value = data[source];
+      if (value != null) {
+        payload[target] = value;
+      }
+    }
+
+    copy('displayName', 'display_name');
+    copy('display_name', 'display_name');
+    copy('targetLevel', 'target_level');
+    copy('target_level', 'target_level');
+    copy('dailyMinutes', 'daily_minutes');
+    copy('daily_minutes', 'daily_minutes');
+    copy('reminderEnabled', 'reminder_enabled');
+    copy('reminder_enabled', 'reminder_enabled');
+    copy('reminderTime', 'reminder_time');
+    copy('reminder_time', 'reminder_time');
+    return payload;
   }
 
   static Map<String, dynamic> _asMap(Object? value) {

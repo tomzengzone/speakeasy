@@ -105,10 +105,32 @@ def iter_operations(spec):
                 yield operation
 
 
+def path_templates(spec):
+    return sorted((spec.get("paths") or {}).keys())
+
+
+def dart_source_text(target):
+    return "\n".join(path.read_text(encoding="utf-8") for path in sorted(target.rglob("*.dart")))
+
+
+def handwritten_path_literals(path):
+    if not path.exists():
+        return set()
+    text = path.read_text(encoding="utf-8")
+    literals = set()
+    for match in re.finditer(r"""(?P<quote>['"])(/[^'"]+)(?P=quote)""", text):
+        literal = match.group(2)
+        if literal.startswith("//"):
+            continue
+        literals.add(literal)
+    return literals
+
+
 def main():
     errors = []
     spec = load_spec()
     current_hash = sha256(SPEC_PATH)
+    openapi_paths = set(path_templates(spec))
 
     if not MANIFEST_PATH.exists():
         errors.append(f"missing Dart drift manifest: {MANIFEST_PATH}")
@@ -135,8 +157,20 @@ def main():
             errors.append("generated Dart client is missing lib/generated/api/.openapi-sha256")
         elif marker.read_text(encoding="utf-8").strip() != current_hash:
             errors.append("generated Dart client hash marker does not match current OpenAPI")
-        if not list(target.rglob("*.dart")):
+        dart_files = list(target.rglob("*.dart"))
+        if not dart_files:
             errors.append("generated Dart client directory exists but contains no Dart files")
+        else:
+            generated_text = dart_source_text(target)
+            if current_hash not in generated_text:
+                errors.append("generated Dart client does not embed the current OpenAPI hash")
+            missing_paths = [path for path in sorted(openapi_paths) if path not in generated_text]
+            if missing_paths:
+                errors.append(
+                    "generated Dart client is missing OpenAPI path templates: "
+                    + ", ".join(missing_paths[:12])
+                    + (" ..." if len(missing_paths) > 12 else "")
+                )
     else:
         if mode != "pre_client_generation_gate":
             errors.append("generated Dart client is absent, but manifest is not in pre-client mode")
@@ -169,6 +203,23 @@ def main():
     handwritten_client = Path("lib/services/api_client.dart")
     if handwritten_client.exists() and target in handwritten_client.parents:
         errors.append("handwritten ApiClient is inside generated Dart client target")
+    exceptions = set((manifest.get("handwritten_client_exceptions") or {}).keys())
+    handwritten_paths = handwritten_path_literals(handwritten_client)
+    untracked_paths = sorted(
+        path for path in handwritten_paths
+        if path not in openapi_paths and path not in exceptions
+    )
+    if untracked_paths:
+        errors.append(
+            "handwritten ApiClient uses paths that are neither OpenAPI paths nor documented exceptions: "
+            + ", ".join(untracked_paths)
+        )
+    unused_exceptions = sorted(path for path in exceptions if path not in handwritten_paths)
+    if unused_exceptions:
+        errors.append(
+            "Dart drift manifest has unused handwritten client exceptions: "
+            + ", ".join(unused_exceptions)
+        )
 
     if errors:
         for error in errors:

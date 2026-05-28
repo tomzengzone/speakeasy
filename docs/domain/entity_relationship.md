@@ -22,7 +22,9 @@ Proposed - Domain Schema Baseline + P0/P0.1 Extension companion document。
 flowchart LR
   User["User"] --> Identity["AuthIdentity / UserProfile / OnboardingAssessment"]
   User --> Route["LearningRoute"]
+  User --> UserScenarioState["UserScenarioState"]
   Route --> Scenario["Scenario / ScenarioVersion / ScenarioLevel"]
+  UserScenarioState --> Scenario
   Scenario --> Expression["TargetExpression / DialogueAsset / ActionChainStep"]
 
   User --> Practice["PracticeSession / DialogueTurn"]
@@ -56,15 +58,17 @@ flowchart LR
 | User | completes | OnboardingAssessment | 1 -> many | Onboarding domain | 支持后续重评；当前门禁只需要 completed 状态。 |
 | OnboardingAssessment | creates or updates | LearningRoute | 1 -> 0..1 current route | Onboarding + Content domain | 只写入当前真实官方场景。 |
 | LearningRoute | selects | Scenario | many -> many via route items | Content domain | 当前可选真实场景为 `job_interview`、`onboarding_introduction`。 |
+| User | owns | UserScenarioState | 1 -> many | Onboarding + Content backend | 加入、移除、设为当前和等级切换的服务端事实源；user + scenario 必须唯一。 |
+| UserScenarioState | selects | Scenario | many -> 1 | Content domain | 只能引用两个 Product Base 官方场景；移除状态不得作为 current scene。 |
 | Scenario | has | ScenarioVersion | 1 -> many | Content domain | 练习和证据应引用版本，避免内容漂移。 |
 | ScenarioVersion | has | ScenarioLevel | 1 -> many | Content domain | 当前 L1/L2/L3，不等同完整 A1-C2。 |
 | ScenarioVersion | has | TargetExpression | 1 -> many | Content domain | 表达需要稳定 ID。 |
 | ScenarioVersion | has | DialogueAsset | 1 -> many | Content domain | 听力热身和示范输入来源。 |
 | ScenarioVersion | has | ActionChainStep | 1 -> many | Content + Training domain | Product Base 草案已有 action chain；P0.1 强化为 planner 输入。 |
-| User | joins | Scenario | many -> many via LearningRoute or membership state | Content + Identity domain | 加入、移除、设为当前影响首页和练习入口。 |
+| User | joins | Scenario | many -> many via UserScenarioState | Content + Identity domain | 加入、移除、设为当前影响首页和练习入口。 |
 | User | starts/resumes | PracticeSession | 1 -> many | Training domain | 同用户、场景、等级可恢复未完成会话。 |
-| PracticeSession | contains | DialogueTurn | 1 -> many | Training domain | Turn 顺序必须稳定。 |
-| DialogueTurn | may produce | CoachFeedback | 1 -> 0..many | AI Gateway + Training domain | 反馈可能来自 AI 或 deterministic fallback。 |
+| PracticeSession | contains | DialogueTurn | 1 -> many | Training domain | Turn 顺序必须稳定；同 session + idempotency key 不得重复创建 turn。 |
+| DialogueTurn | may produce | CoachFeedback | 1 -> 0..many | AI Gateway + Training domain | 反馈可能来自 AI 或 deterministic fallback；invalid provider schema 不得成为 successful feedback。 |
 | DialogueTurn | may produce | Correction | 1 -> 0..many | Learning Evidence domain | Correction 必须引用 source turn。 |
 | DialogueTurn | may produce | ScoreSignal | 1 -> 0..many | AI Gateway domain | 分数不单独决定最终掌握。 |
 | User | owns | PracticeQueueItem | 1 -> many | Training / Review domain | 队列来自复习、薄弱和变体，需去重。 |
@@ -121,6 +125,34 @@ flowchart LR
 | LearningEvidence | may schedule | ReviewItem | 1 -> many | Review domain | P0.1 只写回本轮证据，不承诺跨天调度。 |
 | TrainingSession | ends with | TrainingRecap | 1 -> 0..1 | Training + Learning Evidence | recap 不得因 evidence 写回失败而丢失。 |
 
+## MVP Learning/Memory Increment Relationships
+
+Owning increment: `docs/product/increments/mvp-backend-learning-memory/`.
+
+| Implemented relationship | Evidence |
+| --- | --- |
+| User -> PracticeQueueItem -> TargetExpression | `/expressions/queue` returns joined-scenario expression tasks, stable target IDs, priority and explicit empty states. |
+| PracticeQueueItem -> ExpressionPracticeAttempt -> LearningEvidence | `/expressions/tasks/{queue_item_id}/complete` persists attempts and projects high/low score into accepted learning evidence. |
+| User -> FavoriteExpression -> TargetExpression | `/favorites/expressions` is idempotent by user and stable target expression, and delete removes the item from the active list. |
+| LearningEvidence -> MasteryRecord / ReviewItem / SavedExpression / LearningHistoryEntry | Accepted evidence updates mastery, schedules review, saves a personal wiki entry, records history, and creates a follow-up queue item. |
+| LearningHistoryEntry deletion | `/learning/history/{history_entry_id}` soft-deletes history visibility without deleting saved wiki evidence. |
+
+These relationships close MVP-BE-GAP-006 for MVP-BE-TR-007 and MVP-BE-TR-010; P0.2 cross-day long-term planning and complete L0-L5 mastery ladder remain deferred.
+
+## MVP Membership/Boundary Increment Relationships
+
+Owning increment: `docs/product/increments/mvp-backend-membership-boundary/`.
+
+| Implemented relationship | Evidence |
+| --- | --- |
+| User -> AccountDeletionJob | `DELETE /user/me` creates and completes the latest deletion job for the authenticated user. |
+| AccountDeletionJob -> AuthSession | Account deletion revokes user sessions; previous access and refresh tokens fail after completion. |
+| AccountDeletionJob -> Profile / Onboarding / Practice / Learning data | User-owned Product Base rows are deleted while the account row is retained only as a deleted identity marker. |
+| AccountDeletionJob -> AuditLog | Completion or failure is auditable with redacted details and request id. |
+| User -> Membership boundary / placeholder facts | Membership, Android billing, report, offline content, and achievement endpoints return explicit MVP boundary states rather than implied commercial readiness. |
+
+These relationships close MVP-BE-GAP-008 and MVP-BE-GAP-009 for MVP-BE-TR-011 and MVP-BE-TR-012; complete commercial subscription, payment provider integration, paid reports, offline packages, and achievements remain deferred to their owning increments.
+
 ## Deletion / Retention Relationship Rules
 
 | Data class | Relationship under account deletion |
@@ -166,6 +198,7 @@ API Contract/OpenAPI 阶段必须从这些关系定义 authentication、authoriz
 | User -> gate -> onboarding -> route | 启动门禁、首评完成条件、场景映射和日常服务排除。 |
 | Scenario -> level -> expression -> practice | 双官方场景、等级切换、表达队列、听力热身和语音练习回归。 |
 | Session -> turn -> feedback -> evidence | 会话恢复、turn 顺序、反馈失败、证据写回和 recap 保留。 |
+| Provider gateway -> feedback fallback | provider timeout/unavailable/invalid schema 只能产出 typed fallback 或明确失败，不能写伪成功反馈。 |
 | Favorite / saved expression -> review | 收藏去重、取消收藏、收藏不自动生成复习任务。 |
 | Subscription -> entitlement -> gating | 购买/恢复/退款/过期、权益刷新、场景/AI gating 一致性。 |
 | Usage ledger -> reservation -> provider event | reserve/commit/release、provider timeout、额度耗尽和滥用审计。 |

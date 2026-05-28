@@ -39,4 +39,32 @@ public class TargetExpression {
     this.levelCode = levelCode;
     this.text = text;
   }
+
+  public UUID getTargetExpressionId() {
+    return targetExpressionId;
+  }
+
+  public UUID getScenarioVersionId() {
+    return scenarioVersionId;
+  }
+
+  public String getLevelCode() {
+    return levelCode;
+  }
+
+  public String getText() {
+    return text;
+  }
+
+  public String getMeaningCn() {
+    return meaningCn;
+  }
+
+  public String getTags() {
+    return tags;
+  }
+
+  public String getUsageNote() {
+    return usageNote;
+  }
 }

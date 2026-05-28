@@ -16,6 +16,9 @@ migrate_working_dir/
 .workbuddy/
 exports/
 node_modules/
+.npm-cache/
+.uv-cache/
+backend/.m2/
 backend/target/
 
 # Sensitive files

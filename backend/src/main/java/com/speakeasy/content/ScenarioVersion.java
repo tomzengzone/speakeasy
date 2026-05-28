@@ -35,4 +35,24 @@ public class ScenarioVersion {
     this.contentStatus = "published";
     this.publishedAt = publishedAt;
   }
+
+  public UUID getScenarioVersionId() {
+    return scenarioVersionId;
+  }
+
+  public String getScenarioId() {
+    return scenarioId;
+  }
+
+  public String getVersion() {
+    return version;
+  }
+
+  public String getContentStatus() {
+    return contentStatus;
+  }
+
+  public Instant getPublishedAt() {
+    return publishedAt;
+  }
 }

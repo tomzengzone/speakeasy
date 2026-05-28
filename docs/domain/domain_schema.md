@@ -55,7 +55,8 @@ Proposed - Domain Schema Baseline + P0/P0.1 Extension。
 | AuthIdentity | Identity domain | auth_identity_id, user_id, provider, provider_subject, linked_at, status | 一个 User 可绑定多个登录身份；生产登录不得依赖 demo flow | 需要唯一约束 provider + provider_subject；测试登录需 release gate 可识别 | Auth API 负责登录、refresh、logout、社交登录绑定 | 微信/Apple/手机号/邮箱登录失败和生产配置门禁测试 | Product Base FR-001；P0 FR-COM-004, FR-COM-005 |
 | UserProfile | Identity domain | user_id, nickname, target_level, daily_minutes, reminder_enabled, reminder_time, theme | 个人资料和偏好不直接决定权益；每日分钟数只作为偏好 | 可与 User 分表或 profile 表；本地缓存上线后需同步策略 | User/Profile API 后续细化，Flutter 可缓存展示 | 编辑资料、提醒、主题、个人中心展示测试 | Product Base FR-002, FR-010 |
 | OnboardingAssessment | Onboarding domain | assessment_id, user_id, goal_direction, pain_points, output_level, daily_minutes, completed_at | 缺少目标方向、表达卡点或输出水平时不得完成 | 需要记录首评结果与完成时间；可支持后续重评版本 | User/Onboarding API 后续细化 | 首评阻止逻辑、场景映射、日常服务非真实场景测试 | Product Base FR-002 |
-| LearningRoute | Onboarding + Content domain | route_id, user_id, scenario_ids, current_scenario_id, target_level, source_assessment_id | 只允许写入当前真实官方场景；工作沟通映射到 `onboarding_introduction` | 需要用户到场景/等级的当前关系；避免把文案方向写成场景资产 | Scenario/User route API 后续细化 | 英语面试、入职介绍、工作沟通映射和日常服务排除测试 | Product Base FR-002, FR-003 |
+| LearningRoute | Onboarding + Content domain | route_id, user_id, scenario_ids, current_scenario_id, target_level, source_assessment_id | 只允许写入当前真实官方场景；工作沟通映射到 `onboarding_introduction`；日常服务只能形成空路线或无可练场景状态 | 需要用户到场景/等级的当前关系；避免把文案方向写成场景资产 | Scenario/User route API 后续细化 | 英语面试、入职介绍、工作沟通映射和日常服务排除测试 | Product Base FR-002, FR-003 |
+| UserScenarioState | Onboarding + Content domain | user_scenario_state_id, user_id, scenario_id, state, current_flag, target_level, joined_at, updated_at | 用户加入、移除、设为当前和切换等级的服务端事实；移除场景不得继续作为 current scene | 需要 user + scenario 唯一约束；home summary 和练习入口只能读取 active/joined 状态 | User scenario state 与 home summary API 后续细化 | 加入/移除/current/level 切换、首页空状态和下一步建议测试 | Product Base FR-002, FR-003, FR-005 |
 
 ### Official Scenario Library
 
@@ -88,9 +89,9 @@ Proposed - Domain Schema Baseline + P0/P0.1 Extension。
 
 | Entity | Owner | 关键字段 | 生命周期 / 不变量 | Persistence / migration implication | API boundary recommendation | Test impact | Traceability note |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| PracticeSession | Training Session domain | practice_session_id, user_id, scenario_id, level_code, status, current_step_ref, started_at, completed_at | Product Base 会话支持开始、恢复、完成、中断；同场景同等级可恢复未完成会话 | 需要 session 表或本地到服务端迁移策略；完成后清理活跃恢复状态 | Training API 后续负责 session start/resume/complete | 会话恢复、完成清理、错误状态测试 | Product Base FR-007, FR-009 |
-| DialogueTurn | Training Session domain | dialogue_turn_id, session_id, role, text, audio_ref, transcript_ref, turn_index, created_at | 每个 turn 必须属于一个 session；用户提交后可关联反馈和证据 | 需要 turn 表；音频/转写 retention 由 Security/DevOps 后续细化 | Training turn API 后续提交 turn；本文不定义 payload | 录音、转写提交、消息播放、turn 顺序测试 | Product Base FR-007, FR-008 |
-| CoachFeedback | AI Gateway + Training domain | feedback_id, source_turn_id, feedback_type, summary, suggestion_ref, score_signal_id, status | 教练反馈必须来自有效 turn 或 deterministic fallback；不可直接写最终 mastery | 需要反馈记录和 provider result ref；敏感正文需脱敏策略 | AI feedback / Training API 后续返回结构化反馈 | 教练反馈、建议、下一问题、服务失败 fallback 测试 | Product Base FR-008；P0.1 P01-FR-007 |
+| PracticeSession | Training Session domain | practice_session_id, user_id, scenario_id, level_code, status, current_turn_index, started_at, completed_at | Product Base 会话支持开始、恢复、完成、中断；同场景同等级可恢复未完成会话 | `mvp-backend-practice-ai` 已落地 session 表；完成后清理活跃恢复状态 | Practice API 负责 session start/resume/get/complete | 会话恢复、完成清理、错误状态测试 | Product Base FR-007, FR-009；MVP-SI-008 |
+| DialogueTurn | Training Session domain | dialogue_turn_id, session_id, role, text, audio_ref, transcript_ref, turn_index, idempotency_key, created_at | 每个 turn 必须属于一个 session；用户提交后可关联反馈和证据；同 session 幂等键不得重复创建 turn | `mvp-backend-practice-ai` 已落地 turn 表；音频/转写 retention 由 Security/DevOps 后续细化 | Practice turn API 提交 turn，并由幂等键保护 replay | 录音、转写提交、消息播放、turn 顺序测试 | Product Base FR-007, FR-008；MVP-SI-008 |
+| CoachFeedback | AI Gateway + Training domain | feedback_id, source_turn_id, feedback_type, summary, suggestion_ref, score_signal_id, validation_status, provider_status | 教练反馈必须来自有效 turn 或 deterministic fallback；invalid provider schema 不得成为 successful feedback；不可直接写最终 mastery | `mvp-backend-practice-ai` 已落地 feedback 表；敏感正文需脱敏策略 | AI feedback / Practice turn API 返回结构化反馈 | 教练反馈、建议、下一问题、服务失败 fallback 测试 | Product Base FR-008；MVP-SI-006, MVP-SI-009 |
 | Correction | Learning Evidence domain | correction_id, source_turn_id, issue_type, original_text, improved_text, explanation, status | Correction 必须引用 DialogueTurn；可成为学习证据候选 | 需要 source turn 外键和去重规则 | Learning/Training API 后续可查询或沉淀 | 纠错展示、薄弱记录、个人素材写入测试 | Product Base FR-008, FR-009 |
 | HintRequest | Training domain | hint_request_id, session_id, source_turn_id, hint_type, hint_content_ref, used_at | Product Base 提示次数和内容必须可见；P0.1 扩展为 HintState | 可本地记录，后续并入 training hint 表 | Training hints API 后续细化 | 提示展示、次数更新、失败恢复测试 | Product Base FR-007；P0.1 P01-FR-005 |
 
@@ -147,6 +148,14 @@ Proposed - Domain Schema Baseline + P0/P0.1 Extension。
 | LearningEvidenceCandidate | Learning Evidence domain | candidate_id, source_turn_id, source_ai_result_ref, evidence_type, confidence, status | 候选证据不能直接改变最终掌握；必须经 evidence rules 接受或拒绝 | 可与 LearningEvidence 分表或 status 区分；需保留拒绝原因 | Learning Evidence API 后续写入 accepted evidence | LLM 候选、低置信度拒绝、去重测试 | P0.1 P01-FR-009 |
 | TrainingRecap | Training + Learning Evidence domain | recap_id, training_session_id, summary_ref, evidence_refs, next_focus, status | recap 可见结果不得因学习证据写回失败而丢失 | 需要与 session 和 evidence refs 关联；失败可重试写回 | Training/Learning API 后续提供 recap 查询 | recap 可见、写回失败可恢复、下一步建议测试 | P0.1 P01-FR-009, P01-FR-010 |
 
+### Product Base Practice Lifecycle Notes
+
+| 状态机 | 状态 |
+| --- | --- |
+| PracticeSession | `active -> feedback -> completed`; provider/网络/转写失败可进入 `recoverable_error` 并允许重试或退出 |
+| DialogueTurn | `submitted -> feedback_ready`；ASR/provider/media/schema failure 可进入 `rejected`，但必须保留 session recovery |
+| CoachFeedback | `valid -> user_visible` 或 `fallback -> recoverable_error`；invalid schema 不得成为 successful feedback |
+
 ### P0.1 Lifecycle Notes
 
 | 状态机 | 状态 |
@@ -199,6 +208,32 @@ Proposed - Domain Schema Baseline + P0/P0.1 Extension。
 | AI Gateway | Transcribe、TTS、feedback、pronunciation family，需与 usage 和 schema validation 关联 |
 
 API Contract 阶段必须使用 OpenAPI source-of-truth，并为支付、用量、删除、训练 turn replay 定义 authentication、authorization、idempotency、error code 和 contract tests。本文不定义 request/response shape。
+
+## MVP Practice/AI Increment Note
+
+Owning increment: `docs/product/increments/mvp-backend-practice-ai/`.
+
+- `PracticeSession`、`DialogueTurn`、`CoachFeedback` 和 `SessionSummary` 已在 backend persistence 中落地为 Product Base practice lifecycle 的事实源。
+- `SessionSummary` 在本 increment 中只输出 candidate-only learning input；最终 `MasteryRecord`、accepted `LearningEvidence` 和长期复习规则仍归 `mvp-backend-learning-memory`。
+- AI/ASR/TTS/pronunciation provider 只通过 server-side gateway adapter 调用；客户端不得提交 provider secret。
+
+## MVP Learning/Memory Increment Note
+
+Owning increment: `docs/product/increments/mvp-backend-learning-memory/`.
+
+- `PracticeQueueItem`、`ExpressionPracticeAttempt`、`FavoriteExpression`、`LearningEvidence`、`MasteryRecord`、`ReviewItem`、`SavedExpression` 和 `LearningHistoryEntry` 已在 backend persistence 中落地为 Product Base learning/memory 事实源。
+- 表达队列由已加入官方场景的稳定 `TargetExpression` 生成，并按 evidence-derived priority 去重排序；无已加入场景时返回明确空状态。
+- `LearningEvidence` 只有在有稳定 target expression 且置信度满足规则时才写入 mastery、review、personal wiki、history 和后续 queue projection；低置信度或缺 target 的 evidence 保留为 rejected，不更新最终 mastery。
+- 收藏使用稳定 `target_expression_id` 幂等去重；历史删除为用户历史软删除，不等同账号删除。
+
+## MVP Membership/Boundary Increment Note
+
+Owning increment: `docs/product/increments/mvp-backend-membership-boundary/`.
+
+- `AccountDeletionJob` 作为账号删除状态事实源保留；成功删除时用户账号标记为 `deleted`，active session 被撤销，用户自有 profile、onboarding、scenario state、practice、learning evidence、mastery、review、favorites、saved expressions、history 和 commercial foundation user rows 被清理。
+- `AuditLog` 只保留最小脱敏删除完成/失败证据；不保留 token、raw audio、完整敏感对话或支付凭据。
+- MVP membership/report boundary 只落地边界事实：membership entry state、Android billing not connected、learning report empty placeholder、offline content placeholder、achievement placeholder。
+- 完整商业订阅、真实 payment provider verify/restore/webhook、权益 gating、付费报告、离线内容包和成就系统仍不是本 increment 的领域事实。
 
 ## Test Impact Summary
 

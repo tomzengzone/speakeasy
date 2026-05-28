@@ -10,9 +10,12 @@ import com.speakeasy.commerce.EntitlementSnapshot;
 import com.speakeasy.commerce.EntitlementSnapshotRepository;
 import com.speakeasy.commerce.SubscriptionPlan;
 import com.speakeasy.commerce.SubscriptionPlanRepository;
+import com.speakeasy.content.UserScenarioStateRepository;
 import com.speakeasy.identity.AuthIdentityRepository;
 import com.speakeasy.identity.AuthSession;
 import com.speakeasy.identity.AuthSessionRepository;
+import com.speakeasy.identity.LearningRouteRepository;
+import com.speakeasy.identity.OnboardingAssessmentRepository;
 import com.speakeasy.identity.UserAccount;
 import com.speakeasy.identity.UserAccountRepository;
 import com.speakeasy.identity.UserProfileRepository;
@@ -48,10 +51,16 @@ class CommercialFoundationControllerTest {
   @Autowired EntitlementSnapshotRepository entitlements;
   @Autowired UsageLedgerRepository ledgers;
   @Autowired AccountDeletionJobRepository deletionJobs;
+  @Autowired UserScenarioStateRepository userScenarioStates;
+  @Autowired LearningRouteRepository routes;
+  @Autowired OnboardingAssessmentRepository assessments;
 
   @BeforeEach
   void setUp() {
     deletionJobs.deleteAll();
+    userScenarioStates.deleteAll();
+    routes.deleteAll();
+    assessments.deleteAll();
     sessions.deleteAll();
     identities.deleteAll();
     profiles.deleteAll();
@@ -108,11 +117,13 @@ class CommercialFoundationControllerTest {
 
   @Test
   void requestAccountDeletionCreatesJob() throws Exception {
-    mvc.perform(delete("/user/me").header(HttpHeaders.AUTHORIZATION, bearerToken()))
+    mvc.perform(delete("/user/me")
+            .header(HttpHeaders.AUTHORIZATION, bearerToken())
+            .header("Idempotency-Key", "commercial-delete-1"))
         .andExpect(status().isAccepted())
         .andExpect(jsonPath("$.schema_version").value(1))
         .andExpect(jsonPath("$.deletion_job_id").exists())
-        .andExpect(jsonPath("$.status").value("requested"))
+        .andExpect(jsonPath("$.status").value("completed"))
         .andExpect(jsonPath("$.requested_at").exists());
   }
 
