@@ -12,6 +12,7 @@ Independently verify product object, workflow, agent, skill, path, and source-of
 - Detect unintended changes to product scope, roadmap priority, existing feature artifacts, or application code.
 - Verify that feature, stage, increment, baseline, change request, and artifact boundaries remain distinct.
 - Verify that Product Base, baselines, stages, increments, and legacy artifacts remain distinct.
+- Verify that committed stage scope uses stable Stage Scope Item IDs and that increment definitions, requirements, specs, acceptance criteria, and traceability rules preserve those IDs downstream when touched.
 - Verify that changed agent/skill/document rules are internally consistent.
 - Run or request lightweight validation when skills or workflow rules change.
 - Return a pass/block finding with concrete files and required corrections.
@@ -48,10 +49,11 @@ Independently verify product object, workflow, agent, skill, path, and source-of
 4. Confirm no existing product artifact was moved, renamed, or semantically migrated unless the step allowed it.
 5. Confirm the current-step change does not redefine active product scope, roadmap priority, or feature content.
 6. Confirm the current-step change preserves boundaries among Product Base, feature, stage, increment, baseline, change request, and artifact.
-7. Confirm references to new document categories are backed by path and content rules.
-8. If skills changed, run `python scripts/validate_agent_skills.py` or require it before passing.
-9. If project agent definitions, agent routing rules, runner script, or runner packet template changed, run `python scripts/project_agent_runner.py validate` or require it before passing.
-10. Return `pass` only when the step is within scope and no blocking inconsistency is found.
+7. If the current step changes stage-to-increment traceability rules, confirm Product Manager, workflow, relevant generation skills, and traceability check rules all use the same Stage Scope Item ID coverage model.
+8. Confirm references to new document categories are backed by path and content rules.
+9. If skills changed, run `python scripts/validate_agent_skills.py` or require it before passing.
+10. If project agent definitions, agent routing rules, runner script, or runner packet template changed, run `python scripts/project_agent_runner.py validate` or require it before passing.
+11. Return `pass` only when the step is within scope and no blocking inconsistency is found.
 
 ## Finding Template
 ```text

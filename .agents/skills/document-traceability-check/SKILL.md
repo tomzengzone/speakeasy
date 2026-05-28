@@ -32,6 +32,8 @@ description: Use when project documentation needs a workflow traceability audit 
 - `docs/product/base/spec.md`
 - `docs/product/base/acceptance.md`
 - `docs/product/base/traceability.md`
+- `docs/product/stages/`
+- `docs/product/increments/`
 - `docs/product/user_stories.md`
 - `docs/product/acceptance_criteria.md`
 - `docs/product/traceability_matrix.md`
@@ -86,6 +88,24 @@ docs/product/mvp_scope.md
 
 不是每个 feature 都必须触达所有下游文档；但跳过某个下游文档时，必须有明确原因或“不适用”说明。
 
+新 increment 标准链路：
+
+```text
+Stage Scope ID
+  -> docs/product/increments/<increment-id>/definition.md
+  -> docs/product/increments/<increment-id>/requirements.md
+  -> docs/product/increments/<increment-id>/spec.md
+  -> docs/product/increments/<increment-id>/acceptance.md
+  -> docs/product/increments/<increment-id>/traceability.md
+  -> docs/domain/ 或 docs/architecture/ 或 docs/ai_runtime/ 或 docs/ux/ when applicable
+  -> test/ 或 tests/
+  -> docs/reports/implementation_report.md
+  -> docs/reports/quality_report.md
+  -> docs/release/release_checklist.md when release scope is affected
+```
+
+`100% traceability` for committed stage work means every required Stage Scope Item ID is covered by at least one increment or has an explicit deferred/not-applicable decision, every increment requirement traces back to at least one Stage Scope Item ID, every FR has at least one AC, every AC has code/test evidence or a documented exception once implementation has started, and release evidence exists when the increment affects release scope.
+
 ## Architecture Traceability Gate
 当检查系统架构、技术栈、前后端数据库方案、商业化架构或全量 APP 架构时，必须增加以下检查：
 
@@ -99,14 +119,16 @@ docs/product/mvp_scope.md
 ## Process
 1. 确定要检查的 feature、变更请求或文档范围。
 2. 找到最上游来源：产品定位、MVP 范围、需求收敛或变更请求。
-3. 判断 AC 来源模式：Product Base 稳定需求库、当前 MVP 代码基线固化，或标准 P0/新增功能 workflow。
-4. 当前 MVP 代码基线固化时，检查 AC 是否基于主需求文档、MVP scope、用户故事和实际代码证据；P0/新增功能时，检查 AC 是否以已批准 feature spec 为直接输入。
-5. 沿 workflow 检查是否存在 feature spec、验收标准、强制追溯矩阵、相关契约、测试和报告。
-6. 检查 `FR -> User Story -> AC -> Code Evidence -> Test Evidence -> Status` 是否完整：每个 FR 至少有 1 个 AC；每个 AC 反向引用 1 个或多个 FR；Code Evidence 不为空；Test Evidence 不为空或有明确例外。
-7. 标记缺失、不适用、重复、过期或状态冲突。
-8. 检查 accepted/proposed/deferred 等状态是否和实际推进阶段一致。
-9. 输出断链清单和下一步建议；不直接生成缺失文档。
-10. 若修改 skill 或质量标准，运行 `python scripts/validate_agent_skills.py`。
+3. 判断 AC 来源模式：Product Base 稳定需求库、当前 MVP 代码基线固化，或标准 P0/新增 increment workflow。
+4. 对标准 increment workflow，先检查 active stage 是否有稳定 Stage Scope Item IDs，以及 increment definition 是否列出 `Covered Stage Scope Items` 和 `Excluded Stage Scope Items`。
+5. 当前 MVP 代码基线固化时，检查 AC 是否基于主需求文档、MVP scope、用户故事和实际代码证据；P0/新增功能时，检查 AC 是否以已批准 increment spec 为直接输入，并保留 Stage Scope Item IDs。
+6. 沿 workflow 检查是否存在 feature/increment spec、验收标准、强制追溯矩阵、相关契约、测试和报告。
+7. 检查新 increment 链路是否完整：每个 required Stage Scope ID 有 increment 覆盖或明确 deferred/not applicable；每个 FR 至少有 1 个 AC；每个 AC 反向引用 1 个或多个 FR 和上游 Stage Scope ID；Code Evidence 不为空；Test Evidence 不为空或有明确例外。
+8. 检查 Product Base 链路时，检查 `FR -> User Story -> AC -> Code Evidence -> Test Evidence -> Status` 是否完整。
+9. 标记缺失、不适用、重复、过期或状态冲突。
+10. 检查 accepted/proposed/deferred 等状态是否和实际推进阶段一致。
+11. 输出断链清单和下一步建议；不直接生成缺失文档。
+12. 若修改 skill 或质量标准，运行 `python scripts/validate_agent_skills.py`。
 
 ## Red Flags
 - P0 或新增功能代码实现存在，但没有 feature spec 或验收标准；当前 MVP 反向固化任务必须显式标记为代码基线例外。
@@ -116,6 +138,9 @@ docs/product/mvp_scope.md
 - acceptance criteria 没有对应测试或测试报告说明。
 - 测试阶段才开始定义 FR/AC 覆盖关系，而不是在 acceptance criteria 阶段建立。
 - `FR`、`AC`、`Code Evidence` 或 `Test Evidence` 字段为空且无明确例外。
+- Stage scope is written only as bullets with no stable Stage Scope Item IDs for committed work.
+- Increment definition lacks `Covered Stage Scope Items`, or requirements/spec/AC drop those IDs downstream.
+- 100% traceability is claimed while a required Stage Scope Item ID is uncovered, deferred without reason, or not represented in the increment traceability matrix.
 - prompt/schema/API 变更没有对应契约文档。
 - implementation report 声称完成，但没有验证命令或测试缺口说明。
 - 全量架构只基于最新 change request 或 active stage，没有覆盖 Product Base、baseline、feature registry 和 future stages。
@@ -130,6 +155,7 @@ docs/product/mvp_scope.md
 - 必要时质量报告保留审查结论。
 - AC 来源模式被明确判定，且不和当前 phase 冲突。
 - 需求覆盖完整性已通过追溯矩阵检查；该结论不被表述为代码行覆盖率或线上零缺陷保证。
+- 新 increment 追溯检查确认 Stage Scope ID coverage、increment coverage、FR coverage、AC coverage 和 evidence status 均有结论。
 - 架构检查已明确范围模式，并给出 coverage matrix 通过、条件通过或阻塞结论。
 - 全量架构没有把 future-stage、P1/P2 或商业发布门禁遗漏为隐性非目标。
 

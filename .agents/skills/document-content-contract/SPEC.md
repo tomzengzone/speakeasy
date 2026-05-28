@@ -26,6 +26,7 @@
 - 内容审查结论。
 - 必要时更新相关 skill 或 `docs/process/skill_quality_standard.md`。
 - 对验收标准和强制追溯矩阵职责边界的审查结论。
+- 对 stage 文档是否用稳定 Stage Scope Item IDs 表达 committed scope、increment definition 是否声明 covered/excluded Stage Scope Item IDs 的审查结论。
 
 ## Quality Bar
 - 每类文档的目的和读者清晰。
@@ -35,10 +36,12 @@
 - 不和路径治理、追踪检查职责重叠。
 - `docs/product/base/acceptance.md` and legacy `docs/product/acceptance_criteria.md` only define observable acceptance behavior; `docs/product/base/traceability.md` and legacy `docs/product/traceability_matrix.md` record FR, User Story, AC, Code Evidence, Test Evidence, and Status.
 - 100% 覆盖只表示需求覆盖完整性，不表述为代码行覆盖率或线上零缺陷保证。
+- Committed stage scope must be expressed as stable Stage Scope Item IDs, not prose-only bullets; increment definitions must preserve those IDs as covered or excluded scope.
 
 ## Maintenance Notes
 - 新增文档类别时，同时检查是否需要更新 `document-path-governance`。
 - 修改验收标准或追溯矩阵内容边界时，同步检查 acceptance-criteria-generate、test-case-generate 和 document-traceability-check。
+- 修改 stage scope item 或 stage-to-increment coverage 内容边界时，同步检查 Product Manager agent、workflow、requirement-refine、feature-spec-generate、acceptance-criteria-generate 和 document-traceability-check。
 - 借鉴外部模板时只吸收结构和原则，不复制未确认许可的内容。
 - 修改 skill 后运行 `python scripts/validate_agent_skills.py`。
 - 保持内容契约简洁，详细模板应放到对应生成类 skill。

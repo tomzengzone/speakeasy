@@ -36,6 +36,7 @@ This project-local skill applies to development workflow assets in this reposito
 ## Product Object Outputs
 - Product Base spec for accepted stable behavior: `docs/product/base/spec.md`.
 - New increment spec: `docs/product/increments/<increment-id>/spec.md`.
+- Stage Scope Item ID references preserved in increment spec flows, states, dependencies, and non-goals.
 - Stable feature contract update when explicitly requested: `docs/product/features/<feature-slug>/README.md`.
 - Legacy feature spec: `docs/product/features/<feature-slug>-spec.md` only for existing flat artifacts until migration.
 - Required downstream contract list for architecture, domain, API, AI runtime, UX, and tests.
@@ -50,8 +51,9 @@ This project-local skill applies to development workflow assets in this reposito
 - The feature spec preserves traceability to requirements, user stories, MVP/P0 scope, and non-goals.
 - Requirement coverage completeness is established later by acceptance criteria and the traceability matrix, not by the feature spec alone.
 - For new product work, output path follows `docs/product/increments/<increment-id>/spec.md`.
-- The spec cites active stage, primary feature, affected features, increment definition, and increment requirements.
+- The spec cites active stage, covered Stage Scope Item IDs, primary feature, affected features, increment definition, and increment requirements.
 - Stage goals and stable feature boundaries are referenced but not rewritten as the increment spec.
+- New behavior in the spec must be traceable to a Stage Scope Item ID, an increment requirement, or a Product Manager-approved change request.
 
 ## Maintenance Notes
 - Keep SKILL.md concise enough for runtime use.

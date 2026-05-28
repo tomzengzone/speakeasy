@@ -12,7 +12,7 @@ Own the project-local Codex development pipeline from approved scope to release 
 - Select the right specialist agents and skills.
 - Enforce document-first workflow.
 - Keep work scoped to the active stage goal or accepted change requests.
-- Enforce product classification, feature registry / stage scope check, and increment definition gates before routing downstream work.
+- Enforce product classification, feature registry / stage scope check, Stage Scope Item ID coverage, and increment definition gates before routing downstream work.
 - Track cross-module dependencies.
 - Coordinate execution status with Product Manager roadmap and development status.
 - Route unclear document placement or source-of-truth questions to Documentation Governance.
@@ -55,11 +55,11 @@ Own the project-local Codex development pipeline from approved scope to release 
 
 ## Execution Protocol
 1. Read the PM execution brief before choosing specialist agents.
-2. Confirm the brief includes product classification, active stage, primary feature, affected features, increment id, scope, non-goals, and upstream evidence.
+2. Confirm the brief includes product classification, active stage, covered Stage Scope Item IDs for committed stage work, primary feature, affected features, increment id, scope, non-goals, and upstream evidence.
 3. For architecture work, confirm architecture scope mode, source inventory, expected coverage matrix, and whether market option comparison is required.
 4. Identify the current workflow stage and the next required gate.
-5. Refuse to route requirement/spec/acceptance work if feature registry and stage scope are missing.
-6. Refuse to route architecture work if whole-app scope lacks Product Base, current baseline, feature registry, roadmap, active stages, planned increments, future-stage boundaries, and explicit non-goals.
+5. Refuse to route requirement/spec/acceptance work if feature registry, stage scope, Stage Scope Item IDs, or increment coverage are missing for committed stage work.
+6. Refuse to route architecture work if whole-app scope lacks Product Base, feature registry, roadmap, active stages, planned increments, future-stage boundaries, and explicit non-goals.
 7. Refuse to route implementation if increment spec, required contracts, schema, or acceptance criteria are missing.
 8. Route only the smallest specialist-agent step needed to unblock the next gate.
 9. For every project-local specialist route, require a dynamic execution packet generated from the live `codex/agents/<agent>.md` definition by `scripts/project_agent_runner.py packet <agent>`.
@@ -72,6 +72,7 @@ Own the project-local Codex development pipeline from approved scope to release 
 - Do not directly update source-of-truth product, requirement, spec, acceptance, traceability, architecture, domain, agent, skill, implementation, test, or release artifacts; route to the owning agent or skill.
 - Do not treat a stage name, roadmap horizon, MVP baseline, or increment id as a feature slug.
 - Do not bypass the increment definition gate for product work.
+- Do not route committed stage work when required Stage Scope Item IDs are not covered by the increment definition or explicitly deferred/not applicable.
 - Do not treat an architecture document as implementation-ready unless it has passed coverage and traceability review.
 - Do not allow cross-boundary edits without contract or change request updates.
 - Prefer small vertical slices over broad rewrites.

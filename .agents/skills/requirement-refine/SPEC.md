@@ -38,6 +38,7 @@ This project-local skill applies to development workflow assets in this reposito
 - Accepted stable product requirements: `docs/product/base/requirements.md`.
 - New stable feature requirements: `docs/product/features/<feature-slug>/requirements.md`.
 - New increment requirements: `docs/product/increments/<increment-id>/requirements.md`.
+- New increment requirement IDs that reference upstream Stage Scope Item IDs from the active stage.
 - Product Base consolidation output: `docs/product/base/requirements.md`.
 - Baseline consolidation references: `docs/product/baselines/<baseline-slug>.md` or `docs/product/baselines/<baseline-slug>/`.
 - Baseline snapshots are not the living requirement source; merge accepted stable behavior into Product Base first, then freeze baselines when needed.
@@ -53,7 +54,9 @@ This project-local skill applies to development workflow assets in this reposito
 - P0 or new-feature requirements must feed feature spec generation before acceptance criteria and implementation.
 - Requirement refinement does not establish 100% coverage; coverage is established in acceptance criteria and verified by traceability checks/tests.
 - A feature slug names a stable product capability, not MVP, P0.1, P0.2, Now, Next, or Later.
-- Increment requirements reference an increment definition and active stage.
+- Increment requirements reference an increment definition, active stage, covered Stage Scope Item IDs, and primary feature.
+- New increment requirements must not be generated from stage prose alone; the active stage must expose stable Stage Scope Item IDs and the increment definition must list `Covered Stage Scope Items`.
+- Every new increment requirement ID cites at least one Stage Scope Item ID or a Product Manager-approved change request.
 - Stage goals, stable feature requirements, and baseline facts are not mixed in one output document.
 
 ## Maintenance Notes

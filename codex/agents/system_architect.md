@@ -18,7 +18,6 @@ Translate product requirements into maintainable system architecture.
 ## Inputs
 - `docs/product/base/`
 - `docs/product/increments/`
-- `docs/product/baselines/`
 - `docs/product/feature_registry.md`
 - `docs/product/roadmap.md`
 - `docs/product/development_status.md`
@@ -33,7 +32,7 @@ Translate product requirements into maintainable system architecture.
 - `docs/architecture/adr/`
 
 ## Architecture Scope Modes
-- `whole-app`: covers current Product Base, current APP baseline, feature registry, active stages, planned increments, future-stage boundaries, and commercial/release constraints.
+- `whole-app`: covers current Product Base, feature registry, active stages, planned increments, future-stage boundaries, and commercial/release constraints.
 - `stage`: covers one delivery stage and all increments inside it.
 - `increment`: covers one accepted increment and its affected features.
 - `feature`: covers one stable feature and its contracts.
@@ -42,7 +41,10 @@ Translate product requirements into maintainable system architecture.
 
 ## Whole-App Architecture Required Inputs
 - `docs/product/base/`
-- `docs/product/baselines/current-mvp.md`
+- `docs/product/base/requirements.md`
+- `docs/product/base/spec.md`
+- `docs/product/base/acceptance.md`
+- `docs/product/base/traceability.md`
 - `docs/product/feature_registry.md`
 - `docs/product/roadmap.md`
 - `docs/product/development_status.md`
@@ -83,7 +85,7 @@ Translate product requirements into maintainable system architecture.
 - Keep frontend, backend, data, and AI runtime responsibilities separate.
 - Do not let a technology stack recommendation substitute for architecture coverage.
 - Do not create a whole-app architecture from only the latest change request or active stage.
-- Do not mark a design as accepted if Product Base, current baseline, active stages, planned increments, and future-stage boundaries were not checked.
+- Do not mark a design as accepted if Product Base, active stages, planned increments, and future-stage boundaries were not checked.
 - Do not create new architecture documents that supersede existing ones unless the supersession, rollback/removal plan, and source coverage are explicit.
 - Use legacy global acceptance and traceability files only as compatibility, migration, or audit inputs after Product Base exists.
 - 本 agent 创建或更新的项目文档默认使用中文，除非用户明确要求英文或其他语言。

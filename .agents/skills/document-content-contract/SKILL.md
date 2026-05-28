@@ -64,10 +64,10 @@ description: Use when a project document needs a content boundary, required sect
 - `docs/product/base/acceptance.md`：写已接受稳定产品行为的可观察 pass/fail 行为；不写类名、函数名、数据库字段或测试实现。
 - `docs/product/base/traceability.md`：写 Product Base 的 `Requirement -> AC -> Code Evidence -> Test Evidence -> Status`；不新增需求，不替代验收标准。
 - `docs/product/baselines/<baseline-slug>.md`：写当前已实现能力快照、事实来源、代码/资产证据、回归边界和不承诺项；不写未来新增需求或未批准计划。
-- `docs/product/stages/<stage-id>.md`：写阶段目标、阶段范围、阶段非目标、入口条件、出口条件、纳入/排除的 increments；不写 API schema、UI 布局、prompt schema 或代码实现。
+- `docs/product/stages/<stage-id>.md`：写阶段目标、入口条件、出口条件、纳入/排除的 increments，并用稳定 Stage Scope Item ID 表表达阶段范围；不写 API schema、UI 布局、prompt schema 或代码实现。
 - `docs/product/features/<feature-slug>/README.md`：写稳定 feature 的定义、用户价值、长期边界、owner 和相关 increments；不写阶段交付细节。
 - `docs/product/features/<feature-slug>/requirements.md`：写该稳定 feature 的长期能力需求、用户路径和非目标；不写某个阶段的具体交付任务。
-- `docs/product/increments/<increment-id>/definition.md`：写 active stage、primary feature、affected features、scope、non-goals、upstream decision 和 required artifacts；不写验收用例或实现计划。
+- `docs/product/increments/<increment-id>/definition.md`：写 active stage、covered/excluded Stage Scope Item IDs、primary feature、affected features、scope、non-goals、upstream decision 和 required artifacts；不写验收用例或实现计划。
 - `docs/product/increments/<increment-id>/requirements.md`：写本次增量的用户目标、用户路径、成功标准、非目标、假设和开放问题；不写 API 字段、prompt schema、UI 布局或代码实现。
 - `docs/product/increments/<increment-id>/spec.md`：写本次增量的状态、输入输出、状态、依赖、失败路径、模块影响和测试映射；不写代码实现或产品优先级决策。
 - `docs/product/increments/<increment-id>/acceptance.md`：写本次增量可观察 pass/fail 行为；不写类名、函数名、数据库字段或测试实现。

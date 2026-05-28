@@ -18,6 +18,7 @@ Product Manager is the unified user-facing entry point. It decides the active st
 Feature = long-lived product capability
 Product Base = living source of truth for accepted product requirements, specs, acceptance, and traceability
 Stage = delivery horizon or priority window
+Stage Scope Item = stable, ID-addressable capability or obligation committed, deferred, or marked not applicable inside a stage
 Increment = scoped delivery slice inside a stage
 Baseline = frozen snapshot of Product Base at a stage, version, release, or audit point
 Change Request = decision record for scope change
@@ -58,13 +59,14 @@ Requirement Development owns requirement quality for a scoped feature or change.
 ## Required Gates
 1. No feature/increment document before product classification.
 2. No requirements/spec/acceptance artifact before feature registry and stage scope are confirmed.
-3. No implementation before increment spec.
-4. No cross-layer implementation before contract updates.
-5. No AI UI rendering before schema definition.
-6. No completion without tests or documented test gap.
-7. No release without release checklist.
-8. No increment may merge into Product Base until acceptance, traceability, implementation, test, and report evidence are complete or explicitly excepted.
-9. No multi-step product or documentation governance task may proceed to the next step until an independent checker agent returns a pass finding for the completed step.
+3. No committed stage work may proceed without stable Stage Scope Item IDs and an increment coverage decision for each required item.
+4. No implementation before increment spec.
+5. No cross-layer implementation before contract updates.
+6. No AI UI rendering before schema definition.
+7. No completion without tests or documented test gap.
+8. No release without release checklist.
+9. No increment may merge into Product Base until acceptance, traceability, implementation, test, and report evidence are complete or explicitly excepted.
+10. No multi-step product or documentation governance task may proceed to the next step until an independent checker agent returns a pass finding for the completed step.
 
 ## Product Classification Gate
 Every incoming request must be classified before requirements or specs are created:
@@ -83,6 +85,7 @@ The classification must identify the primary feature when one exists, affected f
 Before requirement development starts, the active increment must state:
 - increment id and name
 - active stage
+- covered Stage Scope Item IDs
 - primary feature
 - affected features
 - scope and non-goals
@@ -91,6 +94,32 @@ Before requirement development starts, the active increment must state:
 - owner agent and checker agent
 
 If the work is product-base consolidation, the artifact must update `docs/product/base/` and must only include accepted stable behavior. If the work is baseline consolidation, the artifact must be marked as a frozen baseline snapshot and must not replace the living Product Base.
+
+## Stage Scope Traceability Gate
+Every active stage must expose committed scope as stable Stage Scope Items before downstream increment artifacts are generated. Each stage scope file should include a table with:
+
+- Stage Scope ID
+- Capability
+- Required status: `required`, `deferred`, or `not applicable`
+- Target increment or reason no increment is planned
+- Current status
+
+Each increment definition must include `Covered Stage Scope Items` and `Excluded Stage Scope Items`. The traceability chain for committed stage work is:
+
+```text
+Stage Scope ID
+-> Increment ID
+-> Requirement ID
+-> Spec section/state ID
+-> Acceptance Criteria ID
+-> Contract ID, when applicable
+-> Work Package ID, when available
+-> Code Evidence
+-> Test Evidence
+-> Release Evidence
+```
+
+`100% traceability` means every required Stage Scope Item ID is covered by at least one increment or has an explicit deferred/not-applicable decision, every increment requirement traces back to at least one Stage Scope Item ID, every FR has at least one AC, every AC traces to implementation and test evidence or a documented exception, and release evidence exists when release scope is affected.
 
 ## Product Base Gate
 `docs/product/base/` is the living source of truth for accepted product behavior:
@@ -112,7 +141,7 @@ Use `docs/process/change_request.md` when a change:
 ## Agent Handoffs
 - Product Manager sets roadmap priority and updates `docs/product/development_status.md`.
 - Product Manager sends approved or investigatory work to Development Orchestrator using the PM execution brief in `codex/templates/pm_orchestrator_brief.template.md`.
-- Product Manager owns product classification, stage scope, and increment priority.
+- Product Manager owns product classification, stage scope, Stage Scope Item IDs, and increment priority.
 - Requirement Development converts accepted scope into user stories, feature requirements, and acceptance criteria.
 - Development Orchestrator routes the approved work through specialist agents and reports workflow progress or DoD gaps back to Product Manager.
 - Product Manager is responsible for user-facing summaries, product tradeoff explanations, and development status updates after Orchestrator returns execution findings.

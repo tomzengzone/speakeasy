@@ -50,6 +50,7 @@ Product documents must distinguish product objects before choosing a path:
 
 - Feature: a long-lived APP capability. It belongs in the feature registry and `docs/product/features/<feature-slug>/`.
 - Stage: a delivery horizon or priority window. It belongs in `docs/product/stages/<stage-id>.md`.
+- Stage Scope Item: a stable, ID-addressable capability, obligation, or explicit deferral inside a stage. Active stage scope items belong in the owning stage file and use stable IDs such as `P01-SI-001`.
 - Increment: a scoped delivery slice inside a stage. It belongs in `docs/product/increments/<increment-id>/`.
 - Baseline: a snapshot of implemented behavior. It belongs in `docs/product/baselines/<baseline-slug>.md`.
 - Change request: a scope decision record. It remains in `docs/process/change_request.md`.
@@ -57,6 +58,32 @@ Product documents must distinguish product objects before choosing a path:
 Legacy flat paths such as `docs/product/features/<feature-slug>-requirements.md` remain valid for existing artifacts until migration, but new product work should prefer the object-based paths above after classification and increment definition.
 
 Do not use a stage name, MVP baseline name, or roadmap horizon as a feature slug. A feature slug must name a stable product capability.
+
+## Stage-To-Increment Traceability
+
+Committed stage work must be traceable before downstream artifacts are generated:
+
+```text
+Stage Scope ID
+-> Increment ID
+-> Requirement ID
+-> Spec section/state ID
+-> Acceptance Criteria ID
+-> Contract ID, when applicable
+-> Work Package ID, when available
+-> Code Evidence
+-> Test Evidence
+-> Release Evidence
+```
+
+Rules:
+
+- Active stage files must expose scope as stable Stage Scope Item IDs and classify each item as `required`, `deferred`, or `not applicable`.
+- Increment definitions must list `Covered Stage Scope Items` and `Excluded Stage Scope Items`.
+- Requirement artifacts for new increment work must cite the Stage Scope Item IDs they refine.
+- Specs and acceptance criteria must preserve the Stage Scope Item IDs rather than replacing them with prose-only references.
+- Traceability matrices must prove 100% coverage for committed scope: every required Stage Scope Item ID is covered by an increment or has an explicit deferred/not-applicable decision, every increment requirement traces to at least one Stage Scope Item ID, every FR has at least one AC, and every AC has code/test evidence or a documented exception when implementation has started.
+- Future roadmap placeholders may be traced only to feature/stage boundaries and architecture compatibility notes until Product Manager accepts them into an increment; they must not be represented as implementation-ready requirements.
 
 ## Naming
 
@@ -150,7 +177,7 @@ Quality rules:
 Broad planning skills and architecture agents must prevent partial context from being presented as full-system conclusions.
 
 - Every broad architecture or platform strategy task must declare scope mode: `whole-app`, `stage`, `increment`, `feature`, `refactor`, or `experiment`.
-- Whole-app tasks must build a source inventory before conclusions: Product Base, current baseline, feature registry, roadmap, development status, active stages, planned increments, future-stage boundaries, non-goals, current code structure, existing contracts, release artifacts, and reports.
+- Whole-app tasks must build a source inventory before conclusions: Product Base, feature registry, roadmap, development status, active stages, planned increments, future-stage boundaries, non-goals, current code structure, existing contracts, release artifacts, and reports.
 - Whole-app architecture must include a feature/stage coverage matrix mapping product capabilities to frontend, backend, data, API, AI/runtime, security, tests, release, and operations.
 - Missing coverage must be classified as blocker, deferred, or not applicable. Unclassified omissions block acceptance.
 - Technology recommendations must be traceable to requirements, constraints, market/common-practice option comparison, trade-offs, team/operations fit, and rollback cost.

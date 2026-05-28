@@ -24,6 +24,7 @@ Turn natural-language product intent into constrained, testable requirements bef
 - Product object classification from Product Manager: feature, stage, increment, baseline, change request, or artifact.
 - `docs/product/base/requirements.md` when consolidating or updating accepted stable product requirements.
 - For new product work, the feature registry, active stage, and increment definition when available.
+- For committed stage work, Stage Scope Item IDs from the active stage file and `Covered Stage Scope Items` from the increment definition.
 - Known constraints, target users, and MVP boundary.
 
 ## Outputs
@@ -32,6 +33,7 @@ Turn natural-language product intent into constrained, testable requirements bef
 - Product Base requirements in `docs/product/base/requirements.md` for accepted stable product behavior.
 - Durable feature requirements in `docs/product/features/<feature-slug>/requirements.md` for stable product capabilities.
 - Increment requirements in `docs/product/increments/<increment-id>/requirements.md` for stage-bound delivery slices.
+- Requirement IDs that cite one or more upstream Stage Scope Item IDs for new increment work.
 - Baseline references in `docs/product/baselines/<baseline-slug>.md` only when consolidating implemented behavior.
 - Testable success criteria.
 - Explicit non-goals and assumptions.
@@ -53,20 +55,23 @@ Turn natural-language product intent into constrained, testable requirements bef
 - First classify the request as `product-base-consolidation`, `baseline-consolidation`, `new-feature`, `feature-increment`, `bugfix`, `refactor`, `experiment`, or `scope-change`.
 - A feature is a long-lived APP capability. Do not use MVP, P0, P0.1, P0.2, Now, Next, or Later as a feature slug.
 - Stage goals belong in `docs/product/stages/<stage-id>.md`; they do not replace feature requirements.
-- Increment requirements belong in `docs/product/increments/<increment-id>/requirements.md` and must reference the active stage and primary feature.
+- Increment requirements belong in `docs/product/increments/<increment-id>/requirements.md` and must reference the active stage, covered Stage Scope Item IDs, and primary feature.
 - Accepted stable requirements belong in `docs/product/base/requirements.md`; baseline snapshots must not be edited as the living requirement source.
 - Feature requirements belong in `docs/product/features/<feature-slug>/requirements.md` and must not include stage delivery plans, implementation plans, or acceptance evidence.
+- Do not generate new increment requirements when the active stage lacks stable Stage Scope Item IDs or the increment definition lacks `Covered Stage Scope Items`.
+- Each new increment requirement ID must trace back to at least one Stage Scope Item ID, or explicitly mark the source as a Product Manager-approved change request.
 - If a request mixes feature, stage, increment, and baseline content, split it before writing requirements.
 
 ## Process
 1. List assumptions before conclusions.
 2. Classify the product object and source mode before choosing an output path.
-3. Restate the functional goal in one sentence.
-4. Identify user path, entry point, data touched, and expected outcome.
-5. Convert expectations into measurable success criteria.
-6. Mark out-of-stage ideas as backlog unless the user explicitly includes them through a change request.
-7. State whether the output is Product Base consolidation, baseline snapshot consolidation, stable feature requirements, or increment requirements.
-8. Request clarification only when a risky decision cannot be inferred.
+3. For new increment work, list the covered Stage Scope Item IDs before drafting requirements.
+4. Restate the functional goal in one sentence.
+5. Identify user path, entry point, data touched, and expected outcome.
+6. Convert expectations into measurable success criteria.
+7. Mark out-of-stage ideas as backlog unless the user explicitly includes them through a change request.
+8. State whether the output is Product Base consolidation, baseline snapshot consolidation, stable feature requirements, or increment requirements.
+9. Request clarification only when a risky decision cannot be inferred.
 
 ## Red Flags
 - The requirement contains words like smart, seamless, complete, or advanced without measurable behavior.
@@ -77,6 +82,8 @@ Turn natural-language product intent into constrained, testable requirements bef
 - P0/new-feature requirements bypass feature spec and go straight to implementation.
 - A stage name or roadmap horizon is used as a feature slug.
 - Baseline facts are rewritten as future requirements without a Product Manager decision.
+- Increment requirements are created from stage prose without stable Stage Scope Item IDs.
+- Requirement IDs cannot be traced back to `Covered Stage Scope Items` or an approved change request.
 
 ## Verification
 - Every success criterion can become at least one test.
@@ -86,6 +93,7 @@ Turn natural-language product intent into constrained, testable requirements bef
 - P0/new-feature requirements are ready for feature spec generation, not treated as final acceptance coverage.
 - Current MVP reverse-consolidation requirements explicitly cite the code-baseline mode.
 - Output path matches the classified product object and does not mix feature, stage, increment, or baseline boundaries.
+- For new increment work, every requirement ID cites at least one Stage Scope Item ID.
 
 ## Common Rationalizations
 | Rationalization | Reality |
