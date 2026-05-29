@@ -41,6 +41,16 @@ void main() {
         '/membership/boundary',
         '/membership/android/purchase',
         '/membership/android/restore',
+        '/entitlements',
+        '/entitlements/refresh',
+        '/subscription/plans',
+        '/subscriptions/apple/verify',
+        '/subscriptions/google/verify',
+        '/subscriptions/restore',
+        '/usage/reserve',
+        '/usage/commit',
+        '/usage/release',
+        '/usage/summary',
         '/offline-content/status',
         '/achievements/status',
         '/ai/transcribe',
@@ -66,6 +76,7 @@ void main() {
       '/ai/tts/cache',
       '/ai/score',
       '/ai/interview/coach-turn',
+      '/payments/apple/verify-receipt',
     ]) {
       expect(source, isNot(contains(oldPath)), reason: oldPath);
     }
@@ -73,6 +84,10 @@ void main() {
     expect(source, contains('SpeakeasyApiPaths.authLoginPhone'));
     expect(source, contains('SpeakeasyApiPaths.aiPronunciation'));
     expect(source, contains('SpeakeasyApiPaths.userMe'));
+    expect(source, contains('SpeakeasyApiPaths.subscriptionsAppleVerify'));
+    expect(source, contains('SpeakeasyApiPaths.subscriptionsGoogleVerify'));
+    expect(source, contains('SpeakeasyApiPaths.subscriptionsRestore'));
+    expect(source, contains('SpeakeasyApiPaths.entitlementsRefresh'));
   });
 
   test('legacy handwritten paths are documented as drift exceptions', () {

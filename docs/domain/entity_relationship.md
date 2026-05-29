@@ -103,6 +103,15 @@ flowchart LR
 | AccountDeletionJob | affects | PracticeSession / TrainingSession / LearningEvidence / FavoriteExpression / SavedExpression / Profile data | 1 -> many | Admin/Ops + owning domains | 按 hard delete、anonymize、retain-for-audit 分类处理。 |
 | Purchase / Subscription / UsageReservation / AccountDeletionJob | writes | AuditLog | many -> many | Admin/Ops backend | 审计为 append-only、脱敏最小字段。 |
 
+### P0 Relationship Gate Notes
+
+| Gate | Relationship requirement | Covered by |
+| --- | --- | --- |
+| P0-COM-DOM-001 | 付款、恢复、退款、过期和宽限期必须能从 provider event 追踪到用户权益 | `User -> Purchase -> Subscription -> EntitlementSnapshot` and `Subscription -> PaymentProviderEvent` |
+| P0-COM-DOM-001 | 场景包和 AI 高成本能力的 gating 必须由同一权益规则解释 | `EntitlementSnapshot -> EntitlementRule -> Scenario` and `EntitlementRule -> AI/provider usage` |
+| P0-COM-DOM-001 | 用量扣减必须能从 provider 调用结果回写到 reservation 状态 | `UsageLedger -> UsageReservation -> ProviderUsageEvent` |
+| P0-COM-DOM-001 | 账号注销必须处理学习数据和审计数据的不同保留策略 | `AccountLifecycle -> AccountDeletionJob -> owning domain data` and `AccountDeletionJob -> AuditLog` |
+
 ## P0.1 Training Relationships
 
 | From | Relationship | To | Cardinality | Owner / source of truth | Notes |

@@ -41,11 +41,15 @@ public class AccountDeletionService {
     if (idempotencyKey == null || idempotencyKey.length() < 8 || idempotencyKey.length() > 128) {
       throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "Idempotency-Key is required.");
     }
+    AccountDeletionJob existingJob = deletionJobs.findByUserIdAndIdempotencyKey(userId, idempotencyKey).orElse(null);
+    if (existingJob != null) {
+      return existingJob;
+    }
     Instant now = Instant.now(clock);
     UserAccount user = users.findById(userId)
         .filter(candidate -> "active".equals(candidate.getAccountStatus()) || "deletion_requested".equals(candidate.getAccountStatus()))
         .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "User is not active."));
-    AccountDeletionJob job = deletionJobs.save(new AccountDeletionJob(UUID.randomUUID(), userId, now));
+    AccountDeletionJob job = deletionJobs.save(new AccountDeletionJob(UUID.randomUUID(), userId, idempotencyKey, now));
     user.requestDeletion(now);
     authService.revokeUserSessions(userId);
     purgeUserOwnedData(userId);
@@ -85,6 +89,9 @@ public class AccountDeletionService {
     delete("learning_routes", userId);
     delete("onboarding_assessments", userId);
     delete("entitlement_snapshots", userId);
+    jdbcTemplate.update(
+        "DELETE FROM payment_provider_events WHERE related_subscription_id IN (SELECT subscription_id FROM subscriptions WHERE user_id = ?)",
+        userId);
     delete("subscriptions", userId);
     delete("purchases", userId);
     delete("usage_reservations", userId);

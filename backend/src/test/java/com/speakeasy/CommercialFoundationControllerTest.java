@@ -8,6 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.speakeasy.commerce.EntitlementSnapshot;
 import com.speakeasy.commerce.EntitlementSnapshotRepository;
+import com.speakeasy.commerce.PaymentProviderEventRepository;
+import com.speakeasy.commerce.PurchaseRepository;
+import com.speakeasy.commerce.SubscriptionRepository;
 import com.speakeasy.commerce.SubscriptionPlan;
 import com.speakeasy.commerce.SubscriptionPlanRepository;
 import com.speakeasy.content.UserScenarioStateRepository;
@@ -23,6 +26,7 @@ import com.speakeasy.ops.AccountDeletionJobRepository;
 import com.speakeasy.security.TokenHasher;
 import com.speakeasy.usage.UsageLedger;
 import com.speakeasy.usage.UsageLedgerRepository;
+import com.speakeasy.usage.UsageReservationRepository;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,8 +52,12 @@ class CommercialFoundationControllerTest {
   @Autowired AuthIdentityRepository identities;
   @Autowired AuthSessionRepository sessions;
   @Autowired SubscriptionPlanRepository plans;
+  @Autowired PurchaseRepository purchases;
+  @Autowired SubscriptionRepository subscriptions;
+  @Autowired PaymentProviderEventRepository providerEvents;
   @Autowired EntitlementSnapshotRepository entitlements;
   @Autowired UsageLedgerRepository ledgers;
+  @Autowired UsageReservationRepository reservations;
   @Autowired AccountDeletionJobRepository deletionJobs;
   @Autowired UserScenarioStateRepository userScenarioStates;
   @Autowired LearningRouteRepository routes;
@@ -65,6 +73,10 @@ class CommercialFoundationControllerTest {
     identities.deleteAll();
     profiles.deleteAll();
     entitlements.deleteAll();
+    providerEvents.deleteAll();
+    subscriptions.deleteAll();
+    purchases.deleteAll();
+    reservations.deleteAll();
     ledgers.deleteAll();
     plans.deleteAll();
     users.deleteAll();
@@ -143,10 +155,22 @@ class CommercialFoundationControllerTest {
 
   @Test
   void releaseHealthRemainsWarningUntilProviderAndReleaseGatesExist() throws Exception {
-    mvc.perform(get("/admin/release-health"))
+    mvc.perform(get("/admin/release-health")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer ops-test-token"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.schema_version").value(1))
         .andExpect(jsonPath("$.status").value("warn"));
+  }
+
+  @Test
+  void releaseHealthRequiresOpsBearerToken() throws Exception {
+    mvc.perform(get("/admin/release-health"))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"));
+
+    mvc.perform(get("/admin/release-health").header(HttpHeaders.AUTHORIZATION, bearerToken()))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
   }
 
   private String bearerToken() {

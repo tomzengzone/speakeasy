@@ -36,7 +36,13 @@ public class CommercialFoundationService {
   }
 
   public EntitlementSnapshot defaultFreeEntitlement(UUID userId) {
-    return new EntitlementSnapshot(UUID.randomUUID(), userId, "free", "{}", "{}", Instant.now(clock));
+    return new EntitlementSnapshot(
+        UUID.randomUUID(),
+        userId,
+        "free",
+        "{\"basic_scenarios\":true,\"advanced_scenarios\":false,\"ai_feedback\":true}",
+        "{\"ai\":10,\"asr\":10,\"tts\":10,\"scoring\":10,\"training\":3}",
+        Instant.now(clock));
   }
 
   public List<UsageLedger> usageSummary(UUID userId) {

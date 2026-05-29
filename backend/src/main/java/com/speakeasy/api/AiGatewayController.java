@@ -25,22 +25,25 @@ public class AiGatewayController {
   }
 
   @PostMapping("/ai/transcribe")
-  public TranscribeResponse transcribe(@Valid @RequestBody TranscribeRequest request) {
-    AiProviderGateway.TranscribeResult result = service.transcribe(request.audioRef(), request.languageHint());
+  public TranscribeResponse transcribe(
+      @AuthenticationPrincipal CurrentUser currentUser, @Valid @RequestBody TranscribeRequest request) {
+    AiProviderGateway.TranscribeResult result = service.transcribe(currentUser.userId(), request.audioRef(), request.languageHint());
     return new TranscribeResponse(1, result.transcript(), result.confidence(), result.status());
   }
 
   @PostMapping("/ai/tts")
-  public TtsResponse synthesize(@Valid @RequestBody TtsRequest request) {
-    AiProviderGateway.TtsResult result = service.synthesize(request.text(), request.voice());
+  public TtsResponse synthesize(
+      @AuthenticationPrincipal CurrentUser currentUser, @Valid @RequestBody TtsRequest request) {
+    AiProviderGateway.TtsResult result = service.synthesize(currentUser.userId(), request.text(), request.voice());
     return new TtsResponse(1, result.audioRef(), result.status());
   }
 
   @PostMapping("/ai/pronunciation")
-  public PronunciationResponse scorePronunciation(@Valid @RequestBody PronunciationRequest request) {
+  public PronunciationResponse scorePronunciation(
+      @AuthenticationPrincipal CurrentUser currentUser, @Valid @RequestBody PronunciationRequest request) {
     return new PronunciationResponse(
         1,
-        ScoreSignalDto.from(service.scorePronunciation(request.audioRef(), request.referenceText())));
+        ScoreSignalDto.from(service.scorePronunciation(currentUser.userId(), request.audioRef(), request.referenceText())));
   }
 
   @PostMapping({"/ai/coach-turn", "/ai/feedback"})

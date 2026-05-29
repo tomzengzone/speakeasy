@@ -17,6 +17,9 @@ public class AccountDeletionJob {
   @Column(name = "user_id", nullable = false)
   private UUID userId;
 
+  @Column(name = "idempotency_key")
+  private String idempotencyKey;
+
   @Column(name = "status", nullable = false)
   private String status;
 
@@ -35,8 +38,13 @@ public class AccountDeletionJob {
   protected AccountDeletionJob() {}
 
   public AccountDeletionJob(UUID deletionJobId, UUID userId, Instant requestedAt) {
+    this(deletionJobId, userId, null, requestedAt);
+  }
+
+  public AccountDeletionJob(UUID deletionJobId, UUID userId, String idempotencyKey, Instant requestedAt) {
     this.deletionJobId = deletionJobId;
     this.userId = userId;
+    this.idempotencyKey = idempotencyKey;
     this.status = "requested";
     this.requestedAt = requestedAt;
   }
@@ -59,6 +67,10 @@ public class AccountDeletionJob {
 
   public UUID getUserId() {
     return userId;
+  }
+
+  public String getIdempotencyKey() {
+    return idempotencyKey;
   }
 
   public String getStatus() {

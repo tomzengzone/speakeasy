@@ -1,10 +1,15 @@
 # P0.1 阶段范围：表达自动化训练闭环
 
 ## 状态
-Draft - 当前 active stage。
+Draft - next value-experience stage；当目标是商业软件功能补齐或真实收费准备时，P0 商业化订阅上线准备优先级高于本阶段。
 
 ## 阶段目标
 在当前 Product Base 稳定能力之上，把现有语音场景模拟升级为训练型 Agent：用户只完成听一句、选一个、回一句、跟一句、补一句、在追问下继续说等小动作；agent 在 session 内接管训练组织、节奏控制、难度拆解、重复推进、即时反馈和轻量场景施压。
+
+## 阶段排序
+- 本阶段是价值体验升级线，不是商业发布阻塞线。
+- P0 商业化订阅上线准备负责生产账号、真实支付、服务端权益、商业 gating、合规、风控和发布门禁，排序高于本阶段。
+- 本阶段可以在不混入商业发布承诺的前提下做规划或预研；真实收费上线不得跳过 P0 商业化订阅上线准备。
 
 ## 入口条件
 - 当前稳定能力已记录在 `docs/product/base/requirements.md`、`docs/product/base/spec.md`、`docs/product/base/acceptance.md` 和 `docs/product/base/traceability.md`。

@@ -1,6 +1,7 @@
 package com.speakeasy.practice;
 
 import com.speakeasy.ai.AiProviderGateway;
+import com.speakeasy.commerce.EntitlementGateService;
 import com.speakeasy.common.ApiException;
 import com.speakeasy.content.ScenarioLevelRepository;
 import com.speakeasy.content.ScenarioRepository;
@@ -28,6 +29,7 @@ public class PracticeService {
   private final CoachFeedbackRepository feedbacks;
   private final SessionSummaryRepository summaries;
   private final AiProviderGateway provider;
+  private final EntitlementGateService entitlementGateService;
   private final Clock clock;
 
   public PracticeService(
@@ -39,6 +41,7 @@ public class PracticeService {
       CoachFeedbackRepository feedbacks,
       SessionSummaryRepository summaries,
       AiProviderGateway provider,
+      EntitlementGateService entitlementGateService,
       Clock clock) {
     this.users = users;
     this.scenarios = scenarios;
@@ -48,6 +51,7 @@ public class PracticeService {
     this.feedbacks = feedbacks;
     this.summaries = summaries;
     this.provider = provider;
+    this.entitlementGateService = entitlementGateService;
     this.clock = clock;
   }
 
@@ -55,6 +59,7 @@ public class PracticeService {
   public PracticeSessionView startOrResume(UUID userId, String scenarioId, String levelCode, boolean resumeExisting) {
     requireUser(userId);
     requireOfficialScenarioLevel(scenarioId, levelCode);
+    entitlementGateService.requireScenarioLevel(userId, scenarioId, levelCode);
     if (resumeExisting) {
       var existing = sessions.findFirstByUserIdAndScenarioIdAndLevelCodeAndStatusInOrderByUpdatedAtDesc(
           userId, scenarioId, levelCode, RECOVERABLE_STATUSES);

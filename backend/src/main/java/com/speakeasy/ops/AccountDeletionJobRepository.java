@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AccountDeletionJobRepository extends JpaRepository<AccountDeletionJob, UUID> {
   Optional<AccountDeletionJob> findFirstByUserIdOrderByRequestedAtDesc(UUID userId);
+
+  Optional<AccountDeletionJob> findByUserIdAndIdempotencyKey(UUID userId, String idempotencyKey);
 }

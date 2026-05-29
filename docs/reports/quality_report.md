@@ -1,7 +1,7 @@
 # Quality Report
 
 ## Current Status
-`mvp-system-e2e-validation` passed scoped QA, traceability, and Product Base system E2E evidence checks through TC-MVP-E2E-010; real payment provider verification remains an explicit manual/external gate.
+`P0-COM-MANUAL-EVIDENCE-PLAN-001` passed independent review for manual external evidence planning and gate integration. This is not commercial release approval; TC-COM-012/015/019/021/022 remain active blockers until real external/native execution evidence is supplied.
 
 ## 2026-05-26 OpenAPI Path Governance
 
@@ -509,3 +509,425 @@ Residual risk:
 - macOS notification initialization remains a logged soft failure in the local E2E environment.
 - TC-MVP-E2E-008 proves deterministic practice/coach/evidence behavior, not real third-party LLM/ASR/TTS quality or SLA.
 - TC-MVP-E2E-010 proves membership boundary UI, not real purchase, restore, webhook, refund, or provider settlement behavior.
+
+## 2026-05-29 commercial-subscription-readiness Gate Review
+
+Result: pass for pre-implementation contract and AC-to-TC gate only. This review does not approve commercial release readiness.
+
+Findings:
+- No blocker remains for routing the next implementation packages after this gate. `P0-COM-DOM-001`, `P0-COM-API-001`, `P0-COM-ARCH-001`, `P0-COM-UX-001`, and `P0-COM-QA-001` have documented downstream evidence.
+- No Backend, Frontend, AI Runtime, or DevOps implementation was started in this step. The generated Dart OpenAPI boundary and hash were synchronized only because the OpenAPI contract changed and the drift gate requires it.
+- No Product Base or stage scope expansion was introduced. The review keeps `commercial-subscription-readiness` as the owning increment for `COM-SI-001` through `COM-SI-012`.
+
+Checked step:
+- Development Orchestrator routing evidence for `P0-COM-DOM-001`, `P0-COM-API-001`, `P0-COM-ARCH-001`, `P0-COM-UX-001`, and `P0-COM-QA-001`.
+- Document traceability from requirements to acceptance criteria to test cases.
+- Product Object Governance Check for scope boundaries, stage object ownership, and no implementation-before-test-case violation.
+- Code Review Quality gate for changed docs, OpenAPI contract, generated boundary hash, validation results, and release risk.
+
+Changed files reviewed:
+- Product/increment docs: `docs/product/increments/commercial-subscription-readiness/definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `traceability.md`, and `test_cases.md`.
+- Stage/status docs: `docs/product/stages/p0-commercial-readiness.md` and `docs/product/development_status.md`.
+- Domain/architecture/UX contracts: `docs/domain/domain_schema.md`, `docs/domain/entity_relationship.md`, `docs/architecture/api_contract.md`, `docs/architecture/system_overview.md`, `docs/architecture/security_design.md`, `docs/architecture/openapi/speakeasy-api.yaml`, `docs/ux/screen_spec.md`, `docs/ux/user_flow.md`, `docs/ux/copywriting_guideline.md`, and `docs/ux/usability_checklist.md`.
+- Generated contract boundary: `docs/architecture/openapi/dart-client-drift-manifest.json`, `lib/generated/api/.openapi-sha256`, and `lib/generated/api/speakeasy_api.dart`.
+- Evidence reports: `docs/reports/test_report.md` and `docs/reports/quality_report.md`.
+
+Traceability finding:
+- Stage scope coverage is complete for this pre-implementation gate: `COM-SI-001` through `COM-SI-012` all map to stable test cases.
+- Requirement coverage is complete: `FR-COM-001` through `FR-COM-012` all map through accepted AC IDs to one or more `TC-COM` rows.
+- Acceptance coverage is complete: `AC-COM-001` through `AC-COM-014` all map to one or more stable test cases.
+- `docs/product/increments/commercial-subscription-readiness/test_cases.md` contains 23 `TC-COM` rows. Each row includes Stage Scope ID, FR, Spec, AC, Traceability Row, Gap, test level, automation status, script path, execution command, result status, and evidence report.
+- `TC-COM-023` is passed for the OpenAPI contract gate. `TC-COM-001` through `TC-COM-022` remain planned and block commercial release readiness until implemented and executed.
+
+Validation:
+- `npm run check:api-contract` - passed: OpenAPI contract gate passed with 62 paths, 67 operations, 29 request examples, 62 success examples, and 74 error examples; Dart generated-client drift gate passed with OpenAPI hash `4a0a9978ba4dec45d1df598bc0cd39770fd5eaa021fc6f7fe2ce47f16d0fb63a`, 67 operations, and 117 schemas.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `awk` TC row audit - passed: 23 `TC-COM` rows, no malformed row field count reported.
+- `awk` coverage audits - passed: `COM-SI-001..012`, `FR-COM-001..012`, and `AC-COM-001..014` all have test-case coverage.
+
+Required corrections:
+- None remaining for this pre-implementation gate.
+
+Residual risk:
+- The project is not commercial release ready.
+- `TC-COM-001` through `TC-COM-022` are planned but not implemented or executed.
+- Apple sandbox, Google Play internal testing, refund/expiry/provider event evidence, social login production configuration, store metadata, privacy/support URLs, release secrets, signing, symbols, rollback evidence, implementation report, and release decision remain future blockers.
+- This review only authorizes the next Development Orchestrator implementation routing; it does not authorize skipping the planned backend, frontend, provider, release, or QA execution gates.
+
+## 2026-05-29 P0-COM-BE-001 Independent Review
+
+Result: pass for `P0-COM-BE-001` only.
+
+Checked step:
+- Commercial foundation hardening after AC-to-TC gate: ops auth for release health, account deletion idempotency, auth/session retry boundary, entitlement/usage read foundation regression, and audit evidence.
+- Scope guard: confirmed no `P0-COM-BE-002` entitlement/usage gating, no `P0-COM-BE-003` Apple/Google provider verify/webhook, no Flutter commercial UI, and no DevOps release gate implementation was added.
+
+Changed files:
+- Backend auth/security: `BearerTokenAuthenticationFilter.java`, `SecurityConfig.java`, `AuthService.java`, and `application-test.yml`.
+- Account deletion persistence/service: `V202605290004__commercial_foundation_hardening.sql`, `AccountDeletionJob.java`, `AccountDeletionJobRepository.java`, and `AccountDeletionService.java`.
+- Backend tests: `CommercialAccountDeletionProcessorTest.java` and `CommercialFoundationControllerTest.java`.
+- Evidence report: `docs/reports/implementation_report.md`.
+
+Findings:
+- No blocker. The ops bearer token is only accepted for admin paths, so it cannot accidentally satisfy normal user endpoints that require `CurrentUser`.
+- No blocker. Deletion idempotency returns the existing job before active-user validation, allowing same-key retry after session revocation without re-running purge/audit side effects.
+- No blocker. User bearer tokens no longer satisfy `/admin/release-health`; the endpoint returns `FORBIDDEN` for normal users and succeeds only with ops bearer evidence.
+
+Validation:
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CommercialFoundationControllerTest,CommercialAccountDeletionProcessorTest,AccountDeletionControllerTest,AccountDeletionSessionInvalidationTest,AccountDeletionLearningDataTest,AccountDeletionFailureAuditTest test` - passed.
+
+Required corrections:
+- None for this step.
+
+Residual risk:
+- This is not commercial release readiness. Provider verification, entitlement/usage gating, Flutter commercial UI, release scripts, store metadata, and QA execution remain pending in later steps.
+
+## 2026-05-29 P0-COM-BE-002 Independent Review
+
+Result: pass for `P0-COM-BE-002` only.
+
+Checked step:
+- Entitlement refresh, paid scenario-level gating, usage reserve/commit/release lifecycle, high-cost AI/ASR/TTS/scoring quota enforcement, and audit evidence.
+- Scope guard: confirmed no Apple/Google provider verification, webhook processing, Flutter UI, DevOps release scripts, or commercial release decision was added.
+
+Changed files:
+- Backend services/controllers: `EntitlementGateService.java`, `UsageService.java`, `UsageReservationRepository.java`, `UsageLedger.java`, `UsageReservation.java`, `CommercialFoundationController.java`, `AiGatewayService.java`, `AiGatewayController.java`, `OnboardingContentService.java`, and `PracticeService.java`.
+- Backend test support/tests: `BackendIntegrationTestSupport.java`, `EntitlementGateServiceTest.java`, `UsageQuotaGateTest.java`, `UsageReservationLifecycleTest.java`, and `CommercialAbuseControlTest.java`.
+- Evidence report: `docs/reports/implementation_report.md`.
+
+Findings:
+- No blocker. The first BE-002 validation run found a real read-only transaction defect in `AiGatewayService.coach`; the method now uses a write transaction and the same routed test set passes.
+- No blocker. Quota exhaustion is checked before provider invocation, so high-cost calls do not spend provider resources when the server ledger is exhausted.
+- No blocker. Paid scenario gating is attached to both scenario-level content and practice session start, keeping list/detail/training entrance behavior consistent for the L3 paid fixture.
+
+Validation:
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=EntitlementGateServiceTest,UsageQuotaGateTest,UsageReservationLifecycleTest,CommercialAbuseControlTest,ProviderGatewayControllerTest,ProviderGatewayAuthorizationTest test` - failed before fix, then passed after the transaction correction.
+
+Required corrections:
+- None remaining for this step.
+
+Residual risk:
+- Paid entitlement creation still depends on provider verification in `P0-COM-BE-003`; this step proves gating once entitlement facts exist.
+- Full commercial packaging, Flutter paywall behavior, provider sandbox evidence, and release checks remain pending in later steps.
+
+## 2026-05-29 P0-COM-BE-003 Independent Review
+
+Result: pass for `P0-COM-BE-003` local provider-boundary implementation only.
+
+Checked step:
+- Apple/Google verify endpoints, restore endpoint, provider webhook signature gate, provider event idempotency, refund/expiry/revoke downgrade behavior, and deterministic backend tests for TC-COM-001 through TC-COM-006.
+- Scope guard: confirmed no Flutter UI, DevOps release gate, store metadata, signing, or real external sandbox execution was added or claimed.
+
+Changed files:
+- Backend provider boundary: `PaymentProviderService.java`, `CommercialFoundationController.java`, `SecurityConfig.java`, and `application-test.yml`.
+- Commerce persistence: `Purchase.java`, `Subscription.java`, `PaymentProviderEvent.java`, `EntitlementSnapshot.java`, `PurchaseRepository.java`, `SubscriptionRepository.java`, `PaymentProviderEventRepository.java`, and `SubscriptionPlanRepository.java`.
+- Deletion cleanup: `AccountDeletionService.java`.
+- Backend tests: `AppleSubscriptionVerificationTest.java`, `GoogleSubscriptionVerificationTest.java`, `SubscriptionCredentialValidationTest.java`, `SubscriptionRestoreTest.java`, `SubscriptionRestoreEmptyTest.java`, and `PaymentProviderEventDowngradeTest.java`.
+- Evidence report: `docs/reports/implementation_report.md`.
+
+Findings:
+- No blocker. Verify/restore/webhook behavior is tested through server-side deterministic fixtures and preserves server-owned entitlement facts.
+- No blocker. Invalid provider credentials or user mismatch return typed errors and do not create entitlement snapshots.
+- No blocker. Webhook events are signature-gated and duplicate provider event ids do not reprocess downgrade side effects.
+
+Validation:
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AppleSubscriptionVerificationTest,GoogleSubscriptionVerificationTest,SubscriptionCredentialValidationTest,SubscriptionRestoreTest,SubscriptionRestoreEmptyTest,PaymentProviderEventDowngradeTest test` - passed.
+
+Required corrections:
+- None for this step.
+
+Residual risk:
+- This pass does not satisfy TC-COM-019. Real Apple sandbox and Google Play internal test evidence remain external blockers.
+- Production provider credentials, signing keys, product allowlists, provider webhook registration, and store console state remain release/DevOps blockers.
+
+## 2026-05-29 P0-COM-FE-001 Independent Review
+
+Result: pass for `P0-COM-FE-001` Flutter commercial subscription integration only.
+
+Checked step:
+- Flutter client API boundary for Apple verify, Google verify, restore, entitlement refresh, account deletion idempotency, membership downgrade UI, commercial copy safety, and local account deletion cleanup.
+- Scope guard: confirmed no DevOps release script, store metadata, signing, real provider sandbox/internal evidence, or commercial release decision was added or claimed.
+
+Changed files:
+- Flutter services: `lib/services/api_client.dart`, `lib/services/apple_payment_service.dart`, `lib/services/android_payment_service.dart`, and `lib/services/app_session.dart`.
+- Flutter UI: `lib/pages/membership_page.dart`.
+- Flutter tests: `test/features/commercial/entitlement_downgrade_widget_test.dart`, `test/features/commercial/account_deletion_cleanup_test.dart`, and `test/services/api_client_contract_test.dart`.
+- Contract drift metadata: `docs/architecture/openapi/dart-client-drift-manifest.json`.
+- Backend test isolation cleanup: `CommercialFoundationControllerTest.java`, `FoundationErrorContractTest.java`, `FoundationResponseContractTest.java`, `AuthControllerTest.java`, `AuthServiceTest.java`, and `AuthSessionLifecycleTest.java`.
+- Evidence report: `docs/reports/implementation_report.md`.
+
+Findings:
+- No blocker. The legacy `/payments/apple/verify-receipt` handwritten path is removed and Flutter now uses generated OpenAPI path constants for Apple verify, Google verify, restore, and entitlement refresh.
+- No blocker after correction. Provider verify/restore idempotency keys are stable across retries: Apple uses transaction id, Google uses purchase token, and restore uses platform.
+- No blocker after correction. Account deletion now reuses the same client idempotency key during a failed same-attempt retry, matching the backend retry boundary from `P0-COM-BE-001`.
+- No blocker after correction. Android purchase no longer returns a hardcoded “not connected” error; it uses the Google Play purchase stream and verifies purchase tokens through the backend before returning success.
+- No blocker. Membership page copy no longer promises offline packages or dedicated reports as paid benefits, and the free entitlement downgrade banner is covered by a widget test.
+
+Validation:
+- `flutter analyze lib/services/app_session.dart lib/services/api_client.dart lib/services/apple_payment_service.dart lib/services/android_payment_service.dart lib/pages/membership_page.dart test/features/commercial/entitlement_downgrade_widget_test.dart test/features/commercial/account_deletion_cleanup_test.dart test/services/api_client_contract_test.dart` - passed.
+- `flutter test test/features/commercial/entitlement_downgrade_widget_test.dart test/features/commercial/account_deletion_cleanup_test.dart test/services/api_client_contract_test.dart` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CommercialFoundationControllerTest,FoundationErrorContractTest,FoundationResponseContractTest,AuthControllerTest,AuthServiceTest,AuthSessionLifecycleTest test` - passed.
+- `git diff --check` - passed before report update.
+- `python3 scripts/project_agent_runner.py validate` - passed before report update.
+
+Required corrections:
+- Closed before final acceptance: timestamp-based provider idempotency keys were replaced with stable transaction/token/platform keys.
+- Closed before final acceptance: same-attempt account deletion retry now reuses the idempotency key.
+- Closed before final acceptance: Android purchase was wired to Google Play purchase updates plus backend verification.
+- Closed before final acceptance: the account deletion unit test now injects a non-platform payment service so it does not initialize real IAP channels.
+
+Residual risk:
+- This pass does not satisfy TC-COM-019. Real App Store sandbox and Google Play internal-track purchase/restore/refund/expiry/grace-period/account-switch evidence remain external blockers.
+- The Apple client currently uses the transaction id as the original transaction id fallback; real StoreKit sandbox validation must confirm whether a separate original transaction id is required for production-grade restore history.
+- Backend `subscription_plans` product allowlists must be aligned with App Store Connect and Play Console product ids before release.
+
+## 2026-05-29 P0-COM-REL-001 Independent Review
+
+Result: pass for `P0-COM-REL-001` release gate implementation only. Commercial release readiness remains blocked, as intended.
+
+Checked step:
+- Release configuration script, social-login release script, aggregate commercial readiness script, GitHub release workflow integration, commercial runbook, release checklist, rollback plan, and version log.
+- Scope guard: confirmed no production secrets were committed and no real Apple sandbox / Google Play internal-track evidence was claimed.
+
+Changed files:
+- Release scripts: `scripts/check_release_configuration.sh`, `scripts/check_social_login_release_config.sh`, and `scripts/check_release_readiness.sh`.
+- Release workflow: `.github/workflows/release.yml`.
+- Release docs: `docs/release/commercial_release_runbook.md`, `docs/release/release_checklist.md`, `docs/release/rollback_plan.md`, and `docs/release/version_log.md`.
+- Evidence report: `docs/reports/implementation_report.md`.
+
+Findings:
+- No blocker. The aggregate release gate fails before signing/build artifact creation in `.github/workflows/release.yml`, so missing commercial evidence cannot be bypassed by the release build.
+- No blocker. TC-COM-019 remains an external/manual provider evidence gate; scripts require evidence references and do not pretend to execute real provider sandbox/internal tests.
+- No blocker. Strict mode correctly blocks the current repository because iOS still contains the placeholder WeChat URL scheme and lacks the Apple Sign In entitlement.
+- No blocker after correction. The readiness gate now requires symbol upload evidence and rollback rehearsal evidence in addition to Sentry DSN and rollback docs.
+
+Validation:
+- `bash -n scripts/check_release_configuration.sh scripts/check_social_login_release_config.sh scripts/check_release_readiness.sh` - passed.
+- `APP_API_BASE_URL=https://api.speakeasyapp.com ENV=production ENABLE_TEST_PHONE_LOGIN=false scripts/check_release_configuration.sh` - passed.
+- `WECHAT_APP_ID=wx1234567890abcdef WECHAT_UNIVERSAL_LINK=https://app.speakeasyapp.com/app/ scripts/check_social_login_release_config.sh --env-only` - passed.
+- Fixture `scripts/check_release_readiness.sh --env-only` with production API, social-login env, Sentry, Android signing, Apple/Google provider evidence refs, store metadata ref, reviewer account ref, symbol upload ref, rollback rehearsal ref, privacy URL, and support URL - passed.
+- Same fixture `scripts/check_release_readiness.sh` in strict mode - failed as expected with native iOS social-login blockers.
+- `git diff --check` - passed before report update.
+- `python3 scripts/project_agent_runner.py validate` - passed before report update.
+
+Required corrections:
+- Closed before final acceptance: readiness gate now checks `SYMBOL_UPLOAD_EVIDENCE_REF` and `ROLLBACK_REHEARSAL_REF`, not only Sentry DSN and rollback document existence.
+- Closed before final acceptance: macOS bash 3.2 incompatible lowercasing was replaced with `tr` in `scripts/check_release_configuration.sh`.
+
+Residual risk:
+- This step establishes release blocking gates; it does not configure real WeChat AppID/native URL scheme, Apple Sign In entitlement, signing secrets, Sentry upload credentials, or store/provider evidence.
+- Current strict commercial release readiness should fail until those external/native configurations and evidence refs are supplied.
+
+## 2026-05-29 P0-COM-QA-002 Independent Review
+
+Result: pass for QA evidence integrity and traceability. Not a commercial release pass.
+
+Checked step:
+- Re-executed automated commercial backend tests, Flutter commercial tests, OpenAPI contract gate, and release readiness fixture gate.
+- Updated increment traceability with actual code evidence, test evidence, release evidence, statuses, and remaining blockers.
+- Confirmed requirements and acceptance criteria still map to TC IDs; blocked/manual/external TCs are explicit and not marked passed.
+
+Findings:
+- No blocker for proceeding to Step 7 reporting. FR-COM-001 through FR-COM-012 and AC-COM-001 through AC-COM-014 retain 100% mapping to TC-COM IDs.
+- No blocker. Automated local evidence is separated from real provider/store evidence; TC-COM-019 and TC-COM-021 are not falsely marked passed.
+- No blocker. Strict release readiness correctly fails on current native iOS social-login blockers, while fixture mode proves the aggregate gate logic.
+- No blocker. The OpenAPI gate failure in the sandbox was environmental (`uv` panic); the same command passed outside sandbox with the approved rerun.
+
+Validation:
+- Backend commercial Maven test set - passed.
+- Flutter commercial/API contract tests - passed.
+- `npm run check:api-contract` - passed outside sandbox after sandbox `uv` panic.
+- Release scripts syntax and fixture readiness gate - passed.
+- Strict release readiness fixture - failed as expected on native iOS WeChat URL scheme and Apple Sign In entitlement.
+- `docs/product/increments/commercial-subscription-readiness/traceability.md` now records passed, blocked, manual, and external status by traceability row.
+
+Required corrections:
+- None remaining for Step 6.
+
+Residual risk:
+- TC-COM-010 is closed by `P0-COM-SCENARIO-GATE-001`; TC-COM-016 is closed by `P0-COM-COPY-001`; TC-COM-020 is closed by `P0-COM-PROVIDER-EVIDENCE-001`; TC-COM-015 external evidence, TC-COM-019 external evidence, and TC-COM-021 external evidence remain release blockers.
+- Strict TC-COM-012 and TC-COM-022 remain blocked until native iOS social-login configuration and external evidence refs are supplied.
+- Step 7 must summarize this as partial implementation/QA completion, not commercial release readiness.
+
+## 2026-05-29 P0-COM-REPORT-001 Final Independent Review
+
+Result: pass for final reporting, traceability integrity, and blocker preservation. Not a commercial release pass.
+
+Checked step:
+- Final summary across `P0-COM-BE-001`, `P0-COM-BE-002`, `P0-COM-BE-003`, `P0-COM-FE-001`, `P0-COM-REL-001`, `P0-COM-QA-002`, and `P0-COM-REPORT-001`.
+- Evidence alignment across `docs/reports/implementation_report.md`, `docs/reports/test_report.md`, `docs/product/increments/commercial-subscription-readiness/traceability.md`, and `docs/product/increments/commercial-subscription-readiness/test_cases.md`.
+- Review requirement that every completed step has an independent review entry and that incomplete/manual/external TC-COM items are not marked as release-ready.
+
+Findings:
+- No blocker for closing the 1-7 execution sequence. Each implementation/QA/release/reporting step has a corresponding quality review entry with scoped validation evidence.
+- No blocker. FR-COM-001 through FR-COM-012, AC-COM-001 through AC-COM-014, and TC-COM-001 through TC-COM-023 remain fully traceable; blocked/manual/external rows are represented as explicit release blockers rather than missing coverage.
+- No blocker. Final implementation reporting correctly states `Not release ready`; TC-COM-010, TC-COM-016, and TC-COM-020 are now closed, while TC-COM-015 external evidence, TC-COM-019 external evidence, TC-COM-021 external evidence, and strict TC-COM-012/022 remain blockers.
+- No blocker. The sandbox-only `uv` panic for `npm run check:api-contract` is recorded as an environmental rerun case; the approved outside-sandbox rerun passed and is reflected in QA evidence.
+
+Validation:
+- Backend commercial Maven test set - passed during Step 6 QA.
+- Flutter commercial/API contract tests - passed during Step 6 QA.
+- `npm run check:api-contract` - passed outside sandbox after the sandbox `uv` panic.
+- Release readiness fixture gate - passed; strict release readiness failed as expected on native iOS social-login blockers.
+- Final FR/AC/TC coverage audit - passed with no missing FR, AC, or TC links.
+- `git diff --check` - passed after final report update.
+- `python3 scripts/project_agent_runner.py validate` - passed after final report update.
+
+Required corrections:
+- None remaining for the 1-7 execution sequence.
+
+Residual risk:
+- The project is still not commercial release ready.
+- Remaining work must close the documented blockers before PM can approve launch: copy review/automation, real Apple sandbox and Google Play internal evidence, commercial boundary E2E, store metadata/privacy/support/subscription terms/reviewer account evidence, and native social-login configuration.
+
+## 2026-05-29 P0-COM-SCENARIO-GATE-001 Independent Review
+
+Result: pass for scenario gate blocker closure. Not a commercial release pass.
+
+Checked step:
+- Reviewed TC-COM-010 implementation and tests after code changes.
+- Confirmed the gate is shared across direct training entry, scene navigation target-level switching, and Home scene entry paths.
+- Confirmed traceability, test report, and implementation report mark only TC-COM-010 as closed and preserve other blockers.
+
+Findings:
+- No blocker. `CommercialScenarioGate` centralizes the paid L3 policy and avoids divergent lock decisions between list/detail/training entry.
+- No blocker. Free users are blocked from L3 direct training and see L3 as locked in scene navigation; Pro users can switch to L3 and train on L3 expressions.
+- No blocker. Existing interview widget tests still pass after the gating changes.
+- No blocker. Test-only entitlement injection in `InterviewPracticePage` defaults to `AppSessionScope.of(context).isPro`, so production entitlement source remains unchanged.
+
+Validation:
+- `flutter test test/features/commercial/scenario_gating_consistency_test.dart --plain-name "免费用户训练入口" --timeout 30s` - passed.
+- `flutter test test/features/commercial/scenario_gating_consistency_test.dart` - passed.
+- `flutter test test/features/commercial/scenario_gating_consistency_test.dart test/features/interview/interview_practice_page_widget_test.dart` - passed.
+- `flutter analyze lib/features/commercial/commercial_scenario_gate.dart lib/features/interview/interview_practice_page.dart lib/pages/home_page.dart test/features/commercial/scenario_gating_consistency_test.dart test/features/interview/interview_practice_page_widget_test.dart` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Required corrections:
+- Closed during implementation: removed `Future.delayed(Duration.zero)` waits from widget-test helpers because they deadlocked under fake async before `tester.pump`.
+- Closed during implementation: scene-map dropdown test now waits for route transition completion before tapping the level menu.
+
+Residual risk:
+- TC-COM-016 is closed by `P0-COM-COPY-001`; TC-COM-020 is closed by `P0-COM-PROVIDER-EVIDENCE-001`; TC-COM-015 external evidence, TC-COM-019 external evidence, TC-COM-021 external evidence, and strict TC-COM-012/022 remain release blockers.
+- Real provider/store evidence and commercial boundary E2E were intentionally not executed in this package.
+
+## 2026-05-29 P0-COM-COPY-001 Independent Review
+
+Result: pass for local commercial copy blocker closure. Not a commercial release pass.
+
+Checked step:
+- Reviewed profile upsell copy, membership copy contract, release checklist/runbook integration, and test/report traceability.
+- Confirmed TC-COM-016 is automated and passed.
+- Confirmed TC-COM-015 is only marked internal passed / external pending, not falsely closed.
+
+Findings:
+- No blocker. The app no longer promises “无限场景练习” in the profile membership upsell; the replacement copy names shipped benefits.
+- No blocker. `scripts/check_commercial_copy_contract.py` verifies membership benefit names, plan/product IDs, profile upsell copy, and release copy gate documentation.
+- No blocker. `scripts/check_release_readiness.sh` now runs the copy contract in strict external mode before release.
+- No blocker. Missing store metadata, privacy URL, and support URL are represented as release blockers rather than hidden passes.
+
+Validation:
+- `python3 scripts/check_commercial_copy_contract.py` - passed and reported external evidence blockers.
+- Fixture `scripts/check_release_readiness.sh --env-only` with production API, social-login env, provider/store/reviewer/symbol/rollback evidence refs, privacy URL, support URL, Sentry, and Android signing vars - passed.
+- `flutter test test/features/commercial/entitlement_downgrade_widget_test.dart` - passed.
+- `flutter analyze lib/pages/profile_page.dart lib/pages/membership_page.dart test/features/commercial/entitlement_downgrade_widget_test.dart` - passed.
+- `bash -n scripts/check_release_readiness.sh` - passed.
+
+Required corrections:
+- None remaining for TC-COM-016.
+
+Residual risk:
+- TC-COM-015 still needs external store metadata, privacy/support copy, and screenshot/evidence references.
+- TC-COM-020 is closed by `P0-COM-PROVIDER-EVIDENCE-001`; TC-COM-019 external evidence, TC-COM-021 external evidence, and strict TC-COM-012/022 remain release blockers.
+
+## 2026-05-29 P0-COM-PROVIDER-EVIDENCE-001 Independent Review
+
+Result: pass for local provider evidence gate and commercial boundary coverage. Not a commercial release pass.
+
+Checked step:
+- Reviewed TC-COM-019 matrix coverage and strict evidence gate behavior.
+- Reviewed TC-COM-020 local boundary test coverage.
+- Confirmed release readiness includes provider evidence gate and still blocks missing real provider evidence.
+
+Findings:
+- No blocker. TC-COM-019 matrix enumerates Apple sandbox and Google Play internal purchase, restore, refund/revoke, expiry, grace-period, and account-switch scenarios.
+- No blocker. `scripts/check_provider_sandbox_evidence.py` reports missing external evidence refs in default mode and fails them in strict mode.
+- No blocker. Aggregate release readiness now runs provider evidence validation before declaring release readiness.
+- No blocker. TC-COM-020 local integration test covers first-install membership gate, legacy plan normalization, L3 entitlement lock, and weak-network/provider-error recovery UI.
+- No blocker. Real provider evidence is not falsely marked passed.
+
+Validation:
+- `python3 scripts/check_provider_sandbox_evidence.py` - passed and reported external evidence blockers.
+- `python3 -m py_compile scripts/check_provider_sandbox_evidence.py scripts/check_commercial_copy_contract.py` - passed.
+- `bash -n scripts/run_mvp_system_e2e.sh scripts/check_release_readiness.sh` - passed.
+- `flutter test integration_test/commercial_boundary_test.dart` - passed.
+- Fixture `scripts/check_release_readiness.sh --env-only` with production API, social-login env, provider/store/reviewer/symbol/rollback evidence refs, privacy URL, support URL, Sentry, and Android signing vars - passed.
+
+Required corrections:
+- None remaining for TC-COM-020.
+
+Residual risk:
+- TC-COM-019 still requires real Apple sandbox and Google Play internal-track evidence refs.
+- TC-COM-015 external evidence, TC-COM-021, and strict TC-COM-012/022 remain release blockers.
+
+## 2026-05-29 P0-COM-STORE-001 Independent Review
+
+Result: pass for local store evidence gate and release readiness aggregation. Not a commercial release pass.
+
+Checked step:
+- Reviewed TC-COM-021 store submission matrix and strict evidence gate behavior.
+- Reviewed aggregate release readiness after adding copy, provider, and store evidence gates.
+- Confirmed strict release gate fails on real native blockers and is not marked as release approval.
+
+Findings:
+- No blocker. Store submission matrix covers store metadata, subscription terms, privacy labels/Data safety, privacy URL, support URL, and reviewer account evidence.
+- No blocker. `scripts/check_store_submission_evidence.py` reports missing external store evidence in default mode and fails it in strict mode.
+- No blocker. Aggregate release readiness now runs release config, copy contract, provider evidence, store evidence, social login, secrets, URLs, symbols, and rollback checks.
+- No blocker. Strict release gate fails on iOS placeholder WeChat URL scheme and missing Apple Sign In entitlement, which are true remaining native blockers.
+
+Validation:
+- `python3 scripts/check_store_submission_evidence.py` - passed and reported external evidence blockers.
+- `python3 -m py_compile scripts/check_store_submission_evidence.py scripts/check_provider_sandbox_evidence.py scripts/check_commercial_copy_contract.py` - passed.
+- `bash -n scripts/check_release_readiness.sh scripts/run_mvp_system_e2e.sh` - passed.
+- Fixture `scripts/check_release_readiness.sh --env-only` with production API, social-login env, provider/store/reviewer/symbol/rollback evidence refs, privacy URL, support URL, Sentry, and Android signing vars - passed.
+- Same fixture `scripts/check_release_readiness.sh` in strict mode - failed as expected on native iOS social-login blockers.
+
+Required corrections:
+- None remaining for local TC-COM-021/022 evidence gate setup.
+
+Residual risk:
+- TC-COM-015 external copy/store evidence, TC-COM-019 external provider evidence, TC-COM-021 external store evidence, and strict TC-COM-012/022 native/release evidence remain blockers.
+- PM must not treat this as release approval until those external/native blockers are supplied and strict gate passes.
+
+## 2026-05-29 P0-COM-MANUAL-EVIDENCE-PLAN-001 Independent Review
+
+Result: pass for manual external evidence plan completeness and traceability. Not a commercial release pass.
+
+Checked step:
+- Reviewed `tests/commercial/manual_external_evidence_checklist.md` against remaining blockers TC-COM-012, TC-COM-015, TC-COM-019, TC-COM-021 and TC-COM-022.
+- Reviewed release runbook/checklist, test cases, traceability and aggregate release gate integration.
+- Confirmed the change adds execution instructions and result fields without marking external evidence as passed.
+
+Findings:
+- No blocker. Each remaining external/native TC now has manual steps, preconditions, expected results, evidence requirements, actual result fields and reviewer fields.
+- No blocker. Provider coverage includes Apple sandbox and Google Play internal purchase, restore, refund/revoke, expiry, grace-period and account-switch scenarios.
+- No blocker. Store coverage includes App Store / Play metadata, subscription products and terms, privacy/Data safety, privacy/support URLs and reviewer account evidence.
+- No blocker. Native/release coverage includes WeChat, Apple Sign In, real login smoke, release secrets, signing, symbols, rollback and strict release readiness.
+- No blocker. `scripts/check_release_readiness.sh` now runs `scripts/check_manual_external_evidence_plan.py` before external evidence gates, so the manual plan structure is release-gated.
+
+Validation:
+- `python3 scripts/check_manual_external_evidence_plan.py` - passed.
+- `python3 scripts/check_commercial_copy_contract.py` - passed with expected external copy blockers reported.
+- `python3 scripts/check_provider_sandbox_evidence.py` - passed with expected provider evidence blockers reported.
+- `python3 scripts/check_store_submission_evidence.py` - passed with expected store evidence blockers reported.
+- `python3 -m py_compile scripts/check_manual_external_evidence_plan.py scripts/check_provider_sandbox_evidence.py scripts/check_store_submission_evidence.py scripts/check_commercial_copy_contract.py` - passed.
+- `bash -n scripts/check_release_readiness.sh` - passed.
+- Fixture `scripts/check_release_readiness.sh --env-only` - passed.
+- Same fixture `scripts/check_release_readiness.sh` strict mode - failed as expected on native iOS social-login blockers.
+
+Required corrections:
+- None for the manual evidence planning step.
+
+Residual risk:
+- The project is still not commercial release ready.
+- TC-COM-012, TC-COM-015, TC-COM-019, TC-COM-021 and TC-COM-022 remain blockers until the manual checklist is actually executed, evidence refs are supplied, strict release gate passes and independent review approves the results.

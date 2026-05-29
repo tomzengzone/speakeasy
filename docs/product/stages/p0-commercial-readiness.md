@@ -1,10 +1,15 @@
 # P0 阶段范围：商业化订阅上线准备
 
 ## 状态
-Draft - Product Manager 已接受为付费上线阻塞阶段。
+Draft - Product Manager 已接受为 P0 级商业软件功能补齐和付费上线阻塞阶段；当目标是商业发布或真实收费准备时，本阶段优先级高于 P0.1 训练体验升级。
 
 ## 阶段目标
 在不改变 P0.1 表达自动化训练闭环产品目标的前提下，补齐真实商业订阅 APP 上线前必须具备的账号、支付、权益、合规、风控和发布门禁能力。该阶段回答的问题不是“用户为什么续费”，而是“APP 能不能安全、合规、可恢复地向真实用户收费”。
+
+## 阶段排序
+- 本阶段是 P0 release-blocking stage，位于 P0.1 价值体验升级之前。
+- 本阶段不替代 P0.1 训练 Agent，但任何真实收费、商业发布或会员权益承诺上线前，必须先完成本阶段出口条件。
+- P0.1 可以作为体验预研或后续价值升级线推进，但不得把 P0.1 完成误计为商业软件功能补齐完成。
 
 ## 入口条件
 - 当前稳定能力已记录在 `docs/product/base/requirements.md`、`docs/product/base/spec.md`、`docs/product/base/acceptance.md` 和 `docs/product/base/traceability.md`。
@@ -47,6 +52,12 @@ Draft - Product Manager 已接受为付费上线阻塞阶段。
 
 ## 纳入 increment
 - `commercial-subscription-readiness`：商业化订阅上线准备增量。
+
+## 当前开发计划
+- 详细 PM 阶段开发计划记录在 `docs/product/increments/commercial-subscription-readiness/definition.md` 的 `PM 阶段开发计划` 部分。
+- Domain Schema、API Contract、Architecture/Security、UX/Screen Spec 和 QA AC-to-TC 测试用例库已补齐；`test_cases.md` 已覆盖 `AC-COM-001` 到 `AC-COM-014`。
+- 独立 checker pass 后，当前合法下一步是按 work package 顺序进入商业 foundation hardening、权益/用量 gating、支付 provider、Flutter 商业 UI、release gate 和 QA 执行批次。
+- 商业发布 ready 不能由本地 E2E 或现有会员页/Apple IAP 前端雏形替代，必须有支付 provider 沙盒/内测、权益 gating、账号删除、商业文案一致性、release checklist 和回滚证据。
 
 ## 出口条件
 - 订阅权益以服务端为准，客户端不再把本地 `memberPlan` 作为付费状态唯一依据。

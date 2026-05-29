@@ -20,3 +20,10 @@
 - State what the learner can do next.
 - Preserve user work.
 
+## P0 Commercial Copy
+- Paid benefit copy must match `SubscriptionPlan` and `EntitlementRule`; do not describe unavailable benefits as included.
+- Prefer concrete entitlement labels such as "AI 深度反馈" or "本月剩余练习次数" over broad claims.
+- Restore empty state must say no active subscription was found, not imply failure or purchase loss.
+- Expired, refunded, revoked, or quota-exhausted states must explain the current limitation and the next available action.
+- Account deletion copy must state that local data will be cleared only after the backend deletion or anonymization request is accepted.
+- Store copy, membership page copy, privacy copy, and in-app gating copy must use the same benefit names.

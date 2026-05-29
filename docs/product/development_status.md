@@ -12,8 +12,8 @@ Product Manager Agent
 ## 活动目标
 以 Product Base 活需求库承载已接受稳定能力。当前 MVP 后端与数据库补齐 stage 已完成实现、测试、发布证据和本地系统 E2E gate；后续工作进入新 stage/increment 时必须继续从 Product Base 和对应 increment 追溯，不得把本次完成状态扩展为 P0.1 或商业化自动批准。
 - MVP 后端线：Product Base 已接受的登录、首评、官方场景、练习会话、AI/语音、推荐表达、学习记忆、会员边界和测试发布证据已补齐为当前后端/API/数据库事实，并通过本地 Flutter macOS + Spring Boot + 真实 PostgreSQL 系统 E2E 验证。
-- 价值体验线：P0.1“口语优先、文本兜底的 FSI 式表达自动化训练闭环”保持 planned，后续实现应基于已验证的 MVP 后端/API/DB baseline，而不是重新绕开服务端事实。
-- 商业发布线：P0 商业化订阅上线准备保持 planned/blocked-by-provider-readiness；真实支付 provider、webhook、退款/恢复和权益 gating 仍需独立商业化门禁。
+- 商业发布线：P0 商业化订阅上线准备是 P0.1 之上的商业软件功能补齐和付费发布阻塞 stage；若今天目标是商业软件功能补齐或真实收费准备，应优先进入该 stage 的下游门禁。
+- 价值体验线：P0.1“口语优先、文本兜底的 FSI 式表达自动化训练闭环”保持 next value-experience stage；可以做不混入商业承诺的规划或预研，但不替代 P0 商业发布门禁。
 
 ## 产品对象状态
 - Product Base requirements：`docs/product/base/requirements.md`
@@ -29,13 +29,13 @@ Product Manager Agent
 - MVP backend membership/boundary increment：`docs/product/increments/mvp-backend-membership-boundary/definition.md`
 - MVP backend client/QA/release increment：`docs/product/increments/mvp-backend-client-qa-release/definition.md`
 - MVP system E2E validation increment：`docs/product/increments/mvp-system-e2e-validation/definition.md`
-- Active value-experience stage：`docs/product/stages/p0-1-expression-automation.md`
+- Active release-blocking stage：`docs/product/stages/p0-commercial-readiness.md`
+- Next value-experience stage：`docs/product/stages/p0-1-expression-automation.md`
 - P0.1 increment definition：`docs/product/increments/p0-1-expression-automation-training/definition.md`
 - P0.1 increment requirements：`docs/product/increments/p0-1-expression-automation-training/requirements.md`
 - P0.1 increment spec：`docs/product/increments/p0-1-expression-automation-training/spec.md`
 - P0.1 acceptance criteria：`docs/product/increments/p0-1-expression-automation-training/acceptance.md`
 - P0.1 traceability：`docs/product/increments/p0-1-expression-automation-training/traceability.md`
-- Commercial readiness stage：`docs/product/stages/p0-commercial-readiness.md`
 - Commercial readiness increment definition：`docs/product/increments/commercial-subscription-readiness/definition.md`
 - Commercial readiness requirements：`docs/product/increments/commercial-subscription-readiness/requirements.md`
 - Commercial readiness spec：`docs/product/increments/commercial-subscription-readiness/spec.md`
@@ -52,7 +52,8 @@ Product Manager Agent
 - 旧全局 MVP 文档已标记为 legacy/source 或历史参考，不再作为后续稳定需求的写回位置。
 - MVP backend stage 已完成当前 committed stage work；它没有改变 Product Base 用户范围，而是补齐后端/API/数据库、客户端集成、测试、发布证据和本地系统 E2E 证据。
 - `mvp-system-e2e-validation` 已验证 TC-MVP-E2E-001 到 TC-MVP-E2E-010；其中真实支付 provider 只作为 manual/external gate 保留，不作为本地自动化通过项。
-- P0.1 `expression-automation-training` 仍是 increment planned 内容，完成实现、验收、追溯、测试和报告后，才允许由 Product Manager 批准 merge back 到 Product Base。
+- P0 `commercial-subscription-readiness` 是商业软件功能补齐和付费发布阻塞 stage；完成实现、验收、追溯、测试、发布和外部门禁后，才允许 Product Manager 批准商业发布口径。
+- P0.1 `expression-automation-training` 是 next value-experience stage；完成实现、验收、追溯、测试和报告后，才允许由 Product Manager 批准 merge back 到 Product Base。
 - 后续每个多步骤产品、需求、工作流或文档治理任务，每一步完成后必须由独立 checker agent 审查是否符合预期、是否偏离、是否存在非预期变更。
 
 ## 当前已实现能力判断
@@ -117,7 +118,15 @@ Product Manager Agent
 16. 2026-05-28 Product Manager 已将 MVP backend stage 拆成 6 个 increments：`mvp-backend-foundation-auth`、`mvp-backend-onboarding-content`、`mvp-backend-practice-ai`、`mvp-backend-learning-memory`、`mvp-backend-membership-boundary`、`mvp-backend-client-qa-release`。
 17. 2026-05-29 六个 MVP backend increments 已完成实现、测试和报告证据，`MVP-SI-001` 到 `MVP-SI-014` 均在 `docs/product/stages/mvp-backend-foundation.md` 中闭环。
 18. 2026-05-29 Product Manager 已补充 `mvp-system-e2e-validation`，并通过 TC-MVP-E2E-001 到 TC-MVP-E2E-010 验证本地 Flutter macOS + Spring Boot + 真实 PostgreSQL 系统路径。
-19. 下一步不再是继续补齐 MVP backend foundation；应在确认外部门禁边界后，分别路由 P0.1 训练体验升级或 P0 商业化订阅上线准备。真实支付 provider、真实 LLM/ASR/TTS provider SLA、真机音频权限和商业权益 gating 不得被本地 E2E 自动化结果替代。
+19. 2026-05-29 PM 复查决策：`p0-commercial-readiness` 是 P0 级商业软件功能补齐 stage，位于 P0.1 训练体验升级之上；下一步不再是继续补齐 MVP backend foundation。
+20. 若今天目标是商业软件功能补齐或真实收费准备，应先启动 `commercial-subscription-readiness` 的下游门禁：Domain Schema、API Contract、Architecture/Security、UX/Screen Spec、Backend、Frontend、QA/Test Plan、DevOps/Release 和独立 checker agent。
+21. P0.1 UI/UX 设计仍可作为价值体验预研，但范围只覆盖 session 内训练体验：听一句、选一个、回一句、跟一句、补一句、追问继续说、hint ladder、语音主路径/文本兜底、教练反馈和学习证据写回；不得替代 P0 商业发布门禁，也不得扩展到 P0.2/P1/P2 或完整商业订阅 UI。
+22. 2026-05-29 Product Manager 已为 P0 商业化订阅上线准备补充 PM 阶段开发计划，位置为 `docs/product/increments/commercial-subscription-readiness/definition.md` 的 `PM 阶段开发计划`。
+23. 2026-05-29 在本轮执行前，P0 商业化实现就绪状态为 blocked：`docs/product/increments/commercial-subscription-readiness/test_cases.md` 尚未建立，Domain/API/Architecture/UX/QA 下游门禁未全部通过，因此不得直接开始 Backend、Frontend、AI Runtime 或 DevOps 实现。
+24. 2026-05-29 本轮执行目标是由 Development Orchestrator 路由 `P0-COM-DOM-001`、`P0-COM-API-001`、`P0-COM-ARCH-001`、`P0-COM-UX-001` 和 `P0-COM-QA-001`，并在 AC-to-TC gate 通过后再进入商业 foundation、权益 gating、支付 provider、Flutter 商业 UI、release 和 QA 执行批次。
+25. 2026-05-29 已完成 `P0-COM-DOM-001`、`P0-COM-API-001`、`P0-COM-ARCH-001`、`P0-COM-UX-001` 和 `P0-COM-QA-001` 的文档门禁补齐；`docs/product/increments/commercial-subscription-readiness/test_cases.md` 已建立。
+26. P0 商业化需求到测试用例的 100% 追溯已建立：`FR-COM-001` 到 `FR-COM-012` 均通过 `AC-COM-001` 到 `AC-COM-014` 映射到 `TC-COM-001` 到 `TC-COM-023`；`TC-COM-023` OpenAPI contract gate 已通过。
+27. P0 商业化仍不是商业发布 ready：`TC-COM-001` 到 `TC-COM-022` 尚未实现或执行，Apple/Google sandbox/internal test、社交登录生产配置、release secrets、签名、符号表、商店材料、implementation report 和 quality report 仍是后续阻塞项。
 
 ## 风险与边界
 - 当前只有 2 个真实官方场景，内容规模不足以支撑“任意场景”承诺。
@@ -131,4 +140,4 @@ Product Manager Agent
 - `/user/stats` 和 macOS notification 初始化在本地 E2E 中仍有非阻断日志，已记录为后续兼容性/测试环境清理项。
 
 ## 状态口径
-当前不是从零开发新 MVP，而是在已有语音场景训练基线上补齐服务端事实。当前开发口径已从“先完成 MVP 后端与数据库全量补齐”更新为“以已验证的 MVP 后端/API/DB/系统 E2E baseline 为基础，进入 P0.1 训练体验升级或 P0 商业化订阅上线准备；所有新增能力仍需重新走 owning increment、契约、测试和发布门禁”。
+当前不是从零开发新 MVP，而是在已有语音场景训练基线上继续升级。当前开发口径已从“先完成 MVP 后端与数据库全量补齐”更新为“以已验证的 MVP 后端/API/DB/系统 E2E baseline 为基础，优先识别 P0 商业软件功能补齐和 P0.1 训练体验升级两条线；商业发布或真实收费目标必须先走 P0 商业化订阅上线准备，所有新增能力仍需重新走 owning increment、契约、测试和发布门禁”。

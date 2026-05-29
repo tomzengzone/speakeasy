@@ -39,7 +39,7 @@ PaymentService _defaultPaymentService() {
     return ApplePaymentService();
   }
   if (Platform.isAndroid) {
-    return const AndroidPaymentService();
+    return AndroidPaymentService();
   }
   return const UnsupportedPaymentService();
 }

@@ -36,6 +36,9 @@ case "$SUITE" in
   membership-boundary)
     FLUTTER_TEST_FILE="integration_test/mvp_system_membership_boundary_test.dart"
     ;;
+  commercial-boundary)
+    FLUTTER_TEST_FILE="integration_test/commercial_boundary_test.dart"
+    ;;
   *)
     echo "[e2e] unsupported suite: $SUITE" >&2
     exit 2

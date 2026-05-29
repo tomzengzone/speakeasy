@@ -47,4 +47,45 @@ public class Subscription {
     this.platform = platform;
     this.status = "pending_verification";
   }
+
+  public UUID getSubscriptionId() {
+    return subscriptionId;
+  }
+
+  public UUID getUserId() {
+    return userId;
+  }
+
+  public UUID getPlanId() {
+    return planId;
+  }
+
+  public String getPlatform() {
+    return platform;
+  }
+
+  public String getStatus() {
+    return status;
+  }
+
+  public Instant getExpiresAt() {
+    return expiresAt;
+  }
+
+  public void activate(UUID latestPurchaseId, Instant startsAt, Instant expiresAt) {
+    this.status = "active";
+    this.latestPurchaseId = latestPurchaseId;
+    this.startsAt = startsAt;
+    this.expiresAt = expiresAt;
+    this.graceUntil = null;
+  }
+
+  public void markGracePeriod(Instant graceUntil) {
+    this.status = "grace_period";
+    this.graceUntil = graceUntil;
+  }
+
+  public void downgrade(String status) {
+    this.status = status;
+  }
 }

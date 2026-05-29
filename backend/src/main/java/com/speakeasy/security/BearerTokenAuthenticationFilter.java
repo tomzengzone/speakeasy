@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -22,10 +23,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
   private final AuthService authService;
   private final ObjectMapper objectMapper;
+  private final String opsBearerTokenHash;
 
-  public BearerTokenAuthenticationFilter(AuthService authService, ObjectMapper objectMapper) {
+  public BearerTokenAuthenticationFilter(
+      AuthService authService,
+      ObjectMapper objectMapper,
+      @Value("${speakeasy.ops.bearer-token:}") String opsBearerToken) {
     this.authService = authService;
     this.objectMapper = objectMapper;
+    this.opsBearerTokenHash = opsBearerToken == null || opsBearerToken.isBlank() ? "" : TokenHasher.hash(opsBearerToken.trim());
   }
 
   @Override
@@ -40,6 +46,17 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
     String token = header.substring("Bearer ".length()).trim();
     CurrentUser currentUser = authService.authenticateAccessToken(token).orElse(null);
     if (currentUser == null) {
+      if (isOpsRequest(request) && isOpsToken(token)) {
+        UsernamePasswordAuthenticationToken authentication =
+            new UsernamePasswordAuthenticationToken("ops", token, List.of(new SimpleGrantedAuthority("ROLE_OPS")));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        filterChain.doFilter(request, response);
+        return;
+      }
+      currentUser = deletionRetryUser(request, token);
+    }
+
+    if (currentUser == null) {
       SecurityContextHolder.clearContext();
       writeUnauthorized(request, response);
       return;
@@ -49,6 +66,21 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
         new UsernamePasswordAuthenticationToken(currentUser, token, List.of(new SimpleGrantedAuthority("ROLE_USER")));
     SecurityContextHolder.getContext().setAuthentication(authentication);
     filterChain.doFilter(request, response);
+  }
+
+  private boolean isOpsToken(String token) {
+    return !opsBearerTokenHash.isBlank() && opsBearerTokenHash.equals(TokenHasher.hash(token));
+  }
+
+  private boolean isOpsRequest(HttpServletRequest request) {
+    return request.getRequestURI().contains("/admin/");
+  }
+
+  private CurrentUser deletionRetryUser(HttpServletRequest request, String token) {
+    if (!"DELETE".equalsIgnoreCase(request.getMethod()) || !request.getRequestURI().endsWith("/user/me")) {
+      return null;
+    }
+    return authService.authenticateAccountDeletionRetry(token, request.getHeader("Idempotency-Key")).orElse(null);
   }
 
   private void writeUnauthorized(HttpServletRequest request, HttpServletResponse response) throws IOException {

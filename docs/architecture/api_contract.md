@@ -65,6 +65,21 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | Admin / Ops | `Admin` | P0 FR-COM-008, FR-COM-011, FR-COM-012 | In OpenAPI |
 | P0.2/P1/P2 future extensions | `Deferred` | Roadmap/stage/future feature registry boundaries only | No implementation-level endpoints |
 
+## P0 Commercial Contract Gate
+
+Owning increment: `docs/product/increments/commercial-subscription-readiness/`.
+
+| Work package | Contract decision | Traceability |
+| --- | --- | --- |
+| P0-COM-API-001 | `GET /subscription/plans` is a public read endpoint for saleable plan display; purchase, restore, entitlement and usage endpoints remain authenticated. OpenAPI must use `security: []` for this path and must not imply unauthenticated entitlement access. | FR-COM-001, FR-COM-009; AC-COM-011 |
+| P0-COM-API-001 | Apple and Google verification use authenticated `POST /subscriptions/apple/verify` and `POST /subscriptions/google/verify` with `Idempotency-Key`. Invalid receipt, product mismatch and idempotency conflict are explicit errors. | FR-COM-001, FR-COM-002, FR-COM-003; AC-COM-001, AC-COM-002 |
+| P0-COM-API-001 | Restore purchase is an authenticated operation and empty restore is a successful typed state, not an entitlement grant. | FR-COM-002, FR-COM-003; AC-COM-003, AC-COM-004 |
+| P0-COM-API-001 | Provider webhooks require `webhookSignature` and are processed idempotently through `PaymentProviderEvent`. | FR-COM-002, FR-COM-003, FR-COM-005; AC-COM-005 |
+| P0-COM-API-001 | Entitlement refresh, usage summary, usage reserve/commit/release are server-owned boundaries; Flutter may cache display state but cannot mutate final entitlement or quota facts. | FR-COM-001, FR-COM-006, FR-COM-007, FR-COM-010; AC-COM-006, AC-COM-007, AC-COM-012 |
+| P0-COM-API-001 | Account deletion remains authenticated and idempotent; admin retry and release health use `opsBearerAuth`. | FR-COM-004, FR-COM-008, FR-COM-011, FR-COM-012; AC-COM-008, AC-COM-010, AC-COM-014 |
+
+P0-COM-API-001 gate result: API contract and OpenAPI source-of-truth cover the commercial subscription, entitlement, usage, account deletion and admin/release API families needed before implementation. Contract lint remains the validation gate before downstream code consumes these paths.
+
 ## Error Model
 
 OpenAPI component: `ErrorResponse`.

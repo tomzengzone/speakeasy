@@ -76,4 +76,33 @@ public class UsageLedger {
   public String getStatus() {
     return status;
   }
+
+  public void setLimitAmount(int limitAmount) {
+    this.limitAmount = limitAmount;
+    refreshStatus();
+  }
+
+  public boolean canReserve(int amount) {
+    return committedAmount + reservedAmount + amount <= limitAmount;
+  }
+
+  public void reserve(int amount) {
+    this.reservedAmount += amount;
+    refreshStatus();
+  }
+
+  public void commit(int amount) {
+    this.reservedAmount = Math.max(0, this.reservedAmount - amount);
+    this.committedAmount += amount;
+    refreshStatus();
+  }
+
+  public void release(int amount) {
+    this.reservedAmount = Math.max(0, this.reservedAmount - amount);
+    refreshStatus();
+  }
+
+  private void refreshStatus() {
+    this.status = committedAmount + reservedAmount >= limitAmount ? "exhausted" : "available";
+  }
 }

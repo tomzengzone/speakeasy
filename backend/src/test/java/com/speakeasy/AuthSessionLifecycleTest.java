@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.speakeasy.common.ApiException;
 import com.speakeasy.commerce.EntitlementSnapshotRepository;
+import com.speakeasy.commerce.PaymentProviderEventRepository;
+import com.speakeasy.commerce.PurchaseRepository;
+import com.speakeasy.commerce.SubscriptionRepository;
 import com.speakeasy.commerce.SubscriptionPlanRepository;
 import com.speakeasy.content.UserScenarioStateRepository;
 import com.speakeasy.identity.AuthIdentityRepository;
@@ -19,6 +22,7 @@ import com.speakeasy.identity.UserProfileRepository;
 import com.speakeasy.ops.AccountDeletionJobRepository;
 import com.speakeasy.security.TokenHasher;
 import com.speakeasy.usage.UsageLedgerRepository;
+import com.speakeasy.usage.UsageReservationRepository;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +44,11 @@ class AuthSessionLifecycleTest {
   @Autowired AccountDeletionJobRepository deletionJobs;
   @Autowired EntitlementSnapshotRepository entitlements;
   @Autowired UsageLedgerRepository ledgers;
+  @Autowired UsageReservationRepository reservations;
   @Autowired SubscriptionPlanRepository plans;
+  @Autowired PurchaseRepository purchases;
+  @Autowired SubscriptionRepository subscriptions;
+  @Autowired PaymentProviderEventRepository providerEvents;
   @Autowired UserAccountRepository users;
 
   @BeforeEach
@@ -53,6 +61,10 @@ class AuthSessionLifecycleTest {
     identities.deleteAll();
     profiles.deleteAll();
     entitlements.deleteAll();
+    providerEvents.deleteAll();
+    subscriptions.deleteAll();
+    purchases.deleteAll();
+    reservations.deleteAll();
     ledgers.deleteAll();
     plans.deleteAll();
     users.deleteAll();

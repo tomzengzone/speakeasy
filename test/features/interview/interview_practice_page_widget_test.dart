@@ -3,12 +3,90 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:speakeasy/application/session/session_lifecycle_coordinator.dart';
 import 'package:speakeasy/features/interview/interview_llm_scheduler.dart';
 import 'package:speakeasy/features/interview/interview_models.dart';
 import 'package:speakeasy/features/interview/interview_practice_page.dart';
+import 'package:speakeasy/models/storage_models.dart';
 import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/services/audio_service.dart';
+import 'package:speakeasy/services/auth_service.dart';
 import 'package:speakeasy/services/storage_service.dart';
+
+class _StaticSessionLifecycleCoordinator extends SessionLifecycleCoordinator {
+  _StaticSessionLifecycleCoordinator(this.memberPlan)
+    : super(
+        authService: AuthService(
+          signInWithEmail: (_) async => AppUser(
+            nickname: 'Test learner',
+            avatarUrl: '',
+            memberPlan: memberPlan,
+            onboardingDone: true,
+          ),
+        ),
+        remoteApi: const _NoopSessionRemoteApi(),
+        localStore: const _EmptySessionLocalStore(),
+      );
+
+  final String memberPlan;
+
+  @override
+  Future<StoredSessionSnapshot> loadStoredSession() async {
+    return StoredSessionSnapshot(
+      user: AppUser(
+        nickname: 'Test learner',
+        avatarUrl: '',
+        memberPlan: memberPlan,
+        onboardingDone: true,
+      ),
+      onboardingDone: true,
+      themeMode: ThemeMode.light,
+    );
+  }
+
+  @override
+  Future<ResolvedAuthenticatedSession?> hydrateExistingSession() async => null;
+}
+
+class _NoopSessionRemoteApi implements SessionRemoteApi {
+  const _NoopSessionRemoteApi();
+
+  @override
+  Future<void> clearToken() async {}
+
+  @override
+  Future<Map<String, dynamic>> getMe() async => <String, dynamic>{'code': 401};
+
+  @override
+  Future<String?> getToken() async => null;
+
+  @override
+  Future<Map<String, dynamic>> refreshToken() async => <String, dynamic>{
+    'code': 401,
+  };
+
+  @override
+  Future<void> saveToken(String token) async {}
+
+  @override
+  Future<Map<String, dynamic>> testPhoneLogin(String phone) async =>
+      <String, dynamic>{'code': 401};
+}
+
+class _EmptySessionLocalStore implements SessionLocalStore {
+  const _EmptySessionLocalStore();
+
+  @override
+  AuthSessionStorageModel? getAuthSession() => null;
+
+  @override
+  StoredUserProfileModel? getUserProfile() => null;
+
+  @override
+  UserPreferencesStorageModel getUserPreferences() {
+    return const UserPreferencesStorageModel();
+  }
+}
 
 class _FakeInterviewLlmScheduler extends InterviewLlmScheduler {
   @override
@@ -75,15 +153,20 @@ void main() {
   Future<void> pumpInterviewPage(
     WidgetTester tester, {
     String targetLevel = 'beginner',
+    String memberPlan = 'free',
   }) async {
+    final AppSession session = AppSession(
+      sessionCoordinator: _StaticSessionLifecycleCoordinator(memberPlan),
+    );
     await tester.pumpWidget(
       MaterialApp(
         home: AudioServiceScope(
           service: AudioService(),
           child: AppSessionScope(
-            session: AppSession(),
+            session: session,
             child: InterviewPracticePage(
               targetLevel: targetLevel,
+              hasProEntitlement: memberPlan != 'free',
               llmScheduler: _FakeInterviewLlmScheduler(),
             ),
           ),
@@ -182,7 +265,11 @@ void main() {
   testWidgets('scene navigation only shows selected difficulty expressions', (
     WidgetTester tester,
   ) async {
-    await pumpInterviewPage(tester, targetLevel: 'advanced');
+    await pumpInterviewPage(
+      tester,
+      targetLevel: 'advanced',
+      memberPlan: 'yearly',
+    );
 
     await tester.tap(
       find.byKey(const ValueKey<String>('interview_scene_map_menu_button')),
@@ -210,7 +297,7 @@ void main() {
   testWidgets('scene navigation level switch updates dialogue level', (
     WidgetTester tester,
   ) async {
-    await pumpInterviewPage(tester);
+    await pumpInterviewPage(tester, memberPlan: 'yearly');
 
     await tester.tap(
       find.byKey(const ValueKey<String>('interview_scene_map_menu_button')),

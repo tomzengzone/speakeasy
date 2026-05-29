@@ -16,14 +16,22 @@ class ApplePaymentService implements PaymentService {
   Future<PaymentResult> purchasePlan(String planId) async {
     await _ensureStoreAvailable();
 
+    final String appAccountToken = await ApiClient.currentUserId();
     final ProductDetails product = await _loadProduct(planId);
     final Completer<PaymentResult> completer = Completer<PaymentResult>();
     final StreamSubscription<List<PurchaseDetails>> subscription =
-        _listenToFlow(completer: completer, expectedPlanId: planId);
+        _listenToFlow(
+          completer: completer,
+          expectedPlanId: planId,
+          appAccountToken: appAccountToken,
+        );
 
     try {
       final bool started = await _inAppPurchase.buyNonConsumable(
-        purchaseParam: PurchaseParam(productDetails: product),
+        purchaseParam: PurchaseParam(
+          productDetails: product,
+          applicationUserName: appAccountToken,
+        ),
       );
       if (!started) {
         return PaymentResult(
@@ -75,9 +83,10 @@ class ApplePaymentService implements PaymentService {
   }) async {
     await _ensureStoreAvailable();
 
+    final String appAccountToken = await ApiClient.currentUserId();
     final Completer<PaymentResult> completer = Completer<PaymentResult>();
     final StreamSubscription<List<PurchaseDetails>> subscription =
-        _listenToFlow(completer: completer);
+        _listenToFlow(completer: completer, appAccountToken: appAccountToken);
 
     try {
       await _inAppPurchase.restorePurchases();
@@ -92,6 +101,7 @@ class ApplePaymentService implements PaymentService {
 
   StreamSubscription<List<PurchaseDetails>> _listenToFlow({
     required Completer<PaymentResult> completer,
+    required String appAccountToken,
     String? expectedPlanId,
   }) {
     return _inAppPurchase.purchaseStream.listen(
@@ -101,6 +111,7 @@ class ApplePaymentService implements PaymentService {
             purchases,
             completer: completer,
             expectedPlanId: expectedPlanId,
+            appAccountToken: appAccountToken,
           ),
         );
       },
@@ -122,6 +133,7 @@ class ApplePaymentService implements PaymentService {
   Future<void> _handlePurchaseUpdates(
     List<PurchaseDetails> purchases, {
     required Completer<PaymentResult> completer,
+    required String appAccountToken,
     String? expectedPlanId,
   }) async {
     if (purchases.isEmpty) {
@@ -139,6 +151,7 @@ class ApplePaymentService implements PaymentService {
       final PaymentResult result = await _buildResultForPurchase(
         purchase,
         matchedPlanId: matchedPlanId,
+        appAccountToken: appAccountToken,
       );
       if (!completer.isCompleted) {
         completer.complete(result);
@@ -150,6 +163,7 @@ class ApplePaymentService implements PaymentService {
   Future<PaymentResult> _buildResultForPurchase(
     PurchaseDetails purchase, {
     required String? matchedPlanId,
+    required String appAccountToken,
   }) async {
     try {
       switch (purchase.status) {
@@ -179,7 +193,10 @@ class ApplePaymentService implements PaymentService {
           );
         case PurchaseStatus.purchased:
         case PurchaseStatus.restored:
-          final bool verified = await _validateReceipt(purchase);
+          final bool verified = await _validateReceipt(
+            purchase,
+            appAccountToken: appAccountToken,
+          );
           if (!verified) {
             return PaymentResult(
               success: false,
@@ -233,29 +250,36 @@ class ApplePaymentService implements PaymentService {
     return response.productDetails.first;
   }
 
-  Future<bool> _validateReceipt(PurchaseDetails purchase) async {
-    final String receipt = purchase.verificationData.serverVerificationData
-        .trim();
-    if (receipt.isEmpty) {
+  Future<bool> _validateReceipt(
+    PurchaseDetails purchase, {
+    required String appAccountToken,
+  }) async {
+    final String transactionId = (purchase.purchaseID ?? '').trim();
+    if (transactionId.isEmpty || appAccountToken.trim().isEmpty) {
       return false;
     }
 
-    final Map<String, dynamic> data = await ApiClient.verifyAppleReceipt(
+    final Map<String, dynamic> data = await ApiClient.verifyAppleSubscription(
       productId: purchase.productID,
-      transactionId: purchase.purchaseID,
-      serverVerificationData: receipt,
-      localVerificationData: purchase.verificationData.localVerificationData,
+      transactionId: transactionId,
+      originalTransactionId: transactionId,
+      appAccountToken: appAccountToken,
     );
-    final String verifiedProductId =
-        (data['productId'] as String? ?? data['productID'] as String? ?? '')
+    final String verificationStatus =
+        (data['verification_status'] as String? ??
+                data['verificationStatus'] as String? ??
+                '')
             .trim();
-    final bool productMatches =
-        verifiedProductId.isEmpty || verifiedProductId == purchase.productID;
-    final bool active =
-        data['active'] == true ||
-        data['valid'] == true ||
-        data['entitlementActive'] == true;
-    return productMatches && active;
+    final String subscriptionStatus =
+        (data['subscription_status'] as String? ??
+                data['subscriptionStatus'] as String? ??
+                '')
+            .trim();
+    final Map<String, dynamic> entitlement = _asMap(data['entitlement']);
+    final String entitlementStatus = (entitlement['status'] as String? ?? '')
+        .trim();
+    return verificationStatus == 'verified' &&
+        (subscriptionStatus == 'active' || entitlementStatus == 'active');
   }
 
   String _errorMessageFromPurchase(PurchaseDetails purchase) {
@@ -272,5 +296,15 @@ class ApplePaymentService implements PaymentService {
       'status': purchase.status.name,
       'source': purchase.verificationData.source,
     };
+  }
+
+  Map<String, dynamic> _asMap(Object? value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    if (value is Map) {
+      return value.cast<String, dynamic>();
+    }
+    return <String, dynamic>{};
   }
 }

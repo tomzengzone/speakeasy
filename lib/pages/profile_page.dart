@@ -1195,7 +1195,9 @@ class _SubscriptionPanel extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    isPro ? '$planLabel · 查看权益与账单' : '解锁无限场景练习、完整句型库和深度反馈',
+                    isPro
+                        ? '$planLabel · 查看权益与账单'
+                        : '解锁 L3 高级场景、完整句型库和更高 AI 练习额度',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(

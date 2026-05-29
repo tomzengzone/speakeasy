@@ -11,6 +11,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import com.speakeasy.commerce.EntitlementSnapshotRepository;
+import com.speakeasy.commerce.PaymentProviderEventRepository;
+import com.speakeasy.commerce.PurchaseRepository;
+import com.speakeasy.commerce.SubscriptionRepository;
 import com.speakeasy.commerce.SubscriptionPlanRepository;
 import com.speakeasy.content.UserScenarioStateRepository;
 import com.speakeasy.identity.AuthIdentityRepository;
@@ -21,6 +24,7 @@ import com.speakeasy.identity.UserAccountRepository;
 import com.speakeasy.identity.UserProfileRepository;
 import com.speakeasy.ops.AccountDeletionJobRepository;
 import com.speakeasy.usage.UsageLedgerRepository;
+import com.speakeasy.usage.UsageReservationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +50,11 @@ class AuthControllerTest {
   @Autowired UserProfileRepository profiles;
   @Autowired EntitlementSnapshotRepository entitlements;
   @Autowired UsageLedgerRepository ledgers;
+  @Autowired UsageReservationRepository reservations;
   @Autowired SubscriptionPlanRepository plans;
+  @Autowired PurchaseRepository purchases;
+  @Autowired SubscriptionRepository subscriptions;
+  @Autowired PaymentProviderEventRepository providerEvents;
   @Autowired UserAccountRepository users;
 
   @BeforeEach
@@ -59,6 +67,10 @@ class AuthControllerTest {
     identities.deleteAll();
     profiles.deleteAll();
     entitlements.deleteAll();
+    providerEvents.deleteAll();
+    subscriptions.deleteAll();
+    purchases.deleteAll();
+    reservations.deleteAll();
     ledgers.deleteAll();
     plans.deleteAll();
     users.deleteAll();

@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:speakeasy/features/commercial/commercial_scenario_gate.dart';
 import 'package:speakeasy/features/interview/expression_daily_queue_coordinator.dart';
 import 'package:speakeasy/features/interview/interview_engine.dart';
 import 'package:speakeasy/features/interview/interview_expression_learning_page.dart';
@@ -575,11 +576,17 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
     String? targetLevel,
     String? initialNodeId,
   }) async {
+    final String resolvedTargetLevel =
+        targetLevel ?? status.selectedTargetLevel;
+    if (!_canAccessSceneTargetLevel(resolvedTargetLevel)) {
+      _showCommercialScenarioGate();
+      return;
+    }
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (BuildContext context) => InterviewPracticePage(
           sceneId: status.entry.id,
-          targetLevel: targetLevel ?? status.selectedTargetLevel,
+          targetLevel: resolvedTargetLevel,
           initialNodeId: initialNodeId ?? '',
         ),
       ),
@@ -594,11 +601,17 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
     _InterviewSceneHomeStatus status, {
     String? targetLevel,
   }) async {
+    final String resolvedTargetLevel =
+        targetLevel ?? status.selectedTargetLevel;
+    if (!_canAccessSceneTargetLevel(resolvedTargetLevel)) {
+      _showCommercialScenarioGate();
+      return;
+    }
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (BuildContext context) => InterviewSceneListeningPage(
           sceneId: status.entry.id,
-          targetLevel: targetLevel ?? status.selectedTargetLevel,
+          targetLevel: resolvedTargetLevel,
           coverUrl: _sceneCoverUrl(status.entry.id),
         ),
       ),
@@ -610,6 +623,10 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
     String targetLevel, {
     String initialTaskType = '',
   }) async {
+    if (!_canAccessSceneTargetLevel(targetLevel)) {
+      _showCommercialScenarioGate();
+      return;
+    }
     final InterviewExpressionLearningResult? result =
         await Navigator.of(context).push(
           MaterialPageRoute<InterviewExpressionLearningResult>(
@@ -641,6 +658,10 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
     _InterviewSceneHomeStatus status,
     String nodeId,
   ) async {
+    if (!_canAccessSceneTargetLevel(status.selectedTargetLevel)) {
+      _showCommercialScenarioGate();
+      return;
+    }
     await _addLearningScene(status, setActive: true);
     await _openInterviewScene(
       status,
@@ -655,6 +676,7 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
         builder: (BuildContext context) => _HomeSceneIntroPage(
           status: status,
           isJoined: _selectedLearningSceneIds.contains(status.entry.id),
+          hasProEntitlement: AppSessionScope.of(context).isPro,
           onSelectLevel: (String targetLevel) async {
             await _selectInterviewSceneLevel(status, targetLevel);
           },
@@ -688,6 +710,10 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
     _InterviewSceneHomeStatus status,
     String targetLevel,
   ) async {
+    if (!_canAccessSceneTargetLevel(targetLevel)) {
+      _showCommercialScenarioGate();
+      return;
+    }
     await InterviewWikiStore(
       sceneId: status.entry.id,
     ).saveSelectedTargetLevel(targetLevel);
@@ -695,6 +721,19 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
       return;
     }
     await _loadInterviewSceneStatuses();
+  }
+
+  bool _canAccessSceneTargetLevel(String targetLevel) {
+    return CommercialScenarioGate.canAccess(
+      targetLevel: targetLevel,
+      isPro: AppSessionScope.of(context).isPro,
+    );
+  }
+
+  void _showCommercialScenarioGate() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(CommercialScenarioGate.lockedMessage)),
+    );
   }
 
   Future<void> _persistLearningSceneSelection({
@@ -2548,12 +2587,14 @@ class _HomeSceneIntroPage extends StatefulWidget {
   const _HomeSceneIntroPage({
     required this.status,
     required this.isJoined,
+    required this.hasProEntitlement,
     required this.onSelectLevel,
     required this.onJoinLearning,
   });
 
   final _InterviewSceneHomeStatus status;
   final bool isJoined;
+  final bool hasProEntitlement;
   final Future<void> Function(String targetLevel) onSelectLevel;
   final Future<void> Function(String targetLevel) onJoinLearning;
 
@@ -2603,12 +2644,30 @@ class _HomeSceneIntroPageState extends State<_HomeSceneIntroPage> {
     if (targetLevel == _selectedTargetLevel) {
       return;
     }
+    if (!CommercialScenarioGate.canAccess(
+      targetLevel: targetLevel,
+      isPro: widget.hasProEntitlement,
+    )) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(CommercialScenarioGate.lockedMessage)),
+      );
+      return;
+    }
     setState(() => _selectedTargetLevel = targetLevel);
     unawaited(widget.onSelectLevel(targetLevel));
   }
 
   Future<void> _joinLearning() async {
     if (_joiningLearning || _joined) {
+      return;
+    }
+    if (!CommercialScenarioGate.canAccess(
+      targetLevel: _selectedTargetLevel,
+      isPro: widget.hasProEntitlement,
+    )) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(CommercialScenarioGate.lockedMessage)),
+      );
       return;
     }
     setState(() => _joiningLearning = true);
@@ -2670,6 +2729,7 @@ class _HomeSceneIntroPageState extends State<_HomeSceneIntroPage> {
                     options: status.levelOptions,
                     selectedTargetLevel: _selectedTargetLevel,
                     selectedLabel: selectedLevelLabel,
+                    hasProEntitlement: widget.hasProEntitlement,
                     onChanged: _selectTargetLevel,
                   ),
                 ],
@@ -2980,12 +3040,14 @@ class _HomeSceneIntroLevelMenu extends StatelessWidget {
     required this.options,
     required this.selectedTargetLevel,
     required this.selectedLabel,
+    required this.hasProEntitlement,
     required this.onChanged,
   });
 
   final List<_InterviewSceneLevelOption> options;
   final String selectedTargetLevel;
   final String selectedLabel;
+  final bool hasProEntitlement;
   final ValueChanged<String> onChanged;
 
   @override
@@ -3005,17 +3067,26 @@ class _HomeSceneIntroLevelMenu extends StatelessWidget {
       tooltip: '选择等级',
       onSelected: onChanged,
       itemBuilder: (BuildContext context) => options
-          .map(
-            (_InterviewSceneLevelOption option) => PopupMenuItem<String>(
+          .map((_InterviewSceneLevelOption option) {
+            final bool locked = !CommercialScenarioGate.canAccess(
+              targetLevel: option.targetLevel,
+              isPro: hasProEntitlement,
+            );
+            return PopupMenuItem<String>(
               value: option.targetLevel,
+              enabled: !locked,
               child: Row(
                 children: [
                   Icon(
-                    option.targetLevel == selectedTargetLevel
+                    locked
+                        ? Icons.lock_outline_rounded
+                        : option.targetLevel == selectedTargetLevel
                         ? Icons.check_circle_rounded
                         : Icons.circle_outlined,
                     size: 17,
-                    color: option.targetLevel == selectedTargetLevel
+                    color: locked
+                        ? const Color(0xFFA0622A)
+                        : option.targetLevel == selectedTargetLevel
                         ? darkGreen
                         : textTertiary,
                   ),
@@ -3028,25 +3099,32 @@ class _HomeSceneIntroLevelMenu extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w900,
-                        color: option.targetLevel == selectedTargetLevel
+                        color: locked
+                            ? textTertiary
+                            : option.targetLevel == selectedTargetLevel
                             ? darkGreen
                             : textPrimary,
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Text(
-                    '${option.expressionCount}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: textSecondary,
+                  if (locked)
+                    const _SceneLibraryBadge(
+                      label: CommercialScenarioGate.lockedBadge,
+                    )
+                  else
+                    Text(
+                      '${option.expressionCount}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: textSecondary,
+                      ),
                     ),
-                  ),
                 ],
               ),
-            ),
-          )
+            );
+          })
           .toList(growable: false),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),

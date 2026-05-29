@@ -30,8 +30,12 @@ public class SecurityConfig {
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(HttpMethod.POST, "/auth/login/phone", "/auth/login/apple", "/auth/login/wechat", "/auth/refresh")
             .permitAll()
-            .requestMatchers(HttpMethod.GET, "/subscription/plans", "/admin/release-health")
+            .requestMatchers(HttpMethod.POST, "/subscriptions/webhook/apple", "/subscriptions/webhook/google")
             .permitAll()
+            .requestMatchers(HttpMethod.GET, "/subscription/plans")
+            .permitAll()
+            .requestMatchers("/admin/**")
+            .hasRole("OPS")
             .anyRequest()
             .authenticated())
         .exceptionHandling(exceptions -> exceptions

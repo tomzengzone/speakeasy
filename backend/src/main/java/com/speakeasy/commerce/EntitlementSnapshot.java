@@ -41,12 +41,27 @@ public class EntitlementSnapshot {
   protected EntitlementSnapshot() {}
 
   public EntitlementSnapshot(UUID id, UUID userId, String plan, String featureFlags, String quotaLimits, Instant generatedAt) {
+    this(id, userId, null, plan, featureFlags, quotaLimits, "active", null, generatedAt);
+  }
+
+  public EntitlementSnapshot(
+      UUID id,
+      UUID userId,
+      UUID sourceSubscriptionId,
+      String plan,
+      String featureFlags,
+      String quotaLimits,
+      String status,
+      Instant validUntil,
+      Instant generatedAt) {
     this.entitlementSnapshotId = id;
     this.userId = userId;
+    this.sourceSubscriptionId = sourceSubscriptionId;
     this.plan = plan;
     this.featureFlags = featureFlags;
     this.quotaLimits = quotaLimits;
-    this.status = "active";
+    this.status = status;
+    this.validUntil = validUntil;
     this.generatedAt = generatedAt;
   }
 

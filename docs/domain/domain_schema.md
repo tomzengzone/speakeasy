@@ -133,6 +133,25 @@ Proposed - Domain Schema Baseline + P0/P0.1 Extension。
 | AccountDeletionJob | `requested -> access_revoked -> deleting_learning_data -> anonymizing_audit_refs -> completed`; 任一步可进入 `failed` 并支持 retry |
 | AuditLog | append-only；允许 redaction/anonymized target ref，不允许业务流程删除审计事实 |
 
+### P0-COM-DOM-001 Gate Coverage
+
+| Stage Scope ID | Requirement | Domain evidence | Test impact |
+| --- | --- | --- | --- |
+| COM-SI-001 | FR-COM-001 | `SubscriptionPlan`、`Purchase`、`Subscription`、`EntitlementSnapshot`、`PaymentProviderEvent` 定义订阅和权益事实源 | 购买后权益生效、退款/过期/撤销降级、权益刷新测试 |
+| COM-SI-002 | FR-COM-002 | `Purchase`、`Subscription`、`PaymentProviderEvent` 覆盖 Apple transaction 校验、幂等和 provider event | Apple valid/invalid receipt、restore、webhook、refund 测试 |
+| COM-SI-003 | FR-COM-003 | `Purchase`、`Subscription`、`PaymentProviderEvent` 覆盖 Google purchase token 校验和 Android 恢复购买 | Google valid/invalid token、restore、webhook、refund 测试 |
+| COM-SI-004 | FR-COM-004 | `User`、`AuthIdentity`、`AccountLifecycle` 覆盖生产账号事实、账号状态和测试登录发布门禁 | release config gate、token/session、账号切换测试 |
+| COM-SI-005 | FR-COM-005 | `AuthIdentity` 和 `PaymentProviderEvent` 覆盖社交登录身份与 provider event 可信边界 | Apple/WeChat 生产配置缺失阻断、provider signature 测试 |
+| COM-SI-006 | FR-COM-008 | `AccountLifecycle`、`AccountDeletionJob`、`AuditLog` 覆盖注销、删除/匿名化和审计 | 云端删除、本地清理、失败重试、审计测试 |
+| COM-SI-007 | FR-COM-006 | `EntitlementSnapshot`、`EntitlementRule`、`UsageLedger` 覆盖免费/付费权益和额度边界 | 付费墙、超限态、降级态测试 |
+| COM-SI-008 | FR-COM-007 | `EntitlementRule` 可引用 `scenario_scope`，并与 `Scenario` 访问边界关联 | 场景列表、详情、训练入口 gating 一致性测试 |
+| COM-SI-009 | FR-COM-009 | `SubscriptionPlan`、`EntitlementRule`、`AuditLog` 支持商品、权益和文案版本可追踪 | 会员页/商店/隐私文案一致性测试 |
+| COM-SI-010 | FR-COM-010 | `UsageLedger`、`UsageReservation`、`ProviderUsageEvent` 覆盖 AI/ASR/TTS/评分成本控制 | reserve/commit/release、额度耗尽、滥用审计测试 |
+| COM-SI-011 | FR-COM-011 | `AuditLog`、`PaymentProviderEvent`、`AccountDeletionJob` 为商业边界测试提供可审计事实 | 商业边界测试矩阵结果追踪 |
+| COM-SI-012 | FR-COM-012 | `AuditLog`、`AccountLifecycle`、`SubscriptionPlan` 支持发布门禁、配置审计和回滚核查 | release secrets、签名、符号表、商店材料和回滚检查 |
+
+P0-COM-DOM-001 结论：Domain Schema 对 `commercial-subscription-readiness` 的 12 个 required Stage Scope Items 均有领域对象、生命周期或不变量承接。本文仍不定义 API DTO、数据库 SQL、Flutter UI 或实现顺序。
+
 ## P0.1 Training Domain Extension
 
 | Entity | Owner | 关键字段 | 生命周期 / 不变量 | Persistence / migration implication | API boundary recommendation | Test impact | Traceability note |

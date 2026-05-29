@@ -33,4 +33,29 @@ public class PaymentProviderEvent {
   private String payloadRef;
 
   protected PaymentProviderEvent() {}
+
+  public PaymentProviderEvent(
+      String providerEventId,
+      String platform,
+      String eventType,
+      Instant receivedAt,
+      String processedStatus,
+      UUID relatedSubscriptionId,
+      String payloadRef) {
+    this.providerEventId = providerEventId;
+    this.platform = platform;
+    this.eventType = eventType;
+    this.receivedAt = receivedAt;
+    this.processedStatus = processedStatus;
+    this.relatedSubscriptionId = relatedSubscriptionId;
+    this.payloadRef = payloadRef;
+  }
+
+  public String getProviderEventId() {
+    return providerEventId;
+  }
+
+  public String getProcessedStatus() {
+    return processedStatus;
+  }
 }

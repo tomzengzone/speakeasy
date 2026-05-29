@@ -98,6 +98,27 @@ Proposed - whole-app architecture。本文基于 PM execution brief 进入第二
 - P0.1 training：Training domain model、AI prompt/schema、dialogue state machine、screen spec、planner tests。
 - `document-traceability-check` 和 Product Object Governance Check Agent 均返回 pass。
 
+## P0 Commercial Stage Architecture Gate
+
+Architecture scope mode: `stage` for `docs/product/stages/p0-commercial-readiness.md` and increment `commercial-subscription-readiness`.
+
+| Stage Scope ID | Architecture boundary | Evidence path | Gate status |
+| --- | --- | --- | --- |
+| COM-SI-001 | Commerce/Entitlement backend owns subscription and entitlement facts | `docs/domain/domain_schema.md`, `docs/architecture/api_contract.md`, ADR 0003 | Contract-ready |
+| COM-SI-002 | Apple verify/restore/webhook are backend/provider boundaries, not client entitlement facts | `docs/architecture/api_contract.md`, `docs/architecture/data_flow.md` | Contract-ready; provider sandbox evidence pending |
+| COM-SI-003 | Google Play Billing uses client purchase token submission plus backend verification | `docs/architecture/api_contract.md`, `docs/architecture/data_flow.md` | Contract-ready; Play internal test evidence pending |
+| COM-SI-004 | Identity backend owns login/session/token and release disables test login | `docs/architecture/module_boundary.md`, `docs/architecture/security_design.md` | Contract-ready; release gate pending |
+| COM-SI-005 | Social login production config is a platform/release boundary with backend token verification | `docs/architecture/security_design.md`, `docs/architecture/api_contract.md` | Contract-ready; platform config evidence pending |
+| COM-SI-006 | Account deletion is an Identity/Admin/Ops state machine with local cleanup requirements | `docs/domain/domain_schema.md`, `docs/architecture/data_flow.md` | Contract-ready |
+| COM-SI-007 | Entitlement and usage gates protect paid features and high-cost calls | ADR 0003, `docs/architecture/module_boundary.md` | Contract-ready |
+| COM-SI-008 | Scenario gating uses EntitlementRule and must be consistent across list/detail/training entry | `docs/domain/entity_relationship.md`, `docs/ux/screen_spec.md` | Contract-ready |
+| COM-SI-009 | Commercial copy consistency is a UX/release gate tied to SubscriptionPlan and EntitlementRule | `docs/ux/copywriting_guideline.md`, `docs/release/release_checklist.md` | Contract-ready; release evidence pending |
+| COM-SI-010 | Usage Control reserves/commits/releases quota before provider calls | `docs/domain/domain_schema.md`, `docs/architecture/api_contract.md`, `docs/architecture/security_design.md` | Contract-ready |
+| COM-SI-011 | Commercial boundary testing is a QA gate across provider, account, network and quota states | `docs/product/increments/commercial-subscription-readiness/test_cases.md` | Test design ready after P0-COM-QA-001 |
+| COM-SI-012 | Release readiness is Admin/Ops + DevOps, including secrets, signing, symbols and rollback | `docs/architecture/security_design.md`, `docs/release/rollback_plan.md` | Contract-ready; DevOps evidence pending |
+
+P0-COM-ARCH-001 结论：stage 级架构覆盖矩阵已建立；它允许进入测试用例库和后续实现路由，但不等同于支付 provider、DevOps release 或商业发布 ready。
+
 ## ADR Index
 - `docs/architecture/adr/0002-whole-app-architecture-stack.md`
 - `docs/architecture/adr/0003-server-owned-entitlement-and-usage.md`

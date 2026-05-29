@@ -1,6 +1,7 @@
 package com.speakeasy.content;
 
 import com.speakeasy.common.ApiException;
+import com.speakeasy.commerce.EntitlementGateService;
 import com.speakeasy.identity.LearningRoute;
 import com.speakeasy.identity.LearningRouteRepository;
 import com.speakeasy.identity.OnboardingAssessment;
@@ -40,6 +41,7 @@ public class OnboardingContentService {
   private final TargetExpressionRepository expressions;
   private final UserScenarioStateRepository userScenarios;
   private final PracticeSessionRepository practiceSessions;
+  private final EntitlementGateService entitlementGateService;
   private final Clock clock;
 
   public OnboardingContentService(
@@ -53,6 +55,7 @@ public class OnboardingContentService {
       TargetExpressionRepository expressions,
       UserScenarioStateRepository userScenarios,
       PracticeSessionRepository practiceSessions,
+      EntitlementGateService entitlementGateService,
       Clock clock) {
     this.users = users;
     this.profiles = profiles;
@@ -64,6 +67,7 @@ public class OnboardingContentService {
     this.expressions = expressions;
     this.userScenarios = userScenarios;
     this.practiceSessions = practiceSessions;
+    this.entitlementGateService = entitlementGateService;
     this.clock = clock;
   }
 
@@ -115,6 +119,7 @@ public class OnboardingContentService {
   @Transactional(readOnly = true)
   public LevelContentView getScenarioLevel(UUID userId, String scenarioId, String levelCode) {
     requireUser(userId);
+    entitlementGateService.requireScenarioLevel(userId, scenarioId, levelCode);
     ScenarioVersion version = latestPublishedVersion(scenarioId);
     levels.findByScenarioIdAndLevelCode(scenarioId, levelCode)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Scenario level was not found."));

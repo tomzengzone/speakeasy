@@ -44,8 +44,8 @@ class _MembershipPageState extends State<MembershipPage> {
   static const _proFeatures = <_MemberFeature>[
     _MemberFeature(
       icon: Icons.all_inclusive_rounded,
-      title: '无限场景练习',
-      desc: '不限次数畅享所有场景',
+      title: '高级场景 L3',
+      desc: '解锁高级场景和完整练习路径',
     ),
     _MemberFeature(
       icon: Icons.menu_book_rounded,
@@ -55,34 +55,34 @@ class _MembershipPageState extends State<MembershipPage> {
     _MemberFeature(
       icon: Icons.mic_rounded,
       title: 'AI 深度反馈',
-      desc: '语音分析和发音纠正',
+      desc: '发音评分和表达建议',
     ),
     _MemberFeature(
       icon: Icons.message_rounded,
       title: '沉浸式对话',
-      desc: '无限次沉浸对话练习',
+      desc: '更高频次的 AI 对话练习',
     ),
     _MemberFeature(
-      icon: Icons.download_rounded,
-      title: '离线学习包',
-      desc: '下载场景离线练习',
+      icon: Icons.speed_rounded,
+      title: '更高 AI 练习额度',
+      desc: '提升对话、转写和评分额度',
     ),
     _MemberFeature(
-      icon: Icons.shield_outlined,
-      title: '专属学习报告',
-      desc: '详细能力分析报告',
+      icon: Icons.verified_user_outlined,
+      title: '订阅状态同步',
+      desc: '支持购买、恢复和服务端权益刷新',
     ),
   ];
 
   static const _compareItems = <({String label, bool free, bool pro})>[
-    (label: '每日 3 次场景练习', free: true, pro: true),
-    (label: '基础句型库（50+）', free: true, pro: true),
+    (label: '基础场景与 L1-L2 练习', free: true, pro: true),
+    (label: '每日 3 次训练会话', free: true, pro: true),
     (label: '学习进度追踪', free: true, pro: true),
-    (label: '无限场景练习', free: false, pro: true),
+    (label: '高级 L3 场景', free: false, pro: true),
     (label: '完整句型库（500+）', free: false, pro: true),
-    (label: 'AI 深度对话反馈', free: false, pro: true),
-    (label: '离线学习包', free: false, pro: true),
-    (label: '专属学习报告', free: false, pro: true),
+    (label: '更高 AI/ASR/TTS/评分额度', free: false, pro: true),
+    (label: '每日 50 次训练会话', free: false, pro: true),
+    (label: '购买恢复与权益同步', free: false, pro: true),
   ];
 
   @override
@@ -231,6 +231,12 @@ class _MembershipPageState extends State<MembershipPage> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
               children: [
+                if (!_isPro) ...[
+                  const _EntitlementNotice(
+                    key: ValueKey<String>('membership_free_gate_banner'),
+                  ),
+                  const SizedBox(height: 20),
+                ],
                 _SectionTitle(title: l10n.proBenefits),
                 Container(
                   decoration: _panelDecoration(),
@@ -631,6 +637,53 @@ class _SectionTitle extends StatelessWidget {
           color: textTertiary,
           letterSpacing: 0.3,
         ),
+      ),
+    );
+  }
+}
+
+class _EntitlementNotice extends StatelessWidget {
+  const _EntitlementNotice({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F8EF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFD9E8CF)),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.lock_outline_rounded, size: 20, color: Color(0xFF4A7244)),
+          SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '当前为免费版',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: textPrimary,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '可使用基础场景与每日基础 AI 练习额度。订阅后解锁 L3 高级场景和更高 AI 练习额度。',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

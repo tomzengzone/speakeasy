@@ -51,4 +51,52 @@ public class UsageReservation {
     this.reservedAt = reservedAt;
     this.expiresAt = expiresAt;
   }
+
+  public UUID getReservationId() {
+    return reservationId;
+  }
+
+  public UUID getLedgerId() {
+    return ledgerId;
+  }
+
+  public UUID getUserId() {
+    return userId;
+  }
+
+  public String getUsageFamily() {
+    return usageFamily;
+  }
+
+  public int getAmount() {
+    return amount;
+  }
+
+  public String getStatus() {
+    return status;
+  }
+
+  public String getIdempotencyKey() {
+    return idempotencyKey;
+  }
+
+  public Instant getExpiresAt() {
+    return expiresAt;
+  }
+
+  public boolean sameReservePayload(String usageFamily, int amount) {
+    return this.usageFamily.equals(usageFamily) && this.amount == amount;
+  }
+
+  public void commit() {
+    if ("reserved".equals(status)) {
+      this.status = "committed";
+    }
+  }
+
+  public void release() {
+    if ("reserved".equals(status)) {
+      this.status = "released";
+    }
+  }
 }

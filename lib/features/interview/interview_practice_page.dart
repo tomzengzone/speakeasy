@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:speakeasy/features/commercial/commercial_scenario_gate.dart';
 import 'package:speakeasy/features/interview/expression_shadow_scoring.dart';
 import 'package:speakeasy/features/interview/expression_scene_orchestrator.dart';
 import 'package:speakeasy/features/interview/interview_coach_schema.dart';
@@ -48,12 +49,14 @@ class InterviewPracticePage extends StatefulWidget {
     this.sceneId = defaultInterviewSceneId,
     this.targetLevel = 'beginner',
     this.initialNodeId = '',
+    this.hasProEntitlement,
     this.llmScheduler,
   });
 
   final String sceneId;
   final String targetLevel;
   final String initialNodeId;
+  final bool? hasProEntitlement;
   final InterviewLlmScheduler? llmScheduler;
 
   @override
@@ -608,6 +611,29 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
       _errorText = null;
       _wikiWriteSummary = null;
     });
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) {
+      return;
+    }
+    final String selectedTargetLevel = _runtimeTargetLevel;
+    if (!CommercialScenarioGate.canAccess(
+      targetLevel: selectedTargetLevel,
+      isPro: _hasProEntitlement(context),
+    )) {
+      setState(() {
+        _resetMessageUiState();
+        _session = null;
+        _messages.clear();
+        _review = null;
+        _aiReviewNote = null;
+        _wikiWriteSummary = null;
+        _lastPronunciationScore = null;
+        _pendingVoiceAudioPath = null;
+        _loading = false;
+        _errorText = CommercialScenarioGate.lockedMessage;
+      });
+      return;
+    }
     try {
       final InterviewSceneGraph sceneGraph = await loadInterviewSceneGraph(
         sceneId: widget.sceneId,
@@ -628,7 +654,6 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
       final List<InterviewWeakExpressionState> weakExpressions = _wikiStore
           .loadUserGrowthWiki()
           .weakExpressions;
-      final String selectedTargetLevel = _runtimeTargetLevel;
       final bool hasInitialNode = widget.initialNodeId.trim().isNotEmpty;
       final InterviewActiveSessionSnapshot? activeSnapshot =
           roundMode == null && !hasInitialNode
@@ -4065,6 +4090,10 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
     });
   }
 
+  bool _hasProEntitlement(BuildContext context) {
+    return widget.hasProEntitlement ?? AppSessionScope.of(context).isPro;
+  }
+
   @override
   Widget build(BuildContext context) {
     final InterviewPracticeSession? session = _session;
@@ -4662,6 +4691,7 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
                     dueNodeIds: _dueNodeIds(),
                     weakNodeIds: _weakNodeIds(session),
                     practiceStatsByNode: practiceStatsByNode,
+                    hasProEntitlement: _hasProEntitlement(context),
                   );
                 },
             transitionsBuilder:
@@ -4703,6 +4733,16 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
 
   Future<void> _switchToTargetLevel(String targetLevel) async {
     final String normalizedLevel = _normalizeSceneMapTargetLevel(targetLevel);
+    if (!CommercialScenarioGate.canAccess(
+      targetLevel: normalizedLevel,
+      isPro: _hasProEntitlement(context),
+    )) {
+      setState(() => _errorText = CommercialScenarioGate.lockedMessage);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(CommercialScenarioGate.lockedMessage)),
+      );
+      return;
+    }
     final InterviewPracticeEngine? engine = _engine;
     final InterviewSceneGraph? sceneGraph = _sceneGraph;
     final InterviewLibrary? library = _library;
@@ -6582,6 +6622,7 @@ class _SceneMapPage extends StatefulWidget {
     required this.dueNodeIds,
     required this.weakNodeIds,
     required this.practiceStatsByNode,
+    required this.hasProEntitlement,
   });
 
   final InterviewSceneGraph sceneGraph;
@@ -6591,6 +6632,7 @@ class _SceneMapPage extends StatefulWidget {
   final Set<String> dueNodeIds;
   final Set<String> weakNodeIds;
   final Map<String, _SceneNodePracticeStats> practiceStatsByNode;
+  final bool hasProEntitlement;
 
   @override
   State<_SceneMapPage> createState() => _SceneMapPageState();
@@ -6762,6 +6804,7 @@ class _SceneMapPageState extends State<_SceneMapPage> {
                     options: levelOptions,
                     selectedTargetLevel: selectedTargetLevel,
                     activeTargetLevel: activeTargetLevel,
+                    hasProEntitlement: widget.hasProEntitlement,
                     onChanged: (String targetLevel) {
                       Navigator.of(
                         context,
@@ -6801,12 +6844,14 @@ class _SceneTargetLevelDropdown extends StatelessWidget {
     required this.options,
     required this.selectedTargetLevel,
     required this.activeTargetLevel,
+    required this.hasProEntitlement,
     required this.onChanged,
   });
 
   final List<_SceneTargetLevelOption> options;
   final String selectedTargetLevel;
   final String activeTargetLevel;
+  final bool hasProEntitlement;
   final ValueChanged<String> onChanged;
 
   @override
@@ -6841,6 +6886,10 @@ class _SceneTargetLevelDropdown extends StatelessWidget {
           for (final _SceneTargetLevelOption option in options)
             PopupMenuItem<String>(
               value: option.targetLevel,
+              enabled: CommercialScenarioGate.canAccess(
+                targetLevel: option.targetLevel,
+                isPro: hasProEntitlement,
+              ),
               child: KeyedSubtree(
                 key: ValueKey<String>('scene_map_level_${option.targetLevel}'),
                 child: Row(
@@ -6872,6 +6921,15 @@ class _SceneTargetLevelDropdown extends StatelessWidget {
                     if (option.targetLevel == activeTargetLevel) ...[
                       const SizedBox(width: 8),
                       const _TinyBadge(label: '当前', color: darkGreen),
+                    ] else if (!CommercialScenarioGate.canAccess(
+                      targetLevel: option.targetLevel,
+                      isPro: hasProEntitlement,
+                    )) ...[
+                      const SizedBox(width: 8),
+                      const _TinyBadge(
+                        label: CommercialScenarioGate.lockedBadge,
+                        color: Color(0xFFA0622A),
+                      ),
                     ],
                   ],
                 ),

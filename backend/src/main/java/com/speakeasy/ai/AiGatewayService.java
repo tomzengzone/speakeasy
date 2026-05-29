@@ -2,6 +2,8 @@ package com.speakeasy.ai;
 
 import com.speakeasy.common.ApiException;
 import com.speakeasy.practice.PracticeSessionRepository;
+import com.speakeasy.usage.UsageReservation;
+import com.speakeasy.usage.UsageService;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -12,29 +14,71 @@ import org.springframework.transaction.annotation.Transactional;
 public class AiGatewayService {
   private final AiProviderGateway provider;
   private final PracticeSessionRepository sessions;
+  private final UsageService usageService;
 
-  public AiGatewayService(AiProviderGateway provider, PracticeSessionRepository sessions) {
+  public AiGatewayService(AiProviderGateway provider, PracticeSessionRepository sessions, UsageService usageService) {
     this.provider = provider;
     this.sessions = sessions;
+    this.usageService = usageService;
   }
 
-  public AiProviderGateway.TranscribeResult transcribe(String audioRef, String languageHint) {
-    return provider.transcribe(audioRef, languageHint);
+  public AiProviderGateway.TranscribeResult transcribe(UUID userId, String audioRef, String languageHint) {
+    UsageReservation reservation = usageService.reserveProviderCall(userId, "asr", audioRef);
+    try {
+      AiProviderGateway.TranscribeResult result = provider.transcribe(audioRef, languageHint);
+      closeProviderReservation(userId, reservation, "available".equals(result.status()));
+      return result;
+    } catch (RuntimeException e) {
+      usageService.release(userId, reservation.getReservationId(), "provider_exception:asr");
+      throw e;
+    }
   }
 
-  public AiProviderGateway.TtsResult synthesize(String text, String voice) {
-    return provider.synthesize(text, voice);
+  public AiProviderGateway.TtsResult synthesize(UUID userId, String text, String voice) {
+    UsageReservation reservation = usageService.reserveProviderCall(userId, "tts", "tts");
+    try {
+      AiProviderGateway.TtsResult result = provider.synthesize(text, voice);
+      closeProviderReservation(userId, reservation, "available".equals(result.status()));
+      return result;
+    } catch (RuntimeException e) {
+      usageService.release(userId, reservation.getReservationId(), "provider_exception:tts");
+      throw e;
+    }
   }
 
-  public AiProviderGateway.ScoreResult scorePronunciation(String audioRef, String referenceText) {
-    return provider.scorePronunciation(audioRef, referenceText);
+  public AiProviderGateway.ScoreResult scorePronunciation(UUID userId, String audioRef, String referenceText) {
+    UsageReservation reservation = usageService.reserveProviderCall(userId, "scoring", audioRef);
+    try {
+      AiProviderGateway.ScoreResult result = provider.scorePronunciation(audioRef, referenceText);
+      closeProviderReservation(userId, reservation, "available".equals(result.status()));
+      return result;
+    } catch (RuntimeException e) {
+      usageService.release(userId, reservation.getReservationId(), "provider_exception:scoring");
+      throw e;
+    }
   }
 
-  @Transactional(readOnly = true)
+  @Transactional
   public AiProviderGateway.CoachResult coach(UUID userId, UUID sessionId, String transcript, List<String> targetExpressionIds) {
     sessions.findByPracticeSessionIdAndUserId(sessionId, userId)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Practice session was not found."));
-    return provider.coach(sessionId, transcript, targetExpressionIds == null ? List.of() : targetExpressionIds);
+    UsageReservation reservation = usageService.reserveProviderCall(userId, "ai", sessionId.toString());
+    try {
+      AiProviderGateway.CoachResult result = provider.coach(sessionId, transcript, targetExpressionIds == null ? List.of() : targetExpressionIds);
+      closeProviderReservation(userId, reservation, !result.recoverable());
+      return result;
+    } catch (RuntimeException e) {
+      usageService.release(userId, reservation.getReservationId(), "provider_exception:ai");
+      throw e;
+    }
+  }
+
+  private void closeProviderReservation(UUID userId, UsageReservation reservation, boolean success) {
+    if (success) {
+      usageService.commit(userId, reservation.getReservationId(), "provider:" + reservation.getUsageFamily());
+    } else {
+      usageService.release(userId, reservation.getReservationId(), "provider:" + reservation.getUsageFamily());
+    }
   }
 
   public int invocationCount() {

@@ -43,4 +43,32 @@ public class Purchase {
     this.verificationStatus = "pending";
     this.purchasedAt = purchasedAt;
   }
+
+  public UUID getPurchaseId() {
+    return purchaseId;
+  }
+
+  public UUID getUserId() {
+    return userId;
+  }
+
+  public String getPlatform() {
+    return platform;
+  }
+
+  public String getProviderTransactionId() {
+    return providerTransactionId;
+  }
+
+  public String getProductId() {
+    return productId;
+  }
+
+  public String getVerificationStatus() {
+    return verificationStatus;
+  }
+
+  public void markVerified() {
+    this.verificationStatus = "verified";
+  }
 }

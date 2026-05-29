@@ -12,6 +12,8 @@ import 'package:speakeasy/models/storage_models.dart';
 import 'package:speakeasy/services/storage_service.dart';
 
 class ApiClient {
+  static String? _pendingAccountDeletionKey;
+
   static Future<String?> getToken() async {
     return StorageService.instance.getAuthSession()?.token;
   }
@@ -110,11 +112,14 @@ class ApiClient {
     Map<String, dynamic> body, {
     bool allowEmpty = false,
     Duration timeout = const Duration(seconds: 15),
+    Map<String, String> headers = const <String, String>{},
   }) async {
+    final Map<String, String> requestHeaders = await _headers();
+    requestHeaders.addAll(headers);
     final http.Response response = await http
         .post(
           Uri.parse('${AppConfig.apiBaseUrl}$path'),
-          headers: await _headers(),
+          headers: requestHeaders,
           body: jsonEncode(body),
         )
         .timeout(timeout);
@@ -271,36 +276,99 @@ class ApiClient {
   }
 
   static Future<Map<String, dynamic>> deleteAccount() async {
+    final String idempotencyKey = _pendingAccountDeletionKey ??=
+        'account-delete-${DateTime.now().millisecondsSinceEpoch}';
     final Map<String, dynamic> response = await _delete(
       SpeakeasyApiPaths.userMe,
       allowEmpty: true,
-      headers: <String, String>{
-        'Idempotency-Key':
-            'account-delete-${DateTime.now().millisecondsSinceEpoch}',
-      },
+      headers: <String, String>{'Idempotency-Key': idempotencyKey},
     );
     _ensureSuccess(response, fallback: '注销账号失败');
+    _pendingAccountDeletionKey = null;
     return _okEnvelope(response);
   }
 
-  static Future<Map<String, dynamic>> verifyAppleReceipt({
+  static Future<String> currentUserId() async {
+    final Map<String, dynamic> response = await getMe();
+    final Map<String, dynamic> data = _asMap(response['data']);
+    final String userId =
+        (data['user_id'] as String? ?? data['userId'] as String? ?? '').trim();
+    if (userId.isEmpty) {
+      throw Exception('无法获取当前用户标识');
+    }
+    return userId;
+  }
+
+  static Future<Map<String, dynamic>> refreshEntitlements() async {
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.entitlementsRefresh,
+      <String, dynamic>{'schema_version': 1},
+    );
+    _ensureSuccess(response, fallback: '订阅权益刷新失败');
+    return _asMap(response['entitlement']);
+  }
+
+  static Future<Map<String, dynamic>> verifyAppleSubscription({
     required String productId,
-    required String serverVerificationData,
-    String? transactionId,
-    String? localVerificationData,
+    required String transactionId,
+    required String originalTransactionId,
+    required String appAccountToken,
   }) async {
-    final Map<String, dynamic> response =
-        await _post('/payments/apple/verify-receipt', <String, dynamic>{
-          'productId': productId,
-          'serverVerificationData': serverVerificationData,
-          if (transactionId != null && transactionId.trim().isNotEmpty)
-            'transactionId': transactionId.trim(),
-          if (localVerificationData != null &&
-              localVerificationData.trim().isNotEmpty)
-            'localVerificationData': localVerificationData.trim(),
-        }, timeout: const Duration(seconds: 20));
+    final String idempotencyKey = 'apple-${transactionId.trim()}';
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.subscriptionsAppleVerify,
+      <String, dynamic>{
+        'schema_version': 1,
+        'transaction_id': transactionId.trim(),
+        'original_transaction_id': originalTransactionId.trim(),
+        'product_id': productId.trim(),
+        'app_account_token': appAccountToken.trim(),
+      },
+      timeout: const Duration(seconds: 20),
+      headers: <String, String>{'Idempotency-Key': idempotencyKey},
+    );
     _ensureSuccess(response, fallback: '订阅凭证校验失败');
-    return _asMap(response['data']);
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> verifyGoogleSubscription({
+    required String purchaseToken,
+    required String productId,
+  }) async {
+    final String idempotencyKey = 'google-${purchaseToken.trim()}';
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.subscriptionsGoogleVerify,
+      <String, dynamic>{
+        'schema_version': 1,
+        'purchase_token': purchaseToken.trim(),
+        'product_id': productId.trim(),
+      },
+      timeout: const Duration(seconds: 20),
+      headers: <String, String>{'Idempotency-Key': idempotencyKey},
+    );
+    _ensureSuccess(response, fallback: 'Google Play 订阅凭证校验失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> restoreSubscription({
+    required String platform,
+    String? providerAccountToken,
+  }) async {
+    final String idempotencyKey = 'restore-${platform.trim()}';
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.subscriptionsRestore,
+      <String, dynamic>{
+        'schema_version': 1,
+        'platform': platform.trim(),
+        if (providerAccountToken != null &&
+            providerAccountToken.trim().isNotEmpty)
+          'provider_account_token': providerAccountToken.trim(),
+      },
+      timeout: const Duration(seconds: 20),
+      headers: <String, String>{'Idempotency-Key': idempotencyKey},
+    );
+    _ensureSuccess(response, fallback: '恢复购买失败');
+    return response;
   }
 
   static Future<LearningStatsModel> getLearningStats() async {

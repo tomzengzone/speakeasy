@@ -8,6 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import com.speakeasy.commerce.EntitlementSnapshotRepository;
+import com.speakeasy.commerce.PaymentProviderEventRepository;
+import com.speakeasy.commerce.PurchaseRepository;
+import com.speakeasy.commerce.SubscriptionRepository;
 import com.speakeasy.commerce.SubscriptionPlanRepository;
 import com.speakeasy.content.UserScenarioStateRepository;
 import com.speakeasy.identity.AuthIdentityRepository;
@@ -31,6 +34,7 @@ import com.speakeasy.practice.PracticeSessionRepository;
 import com.speakeasy.practice.PracticeTurnRepository;
 import com.speakeasy.practice.SessionSummaryRepository;
 import com.speakeasy.usage.UsageLedgerRepository;
+import com.speakeasy.usage.UsageReservationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -60,6 +64,10 @@ abstract class BackendIntegrationTestSupport {
   @Autowired AuthIdentityRepository identities;
   @Autowired UserProfileRepository profiles;
   @Autowired EntitlementSnapshotRepository entitlements;
+  @Autowired PaymentProviderEventRepository providerEvents;
+  @Autowired SubscriptionRepository subscriptions;
+  @Autowired PurchaseRepository purchases;
+  @Autowired UsageReservationRepository usageReservations;
   @Autowired UsageLedgerRepository ledgers;
   @Autowired SubscriptionPlanRepository plans;
   @Autowired UserAccountRepository users;
@@ -87,6 +95,10 @@ abstract class BackendIntegrationTestSupport {
     identities.deleteAll();
     profiles.deleteAll();
     entitlements.deleteAll();
+    providerEvents.deleteAll();
+    subscriptions.deleteAll();
+    purchases.deleteAll();
+    usageReservations.deleteAll();
     ledgers.deleteAll();
     plans.deleteAll();
     users.deleteAll();

@@ -15,3 +15,9 @@ spring:
     property-naming-strategy: SNAKE_CASE
     deserialization:
       fail-on-unknown-properties: true
+
+speakeasy:
+  ops:
+    bearer-token: ops-test-token
+  payment:
+    webhook-signature: provider-test-signature

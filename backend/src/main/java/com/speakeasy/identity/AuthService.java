@@ -1,6 +1,7 @@
 package com.speakeasy.identity;
 
 import com.speakeasy.common.ApiException;
+import com.speakeasy.ops.AccountDeletionJobRepository;
 import com.speakeasy.security.CurrentUser;
 import com.speakeasy.security.TokenHasher;
 import java.security.SecureRandom;
@@ -23,6 +24,7 @@ public class AuthService {
   private final UserProfileRepository profiles;
   private final AuthIdentityRepository identities;
   private final AuthSessionRepository sessions;
+  private final AccountDeletionJobRepository deletionJobs;
   private final Clock clock;
   private final SecureRandom secureRandom = new SecureRandom();
 
@@ -31,11 +33,13 @@ public class AuthService {
       UserProfileRepository profiles,
       AuthIdentityRepository identities,
       AuthSessionRepository sessions,
+      AccountDeletionJobRepository deletionJobs,
       Clock clock) {
     this.users = users;
     this.profiles = profiles;
     this.identities = identities;
     this.sessions = sessions;
+    this.deletionJobs = deletionJobs;
     this.clock = clock;
   }
 
@@ -99,6 +103,18 @@ public class AuthService {
         .filter(session -> session.isActiveAt(now))
         .flatMap(session -> users.findById(session.getUserId())
             .filter(user -> "active".equals(user.getAccountStatus()))
+            .map(user -> new CurrentUser(user.getUserId(), session.getSessionId())));
+  }
+
+  @Transactional(readOnly = true)
+  public Optional<CurrentUser> authenticateAccountDeletionRetry(String accessToken, String idempotencyKey) {
+    if (accessToken == null || accessToken.isBlank() || idempotencyKey == null || idempotencyKey.isBlank()) {
+      return Optional.empty();
+    }
+    return sessions.findByAccessTokenHash(TokenHasher.hash(accessToken))
+        .flatMap(session -> users.findById(session.getUserId())
+            .filter(user -> "deleted".equals(user.getAccountStatus()) || "deletion_requested".equals(user.getAccountStatus()))
+            .filter(user -> deletionJobs.findByUserIdAndIdempotencyKey(user.getUserId(), idempotencyKey).isPresent())
             .map(user -> new CurrentUser(user.getUserId(), session.getSessionId())));
   }
 
