@@ -16,6 +16,7 @@ migrate_working_dir/
 .workbuddy/
 exports/
 node_modules/
+.m2/
 .npm-cache/
 .uv-cache/
 backend/.m2/

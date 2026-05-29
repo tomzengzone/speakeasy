@@ -1,7 +1,7 @@
 # 产品路线图
 
 ## 状态
-Draft - 当前开发重点调整为 MVP 后端与数据库全量补齐
+Validated for MVP backend stage with local system E2E gate - MVP 后端与数据库全量补齐已完成 TC-MVP-E2E-001 到 TC-MVP-E2E-010 本地系统黑盒验证；真实支付 provider 保留外部门禁。
 
 ## Owner
 Product Manager Agent
@@ -43,6 +43,7 @@ Canonical scope：
 - `docs/product/increments/mvp-backend-learning-memory/`
 - `docs/product/increments/mvp-backend-membership-boundary/`
 - `docs/product/increments/mvp-backend-client-qa-release/`
+- `docs/product/increments/mvp-system-e2e-validation/`（`MVP-SI-014` 的系统级黑盒验证加固，不扩大产品功能范围）
 
 每个 MVP backend increment 均包含 `definition.md`、`requirements.md`、`spec.md`、`acceptance.md` 和 `traceability.md`。
 
@@ -53,11 +54,13 @@ Stage Scope ID 到 increment 的全量分解：
 - `MVP-SI-007`、`MVP-SI-010` -> `mvp-backend-learning-memory`
 - `MVP-SI-011`、`MVP-SI-012` -> `mvp-backend-membership-boundary`
 - `MVP-SI-013`、`MVP-SI-014` -> `mvp-backend-client-qa-release`
+- `MVP-SI-014` system E2E hardening -> `mvp-system-e2e-validation`
 
 下一工件：
 - Development Orchestrator 必须按上述 increment 顺序路由 Domain/API/Backend/Frontend/QA 工作。
 - 任何实现前必须使用对应 increment 的 requirements、spec、acceptance 和 traceability，而不是直接从 Product Base 或 roadmap 跳到代码。
 - 每个 increment 完成后独立执行 Product Object Governance Check，确认 `MVP-SI-* -> MVP-BE-FR-* -> MVP-BE-SPEC-* -> AC-MVP-BE-* -> MVP-BE-TR-*` 没有断链。
+- 系统级黑盒测试加固使用 `MVP-SI-014 -> MVP-E2E-FR-* -> MVP-E2E-SPEC-* -> AC-MVP-E2E-* -> MVP-E2E-TR-*`，当前本地 gate 已通过 TC-MVP-E2E-001 到 TC-MVP-E2E-010，并反向映射 Product Base AC-001 到 AC-013；TC-MVP-E2E-010 的真实支付 provider 子范围保留 manual/external gate，不得误计为本地自动化已完成真实支付。
 
 ## Planned: P0 商业化订阅上线准备（付费发布阻塞）
 目标：把当前“会员入口 + Apple IAP 前端雏形”升级为可以面向真实用户收费的商业订阅闭环。该路线不替代 P0.1 训练闭环；在当前执行顺序上，商业化实现不得抢在 MVP 后端与数据库全量补齐之前混入同一开发切片。

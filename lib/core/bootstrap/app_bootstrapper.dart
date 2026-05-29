@@ -38,9 +38,23 @@ abstract class SentryBootstrapGateway {
 class DefaultStorageBootstrapGateway implements StorageBootstrapGateway {
   const DefaultStorageBootstrapGateway();
 
+  static const String _hivePathOverride = String.fromEnvironment(
+    'SPEAKEASY_HIVE_PATH',
+  );
+  static const String _hiveNamespace = String.fromEnvironment(
+    'SPEAKEASY_HIVE_NAMESPACE',
+  );
+  static const bool _disableSharedPreferencesMigration = bool.fromEnvironment(
+    'SPEAKEASY_DISABLE_SHARED_PREFS_MIGRATION',
+  );
+
   @override
   Future<void> initStorage() {
-    return StorageService.instance.init();
+    return StorageService.instance.init(
+      hivePath: _hivePathOverride.trim().isEmpty ? null : _hivePathOverride,
+      hiveNamespace: _hiveNamespace.trim().isEmpty ? null : _hiveNamespace,
+      migrateFromSharedPreferences: !_disableSharedPreferencesMigration,
+    );
   }
 }
 

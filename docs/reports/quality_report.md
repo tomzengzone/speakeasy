@@ -1,7 +1,7 @@
 # Quality Report
 
 ## Current Status
-`mvp-backend-foundation-auth` gap closure passed scoped QA, traceability, and product-object governance checks.
+`mvp-system-e2e-validation` passed scoped QA, traceability, and Product Base system E2E evidence checks through TC-MVP-E2E-010; real payment provider verification remains an explicit manual/external gate.
 
 ## 2026-05-26 OpenAPI Path Governance
 
@@ -460,3 +460,52 @@ Validation:
 PM release decision:
 - The prior traceability evidence blocker is removed for the reviewed affected rows.
 - This is a documentation evidence correction only; it does not change backend implementation scope, database scope, OpenAPI scope, or the documented future/commercial/P0.1 non-goals.
+
+## 2026-05-29 mvp-system-e2e-validation QA And Governance Check
+
+Result: pass for `mvp-system-e2e-validation` local system gate. TC-MVP-E2E-001 through TC-MVP-E2E-010 have script, command, result, and report evidence; TC-MVP-E2E-010 retains only the real payment provider sub-scope as manual/external.
+
+Checked step:
+- Step 1 independent audit verified the system E2E test case library has 10 stable TC rows and covers Product Base AC-001 through AC-013 without blank required fields.
+- Step 2 independent audit verified `MVP-SI-014 -> MVP-E2E-FR-* -> MVP-E2E-SPEC-* -> AC-MVP-E2E-* -> MVP-E2E-TR-* -> TC-MVP-E2E-* -> report evidence` is connected.
+- Step 3 independent audit verified executable smoke/deep E2E gates, coverage audit, Flutter regression, project governance validation, and diff whitespace check.
+
+Changed files reviewed:
+- Product/docs: `docs/product/increments/mvp-system-e2e-validation/`, `docs/product/stages/mvp-backend-foundation.md`, `docs/product/roadmap.md`, `docs/reports/test_report.md`, `docs/reports/implementation_report.md`, `docs/reports/mvp_system_e2e_handoff.md`.
+- Automation: `scripts/run_mvp_system_e2e.sh`, `scripts/check_mvp_system_e2e_coverage.py`, `integration_test/mvp_system_smoke_test.dart`, `integration_test/mvp_system_scene_catalog_test.dart`, `integration_test/mvp_system_learning_memory_test.dart`, `integration_test/mvp_system_practice_feedback_test.dart`, `integration_test/mvp_system_profile_settings_test.dart`, `integration_test/mvp_system_membership_boundary_test.dart`, `integration_test/support/mvp_e2e_test_helpers.dart`.
+- App support: `lib/pages/login_page.dart`, `lib/pages/onboarding_page.dart`, `lib/pages/home_page.dart`, `lib/features/interview/interview_scene_listening_page.dart`, `lib/pages/profile_page.dart`, `lib/pages/edit_profile_page.dart`, `lib/pages/membership_page.dart`, `lib/pages/favorites_page.dart`, `lib/pages/feature_placeholder_page.dart`, `lib/main.dart`, `lib/services/api_client.dart`, `lib/services/app_session.dart`, `lib/application/session/session_profile_coordinator.dart`, `lib/core/bootstrap/app_bootstrapper.dart`, `lib/services/storage_service.dart`.
+- macOS/dependencies: `macos/Podfile`, `macos/Runner.xcodeproj/project.pbxproj`, `macos/Runner/DebugProfile.entitlements`, `pubspec.yaml`, `pubspec.lock`.
+
+Scope match:
+- The work stays inside MVP-SI-014 QA/system validation hardening.
+- It fixes client/backend contract mismatches found by E2E where needed to make existing MVP behavior persist correctly; it does not add production payment behavior, P0.1 training planner behavior, P0.2 memory behavior, or P1/P2 content expansion.
+- Docker is not required; the local gate uses installed PostgreSQL binaries and still validates real PostgreSQL rather than H2.
+
+Traceability finding:
+- AC-MVP-E2E-001 maps to TC-MVP-E2E-001 and passed.
+- AC-MVP-E2E-002 maps to TC-MVP-E2E-002 and TC-MVP-E2E-003 and passed.
+- AC-MVP-E2E-003 maps to TC-MVP-E2E-004 and TC-MVP-E2E-006 through TC-MVP-E2E-010 and passed, with TC-MVP-E2E-010 payment provider marked external/manual.
+- AC-MVP-E2E-004 maps to TC-MVP-E2E-005 and passed.
+- Product Base AC-001 through AC-013 are all represented in `test_cases.md`; AC-004 through AC-011 now have executed deep local system evidence, and AC-012/AC-013 preserve only the real payment/provider boundary exception.
+
+Validation:
+- `scripts/run_mvp_system_e2e.sh` - passed with local PostgreSQL + backend + Flutter macOS integration test.
+- `scripts/run_mvp_system_e2e.sh --suite scene-catalog` - passed.
+- `scripts/run_mvp_system_e2e.sh --suite learning-memory` - passed.
+- `scripts/run_mvp_system_e2e.sh --suite practice-feedback` - passed.
+- `scripts/run_mvp_system_e2e.sh --suite profile-settings` - passed.
+- `scripts/run_mvp_system_e2e.sh --suite membership-boundary` - passed.
+- `python3 scripts/check_mvp_system_e2e_coverage.py` - passed: 10 TC rows, 13 Product Base AC rows, 4 traceability rows.
+- `flutter test` - passed, 173 tests.
+- `env JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` from `backend/` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Required corrections:
+- Closed before final acceptance: the shared E2E helper was changed to drive onboarding through real Flutter UI clicks instead of completing onboarding through a session shortcut, and smoke plus TC-MVP-E2E-006 through TC-MVP-E2E-010 were rerun successfully.
+
+Residual risk:
+- `/user/stats` remains a logged non-blocking backend/client mismatch and should not be hidden by the smoke pass.
+- macOS notification initialization remains a logged soft failure in the local E2E environment.
+- TC-MVP-E2E-008 proves deterministic practice/coach/evidence behavior, not real third-party LLM/ASR/TTS quality or SLA.
+- TC-MVP-E2E-010 proves membership boundary UI, not real purchase, restore, webhook, refund, or provider settlement behavior.

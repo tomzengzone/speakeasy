@@ -1,13 +1,16 @@
 # MVP 阶段范围：后端与数据库全量补齐
 
 ## 状态
-Validated - MVP backend-first stage 已完成六个 increment 的实现、测试和 release evidence 闭环。
+Validated with local system E2E gate - MVP backend-first stage 已完成六个 implementation increment 的实现、测试和 release evidence 闭环；本地系统级黑盒验证作为 `MVP-SI-014` 的测试能力加固已通过 TC-MVP-E2E-001 到 TC-MVP-E2E-010，真实支付 provider 保留外部门禁。
 
 ## Version / Status
 | Version | Date | Status | Change |
 | --- | --- | --- | --- |
 | v0.1 | 2026-05-28 | Draft | 建立 MVP 从 roadmap 到 stage scope 到 increments 的后端优先全量分解。 |
 | v1.0 | 2026-05-29 | Validated | MVP-SI-001 到 MVP-SI-014 均通过 increment traceability、code/test/report/release evidence 或明确例外闭环。 |
+| v1.1 | 2026-05-29 | Hardening | 新增 `mvp-system-e2e-validation`，补齐电脑端 Flutter + backend + PostgreSQL 系统 E2E 验证链路。 |
+| v1.2 | 2026-05-29 | Validated | `mvp-system-e2e-validation` TC-MVP-E2E-001 到 TC-MVP-E2E-005 已自动化并通过，TC-MVP-E2E-006 到 TC-MVP-E2E-010 保留为深度系统回归 backlog/外部例外。 |
+| v1.3 | 2026-05-29 | Validated | `mvp-system-e2e-validation` TC-MVP-E2E-006 到 TC-MVP-E2E-010 已自动化并通过；真实支付 provider 保留 manual/external gate。 |
 
 ## 阶段目标
 把 Product Base 已接受的 MVP 学习闭环从当前本地/前端优先状态补齐为可上线演进的服务端事实：账号、首评、官方场景、练习会话、AI/语音网关、学习证据、会员边界、OpenAPI client、测试和发布证据都必须具备后端/API/数据库承接。
@@ -57,6 +60,7 @@ Validated - MVP backend-first stage 已完成六个 increment 的实现、测试
 | `mvp-backend-learning-memory` | Done | MVP-SI-007, MVP-SI-010 | 推荐表达、收藏、复习、学习证据和记忆沉淀。 |
 | `mvp-backend-membership-boundary` | Done | MVP-SI-011, MVP-SI-012 | MVP 账号删除、学习数据处理、会员/报告边界。 |
 | `mvp-backend-client-qa-release` | Done | MVP-SI-013, MVP-SI-014 | OpenAPI/Dart client/frontend integration、测试和发布证据。 |
+| `mvp-system-e2e-validation` | Validated local system gate | MVP-SI-014 | 本地电脑端 Flutter UI + Spring Boot backend + 真实 PostgreSQL 系统 E2E 用例库、脚本和证据加固；TC-MVP-E2E-001 到 TC-MVP-E2E-010 已通过，真实支付 provider 保留外部门禁。 |
 
 ## Stage Traceability Matrix
 | Stage Scope ID | Increment ID | Requirement ID | Spec ID | Acceptance Criteria ID | Traceability Row ID | Status | Gap |
@@ -75,6 +79,7 @@ Validated - MVP backend-first stage 已完成六个 increment 的实现、测试
 | MVP-SI-012 | `mvp-backend-membership-boundary` | MVP-BE-FR-012 | MVP-BE-SPEC-012 | AC-MVP-BE-012 | MVP-BE-TR-012 | Done | Closed |
 | MVP-SI-013 | `mvp-backend-client-qa-release` | MVP-BE-FR-013 | MVP-BE-SPEC-013 | AC-MVP-BE-013 | MVP-BE-TR-013 | Done with documented exceptions | Closed |
 | MVP-SI-014 | `mvp-backend-client-qa-release` | MVP-BE-FR-014 | MVP-BE-SPEC-014 | AC-MVP-BE-014 | MVP-BE-TR-014 | Done | Closed |
+| MVP-SI-014 | `mvp-system-e2e-validation` | MVP-E2E-FR-001..004 | MVP-E2E-SPEC-001..004 | AC-MVP-E2E-001..004 | MVP-E2E-TR-001..004 | Validated local system gate | MVP-E2E-GAP-001..007 closed; MVP-E2E-GAP-008 accepted external payment exception |
 
 ## Gap Register
 | Gap ID | Gap | Owner / next route | Status |
@@ -90,6 +95,8 @@ Validated - MVP backend-first stage 已完成六个 increment 的实现、测试
 | MVP-BE-GAP-009 | 会员/报告/占位页只需 MVP 边界事实，不应误升级为完整商业订阅；需防止与 P0 商业化 scope 混淆。 | Product Manager + Backend + Frontend | Closed 2026-05-29 |
 | MVP-BE-GAP-010 | OpenAPI 与 Flutter 现有 API client 存在 drift，缺 generated Dart client 或等效强约束。 | Frontend + Backend + QA | Closed 2026-05-29 |
 | MVP-BE-GAP-011 | 后端测试、契约测试、Flutter integration/e2e、implementation report 和 quality report 尚未覆盖本 stage 全量。 | QA + Development Orchestrator | Closed 2026-05-29 |
+| MVP-E2E-GAP-001..004 | 本地系统级黑盒验证能力加固：真实 PostgreSQL + backend + Flutter integration test、Product Base AC 覆盖审计、证据报告。 | QA + Development Orchestrator | Closed 2026-05-29 in `mvp-system-e2e-validation` |
+| MVP-E2E-GAP-005..008 | 场景目录/听力/学习记忆、语音模拟/反馈、profile/settings/session persistence 和真实支付 provider 的深度系统回归或外部例外。 | Frontend + Backend + QA + Product | GAP-005..007 Closed 2026-05-29; GAP-008 accepted external payment exception |
 
 ## 阶段非目标
 - 不实现 P0.1 训练型 Agent 的 session planner、micro-action、hint ladder 或 pressure check；这些仍由 `p0-1-expression-automation-training` 管理。

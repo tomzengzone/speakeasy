@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:speakeasy/features/interview/interview_wiki_store.dart';
@@ -186,12 +188,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
       '首评目标：${scene.title} ${diagnostic.targetLevel}',
     }.toList(growable: false);
 
-    await _persistLearningRoute(scene, diagnostic);
     widget.onComplete(
       goals: goals,
       level: diagnostic.level,
       dailyMinutes: _selectedDailyMinutes,
     );
+    unawaited(_persistLearningRoute(scene, diagnostic));
   }
 
   @override
@@ -248,6 +250,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: _SceneOptionTile(
+              selectionKey: ValueKey<String>('onboarding_scene_$index'),
               option: _sceneOptions[index],
               selected: _selectedSceneIndex == index,
               onTap: () => setState(() => _selectedSceneIndex = index),
@@ -271,6 +274,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: _BlockerOptionTile(
+              selectionKey: ValueKey<String>('onboarding_blocker_$index'),
               data: intents[index],
               description: _blockerDescription(intents[index].label),
               selected: _selectedBlockerIndexes.contains(index),
@@ -304,6 +308,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: _DiagnosticOptionTile(
+              selectionKey: ValueKey<String>('onboarding_diagnostic_$index'),
               option: _diagnosticOptions[index],
               selected: _selectedDiagnosticIndex == index,
               onTap: () => setState(() => _selectedDiagnosticIndex = index),
@@ -493,6 +498,7 @@ class _AssessmentFooter extends StatelessWidget {
       child: SizedBox(
         width: double.infinity,
         child: FilledButton.icon(
+          key: const ValueKey<String>('onboarding_primary_action'),
           onPressed: enabled ? onPressed : null,
           style: FilledButton.styleFrom(
             backgroundColor: primaryGreen,
@@ -570,11 +576,13 @@ class _StepIntro extends StatelessWidget {
 
 class _SceneOptionTile extends StatelessWidget {
   const _SceneOptionTile({
+    required this.selectionKey,
     required this.option,
     required this.selected,
     required this.onTap,
   });
 
+  final Key selectionKey;
   final _AssessmentSceneOption option;
   final bool selected;
   final VoidCallback onTap;
@@ -582,6 +590,7 @@ class _SceneOptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _SelectableSurface(
+      selectionKey: selectionKey,
       selected: selected,
       color: option.color,
       onTap: onTap,
@@ -627,12 +636,14 @@ class _SceneOptionTile extends StatelessWidget {
 
 class _BlockerOptionTile extends StatelessWidget {
   const _BlockerOptionTile({
+    required this.selectionKey,
     required this.data,
     required this.description,
     required this.selected,
     required this.onTap,
   });
 
+  final Key selectionKey;
   final IntentData data;
   final String description;
   final bool selected;
@@ -641,6 +652,7 @@ class _BlockerOptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _SelectableSurface(
+      selectionKey: selectionKey,
       selected: selected,
       color: data.color,
       onTap: onTap,
@@ -682,11 +694,13 @@ class _BlockerOptionTile extends StatelessWidget {
 
 class _DiagnosticOptionTile extends StatelessWidget {
   const _DiagnosticOptionTile({
+    required this.selectionKey,
     required this.option,
     required this.selected,
     required this.onTap,
   });
 
+  final Key selectionKey;
   final _DiagnosticLevelOption option;
   final bool selected;
   final VoidCallback onTap;
@@ -694,6 +708,7 @@ class _DiagnosticOptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _SelectableSurface(
+      selectionKey: selectionKey,
       selected: selected,
       color: option.color,
       onTap: onTap,
@@ -979,66 +994,68 @@ class _DailyGoalCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(12),
-          constraints: const BoxConstraints(minHeight: 118),
-          decoration: BoxDecoration(
-            color: selected ? const Color(0xFFEEF5EA) : Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: selected ? primaryGreen : borderColor,
-              width: selected ? 1.6 : 1,
+        child: SizedBox(
+          height: 118,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: selected ? const Color(0xFFEEF5EA) : Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: selected ? primaryGreen : borderColor,
+                width: selected ? 1.6 : 1,
+              ),
             ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                height: 22,
-                child: option.badge == null
-                    ? null
-                    : Align(
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF0CC),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            option.badge!,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFF8B6128),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: 22,
+                  child: option.badge == null
+                      ? null
+                      : Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF0CC),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              option.badge!,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF8B6128),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-              ),
-              const Spacer(),
-              Text(
-                option.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: selected ? primaryGreen : textPrimary,
                 ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                option.description,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, color: textSecondary),
-              ),
-            ],
+                const Spacer(),
+                Text(
+                  option.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: selected ? primaryGreen : textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  option.description,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, color: textSecondary),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1048,12 +1065,14 @@ class _DailyGoalCard extends StatelessWidget {
 
 class _SelectableSurface extends StatelessWidget {
   const _SelectableSurface({
+    required this.selectionKey,
     required this.selected,
     required this.color,
     required this.onTap,
     required this.child,
   });
 
+  final Key selectionKey;
   final bool selected;
   final Color color;
   final VoidCallback onTap;
@@ -1064,6 +1083,7 @@ class _SelectableSurface extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        key: selectionKey,
         borderRadius: BorderRadius.circular(8),
         onTap: onTap,
         child: AnimatedContainer(

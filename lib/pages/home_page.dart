@@ -911,6 +911,7 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
         ),
         Expanded(
           child: ListView(
+            key: const ValueKey<String>('home_learn_scroll'),
             padding: const EdgeInsets.fromLTRB(14, 34, 14, 100),
             children: [
               const _ActiveLearningSceneSectionHeader(),
@@ -1896,6 +1897,7 @@ class _HeroNextStepPanel extends StatelessWidget {
               children: [
                 Expanded(
                   child: _HeroBottomAction(
+                    key: const ValueKey<String>('home_hero_listen_button'),
                     icon: Icons.local_fire_department_rounded,
                     label: '开始热身',
                     onPressed: onListenScene,
@@ -1904,6 +1906,7 @@ class _HeroNextStepPanel extends StatelessWidget {
                 const SizedBox(width: 9),
                 Expanded(
                   child: _HeroBottomAction(
+                    key: const ValueKey<String>('home_hero_practice_button'),
                     icon: Icons.play_arrow_rounded,
                     label: '开始模拟',
                     onPressed: onOpenScene,
@@ -1921,6 +1924,7 @@ class _HeroNextStepPanel extends StatelessWidget {
 
 class _HeroBottomAction extends StatelessWidget {
   const _HeroBottomAction({
+    super.key,
     required this.icon,
     required this.label,
     required this.onPressed,
@@ -2301,6 +2305,9 @@ class _HomeSceneCategoryModule extends StatelessWidget {
               final bool selected = selectedSceneIds.contains(status.entry.id);
               final bool active = activeSceneId == status.entry.id;
               return _HomeSceneGridCard(
+                key: ValueKey<String>(
+                  'home_scene_grid_card_${status.entry.id}',
+                ),
                 status: status,
                 selected: selected,
                 active: active,
@@ -2370,6 +2377,7 @@ class _HomeSceneCategoryRail extends StatelessWidget {
 
 class _HomeSceneGridCard extends StatelessWidget {
   const _HomeSceneGridCard({
+    super.key,
     required this.status,
     required this.selected,
     required this.active,
@@ -2461,6 +2469,9 @@ class _HomeSceneGridCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         _HomeSceneJoinButton(
+                          key: ValueKey<String>(
+                            'home_scene_join_${status.entry.id}',
+                          ),
                           selected: selected,
                           completed: status.isCompleted,
                           onPressed: onJoin,
@@ -2480,6 +2491,7 @@ class _HomeSceneGridCard extends StatelessWidget {
 
 class _HomeSceneJoinButton extends StatelessWidget {
   const _HomeSceneJoinButton({
+    super.key,
     required this.selected,
     required this.completed,
     required this.onPressed,
@@ -2845,6 +2857,9 @@ class _HomeSceneIntroPageState extends State<_HomeSceneIntroPage> {
                     width: double.infinity,
                     height: 50,
                     child: FilledButton.icon(
+                      key: const ValueKey<String>(
+                        'home_scene_intro_join_button',
+                      ),
                       onPressed: (_joiningLearning || _joined)
                           ? null
                           : _joinLearning,
@@ -5958,6 +5973,7 @@ class _BottomBar extends StatelessWidget {
               final bool active = currentIndex == index;
               return Expanded(
                 child: GestureDetector(
+                  key: ValueKey<String>('home_bottom_tab_$index'),
                   onTap: () => onChanged(index),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

@@ -537,20 +537,19 @@ class AppSession extends ChangeNotifier {
   }) async {
     _onboardingDone = true;
     _user = _user?.copyWith(onboardingDone: true);
+    notifyListeners();
     await _profileCoordinator.persistOnboarding(
       user: _user,
       goals: goals,
       level: level,
       dailyMinutes: dailyMinutes,
     );
-    notifyListeners();
     unawaited(
-      _syncUserPatch(<String, dynamic>{
-        'onboardingDone': true,
-        'goals': goals,
-        'level': level,
-        'dailyMinutes': dailyMinutes,
-      }),
+      _syncOnboardingAssessment(
+        goals: goals,
+        level: level,
+        dailyMinutes: dailyMinutes,
+      ),
     );
   }
 
@@ -855,6 +854,60 @@ class AppSession extends ChangeNotifier {
         context: 'User profile patch sync failed',
       );
     }
+  }
+
+  Future<void> _syncOnboardingAssessment({
+    required List<String> goals,
+    required int level,
+    required int dailyMinutes,
+  }) async {
+    try {
+      await _profileCoordinator.syncOnboardingAssessment(
+        goalDirection: _goalDirectionFromGoals(goals),
+        painPoints: _painPointsFromGoals(goals),
+        outputLevel: _outputLevelFromAssessmentLevel(level),
+        dailyMinutes: dailyMinutes,
+      );
+    } catch (error, stackTrace) {
+      ErrorHandler.handleError(
+        error,
+        stackTrace: stackTrace,
+        context: 'Onboarding assessment sync failed',
+      );
+    }
+  }
+
+  String _goalDirectionFromGoals(List<String> goals) {
+    final String joined = goals.join('|');
+    if (joined.contains('入职')) {
+      return 'onboarding_introduction';
+    }
+    if (joined.contains('工作沟通') || joined.contains('会议')) {
+      return 'work_communication';
+    }
+    if (joined.contains('日常') || joined.contains('生活服务')) {
+      return 'daily_service';
+    }
+    return 'job_interview';
+  }
+
+  List<String> _painPointsFromGoals(List<String> goals) {
+    final List<String> painPoints = goals
+        .map((String goal) => goal.trim())
+        .where((String goal) => goal.isNotEmpty)
+        .take(5)
+        .toList(growable: false);
+    return painPoints.isEmpty ? <String>['opening'] : painPoints;
+  }
+
+  String _outputLevelFromAssessmentLevel(int level) {
+    if (level <= 1) {
+      return 'L1';
+    }
+    if (level == 2) {
+      return 'L2';
+    }
+    return 'L3';
   }
 
   void _applyUserJson(Map<String, dynamic> json) {

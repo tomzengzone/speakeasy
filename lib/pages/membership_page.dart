@@ -89,6 +89,7 @@ class _MembershipPageState extends State<MembershipPage> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     return Container(
+      key: const ValueKey<String>('membership_page'),
       color: appBackground,
       child: Column(
         children: [
@@ -149,6 +150,7 @@ class _MembershipPageState extends State<MembershipPage> {
                           border: Border.all(color: const Color(0x33FFFFFF)),
                         ),
                         child: IconButton(
+                          key: const ValueKey<String>('membership_back_button'),
                           onPressed: widget.onBack,
                           icon: const Icon(
                             Icons.chevron_left_rounded,
@@ -305,6 +307,7 @@ class _MembershipPageState extends State<MembershipPage> {
                   (plan) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: GestureDetector(
+                      key: ValueKey<String>('membership_plan_${plan.planId}'),
                       onTap: () => setState(() => _selectedPlan = plan.planId),
                       child: Container(
                         padding: const EdgeInsets.all(16),
@@ -432,6 +435,7 @@ class _MembershipPageState extends State<MembershipPage> {
                   const SizedBox(height: 12),
                 ],
                 FilledButton(
+                  key: const ValueKey<String>('membership_subscribe_button'),
                   onPressed:
                       widget.isLoading ||
                           (_isPro && widget.currentPlan == _selectedPlan)
@@ -458,6 +462,9 @@ class _MembershipPageState extends State<MembershipPage> {
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton(
+                  key: const ValueKey<String>(
+                    'membership_restore_purchases_button',
+                  ),
                   onPressed: widget.isLoading
                       ? null
                       : widget.onRestorePurchases,

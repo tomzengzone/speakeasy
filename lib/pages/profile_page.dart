@@ -370,6 +370,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return <Widget>[
       _SubscriptionPanel(
+        key: const ValueKey<String>('profile_subscription_panel'),
         isPro: isPro,
         planLabel: isPro ? l10n.proActivated : l10n.freeUser,
         onTap: () => _openMembership(session),
@@ -403,6 +404,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       const SizedBox(height: 20),
       _FavoritesSnapshot(
+        key: const ValueKey<String>('profile_favorites_snapshot'),
         items: _favoriteItems,
         onOpenFavorites: () => unawaited(_openFavorites()),
       ),
@@ -425,6 +427,7 @@ class _ProfilePageState extends State<ProfilePage> {
         title: '学习资产',
         children: [
           _MenuTile(
+            key: const ValueKey<String>('profile_learning_report_tile'),
             icon: Icons.bar_chart_rounded,
             color: const Color(0xFF4A7244),
             label: l10n.learningReport,
@@ -443,6 +446,7 @@ class _ProfilePageState extends State<ProfilePage> {
             onTap: widget.onOpenCompletedScenes,
           ),
           _MenuTile(
+            key: const ValueKey<String>('profile_offline_content_tile'),
             icon: Icons.download_rounded,
             color: const Color(0xFF5A6FA8),
             label: l10n.offlineContent,
@@ -452,6 +456,7 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
           _MenuTile(
+            key: const ValueKey<String>('profile_achievements_tile'),
             icon: Icons.military_tech_rounded,
             color: const Color(0xFFA0622A),
             label: l10n.achievements,
@@ -597,6 +602,7 @@ class _ProfilePageState extends State<ProfilePage> {
         title: context.l10n.accountAndMembership,
         children: [
           _MenuTile(
+            key: const ValueKey<String>('profile_settings_edit_profile_tile'),
             icon: Icons.person_outline_rounded,
             color: const Color(0xFF4A7244),
             label: context.l10n.editProfile,
@@ -606,6 +612,7 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
           _MenuTile(
+            key: const ValueKey<String>('profile_settings_membership_tile'),
             icon: Icons.workspace_premium_rounded,
             color: session.isPro
                 ? const Color(0xFFC8955A)
@@ -621,6 +628,7 @@ class _ProfilePageState extends State<ProfilePage> {
             onTap: () => _openMembership(session),
           ),
           _MenuTile(
+            key: const ValueKey<String>('profile_settings_favorites_tile'),
             icon: Icons.favorite_border_rounded,
             color: const Color(0xFFE06B6B),
             label: context.l10n.myFavorites,
@@ -633,10 +641,12 @@ class _ProfilePageState extends State<ProfilePage> {
         title: context.l10n.preferences,
         children: [
           _MenuTile(
+            key: const ValueKey<String>('profile_daily_reminder_tile'),
             icon: Icons.notifications_none_rounded,
             color: const Color(0xFF4A7244),
             label: context.l10n.dailyReminder,
             trailing: Switch.adaptive(
+              key: const ValueKey<String>('profile_daily_reminder_switch'),
               value: _reminderEnabled,
               activeThumbColor: primaryGreen,
               onChanged: (bool value) async {
@@ -689,10 +699,12 @@ class _ProfilePageState extends State<ProfilePage> {
               },
             ),
           _MenuTile(
+            key: const ValueKey<String>('profile_dark_mode_tile'),
             icon: Icons.dark_mode_outlined,
             color: const Color(0xFF7B4EA0),
             label: context.l10n.darkMode,
             trailing: Switch(
+              key: const ValueKey<String>('profile_dark_mode_switch'),
               value: _darkMode,
               onChanged: (bool value) async {
                 await session.setThemeMode(
@@ -762,6 +774,7 @@ class _ProfilePageState extends State<ProfilePage> {
             onTap: () => unawaited(_confirmDeleteAccount(session)),
           ),
           _MenuTile(
+            key: const ValueKey<String>('profile_logout_button'),
             icon: Icons.logout_rounded,
             color: const Color(0xFFD46B6B),
             label: context.l10n.logout,
@@ -806,6 +819,7 @@ class _ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      key: const ValueKey<String>('profile_header'),
       margin: const EdgeInsets.fromLTRB(14, 10, 14, 12),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
       decoration: BoxDecoration(
@@ -882,6 +896,9 @@ class _ProfileHeader extends StatelessWidget {
                           icon: Icons.auto_awesome_rounded,
                         ),
                         GestureDetector(
+                          key: const ValueKey<String>(
+                            'profile_header_membership_button',
+                          ),
                           onTap: onOpenMembership,
                           child: _HeaderChip(
                             label: planLabel,
@@ -896,12 +913,14 @@ class _ProfileHeader extends StatelessWidget {
                 ),
               ),
               _HeaderIconButton(
+                buttonKey: const ValueKey<String>('profile_edit_button'),
                 icon: Icons.edit_outlined,
                 tooltip: '编辑资料',
                 onTap: onEditProfile,
               ),
               const SizedBox(width: 8),
               _HeaderIconButton(
+                buttonKey: const ValueKey<String>('profile_settings_button'),
                 icon: Icons.settings_outlined,
                 tooltip: '设置',
                 onTap: onOpenSettings,
@@ -937,32 +956,36 @@ class _ProfileHeader extends StatelessWidget {
 
 class _HeaderIconButton extends StatelessWidget {
   const _HeaderIconButton({
+    required this.buttonKey,
     required this.icon,
     required this.tooltip,
     required this.onTap,
   });
 
+  final Key buttonKey;
   final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: const Color(0x1FFFFFFF),
+    return SizedBox(
+      width: 38,
+      height: 38,
+      child: IconButton(
+        key: buttonKey,
+        tooltip: tooltip,
+        onPressed: onTap,
+        style: IconButton.styleFrom(
+          padding: EdgeInsets.zero,
+          backgroundColor: const Color(0x1FFFFFFF),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0x26FFFFFF)),
+            side: const BorderSide(color: Color(0x26FFFFFF)),
           ),
-          child: Icon(icon, color: Colors.white, size: 20),
         ),
+        icon: Icon(icon, size: 20),
       ),
     );
   }
@@ -1068,6 +1091,7 @@ class _ProfileSectionTabs extends StatelessWidget {
           final bool active = activeIndex == index;
           return Expanded(
             child: InkWell(
+              key: ValueKey<String>('profile_section_tab_$index'),
               borderRadius: BorderRadius.circular(10),
               onTap: () => onChanged(index),
               child: AnimatedContainer(
@@ -1116,6 +1140,7 @@ class _ProfileSectionTabs extends StatelessWidget {
 
 class _SubscriptionPanel extends StatelessWidget {
   const _SubscriptionPanel({
+    super.key,
     required this.isPro,
     required this.planLabel,
     required this.onTap,
@@ -1409,6 +1434,7 @@ class _WeekDayDot extends StatelessWidget {
 
 class _FavoritesSnapshot extends StatelessWidget {
   const _FavoritesSnapshot({
+    super.key,
     required this.items,
     required this.onOpenFavorites,
   });
@@ -1423,6 +1449,7 @@ class _FavoritesSnapshot extends StatelessWidget {
       child: Column(
         children: [
           InkWell(
+            key: const ValueKey<String>('profile_favorites_entry'),
             onTap: onOpenFavorites,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
@@ -2086,6 +2113,7 @@ class _MenuGroup extends StatelessWidget {
 
 class _MenuTile extends StatelessWidget {
   const _MenuTile({
+    super.key,
     required this.icon,
     required this.color,
     required this.label,

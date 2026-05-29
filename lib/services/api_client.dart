@@ -135,6 +135,20 @@ class ApiClient {
     return _decodeResponse(response);
   }
 
+  static Future<Map<String, dynamic>> _patch(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    final http.Response response = await http
+        .patch(
+          Uri.parse('${AppConfig.apiBaseUrl}$path'),
+          headers: await _headers(),
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 15));
+    return _decodeResponse(response);
+  }
+
   static Future<Map<String, dynamic>> _delete(
     String path, {
     bool allowEmpty = false,
@@ -230,12 +244,30 @@ class ApiClient {
   static Future<Map<String, dynamic>> updateMe(
     Map<String, dynamic> data,
   ) async {
-    final Map<String, dynamic> response = await _put(
+    final Map<String, dynamic> response = await _patch(
       SpeakeasyApiPaths.userMe,
       _updateProfilePayload(data),
     );
     _ensureSuccess(response, fallback: '更新用户信息失败');
     return _okEnvelope(_appUserJson(_asMap(response['user'])));
+  }
+
+  static Future<Map<String, dynamic>> submitOnboardingAssessment({
+    required String goalDirection,
+    required List<String> painPoints,
+    required String outputLevel,
+    required int dailyMinutes,
+  }) async {
+    final Map<String, dynamic> response =
+        await _post(SpeakeasyApiPaths.onboardingAssessment, <String, dynamic>{
+          'schema_version': 1,
+          'goal_direction': goalDirection,
+          'pain_points': painPoints,
+          'output_level': outputLevel,
+          'daily_minutes': dailyMinutes,
+        });
+    _ensureSuccess(response, fallback: '首评结果同步失败');
+    return _okEnvelope(<String, dynamic>{'route': _asMap(response['route'])});
   }
 
   static Future<Map<String, dynamic>> deleteAccount() async {
@@ -955,6 +987,7 @@ class ApiClient {
 
     copy('displayName', 'display_name');
     copy('display_name', 'display_name');
+    copy('nickname', 'display_name');
     copy('targetLevel', 'target_level');
     copy('target_level', 'target_level');
     copy('dailyMinutes', 'daily_minutes');

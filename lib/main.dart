@@ -8,16 +8,21 @@ import 'package:speakeasy/utils/error_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    debugPrint('[FlutterError] ${details.exceptionAsString()}');
-    if (details.stack != null) {
-      debugPrintStack(stackTrace: details.stack);
-    }
-  };
-  ErrorWidget.builder = (FlutterErrorDetails details) {
-    return _BootErrorView(title: '界面加载失败', detail: details.exceptionAsString());
-  };
+  if (!const bool.fromEnvironment('SPEAKEASY_DISABLE_GLOBAL_ERROR_HOOKS')) {
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      debugPrint('[FlutterError] ${details.exceptionAsString()}');
+      if (details.stack != null) {
+        debugPrintStack(stackTrace: details.stack);
+      }
+    };
+    ErrorWidget.builder = (FlutterErrorDetails details) {
+      return _BootErrorView(
+        title: '界面加载失败',
+        detail: details.exceptionAsString(),
+      );
+    };
+  }
 
   runApp(const _BootstrapApp());
 }

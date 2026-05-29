@@ -1565,6 +1565,7 @@ class _ListeningPlaybackBar extends StatelessWidget {
                     Transform.translate(
                       offset: const Offset(128, 0),
                       child: _PracticeModeButton(
+                        key: const ValueKey<String>('listening_mode_toggle'),
                         mode: mode,
                         onPressed: onToggleMode,
                       ),
@@ -1716,7 +1717,11 @@ class _LoopModeButton extends StatelessWidget {
 }
 
 class _PracticeModeButton extends StatelessWidget {
-  const _PracticeModeButton({required this.mode, required this.onPressed});
+  const _PracticeModeButton({
+    super.key,
+    required this.mode,
+    required this.onPressed,
+  });
 
   final _ListeningPracticeMode mode;
   final VoidCallback onPressed;
