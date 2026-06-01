@@ -21,6 +21,7 @@ run_gate "release configuration" "$ROOT_DIR/scripts/check_release_configuration.
 run_gate "manual external evidence plan" python3 "$ROOT_DIR/scripts/check_manual_external_evidence_plan.py"
 run_gate "commercial copy contract" python3 "$ROOT_DIR/scripts/check_commercial_copy_contract.py" --strict-external
 run_gate "provider sandbox evidence" python3 "$ROOT_DIR/scripts/check_provider_sandbox_evidence.py" --strict-external
+run_gate "AI provider sandbox evidence" python3 "$ROOT_DIR/scripts/check_ai_provider_sandbox_evidence.py" --strict-external
 run_gate "store submission evidence" python3 "$ROOT_DIR/scripts/check_store_submission_evidence.py" --strict-external
 
 if [[ "$MODE" == "--env-only" ]]; then
@@ -43,6 +44,10 @@ done
 for evidence_ref in \
   APPLE_SANDBOX_EVIDENCE_REF \
   GOOGLE_PLAY_INTERNAL_EVIDENCE_REF \
+  DASHSCOPE_AI_SANDBOX_EVIDENCE_REF \
+  AI_MEDIA_STORAGE_EVIDENCE_REF \
+  AI_COST_DASHBOARD_EVIDENCE_REF \
+  AI_RETENTION_POLICY_EVIDENCE_REF \
   STORE_METADATA_EVIDENCE_REF \
   REVIEWER_ACCOUNT_REF \
   SYMBOL_UPLOAD_EVIDENCE_REF \

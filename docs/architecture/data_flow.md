@@ -129,26 +129,28 @@ Flutter records or requests AI help
 Provider-specific rules:
 - LLM: Qwen OpenAI-compatible response must produce strict JSON or recoverable fallback; no final mastery, entitlement, billing or review schedule fields can pass.
 - ASR: Paraformer requires a backend/provider-accessible `audio_ref` with backend-signed media metadata; local device file paths are rejected or returned as no result, and unsigned HTTP refs are rejected before provider calls.
-- TTS: DashScope TTS uses a text/model/voice cache key before calling provider; persistent object storage cache is a later release-hardening item.
+- TTS: DashScope TTS uses a text/model/voice/language cache key before calling provider; P0 paid AI voice requires persistent cache metadata and media object storage, while process-local cache is dev-only.
 - Observability records provider/model/status/latency/fallback reason, not raw audio or full sensitive transcript.
 
 ## P0 Commercial AI Provider Hardening Flow
 ```text
 Flutter records audio
-  -> uploads audio to backend or object storage upload URL
+  -> POST /media/audio/uploads creates backend-owned media upload session
+  -> Flutter uploads audio to backend or signed object storage upload URL
+  -> POST /media/audio/uploads/{media_id}/complete validates metadata/checksum
   -> backend validates mime, duration, size, entitlement and retention policy
   -> backend writes MediaAsset metadata and returns trusted audio_ref/media id
   -> /ai/transcribe consumes trusted audio_ref only
   -> DashScope ASR/LLM/TTS provider calls emit sanitized metrics
-  -> TTS results are stored in persistent cache/object storage by text hash/model/voice
-  -> AI cost dashboard aggregates plan/user/provider/model/status/cache metrics
-  -> retention/account deletion jobs delete or anonymize audio, transcripts and cache refs
+  -> TTS results are stored in persistent cache/object storage by text hash/model/voice/language
+  -> GET /admin/ai/cost-metrics aggregates plan/user/provider/model/status/cache metrics
+  -> POST /admin/ai/retention-jobs deletes or anonymizes audio, transcripts, provider payload refs and cache refs
 ```
 
 Release-hardening rules:
 - Paid AI voice cannot rely on local device paths, unsigned URLs, fake transport or process-local TTS cache.
 - Provider evidence must include DashScope LLM、Paraformer ASR、TTS latency、error、cost、format compatibility and fallback results.
-- Audit and metrics may store media hash/ref, model, status and cost bucket, but not full signed URLs, raw audio, full transcript or provider secrets.
+- Audit and metrics may store media hash/ref, user hash, plan, model, status, cache hit and cost bucket, but not full signed URLs, raw audio, full transcript, raw provider payload or provider secrets.
 
 ## Account Deletion And Data Retention Flow
 ```text

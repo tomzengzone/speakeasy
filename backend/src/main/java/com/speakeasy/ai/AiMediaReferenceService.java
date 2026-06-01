@@ -7,11 +7,14 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,15 +27,25 @@ public class AiMediaReferenceService {
   private static final String BYTES_PARAM = "bytes";
 
   private final AiMediaProperties properties;
+  private final AiMediaAssetRepository mediaAssets;
   private final HttpClient httpClient;
 
   @Autowired
+  public AiMediaReferenceService(AiMediaProperties properties, AiMediaAssetRepository mediaAssets) {
+    this(properties, mediaAssets, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
+  }
+
   public AiMediaReferenceService(AiMediaProperties properties) {
-    this(properties, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
+    this(properties, null, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
   }
 
   AiMediaReferenceService(AiMediaProperties properties, HttpClient httpClient) {
+    this(properties, null, httpClient);
+  }
+
+  AiMediaReferenceService(AiMediaProperties properties, AiMediaAssetRepository mediaAssets, HttpClient httpClient) {
     this.properties = properties;
+    this.mediaAssets = mediaAssets;
     this.httpClient = httpClient;
   }
 
@@ -42,6 +55,9 @@ public class AiMediaReferenceService {
       return TrustedAudioRef.invalid(value, "blank_audio_ref");
     }
     URI uri = parseUri(value);
+    if (uri != null && "media".equalsIgnoreCase(uri.getScheme())) {
+      return inspectStoredMediaRef(value, uri, requireTrustedMetadata);
+    }
     if (uri == null || !isHttp(uri)) {
       return TrustedAudioRef.invalid(value, "unsupported_media_ref");
     }
@@ -62,6 +78,28 @@ public class AiMediaReferenceService {
       return TrustedAudioRef.invalid(value, "trusted_media_metadata_required");
     }
     return TrustedAudioRef.untrusted(value, auditRef(value));
+  }
+
+  private TrustedAudioRef inspectStoredMediaRef(String value, URI uri, boolean requireTrustedMetadata) {
+    if (mediaAssets == null) {
+      return TrustedAudioRef.invalid(value, "media_repository_unavailable");
+    }
+    Optional<UUID> mediaId = parseMediaId(uri);
+    if (mediaId.isEmpty()) {
+      return TrustedAudioRef.invalid(value, "invalid_media_ref");
+    }
+    return mediaAssets.findById(mediaId.get())
+        .map(asset -> trustedRefForAsset(value, asset))
+        .orElseGet(() -> TrustedAudioRef.invalid(value, "media_not_found"));
+  }
+
+  private TrustedAudioRef trustedRefForAsset(String value, AiMediaAsset asset) {
+    Instant now = Instant.now();
+    if (!asset.isValidatedAt(now)) {
+      return TrustedAudioRef.invalid(value, "media_not_validated");
+    }
+    return TrustedAudioRef.trusted(
+        asset.getProviderRef(), asset.getAuditRef(), asset.getDurationSeconds(), asset.getByteSize());
   }
 
   public String signTrustedAudioRef(String providerAudioRef, int durationSeconds, long bytes) {
@@ -185,6 +223,21 @@ public class AiMediaReferenceService {
   private boolean isHttp(URI uri) {
     String scheme = uri.getScheme();
     return "http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme);
+  }
+
+  private Optional<UUID> parseMediaId(URI uri) {
+    if (!"audio".equalsIgnoreCase(uri.getHost())) {
+      return Optional.empty();
+    }
+    String path = uri.getPath() == null ? "" : uri.getPath().replaceFirst("^/", "");
+    if (path.isBlank()) {
+      return Optional.empty();
+    }
+    try {
+      return Optional.of(UUID.fromString(path));
+    } catch (IllegalArgumentException e) {
+      return Optional.empty();
+    }
   }
 
   private String sha256(String value) {

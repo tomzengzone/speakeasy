@@ -34,7 +34,7 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | --- | --- | --- |
 | Product Base stable behavior | Implementation-level paths allowed | Accepted Product Base artifacts and traceability exist |
 | P0 commercial subscription readiness | Implementation-level paths allowed | Approved increment artifacts exist |
-| P0 commercial AI provider hardening | Contract-first planning; implementation-level paths allowed only after API gate updates OpenAPI | Approved planning artifacts exist; media/cost/admin endpoints still require API contract work |
+| P0 commercial AI provider hardening | Implementation-level paths allowed for media upload/signing, provider evidence, cost metrics and retention operations | Approved increment artifacts exist and `P0-AI-ARCH-001` records the API/security contract gate |
 | P0.1 expression automation training | Implementation-level paths allowed where server-backed behavior is required | Approved increment artifacts exist; local-only behavior must not be over-promoted |
 | P0.2 training memory | Deferred boundary only | Stage exists, but no increment definition/spec yet |
 | P1 notebook/scoring/content expansion | Deferred boundary only | Roadmap/future feature boundary only |
@@ -64,7 +64,7 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | Learning / Review / Favorites | `Learning`, `Review`, `Favorites` | Product Base FR-005, FR-006, FR-009; P0.1 P01-FR-009 | In OpenAPI |
 | Subscription / Entitlement | `Subscription`, `Entitlement` | P0 FR-COM-001..FR-COM-007, FR-COM-009 | In OpenAPI |
 | Usage / AI Gateway | `Usage`, `AI Gateway` | P0 FR-COM-010; Product Base FR-004, FR-008; P0.1 P01-FR-006, P01-FR-007; `mvp-backend-practice-ai` MVP-SI-006/MVP-SI-009 | In OpenAPI, including server-side ASR/TTS/pronunciation/coach adapters, no client provider secret field, and typed fallback results |
-| Media / AI Provider Operations | Future `Media`, `Admin` or `AI Ops` | P0 `commercial-ai-provider-hardening` FR-COM-AI-001..005 | Planned; must not be implemented without media upload/signing, cache metadata, cost dashboard and retention API contract updates |
+| Media / AI Provider Operations | `Media`, `AI Ops`, `AI Gateway` | P0 `commercial-ai-provider-hardening` FR-COM-AI-001..005 | In OpenAPI for media upload/signing, TTS cache metadata, provider evidence, cost metrics and retention jobs |
 | Admin / Ops | `Admin` | P0 FR-COM-008, FR-COM-011, FR-COM-012 | In OpenAPI |
 | P0.2/P1/P2 future extensions | `Deferred` | Roadmap/stage/future feature registry boundaries only | No implementation-level endpoints |
 
@@ -89,13 +89,14 @@ Owning increment: `docs/product/increments/commercial-ai-provider-hardening/`.
 
 | Work package | Contract decision | Traceability |
 | --- | --- | --- |
-| P0-AI-ARCH-001 | Production ASR requires a backend media upload/signing contract. Flutter must receive a media id or trusted `audio_ref`, not submit local paths or unsigned provider URLs. | FR-COM-AI-001, AC-COM-AI-001 |
-| P0-AI-ARCH-001 | Persistent TTS cache requires cache metadata and media object lifecycle contracts before backend implementation. | FR-COM-AI-002, AC-COM-AI-002 |
-| P0-AI-QA-001 | DashScope sandbox evidence status may be tracked as ops/release evidence; provider keys and raw payloads must not appear in API responses. | FR-COM-AI-003, AC-COM-AI-003 |
-| P0-AI-OPS-001 | Cost dashboard read APIs, if exposed, must use user hash, plan, provider family, model, status, cache hit and estimated cost fields only. | FR-COM-AI-004, AC-COM-AI-004 |
-| P0-AI-SEC-001 | Retention/deletion APIs or jobs must expose status and audit refs without raw audio, transcript, provider payload or full signed URLs. | FR-COM-AI-005, AC-COM-AI-005 |
+| P0-AI-ARCH-001 | `POST /media/audio/uploads` creates a backend-owned upload session with entitlement/usage precheck, accepted content type, byte size, duration, checksum and short-lived signed upload URL or direct backend upload boundary. Response returns `MediaAsset.audio_ref` as the only client-consumable ASR input ref. | FR-COM-AI-001, AC-COM-AI-001, TC-COM-AI-001 |
+| P0-AI-ARCH-001 | `POST /media/audio/uploads/{media_id}/complete` validates object metadata, checksum, duration and owner before the asset can enter `/ai/transcribe`; local file paths and unsigned URLs remain invalid. | FR-COM-AI-001, AC-COM-AI-001, TC-COM-AI-002 |
+| P0-AI-ARCH-001 | `/ai/tts` response adds optional `media_id`, `cache_status` and `cache_expires_at`; the cache key remains server-owned from normalized text hash, model, voice and language, and Flutter must not submit or see the raw cache key. | FR-COM-AI-002, AC-COM-AI-002, TC-COM-AI-003 |
+| P0-AI-ARCH-001 | `GET /admin/ai/provider-evidence` exposes only reviewed provider evidence metadata and redacted evidence refs; provider keys, raw request payloads, raw audio and full transcripts must not appear in response bodies. | FR-COM-AI-003, AC-COM-AI-003, TC-COM-AI-004 |
+| P0-AI-ARCH-001 | `GET /admin/ai/cost-metrics` exposes plan, user hash, provider family, model, capability, status, cache hit, call count, duration/token estimate, estimated cost, budget bucket and margin risk. | FR-COM-AI-004, AC-COM-AI-004, TC-COM-AI-005 |
+| P0-AI-ARCH-001 | `POST /admin/ai/retention-jobs` and `GET /admin/ai/retention-jobs/{job_id}` expose retention execution status, aggregate deletion/redaction counts and redacted evidence refs only. | FR-COM-AI-005, AC-COM-AI-005, TC-COM-AI-006, TC-COM-AI-007 |
 
-P0-AI contract result: planning gate is established, but OpenAPI implementation paths are not yet added. Backend implementation must first update OpenAPI or record an ops-only internal contract exception with Documentation Governance review.
+P0-AI-ARCH-001 gate result: OpenAPI now contains implementation-level contracts for media upload/signing, persistent TTS cache metadata, provider evidence, cost metrics and AI retention jobs. Backend implementation may proceed only against these paths and must keep raw media, provider payloads, full signed URLs and provider secrets out of request/response DTOs and logs.
 
 ## Error Model
 
@@ -135,6 +136,8 @@ OpenAPI component: `ErrorResponse`.
 | Usage reserve/commit/release | `Idempotency-Key` or reservation id | Reserve cannot be double-counted; commit/release are terminal transitions |
 | Account deletion | `Idempotency-Key` | Duplicate deletion request returns current deletion job |
 | Training/practice turn | `Idempotency-Key` + session id | Replay cannot create duplicate turn/evidence |
+| Media upload create | `Idempotency-Key` + user + client_upload_id/checksum | Replay returns the same pending or validated media asset without creating duplicate provider-accessible refs |
+| AI retention job | `Idempotency-Key` + scope + reason + user_ref/deletion job ref | Replay returns the same retention job status and does not double-delete or double-count evidence |
 
 ## MVP Backend Practice/AI Contract Note
 

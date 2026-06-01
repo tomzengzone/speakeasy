@@ -17,18 +17,24 @@ public class AiGatewayService {
   private final UsageService usageService;
   private final AiProviderPolicyService policyService;
   private final AiMediaReferenceService mediaReferenceService;
+  private final AiCostMetricsService costMetricsService;
+  private final AiRetentionService retentionService;
 
   public AiGatewayService(
       AiProviderGateway provider,
       PracticeSessionRepository sessions,
       UsageService usageService,
       AiProviderPolicyService policyService,
-      AiMediaReferenceService mediaReferenceService) {
+      AiMediaReferenceService mediaReferenceService,
+      AiCostMetricsService costMetricsService,
+      AiRetentionService retentionService) {
     this.provider = provider;
     this.sessions = sessions;
     this.usageService = usageService;
     this.policyService = policyService;
     this.mediaReferenceService = mediaReferenceService;
+    this.costMetricsService = costMetricsService;
+    this.retentionService = retentionService;
   }
 
   public AiProviderGateway.TranscribeResult transcribe(UUID userId, String audioRef, String languageHint) {
@@ -36,6 +42,8 @@ public class AiGatewayService {
     UsageReservation reservation = usageService.reserveProviderCall(userId, "asr", mediaReferenceService.auditRef(audioRef));
     try {
       AiProviderGateway.TranscribeResult result = provider.transcribe(audioRef, languageHint);
+      costMetricsService.recordInvocation(
+          userId, "asr", result.status(), false, null, audioDuration(audioRef), "");
       closeProviderReservation(userId, reservation, "available".equals(result.status()));
       return result;
     } catch (RuntimeException e) {
@@ -49,6 +57,15 @@ public class AiGatewayService {
     UsageReservation reservation = usageService.reserveProviderCall(userId, "tts", "tts");
     try {
       AiProviderGateway.TtsResult result = provider.synthesize(text, voice);
+      retentionService.attachTtsCacheOwner(result.mediaId(), userId);
+      costMetricsService.recordInvocation(
+          userId,
+          "tts",
+          result.status(),
+          "hit".equals(result.cacheStatus()),
+          tokenEstimate(text),
+          null,
+          "provider_unavailable".equals(result.status()) ? result.status() : "");
       closeProviderReservation(userId, reservation, "available".equals(result.status()));
       return result;
     } catch (RuntimeException e) {
@@ -62,6 +79,8 @@ public class AiGatewayService {
     UsageReservation reservation = usageService.reserveProviderCall(userId, "scoring", mediaReferenceService.auditRef(audioRef));
     try {
       AiProviderGateway.ScoreResult result = provider.scorePronunciation(audioRef, referenceText);
+      costMetricsService.recordInvocation(
+          userId, "scoring", result.status(), false, tokenEstimate(referenceText), audioDuration(audioRef), "");
       closeProviderReservation(userId, reservation, "available".equals(result.status()));
       return result;
     } catch (RuntimeException e) {
@@ -78,6 +97,14 @@ public class AiGatewayService {
     UsageReservation reservation = usageService.reserveProviderCall(userId, "ai", sessionId.toString());
     try {
       AiProviderGateway.CoachResult result = provider.coach(sessionId, transcript, targetExpressionIds == null ? List.of() : targetExpressionIds);
+      costMetricsService.recordInvocation(
+          userId,
+          "ai",
+          result.providerStatus(),
+          false,
+          tokenEstimate(transcript),
+          null,
+          result.recoverableErrorCode());
       closeProviderReservation(userId, reservation, !result.recoverable());
       return result;
     } catch (RuntimeException e) {
@@ -100,5 +127,15 @@ public class AiGatewayService {
 
   public void resetInvocationCount() {
     provider.resetInvocationCount();
+  }
+
+  private Integer audioDuration(String audioRef) {
+    AiMediaReferenceService.TrustedAudioRef media = mediaReferenceService.inspectAudioRef(audioRef, false);
+    return media.durationSeconds();
+  }
+
+  private Integer tokenEstimate(String text) {
+    String cleaned = text == null ? "" : text.trim();
+    return cleaned.isBlank() ? 0 : Math.max(1, cleaned.length() / 4);
   }
 }

@@ -7,6 +7,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import com.speakeasy.ai.AiMediaAssetRepository;
+import com.speakeasy.ai.AiProviderInvocationMetricRepository;
+import com.speakeasy.ai.AiRetentionJobRepository;
+import com.speakeasy.ai.AiTtsCacheEntryRepository;
 import com.speakeasy.commerce.EntitlementSnapshotRepository;
 import com.speakeasy.commerce.PaymentProviderEventRepository;
 import com.speakeasy.commerce.PurchaseRepository;
@@ -71,10 +75,18 @@ abstract class BackendIntegrationTestSupport {
   @Autowired UsageLedgerRepository ledgers;
   @Autowired SubscriptionPlanRepository plans;
   @Autowired UserAccountRepository users;
+  @Autowired AiMediaAssetRepository mediaAssets;
+  @Autowired AiTtsCacheEntryRepository ttsCacheEntries;
+  @Autowired AiProviderInvocationMetricRepository aiProviderMetrics;
+  @Autowired AiRetentionJobRepository aiRetentionJobs;
 
   @BeforeEach
   void cleanUserData() {
     deletionJobs.deleteAll();
+    aiRetentionJobs.deleteAll();
+    aiProviderMetrics.deleteAll();
+    ttsCacheEntries.deleteAll();
+    mediaAssets.deleteAll();
     auditLogs.deleteAll();
     expressionAttempts.deleteAll();
     favoriteExpressions.deleteAll();

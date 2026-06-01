@@ -14,6 +14,7 @@ REQUIRED_TCS = (
     "TC-COM-012",
     "TC-COM-015",
     "TC-COM-019",
+    "TC-COM-AI-004",
     "TC-COM-021",
     "TC-COM-022",
 )
@@ -53,6 +54,13 @@ REQUIRED_SCENARIOS = (
     "GOOGLE-EXPIRY",
     "GOOGLE-GRACE-PERIOD",
     "GOOGLE-ACCOUNT-SWITCH",
+    "AI-QWEN-VALID",
+    "AI-QWEN-FALLBACK",
+    "AI-ASR-VALID",
+    "AI-ASR-REJECT",
+    "AI-TTS-GENERATE",
+    "AI-TTS-CACHE",
+    "AI-PROVIDER-ERROR",
     "STORE-APPSTORE-METADATA",
     "STORE-PLAY-METADATA",
     "STORE-SUBSCRIPTION-PRODUCTS",
@@ -78,6 +86,7 @@ REQUIRED_SCENARIOS = (
 REQUIRED_COMMANDS = (
     "python3 scripts/check_commercial_copy_contract.py --strict-external",
     "python3 scripts/check_provider_sandbox_evidence.py --strict-external",
+    "python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external",
     "python3 scripts/check_store_submission_evidence.py --strict-external",
     "scripts/check_social_login_release_config.sh",
     "scripts/check_release_readiness.sh",
@@ -86,6 +95,7 @@ REQUIRED_COMMANDS = (
 REQUIRED_REFS = (
     "APPLE_SANDBOX_EVIDENCE_REF",
     "GOOGLE_PLAY_INTERNAL_EVIDENCE_REF",
+    "DASHSCOPE_AI_SANDBOX_EVIDENCE_REF",
     "STORE_METADATA_EVIDENCE_REF",
     "REVIEWER_ACCOUNT_REF",
     "PRIVACY_URL",

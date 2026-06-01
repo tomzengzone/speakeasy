@@ -1,7 +1,7 @@
 # Test Report
 
 ## Current Status
-Latest recorded validation: `P0 Commercial AI Provider Hardening Planning Validation` passed documentation/planning checks and established TC-COM-AI-001 through TC-COM-AI-007 as planned test IDs. No implementation tests have run for this new increment.
+Latest recorded validation: `P0-AI-REPORT-001 Final Verification` passed combined backend, OpenAPI, script and release syntax gates. Strict DashScope, media storage, cost dashboard and retention release evidence refs remain required before paid AI release.
 
 ## Required Sections
 - test scope
@@ -30,7 +30,7 @@ Commands run:
 
 Passing tests:
 - TC-P01-015: `DashScopeProviderGatewayTest` verifies DashScope ASR/TTS/LLM model config and adapter routing while deterministic remains the default provider unless `speakeasy.ai.provider=dashscope`.
-- TC-P01-016: `DashScopeProviderGatewayTest` and `DashScopeProviderGatewayIntegrationTest` verify local-path ASR returns typed no-result, unsigned HTTP refs are rejected before provider transport, over-duration signed audio is rejected before provider transport, and valid backend-signed provider-accessible media refs return transcript/status.
+- TC-P01-016: `DashScopeProviderGatewayTest` and `DashScopeProviderGatewayIntegrationTest` verify local-path ASR is rejected before provider transport in production DashScope mode, unsigned HTTP refs are rejected before provider transport, over-duration signed audio is rejected before provider transport, and valid backend-signed provider-accessible media refs return transcript/status.
 - TC-P01-017: `DashScopeProviderGatewayTest` and integration coverage verify TTS cache by text/model/voice avoids duplicate provider calls in the current process.
 - TC-P01-018: `DashScopeProviderGatewayTest` and integration coverage verify strict LLM JSON maps to coach feedback, while invalid enum, missing required field, out-of-range score, unsupported extra field and banned final-mastery/entitlement fields fall back to recoverable feedback.
 - TC-P01-019: `DashScopeProviderGatewayIntegrationTest`, `CommercialAbuseControlTest`, and `UsageQuotaGateTest` verify current AI REST uses the adapter, usage reservation/commit/release remains active, free/pro/enterprise policy is server-derived from entitlement snapshots, text/audio thresholds differ by tier, client `provider_tier` cannot override server facts, and policy telemetry includes tier/cost metadata.
@@ -795,3 +795,155 @@ Acceptance criteria coverage:
 Residual risk:
 - This does not configure App Store Connect, Play Console, public privacy/support pages, reviewer credentials, iOS WeChat URL scheme, or Apple Sign In entitlement.
 - Remaining release blockers are TC-COM-015 external copy/store evidence, TC-COM-019 external provider evidence, TC-COM-021 external store evidence, and strict TC-COM-012/022 native/release evidence.
+## 2026-06-01 P0-AI-BE-001 Media Upload And ASR Ref Tests
+
+Scope:
+- `commercial-ai-provider-hardening`
+- Work package：`P0-AI-BE-001`
+- Coverage：`COM-SI-013` / `FR-COM-AI-001` / `AC-COM-AI-001`
+- Test cases：`TC-COM-AI-001`, `TC-COM-AI-002`
+
+Command:
+```bash
+cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MediaUploadReferenceServiceTest,ProductionAsrMediaRefTest,DashScopeProviderGatewayIntegrationTest test
+```
+
+Result: passed.
+
+Evidence:
+- `MediaUploadReferenceServiceTest` verifies authenticated media upload creation, idempotent upload create, trusted `media://audio/{media_id}` ref shape, upload URL shape, upload completion to `validated`, unsupported MIME rejection and oversize rejection.
+- `ProductionAsrMediaRefTest` verifies DashScope production ASR rejects local paths, unsigned HTTP URLs and unvalidated media refs before provider call, and accepts a completed backend media ref.
+- `DashScopeProviderGatewayIntegrationTest` regression verifies existing DashScope adapter behavior after changing local path handling from typed no-result to provider-before-call rejection.
+
+Residual:
+- This is a local backend/object lifecycle implementation gate. Real object storage bucket credentials, CDN/public serving behavior and live DashScope evidence remain pending in later work packages.
+
+## 2026-06-01 P0-AI-BE-002 Persistent TTS Cache Tests
+
+Scope:
+- `commercial-ai-provider-hardening`
+- Work package：`P0-AI-BE-002`
+- Coverage：`COM-SI-014` / `FR-COM-AI-002` / `AC-COM-AI-002`
+- Test cases：`TC-COM-AI-003`
+
+Command:
+```bash
+cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=PersistentTtsCacheTest,DashScopeProviderGatewayIntegrationTest,DashScopeProviderGatewayTest test
+```
+
+Result: passed.
+
+Evidence:
+- `PersistentTtsCacheTest` verifies the first TTS request stores a persistent cache entry with `cache_status=miss`, and a repeated request returns `cache_status=hit`, the same cache media id/audio ref and no second provider call.
+- `PersistentTtsCacheTest` verifies an expired cache entry is refreshed instead of reused.
+- `DashScopeProviderGatewayIntegrationTest` regression verifies the existing `/ai/tts` path still returns available TTS and avoids duplicate provider calls.
+- `DashScopeProviderGatewayTest` keeps the non-Spring unit boundary covered with a dev-only local fallback cache while production Spring wiring uses `AiTtsCacheService`.
+
+Residual:
+- This closes local persistent cache metadata, expiry refresh and delete-hook support. CDN/object storage distribution and production retention proof remain pending in later work packages.
+
+## 2026-06-01 P0-AI-QA-001 DashScope Sandbox Evidence Gate
+
+Scope:
+- `commercial-ai-provider-hardening`
+- Work package：`P0-AI-QA-001`
+- Coverage：`COM-SI-015` / `FR-COM-AI-003` / `AC-COM-AI-003`
+- Test case：`TC-COM-AI-004`
+
+Commands:
+```bash
+python3 scripts/check_ai_provider_sandbox_evidence.py
+python3 scripts/check_manual_external_evidence_plan.py
+python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external
+```
+
+Result:
+- Non-strict AI provider evidence gate passed and reported the expected missing `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` release blocker.
+- Manual external evidence plan passed after adding the DashScope gate command and scenario IDs.
+- Strict AI provider evidence gate failed as expected because real DashScope evidence has not been supplied.
+
+Evidence:
+- `tests/commercial/ai_provider_sandbox_matrix.md` now enumerates Qwen valid/fallback, Paraformer valid/reject, TTS generate/cache and provider-error scenarios with latency, error code, cost estimate, format compatibility, fallback and reviewer requirements.
+- `scripts/check_ai_provider_sandbox_evidence.py` validates the matrix and blocks strict release closure without `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`.
+- `scripts/check_release_readiness.sh` now includes the AI provider evidence gate in strict release readiness.
+
+Residual:
+- This is not a real DashScope sandbox pass. Controlled live LLM/ASR/TTS execution and external evidence review remain required before paid AI voice release.
+
+## 2026-06-01 P0-AI-OPS-001 AI Cost Dashboard Tests
+
+Scope:
+- `commercial-ai-provider-hardening`
+- Work package：`P0-AI-OPS-001`
+- Coverage：`COM-SI-016` / `FR-COM-AI-004` / `AC-COM-AI-004`
+- Test case：`TC-COM-AI-005`
+
+Command:
+```bash
+cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiCostDashboardTest,DashScopeProviderGatewayIntegrationTest,CommercialFoundationControllerTest test
+```
+
+Result: passed.
+
+Evidence:
+- `AiCostDashboardTest` verifies `/admin/ai/cost-metrics` returns plan, user hash, provider family, model, capability, status, cache hit, call count, token/audio units, estimated cost, budget bucket and margin risk.
+- `AiCostDashboardTest` verifies raw user id and raw TTS input text are not exposed in the dashboard response.
+- `AiCostDashboardTest` verifies budget warning aggregation and provider anomaly status.
+- `AiCostDashboardTest` verifies the endpoint requires the OPS bearer token and rejects normal user tokens.
+- Regression coverage with `DashScopeProviderGatewayIntegrationTest` and `CommercialFoundationControllerTest` passed after adding metric persistence and OPS controller wiring.
+
+Residual:
+- Local dashboard and budget/anomaly status are implemented. Production PM/Ops evidence is still required through `AI_COST_DASHBOARD_EVIDENCE_REF` before paid AI release.
+
+## 2026-06-01 P0-AI-SEC-001 AI Retention And Deletion Tests
+
+Scope:
+- `commercial-ai-provider-hardening`
+- Work package：`P0-AI-SEC-001`
+- Coverage：`COM-SI-017` / `FR-COM-AI-005` / `AC-COM-AI-005`
+- Test cases：`TC-COM-AI-006`, `TC-COM-AI-007`
+
+Command:
+```bash
+cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiRetentionPolicyTest,AiAccountDeletionMediaCleanupTest,AiCostDashboardTest,AccountDeletionLearningDataTest test
+```
+
+Result: passed.
+
+Evidence:
+- `AiRetentionPolicyTest` verifies OPS-only `POST /admin/ai/retention-jobs` deletes expired media and expired TTS cache entries, records counts and returns a redacted evidence ref.
+- `AiRetentionPolicyTest` verifies `GET /admin/ai/retention-jobs/{job_id}` reads completed retention evidence and the idempotency key returns the same job.
+- `AiAccountDeletionMediaCleanupTest` verifies account deletion runs AI media deletion, TTS cache owner cleanup, provider metric redaction and creates an `account_deletion` AI retention job.
+- `AccountDeletionLearningDataTest` passed as an existing account deletion regression.
+
+Residual:
+- Local retention execution proof is implemented. Production object-store lifecycle, external deletion proof and approved retention policy evidence remain required through `AI_MEDIA_STORAGE_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF`.
+
+## 2026-06-01 P0-AI-REPORT-001 Final Verification
+
+Scope:
+- `commercial-ai-provider-hardening`
+- Work package：`P0-AI-REPORT-001`
+- Coverage：final verification for TC-COM-AI-001 through TC-COM-AI-007 local gates and release blockers.
+
+Commands:
+```bash
+cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MediaUploadReferenceServiceTest,ProductionAsrMediaRefTest,PersistentTtsCacheTest,AiCostDashboardTest,AiRetentionPolicyTest,AiAccountDeletionMediaCleanupTest,DashScopeProviderGatewayIntegrationTest,DashScopeProviderGatewayTest,CommercialFoundationControllerTest,AccountDeletionLearningDataTest test
+python3 scripts/check_ai_provider_sandbox_evidence.py
+python3 scripts/check_manual_external_evidence_plan.py
+python3 -m py_compile scripts/check_ai_provider_sandbox_evidence.py scripts/check_manual_external_evidence_plan.py scripts/check_provider_sandbox_evidence.py scripts/check_store_submission_evidence.py scripts/check_commercial_copy_contract.py
+bash -n scripts/check_release_readiness.sh
+git diff --check
+npm run lint:openapi
+npm run check:api-contract
+```
+
+Result:
+- Backend combined target tests passed.
+- AI provider sandbox evidence non-strict gate passed with expected missing `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` blocker.
+- Manual external evidence plan passed.
+- Script compile, release shell syntax, diff whitespace and OpenAPI lint passed.
+- `npm run check:api-contract` failed inside the filesystem sandbox due to the known `uv` macOS system configuration panic, then passed outside the sandbox.
+
+Residual:
+- This is not paid AI release approval. Strict release still requires DashScope, media storage, cost dashboard and retention evidence refs.

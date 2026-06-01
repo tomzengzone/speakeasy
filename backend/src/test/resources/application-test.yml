@@ -17,6 +17,15 @@ spring:
       fail-on-unknown-properties: true
 
 speakeasy:
+  ai:
+    media:
+      metadata-signing-key: media-test-signing-key
+      public-base-url: https://media.test.local/audio
+      upload-base-url: https://upload.test.local/audio
+      upload-ttl: 15m
+      tts-cache-ttl: 7d
+      max-upload-bytes: 10000000
+      max-upload-duration-seconds: 120
   ops:
     bearer-token: ops-test-token
   payment:

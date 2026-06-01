@@ -1,7 +1,7 @@
 # Quality Report
 
 ## Current Status
-`P0 Commercial AI Provider Hardening Planning` passed independent documentation governance review. This is planning/traceability approval only; object-storage media upload, persistent TTS cache, real DashScope evidence, AI cost dashboard and production AI data strategy remain open implementation/release gates.
+`P0-AI-ARCH-001` passed architecture/API/security contract review, `P0-AI-BE-001` passed local backend media upload / ASR ref review, `P0-AI-BE-002` passed local persistent TTS cache review, `P0-AI-QA-001` passed the structural DashScope evidence gate review, `P0-AI-OPS-001` passed local AI cost dashboard review, `P0-AI-SEC-001` passed local AI retention/deletion execution review, and `P0-AI-REPORT-001` passed final evidence summary review. Real DashScope evidence and final external release evidence refs remain open gates.
 
 ## 2026-06-01 P0 Commercial AI Provider Hardening Documentation Review
 
@@ -1004,3 +1004,195 @@ Required corrections:
 Residual risk:
 - The project is still not commercial release ready.
 - TC-COM-012, TC-COM-015, TC-COM-019, TC-COM-021 and TC-COM-022 remain blockers until the manual checklist is actually executed, evidence refs are supplied, strict release gate passes and independent review approves the results.
+## 2026-06-01 P0-AI-ARCH-001 Independent Review
+
+Result: pass for architecture/API/security contract gate. Not a production AI release pass.
+
+Checked step:
+- Reviewed `P0-AI-ARCH-001` changes for `commercial-ai-provider-hardening`.
+- Confirmed scope is limited to architecture, API, security, domain, traceability, ADR and generated API boundary updates.
+- Confirmed no backend implementation files, Flutter feature files or tests were changed in this step.
+
+Findings:
+- No blocker. OpenAPI now contains implementation-level `Media` and `AI Ops` paths for media upload/signing, provider evidence, cost metrics and AI retention jobs.
+- No blocker. Domain and relationship docs define `MediaAsset`, `TtsCacheEntry`, `ProviderSandboxRun`, `ProviderInvocationMetric`, `RetentionPolicy` and `AiRetentionJob` with ownership, lifecycle and test impact.
+- No blocker. Security contract keeps provider secrets, raw audio, full transcripts, full signed URLs and raw provider payloads out of API responses and logs.
+- No blocker. `commercial-ai-provider-hardening` traceability rows are marked contract-ready while preserving implementation/live-evidence gaps as open.
+
+Validation:
+- `npm run check:api-contract` - passed outside sandbox after `uv` panicked under sandbox macOS system configuration access.
+- `npm run lint:openapi` - passed.
+- `npm run check:openapi-contract` - passed outside sandbox.
+- `npm run check:dart-client-drift` - passed outside sandbox.
+
+Required corrections:
+- None for `P0-AI-ARCH-001`.
+
+Residual risk:
+- Backend implementation, persistent cache implementation, real DashScope evidence, cost dashboard implementation, retention execution proof and final reports are still pending in `P0-AI-BE-001` through `P0-AI-REPORT-001`.
+
+## 2026-06-01 P0-AI-BE-001 Independent Review
+
+Result: pass for local backend media upload/signing and ASR ref resolution. Not a production object-storage/live-provider release pass.
+
+Checked step:
+- Reviewed backend implementation for `COM-SI-013` / `FR-COM-AI-001` / `AC-COM-AI-001`.
+- Reviewed migration, media upload API, trusted media ref resolution, DashScope policy rejection, and tests.
+- Confirmed the step did not mark persistent TTS cache, real DashScope evidence, cost dashboard or retention execution as complete.
+
+Findings:
+- No blocker. `ai_media_assets` stores backend-owned media metadata, upload URL, signed provider ref, audit ref, duration, byte size, checksum, status and expiry.
+- No blocker. `POST /media/audio/uploads` creates idempotent pending media assets and rejects unsupported MIME, oversize or over-duration metadata.
+- No blocker. `POST /media/audio/uploads/{media_id}/complete` validates ownership, expiry and checksum before marking a media ref `validated`.
+- No blocker. Production DashScope ASR now rejects local paths, unsigned URLs and unvalidated `media://audio/{media_id}` refs before provider calls.
+- No blocker. Traceability correctly marks only `COM-AI-GAP-001` local backend work closed; external object storage lifecycle evidence remains pending.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MediaUploadReferenceServiceTest,ProductionAsrMediaRefTest,DashScopeProviderGatewayIntegrationTest test` - passed.
+- `git diff --check` - passed.
+
+Required corrections:
+- Updated historical P0.1 test report wording so production DashScope local-path behavior is described as provider-before-call rejection rather than typed no-result.
+
+Residual risk:
+- Real object storage bucket/KMS/CDN evidence is not supplied yet.
+- Flutter is not wired to the upload flow in this step.
+- Persistent TTS cache, DashScope live evidence, cost dashboard and retention/deletion proof remain pending in later work packages.
+
+## 2026-06-01 P0-AI-BE-002 Independent Review
+
+Result: pass for local persistent TTS cache metadata, expiry refresh and delete-hook support. Not a CDN/object-storage distribution release pass.
+
+Checked step:
+- Reviewed backend implementation for `COM-SI-014` / `FR-COM-AI-002` / `AC-COM-AI-002`.
+- Reviewed persistent cache entity, repository, service, migration, `/ai/tts` response metadata and DashScope gateway integration.
+- Confirmed the step did not mark real DashScope sandbox evidence, cost dashboard or retention execution proof as complete.
+
+Findings:
+- No blocker. `ai_tts_cache_entries` persists cache key, normalized text hash, model, voice, language, audio ref, status, hit count, expiry and deletion fields.
+- No blocker. DashScope TTS checks `AiTtsCacheService` before provider calls and returns `cache_status`, `media_id` and `cache_expires_at` through the existing `/ai/tts` response.
+- No blocker. Expired entries are not reused; provider refresh updates the existing cache key instead of creating duplicate cache rows.
+- No blocker. `markExpiredDeleted` provides the local delete hook needed by later retention jobs.
+- No blocker. Traceability correctly marks only `COM-AI-GAP-002` local backend metadata work closed; CDN/object-storage distribution evidence remains pending.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=PersistentTtsCacheTest,DashScopeProviderGatewayIntegrationTest,DashScopeProviderGatewayTest test` - passed.
+- `git diff --check` - passed.
+
+Required corrections:
+- Kept a dev-only local fallback cache for non-Spring unit construction while production Spring wiring uses persistent `AiTtsCacheService`.
+
+Residual risk:
+- CDN/object storage distribution proof is not supplied yet.
+- Retention/account deletion execution proof is still pending in `P0-AI-SEC-001`.
+- Cost dashboard and live DashScope evidence remain pending.
+
+## 2026-06-01 P0-AI-QA-001 Independent Review
+
+Result: pass for DashScope sandbox evidence gate completeness. Not a real DashScope provider execution pass.
+
+Checked step:
+- Reviewed `COM-SI-015` / `FR-COM-AI-003` / `AC-COM-AI-003` / `TC-COM-AI-004`.
+- Reviewed `tests/commercial/ai_provider_sandbox_matrix.md`, `tests/commercial/manual_external_evidence_checklist.md`, `scripts/check_ai_provider_sandbox_evidence.py`, `scripts/check_manual_external_evidence_plan.py` and `scripts/check_release_readiness.sh`.
+- Confirmed the change does not mark fake transport or missing external evidence as a provider pass.
+
+Findings:
+- No blocker. The matrix now covers Qwen valid/fallback, Paraformer valid/reject, TTS generate/cache and provider-error scenarios with latency, error code, cost estimate, format compatibility, fallback and reviewer evidence.
+- No blocker. The new script passes in non-strict mode while preserving `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` as a strict release blocker.
+- No blocker. Manual evidence planning and aggregate release readiness now include the AI provider evidence gate.
+- No blocker. Traceability correctly keeps `COM-AI-GAP-003` open for real controlled live execution evidence.
+
+Validation:
+- `python3 scripts/check_ai_provider_sandbox_evidence.py` - passed with expected DashScope evidence blocker reported.
+- `python3 scripts/check_manual_external_evidence_plan.py` - passed.
+- `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external` - failed as expected until `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` is supplied.
+
+Required corrections:
+- None for `P0-AI-QA-001`.
+
+Residual risk:
+- Real DashScope LLM/ASR/TTS sandbox or controlled live calls have not been executed in this step.
+- Provider latency, error code, cost and audio format compatibility evidence remains an external release blocker.
+
+## 2026-06-01 P0-AI-OPS-001 Independent Review
+
+Result: pass for local AI cost dashboard, budget warning and provider anomaly implementation. Not a production PM/Ops release evidence pass.
+
+Checked step:
+- Reviewed `COM-SI-016` / `FR-COM-AI-004` / `AC-COM-AI-004` / `TC-COM-AI-005`.
+- Reviewed metric entity/repository/migration, cost aggregation service, `/admin/ai/cost-metrics` controller, provider call metric recording, policy rejection metric recording and release readiness evidence var.
+- Confirmed responses use user hash and aggregate cost fields only, not raw text, raw audio, full signed URLs or provider secrets.
+
+Findings:
+- No blocker. `ai_provider_invocation_metrics` persists provider/model/capability/status/cache hit/token/audio/cost/margin fields needed for PM/Ops aggregation.
+- No blocker. `/admin/ai/cost-metrics` is under `/admin/**` and requires `ROLE_OPS`; normal user tokens are forbidden.
+- No blocker. Dashboard status escalates for budget warning, budget exceeded and provider anomaly conditions.
+- No blocker. TTS result metadata feeds cache hit cost metrics, and provider/policy failures can appear as `provider_unavailable` or `rejected` without exposing raw payloads.
+- No blocker. Strict release readiness now requires `AI_COST_DASHBOARD_EVIDENCE_REF`, so local tests cannot be mistaken for production PM/Ops evidence.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiCostDashboardTest,DashScopeProviderGatewayIntegrationTest,CommercialFoundationControllerTest test` - passed.
+- `git diff --check` - passed in the follow-up validation for this step.
+
+Required corrections:
+- Changed dashboard aggregation period to daily `YYYY-MM-DD` to match the OpenAPI example and `daily_user` budget bucket.
+
+Residual risk:
+- Production budget thresholds and alert destinations are still configuration/ops evidence, not proven by local tests.
+- `AI_COST_DASHBOARD_EVIDENCE_REF` remains required before paid AI release.
+
+## 2026-06-01 P0-AI-SEC-001 Independent Review
+
+Result: pass for local AI retention/deletion execution proof. Not a production object-store lifecycle or privacy-policy approval pass.
+
+Checked step:
+- Reviewed `COM-SI-017` / `FR-COM-AI-005` / `AC-COM-AI-005` / `TC-COM-AI-006` / `TC-COM-AI-007`.
+- Reviewed retention job entity/repository/migration, OPS retention endpoints, expired media/cache deletion, TTS cache owner hash, account deletion hook and release readiness evidence refs.
+- Confirmed AI retention responses expose only counts and redacted evidence refs, not raw audio, full transcript, full signed URLs, provider payloads or provider secrets.
+
+Findings:
+- No blocker. `ai_retention_jobs` records scope, status, deletion/redaction counts, evidence ref, timestamps and idempotency key.
+- No blocker. `POST /admin/ai/retention-jobs` and `GET /admin/ai/retention-jobs/{job_id}` are protected by the existing `/admin/**` OPS role gate.
+- No blocker. Expired media and TTS cache entries are marked `deleted` and produce retention evidence counts.
+- No blocker. Account deletion invokes AI retention cleanup before general user data purge, marking media/cache deleted and deleting provider metrics for the user hash.
+- No blocker. Strict release readiness now requires `AI_MEDIA_STORAGE_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF`, so local retention tests cannot be treated as production privacy evidence.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiRetentionPolicyTest,AiAccountDeletionMediaCleanupTest,AiCostDashboardTest,AccountDeletionLearningDataTest test` - passed.
+- `git diff --check` - passed in follow-up validation for this step.
+
+Required corrections:
+- None for `P0-AI-SEC-001`.
+
+Residual risk:
+- Object-store provider lifecycle deletion is represented by local metadata deletion only; real bucket/CDN deletion proof remains external.
+- TTS cache ownership is first-owner based for local cleanup; shared-cache multi-owner deletion policy should be reviewed before broad multi-tenant production use.
+- Approved privacy/retention policy evidence remains required before paid AI release.
+
+## 2026-06-01 P0-AI-REPORT-001 Independent Review
+
+Result: pass for implementation/test/quality/release evidence summary. Not a paid AI release approval.
+
+Checked step:
+- Reviewed `docs/reports/implementation_report.md`, `docs/reports/test_report.md`, `docs/reports/quality_report.md`, `docs/product/increments/commercial-ai-provider-hardening/traceability.md` and release gate updates.
+- Confirmed each work package from `P0-AI-ARCH-001` through `P0-AI-SEC-001` has an independent quality entry and validation evidence.
+- Confirmed final report does not claim real DashScope, object-store lifecycle, PM/Ops production dashboard evidence or approved retention policy evidence has passed.
+
+Findings:
+- No blocker. Implementation report maps the work to COM-SI-013 through COM-SI-017, FR-COM-AI-001 through FR-COM-AI-005 and TC-COM-AI-001 through TC-COM-AI-007.
+- No blocker. Test report records backend, script, release syntax and OpenAPI validation commands with actual outcomes.
+- No blocker. Traceability marks local backend gaps closed where implemented and preserves external evidence refs as release blockers.
+- No blocker. Strict release readiness requires `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF`.
+
+Validation:
+- Combined backend target test command - passed.
+- `python3 scripts/check_ai_provider_sandbox_evidence.py` - passed with expected missing DashScope evidence blocker.
+- `python3 scripts/check_manual_external_evidence_plan.py` - passed.
+- Script compile, `bash -n scripts/check_release_readiness.sh`, `git diff --check` and `npm run lint:openapi` - passed.
+- `npm run check:api-contract` - passed outside sandbox after the sandbox `uv` panic.
+
+Required corrections:
+- None for `P0-AI-REPORT-001`.
+
+Residual risk:
+- External evidence refs are still missing; do not declare paid AI voice release ready.

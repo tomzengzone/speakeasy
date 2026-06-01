@@ -1,7 +1,7 @@
 # Traceability：商业 AI Provider 生产化加固
 
 ## 状态
-Draft - 需求、规格、验收和测试映射已规划；代码、测试执行、live evidence、实现报告和质量报告均未开始。
+In progress - architecture/API/security, media upload/ref resolution, persistent TTS cache, DashScope evidence gate, AI cost dashboard, retention/deletion execution and final reports have local evidence；live provider and release evidence refs remain open.
 
 ## 版本和状态管理
 | 字段 | 值 |
@@ -10,7 +10,7 @@ Draft - 需求、规格、验收和测试映射已规划；代码、测试执行
 | Last updated | 2026-06-01 |
 | Owner | Product Manager Agent |
 | Scope change | 新增 P0 AI provider 生产化加固 increment，用于承接 P01-GAP-008 release residual。 |
-| Workflow state | Planning ready；等待 architecture/API/security/test gates。 |
+| Workflow state | P0-AI-ARCH-001 through P0-AI-REPORT-001 local gates complete；waiting external evidence refs for paid AI release。 |
 
 ## 上游
 - Definition：`docs/product/increments/commercial-ai-provider-hardening/definition.md`
@@ -22,20 +22,20 @@ Draft - 需求、规格、验收和测试映射已规划；代码、测试执行
 ## Full Traceability Matrix
 | Traceability Row ID | Stage Scope ID | Increment ID | Requirement | Spec | Acceptance | Contract Evidence | Code Evidence | Test Evidence | Release Evidence | Status | Gap / notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| COM-AI-TR-001 | COM-SI-013 | commercial-ai-provider-hardening | FR-COM-AI-001 对象存储上传链路 | COM-AI-SPEC-001 | AC-COM-AI-001 | Required: API/Architecture/Security media upload contract | Pending | TC-COM-AI-001, TC-COM-AI-002 planned | Required before paid AI voice release | Planned | COM-AI-GAP-001 open |
-| COM-AI-TR-002 | COM-SI-014 | commercial-ai-provider-hardening | FR-COM-AI-002 持久化 TTS 媒体缓存 | COM-AI-SPEC-002 | AC-COM-AI-002 | Required: cache domain/API/storage contract | Pending | TC-COM-AI-003 planned | Required before paid AI scale | Planned | COM-AI-GAP-002 open |
-| COM-AI-TR-003 | COM-SI-015 | commercial-ai-provider-hardening | FR-COM-AI-003 真实 DashScope sandbox / controlled live 测试 | COM-AI-SPEC-003 | AC-COM-AI-003 | Required: AI runtime eval and evidence matrix | Pending | TC-COM-AI-004 external planned | DashScope evidence ref required | External pending | COM-AI-GAP-003 open |
-| COM-AI-TR-004 | COM-SI-016 | commercial-ai-provider-hardening | FR-COM-AI-004 AI 成本看板 | COM-AI-SPEC-004 | AC-COM-AI-004 | Required: ops dashboard metric contract | Pending | TC-COM-AI-005 planned | Budget/margin gate required | Planned | COM-AI-GAP-004 open |
-| COM-AI-TR-005 | COM-SI-017 | commercial-ai-provider-hardening | FR-COM-AI-005 生产级 AI 数据策略 | COM-AI-SPEC-005 | AC-COM-AI-005 | Required: security/data retention contract | Pending | TC-COM-AI-006, TC-COM-AI-007 planned | Privacy/store evidence required | Planned | COM-AI-GAP-005 open |
+| COM-AI-TR-001 | COM-SI-013 | commercial-ai-provider-hardening | FR-COM-AI-001 对象存储上传链路 | COM-AI-SPEC-001 | AC-COM-AI-001 | `docs/domain/domain_schema.md` MediaAsset; `docs/architecture/api_contract.md` P0-AI gate; OpenAPI `/media/audio/uploads`, `/media/audio/uploads/{media_id}/complete`; `docs/architecture/security_design.md` P0-AI security contract; ADR 0006 | `backend/src/main/java/com/speakeasy/ai/AiMediaAsset.java`, `AiMediaUploadService.java`, `AiMediaReferenceService.java`, `AiProviderPolicyService.java`, `backend/src/main/java/com/speakeasy/api/MediaController.java`, `backend/src/main/resources/db/migration/V202606010001__commercial_ai_media_assets.sql` | TC-COM-AI-001 `MediaUploadReferenceServiceTest` passed; TC-COM-AI-002 `ProductionAsrMediaRefTest` passed; command: `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MediaUploadReferenceServiceTest,ProductionAsrMediaRefTest,DashScopeProviderGatewayIntegrationTest test` | Required before paid AI voice release; local backend gate passed, external storage/provider evidence still pending | Backend implemented / local tests passed | COM-AI-GAP-001 closed for local backend; external object storage credentials/lifecycle evidence pending release gate |
+| COM-AI-TR-002 | COM-SI-014 | commercial-ai-provider-hardening | FR-COM-AI-002 持久化 TTS 媒体缓存 | COM-AI-SPEC-002 | AC-COM-AI-002 | `docs/domain/domain_schema.md` TtsCacheEntry; OpenAPI `/ai/tts` cache metadata fields; `docs/architecture/module_boundary.md` TTS cache service; ADR 0006 | `backend/src/main/java/com/speakeasy/ai/AiTtsCacheEntry.java`, `AiTtsCacheEntryRepository.java`, `AiTtsCacheService.java`, `DashScopeAiProviderGateway.java`, `backend/src/main/resources/db/migration/V202606010002__commercial_ai_tts_cache.sql`, `backend/src/main/java/com/speakeasy/api/AiGatewayController.java` | TC-COM-AI-003 `PersistentTtsCacheTest` passed; command: `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=PersistentTtsCacheTest,DashScopeProviderGatewayIntegrationTest,DashScopeProviderGatewayTest test` | Required before paid AI scale; local persistent metadata gate passed, external CDN/object storage distribution evidence pending | Backend implemented / local tests passed | COM-AI-GAP-002 closed for local persistent metadata; CDN/object-storage distribution evidence pending release gate |
+| COM-AI-TR-003 | COM-SI-015 | commercial-ai-provider-hardening | FR-COM-AI-003 真实 DashScope sandbox / controlled live 测试 | COM-AI-SPEC-003 | AC-COM-AI-003 | `docs/domain/domain_schema.md` ProviderSandboxRun; OpenAPI `/admin/ai/provider-evidence`; `tests/commercial/ai_provider_sandbox_matrix.md`; ADR 0006 | `scripts/check_ai_provider_sandbox_evidence.py`; `tests/commercial/manual_external_evidence_checklist.md`; `scripts/check_release_readiness.sh` AI provider gate | TC-COM-AI-004 structural gate passed via `python3 scripts/check_ai_provider_sandbox_evidence.py`; strict gate failed as expected without `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` | DashScope evidence ref required before paid AI voice release | Evidence gate implemented / external pending | COM-AI-GAP-003 still open for real DashScope LLM/ASR/TTS execution evidence |
+| COM-AI-TR-004 | COM-SI-016 | commercial-ai-provider-hardening | FR-COM-AI-004 AI 成本看板 | COM-AI-SPEC-004 | AC-COM-AI-004 | `docs/domain/domain_schema.md` ProviderInvocationMetric; OpenAPI `/admin/ai/cost-metrics`; `docs/architecture/security_design.md` sanitized cost fields; ADR 0006 | `backend/src/main/java/com/speakeasy/ai/AiProviderInvocationMetric.java`, `AiCostMetricsService.java`, `AiProviderInvocationMetricRepository.java`, `backend/src/main/java/com/speakeasy/api/AiOpsController.java`, `backend/src/main/resources/db/migration/V202606010003__commercial_ai_cost_metrics.sql`, `scripts/check_release_readiness.sh` cost evidence var | TC-COM-AI-005 `AiCostDashboardTest` passed; command: `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiCostDashboardTest,DashScopeProviderGatewayIntegrationTest,CommercialFoundationControllerTest test` | `AI_COST_DASHBOARD_EVIDENCE_REF` required before paid AI release | Backend implemented / local tests passed | COM-AI-GAP-004 closed for local dashboard; production PM/Ops evidence ref and alert runbook evidence remain release gates |
+| COM-AI-TR-005 | COM-SI-017 | commercial-ai-provider-hardening | FR-COM-AI-005 生产级 AI 数据策略 | COM-AI-SPEC-005 | AC-COM-AI-005 | `docs/domain/domain_schema.md` RetentionPolicy/AiRetentionJob; OpenAPI `/admin/ai/retention-jobs`; `docs/architecture/security_design.md` retention controls; ADR 0006 | `backend/src/main/java/com/speakeasy/ai/AiRetentionJob.java`, `AiRetentionService.java`, `AiRetentionJobRepository.java`, `backend/src/main/java/com/speakeasy/api/AiOpsController.java`, `backend/src/main/resources/db/migration/V202606010004__commercial_ai_retention_jobs.sql`, `backend/src/main/java/com/speakeasy/ops/AccountDeletionService.java`, `scripts/check_release_readiness.sh` retention/storage evidence vars | TC-COM-AI-006 `AiRetentionPolicyTest` passed; TC-COM-AI-007 `AiAccountDeletionMediaCleanupTest` passed; command: `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiRetentionPolicyTest,AiAccountDeletionMediaCleanupTest,AiCostDashboardTest,AccountDeletionLearningDataTest test` | `AI_RETENTION_POLICY_EVIDENCE_REF` and `AI_MEDIA_STORAGE_EVIDENCE_REF` required before paid AI release | Backend implemented / local tests passed | COM-AI-GAP-005 closed for local retention execution; production policy approval/object-store lifecycle evidence remains release gate |
 
 ## Gap Register
 | Gap ID | Gap | Affected traceability rows | Owner / next route | Status |
 | --- | --- | --- | --- | --- |
-| COM-AI-GAP-001 | Flutter-to-backend/object-storage media upload and trusted `audio_ref` lifecycle not implemented. | COM-AI-TR-001 | Backend / System Architect | Open |
-| COM-AI-GAP-002 | TTS cache is process-local only; no persistent cache metadata, object storage, expiry or delete hook. | COM-AI-TR-002 | Backend / Security | Open |
-| COM-AI-GAP-003 | No real DashScope LLM/ASR/TTS sandbox or controlled live evidence. | COM-AI-TR-003 | QA / AI Runtime / DevOps | Open / external |
-| COM-AI-GAP-004 | No PM/Ops cost dashboard for provider cost, cache hit, plan margin or budget alerts. | COM-AI-TR-004 | Ops / Backend / PM | Open |
-| COM-AI-GAP-005 | Production AI data retention/deletion policy and execution evidence incomplete for audio, transcripts, provider payload and cache. | COM-AI-TR-005 | Security / Backend / PM | Open |
+| COM-AI-GAP-001 | Flutter-to-backend/object-storage media upload and trusted `audio_ref` lifecycle implemented locally with backend-owned media metadata; external object storage credentials/lifecycle evidence remain release-gate work. | COM-AI-TR-001 | Backend / System Architect | Local backend closed / external evidence pending |
+| COM-AI-GAP-002 | Persistent TTS cache metadata, hit/miss/expiry refresh and delete hook are implemented locally; CDN/object-storage distribution evidence remains release-gate work. | COM-AI-TR-002 | Backend / Security | Local backend closed / external distribution evidence pending |
+| COM-AI-GAP-003 | DashScope LLM/ASR/TTS sandbox evidence gate is implemented, but no real controlled live evidence ref has been supplied. | COM-AI-TR-003 | QA / AI Runtime / DevOps | Gate implemented / external evidence open |
+| COM-AI-GAP-004 | AI cost dashboard implementation, aggregation, budget warning and provider anomaly status are implemented locally; production PM/Ops evidence ref remains required. | COM-AI-TR-004 | Ops / Backend / PM | Local backend closed / release evidence pending |
+| COM-AI-GAP-005 | Local AI retention job and account deletion cleanup are implemented for media, TTS cache owner refs and provider metric redaction; production policy approval/object-store lifecycle evidence remains required. | COM-AI-TR-005 | Security / Backend / PM | Local backend closed / release evidence pending |
 
 ## Required Downstream Evidence
 - Domain Schema：MediaAsset、TtsCacheEntry、ProviderInvocationMetric、ProviderSandboxRun、RetentionPolicy。
@@ -44,6 +44,6 @@ Draft - 需求、规格、验收和测试映射已规划；代码、测试执行
 - AI Runtime：DashScope sandbox/eval matrix and fallback compatibility evidence。
 - QA / Test Plan：TC-COM-AI-001 through TC-COM-AI-007 execution evidence。
 - DevOps / Release：storage lifecycle, budget alert, provider evidence refs and retention job schedule。
-- Implementation Report：must be updated after implementation starts。
-- Test Report：must record execution commands, results and external evidence refs。
-- Quality Report：must record independent review before release gate closure。
+- Implementation Report：updated by `P0-AI-REPORT-001`。
+- Test Report：records execution commands, results and external evidence blockers。
+- Quality Report：records independent review for each local work package before release gate closure。

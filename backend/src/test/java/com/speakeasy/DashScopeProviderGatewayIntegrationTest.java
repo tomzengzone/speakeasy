@@ -87,8 +87,9 @@ class DashScopeProviderGatewayIntegrationTest extends BackendIntegrationTestSupp
                   "audio_ref": "/tmp/local-answer.wav"
                 }
                 """))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.status").value("no_result"));
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"))
+        .andExpect(jsonPath("$.error.details.media_error").value("unsupported_media_ref"));
 
     mvc.perform(post("/ai/tts")
             .header(HttpHeaders.AUTHORIZATION, auth)

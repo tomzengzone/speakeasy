@@ -13,7 +13,7 @@ Proposed - Domain Schema Baseline + P0/P0.1 Extension。
 | 分类 | 范围 | 状态 |
 | --- | --- | --- |
 | Product Base accepted domain | access-onboarding、official-scenario-library、listening-shadowing、expression-practice-queue、voice-scenario-practice、learning-memory-review、profile-membership 的当前稳定能力 | In scope |
-| P0 extension | subscription、purchase、entitlement、usage、account deletion、commercial audit、production identity hardening | In scope |
+| P0 extension | subscription、purchase、entitlement、usage、account deletion、commercial audit、production identity hardening、AI provider operations | In scope |
 | P0.1 extension | training session、training turn、planner decision、action chain step、micro-action、hint state、pressure check、learning evidence hardening | In scope |
 | Explicit deferred | P0.2 跨 session/跨天训练编排、完整 L0-L5、P1 notebook/评分产品化、P2 A1-C2/CMS、任意场景生成 | Out of scope |
 
@@ -124,6 +124,19 @@ Proposed - Domain Schema Baseline + P0/P0.1 Extension。
 | AuditLog | Admin / Ops domain | audit_log_id, actor_type, actor_id, event_type, target_ref, redacted_details, request_id, created_at | 审计保留最小必要字段；不得记录完整 receipt、token、raw audio | 需要 append-only audit 表和 retention 策略 | Admin/Ops API 后续受限访问 | 支付、账号删除、用量、发布门禁审计测试 | P0 FR-COM-011, FR-COM-012 |
 | PaymentProviderEvent | Commerce / Admin domain | provider_event_id, platform, event_type, received_at, processed_status, related_subscription_id | webhook/provider event 必须按 provider id 去重和幂等处理 | 需要 provider event 唯一约束和处理状态 | Subscription webhook API 后续定义 provider event contract | webhook 乱序、重复、退款/过期降级测试 | P0 FR-COM-002, FR-COM-003, FR-COM-005 |
 
+## P0 Commercial AI Provider Operations Domain Extension
+
+Owning increment：`docs/product/increments/commercial-ai-provider-hardening/`。本节承接 `COM-SI-013` 到 `COM-SI-017`，定义 paid AI voice 前必须落地的媒体、缓存、真实 provider evidence、成本和保留删除领域对象。本文只定义领域语义和持久化边界；API shape 以 `docs/architecture/api_contract.md` 和 `docs/architecture/openapi/speakeasy-api.yaml` 为准。
+
+| Entity | Owner | 关键字段 | 生命周期 / 不变量 | Persistence / migration implication | API boundary recommendation | Test impact | Traceability note |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| MediaAsset | Media Storage + AI Gateway domain | media_id, user_id, purpose, provider_ref, audit_ref, content_type, byte_size, duration_seconds, checksum_sha256, status, expires_at, deleted_at | Flutter 只能消费后端签发的 `audio_ref`；本地路径、裸 URL、伪造签名、超时长或超大小输入不得进入生产 ASR | 需要 `ai_media_asset` 或等价表；对象存储 key 与 signed URL 分离；audit 只存 hash/ref | `POST /media/audio/uploads`、`POST /media/audio/uploads/{media_id}/complete` | TC-COM-AI-001, TC-COM-AI-002 | COM-SI-013, FR-COM-AI-001 |
+| TtsCacheEntry | Media Cache + AI Gateway domain | cache_id, normalized_text_hash, model, voice, language, media_id, status, hit_count, expires_at, deleted_at | cache key 不包含完整敏感文本；有效缓存命中必须复用同一持久 media ref；过期或删除后不得继续返回旧对象 | 需要 cache metadata 表和 object storage media 关系；支持多实例、重启、expiry 和账号删除 hook | `/ai/tts` response exposes `media_id`, `cache_status`, `cache_expires_at` only | TC-COM-AI-003 | COM-SI-014, FR-COM-AI-002 |
+| ProviderSandboxRun | AI Runtime + QA/Ops domain | evidence_id, provider_family, capability, model, fixture_ref, latency_p50_ms, latency_p95_ms, status, error_code, estimated_cost, reviewed_status, evidence_ref | 真实 DashScope evidence 是 release gate；缺少 approved evidence 时不得关闭 paid AI voice gate；raw payload 不进入普通 API | 可持久化 evidence metadata；外部 evidence refs 指向脱敏测试矩阵或受限存储 | `GET /admin/ai/provider-evidence` | TC-COM-AI-004 | COM-SI-015, FR-COM-AI-003 |
+| ProviderInvocationMetric | Usage Control + Ops domain | metric_id, user_hash, plan, provider_family, model, capability, status, cache_hit, token_estimate, audio_duration_seconds, estimated_cost, budget_bucket, created_at | 成本和毛利风险必须可按套餐、用户 hash、provider、模型、状态和 cache hit 聚合；不得保存 raw content | 可从 provider call event 异步聚合；需要日/周索引和 budget threshold 配置 | `GET /admin/ai/cost-metrics` | TC-COM-AI-005 | COM-SI-016, FR-COM-AI-004 |
+| RetentionPolicy | Security + Ops domain | policy_id, data_class, retention_days, action, legal_hold, status, approved_by, effective_at | 每类 AI 数据必须有保留、删除、匿名化或最小审计保留规则；未批准策略不得声明 production ready | 可作为配置表或版本化 policy doc；release gate 需要 approved policy version | Admin retention job reads policy but does not expose raw policy internals to Flutter | TC-COM-AI-006, TC-COM-AI-007 | COM-SI-017, FR-COM-AI-005 |
+| AiRetentionJob | Security + Backend/Ops domain | job_id, scope, user_ref, status, media_deleted_count, transcript_deleted_count, provider_payload_redacted_count, tts_cache_deleted_count, redacted_evidence_ref, failure_reason | retention/account deletion 必须删除、匿名化或保留最小审计字段，并记录脱敏证据；失败进入 retry/manual ops | 需要 job 表、幂等键和 retry/manual 状态；账号删除必须联动 MediaAsset、TtsCacheEntry 和 provider-derived private content | `POST /admin/ai/retention-jobs`、`GET /admin/ai/retention-jobs/{job_id}` | TC-COM-AI-006, TC-COM-AI-007 | COM-SI-017, FR-COM-AI-005 |
+
 ### P0 Lifecycle Notes
 
 | 状态机 | 状态 |
@@ -133,6 +146,10 @@ Proposed - Domain Schema Baseline + P0/P0.1 Extension。
 | UsageReservation | `reserved -> committed`; `reserved -> released`; `reserved -> expired`; `reserved -> failed` |
 | AccountDeletionJob | `requested -> access_revoked -> deleting_learning_data -> anonymizing_audit_refs -> completed`; 任一步可进入 `failed` 并支持 retry |
 | AuditLog | append-only；允许 redaction/anonymized target ref，不允许业务流程删除审计事实 |
+| MediaAsset | `pending -> uploaded -> validated`; `pending/uploaded/validated -> expired`; `pending/uploaded/validated -> deleted`; invalid metadata enters `rejected` and must not be used by ASR |
+| TtsCacheEntry | `miss -> active`; `active -> hit`; `active -> stale`; `active/stale -> deleted`; provider unavailable must not create active cache |
+| ProviderSandboxRun | `planned -> executed -> reviewed -> approved`; provider failure enters `failed` and release status remains blocked until reviewed |
+| AiRetentionJob | `pending -> running -> completed`; failures enter `failed_retryable` or `failed_manual` and require audit-visible retry state |
 
 ### P0-COM-DOM-001 Gate Coverage
 
@@ -150,8 +167,15 @@ Proposed - Domain Schema Baseline + P0/P0.1 Extension。
 | COM-SI-010 | FR-COM-010 | `UsageLedger`、`UsageReservation`、`ProviderUsageEvent` 覆盖 AI/ASR/TTS/评分成本控制 | reserve/commit/release、额度耗尽、滥用审计测试 |
 | COM-SI-011 | FR-COM-011 | `AuditLog`、`PaymentProviderEvent`、`AccountDeletionJob` 为商业边界测试提供可审计事实 | 商业边界测试矩阵结果追踪 |
 | COM-SI-012 | FR-COM-012 | `AuditLog`、`AccountLifecycle`、`SubscriptionPlan` 支持发布门禁、配置审计和回滚核查 | release secrets、签名、符号表、商店材料和回滚检查 |
+| COM-SI-013 | FR-COM-AI-001 | `MediaAsset` 覆盖 Flutter 录音上传、可信 `audio_ref`、签名元数据、对象生命周期和 ASR 输入边界 | media upload/signing、ASR ref resolution、非法 ref 拒绝测试 |
+| COM-SI-014 | FR-COM-AI-002 | `TtsCacheEntry` + `MediaAsset` 覆盖持久化 TTS cache key、media ref、expiry 和删除 hook | persistent TTS cache hit/miss/expiry/delete tests |
+| COM-SI-015 | FR-COM-AI-003 | `ProviderSandboxRun` 覆盖真实 DashScope LLM/ASR/TTS evidence、review 状态和 release gate | DashScope sandbox matrix evidence review |
+| COM-SI-016 | FR-COM-AI-004 | `ProviderInvocationMetric` 覆盖成本、cache hit、budget bucket 和 margin risk 聚合 | AI cost dashboard aggregation tests |
+| COM-SI-017 | FR-COM-AI-005 | `RetentionPolicy`、`AiRetentionJob` 覆盖音频、转写、provider payload、TTS cache 和账号删除证据 | retention policy and account deletion media cleanup tests |
 
 P0-COM-DOM-001 结论：Domain Schema 对 `commercial-subscription-readiness` 的 12 个 required Stage Scope Items 均有领域对象、生命周期或不变量承接。本文仍不定义 API DTO、数据库 SQL、Flutter UI 或实现顺序。
+
+P0-AI-ARCH-001 结论：Domain Schema 对 `commercial-ai-provider-hardening` 的 5 个 required Stage Scope Items 均有领域对象、状态机、持久化方向、API boundary recommendation 和测试影响承接。Backend 实现可以开始前，仍需通过 API/security/document-traceability 检查。
 
 ## P0.1 Training Domain Extension
 
@@ -226,6 +250,8 @@ P0.1-DOM-001 结论：`docs/domain/training_model.md`、本文和 `docs/domain/e
 | `learning_*` | FavoriteExpression、SavedExpression、LearningEvidence、LearningEvidenceCandidate、EvidenceRuleTrace、MasteryRecord、ReviewItem、SessionSummary、LearningHistoryEntry |
 | `commerce_*` | SubscriptionPlan、Purchase、Subscription、EntitlementSnapshot、EntitlementRule、PaymentProviderEvent |
 | `usage_*` | UsageLedger、UsageReservation、ProviderUsageEvent、ScoreSignal provider linkage |
+| `media_*` / `ai_media_*` | MediaAsset、TtsCacheEntry、provider-accessible signed media refs、object lifecycle metadata |
+| `ai_ops_*` | ProviderSandboxRun、ProviderInvocationMetric、RetentionPolicy、AiRetentionJob |
 | `ops_*` | AccountDeletionJob、AuditLog |
 
 本文不写 migration SQL。后续 migration 必须等 Domain Schema 和 API Contract 通过复核后，由 Backend/DB implementation plan 生成。
@@ -240,6 +266,8 @@ P0.1-DOM-001 结论：`docs/domain/training_model.md`、本文和 `docs/domain/e
 | Learning memory | Learning evidence、mastery、review、favorites/history family |
 | Commerce / Entitlement | Subscription verify/restore/provider event、Entitlement query/refresh family |
 | Usage | Usage summary、reserve、commit、release family |
+| Media Storage | Audio upload/create/complete、trusted media ref resolution family |
+| AI Ops | Provider evidence、cost metrics、budget status、retention job family |
 | P0.1 Planner | Training session、turn、planner next、hint、pressure check family |
 | AI Gateway | Transcribe、TTS、feedback、pronunciation family，需与 usage 和 schema validation 关联 |
 

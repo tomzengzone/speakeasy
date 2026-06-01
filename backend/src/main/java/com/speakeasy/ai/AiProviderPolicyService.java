@@ -20,16 +20,19 @@ public class AiProviderPolicyService {
   private final EntitlementGateService entitlementGateService;
   private final AiProviderTelemetry telemetry;
   private final AiMediaReferenceService mediaReferenceService;
+  private final AiCostMetricsService costMetricsService;
   private final String providerName;
 
   public AiProviderPolicyService(
       EntitlementGateService entitlementGateService,
       AiProviderTelemetry telemetry,
       AiMediaReferenceService mediaReferenceService,
+      AiCostMetricsService costMetricsService,
       @Value("${speakeasy.ai.provider:deterministic}") String providerName) {
     this.entitlementGateService = entitlementGateService;
     this.telemetry = telemetry;
     this.mediaReferenceService = mediaReferenceService;
+    this.costMetricsService = costMetricsService;
     this.providerName = providerName == null ? "deterministic" : providerName.trim();
   }
 
@@ -39,6 +42,7 @@ public class AiProviderPolicyService {
     String cleaned = text == null ? "" : text.trim();
     if (cleaned.length() > policy.maxTextChars()) {
       record(policy, usageFamily, "rejected", started, "text_length_exceeded", tokenEstimate(cleaned), null);
+      costMetricsService.recordPolicyRejection(userId, usageFamily, policy.tier(), tokenEstimate(cleaned), null, "text_length_exceeded");
       throw limitExceeded(
           usageFamily,
           policy,
@@ -52,10 +56,12 @@ public class AiProviderPolicyService {
   public String validateAudioRef(UUID userId, String usageFamily, String audioRef) {
     Instant started = Instant.now();
     TierPolicy policy = policyFor(userId);
+    boolean requiresTrustedMedia = "dashscope".equalsIgnoreCase(providerName);
     AiMediaReferenceService.TrustedAudioRef media =
-        mediaReferenceService.inspectAudioRef(audioRef, "dashscope".equalsIgnoreCase(providerName));
-    if ("dashscope".equalsIgnoreCase(providerName) && media.providerRef().startsWith("http") && !media.valid()) {
+        mediaReferenceService.inspectAudioRef(audioRef, requiresTrustedMedia);
+    if (requiresTrustedMedia && !media.valid()) {
       record(policy, usageFamily, "rejected", started, media.invalidReason(), null, null);
+      costMetricsService.recordPolicyRejection(userId, usageFamily, policy.tier(), null, null, media.invalidReason());
       throw new ApiException(
           HttpStatus.UNPROCESSABLE_ENTITY,
           "SCHEMA_VALIDATION_FAILED",
@@ -65,6 +71,7 @@ public class AiProviderPolicyService {
     Integer duration = media.durationSeconds();
     if (duration != null && duration > policy.maxAudioDurationSeconds()) {
       record(policy, usageFamily, "rejected", started, "audio_duration_exceeded", null, duration);
+      costMetricsService.recordPolicyRejection(userId, usageFamily, policy.tier(), null, duration, "audio_duration_exceeded");
       throw limitExceeded(
           usageFamily,
           policy,
@@ -74,6 +81,7 @@ public class AiProviderPolicyService {
     Long bytes = media.bytes();
     if (bytes != null && bytes > policy.maxAudioBytes()) {
       record(policy, usageFamily, "rejected", started, "audio_size_exceeded", null, duration);
+      costMetricsService.recordPolicyRejection(userId, usageFamily, policy.tier(), null, duration, "audio_size_exceeded");
       throw limitExceeded(
           usageFamily,
           policy,

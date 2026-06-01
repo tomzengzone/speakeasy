@@ -1,6 +1,7 @@
 package com.speakeasy.ops;
 
 import com.speakeasy.common.ApiException;
+import com.speakeasy.ai.AiRetentionService;
 import com.speakeasy.identity.AuthService;
 import com.speakeasy.identity.UserAccount;
 import com.speakeasy.identity.UserAccountRepository;
@@ -18,6 +19,7 @@ public class AccountDeletionService {
   private final AccountDeletionJobRepository deletionJobs;
   private final AuditLogRepository auditLogs;
   private final AuthService authService;
+  private final AiRetentionService aiRetentionService;
   private final JdbcTemplate jdbcTemplate;
   private final Clock clock;
 
@@ -26,12 +28,14 @@ public class AccountDeletionService {
       AccountDeletionJobRepository deletionJobs,
       AuditLogRepository auditLogs,
       AuthService authService,
+      AiRetentionService aiRetentionService,
       JdbcTemplate jdbcTemplate,
       Clock clock) {
     this.users = users;
     this.deletionJobs = deletionJobs;
     this.auditLogs = auditLogs;
     this.authService = authService;
+    this.aiRetentionService = aiRetentionService;
     this.jdbcTemplate = jdbcTemplate;
     this.clock = clock;
   }
@@ -52,6 +56,8 @@ public class AccountDeletionService {
     AccountDeletionJob job = deletionJobs.save(new AccountDeletionJob(UUID.randomUUID(), userId, idempotencyKey, now));
     user.requestDeletion(now);
     authService.revokeUserSessions(userId);
+    var aiRetentionJob = aiRetentionService.runAccountDeletion(
+        userId, "account-deletion-" + job.getDeletionJobId(), requestId);
     purgeUserOwnedData(userId);
     user.markDeleted(now);
     job.complete(now);
@@ -61,7 +67,9 @@ public class AccountDeletionService {
         userId.toString(),
         "account_deletion_completed",
         "user:" + userId,
-        "{\"learning_data\":\"deleted_or_anonymized\",\"sessions\":\"revoked\"}",
+        "{\"learning_data\":\"deleted_or_anonymized\",\"sessions\":\"revoked\",\"ai_retention_ref\":\""
+            + aiRetentionJob.getRedactedEvidenceRef()
+            + "\"}",
         requestId,
         now));
     return deletionJobs.save(job);

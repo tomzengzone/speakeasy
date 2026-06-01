@@ -1,6 +1,7 @@
 package com.speakeasy.ai;
 
 import java.util.List;
+import java.time.Instant;
 import java.util.UUID;
 
 public interface AiProviderGateway {
@@ -18,7 +19,11 @@ public interface AiProviderGateway {
 
   record TranscribeResult(String transcript, double confidence, String status) {}
 
-  record TtsResult(String audioRef, String status) {}
+  record TtsResult(String audioRef, String status, String mediaId, String cacheStatus, Instant cacheExpiresAt) {
+    public TtsResult(String audioRef, String status) {
+      this(audioRef, status, null, null, null);
+    }
+  }
 
   record ScoreResult(String scoreKind, Double value, Double confidence, String status) {}
 

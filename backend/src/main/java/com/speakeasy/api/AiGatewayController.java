@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -35,7 +36,7 @@ public class AiGatewayController {
   public TtsResponse synthesize(
       @AuthenticationPrincipal CurrentUser currentUser, @Valid @RequestBody TtsRequest request) {
     AiProviderGateway.TtsResult result = service.synthesize(currentUser.userId(), request.text(), request.voice());
-    return new TtsResponse(1, result.audioRef(), result.status());
+    return new TtsResponse(1, result.audioRef(), result.status(), result.mediaId(), result.cacheStatus(), result.cacheExpiresAt());
   }
 
   @PostMapping("/ai/pronunciation")
@@ -66,7 +67,14 @@ public class AiGatewayController {
 
   public record TtsRequest(@NotNull @Min(1) @Max(1) Integer schemaVersion, @NotBlank String text, String voice) {}
 
-  public record TtsResponse(int schemaVersion, String audioRef, String status) implements SchemaResponse {}
+  public record TtsResponse(
+      int schemaVersion,
+      String audioRef,
+      String status,
+      String mediaId,
+      String cacheStatus,
+      Instant cacheExpiresAt)
+      implements SchemaResponse {}
 
   public record PronunciationRequest(
       @NotNull @Min(1) @Max(1) Integer schemaVersion,

@@ -186,6 +186,31 @@ These relationships close MVP-BE-GAP-008 and MVP-BE-GAP-009 for MVP-BE-TR-011 an
 | Purchase / Subscription / PaymentProviderEvent | 按财务、商店争议和合规要求保留最小脱敏审计字段。 |
 | AuditLog | 保留最小必要字段；target_ref 可匿名化；不得包含完整凭据、token、raw audio 或敏感对话。 |
 
+## P0 Commercial AI Provider Operations Relationships
+
+Owning increment：`commercial-ai-provider-hardening`。这些关系是 `P0-AI-ARCH-001` 的架构/API/security 契约输入，后续 Backend/QA/Ops/Security 实现不得绕过。
+
+| Source entity | Relationship | Target entity | Cardinality | Owner | Rule |
+| --- | --- | --- | --- | --- | --- |
+| User | owns | MediaAsset | 1 -> many | Media Storage | 每个录音 media ref 必须有服务端 owner，客户端不能提交裸 URL 作为生产 ASR 输入。 |
+| MediaAsset | may be source for | TranscribeRequest / PronunciationRequest | 1 -> many | AI Gateway | `/ai/transcribe` 和 `/ai/pronunciation` 只接受 validated backend media refs。 |
+| MediaAsset | may back | TtsCacheEntry | 1 -> many | Media Cache | TTS 输出对象通过 media_id/audio_ref 复用，不暴露对象存储内部 key。 |
+| TtsCacheEntry | references | ProviderInvocationMetric | many -> many aggregate | Usage / Ops | cache hit/miss 必须进入成本聚合，不能只作为进程内行为。 |
+| ProviderSandboxRun | validates | AiProviderGateway capability | many -> one capability | AI Runtime / QA | LLM、ASR、TTS 每类能力都需要 approved evidence 才能关闭 paid AI voice gate。 |
+| ProviderInvocationMetric | rolls up from | UsageReservation / provider call | many -> many | Usage / Ops | 成本看板只读 user hash、plan、provider、model、status、cache hit、duration/token estimate 和 cost。 |
+| RetentionPolicy | governs | MediaAsset / TtsCacheEntry / provider payload refs | 1 -> many | Security / Ops | retention policy 决定删除、匿名化或保留最小审计字段。 |
+| AiRetentionJob | executes | RetentionPolicy | many -> one policy version | Security / Backend | retention/account deletion job 必须记录 redacted evidence ref 和 retry/manual failure 状态。 |
+
+### P0-AI-ARCH-001 Relationship Gate Notes
+
+| Gate | Relationship requirement | Covered by |
+| --- | --- | --- |
+| COM-AI-GAP-001 | Flutter 录音必须先变成服务端-owned MediaAsset，再生成可信 `audio_ref` | `User -> MediaAsset -> TranscribeRequest` |
+| COM-AI-GAP-002 | TTS cache 必须持久化到 media/cache 关系，支持重启、多实例、expiry 和删除 hook | `MediaAsset -> TtsCacheEntry -> ProviderInvocationMetric` |
+| COM-AI-GAP-003 | 真实 provider evidence 是 release gate，不是普通测试日志 | `ProviderSandboxRun -> AiProviderGateway capability` |
+| COM-AI-GAP-004 | 成本看板必须从 provider call/usage/cache 汇总，不暴露原始内容 | `UsageReservation -> ProviderInvocationMetric` |
+| COM-AI-GAP-005 | 账号删除和 retention job 必须覆盖音频、转写、provider payload 和 TTS cache | `RetentionPolicy -> AiRetentionJob -> MediaAsset/TtsCacheEntry` |
+
 ## No-Cycle Ownership Rules
 
 | Rule | Explanation |
@@ -196,6 +221,9 @@ These relationships close MVP-BE-GAP-008 and MVP-BE-GAP-009 for MVP-BE-TR-011 an
 | Mastery is aggregate | MasteryRecord 由 evidence 更新，不反向拥有 evidence。 |
 | Entitlement gates access, not content truth | EntitlementRule 可限制场景或 AI 能力访问，但不改变 Scenario 内容本身。 |
 | Usage records consumption, not provider truth | ProviderUsageEvent 记录调用事实和成本，不保存 provider secret 或完整 raw payload。 |
+| Media refs are server facts | MediaAsset 负责 provider-accessible ref；客户端本地路径、裸 URL 或对象存储内部 key 都不是生产 ASR 事实。 |
+| Cache metadata is not user text | TtsCacheEntry 只保存 normalized text hash/model/voice/language/media ref，不保存完整敏感文本。 |
+| Cost metrics are sanitized aggregates | ProviderInvocationMetric 可被 PM/Ops 查看，但不得包含 raw audio、raw transcript、完整 signed URL 或 provider payload。 |
 | Deletion orchestrates, not owns business history | AccountDeletionJob 管理删除流程，但被处理数据仍归各 domain 定义处理策略。 |
 
 ## API Contract Inputs From Relationships
@@ -207,8 +235,9 @@ These relationships close MVP-BE-GAP-008 and MVP-BE-GAP-009 for MVP-BE-TR-011 an
 | Training / Practice | PracticeSession、DialogueTurn、TrainingSession、TrainingTurn、MicroAction、PlannerDecision、HintState、PressureCheck |
 | Learning / Review | LearningEvidence、EvidenceRuleTrace、MasteryRecord、ReviewItem、FavoriteExpression、SavedExpression、SessionSummary |
 | Subscription / Entitlement | SubscriptionPlan、Purchase、Subscription、EntitlementSnapshot、EntitlementRule、PaymentProviderEvent |
-| Usage / AI Gateway | UsageLedger、UsageReservation、ProviderUsageEvent、AIResultRef、ScoreSignal |
-| Admin / Ops | AuditLog、AccountDeletionJob、PaymentProviderEvent |
+| Usage / AI Gateway | UsageLedger、UsageReservation、ProviderUsageEvent、AIResultRef、ScoreSignal、ProviderInvocationMetric |
+| Media / AI Ops | MediaAsset、TtsCacheEntry、ProviderSandboxRun、RetentionPolicy、AiRetentionJob |
+| Admin / Ops | AuditLog、AccountDeletionJob、PaymentProviderEvent、ProviderSandboxRun、AiRetentionJob |
 
 API Contract/OpenAPI 阶段必须从这些关系定义 authentication、authorization、idempotency、error codes、schema version 和 generated Dart client policy。本文不定义 request/response shape。
 
@@ -223,9 +252,14 @@ API Contract/OpenAPI 阶段必须从这些关系定义 authentication、authoriz
 | Favorite / saved expression -> review | 收藏去重、取消收藏、收藏不自动生成复习任务。 |
 | Subscription -> entitlement -> gating | 购买/恢复/退款/过期、权益刷新、场景/AI gating 一致性。 |
 | Usage ledger -> reservation -> provider event | reserve/commit/release、provider timeout、额度耗尽和滥用审计。 |
+| Media asset -> trusted audio_ref -> ASR | upload/signing、非法 ref 拒绝、ASR ref resolution 和 hash-only audit。 |
+| TTS cache entry -> media asset -> provider metric | persistent cache hit/miss/expiry/delete、provider 不重复调用和 cache hit 成本聚合。 |
+| Provider sandbox run -> release gate | DashScope LLM/ASR/TTS latency、错误码、费用、格式兼容性、fallback 和独立审查。 |
+| Provider invocation metric -> cost dashboard | 套餐、用户 hash、provider、模型、状态、cache hit、budget 和 margin risk 聚合。 |
 | Training session -> planner -> hint/pressure | micro-action 单步训练、hint ladder、pressure check、ASR fallback。 |
 | Candidate evidence -> accepted evidence -> mastery/review | LLM 不直接写 mastery、rule trace、低置信度拒绝、去重。 |
 | Account deletion -> owned data -> audit | 云端删除/匿名化、本地清理、token 撤销、审计脱敏。 |
+| Retention policy -> AI retention job -> media/cache cleanup | 音频、转写、provider payload、TTS cache 删除/匿名化和 redacted evidence。 |
 
 ## Explicit Deferred Relationships
 

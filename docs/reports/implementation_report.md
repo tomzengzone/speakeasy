@@ -1,7 +1,7 @@
 # Implementation Report
 
 ## Current Status
-Latest planning update recorded: `P0 Commercial AI Provider Hardening Planning` created a dedicated P0 increment for object-storage media upload, persistent TTS cache, real DashScope sandbox evidence, AI cost dashboard and production AI data strategy. No implementation has started for that increment.
+Latest implementation update recorded: `P0-AI-REPORT-001 Commercial AI Provider Hardening Evidence Summary` completed local implementation, validation and independent review records for P0-AI-ARCH-001 through P0-AI-SEC-001. Paid AI release remains blocked until external DashScope, media storage, cost dashboard and retention evidence refs are supplied.
 
 ## Report Format
 Each completed change should append:
@@ -14,6 +14,60 @@ Each completed change should append:
 - results
 - risks
 - follow-up
+
+## 2026-06-01 - P0-AI-REPORT-001 Commercial AI Provider Hardening Evidence Summary
+
+Change request:
+- Execute `CR-20260601-002` / `commercial-ai-provider-hardening` work packages in order after first committing and pushing the pre-existing local worktree snapshot to GitHub.
+- Initial snapshot commit was pushed to branch `snapshot-all-local-changes-2026-05-27` as `094355b chore: snapshot local commercial readiness work`.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-commercial-readiness.md`.
+- Increment: `docs/product/increments/commercial-ai-provider-hardening/`.
+- Stage Scope: COM-SI-013 through COM-SI-017.
+- Requirements: FR-COM-AI-001 through FR-COM-AI-005.
+- Test cases: TC-COM-AI-001 through TC-COM-AI-007.
+- Traceability rows: COM-AI-TR-001 through COM-AI-TR-005.
+
+Files changed:
+- Architecture/API/security/domain: `docs/architecture/api_contract.md`, `docs/architecture/data_flow.md`, `docs/architecture/module_boundary.md`, `docs/architecture/security_design.md`, `docs/domain/domain_schema.md`, `docs/domain/entity_relationship.md`, `docs/architecture/adr/0006-commercial-ai-provider-media-cache-ops.md`, OpenAPI and generated Dart client hash/client files.
+- Backend media/cache/ops/security: AI media upload/ref resolution, persistent TTS cache, cost metric aggregation, AI retention jobs, account deletion AI cleanup, OPS controller and Flyway migrations `V202606010001` through `V202606010004`.
+- Tests: `MediaUploadReferenceServiceTest`, `ProductionAsrMediaRefTest`, `PersistentTtsCacheTest`, `AiCostDashboardTest`, `AiRetentionPolicyTest`, `AiAccountDeletionMediaCleanupTest` plus DashScope/account deletion regressions.
+- Release gates and evidence docs: `scripts/check_ai_provider_sandbox_evidence.py`, `scripts/check_manual_external_evidence_plan.py`, `scripts/check_release_readiness.sh`, `tests/commercial/ai_provider_sandbox_matrix.md`, `tests/commercial/manual_external_evidence_checklist.md`, `docs/reports/test_report.md`, `docs/reports/quality_report.md`.
+
+Implementation summary:
+- `P0-AI-ARCH-001`: Added architecture/API/security contracts for media upload/signing, TTS persistent cache metadata, provider evidence, cost metrics and retention jobs.
+- `P0-AI-BE-001`: Implemented backend-owned media upload/signing metadata, trusted `media://audio/{media_id}` refs and production ASR rejection of local/unsigned/unvalidated media refs before provider calls.
+- `P0-AI-BE-002`: Implemented persistent TTS cache entries with normalized cache key, expiry, hit/miss metadata and delete hook.
+- `P0-AI-QA-001`: Added DashScope AI sandbox evidence matrix and strict gate; non-strict gate passes structurally while strict mode remains blocked without `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`.
+- `P0-AI-OPS-001`: Implemented OPS-only AI cost dashboard with user hash, plan, provider/model/capability/status/cache hit/cost aggregation, budget warning/exceeded and provider anomaly status.
+- `P0-AI-SEC-001`: Implemented AI retention jobs, expired media/cache deletion, account deletion AI media/cache/metric cleanup and redacted retention evidence refs.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MediaUploadReferenceServiceTest,ProductionAsrMediaRefTest,PersistentTtsCacheTest,AiCostDashboardTest,AiRetentionPolicyTest,AiAccountDeletionMediaCleanupTest,DashScopeProviderGatewayIntegrationTest,DashScopeProviderGatewayTest,CommercialFoundationControllerTest,AccountDeletionLearningDataTest test` - passed.
+- `python3 scripts/check_ai_provider_sandbox_evidence.py` - passed with expected missing DashScope evidence blocker reported.
+- `python3 scripts/check_manual_external_evidence_plan.py` - passed.
+- `python3 -m py_compile scripts/check_ai_provider_sandbox_evidence.py scripts/check_manual_external_evidence_plan.py scripts/check_provider_sandbox_evidence.py scripts/check_store_submission_evidence.py scripts/check_commercial_copy_contract.py` - passed.
+- `bash -n scripts/check_release_readiness.sh` - passed.
+- `git diff --check` - passed.
+- `npm run lint:openapi` - passed.
+- `npm run check:api-contract` - failed inside the filesystem sandbox because `uv` panicked while accessing macOS system configuration; rerun outside the sandbox passed.
+
+Result:
+- Local implementation and regression coverage passed for TC-COM-AI-001, TC-COM-AI-002, TC-COM-AI-003, TC-COM-AI-005, TC-COM-AI-006 and TC-COM-AI-007.
+- TC-COM-AI-004 is structurally gated but not closed because real DashScope LLM/ASR/TTS sandbox or controlled live evidence has not been supplied.
+- `scripts/check_release_readiness.sh` now requires `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF` in strict release mode.
+
+Residual risk:
+- No real DashScope sandbox/controlled live call was executed in this local run.
+- Object-store bucket/KMS/CDN lifecycle and external deletion evidence are still external release work.
+- Production budget thresholds and alert destinations need PM/Ops evidence.
+- TTS cache ownership is first-owner based for local cleanup; shared-cache multi-owner policy needs review before broad multi-tenant production use.
+
+Follow-up:
+- Supply and independently review the four external AI evidence refs before declaring paid AI voice release readiness.
+- Run strict `scripts/check_release_readiness.sh` in release CI with production/native/store/provider evidence refs.
+- Review multi-owner TTS cache deletion policy before enabling broad production cache reuse.
 
 ## 2026-06-01 - P0.1 Backend AI Provider Gateway Implementation
 

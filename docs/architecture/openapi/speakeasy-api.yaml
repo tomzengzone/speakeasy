@@ -45,12 +45,17 @@ tags:
   description: Server-owned usage quota and reservation.
 - name: AI Gateway
   description: Backend-isolated AI, ASR, TTS, and scoring calls.
+- name: Media
+  description: Backend-owned media upload, signing, and AI media lifecycle.
+- name: AI Ops
+  description: Restricted AI provider evidence, cost, budget, and retention operations.
 - name: Admin
   description: Restricted audit, release health, and deletion retry.
 x-product-scope:
   implementation_level:
   - product-base
   - p0-commercial-readiness
+  - commercial-ai-provider-hardening
   - p0-1-expression-automation-training
   deferred_boundaries:
   - p0-2-training-memory
@@ -2084,6 +2089,7 @@ paths:
         - P01-FR-006
         - P01-FR-011
         - FR-COM-010
+        - FR-COM-AI-001
       requestBody:
         required: true
         content:
@@ -2123,6 +2129,7 @@ paths:
         - FR-008
         - P01-FR-011
         - FR-COM-010
+        - FR-COM-AI-002
       requestBody:
         required: true
         content:
@@ -2289,6 +2296,221 @@ paths:
               examples:
                 default:
                   $ref: '#/components/examples/ErrorResponseExample'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /media/audio/uploads:
+    post:
+      tags:
+      - Media
+      operationId: createAudioUpload
+      summary: Create a backend-owned audio upload and signed media reference.
+      x-idempotency-required: true
+      x-traceability:
+        product_objects:
+        - p0-commercial-readiness
+        - commercial-ai-provider-hardening
+        requirements:
+        - FR-COM-AI-001
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AudioUploadCreateRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/AudioUploadCreateRequestExample'
+      responses:
+        '201':
+          description: Upload session and media reference created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAssetResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/MediaAssetResponseExample'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/UsageLimitExceeded'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /media/audio/uploads/{media_id}/complete:
+    post:
+      tags:
+      - Media
+      operationId: completeAudioUpload
+      summary: Mark an uploaded audio object as validated for AI provider use.
+      x-traceability:
+        product_objects:
+        - p0-commercial-readiness
+        - commercial-ai-provider-hardening
+        requirements:
+        - FR-COM-AI-001
+        - FR-COM-AI-005
+      parameters:
+      - $ref: '#/components/parameters/MediaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AudioUploadCompleteRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/AudioUploadCompleteRequestExample'
+      responses:
+        '200':
+          description: Media asset validated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAssetResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/MediaAssetResponseExample'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Media validation failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/ErrorResponseExample'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /admin/ai/provider-evidence:
+    get:
+      tags:
+      - AI Ops
+      operationId: listAiProviderEvidence
+      summary: List restricted DashScope sandbox or controlled live evidence status.
+      security:
+      - opsBearerAuth: []
+      x-traceability:
+        product_objects:
+        - p0-commercial-readiness
+        - commercial-ai-provider-hardening
+        requirements:
+        - FR-COM-AI-003
+      responses:
+        '200':
+          description: Provider evidence status list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiProviderEvidenceListResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/AiProviderEvidenceListResponseExample'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /admin/ai/cost-metrics:
+    get:
+      tags:
+      - AI Ops
+      operationId: getAiCostMetrics
+      summary: Read sanitized AI provider cost, cache, budget, and margin-risk metrics.
+      security:
+      - opsBearerAuth: []
+      x-traceability:
+        product_objects:
+        - p0-commercial-readiness
+        - commercial-ai-provider-hardening
+        requirements:
+        - FR-COM-AI-004
+      responses:
+        '200':
+          description: AI cost metrics.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiCostMetricsResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/AiCostMetricsResponseExample'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /admin/ai/retention-jobs:
+    post:
+      tags:
+      - AI Ops
+      operationId: createAiRetentionJob
+      summary: Create an AI media, transcript, provider payload, and cache retention job.
+      security:
+      - opsBearerAuth: []
+      x-idempotency-required: true
+      x-traceability:
+        product_objects:
+        - p0-commercial-readiness
+        - commercial-ai-provider-hardening
+        requirements:
+        - FR-COM-AI-005
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiRetentionJobCreateRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/AiRetentionJobCreateRequestExample'
+      responses:
+        '202':
+          description: AI retention job accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiRetentionJobResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/AiRetentionJobResponseExample'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /admin/ai/retention-jobs/{job_id}:
+    get:
+      tags:
+      - AI Ops
+      operationId: getAiRetentionJob
+      summary: Read AI retention or deletion job status.
+      security:
+      - opsBearerAuth: []
+      x-traceability:
+        product_objects:
+        - p0-commercial-readiness
+        - commercial-ai-provider-hardening
+        requirements:
+        - FR-COM-AI-005
+      parameters:
+      - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: AI retention job status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiRetentionJobResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/AiRetentionJobResponseExample'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /admin/audit:
@@ -2461,6 +2683,12 @@ components:
         type: string
     HistoryEntryId:
       name: history_entry_id
+      in: path
+      required: true
+      schema:
+        type: string
+    MediaId:
+      name: media_id
       in: path
       required: true
       schema:
@@ -4560,6 +4788,349 @@ components:
           enum:
           - available
           - provider_unavailable
+        media_id:
+          type: string
+          description: Backend media asset id when the audio is served from persistent storage.
+        cache_status:
+          type: string
+          enum:
+          - hit
+          - miss
+          - stale
+          - deleted
+          - provider_unavailable
+        cache_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+    AudioUploadCreateRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - schema_version
+      - purpose
+      - content_type
+      - byte_size
+      - duration_seconds
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        purpose:
+          type: string
+          enum:
+          - asr_input
+          - pronunciation_input
+        content_type:
+          type: string
+          enum:
+          - audio/m4a
+          - audio/mp4
+          - audio/mpeg
+          - audio/wav
+          - audio/webm
+        byte_size:
+          type: integer
+          minimum: 1
+        duration_seconds:
+          type: integer
+          minimum: 1
+        checksum_sha256:
+          type: string
+        client_upload_id:
+          type: string
+    AudioUploadCompleteRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - schema_version
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        checksum_sha256:
+          type: string
+        object_ref:
+          type: string
+          description: Optional object-store ref when upload is completed through a signed direct upload.
+    MediaAssetResponse:
+      type: object
+      required:
+      - schema_version
+      - media
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        media:
+          $ref: '#/components/schemas/MediaAsset'
+    MediaAsset:
+      type: object
+      required:
+      - media_id
+      - audio_ref
+      - owner_ref
+      - purpose
+      - status
+      - content_type
+      - byte_size
+      - duration_seconds
+      - expires_at
+      properties:
+        media_id:
+          type: string
+        audio_ref:
+          type: string
+          description: Backend signed media ref for AI provider gateway calls.
+        owner_ref:
+          type: string
+          description: Redacted user hash or server owner ref, never raw user PII.
+        purpose:
+          type: string
+          enum:
+          - asr_input
+          - pronunciation_input
+          - tts_output
+        status:
+          type: string
+          enum:
+          - pending
+          - uploaded
+          - validated
+          - rejected
+          - expired
+          - deleted
+        content_type:
+          type: string
+        byte_size:
+          type: integer
+        duration_seconds:
+          type: integer
+        upload_url:
+          type: string
+          description: Short-lived signed upload URL when direct object-store upload is used.
+        upload_headers:
+          type: object
+          additionalProperties:
+            type: string
+        checksum_sha256:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+    AiProviderEvidenceListResponse:
+      type: object
+      required:
+      - schema_version
+      - evidence
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/AiProviderEvidence'
+    AiProviderEvidence:
+      type: object
+      required:
+      - evidence_id
+      - provider_family
+      - capability
+      - status
+      - reviewed_status
+      - evidence_ref
+      - executed_at
+      properties:
+        evidence_id:
+          type: string
+        provider_family:
+          type: string
+          enum:
+          - dashscope
+        capability:
+          type: string
+          enum:
+          - llm
+          - asr
+          - tts
+        status:
+          type: string
+          enum:
+          - planned
+          - executed
+          - failed
+          - blocked
+        reviewed_status:
+          type: string
+          enum:
+          - pending
+          - approved
+          - rejected
+        evidence_ref:
+          type: string
+          description: Redacted external or repository evidence reference, not raw provider payload.
+        latency_p50_ms:
+          type: integer
+        latency_p95_ms:
+          type: integer
+        estimated_cost:
+          type: number
+        executed_at:
+          type: string
+          format: date-time
+    AiCostMetricsResponse:
+      type: object
+      required:
+      - schema_version
+      - status
+      - metrics
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        status:
+          type: string
+          enum:
+          - normal
+          - budget_warning
+          - budget_exceeded
+          - provider_anomaly
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/AiCostMetric'
+    AiCostMetric:
+      type: object
+      required:
+      - period
+      - plan
+      - user_hash
+      - provider_family
+      - model
+      - capability
+      - status
+      - cache_hit
+      - call_count
+      - estimated_cost
+      - margin_risk
+      properties:
+        period:
+          type: string
+        plan:
+          type: string
+          enum:
+          - free
+          - pro
+          - premium
+        user_hash:
+          type: string
+        provider_family:
+          type: string
+        model:
+          type: string
+        capability:
+          type: string
+          enum:
+          - llm
+          - asr
+          - tts
+          - scoring
+        status:
+          type: string
+          enum:
+          - available
+          - rejected
+          - provider_unavailable
+          - fallback
+        cache_hit:
+          type: boolean
+        call_count:
+          type: integer
+        audio_duration_seconds:
+          type: integer
+        token_estimate:
+          type: integer
+        estimated_cost:
+          type: number
+        budget_bucket:
+          type: string
+        margin_risk:
+          type: string
+          enum:
+          - low
+          - watch
+          - high
+    AiRetentionJobCreateRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - schema_version
+      - scope
+      - reason
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        scope:
+          type: string
+          enum:
+          - expired_media
+          - account_deletion
+          - policy_backfill
+        user_ref:
+          type: string
+          description: Optional redacted user hash or deletion job ref.
+        reason:
+          type: string
+    AiRetentionJobResponse:
+      type: object
+      required:
+      - schema_version
+      - job
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        job:
+          $ref: '#/components/schemas/AiRetentionJob'
+    AiRetentionJob:
+      type: object
+      required:
+      - job_id
+      - scope
+      - status
+      - redacted_evidence_ref
+      - created_at
+      properties:
+        job_id:
+          type: string
+        scope:
+          type: string
+          enum:
+          - expired_media
+          - account_deletion
+          - policy_backfill
+        status:
+          type: string
+          enum:
+          - pending
+          - running
+          - completed
+          - failed_retryable
+          - failed_manual
+        media_deleted_count:
+          type: integer
+        transcript_deleted_count:
+          type: integer
+        tts_cache_deleted_count:
+          type: integer
+        provider_payload_redacted_count:
+          type: integer
+        redacted_evidence_ref:
+          type: string
+        failure_reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
     CoachTurnRequest:
       type: object
       additionalProperties: false
@@ -5441,8 +6012,102 @@ components:
       summary: synthesizeSpeech response 200 example
       value:
         schema_version: 1
-        audio_ref: sample
+        audio_ref: media://tts/tts_cache_123
         status: available
+        media_id: media_tts_123
+        cache_status: hit
+        cache_expires_at: '2026-06-08T12:00:00Z'
+    AudioUploadCreateRequestExample:
+      summary: createAudioUpload request example
+      value:
+        schema_version: 1
+        purpose: asr_input
+        content_type: audio/m4a
+        byte_size: 240000
+        duration_seconds: 12
+        checksum_sha256: 7d3f8f7a8c9d
+        client_upload_id: rec_20260601_001
+    AudioUploadCompleteRequestExample:
+      summary: completeAudioUpload request example
+      value:
+        schema_version: 1
+        checksum_sha256: 7d3f8f7a8c9d
+        object_ref: object://speakeasy-ai-media/users/u_hash/media_123.m4a
+    MediaAssetResponseExample:
+      summary: media asset response example
+      value:
+        schema_version: 1
+        media:
+          media_id: media_123
+          audio_ref: media://audio/media_123?sig=redacted
+          owner_ref: user_hash_7f3a
+          purpose: asr_input
+          status: validated
+          content_type: audio/m4a
+          byte_size: 240000
+          duration_seconds: 12
+          upload_url: https://storage.example/upload/redacted
+          upload_headers:
+            x-amz-server-side-encryption: aws:kms
+          checksum_sha256: 7d3f8f7a8c9d
+          expires_at: '2026-06-02T12:00:00Z'
+    AiProviderEvidenceListResponseExample:
+      summary: listAiProviderEvidence response 200 example
+      value:
+        schema_version: 1
+        evidence:
+        - evidence_id: ev_dashscope_asr_20260601
+          provider_family: dashscope
+          capability: asr
+          status: executed
+          reviewed_status: approved
+          evidence_ref: tests/commercial/ai_provider_sandbox_matrix.md#dashscope-asr
+          latency_p50_ms: 1800
+          latency_p95_ms: 3200
+          estimated_cost: 0.03
+          executed_at: '2026-06-01T12:00:00Z'
+    AiCostMetricsResponseExample:
+      summary: getAiCostMetrics response 200 example
+      value:
+        schema_version: 1
+        status: budget_warning
+        metrics:
+        - period: 2026-06-01
+          plan: pro
+          user_hash: user_hash_7f3a
+          provider_family: dashscope
+          model: qwen-plus
+          capability: llm
+          status: available
+          cache_hit: false
+          call_count: 12
+          audio_duration_seconds: 0
+          token_estimate: 4200
+          estimated_cost: 0.84
+          budget_bucket: daily_user
+          margin_risk: watch
+    AiRetentionJobCreateRequestExample:
+      summary: createAiRetentionJob request example
+      value:
+        schema_version: 1
+        scope: expired_media
+        user_ref: user_hash_7f3a
+        reason: scheduled_retention_policy
+    AiRetentionJobResponseExample:
+      summary: AI retention job response example
+      value:
+        schema_version: 1
+        job:
+          job_id: ai_retention_123
+          scope: expired_media
+          status: completed
+          media_deleted_count: 8
+          transcript_deleted_count: 8
+          tts_cache_deleted_count: 2
+          provider_payload_redacted_count: 8
+          redacted_evidence_ref: audit:ai_retention_123
+          created_at: '2026-06-01T12:00:00Z'
+          completed_at: '2026-06-01T12:01:00Z'
     CoachTurnRequestExample:
       summary: coachTurn request example
       value:

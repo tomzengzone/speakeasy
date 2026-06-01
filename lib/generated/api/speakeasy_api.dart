@@ -5,10 +5,14 @@ class SpeakeasyApiContract {
   const SpeakeasyApiContract._();
 
   static const String openApiSha256 =
-      '9340e9d3f6a997f426aa11402b385e3a9004f320bb4ef0ff78d2d0067f2c41a9';
+      '044c58f6d5d0c4db06e3f07002afca75d38846b9240f9d3313c066e2d2bbba56';
 
   static const List<String> pathTemplates = <String>[
     '/achievements/status',
+    '/admin/ai/cost-metrics',
+    '/admin/ai/provider-evidence',
+    '/admin/ai/retention-jobs',
+    '/admin/ai/retention-jobs/{job_id}',
     '/admin/audit',
     '/admin/data-deletion/{job_id}/retry',
     '/admin/release-health',
@@ -35,6 +39,8 @@ class SpeakeasyApiContract {
     '/learning/mastery',
     '/learning/report/summary',
     '/learning/wiki',
+    '/media/audio/uploads',
+    '/media/audio/uploads/{media_id}/complete',
     '/membership/android/purchase',
     '/membership/android/restore',
     '/membership/boundary',
@@ -77,6 +83,9 @@ class SpeakeasyApiPaths {
   const SpeakeasyApiPaths._();
 
   static const String achievementsStatus = '/achievements/status';
+  static const String adminAiCostMetrics = '/admin/ai/cost-metrics';
+  static const String adminAiProviderEvidence = '/admin/ai/provider-evidence';
+  static const String adminAiRetentionJobs = '/admin/ai/retention-jobs';
   static const String adminAudit = '/admin/audit';
   static const String adminReleaseHealth = '/admin/release-health';
   static const String aiCoachTurn = '/ai/coach-turn';
@@ -99,6 +108,7 @@ class SpeakeasyApiPaths {
   static const String learningMastery = '/learning/mastery';
   static const String learningReportSummary = '/learning/report/summary';
   static const String learningWiki = '/learning/wiki';
+  static const String mediaAudioUploads = '/media/audio/uploads';
   static const String membershipAndroidPurchase =
       '/membership/android/purchase';
   static const String membershipAndroidRestore = '/membership/android/restore';
@@ -129,6 +139,9 @@ class SpeakeasyApiPaths {
   static String adminDataDeletionRetry(String jobId) =>
       '/admin/data-deletion/${_path(jobId)}/retry';
 
+  static String adminAiRetentionJob(String jobId) =>
+      '/admin/ai/retention-jobs/${_path(jobId)}';
+
   static String expressionTaskComplete(String queueItemId) =>
       '/expressions/tasks/${_path(queueItemId)}/complete';
 
@@ -137,6 +150,9 @@ class SpeakeasyApiPaths {
 
   static String learningHistoryEntry(String historyEntryId) =>
       '/learning/history/${_path(historyEntryId)}';
+
+  static String mediaAudioUploadComplete(String mediaId) =>
+      '/media/audio/uploads/${_path(mediaId)}/complete';
 
   static String practiceSession(String sessionId) =>
       '/practice/sessions/${_path(sessionId)}';

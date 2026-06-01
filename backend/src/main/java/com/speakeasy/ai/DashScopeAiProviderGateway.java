@@ -18,6 +18,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -49,8 +50,25 @@ public class DashScopeAiProviderGateway implements AiProviderGateway {
   private final ObjectMapper mapper;
   private final AiProviderTelemetry telemetry;
   private final AiMediaReferenceService mediaReferenceService;
+  private final AiTtsCacheService ttsCacheService;
   private final AtomicInteger invocationCount = new AtomicInteger();
-  private final ConcurrentMap<String, TtsResult> ttsCache = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, TtsResult> localFallbackTtsCache = new ConcurrentHashMap<>();
+
+  @Autowired
+  public DashScopeAiProviderGateway(
+      DashScopeAiProperties properties,
+      DashScopeHttpTransport transport,
+      ObjectMapper mapper,
+      AiProviderTelemetry telemetry,
+      AiMediaReferenceService mediaReferenceService,
+      AiTtsCacheService ttsCacheService) {
+    this.properties = properties;
+    this.transport = transport;
+    this.mapper = mapper;
+    this.telemetry = telemetry;
+    this.mediaReferenceService = mediaReferenceService;
+    this.ttsCacheService = ttsCacheService;
+  }
 
   public DashScopeAiProviderGateway(
       DashScopeAiProperties properties,
@@ -58,11 +76,7 @@ public class DashScopeAiProviderGateway implements AiProviderGateway {
       ObjectMapper mapper,
       AiProviderTelemetry telemetry,
       AiMediaReferenceService mediaReferenceService) {
-    this.properties = properties;
-    this.transport = transport;
-    this.mapper = mapper;
-    this.telemetry = telemetry;
-    this.mediaReferenceService = mediaReferenceService;
+    this(properties, transport, mapper, telemetry, mediaReferenceService, null);
   }
 
   @Override
@@ -137,11 +151,28 @@ public class DashScopeAiProviderGateway implements AiProviderGateway {
       return new TtsResult("", "provider_unavailable");
     }
     String resolvedVoice = voice == null || voice.isBlank() ? properties.getTtsVoice() : voice.trim();
-    String cacheKey = ttsCacheKey(cleaned, resolvedVoice);
-    TtsResult cached = ttsCache.get(cacheKey);
-    if (cached != null) {
-      record("tts", properties.getTtsModel(), "available", started, "cache_hit", tokenEstimate(cleaned), null);
-      return cached;
+    String languageType = inferLanguageType(cleaned);
+    String cacheKey = ttsCacheService == null
+        ? ttsCacheKey(cleaned, resolvedVoice, languageType)
+        : ttsCacheService.cacheKey(cleaned, resolvedVoice, languageType);
+    if (ttsCacheService != null) {
+      var cached = ttsCacheService.lookup(cacheKey);
+      if (cached.isPresent()) {
+        AiTtsCacheEntry entry = cached.get();
+        record("tts", properties.getTtsModel(), "available", started, "cache_hit", tokenEstimate(cleaned), null);
+        return new TtsResult(
+            entry.getAudioRef(),
+            "available",
+            entry.getCacheId().toString(),
+            "hit",
+            entry.getExpiresAt());
+      }
+    } else {
+      TtsResult cached = localFallbackTtsCache.get(cacheKey);
+      if (cached != null) {
+        record("tts", properties.getTtsModel(), "available", started, "cache_hit", tokenEstimate(cleaned), null);
+        return cached;
+      }
     }
     try {
       ObjectNode body = mapper.createObjectNode();
@@ -149,7 +180,7 @@ public class DashScopeAiProviderGateway implements AiProviderGateway {
       ObjectNode input = body.putObject("input");
       input.put("text", cleaned);
       input.put("voice", resolvedVoice);
-      input.put("language_type", inferLanguageType(cleaned));
+      input.put("language_type", languageType);
       JsonNode response =
           transport.postJson(
               properties.getTtsUrl(),
@@ -164,8 +195,7 @@ public class DashScopeAiProviderGateway implements AiProviderGateway {
         record("tts", properties.getTtsModel(), "provider_unavailable", started, "missing_audio_ref", tokenEstimate(cleaned), null);
         return new TtsResult("", "provider_unavailable");
       }
-      TtsResult result = new TtsResult(audioRef, "available");
-      ttsCache.putIfAbsent(cacheKey, result);
+      TtsResult result = cachedOrStoredResult(cleaned, resolvedVoice, languageType, cacheKey, audioRef);
       record("tts", properties.getTtsModel(), "available", started, "provider_call", tokenEstimate(cleaned), null);
       return result;
     } catch (RuntimeException e) {
@@ -217,7 +247,22 @@ public class DashScopeAiProviderGateway implements AiProviderGateway {
   @Override
   public void resetInvocationCount() {
     invocationCount.set(0);
-    ttsCache.clear();
+    localFallbackTtsCache.clear();
+  }
+
+  private TtsResult cachedOrStoredResult(String text, String voice, String language, String cacheKey, String audioRef) {
+    if (ttsCacheService == null) {
+      TtsResult result = new TtsResult(audioRef, "available");
+      localFallbackTtsCache.putIfAbsent(cacheKey, result);
+      return localFallbackTtsCache.get(cacheKey);
+    }
+    AiTtsCacheEntry entry = ttsCacheService.store(cacheKey, text, voice, language, audioRef);
+    return new TtsResult(
+        entry.getAudioRef(),
+        "available",
+        entry.getCacheId().toString(),
+        "miss",
+        entry.getExpiresAt());
   }
 
   private ObjectNode coachRequest(String transcript, List<String> targetExpressionIds) {
@@ -402,11 +447,11 @@ public class DashScopeAiProviderGateway implements AiProviderGateway {
     return "Auto";
   }
 
-  private String ttsCacheKey(String text, String voice) {
+  private String ttsCacheKey(String text, String voice, String language) {
     try {
       MessageDigest digest = MessageDigest.getInstance("SHA-256");
       byte[] bytes =
-          digest.digest((properties.getTtsModel() + "\n" + voice + "\n" + text).getBytes(StandardCharsets.UTF_8));
+          digest.digest((properties.getTtsModel() + "\n" + voice + "\n" + language + "\n" + text).getBytes(StandardCharsets.UTF_8));
       return HexFormat.of().formatHex(bytes).substring(0, 32);
     } catch (Exception e) {
       throw new IllegalStateException("sha256 unavailable", e);
