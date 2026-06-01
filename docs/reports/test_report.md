@@ -1,7 +1,7 @@
 # Test Report
 
 ## Current Status
-Latest recorded test execution: `P0-COM-MANUAL-EVIDENCE-PLAN-001` validated the detailed manual evidence checklist and release gate integration for remaining TC-COM blockers. Commercial release remains blocked until TC-COM-012/015/019/021/022 manual/external results are executed, evidence-linked and independently reviewed.
+Latest recorded validation: `P0 Commercial AI Provider Hardening Planning Validation` passed documentation/planning checks and established TC-COM-AI-001 through TC-COM-AI-007 as planned test IDs. No implementation tests have run for this new increment.
 
 ## Required Sections
 - test scope
@@ -11,6 +11,125 @@ Latest recorded test execution: `P0-COM-MANUAL-EVIDENCE-PLAN-001` validated the 
 - skipped tests
 - acceptance criteria coverage
 - residual risk
+
+## 2026-06-01 - P0.1 Backend AI Provider Gateway Test Report
+
+Test scope:
+- Increment `docs/product/increments/p0-1-expression-automation-training/`.
+- Change request `CR-20260601-001`: keep current Spring Boot backend and add DashScope LLM/TTS/ASR adapter behind `AiProviderGateway`.
+- Test cases TC-P01-015 through TC-P01-020.
+
+Commands run:
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` from `backend/` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=DashScopeProviderGatewayTest,DashScopeProviderGatewayIntegrationTest,ProviderGatewaySecurityContractTest,ProviderGatewayControllerTest,ProviderGatewayFailureTest,FeedbackFailureHandlingTest,CommercialAbuseControlTest,UsageQuotaGateTest test` from `backend/` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` from `backend/` - passed.
+- `npm run lint:openapi` - passed.
+- `PYTHONPATH=.uv-cache/archive-v0/6TiI4tLkyvVElUd4WZMLn/lib/python3.11/site-packages python3 scripts/check_openapi_contract.py` - passed.
+- `PYTHONPATH=.uv-cache/archive-v0/6TiI4tLkyvVElUd4WZMLn/lib/python3.11/site-packages python3 scripts/check_openapi_dart_drift.py` - passed.
+- `npm run check:api-contract` - blocked by local `uv run --with PyYAML` runtime panic after OpenAPI lint passed; the same OpenAPI contract and Dart drift scripts passed through the local PyYAML cache path above.
+
+Passing tests:
+- TC-P01-015: `DashScopeProviderGatewayTest` verifies DashScope ASR/TTS/LLM model config and adapter routing while deterministic remains the default provider unless `speakeasy.ai.provider=dashscope`.
+- TC-P01-016: `DashScopeProviderGatewayTest` and `DashScopeProviderGatewayIntegrationTest` verify local-path ASR returns typed no-result, unsigned HTTP refs are rejected before provider transport, over-duration signed audio is rejected before provider transport, and valid backend-signed provider-accessible media refs return transcript/status.
+- TC-P01-017: `DashScopeProviderGatewayTest` and integration coverage verify TTS cache by text/model/voice avoids duplicate provider calls in the current process.
+- TC-P01-018: `DashScopeProviderGatewayTest` and integration coverage verify strict LLM JSON maps to coach feedback, while invalid enum, missing required field, out-of-range score, unsupported extra field and banned final-mastery/entitlement fields fall back to recoverable feedback.
+- TC-P01-019: `DashScopeProviderGatewayIntegrationTest`, `CommercialAbuseControlTest`, and `UsageQuotaGateTest` verify current AI REST uses the adapter, usage reservation/commit/release remains active, free/pro/enterprise policy is server-derived from entitlement snapshots, text/audio thresholds differ by tier, client `provider_tier` cannot override server facts, and policy telemetry includes tier/cost metadata.
+- TC-P01-020: `ProviderGatewaySecurityContractTest` and `DashScopeProviderGatewayIntegrationTest` verify clients cannot submit `provider_secret` or `provider_tier`, provider responses/telemetry do not expose provider secrets or full learner transcript payloads, and usage audit does not persist full signed audio URLs.
+
+Failing tests:
+- None remaining.
+
+Skipped or unavailable tests:
+- No live DashScope request was executed; tests use fake DashScope transport and a test API key.
+- Backend/object-storage upload lifecycle for ASR media refs is not implemented in this slice; current executable boundary uses backend-signed media metadata and rejects unsigned HTTP refs.
+- Persistent TTS media cache and production retention/deletion execution are not implemented in this slice.
+
+Acceptance criteria coverage:
+- AC-P01-013 has local automated evidence for DashScope provider selection, adapter replaceability, ASR guard, TTS cache, LLM schema fallback, usage/tier controls, telemetry and no-secret contract.
+- AC-P01-013 is partial, not release-complete, until live provider and persistent media-storage evidence are supplied.
+
+Residual risk:
+- `P01-GAP-008` is Partial, not Closed.
+- Current TTS cache is process-local; restart or multi-instance deployments need persistent cache/object storage before commercial release.
+- ASR accepts backend-signed provider-accessible `audio_ref` URLs and rejects unsafe or unsigned refs, but the Flutter upload-to-backend/object-storage lifecycle remains downstream.
+- Combined `npm run check:api-contract` currently fails on a local `uv` runtime panic unrelated to OpenAPI content; direct lint, contract and drift subchecks passed.
+
+## 2026-06-01 - P0 Commercial AI Provider Hardening Planning Validation
+
+Test scope:
+- Increment `docs/product/increments/commercial-ai-provider-hardening/`.
+- Planning coverage for object-storage media upload, persistent TTS cache, real DashScope sandbox evidence, AI cost dashboard and production AI data strategy.
+- Test cases TC-COM-AI-001 through TC-COM-AI-007 are created as planned IDs; no implementation tests have executed.
+
+Commands run:
+- `python3 scripts/check_manual_external_evidence_plan.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `python3 scripts/check_provider_sandbox_evidence.py` - passed and reported existing Apple/Google external evidence blockers for TC-COM-019.
+
+Passing checks:
+- Manual external evidence checklist remains structurally valid after adding TC-COM-AI-004.
+- Project agent validation passed.
+- Whitespace/diff check passed.
+- Existing payment provider sandbox evidence matrix script still passes in non-strict mode.
+
+Planned tests:
+- TC-COM-AI-001: trusted media upload/reference.
+- TC-COM-AI-002: production ASR media ref guard.
+- TC-COM-AI-003: persistent TTS cache.
+- TC-COM-AI-004: DashScope LLM/ASR/TTS sandbox or controlled live evidence.
+- TC-COM-AI-005: AI cost dashboard.
+- TC-COM-AI-006: AI retention policy.
+- TC-COM-AI-007: account deletion media/cache cleanup.
+
+Residual risk:
+- All TC-COM-AI implementation and external evidence remains planned/open.
+- `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF` are not supplied.
+
+## 2026-06-01 - P0.1 Training Agent Core Test Report
+
+Test scope:
+- Increment `docs/product/increments/p0-1-expression-automation-training/`.
+- Training Agent deterministic planner, action chain, micro-action state, hint ladder, pressure check, feedback schema validation, learning evidence candidate filtering, recoverable failures, scope boundary, and lightweight training session widget surface.
+- Test cases TC-P01-001 through TC-P01-012.
+
+Commands run:
+- `dart format lib/features/interview/interview_training_agent.dart lib/features/interview/interview_training_session_view.dart test/features/interview/interview_training_test_helpers.dart test/features/interview/interview_training_entry_test.dart test/features/interview/interview_training_planner_test.dart test/features/interview/interview_training_hint_ladder_test.dart test/features/interview/interview_training_voice_flow_test.dart test/features/interview/interview_training_text_fallback_test.dart test/features/interview/interview_training_feedback_schema_test.dart test/features/interview/interview_training_pressure_check_test.dart test/features/interview/interview_training_evidence_test.dart test/features/interview/interview_training_recoverable_failure_test.dart test/features/interview/interview_training_scope_boundary_test.dart` - passed.
+- `flutter test test/features/interview/interview_training_entry_test.dart test/features/interview/interview_training_planner_test.dart test/features/interview/interview_training_hint_ladder_test.dart test/features/interview/interview_training_voice_flow_test.dart test/features/interview/interview_training_text_fallback_test.dart test/features/interview/interview_training_feedback_schema_test.dart test/features/interview/interview_training_pressure_check_test.dart test/features/interview/interview_training_evidence_test.dart test/features/interview/interview_training_recoverable_failure_test.dart test/features/interview/interview_training_scope_boundary_test.dart` - first failed on a missing `hintLevel` argument in the recap decision branch; passed after fix.
+- Same `flutter test ...interview_training_*.dart` command rerun after independent review corrections for blank scene ids and malformed schema field types - passed.
+- `flutter analyze lib/features/interview/interview_training_agent.dart lib/features/interview/interview_training_session_view.dart test/features/interview/interview_training_entry_test.dart test/features/interview/interview_training_planner_test.dart test/features/interview/interview_training_hint_ladder_test.dart test/features/interview/interview_training_voice_flow_test.dart test/features/interview/interview_training_text_fallback_test.dart test/features/interview/interview_training_feedback_schema_test.dart test/features/interview/interview_training_pressure_check_test.dart test/features/interview/interview_training_evidence_test.dart test/features/interview/interview_training_recoverable_failure_test.dart test/features/interview/interview_training_scope_boundary_test.dart` - passed with no issues.
+- `git diff --check` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Passing tests:
+- TC-P01-001: `interview_training_entry_test.dart` verifies official scene session creation/resume, unsupported-scene rejection, blank scene rejection, and unavailable/ready widget states.
+- TC-P01-002, TC-P01-003, TC-P01-004: `interview_training_planner_test.dart` verifies fixed local action chain mapping, one active micro-action, retry/hint decisions, ASR text fallback, and score-unavailable continuation.
+- TC-P01-005: `interview_training_hint_ladder_test.dart` verifies hint escalation, lower scaffold after success, and model-then-retry at high support.
+- TC-P01-006: `interview_training_voice_flow_test.dart` verifies spoken micro-action controls and playback recovery.
+- TC-P01-007: `interview_training_text_fallback_test.dart` verifies ASR fallback and voice-first default behavior.
+- TC-P01-008: `interview_training_feedback_schema_test.dart` verifies valid feedback candidates and rejects unsupported scenes, invalid next actions, malformed field types, final mastery writes, billing fields, and unsafe recoverable-error signals.
+- TC-P01-009: `interview_training_pressure_check_test.dart` verifies consecutive-success pressure check, pressure pass advancement, and pressure failure retry with higher hint.
+- TC-P01-010: `interview_training_evidence_test.dart` verifies recap retention and deterministic filtering of learning evidence candidates.
+- TC-P01-011: `interview_training_recoverable_failure_test.dart` verifies recoverable service-failure state and retry/continue exits.
+- TC-P01-012: `interview_training_scope_boundary_test.dart` verifies only two official scenes, arbitrary-scene rejection, in-session pressure check, and no final mastery/entitlement fields.
+
+Failing tests:
+- None remaining.
+- Initial P0.1 test run failed at compile time because the recap decision branch did not pass `hintLevel` into `_decision`; fixed in `lib/features/interview/interview_training_agent.dart`.
+
+Skipped or unavailable tests:
+- TC-P01-013 integration loop is still planned; the current slice does not wire the new training Agent into the full existing interview route.
+- TC-P01-014 document-level AI eval execution remains planned; schema validation is covered by TC-P01-008.
+- Live ASR/TTS/LLM/scoring providers were not called; P0.1 tests use deterministic local states and schema fixtures.
+
+Acceptance criteria coverage:
+- AC-P01-001 through AC-P01-012 now have executed unit/widget/contract/release-check evidence for the Training Agent core.
+- This is not a full P0.1 completion pass because route integration, end-to-end training loop, and document-level AI eval execution remain planned.
+
+Residual risk:
+- `interview_training_session_view.dart` is a reusable rendering surface and is not yet connected to the existing `interview_practice_page.dart` production entry.
+- The deterministic planner is local-first; no backend sync or repository-backed persistence was added, so API contract P01-GAP-005 remains conditional.
+- Full audio capture/transcription provider behavior still depends on existing app services and requires downstream integration tests.
 
 ## 2026-05-29 - P0-COM-MANUAL-EVIDENCE-PLAN-001 Manual External Evidence Plan
 

@@ -20,7 +20,8 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | Source | Path | API use |
 | --- | --- | --- |
 | Product Base requirements/spec/acceptance/traceability | `docs/product/base/` | 稳定能力的 server-backed contract 输入 |
-| P0 commercial increment | `docs/product/increments/commercial-subscription-readiness/` | 订阅、权益、用量、账号删除、审计和 release gate API |
+| P0 commercial subscription increment | `docs/product/increments/commercial-subscription-readiness/` | 订阅、权益、用量、账号删除、审计和 release gate API |
+| P0 commercial AI provider hardening increment | `docs/product/increments/commercial-ai-provider-hardening/` | media upload/signing、persistent TTS cache、provider evidence、cost dashboard and retention API planning |
 | P0.1 training increment | `docs/product/increments/p0-1-expression-automation-training/` | training session、turn、planner、hint、pressure、evidence API |
 | Domain schema | `docs/domain/domain_schema.md` | 实体、状态机、事实源、API boundary recommendations |
 | Entity relationship | `docs/domain/entity_relationship.md` | ownership、cardinality、cross-domain references |
@@ -32,7 +33,8 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | Scope | OpenAPI treatment | Reason |
 | --- | --- | --- |
 | Product Base stable behavior | Implementation-level paths allowed | Accepted Product Base artifacts and traceability exist |
-| P0 commercial readiness | Implementation-level paths allowed | Approved increment artifacts exist |
+| P0 commercial subscription readiness | Implementation-level paths allowed | Approved increment artifacts exist |
+| P0 commercial AI provider hardening | Contract-first planning; implementation-level paths allowed only after API gate updates OpenAPI | Approved planning artifacts exist; media/cost/admin endpoints still require API contract work |
 | P0.1 expression automation training | Implementation-level paths allowed where server-backed behavior is required | Approved increment artifacts exist; local-only behavior must not be over-promoted |
 | P0.2 training memory | Deferred boundary only | Stage exists, but no increment definition/spec yet |
 | P1 notebook/scoring/content expansion | Deferred boundary only | Roadmap/future feature boundary only |
@@ -62,6 +64,7 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | Learning / Review / Favorites | `Learning`, `Review`, `Favorites` | Product Base FR-005, FR-006, FR-009; P0.1 P01-FR-009 | In OpenAPI |
 | Subscription / Entitlement | `Subscription`, `Entitlement` | P0 FR-COM-001..FR-COM-007, FR-COM-009 | In OpenAPI |
 | Usage / AI Gateway | `Usage`, `AI Gateway` | P0 FR-COM-010; Product Base FR-004, FR-008; P0.1 P01-FR-006, P01-FR-007; `mvp-backend-practice-ai` MVP-SI-006/MVP-SI-009 | In OpenAPI, including server-side ASR/TTS/pronunciation/coach adapters, no client provider secret field, and typed fallback results |
+| Media / AI Provider Operations | Future `Media`, `Admin` or `AI Ops` | P0 `commercial-ai-provider-hardening` FR-COM-AI-001..005 | Planned; must not be implemented without media upload/signing, cache metadata, cost dashboard and retention API contract updates |
 | Admin / Ops | `Admin` | P0 FR-COM-008, FR-COM-011, FR-COM-012 | In OpenAPI |
 | P0.2/P1/P2 future extensions | `Deferred` | Roadmap/stage/future feature registry boundaries only | No implementation-level endpoints |
 
@@ -79,6 +82,20 @@ Owning increment: `docs/product/increments/commercial-subscription-readiness/`.
 | P0-COM-API-001 | Account deletion remains authenticated and idempotent; admin retry and release health use `opsBearerAuth`. | FR-COM-004, FR-COM-008, FR-COM-011, FR-COM-012; AC-COM-008, AC-COM-010, AC-COM-014 |
 
 P0-COM-API-001 gate result: API contract and OpenAPI source-of-truth cover the commercial subscription, entitlement, usage, account deletion and admin/release API families needed before implementation. Contract lint remains the validation gate before downstream code consumes these paths.
+
+## P0 Commercial AI Provider Hardening Contract Gate
+
+Owning increment: `docs/product/increments/commercial-ai-provider-hardening/`.
+
+| Work package | Contract decision | Traceability |
+| --- | --- | --- |
+| P0-AI-ARCH-001 | Production ASR requires a backend media upload/signing contract. Flutter must receive a media id or trusted `audio_ref`, not submit local paths or unsigned provider URLs. | FR-COM-AI-001, AC-COM-AI-001 |
+| P0-AI-ARCH-001 | Persistent TTS cache requires cache metadata and media object lifecycle contracts before backend implementation. | FR-COM-AI-002, AC-COM-AI-002 |
+| P0-AI-QA-001 | DashScope sandbox evidence status may be tracked as ops/release evidence; provider keys and raw payloads must not appear in API responses. | FR-COM-AI-003, AC-COM-AI-003 |
+| P0-AI-OPS-001 | Cost dashboard read APIs, if exposed, must use user hash, plan, provider family, model, status, cache hit and estimated cost fields only. | FR-COM-AI-004, AC-COM-AI-004 |
+| P0-AI-SEC-001 | Retention/deletion APIs or jobs must expose status and audit refs without raw audio, transcript, provider payload or full signed URLs. | FR-COM-AI-005, AC-COM-AI-005 |
+
+P0-AI contract result: planning gate is established, but OpenAPI implementation paths are not yet added. Backend implementation must first update OpenAPI or record an ops-only internal contract exception with Documentation Governance review.
 
 ## Error Model
 
@@ -128,6 +145,20 @@ Owning increment: `docs/product/increments/mvp-backend-practice-ai/`.
 - `/practice/sessions/{session_id}/complete` returns a `SessionSummary` plus candidate-only learning inputs; it must not write final mastery facts.
 - `/ai/transcribe`, `/ai/tts`, `/ai/pronunciation`, `/ai/coach-turn`, and `/ai/feedback` are server-side provider gateway contracts. Request schemas use `additionalProperties: false`; clients must not submit provider secrets or raw provider credentials.
 - Provider timeout, unavailable, media invalid, or invalid schema states must return either typed gateway status or `recoverable_error` feedback; invalid provider output must not become successful user-visible feedback.
+
+## P0.1 DashScope Provider Adapter Contract Note
+
+Owning increment: `docs/product/increments/p0-1-expression-automation-training/`；change request `CR-20260601-001`。
+
+- AI REST path 不新增：Flutter 继续调用 `/ai/transcribe`、`/ai/tts`、`/ai/pronunciation`、`/ai/coach-turn`、`/ai/feedback`。
+- Provider implementation 可配置：`deterministic` 用于本地/CI；`dashscope` 用于当前后端真实 Qwen LLM、DashScope TTS、Paraformer ASR adapter。
+- `TranscribeRequest.audio_ref` 必须是后端/provider 可访问且带后端签名媒体元数据的 media ref。DashScope ASR 不得信任客户端自填的 `duration_seconds`/`bytes` query；客户端本地文件路径、未签名 HTTP ref、空 ref、media invalid、provider no result 均不得转成伪成功 transcript。
+- `TtsResponse.audio_ref` 是后端归一化媒体引用；DashScope TTS 首版必须至少支持 text/model/voice 稳定 cache key，持久对象存储 URL/proxy 是 release-hardening 项。
+- `CoachTurnResponse.feedback` 只能来自 schema-valid provider output 或 deterministic fallback。无效 JSON、schema mismatch、timeout 或 provider unavailable 必须返回 `validation_status=fallback` 和 recoverable feedback。
+- 所有 provider 调用必须复用现有 `AiGatewayService` usage reservation/commit/release 规则，不绕过 entitlement/usage boundary。
+- Response 不得包含 provider secret、raw provider payload、raw audio 或完整敏感 transcript。日志/observability 仅记录 provider、model、status、latency、fallback reason、schema version、usage family、request id，以及适用时的 token estimate、audio duration 或 estimated cost bucket。
+- Provider policy 必须由后端 entitlement/usage facts 决定，可按 free/pro/enterprise tier 限制模型、请求频率、文本长度和音频时长；客户端请求体不得直接选择商业 tier。
+- Live DashScope E2E 属于外部服务证据；默认 automated tests 必须使用 mock HTTP/fixtures，不依赖真实 `DASHSCOPE_API_KEY`。
 
 ## MVP Backend Learning/Memory Contract Note
 

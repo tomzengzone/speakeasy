@@ -10,11 +10,46 @@ open app -> onboarding -> scenario list -> scenario detail -> practice -> correc
 read prompt -> answer -> receive feedback -> retry or continue -> complete scenario -> review summary
 ```
 
+## P0.1 Expression Automation Training Flow
+```text
+official scene detail / resume entry
+  -> load P0.1 training session for job_interview or onboarding_introduction
+  -> show one action chain step and one micro-action
+  -> learner completes listen / choose / say / shadow / fill / continue-under-prompt
+  -> voice-first submit
+  -> ASR / scoring / AI candidate feedback
+  -> deterministic planner decides retry, hint change, continue, pressure check or recap
+  -> learner retries or continues
+  -> recap remains visible
+  -> learning evidence candidate is written or marked retryable
+```
+
+## P0.1 Fallback Flow
+```text
+micro-action active
+  -> mic denied / ASR failed / TTS failed / AI schema failed / scoring unavailable
+  -> preserve current session and learner input where possible
+  -> show recoverable error with retry, re-record, text fallback, exit, or recap
+  -> deterministic planner resumes from previous valid state
+```
+
+## P0.1 Pressure Check Flow
+```text
+consecutive pass
+  -> planner lowers hint or starts session-only pressure check
+  -> learner answers a short follow-up or near-scene prompt
+  -> pass: continue next action step or recap
+  -> fail: return to higher hint retry
+```
+
 ## UX Rules
 - The learner should always know the next action.
 - Feedback should be short and specific.
 - Empty states should tell the learner what to do next.
 - Error states should keep work recoverable.
+- P0.1 training should show one primary micro-action at a time.
+- P0.1 text answer is a fallback path, not the default speaking path.
+- P0.1 pressure check stays inside the current session and must not imply cross-day scheduling or full L0-L5 mastery.
 
 ## P0 Commercial Subscription Flow
 ```text

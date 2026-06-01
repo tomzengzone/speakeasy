@@ -19,3 +19,17 @@
 - [ ] Expired, refunded, revoked, grace-period, and quota-exhausted states are visually distinct.
 - [ ] Account deletion confirmation explains cloud deletion/anonymization and local cleanup before the destructive action.
 - [ ] Commercial copy matches store metadata, privacy copy, and actual implemented entitlement rules.
+
+## P0.1 Expression Automation Training
+
+- [ ] The learner sees exactly one primary micro-action in the active training panel.
+- [ ] The current action chain step is visible but does not crowd the main action.
+- [ ] Voice answer controls include record, cancel, submit and re-record states.
+- [ ] Text fallback appears only after mic denial, ASR failure or debug mode.
+- [ ] Hint level changes are visible through concrete support: sentence frame, options, chunk shadowing or model-then-retry.
+- [ ] Feedback names one main issue and one next action.
+- [ ] Pronunciation unavailable state does not block progress.
+- [ ] Pressure check is visually distinct from normal retry and stays session-only.
+- [ ] Recoverable error preserves user input or recap where possible.
+- [ ] Recap stays available even when learning evidence write-back is retryable.
+- [ ] P0.1 screens do not show third-scene creation, arbitrary scene generation, cross-day schedule, full L0-L5 mastery or commercial gating as completion conditions.

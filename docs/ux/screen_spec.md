@@ -26,6 +26,55 @@ Every new screen must define:
 - States: idle, submitting, analyzing, feedback_shown, retry_needed, completed, error.
 - Primary action: submit learner turn.
 
+## P0.1 Expression Automation Training Screen
+
+Owning increment: `p0-1-expression-automation-training`。
+
+### Training Session
+- Purpose: guide the learner through one session内 micro-action at a time so target expressions can be practiced, retried, lightly pressured, and recapped without open-ended task overload.
+- Entry points: `job_interview` or `onboarding_introduction` official scenario detail, current scenario practice entry, unfinished P0.1 session resume entry.
+- Primary user action: complete the current micro-action by listening, choosing, speaking, shadowing, filling, or continuing under prompt.
+- Core components: session header, current action chain step label, one active micro-action panel, target expression or prompt, hint ladder surface, voice recorder controls, text fallback field, feedback card, retry/continue action, pressure check prompt, recap summary, recoverable error banner.
+- States: `loading`, `ready`, `listening`, `recording`, `transcribing`, `evaluating`, `feedback`, `retry`, `pressure_check`, `recap`, `recoverable_error`, `unsupported_scene`.
+- API dependencies: none required for local-first P0.1 slice; if repository-backed sync is selected later, use existing OpenAPI Training family only after API contract review. AI dependencies are `TrainingFeedbackCandidate` from `docs/ai_runtime/llm_output_schema.md`; ASR/TTS/scoring use existing AI gateway or local deterministic fixtures.
+- Empty state: if no valid action chain or target expression is available for the selected official scene, show a recoverable unavailable state and route back to scenario detail; do not create a fake third scene or arbitrary prompt.
+- Loading state: show that scene, level, action step, history and audio resources are loading; keep the previous resumable state if available.
+- Error state: preserve learner input or audio reference when possible; ASR failure offers retry recording or text fallback; LLM/schema failure offers deterministic retry/fallback; evidence write failure preserves recap and marks write-back retryable.
+- Acceptance criteria mapping: AC-P01-001, AC-P01-002, AC-P01-003, AC-P01-004, AC-P01-005, AC-P01-006, AC-P01-007, AC-P01-008, AC-P01-009, AC-P01-010, AC-P01-011, AC-P01-012.
+
+### Training Session State Contract
+| State | User sees | Primary action | Next states |
+| --- | --- | --- | --- |
+| `loading` | Loading indicator for scene/session | wait or leave | `ready`, `recoverable_error`, `unsupported_scene` |
+| `ready` | One micro-action instruction and current hint if any | start/listen/answer | `listening`, `recording`, `feedback` |
+| `listening` | Playback for model prompt or target expression | replay, continue, report failure | `ready`, `recording`, `recoverable_error` |
+| `recording` | Recorder, cancel, submit, elapsed time | submit or cancel | `transcribing`, `ready` |
+| `transcribing` | Processing voice input | wait | `evaluating`, `retry`, `recoverable_error` |
+| `evaluating` | Feedback is being prepared | wait | `feedback`, `recoverable_error` |
+| `feedback` | Concise feedback card and next action | retry, continue, pressure check, recap | `retry`, `ready`, `pressure_check`, `recap` |
+| `retry` | Same action with raised or adjusted hint | answer again | `ready`, `listening`, `recording` |
+| `pressure_check` | Short follow-up or near-scene prompt with reduced hint | answer under prompt | `recording`, `feedback`, `recap` |
+| `recap` | Summary, one next focus, evidence write status | finish | terminal |
+| `recoverable_error` | What failed and what can be done next | retry, text fallback, exit, view recap | previous valid state, `retry`, `recap` |
+| `unsupported_scene` | P0.1 training unavailable for this scene | return to scenario detail | terminal |
+
+### Micro-action Component Contract
+| Micro-action | Required UI | Fallback |
+| --- | --- | --- |
+| `ListenOne` | play/replay target expression or prompt; continue control | show text if audio/TTS fails |
+| `ChooseOne` | options list with one submit action | explain mismatch and retry |
+| `SayOne` | recorder, cancel, submit, re-record, optional text fallback after failure | text fallback only after mic/ASR issue or debug mode |
+| `ShadowOne` | model audio/chunk, recorder, replay | model-then-retry if score unavailable or low confidence |
+| `FillOne` | sentence frame or missing chunk input | options or sentence frame hint |
+| `ContinueUnderPrompt` | short pressure prompt and recorder | downgrade to `SayOne` or higher hint |
+
+### Feedback And Recap Contract
+- Feedback card shows at most one main issue, one better expression, and one immediate next action.
+- Pronunciation appears only when score signal is available; unavailable score must not block the session.
+- Hint level changes must be visible through the current prompt, sentence frame, options, chunk shadowing or model-then-retry UI.
+- Recap must remain visible even when learning evidence write-back is retryable or delayed.
+- The screen must not display cross-day scheduling, full L0-L5 mastery, third-scene creation, arbitrary scene generation, commercial entitlement status, or billing state as P0.1 completion proof.
+
 ### Notebook
 - Purpose: review saved expressions.
 - States: empty, loaded, deleting, error.

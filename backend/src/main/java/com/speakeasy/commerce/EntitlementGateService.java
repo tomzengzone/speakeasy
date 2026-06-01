@@ -71,6 +71,17 @@ public class EntitlementGateService {
     };
   }
 
+  @Transactional(readOnly = true)
+  public String planFor(UUID userId) {
+    EntitlementSnapshot entitlement =
+        foundationService.latestEntitlement(userId).orElseGet(() -> foundationService.defaultFreeEntitlement(userId));
+    if (!isUsable(entitlement)) {
+      entitlement = foundationService.defaultFreeEntitlement(userId);
+    }
+    String plan = entitlement.getPlan();
+    return plan == null || plan.isBlank() ? "free" : plan.trim();
+  }
+
   private boolean isUsable(EntitlementSnapshot entitlement) {
     if (!"active".equals(entitlement.getStatus())) {
       return false;

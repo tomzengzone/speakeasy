@@ -5,6 +5,7 @@
 
 ## 适用范围
 - Increment：`commercial-subscription-readiness`
+- Related AI hardening increment：`commercial-ai-provider-hardening`
 - Stage：`p0-commercial-readiness`
 - Release work package：`P0-COM-REL-001`
 - 关联测试用例：TC-COM-011、TC-COM-012、TC-COM-015、TC-COM-016、TC-COM-019、TC-COM-021、TC-COM-022
@@ -32,6 +33,10 @@
 | Android signing secrets | release secrets | `ANDROID_KEYSTORE_BASE64`、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD` 必须存在 |
 | `APPLE_SANDBOX_EVIDENCE_REF` | release var | 指向 Apple sandbox 购买、恢复、退款、过期、宽限期和账号切换证据 |
 | `GOOGLE_PLAY_INTERNAL_EVIDENCE_REF` | release var | 指向 Google Play internal test 购买、恢复、退款、过期、宽限期和账号切换证据 |
+| `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` | release var | 指向 DashScope LLM、ASR、TTS latency/error/cost/format/fallback 证据；paid AI voice release required |
+| `AI_MEDIA_STORAGE_EVIDENCE_REF` | release var | 指向对象存储 bucket、signed media ref、lifecycle policy 和 deletion proof |
+| `AI_COST_DASHBOARD_EVIDENCE_REF` | release var | 指向套餐/用户/provider/model/cache hit 成本看板和 budget alert 证据 |
+| `AI_RETENTION_POLICY_EVIDENCE_REF` | release var | 指向音频、转写、provider payload、TTS cache 和日志保留删除策略及执行证据 |
 | `STORE_METADATA_EVIDENCE_REF` | release var | 指向商店截图、订阅条款、隐私标签/Data safety、审核说明证据 |
 | `REVIEWER_ACCOUNT_REF` | release var | 指向可用审核账号和测试步骤 |
 | `SYMBOL_UPLOAD_EVIDENCE_REF` | release var | 指向 dSYM / ProGuard mapping 上传或验证证据 |
@@ -42,6 +47,8 @@
 ## 手工/外部门禁
 - TC-COM-015 必须由会员页、商店元数据、隐私/支持说明截图或等价证据关闭；本地脚本只能证明仓库内文案契约。
 - TC-COM-019 必须由 Apple sandbox 和 Google Play internal test 证据关闭；本地脚本不能替代真实 provider 证据。
+- TC-COM-AI-004 必须由 DashScope LLM/ASR/TTS sandbox 或 controlled live 证据关闭；fake transport 和 deterministic provider 不能替代。
+- Paid AI voice 发布还必须关闭 TC-COM-AI-001 到 TC-COM-AI-007：media upload/ref、persistent TTS cache、DashScope evidence、cost dashboard、retention/deletion。
 - TC-COM-021 必须由 App Store Connect / Play Console 元数据、订阅条款、隐私/支持 URL、审核账号证据关闭。
 - TC-COM-012 和 TC-COM-022 必须由原生配置截图、真实登录 smoke、release secrets/signing/symbol/rollback 证据和 strict gate 输出关闭。
 - 所有人工结果必须按 `tests/commercial/manual_external_evidence_checklist.md` 的模板记录 `Actual result`、`Evidence ref`、执行人、日期和 reviewer。
@@ -61,9 +68,11 @@
 11. 触发 `.github/workflows/release.yml` tag workflow。
 12. 上传或确认 dSYM / ProGuard mapping，记录 artifact、commit、tag、证据链接。
 13. 完成 rollback rehearsal 或发布负责人审批，并记录 `ROLLBACK_REHEARSAL_REF`。
+14. 若本次 release 打开 paid AI voice 或真实 DashScope provider，确认 `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`、`AI_MEDIA_STORAGE_EVIDENCE_REF`、`AI_COST_DASHBOARD_EVIDENCE_REF` 和 `AI_RETENTION_POLICY_EVIDENCE_REF` 均已登记，并且 `commercial-ai-provider-hardening` traceability 不存在 open release blocker。
 
 ## 禁止事项
 - 不得把 DashScope、OpenAI、Apple、Google、WeChat、Sentry 或签名密钥写入仓库。
 - 不得用本地 deterministic provider 测试替代 TC-COM-019。
+- 不得用 fake transport、deterministic provider、进程内 TTS cache 或手工 signed URL 替代 `commercial-ai-provider-hardening` 的生产媒体、缓存、真实 provider 和数据策略证据。
 - 不得在 `ENABLE_TEST_PHONE_LOGIN=true` 或 `ENV!=production` 时发布商店版本。
 - 不得在会员页或商店元数据中承诺尚未上线的离线包、专属报告或其他未交付权益。

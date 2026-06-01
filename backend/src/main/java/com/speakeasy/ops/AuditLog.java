@@ -62,4 +62,8 @@ public class AuditLog {
     this.requestId = requestId;
     this.createdAt = createdAt;
   }
+
+  public String getRedactedDetails() {
+    return redactedDetails;
+  }
 }

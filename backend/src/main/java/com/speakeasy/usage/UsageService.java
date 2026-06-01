@@ -8,6 +8,9 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -159,6 +162,21 @@ public class UsageService {
   }
 
   private String safe(String value) {
-    return value == null || value.isBlank() ? "none" : value;
+    if (value == null || value.isBlank()) {
+      return "none";
+    }
+    String cleaned = value.trim();
+    if (cleaned.startsWith("http://") || cleaned.startsWith("https://") || cleaned.length() > 96) {
+      return "ref_sha256:" + sha256(cleaned).substring(0, 16);
+    }
+    return cleaned;
+  }
+
+  private String sha256(String value) {
+    try {
+      return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
+    } catch (Exception e) {
+      throw new IllegalStateException("sha256 unavailable", e);
+    }
   }
 }

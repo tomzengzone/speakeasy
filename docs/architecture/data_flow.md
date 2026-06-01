@@ -67,6 +67,25 @@ State boundaries:
 - Planner decides whether a step is satisfied.
 - Mastery/evidence updates include source turn, rule trace, schema version, and timestamp.
 
+## P0.1 Local-First Implementation Flow
+```text
+official scene entry
+  -> local TrainingSession draft created or resumed
+  -> Training Planner selects current ActionChainStep + MicroAction + HintState
+  -> Training screen renders one action
+  -> audio/text input collected
+  -> ASR/scoring/AI candidate feedback adapter returns schema-valid signals or fallback
+  -> Training Planner applies deterministic decision
+  -> accepted evidence adapter writes local recap/wiki/home/queue input
+  -> traceable tests verify the same state transition
+```
+
+Boundary notes:
+- This flow is allowed for the first P0.1 implementation slice and does not require new backend endpoints.
+- If `TrainingSession` sync, remote planner, or backend evidence write is implemented, the API contract must be reviewed first.
+- Local-first recap/evidence must still be compatible with account deletion/local cleanup and later server-owned evidence facts.
+- Local-first mode cannot be used to bypass AI schema validation or planner unit tests.
+
 ## Product Base Practice Turn Flow
 ```text
 Scenario selection
@@ -93,6 +112,43 @@ Provider request
 ```
 
 Fallback output may provide a safe next action, but cannot complete a session or write final learning evidence unless deterministic rules confirm the required state.
+
+## P0.1 DashScope Provider Adapter Flow
+```text
+Flutter records or requests AI help
+  -> Flutter calls current Spring Boot AI REST
+  -> backend auth + usage reservation
+  -> AiGatewayService routes to configured AiProviderGateway
+  -> deterministic provider for local/CI OR DashScope provider for real LLM/TTS/ASR
+  -> provider response is normalized to TranscribeResult / TtsResult / CoachResult / ScoreResult
+  -> invalid schema, no result, timeout or unavailable becomes typed fallback
+  -> usage reservation commits only on available/success, otherwise releases
+  -> Flutter receives status/fallback without provider secrets or raw payload
+```
+
+Provider-specific rules:
+- LLM: Qwen OpenAI-compatible response must produce strict JSON or recoverable fallback; no final mastery, entitlement, billing or review schedule fields can pass.
+- ASR: Paraformer requires a backend/provider-accessible `audio_ref` with backend-signed media metadata; local device file paths are rejected or returned as no result, and unsigned HTTP refs are rejected before provider calls.
+- TTS: DashScope TTS uses a text/model/voice cache key before calling provider; persistent object storage cache is a later release-hardening item.
+- Observability records provider/model/status/latency/fallback reason, not raw audio or full sensitive transcript.
+
+## P0 Commercial AI Provider Hardening Flow
+```text
+Flutter records audio
+  -> uploads audio to backend or object storage upload URL
+  -> backend validates mime, duration, size, entitlement and retention policy
+  -> backend writes MediaAsset metadata and returns trusted audio_ref/media id
+  -> /ai/transcribe consumes trusted audio_ref only
+  -> DashScope ASR/LLM/TTS provider calls emit sanitized metrics
+  -> TTS results are stored in persistent cache/object storage by text hash/model/voice
+  -> AI cost dashboard aggregates plan/user/provider/model/status/cache metrics
+  -> retention/account deletion jobs delete or anonymize audio, transcripts and cache refs
+```
+
+Release-hardening rules:
+- Paid AI voice cannot rely on local device paths, unsigned URLs, fake transport or process-local TTS cache.
+- Provider evidence must include DashScope LLM、Paraformer ASR、TTS latency、error、cost、format compatibility and fallback results.
+- Audit and metrics may store media hash/ref, model, status and cost bucket, but not full signed URLs, raw audio, full transcript or provider secrets.
 
 ## Account Deletion And Data Retention Flow
 ```text

@@ -6,6 +6,11 @@
 - Subscription entitlement service: implement `/payments/apple/verify-receipt` with App Store Server API verification, persist entitlement state on the backend, and handle renewals, refunds, grace periods, expiration, and restore flows.
 - Android subscription service: implement Google Play Billing purchase, restore, and backend purchase-token verification before enabling paid Android plans.
 - Account lifecycle: implement `DELETE /user/me` on the backend, delete or anonymize learning data according to the privacy policy, and return a clear success/error response to the app.
+- AI media lifecycle: implement Flutter recording upload to backend/object storage, generate trusted backend-owned `audio_ref`, and reject local paths or unsigned provider URLs in production ASR.
+- Persistent TTS cache: store generated TTS audio and cache metadata by text hash/model/voice/language so multi-instance or restarted backends do not regenerate the same audio.
+- DashScope AI sandbox evidence: execute controlled LLM/Paraformer ASR/TTS tests and record latency, errors, cost estimate, audio format compatibility, fallback behavior, and independent review.
+- AI cost dashboard: expose minimum cost and margin-risk views by plan, user hash, provider family, model, status, cache hit, and fallback reason before opening paid AI traffic.
+- AI data retention: define and test audio, transcript, provider payload, TTS cache, audit log, and account-deletion retention/deletion rules.
 - Production auth: replace demo email/member flows with backend-backed login and user state. Disable `ENABLE_TEST_PHONE_LOGIN` in every release build.
 - WeChat login: replace placeholder App ID, URL scheme, and universal link in Dart config, iOS project settings, Android manifest, and store backend callback settings.
 - Apple login: enable the Sign in with Apple capability in the Apple Developer account and Xcode signing profile before App Store submission.

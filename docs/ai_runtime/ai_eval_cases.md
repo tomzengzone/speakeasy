@@ -33,3 +33,15 @@
 | AI-EVAL-MVP-BE-002 | `mvp-backend-practice-ai` | Off-topic answer | Valid JSON, `main_issue.type=off_topic`, next action asks retry, no mastery update. |
 | AI-EVAL-MVP-BE-003 | `mvp-backend-practice-ai` | Provider invalid schema | Fallback output, `recoverable_error.retryable=true`, no successful feedback or evidence candidate. |
 | AI-EVAL-MVP-BE-004 | `mvp-backend-practice-ai` | ASR unavailable for audio-only turn | Session preserved as recoverable, learner input/audio ref retained, no pseudo success feedback. |
+
+## P0.1 Training AI Eval Cases
+
+| Case ID | Owning increment | Input | Expected |
+| --- | --- | --- | --- |
+| AI-EVAL-P01-001 | `p0-1-expression-automation-training` | `job_interview`, `SayOne`, sentence-frame hint, learner covers opening intent with slightly unnatural wording | Valid `TrainingFeedbackCandidate`; `completion_signal.status=met` or `partial`; one concise naturalness suggestion; evidence remains `candidate`; no final mastery. |
+| AI-EVAL-P01-002 | `p0-1-expression-automation-training` | `ChooseOne`, learner chooses option that misses the intent | Valid schema; `task_signal.status=not_met`; `recommended_next_action.type=retry` or `raise_hint`; no pressure prompt. |
+| AI-EVAL-P01-003 | `p0-1-expression-automation-training` | `ShadowOne`, pronunciation score unavailable but transcript is acceptable | Valid schema; `pronunciation_signal.status=unavailable`; feedback continues; user is not failed solely due to missing score. |
+| AI-EVAL-P01-004 | `p0-1-expression-automation-training` | ASR failure with audio ref and no transcript | Recoverable fallback candidate; `recommended_next_action.type=retry` or `text_fallback`; no weak evidence candidate. |
+| AI-EVAL-P01-005 | `p0-1-expression-automation-training` | Consecutive success context with planner allowing pressure check | Valid schema; may include `pressure_prompt_candidate.enabled=true` only with `recommended_next_action.type=pressure_check`; prompt stays in current session/scenario. |
+| AI-EVAL-P01-006 | `p0-1-expression-automation-training` | LLM attempts to output `mastered=true` or a cross-day schedule | Validation rejects or strips prohibited fields; deterministic fallback returns candidate-only feedback. |
+| AI-EVAL-P01-007 | `p0-1-expression-automation-training` | Non-P0.1 scene id or invented target expression | Validation fails; output cannot create session, scene, target expression or action chain step. |

@@ -45,6 +45,27 @@ class ProviderGatewaySecurityContractTest extends BackendIntegrationTestSupport 
   }
 
   @Test
+  void clientCannotSubmitProviderTierToGateway() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800138202");
+    gateway.resetInvocationCount();
+
+    mvc.perform(post("/ai/tts")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "text": "Hello",
+                  "provider_tier": "enterprise"
+                }
+                """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"));
+
+    org.assertj.core.api.Assertions.assertThat(gateway.invocationCount()).isZero();
+  }
+
+  @Test
   void serverSideGatewayWorksWithoutClientSecret() throws Exception {
     AuthTokens tokens = loginPhone("+8613800138201");
     String sessionId = startSession(tokens, "job_interview", "L1");

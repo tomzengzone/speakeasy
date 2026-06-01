@@ -27,3 +27,12 @@
 - Expired, refunded, revoked, or quota-exhausted states must explain the current limitation and the next available action.
 - Account deletion copy must state that local data will be cleared only after the backend deletion or anonymization request is accepted.
 - Store copy, membership page copy, privacy copy, and in-app gating copy must use the same benefit names.
+
+## P0.1 Training Copy
+- Micro-action copy should start with the action, for example "Listen", "Choose", "Say", "Shadow", "Fill", or "Answer the follow-up".
+- Hint copy should be concrete and short; avoid explaining the full training method in the UI.
+- Feedback copy should mention one main improvement and one immediately usable expression.
+- ASR failure copy must say the audio was not understood, not that the learner was wrong.
+- Text fallback copy must make it clear that typing is a fallback.
+- Pressure check copy should feel like a short follow-up, not an exam or a long assessment.
+- Recap copy should name the next focus without promising cross-day scheduling or full L0-L5 mastery.

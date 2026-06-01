@@ -30,6 +30,7 @@ Draft - 可作为 P0.1 acceptance criteria 的直接上游输入。
 | P01-SPEC-009 | P01-SI-009 | P01-FR-009 | State Model `Recap`, Outputs, Failure Handling |
 | P01-SPEC-010 | P01-SI-011 | P01-FR-010 | State Model `RecoverableError`, Failure Handling |
 | P01-SPEC-011 | P01-SI-010 | P0.1 非目标边界 | Non-goals |
+| P01-SPEC-012 | P01-SI-007, P01-SI-008, P01-SI-011 | P01-FR-011 | Backend AI Provider Gateway, media ref handling, provider fallback |
 
 ## Goal
 把现有语音场景模拟升级为训练型 Agent：系统在 session 内接管训练组织、节奏控制、难度拆解、重复推进、即时反馈和轻量场景施压，用户只完成可快速响应的小动作。
@@ -95,8 +96,29 @@ Draft - 可作为 P0.1 acceptance criteria 的直接上游输入。
 | Domain | 需要训练 session、action chain step、micro-action、hint level、pressure check、learning evidence 模型 |
 | AI runtime | 需要结构化反馈、提示、重试、下一步建议和追问建议 schema |
 | UX | 训练页需要呈现一个 micro-action、hint level、反馈、重试、pressure check 和 recap |
-| API | 如果只本地持久化则无新增后端 API；如果云端同步，需要 API contract |
+| API | AI REST path 复用现有 `/ai/transcribe`、`/ai/tts`、`/ai/pronunciation`、`/ai/coach-turn`、`/ai/feedback`；如果训练状态云端同步，需要额外 API contract |
+| Backend AI Provider | 需要在当前 Spring Boot `AiProviderGateway` 后新增可配置 DashScope provider adapter，保留 deterministic provider 作为 test/dev 默认 |
 | Tests | 需要 planner、hint ladder、micro-action、AI schema、widget 和回归测试 |
+
+## Backend AI Provider Gateway Contract
+
+Traceability: P01-SPEC-012 -> P01-FR-011 -> P01-SI-007/P01-SI-008/P01-SI-011。
+
+| Capability | Required behavior | Failure behavior |
+| --- | --- | --- |
+| Provider selection | `speakeasy.ai.provider=deterministic` keeps local deterministic behavior；`speakeasy.ai.provider=dashscope` routes through DashScope adapter | 未配置真实 provider key 时不得暴露 secret；provider call returns typed unavailable/fallback |
+| ASR | `/ai/transcribe` passes a backend/provider-accessible `audio_ref` with backend-signed media metadata to Paraformer ASR and returns transcript/confidence/status | local file path, unsigned HTTP ref, blank ref, provider timeout or no transcript returns schema/policy error, `no_result` or `provider_unavailable`; no pseudo success |
+| TTS | `/ai/tts` calls DashScope TTS, returns normalized `audio_ref`, and caches same text/model/voice within the backend process | provider failure returns `provider_unavailable`; session remains recoverable |
+| LLM coach | `/ai/coach-turn` / `/ai/feedback` call Qwen compatible chat completion and map strict JSON to `CoachResult` | invalid JSON/schema returns recoverable fallback with `validation_status=fallback` and no evidence candidate |
+| Pronunciation | Until a real pronunciation provider is selected, DashScope adapter returns `status=unavailable` so planner can continue on expression/task signals | unavailable score must not block training |
+| Usage/cost policy | Provider calls attach server-side metadata for usage family, provider, model, status, latency and fallback reason; token estimate, audio duration or estimated cost bucket is recorded when applicable | metadata is auditable but not a live billing invoice |
+| Entitlement tier policy | Provider policy is selected from backend facts such as free/pro/enterprise tier; policy may cap model, request frequency, text length and audio duration | Flutter cannot select premium provider policy by request body |
+
+Provider adapter must not:
+- expose `DASHSCOPE_API_KEY` or provider credentials to Flutter;
+- copy old Node/FastAPI routes into this backend;
+- mark final mastery, entitlement, billing state, or cross-day schedule from LLM output;
+- treat a client local file path as successful ASR provider input.
 
 ## Failure Handling
 - 场景或表达加载失败：展示可恢复错误，不进入空白训练页。

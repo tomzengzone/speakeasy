@@ -114,6 +114,8 @@ flowchart LR
 
 ## P0.1 Training Relationships
 
+专项关系与生命周期细节见 `docs/domain/training_model.md`；本节保留 P0.1 与 Product Base/P0 领域图的关系入口。
+
 | From | Relationship | To | Cardinality | Owner / source of truth | Notes |
 | --- | --- | --- | --- | --- | --- |
 | User | starts/resumes | TrainingSession | 1 -> many | Training Planner domain | P0.1 session 只限两个官方场景。 |
@@ -133,6 +135,16 @@ flowchart LR
 | LearningEvidence | updates | MasteryRecord | many -> 1 | Learning Evidence domain | rule trace 必须保留。 |
 | LearningEvidence | may schedule | ReviewItem | 1 -> many | Review domain | P0.1 只写回本轮证据，不承诺跨天调度。 |
 | TrainingSession | ends with | TrainingRecap | 1 -> 0..1 | Training + Learning Evidence | recap 不得因 evidence 写回失败而丢失。 |
+
+### P0.1-DOM-001 Relationship Gate Notes
+
+| Gate | Relationship requirement | Covered by |
+| --- | --- | --- |
+| P01-GAP-001 | Session planner 必须能从 session、step、micro-action、hint、turn 和反馈信号生成可回放决策 | `TrainingSession -> ActionChainStep -> MicroAction -> TrainingTurn -> PlannerDecision` |
+| P01-GAP-001 | Hint ladder 必须能随失败/通过升降，并在 UI 可见 | `TrainingSession -> HintState` and `PlannerDecision -> next MicroAction` |
+| P01-GAP-001 | Pressure check 只能由 session 内连续通过触发，失败回到更高支架 | `PlannerDecision -> PressureCheck -> TrainingTurn` |
+| P01-GAP-001 | 学习证据必须从候选到 accepted evidence，LLM 不直接写最终 mastery | `TrainingFeedback -> LearningEvidenceCandidate -> LearningEvidence -> MasteryRecord` |
+| P01-GAP-001 | Recap 必须在 evidence 写回失败时仍可见 | `TrainingSession -> TrainingRecap` independent from `LearningEvidenceCandidate -> LearningEvidence` |
 
 ## MVP Learning/Memory Increment Relationships
 

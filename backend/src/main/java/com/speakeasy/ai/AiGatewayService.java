@@ -15,15 +15,25 @@ public class AiGatewayService {
   private final AiProviderGateway provider;
   private final PracticeSessionRepository sessions;
   private final UsageService usageService;
+  private final AiProviderPolicyService policyService;
+  private final AiMediaReferenceService mediaReferenceService;
 
-  public AiGatewayService(AiProviderGateway provider, PracticeSessionRepository sessions, UsageService usageService) {
+  public AiGatewayService(
+      AiProviderGateway provider,
+      PracticeSessionRepository sessions,
+      UsageService usageService,
+      AiProviderPolicyService policyService,
+      AiMediaReferenceService mediaReferenceService) {
     this.provider = provider;
     this.sessions = sessions;
     this.usageService = usageService;
+    this.policyService = policyService;
+    this.mediaReferenceService = mediaReferenceService;
   }
 
   public AiProviderGateway.TranscribeResult transcribe(UUID userId, String audioRef, String languageHint) {
-    UsageReservation reservation = usageService.reserveProviderCall(userId, "asr", audioRef);
+    policyService.validateAudioRef(userId, "asr", audioRef);
+    UsageReservation reservation = usageService.reserveProviderCall(userId, "asr", mediaReferenceService.auditRef(audioRef));
     try {
       AiProviderGateway.TranscribeResult result = provider.transcribe(audioRef, languageHint);
       closeProviderReservation(userId, reservation, "available".equals(result.status()));
@@ -35,6 +45,7 @@ public class AiGatewayService {
   }
 
   public AiProviderGateway.TtsResult synthesize(UUID userId, String text, String voice) {
+    policyService.validateText(userId, "tts", text);
     UsageReservation reservation = usageService.reserveProviderCall(userId, "tts", "tts");
     try {
       AiProviderGateway.TtsResult result = provider.synthesize(text, voice);
@@ -47,7 +58,8 @@ public class AiGatewayService {
   }
 
   public AiProviderGateway.ScoreResult scorePronunciation(UUID userId, String audioRef, String referenceText) {
-    UsageReservation reservation = usageService.reserveProviderCall(userId, "scoring", audioRef);
+    policyService.validateAudioRef(userId, "scoring", audioRef);
+    UsageReservation reservation = usageService.reserveProviderCall(userId, "scoring", mediaReferenceService.auditRef(audioRef));
     try {
       AiProviderGateway.ScoreResult result = provider.scorePronunciation(audioRef, referenceText);
       closeProviderReservation(userId, reservation, "available".equals(result.status()));
@@ -62,6 +74,7 @@ public class AiGatewayService {
   public AiProviderGateway.CoachResult coach(UUID userId, UUID sessionId, String transcript, List<String> targetExpressionIds) {
     sessions.findByPracticeSessionIdAndUserId(sessionId, userId)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Practice session was not found."));
+    policyService.validateText(userId, "ai", transcript);
     UsageReservation reservation = usageService.reserveProviderCall(userId, "ai", sessionId.toString());
     try {
       AiProviderGateway.CoachResult result = provider.coach(sessionId, transcript, targetExpressionIds == null ? List.of() : targetExpressionIds);

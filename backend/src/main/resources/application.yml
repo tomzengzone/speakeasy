@@ -20,3 +20,26 @@ spring:
 server:
   servlet:
     context-path: /v1
+
+speakeasy:
+  ai:
+    provider: ${SPEAKEASY_AI_PROVIDER:deterministic}
+    media:
+      metadata-signing-key: ${SPEAKEASY_MEDIA_METADATA_SIGNING_KEY:}
+      allow-unsigned-head-metadata: ${SPEAKEASY_MEDIA_ALLOW_UNSIGNED_HEAD_METADATA:false}
+      duration-header: ${SPEAKEASY_MEDIA_DURATION_HEADER:X-Speakeasy-Audio-Duration-Seconds}
+      metadata-timeout: ${SPEAKEASY_MEDIA_METADATA_TIMEOUT:5s}
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:}
+      compatible-base-url: ${DASHSCOPE_COMPATIBLE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+      api-base-url: ${DASHSCOPE_API_BASE_URL:https://dashscope.aliyuncs.com/api/v1}
+      llm-model: ${DASHSCOPE_LLM_MODEL:qwen-plus}
+      tts-url: ${DASHSCOPE_TTS_URL:https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation}
+      tts-model: ${DASHSCOPE_TTS_MODEL:qwen3-tts-flash}
+      tts-voice: ${DASHSCOPE_TTS_VOICE:Cherry}
+      asr-model: ${DASHSCOPE_ASR_MODEL:paraformer-v2}
+      max-text-chars: ${DASHSCOPE_MAX_TEXT_CHARS:1200}
+      max-asr-duration-seconds: ${DASHSCOPE_MAX_ASR_DURATION_SECONDS:120}
+      max-asr-bytes: ${DASHSCOPE_MAX_ASR_BYTES:10000000}
+      asr-poll-attempts: ${DASHSCOPE_ASR_POLL_ATTEMPTS:6}
+      request-timeout: ${DASHSCOPE_REQUEST_TIMEOUT:20s}

@@ -21,6 +21,7 @@ Draft - 基于 P0.1 increment spec 生成，供 QA、测试用例和实现计划
 | P01-SI-009 | P01-FR-009 | P01-SPEC-009 | AC-P01-010 |
 | P01-SI-010 | P0.1 非目标边界 | P01-SPEC-011 | AC-P01-012 |
 | P01-SI-011 | P01-FR-010 | P01-SPEC-010 | AC-P01-011 |
+| P01-SI-007, P01-SI-008, P01-SI-011 | P01-FR-011 | P01-SPEC-012 | AC-P01-013 |
 
 ## AC-P01-001 官方场景入口
 - 给定用户打开 `job_interview` 或 `onboarding_introduction` 的当前等级，当用户进入训练入口时，必须进入训练型 Agent session。
@@ -87,3 +88,15 @@ Draft - 基于 P0.1 increment spec 生成，供 QA、测试用例和实现计划
 - P0.1 不得承诺任意场景生成或用户自定义公开场景。
 - P0.1 不得把跨 session、跨天、跨场景长期调度验收为已完成。
 - P0.1 不得把完整 L0-L5 掌握阶梯、完整笔记本、完整评分产品化或商业权益 gating 作为完成条件。
+
+## AC-P01-013 后端 AI Provider Gateway
+- 给定后端配置 `speakeasy.ai.provider=deterministic`，系统必须继续使用 deterministic provider，并且本地/CI 测试不得依赖真实第三方服务。
+- 给定后端配置 `speakeasy.ai.provider=dashscope` 且提供服务端 DashScope 配置，`/ai/transcribe`、`/ai/tts`、`/ai/coach-turn` 和 `/ai/feedback` 必须通过当前 Spring Boot 后端的 `AiProviderGateway` 调用 DashScope adapter，不得暴露 provider secret 给 Flutter。
+- 给定 `/ai/transcribe` 收到空 `audio_ref`、客户端本地文件路径、未携带后端签名媒体元数据的 HTTP ref 或 provider 无结果，系统必须返回 schema/policy 错误、`no_result` 或 `provider_unavailable`，不得生成伪成功 transcript。
+- 给定 `/ai/tts` 对相同 text/model/voice 重复请求，系统必须复用稳定 cache key，避免同一后端进程内重复 provider 调用；provider 失败时必须返回 `provider_unavailable`。
+- 给定 `/ai/coach-turn` 或 `/ai/feedback` 收到 DashScope LLM 无效 JSON、超时或 schema 不合法，系统必须返回 recoverable fallback，且不得生成最终 mastery、entitlement、billing 或 review schedule。
+- 给定任一 AI provider 调用，系统必须经过现有 usage reservation/commit/release 边界，并记录不含敏感原文的 provider/model/status/latency/fallback reason 观测信息。
+- 给定 LLM、ASR、TTS 任一 provider 调用，系统必须记录或返回可审计的 usage metadata：usage family、provider、model、status、latency、fallback reason，以及适用时的 token estimate、audio duration 或 estimated cost bucket；不得把这些字段伪造为 live billing 精确账单。
+- 给定用户处于 free、pro 或 enterprise 等不同 entitlement tier，provider policy 必须能基于后端事实选择允许的模型、调用频率、音频时长和文本长度；本轮如未实现高级模型差异，也必须以配置和测试证明 free/pro/enterprise 策略不会由 Flutter 决定。
+- 给定 ASR 请求，系统必须限制或拒绝不满足后端 policy 的音频输入，包括空 ref、本地文件路径、超长 duration、超大媒体对象或过高频率调用；不满足 policy 时必须返回 typed failure 或 usage limit，而不是调用 provider。
+- 给定账号删除、日志或错误上报路径，系统不得记录 raw audio、完整敏感 transcript、provider key 或 raw provider payload；audio/transcript retention 必须遵守 `docs/architecture/security_design.md`。

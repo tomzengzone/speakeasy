@@ -13,7 +13,7 @@ Proposed - whole-app architecture。本文基于 PM execution brief 进入第二
 | Product Base traceability | `docs/product/base/traceability.md` | 已实现 Flutter 能力事实、代码证据和测试证据 |
 | Feature registry | `docs/product/feature_registry.md` | 稳定 feature、planned feature 和长期边界 |
 | Roadmap / status | `docs/product/roadmap.md`, `docs/product/development_status.md` | P0/P0.1 并行主线和 P0.2/P1/P2 边界 |
-| P0 商业化 | `docs/product/stages/p0-commercial-readiness.md`, `docs/product/increments/commercial-subscription-readiness/` | 订阅、权益、账号、合规、风控和发布门禁 |
+| P0 商业化 | `docs/product/stages/p0-commercial-readiness.md`, `docs/product/increments/commercial-subscription-readiness/`, `docs/product/increments/commercial-ai-provider-hardening/` | 订阅、权益、账号、AI provider 生产化、合规、风控和发布门禁 |
 | P0.1 训练闭环 | `docs/product/stages/p0-1-expression-automation.md`, `docs/product/increments/p0-1-expression-automation-training/` | session 内训练 planner、micro-action、hint、pressure check |
 | P0.2 记忆编排 | `docs/product/stages/p0-2-training-memory.md` | future boundary，不进入当前实现 |
 | 现有代码 | `lib/`, `assets/data/`, `test/` | Flutter 前端、服务调用和本地状态事实 |
@@ -24,7 +24,7 @@ Proposed - whole-app architecture。本文基于 PM execution brief 进入第二
 - Product Base traceability：Flutter APP 已具备 TTS、录音、ASR/转写、LLM 教练反馈、基础评分、个人 Wiki、Apple IAP 前端雏形；尚无真实商业订阅闭环、后端权益事实、生产账号闭环和数据库迁移。
 - Active stages：P0 商业化订阅上线准备；P0.1 session 内表达自动化训练闭环。
 - Planned/future boundaries：P0.2 跨 session 训练编排和记忆引擎；P1 笔记本、评分产品化、场景包扩展；P2 A1-C2 内容体系和 CMS。
-- Commercial/release constraints：付费发布前必须具备服务端权益、支付校验、用量风控、账号删除、审计日志、发布密钥、商店审核材料、测试矩阵和回滚路径。
+- Commercial/release constraints：付费发布前必须具备服务端权益、支付校验、用量风控、账号删除、AI provider 生产化、审计日志、发布密钥、商店审核材料、测试矩阵和回滚路径。
 
 ## Feature / Stage Coverage Matrix
 | Product object | Frontend modules | Backend bounded context | Data ownership | API contract | AI runtime | Security / compliance | Tests / release gate | Coverage result |
@@ -41,6 +41,8 @@ Proposed - whole-app architecture。本文基于 PM execution brief 进入第二
 | `profile-membership` | profile/membership/settings pages | Commerce/Entitlement, Identity | EntitlementSnapshot, AccountLifecycle | `/entitlements`, `/subscriptions/*`, `/user/delete` | 权益不足时 AI 调用降级 | 支付、账号删除、文案一致性 | 商业边界测试矩阵 | In-scope blocker |
 | `commercial-subscription` | 付费墙、权益刷新、超限态、恢复购买 UI | Commerce/Entitlement, Usage Control, Audit | Subscription, Purchase, Entitlement, UsageLedger, AuditLog | `/subscriptions/apple/verify`, `/subscriptions/google/verify`, `/usage/*` | AI quota 在可信边界执行 | 收据校验、退款/过期/宽限期、审计 | 沙盒/内测、release secrets、回滚 | In-scope blocker |
 | `commercial-subscription-readiness` increment | 会员页、付费墙、恢复购买、超限态、账号注销反馈 | Identity, Commerce/Entitlement, Usage Control, Admin/Ops | Subscription, Purchase, EntitlementSnapshot, UsageLedger, AccountDeletionJob, AuditLog | Auth、entitlement、subscription、usage、account deletion API family | AI/ASR/TTS/评分调用必须先过 entitlement 和 usage gate | 支付凭据后端校验、生产账号、数据删除、审计、release secrets | 商业边界测试矩阵、商店审核、rollback plan | In-scope blocker |
+| `ai-provider-operations` | 录音上传、TTS 播放消费、ops 成本查看 | AI Gateway, Media Storage, Usage Control, Admin/Ops | MediaAsset, TtsCacheEntry, ProviderInvocationMetric, ProviderSandboxRun, RetentionPolicy | Media upload/signing、AI Gateway、cost dashboard、admin evidence API | DashScope live evidence、schema/fallback、provider cost metric | 对象存储 ACL、signed URL TTL、hash-only audit、retention/deletion | AI provider sandbox、media/cache/deletion tests、budget gate | In-scope blocker |
+| `commercial-ai-provider-hardening` increment | 录音上传路径、TTS cache 消费、Ops/PM 成本视图 | AI Gateway, Media Storage, Cache, Retention, Cost Dashboard | MediaAsset, TtsCacheEntry, ProviderInvocationMetric, RetentionPolicy | Future media/cost/admin API contract before implementation | LLM/ASR/TTS real provider compatibility and fallback evidence | 音频/转写/provider payload 保留删除、日志脱敏、secret/object storage | TC-COM-AI-001..007, DashScope evidence ref | Planned blocker |
 | `notebook-vocabulary` | 未来 notebook/search UI | Notebook/Learning Assets | NotebookItem, VocabularyLookup | Future API | Future prompt support | Future data retention | P1 独立测试 | Explicitly deferred |
 | `p0-1-expression-automation-training` increment | training session view 或改造 practice page、micro-action UI、recap | Training Planner, Learning Evidence, AI Gateway | TrainingSession, ActionChainStep, MicroAction, HintLevel, PlannerDecision, LearningEvidence | Training session、planner、hint、learning evidence、AI feedback API family | LLM 输出结构化候选；planner 裁决 retry/hint/pressure/evidence | 音频/转写保护、provider secrets 后端化、无效 schema 不写证据 | planner unit、AI schema eval、widget/fallback tests | In-scope blocker |
 | P0.2 memory stage | 首页推荐、表达队列、Wiki 延展 | Long-term Planner | DailyPlan, MasteryLadder, CrossSessionSchedule | Future `/training/daily-plan` | LLM 不拥有最终 mastery | 记忆调度审计 | P0.2 独立 gate | Explicitly deferred |
@@ -54,7 +56,7 @@ Proposed - whole-app architecture。本文基于 PM execution brief 进入第二
 | Explicitly deferred | P2 A1-C2 内容体系、CMS、内容生产工具 | 需要内容治理和运营能力后置 |
 | Non-goal | 任意场景生成、公开社区、真人导师市场、课程市场 | 已被 roadmap 明确排除 |
 | Non-goal | 把商业 gating 作为 P0.1 训练闭环前置条件 | P0 商业化与 P0.1 训练价值体验并行 |
-| In-scope blocker | 后端工程、PostgreSQL schema、OpenAPI、AI schema、商业测试矩阵、release secrets gate | 需要在实现前补齐下游契约 |
+| In-scope blocker | 后端工程、PostgreSQL schema、OpenAPI、AI schema、商业测试矩阵、release secrets gate、AI media lifecycle、persistent TTS cache、DashScope evidence、cost dashboard、AI data retention | 需要在实现前补齐下游契约 |
 
 ## Mainstream Option Comparison
 | Area | Option A | Option B | Option C | Decision |
@@ -77,7 +79,7 @@ Proposed - whole-app architecture。本文基于 PM execution brief 进入第二
 | Database | PostgreSQL + Flyway/Liquibase migrations；JSONB 限于 raw provider payload、audit details 和低频扩展 | 需要认真建模核心实体，不能把业务事实都塞 JSON |
 | Cache/queue | Redis 或托管缓存；托管队列/worker 处理支付 webhook、删除任务、AI 异步任务 | 增加运维组件，但能隔离重试和成本控制 |
 | API | OpenAPI-first；统一 error schema、request_id、idempotency key、schema_version | 需要维护契约和生成客户端 |
-| AI runtime | Backend-owned AI Gateway；LLM 输出 schema 校验；deterministic planner 决策 | 比客户端直连慢一步，但可审计、可限流、可降级 |
+| AI runtime | Backend-owned AI Gateway；LLM 输出 schema 校验；deterministic planner 决策；生产化阶段补对象存储 media refs、persistent TTS cache 和 provider cost metrics | 比客户端直连慢一步，但可审计、可限流、可降级、可控成本 |
 | Security | 服务端拥有 provider/payment secrets；客户端只持短期 token 和展示缓存 | 需要补生产账号和 token 刷新 |
 | Observability | Sentry for Flutter + backend structured logs + OpenTelemetry traces/metrics/logs | 需要定义 request_id 和 trace propagation |
 | Release | CI/CD release gates、商业边界测试矩阵、商店配置检查、回滚计划 | 发布前工作量增加，但能阻断付费事故 |
@@ -87,16 +89,37 @@ Proposed - whole-app architecture。本文基于 PM execution brief 进入第二
 - Backend：以 modular monolith 建立 Identity、Commerce/Entitlement、Usage Control、Content/Scenario、Training Planner、Learning Evidence、AI Gateway、Admin/Ops 上下文。
 - Database：PostgreSQL 保存用户、订阅、权益、用量、训练 session、学习证据、审计和删除任务；通过 migration 管控 schema 演进。
 - API：OpenAPI-first，Dart client generated，所有跨层变更先更新契约。
-- AI runtime：LLM、ASR、TTS、评分全部通过后端可信边界，schema validation 和 fallback 先于 UI 渲染。
+- AI runtime：LLM、ASR、TTS、评分全部通过后端可信边界，schema validation 和 fallback 先于 UI 渲染；paid AI voice 还必须具备对象存储上传、持久化 TTS cache、真实 provider evidence、成本看板和数据保留删除证据。
 - Security：支付凭据、provider keys、AI quota、审计和数据删除均在服务端执行。
 - Observability：客户端 crash/performance、后端 request logs、trace、metrics 统一 request_id/trace_id。
 - Release operations：付费发布前必须完成商业边界测试矩阵、release secrets gate、商店元数据、回滚计划和质量报告。
 
 ## Architecture Acceptance Gate
 本架构可以作为后续契约补齐的候选方案，但不能直接启动实现。进入实现前必须补齐：
-- P0 commercial：Domain Schema、API Contract、Architecture/Security、UX、QA/Test Plan、DevOps/Release。
+- P0 commercial subscription：Domain Schema、API Contract、Architecture/Security、UX、QA/Test Plan、DevOps/Release。
+- P0 commercial AI provider hardening：Media/Storage/API/Security、AI Runtime sandbox matrix、Cost Dashboard、Retention/Deletion、QA/Test Plan、DevOps/Release。
 - P0.1 training：Training domain model、AI prompt/schema、dialogue state machine、screen spec、planner tests。
 - `document-traceability-check` 和 Product Object Governance Check Agent 均返回 pass。
+
+## P0.1 Training Increment Architecture Gate
+
+Architecture scope mode: `increment` for `docs/product/increments/p0-1-expression-automation-training/`。
+
+| Stage Scope ID | Architecture boundary | Evidence path | Gate status |
+| --- | --- | --- | --- |
+| P01-SI-001 | Training entry is limited to `job_interview` and `onboarding_introduction`; unsupported scenes fail closed in UX | `docs/ux/screen_spec.md`, `docs/architecture/module_boundary.md` | Contract-ready |
+| P01-SI-002 | Deterministic Training Planner owns next action, retry, hint, pressure and recap decisions | `docs/domain/training_model.md`, ADR 0004, `docs/architecture/module_boundary.md` | Contract-ready |
+| P01-SI-003 | Action chain is content/domain input, not LLM-generated scope | `docs/domain/training_model.md`, `docs/domain/entity_relationship.md` | Contract-ready |
+| P01-SI-004 | Micro-action UI renders one active action; planner/application module owns state transition | `docs/ux/screen_spec.md`, `docs/architecture/module_boundary.md` | Contract-ready |
+| P01-SI-005 | Hint ladder is domain state rendered by UI; AI may propose hint wording only | `docs/domain/training_model.md`, `docs/ai_runtime/llm_output_schema.md` | Contract-ready |
+| P01-SI-006 | Pressure check is session-only and cannot become P0.2 cross-day scheduling | `docs/domain/training_model.md`, `docs/ux/user_flow.md` | Contract-ready |
+| P01-SI-007 | Voice-first path uses existing audio/ASR boundary with text fallback only for failure/debug | `docs/ux/screen_spec.md`, `docs/ai_runtime/fallback_strategy.md` | Contract-ready |
+| P01-SI-008 | AI runtime returns schema-valid candidate feedback; planner rules decide final progression | `docs/ai_runtime/prompt_contract.md`, `docs/ai_runtime/llm_output_schema.md`, ADR 0004 | Contract-ready |
+| P01-SI-009 | Learning evidence write-back requires accepted rule output and recap preservation | `docs/domain/training_model.md`, `docs/architecture/module_boundary.md` | Contract-ready |
+| P01-SI-010 | Non-goals remain blocked at architecture boundary | `docs/product/stages/p0-1-expression-automation.md`, `docs/product/increments/p0-1-expression-automation-training/acceptance.md` | Contract-ready |
+| P01-SI-011 | Recoverable failures preserve session/input/recap and return to previous valid state or retry | `docs/ai_runtime/fallback_strategy.md`, `docs/ux/screen_spec.md` | Contract-ready |
+
+P0.1-ARCH-001 结论：increment 级 architecture/module boundary 已建立。实现路由仍必须等待 `docs/product/increments/p0-1-expression-automation-training/test_cases.md` 建立并通过 AC-to-TC gate。
 
 ## P0 Commercial Stage Architecture Gate
 

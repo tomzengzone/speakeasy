@@ -1,7 +1,7 @@
 # Increment Definition：商业化订阅上线准备
 
 ## 状态
-Draft - Product Manager accepted；PM 阶段开发计划、Domain/API/Architecture/UX 契约门禁和 AC-to-TC 测试用例库已补齐；实现、外部 provider、DevOps/release 和 QA 执行证据仍未开始。
+Draft - Product Manager accepted；PM 阶段开发计划、Domain/API/Architecture/UX 契约门禁和 AC-to-TC 测试用例库已补齐；本增量负责订阅、权益、账号、商业 gating 和发布门禁。AI provider 生产化 residual 已拆到 `commercial-ai-provider-hardening`。
 
 ## Increment ID
 `commercial-subscription-readiness`
@@ -34,7 +34,7 @@ Draft - Product Manager accepted；PM 阶段开发计划、Domain/API/Architectu
 - 完成微信、Apple 登录生产配置和后端回调校验。
 - 完成账号注销、云端学习数据删除或匿名化、本地学习数据清理、删除日志和用户可理解反馈。
 - 对齐会员页、商店文案、隐私申报和真实能力；未完成权益必须隐藏、降级或从付费承诺中移除。
-- 建立商业风控：AI 成本控制、速率限制、滥用检测、支付审计、账号操作审计和数据删除审计。
+- 建立商业风控：AI 用量控制、速率限制、滥用检测、支付审计、账号操作审计和数据删除审计；对象存储上传、持久化 TTS cache、真实 DashScope evidence、AI 成本看板和生产 AI 数据策略由 `commercial-ai-provider-hardening` 承接。
 - 补齐商业边界测试和发布准备。
 
 ## Covered Stage Scope Items
@@ -54,10 +54,10 @@ Draft - Product Manager accepted；PM 阶段开发计划、Domain/API/Architectu
 | COM-SI-012 | 通过 `FR-COM-012` 覆盖发布门禁和合规准备。 |
 
 ## Excluded Stage Scope Items
-- 无。本 increment 是 P0 商业化订阅上线准备 stage 的当前唯一 planned increment，覆盖该 stage 的全部 required Stage Scope Items。
+- `COM-SI-013` 到 `COM-SI-017` 已拆分到 `commercial-ai-provider-hardening`，不由本订阅增量关闭。
 
 ## Uncovered Required Stage Scope Items
-- 无。下游契约、实现、测试和发布证据缺口记录在 `docs/product/increments/commercial-subscription-readiness/traceability.md`。
+- 无。`COM-SI-001` 到 `COM-SI-012` 的下游契约、实现、测试和发布证据缺口记录在 `docs/product/increments/commercial-subscription-readiness/traceability.md`；`COM-SI-013` 到 `COM-SI-017` 的缺口记录在 `docs/product/increments/commercial-ai-provider-hardening/traceability.md`。
 
 ## Non-goals
 - 不负责训练 Agent 的 session 内 planner、micro-action、hint ladder 或 pressure check。
@@ -94,7 +94,7 @@ Ready for implementation routing after independent checker pass - 当前 Product
 | Priority | P0 release-blocking |
 | Active stage | `p0-commercial-readiness` |
 | Covered Stage Scope Items | `COM-SI-001` 到 `COM-SI-012` |
-| Scope change required | 不需要。`CR-20260524-001` 已接受，本计划不新增商业化范围 |
+| Scope change required | 不需要。`CR-20260524-001` 已接受；AI provider 生产化扩展由 `CR-20260601-002` 和 `commercial-ai-provider-hardening` 单独承接 |
 | Implementation readiness | Ready for Backend/Frontend/AI Runtime/DevOps implementation routing after independent checker pass；commercial release readiness remains blocked |
 
 ### Milestone Plan
@@ -118,7 +118,7 @@ Ready for implementation routing after independent checker pass - 当前 Product
 | 4 | P0-COM-UX-001 | UX Review / `screen-spec-generate` | 会员页、付费墙、超限态、购买/恢复状态、降级、账号注销、本地清理和商业文案一致性 | COM-SI-006,007,008,009 | `docs/ux/screen_spec.md`、`docs/ux/user_flow.md`、`docs/ux/copywriting_guideline.md` | Documentation Governance，Product Object Governance Check |
 | 5 | P0-COM-QA-001 | QA / `test-case-generate` | 建立商业边界 AC-to-TC 测试用例库，定义自动化、人工验收和外部依赖例外 | COM-SI-001..012 | `docs/product/increments/commercial-subscription-readiness/test_cases.md` | AC-to-TC gate pass；未通过前不得实现 |
 | 6 | P0-COM-BE-001 | Backend Agent | 生产账号、token/session、账号删除幂等、ops auth、权益读写和基础审计硬化 | COM-SI-001,004,005,006,012 | 后端代码、migration、backend tests、traceability code/test evidence | Backend tests，QA review，Product Object Governance Check |
-| 7 | P0-COM-BE-002 | Backend Agent / AI Runtime as needed | Entitlement refresh、免费/付费 gating、usage reserve/commit/release、AI/ASR/TTS/评分成本控制 | COM-SI-001,007,008,010 | 后端/API/AI gateway gating 实现和测试 | Backend/API tests，usage and entitlement traceability |
+| 7 | P0-COM-BE-002 | Backend Agent / AI Runtime as needed | Entitlement refresh、免费/付费 gating、usage reserve/commit/release、AI/ASR/TTS/评分用量控制 | COM-SI-001,007,008,010 | 后端/API/AI gateway gating 实现和测试 | Backend/API tests，usage and entitlement traceability；生产媒体链路和成本看板另见 `commercial-ai-provider-hardening` |
 | 8 | P0-COM-BE-003 | Backend Agent / DevOps | Apple/Google verify、restore、webhook/provider event、退款/过期/宽限期/撤销降级 | COM-SI-002,003 | payment provider adapter、sandbox fixtures、webhook tests | Provider sandbox/internal evidence；external-dependency exceptions allowed only with owner/evidence plan |
 | 9 | P0-COM-FE-001 | Frontend Agent | Flutter 会员页、付费墙、权益刷新缓存、Android Billing、restore、降级、本地账号注销清理 | COM-SI-002,003,006,007,008,009 | Flutter code、widget/integration tests、generated client drift evidence | Flutter tests，UX review，commercial copy check |
 | 10 | P0-COM-REL-001 | DevOps Agent | release secrets、签名、Sentry/dSYM/ProGuard、商店元数据、隐私申报、审核账号、rollback | COM-SI-005,009,011,012 | `docs/release/release_checklist.md`、`docs/release/rollback_plan.md`、`docs/release/version_log.md` | DevOps review，Documentation Governance |
@@ -127,6 +127,8 @@ Ready for implementation routing after independent checker pass - 当前 Product
 
 ### Current Legal Next Step
 Development Orchestrator 在独立 checker pass 后可开始路由实现批次，建议先执行 `P0-COM-BE-001` 商业 foundation hardening，再依次路由 `P0-COM-BE-002` 权益/用量 gating、`P0-COM-BE-003` provider verify/webhook、`P0-COM-FE-001` Flutter 商业 UI 和 `P0-COM-REL-001` release gate。任何商业发布口径仍必须等待 QA 执行、provider sandbox/internal test、release evidence、quality report 和 PM release decision。
+
+Paid AI voice 或真实 DashScope provider 上线还必须执行 `commercial-ai-provider-hardening` 的 `P0-AI-*` work packages；不得用本增量的用量 gating 证据替代对象存储上传、持久化 TTS cache、DashScope live evidence、成本看板和生产数据策略。
 
 ### Dependency And Blocker Register
 | Blocker ID | 阻塞内容 | 影响 | 解除条件 |

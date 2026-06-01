@@ -21,7 +21,7 @@ Draft - 可作为 acceptance criteria 的直接上游输入；实现前仍需下
 | COM-SPEC-007 | COM-SI-007 | FR-COM-006 | Flow-COM-003, Required States |
 | COM-SPEC-008 | COM-SI-008 | FR-COM-007 | Flow-COM-003, Module Impact |
 | COM-SPEC-009 | COM-SI-009 | FR-COM-009 | UX / Screen Spec contract, Rollout Notes |
-| COM-SPEC-010 | COM-SI-010 | FR-COM-010 | Flow-COM-003, Required Downstream Contracts, Module Impact |
+| COM-SPEC-010 | COM-SI-010 | FR-COM-010 | Flow-COM-003, Required Downstream Contracts, Module Impact；生产媒体/缓存/成本看板另见 `commercial-ai-provider-hardening` |
 | COM-SPEC-011 | COM-SI-011 | FR-COM-011 | QA / Test Plan contract, Rollout Notes |
 | COM-SPEC-012 | COM-SI-012 | FR-COM-012 | DevOps / Release contract, Required States, Rollout Notes |
 
@@ -84,6 +84,7 @@ Draft - 可作为 acceptance criteria 的直接上游输入；实现前仍需下
 - Frontend：会员页、个人中心、登录、付费墙、权益刷新、Android Billing、购买/恢复状态。
 - Official scenario library：若场景包作为会员权益，场景列表和场景入口必须与权益状态一致。
 - AI runtime：高成本能力必须接入用量和权益限制。
+- AI provider operations：生产 ASR media lifecycle、持久化 TTS cache、DashScope live evidence、成本看板和 AI 数据保留删除不由本订阅增量关闭，必须进入 `commercial-ai-provider-hardening`。
 - Release：商店、签名、隐私、订阅条款、审核材料。
 
 ## Non-goals
@@ -95,3 +96,4 @@ Draft - 可作为 acceptance criteria 的直接上游输入；实现前仍需下
 - 商业化能力不得在缺少服务端权益和商业边界测试时对真实用户开放。
 - 若离线内容、成就、500+ 句型库或专属学习报告无法在发布前完成，必须从会员页和商店文案中移除。
 - 任何商业化实现完成后都不得直接 merge Product Base，必须先补齐验收、测试、实现报告和质量报告。
+- 任何 paid AI voice release 还必须等待 `commercial-ai-provider-hardening` 的 implementation/test/release/quality evidence。

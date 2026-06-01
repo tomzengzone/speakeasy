@@ -4,9 +4,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(prefix = "speakeasy.ai", name = "provider", havingValue = "deterministic", matchIfMissing = true)
 public class DeterministicAiProviderGateway implements AiProviderGateway {
   private final AtomicInteger invocationCount = new AtomicInteger();
 

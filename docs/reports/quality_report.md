@@ -1,7 +1,80 @@
 # Quality Report
 
 ## Current Status
-`P0-COM-MANUAL-EVIDENCE-PLAN-001` passed independent review for manual external evidence planning and gate integration. This is not commercial release approval; TC-COM-012/015/019/021/022 remain active blockers until real external/native execution evidence is supplied.
+`P0 Commercial AI Provider Hardening Planning` passed independent documentation governance review. This is planning/traceability approval only; object-storage media upload, persistent TTS cache, real DashScope evidence, AI cost dashboard and production AI data strategy remain open implementation/release gates.
+
+## 2026-06-01 P0 Commercial AI Provider Hardening Documentation Review
+
+Result: pass for documentation planning and traceability. This is not commercial release approval and not paid AI voice readiness.
+
+Checked step:
+- `CR-20260601-002` / `commercial-ai-provider-hardening`.
+- Five optimization items: object-storage upload lifecycle, persistent TTS cache, real DashScope sandbox / controlled live evidence, AI cost dashboard, production AI data strategy.
+- Updated P0 stage, roadmap, commercial subscription split, P0.1 residual mapping, architecture/security/API/data-flow, release checklist/runbook, manual evidence checklist and reports.
+
+Independent review finding:
+- PASS. The reviewer found no blocker and confirmed all five optimization items have Stage Scope -> FR -> Spec -> AC -> TC -> Traceability/Gaps coverage.
+- Object-storage upload lifecycle maps to `COM-SI-013 -> FR-COM-AI-001 -> COM-AI-SPEC-001 -> AC-COM-AI-001 -> TC-COM-AI-001/002 -> COM-AI-TR-001 -> COM-AI-GAP-001 Open`.
+- Persistent TTS cache maps to `COM-SI-014 -> FR-COM-AI-002 -> COM-AI-SPEC-002 -> AC-COM-AI-002 -> TC-COM-AI-003 -> COM-AI-TR-002 -> COM-AI-GAP-002 Open`.
+- Real DashScope sandbox evidence maps to `COM-SI-015 -> FR-COM-AI-003 -> COM-AI-SPEC-003 -> AC-COM-AI-003 -> TC-COM-AI-004 -> COM-AI-TR-003 -> COM-AI-GAP-003 Open / external`.
+- AI cost dashboard maps to `COM-SI-016 -> FR-COM-AI-004 -> COM-AI-SPEC-004 -> AC-COM-AI-004 -> TC-COM-AI-005 -> COM-AI-TR-004 -> COM-AI-GAP-004 Open`.
+- Production AI data strategy maps to `COM-SI-017 -> FR-COM-AI-005 -> COM-AI-SPEC-005 -> AC-COM-AI-005 -> TC-COM-AI-006/007 -> COM-AI-TR-005 -> COM-AI-GAP-005 Open`.
+
+Quality findings:
+- No unimplemented AI hardening item is marked closed or passed.
+- `commercial-subscription-readiness` no longer claims to close paid AI voice or production AI provider hardening.
+- Release docs clearly state fake transport, deterministic provider, process-local TTS cache and manual signed URLs cannot replace production evidence.
+- `P01-GAP-008` remains Partial and now points production closure to `commercial-ai-provider-hardening`.
+
+Validation performed:
+- `python3 scripts/check_manual_external_evidence_plan.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `python3 scripts/check_provider_sandbox_evidence.py` - passed in non-strict mode and reported existing Apple/Google external evidence blockers.
+
+Residual risk:
+- COM-AI-GAP-001 through COM-AI-GAP-005 remain open.
+- No backend, Flutter, migration, OpenAPI implementation or real DashScope execution was performed for this increment.
+- Paid AI voice release remains blocked until implementation, test execution, external evidence and independent review are supplied.
+
+## 2026-06-01 P0.1 Backend AI Provider Gateway Independent Review
+
+Result: pass for local backend provider gateway scope after three independent review loops.
+
+Checked step:
+- CR-20260601-001 / P01-FR-011 / P01-SPEC-012 / AC-P01-013.
+- LLM/TTS/ASR design obligations 1-5 and commercial obligations 1-5 at the current local executable boundary.
+- TC-P01-015 through TC-P01-020 evidence and P01-TR-012 traceability.
+
+Review sequence:
+- First independent review blocked ASR metadata trust, signed URL audit leakage, loose LLM schema validation and TTS cache overclaim.
+- Second independent review confirmed those fixes, but blocked because TC-P01-019 documented free/pro/enterprise policy while tests only proved free.
+- Third independent review confirmed free/pro/enterprise policy tests, but blocked because audio size cap was documented without a direct bytes-limit test.
+- Final independent review passed after adding signed audio bytes-limit integration evidence.
+
+Quality findings:
+- The current Spring Boot backend remains the implementation boundary; no switch to old `speakeasy_backend_export` occurred.
+- `DashScopeAiProviderGateway` implements `AiProviderGateway`; `DeterministicAiProviderGateway` remains the default through `matchIfMissing = true`.
+- DashScope ASR now requires backend-signed media metadata for HTTP refs and rejects unsigned refs before provider calls.
+- Usage/audit stores hashed media refs rather than complete signed audio URLs.
+- LLM coach output is validated by strict backend schema checks for allowed fields, enums, required fields and score ranges.
+- Commercial provider policy derives free/pro/enterprise tier from server-side entitlement snapshots; tests cover free rejection, pro/enterprise allowance, audio size rejection and client `provider_tier` rejection.
+- TTS cache is correctly documented as in-process partial evidence; persistent media cache remains a residual release requirement.
+
+Validation performed:
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=DashScopeProviderGatewayIntegrationTest test` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
+- `npm run lint:openapi` - passed.
+- `PYTHONPATH=.uv-cache/archive-v0/6TiI4tLkyvVElUd4WZMLn/lib/python3.11/site-packages python3 scripts/check_openapi_contract.py` - passed.
+- `PYTHONPATH=.uv-cache/archive-v0/6TiI4tLkyvVElUd4WZMLn/lib/python3.11/site-packages python3 scripts/check_openapi_dart_drift.py` - passed.
+- `git diff --check` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Residual risk:
+- No live DashScope request was executed; provider calls remain fake-transport local evidence.
+- ASR upload-to-backend/object-storage lifecycle is still downstream.
+- TTS cache is process-local and not durable across restarts or multi-instance deployment.
+- Combined `npm run check:api-contract` still fails on a local `uv run --with PyYAML` runtime panic after OpenAPI lint passes; direct OpenAPI contract and Dart drift subchecks pass.
 
 ## 2026-05-26 OpenAPI Path Governance
 

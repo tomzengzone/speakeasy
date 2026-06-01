@@ -7,12 +7,12 @@ Validated - MVP 后端与数据库全量补齐已完成，系统 E2E gate 已通
 Product Manager Agent
 
 ## Current Date
-2026-05-29
+2026-06-01
 
 ## 活动目标
 以 Product Base 活需求库承载已接受稳定能力。当前 MVP 后端与数据库补齐 stage 已完成实现、测试、发布证据和本地系统 E2E gate；后续工作进入新 stage/increment 时必须继续从 Product Base 和对应 increment 追溯，不得把本次完成状态扩展为 P0.1 或商业化自动批准。
 - MVP 后端线：Product Base 已接受的登录、首评、官方场景、练习会话、AI/语音、推荐表达、学习记忆、会员边界和测试发布证据已补齐为当前后端/API/数据库事实，并通过本地 Flutter macOS + Spring Boot + 真实 PostgreSQL 系统 E2E 验证。
-- 商业发布线：P0 商业化订阅上线准备是 P0.1 之上的商业软件功能补齐和付费发布阻塞 stage；若今天目标是商业软件功能补齐或真实收费准备，应优先进入该 stage 的下游门禁。
+- 商业发布线：P0 商业化订阅上线准备是 P0.1 之上的商业软件功能补齐和付费发布阻塞 stage；若今天目标是商业软件功能补齐、真实收费准备或 paid AI voice 准备，应优先进入该 stage 的订阅和 AI provider 生产化下游门禁。
 - 价值体验线：P0.1“口语优先、文本兜底的 FSI 式表达自动化训练闭环”保持 next value-experience stage；可以做不混入商业承诺的规划或预研，但不替代 P0 商业发布门禁。
 
 ## 产品对象状态
@@ -41,6 +41,12 @@ Product Manager Agent
 - Commercial readiness spec：`docs/product/increments/commercial-subscription-readiness/spec.md`
 - Commercial readiness acceptance：`docs/product/increments/commercial-subscription-readiness/acceptance.md`
 - Commercial readiness traceability：`docs/product/increments/commercial-subscription-readiness/traceability.md`
+- Commercial AI provider hardening definition：`docs/product/increments/commercial-ai-provider-hardening/definition.md`
+- Commercial AI provider hardening requirements：`docs/product/increments/commercial-ai-provider-hardening/requirements.md`
+- Commercial AI provider hardening spec：`docs/product/increments/commercial-ai-provider-hardening/spec.md`
+- Commercial AI provider hardening acceptance：`docs/product/increments/commercial-ai-provider-hardening/acceptance.md`
+- Commercial AI provider hardening test cases：`docs/product/increments/commercial-ai-provider-hardening/test_cases.md`
+- Commercial AI provider hardening traceability：`docs/product/increments/commercial-ai-provider-hardening/traceability.md`
 - Legacy MVP requirements source：`docs/product/features/mvp-learning-loop-requirements.md`
 - Legacy acceptance source：`docs/product/acceptance_criteria.md`
 - Legacy traceability source：`docs/product/traceability_matrix.md`
@@ -97,6 +103,11 @@ Product Manager Agent
 | 商业权益 gating | 接受，作为商业发布线任务；不作为 P0.1 训练闭环前置条件 | P0 |
 | 会员页权益文案一致性 | 接受，未实现的离线、成就、500+ 句型库或专属报告不得作为已兑现付费承诺 | P0 |
 | 商业风控和 AI 成本控制 | 接受，付费流量开放前必须定义速率限制、用量、审计和滥用检测 | P0/P1 |
+| 对象存储上传链路 | 接受，真实 ASR 生产可用前必须由后端生成可信 `audio_ref` | P0 |
+| 持久化 TTS 缓存 | 接受，付费 AI 流量规模化前必须具备跨实例/重启可复用缓存；命中率和 CDN 优化可后续迭代 | P0/P1 |
+| 真实 DashScope sandbox / controlled live 测试 | 接受，不能用 fake transport 替代真实 provider latency/error/cost/format evidence | P0 |
+| AI 成本看板 | 接受，P0 需要最小套餐/用户/provider 成本看板；P1 做高级毛利分析和 provider A/B | P0/P1 |
+| 生产级 AI 数据策略 | 接受，音频、转写、provider payload、TTS cache、日志和账号注销保留删除必须在 paid AI voice 前明确 | P0 |
 | MVP 后端与数据库全量补齐 | 已完成当前 MVP stage；后续只允许通过新 owning increment 扩展能力或关闭外部门禁 | MVP - Validated |
 
 ## 当前下一步
@@ -127,6 +138,9 @@ Product Manager Agent
 25. 2026-05-29 已完成 `P0-COM-DOM-001`、`P0-COM-API-001`、`P0-COM-ARCH-001`、`P0-COM-UX-001` 和 `P0-COM-QA-001` 的文档门禁补齐；`docs/product/increments/commercial-subscription-readiness/test_cases.md` 已建立。
 26. P0 商业化需求到测试用例的 100% 追溯已建立：`FR-COM-001` 到 `FR-COM-012` 均通过 `AC-COM-001` 到 `AC-COM-014` 映射到 `TC-COM-001` 到 `TC-COM-023`；`TC-COM-023` OpenAPI contract gate 已通过。
 27. P0 商业化仍不是商业发布 ready：`TC-COM-001` 到 `TC-COM-022` 尚未实现或执行，Apple/Google sandbox/internal test、社交登录生产配置、release secrets、签名、符号表、商店材料、implementation report 和 quality report 仍是后续阻塞项。
+28. 2026-06-01 Product Manager 已接受 `CR-20260601-002 商业 AI Provider 生产化加固`，并新增 `commercial-ai-provider-hardening` increment，承接对象存储上传、持久化 TTS cache、真实 DashScope evidence、AI 成本看板和生产 AI 数据策略。
+29. `commercial-ai-provider-hardening` 的规划追溯已建立：`FR-COM-AI-001` 到 `FR-COM-AI-005` 均通过 `AC-COM-AI-001` 到 `AC-COM-AI-005` 映射到 `TC-COM-AI-001` 到 `TC-COM-AI-007`；实现和执行证据尚未开始。
+30. 当前合法下一步是执行 `P0-AI-ARCH-001`，先补齐 AI provider 生产化的 architecture/API/security/test gates，再进入 backend/media/cache/live provider/cost dashboard/data retention 实现。
 
 ## 风险与边界
 - 当前只有 2 个真实官方场景，内容规模不足以支撑“任意场景”承诺。
@@ -137,6 +151,7 @@ Product Manager Agent
 - P0.1 只接管 session 内训练；跨 session、跨天、跨场景的长期调度放入 P0.2。
 - 当前商业化能力仍不是完整付费上线闭环；真实支付 provider、Android/iOS 生产校验、webhook、退款/恢复、商业 gating 和付费流量风控必须由 `commercial-subscription-readiness` 或后续 owning increment 承接。
 - 会员边界 UI 已有系统 E2E 证据，但会员页涉及真实权益兑现的文案、入口和 provider 状态仍需在商业化发布前单独验收。
+- P0.1 DashScope adapter 只有本地 fake-provider 边界证据；paid AI voice 仍需 `commercial-ai-provider-hardening` 关闭对象存储上传、持久化 TTS cache、真实 DashScope evidence、成本看板和生产数据策略。
 - `/user/stats` 和 macOS notification 初始化在本地 E2E 中仍有非阻断日志，已记录为后续兼容性/测试环境清理项。
 
 ## 状态口径

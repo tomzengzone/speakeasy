@@ -1,7 +1,7 @@
 # 产品路线图
 
 ## 状态
-Validated for MVP backend stage with local system E2E gate - MVP 后端与数据库全量补齐已完成 TC-MVP-E2E-001 到 TC-MVP-E2E-010 本地系统黑盒验证；P0 商业化订阅上线准备是 P0.1 之上的商业软件功能补齐和付费发布阻塞 stage；真实支付 provider 保留外部门禁。
+Validated for MVP backend stage with local system E2E gate - MVP 后端与数据库全量补齐已完成 TC-MVP-E2E-001 到 TC-MVP-E2E-010 本地系统黑盒验证；P0 商业化订阅上线准备是 P0.1 之上的商业软件功能补齐和付费发布阻塞 stage；真实支付 provider 和真实 AI provider 生产化证据均保留外部门禁。
 
 ## Owner
 Product Manager Agent
@@ -13,11 +13,11 @@ Product Manager Agent
 
 **已完成线：MVP 后端与数据库全量补齐。**
 
-**Now 发布阻塞线：商业软件功能补齐和真实商业订阅上线准备。**
+**Now 发布阻塞线：商业软件功能补齐、真实商业订阅上线准备和 AI provider 生产化加固。**
 
 **Next 价值体验线：口语优先、文本兜底的 FSI 式表达自动化训练闭环。**
 
-**外部门禁线：真实 provider、商店配置、支付沙盒/生产校验、合规和发布证据。**
+**外部门禁线：真实 payment provider、真实 AI provider、对象存储、商店配置、支付沙盒/生产校验、合规和发布证据。**
 
 PM 复查判断：`p0-commercial-readiness` 是 P0 级 stage，位于 P0.1 训练体验升级之上。今天如果目标是“商业软件功能补齐”或“面向真实用户收费前准备”，下一步应先路由 P0 商业化订阅上线准备，而不是直接做 P0.1 前端 UI 设计。P0.1 仍是核心价值体验升级线，可以在不混入商业发布承诺的前提下做规划或并行预研，但不能替代 P0 的账号、支付、权益、合规、风控和发布门禁。
 
@@ -74,10 +74,32 @@ Canonical scope：
 - `docs/product/increments/commercial-subscription-readiness/spec.md`
 - `docs/product/increments/commercial-subscription-readiness/acceptance.md`
 - `docs/product/increments/commercial-subscription-readiness/traceability.md`
+- `docs/product/increments/commercial-ai-provider-hardening/definition.md`
+- `docs/product/increments/commercial-ai-provider-hardening/requirements.md`
+- `docs/product/increments/commercial-ai-provider-hardening/spec.md`
+- `docs/product/increments/commercial-ai-provider-hardening/acceptance.md`
+- `docs/product/increments/commercial-ai-provider-hardening/test_cases.md`
+- `docs/product/increments/commercial-ai-provider-hardening/traceability.md`
 
 下一工件：
-- 由 Domain Schema、API Contract、Architecture/Security、UX/Screen Spec、QA/Test Plan、DevOps/Release 分别补齐强制下游门禁。
+- 订阅闭环由 Domain Schema、API Contract、Architecture/Security、UX/Screen Spec、QA/Test Plan、DevOps/Release 分别补齐强制下游门禁。
+- AI provider 生产化先进入 `P0-AI-ARCH-001`，补齐对象存储、持久化 TTS cache、真实 DashScope evidence、成本看板和数据保留删除的 architecture/API/security 契约。
 - 每个下游门禁完成后，进入 Product Object Governance Check 和 Documentation Governance 复核。
+
+## Now: P0 商业 AI Provider 生产化加固（paid AI voice 发布阻塞）
+目标：把 P0.1 已实现的本地可测 DashScope adapter 边界，补齐为生产 paid AI voice 可用的媒体、缓存、真实 provider、成本和数据策略能力。该路线不改变 P0.1 训练体验目标；它负责回答“AI 能力能不能安全、可控成本、可审计地对真实用户开放”。
+
+范围：
+- 对象存储上传链路：Flutter 录音后上传到后端或对象存储，由后端生成可信 `audio_ref`。
+- 持久化 TTS 缓存：text hash/model/voice/language 命中后复用对象存储音频，支持多实例、重启、过期和删除。
+- 真实 DashScope sandbox / controlled live 测试：LLM、Paraformer ASR、TTS 的 latency、error code、cost、format compatibility 和 fallback evidence。
+- AI 成本看板：按套餐、用户 hash、provider family、模型、状态、cache hit 和 fallback reason 统计成本和毛利风险。
+- 生产级数据策略：音频、转写、provider payload、TTS cache、日志和账号注销的保留、删除、匿名化和审计证据。
+
+阶段判断：
+- P0 必须落地 minimum production gate：对象存储上传、持久化 TTS cache、DashScope evidence、最小成本看板和数据策略。
+- P1 可以继续优化：provider A/B、CDN 命中率、毛利预测、定价实验和多 provider fallback。
+- P0.1 只消费该能力，不负责关闭生产化发布门禁。
 
 ## Next: P0.1 表达自动化训练闭环
 目标：把现有语音场景模拟升级为训练型 Agent。用户只需完成听一句、选一个、回一句、跟一句、补一句、在追问下继续说等小动作；agent 在 session 内接管训练组织、节奏控制、难度拆解、重复推进、即时反馈和轻量场景施压。该路线是核心价值体验升级线，但排序低于 P0 商业软件功能补齐的付费发布阻塞 stage；实际 committed implementation 必须先通过 P0.1 范围的 UI/UX、domain、AI runtime、dialogue state、architecture/module boundary 和测试用例门禁。

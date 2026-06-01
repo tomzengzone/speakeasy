@@ -2082,6 +2082,7 @@ paths:
         - FR-004
         - FR-007
         - P01-FR-006
+        - P01-FR-011
         - FR-COM-010
       requestBody:
         required: true
@@ -2115,10 +2116,12 @@ paths:
       x-traceability:
         product_objects:
         - product-base
+        - p0-1-expression-automation-training
         - p0-commercial-readiness
         requirements:
         - FR-004
         - FR-008
+        - P01-FR-011
         - FR-COM-010
       requestBody:
         required: true
@@ -2164,6 +2167,7 @@ paths:
         requirements:
         - FR-008
         - P01-FR-007
+        - P01-FR-011
         - FR-COM-010
       requestBody:
         required: true
@@ -2209,6 +2213,7 @@ paths:
         requirements:
         - FR-008
         - P01-FR-007
+        - P01-FR-011
         - FR-COM-010
       requestBody:
         required: true
@@ -4497,6 +4502,7 @@ components:
       additionalProperties: false
       required:
       - schema_version
+      - audio_ref
       properties:
         schema_version:
           $ref: '#/components/schemas/SchemaVersion'

@@ -1,7 +1,7 @@
 # Implementation Report
 
 ## Current Status
-Latest feature implementation recorded: `P0-COM-MANUAL-EVIDENCE-PLAN-001` added detailed manual execution steps, result fields and a structure gate for remaining external/native TC-COM blockers. Commercial release readiness remains blocked until those external/manual results are executed and independently reviewed.
+Latest planning update recorded: `P0 Commercial AI Provider Hardening Planning` created a dedicated P0 increment for object-storage media upload, persistent TTS cache, real DashScope sandbox evidence, AI cost dashboard and production AI data strategy. No implementation has started for that increment.
 
 ## Report Format
 Each completed change should append:
@@ -14,6 +14,153 @@ Each completed change should append:
 - results
 - risks
 - follow-up
+
+## 2026-06-01 - P0.1 Backend AI Provider Gateway Implementation
+
+Change request:
+- Execute `CR-20260601-001`: do not switch to the old `speakeasy_backend_export` backend; instead, reference its DashScope strategy and implement the current Spring Boot backend AI Gateway boundary.
+- Cover LLM/TTS/ASR design obligations 1-5 and commercial software obligations 1-5 at the current local executable boundary.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-1-expression-automation-training/`.
+- Requirement: P01-FR-011.
+- Spec: P01-SPEC-012.
+- Acceptance: AC-P01-013.
+- Test cases: TC-P01-015 through TC-P01-020.
+- Traceability row: P01-TR-012.
+
+Files changed:
+- Backend provider implementation: `backend/src/main/java/com/speakeasy/ai/DashScopeAiProviderGateway.java`, `DashScopeAiProperties.java`, `DashScopeHttpTransport.java`, `JavaDashScopeHttpTransport.java`.
+- Backend gateway/commercial policy: `backend/src/main/java/com/speakeasy/ai/AiGatewayService.java`, `AiProviderPolicyService.java`, `AiMediaProperties.java`, `AiMediaReferenceService.java`, `AiProviderTelemetry.java`, `LoggingAiProviderTelemetry.java`, `backend/src/main/java/com/speakeasy/commerce/EntitlementGateService.java`, `backend/src/main/java/com/speakeasy/usage/UsageService.java`, `backend/src/main/java/com/speakeasy/ops/AuditLog.java`, `backend/src/main/resources/application.yml`.
+- Backend tests: `backend/src/test/java/com/speakeasy/DashScopeProviderGatewayTest.java`, `DashScopeProviderGatewayIntegrationTest.java`, `ProviderGatewaySecurityContractTest.java`.
+- Traceability/evidence docs: P0.1 requirements/spec/acceptance/test_cases/traceability, architecture/API/AI runtime docs, this report and `docs/reports/test_report.md`.
+
+Implementation summary:
+- Added config-selected DashScope provider adapter behind the existing `AiProviderGateway`; deterministic provider remains default for local/test unless `speakeasy.ai.provider=dashscope`.
+- Added DashScope-compatible LLM coach request, strict JSON parsing, strict schema validator, banned final-mastery/entitlement field fallback, Paraformer-style ASR async submit/polling, DashScope TTS call and in-process TTS cache keyed by text/model/voice.
+- Added backend-signed media metadata validation so DashScope ASR does not trust client-controlled query parameters and rejects unsigned HTTP refs before provider calls.
+- Added `AiProviderPolicyService` to derive free/pro/enterprise policy from backend entitlement plan and cap text length, signed audio duration and signed audio size before provider calls.
+- Preserved existing `UsageService.reserveProviderCall` reservation/commit/release flow for AI/asr/tts/scoring frequency and quota control.
+- Added sanitized provider telemetry for provider, model, usage family, status, latency, fallback reason, policy tier, token estimate, audio duration and estimated cost bucket.
+- Changed AI usage source refs to hashed media refs so signed media URLs are not persisted in audit details.
+- Hardened client boundary so Flutter cannot submit provider secrets or provider tier facts.
+
+Validation:
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=DashScopeProviderGatewayTest,DashScopeProviderGatewayIntegrationTest,ProviderGatewaySecurityContractTest,ProviderGatewayControllerTest,ProviderGatewayFailureTest,FeedbackFailureHandlingTest,CommercialAbuseControlTest,UsageQuotaGateTest test` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
+- `npm run lint:openapi` - passed.
+- `PYTHONPATH=.uv-cache/archive-v0/6TiI4tLkyvVElUd4WZMLn/lib/python3.11/site-packages python3 scripts/check_openapi_contract.py` - passed.
+- `PYTHONPATH=.uv-cache/archive-v0/6TiI4tLkyvVElUd4WZMLn/lib/python3.11/site-packages python3 scripts/check_openapi_dart_drift.py` - passed.
+- `npm run check:api-contract` - blocked by local `uv run --with PyYAML` runtime panic after OpenAPI lint passed; direct subchecks passed.
+
+Result:
+- TC-P01-015 through TC-P01-020 are passed at the local fake-provider boundary.
+- P01-GAP-008 is Partial, not Closed: DashScope adapter, signed media metadata guard, in-process TTS cache, strict LLM schema fallback, telemetry, tier policy, hashed media audit and no-secret contracts are implemented; live DashScope evidence, backend/object-storage media upload lifecycle and persistent TTS media cache remain pending.
+
+Residual risk:
+- No live DashScope request was executed in this local slice.
+- ASR currently requires an already provider-accessible `audio_ref` with backend-signed metadata; Flutter upload to backend/object storage and lifecycle cleanup are downstream.
+- TTS cache is in-process and not durable across restarts or multi-instance deployments.
+- Production retention/deletion evidence remains a release gate.
+
+Follow-up:
+- Add backend/object-storage media upload lifecycle before production ASR release.
+- Add persistent TTS media cache or object-storage-backed media refs before commercial scale.
+- Execute live provider smoke tests with vault-managed DashScope credentials and evidence refs.
+
+## 2026-06-01 - P0 Commercial AI Provider Hardening Planning
+
+Change request:
+- Execute `CR-20260601-002`: promote the five AI provider production hardening items into a P0 commercial release-blocking increment instead of leaving them as loose roadmap notes.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-commercial-readiness.md`.
+- Increment: `docs/product/increments/commercial-ai-provider-hardening/`.
+- Stage Scope: COM-SI-013 through COM-SI-017.
+- Requirements: FR-COM-AI-001 through FR-COM-AI-005.
+- Spec: COM-AI-SPEC-001 through COM-AI-SPEC-005.
+- Acceptance: AC-COM-AI-001 through AC-COM-AI-005.
+- Test cases: TC-COM-AI-001 through TC-COM-AI-007.
+- Traceability rows: COM-AI-TR-001 through COM-AI-TR-005.
+
+Files changed:
+- New increment docs: `docs/product/increments/commercial-ai-provider-hardening/definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`.
+- New external evidence matrix: `tests/commercial/ai_provider_sandbox_matrix.md`.
+- Updated planning/source docs: `docs/process/change_request.md`, `docs/product/roadmap.md`, `docs/product/stages/p0-commercial-readiness.md`, `docs/product/development_status.md`, `docs/product/feature_registry.md`, `docs/product/feature_backlog.md`, `docs/COMMERCIAL_LAUNCH_TODO.md`.
+- Updated related increment docs: `docs/product/increments/commercial-subscription-readiness/*`, `docs/product/increments/p0-1-expression-automation-training/test_cases.md`, `docs/product/increments/p0-1-expression-automation-training/traceability.md`.
+- Updated architecture/release docs: `docs/architecture/system_overview.md`, `docs/architecture/api_contract.md`, `docs/architecture/data_flow.md`, `docs/architecture/security_design.md`, `docs/release/commercial_release_runbook.md`, `docs/release/release_checklist.md`, `docs/release/version_log.md`, `tests/commercial/manual_external_evidence_checklist.md`.
+
+Implementation summary:
+- Added a separate `commercial-ai-provider-hardening` increment so the existing `commercial-subscription-readiness` increment remains scoped to subscription, entitlement, account, usage gating and release evidence.
+- Planned each optimization item at P0/P1 boundaries: P0 minimum gates for production paid AI voice, P1 for deeper cache/CDN/provider analytics optimization.
+- Established 100% planning traceability for the five items at the documentation level: Stage Scope -> FR -> Spec -> AC -> TC -> traceability row/gap.
+- Updated release docs to require DashScope evidence refs, object-storage evidence, cost dashboard evidence and AI retention policy evidence before paid AI voice or real DashScope release.
+
+Validation:
+- `python3 scripts/check_manual_external_evidence_plan.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `python3 scripts/check_provider_sandbox_evidence.py` - passed with existing Apple/Google external evidence blockers reported.
+
+Result:
+- Documentation planning and traceability are established.
+- No backend, Flutter, migration or OpenAPI implementation was added for this new increment.
+- COM-AI-GAP-001 through COM-AI-GAP-005 remain Open until implementation, tests, live evidence and independent review are supplied.
+
+Residual risk:
+- The current system still lacks production object-storage upload, persistent TTS cache, real DashScope evidence, AI cost dashboard and AI data retention/deletion execution.
+- `P01-GAP-008` remains Partial, not Closed.
+
+## 2026-06-01 - P0.1 Training Agent Core Implementation
+
+Change request:
+- Complete P0.1 prerequisite gates first, then implement the Training Agent core without treating current P0 test blockers as release blockers for this slice.
+- Keep deterministic planner rules as the source of truth; AI output remains candidate-only.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-1-expression-automation-training/`.
+- Stage Scope: P01-SI-001 through P01-SI-011.
+- Acceptance: AC-P01-001 through AC-P01-012.
+- Test cases: TC-P01-001 through TC-P01-014; TC-P01-001 through TC-P01-012 executed in this slice.
+- Traceability rows: P01-TR-001 through P01-TR-011.
+
+Files changed:
+- Added `lib/features/interview/interview_training_agent.dart`.
+- Added `lib/features/interview/interview_training_session_view.dart`.
+- Added P0.1 tests under `test/features/interview/interview_training_*.dart`.
+- Added `docs/product/increments/p0-1-expression-automation-training/test_cases.md`.
+- Updated P0.1 Domain, AI Runtime, UX, Architecture, traceability, test report and this implementation report.
+
+Implementation summary:
+- Added a local-first deterministic Training Agent for supported official scenes `job_interview` and `onboarding_introduction`.
+- Added fixed action chain fallback, single active micro-action state, hint ladder transitions, retry/model-then-retry, score-unavailable continuation, ASR text fallback, pressure check, recoverable failure and recap generation.
+- Added `TrainingFeedbackCandidate` schema validation that rejects unsupported scenes, invalid next actions, unsafe recoverable-error signals, final mastery writes and billing/entitlement fields.
+- Added a lightweight training session view surface for unsupported, ready, hint, voice controls, text fallback, feedback, pressure, recoverable error and recap states.
+- Kept production route integration and end-to-end loop outside this slice; no backend API, migration or provider call was added.
+
+Validation:
+- `dart format ...` on new P0.1 code/tests - passed.
+- `flutter test test/features/interview/interview_training_entry_test.dart test/features/interview/interview_training_planner_test.dart test/features/interview/interview_training_hint_ladder_test.dart test/features/interview/interview_training_voice_flow_test.dart test/features/interview/interview_training_text_fallback_test.dart test/features/interview/interview_training_feedback_schema_test.dart test/features/interview/interview_training_pressure_check_test.dart test/features/interview/interview_training_evidence_test.dart test/features/interview/interview_training_recoverable_failure_test.dart test/features/interview/interview_training_scope_boundary_test.dart` - passed after one local compile fix.
+- Same P0.1 `flutter test` command rerun after independent review corrections for blank scene ids and malformed schema field types - passed.
+- `flutter analyze lib/features/interview/interview_training_agent.dart lib/features/interview/interview_training_session_view.dart test/features/interview/interview_training_entry_test.dart test/features/interview/interview_training_planner_test.dart test/features/interview/interview_training_hint_ladder_test.dart test/features/interview/interview_training_voice_flow_test.dart test/features/interview/interview_training_text_fallback_test.dart test/features/interview/interview_training_feedback_schema_test.dart test/features/interview/interview_training_pressure_check_test.dart test/features/interview/interview_training_evidence_test.dart test/features/interview/interview_training_recoverable_failure_test.dart test/features/interview/interview_training_scope_boundary_test.dart` - passed with no issues.
+- `git diff --check` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Result:
+- P0.1 gates are ready and Training Agent core implementation is in place with automated evidence for TC-P01-001 through TC-P01-012.
+- P01-GAP-006 is partial, not closed: production route integration and end-to-end loop remain pending.
+- P01-GAP-007 is partial, not closed: TC-P01-013 integration and TC-P01-014 document-level AI eval remain pending.
+
+Residual risk:
+- `InterviewTrainingSessionView` is not yet wired into `interview_practice_page.dart` or a production route.
+- Full audio recording, ASR/TTS/LLM/scoring provider behavior is not covered by this deterministic slice.
+- Local-first recap/evidence filtering exists, but server/wiki/home write-back integration is pending.
+
+Follow-up:
+- Wire the Training Agent into the existing interview practice entry or a dedicated P0.1 route.
+- Add `integration_test/p0_1_training_loop_test.dart` for TC-P01-013 after route integration.
+- Convert `docs/ai_runtime/ai_eval_cases.md` into runnable AI eval/schema evidence for TC-P01-014.
 
 ## 2026-05-29 - P0-COM-MANUAL-EVIDENCE-PLAN-001 Manual External Evidence Plan
 

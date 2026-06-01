@@ -53,6 +53,8 @@ Test Case Development Agent
 | FR-COM-012 | COM-SI-012 | AC-COM-014 | TC-COM-011, TC-COM-012, TC-COM-021, TC-COM-022, TC-COM-023 | 100% mapped |
 
 ## 2026-05-29 QA Execution Overlay
+The overlay below is the authoritative execution status for completed commercial readiness slices. The detailed TC table keeps the original planned rows for stable AC-to-TC design history unless a later execution update rewrites the individual row.
+
 | TC ID | Current result | Evidence |
 | --- | --- | --- |
 | TC-COM-001 | passed | `AppleSubscriptionVerificationTest`, Maven commercial test command, `docs/reports/test_report.md` |
@@ -78,6 +80,11 @@ Test Case Development Agent
 | TC-COM-021 | evidence gate ready / external pending | `tests/commercial/store_submission_matrix.md`, `tests/commercial/manual_external_evidence_checklist.md`, `scripts/check_store_submission_evidence.py`; store metadata, privacy/support URL, subscription terms and reviewer account evidence not supplied |
 | TC-COM-022 | env-fixture passed / strict blocked | `scripts/check_release_readiness.sh --env-only` passed; strict mode blocks native iOS social-login config; release evidence steps in `tests/commercial/manual_external_evidence_checklist.md` |
 | TC-COM-023 | passed | `npm run check:api-contract` passed outside sandbox after sandbox `uv` panic |
+
+## Out-of-Scope AI Provider Hardening Tests
+- `TC-COM-001` through `TC-COM-023` cover subscription, entitlement, usage gating, commercial copy, store/release and payment-provider evidence.
+- Production AI provider hardening has separate stable IDs `TC-COM-AI-001` through `TC-COM-AI-007` in `docs/product/increments/commercial-ai-provider-hardening/test_cases.md`.
+- Do not mark paid AI voice, production ASR media lifecycle, persistent TTS cache, DashScope live evidence, cost dashboard, or AI data retention as closed from this subscription test suite.
 
 ## Test Cases
 | TC ID | Stage Scope ID | FR | Spec | AC | Traceability Row | Gap | 测试层级 | 自动化状态 | 测试脚本路径 | 执行命令 | 结果状态 | 证据报告 | Fixture / 数据 | 预期断言 |
@@ -116,3 +123,4 @@ Test Case Development Agent
 - TC-COM-001 through TC-COM-023 are stable IDs and must not be renumbered.
 - Backend, Frontend, AI Runtime and DevOps may implement the planned scripts in the paths above or update the test case row with a documented replacement path before execution.
 - Commercial release readiness still requires executed provider sandbox/internal test evidence, store metadata evidence, native social-login evidence, release secrets/signing/symbol evidence, rollback evidence, filled manual result records, implementation report, test report and quality report.
+- Paid AI voice release additionally requires `commercial-ai-provider-hardening` execution evidence for `TC-COM-AI-001` through `TC-COM-AI-007`.

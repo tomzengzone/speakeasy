@@ -11,7 +11,7 @@ Product Manager Agent
 - 当前已实现能力不重复作为未实现 backlog；只记录需要产品化、扩展或重构的后续能力。
 - 新功能进入实现前必须经过 Product Manager 接受范围，并由 Requirement Development 输出需求或 feature spec。
 
-## MVP - 后端与数据库全量补齐（当前开发重点）
+## MVP - 后端与数据库全量补齐（已完成 / Validated）
 - `mvp-backend-foundation-auth`：后端 runtime、PostgreSQL/Flyway、统一错误、auth/session/current user/profile。
 - `mvp-backend-onboarding-content`：首评、learning route、官方场景内容、场景状态和首页状态 API。
 - `mvp-backend-practice-ai`：practice session lifecycle、ASR/TTS/pronunciation/LLM provider gateway、coach feedback 和可恢复失败。
@@ -24,6 +24,9 @@ Product Manager Agent
 ## P0 - 商业化订阅上线准备
 - `commercial-subscription-readiness`：真实商业订阅上线准备，canonical scope 见 `docs/product/stages/p0-commercial-readiness.md` 和 `docs/product/increments/commercial-subscription-readiness/`。
 - 强制下游门禁：Domain Schema、API Contract、Architecture/Security、UX/Screen Spec、QA/Test Plan、DevOps/Release、Product Object Governance Check、Documentation Governance。
+- `commercial-ai-provider-hardening`：paid AI voice / real provider 生产化加固，canonical scope 见 `docs/product/increments/commercial-ai-provider-hardening/`。
+- AI provider 生产化强制门禁：对象存储上传可信 `audio_ref`、持久化 TTS cache、真实 DashScope sandbox evidence、AI 成本看板、生产 AI 数据保留/删除策略。
+- P1 可继续优化 provider A/B、CDN 命中率、成本预测和多 provider fallback；P0 先关闭商业发布必需的最小安全/成本/合规边界。
 
 ## P0.1 - 表达自动化训练闭环
 - 训练型 Agent：把现有语音场景模拟升级为由 agent 接管的训练流程，而不是开放式问答。

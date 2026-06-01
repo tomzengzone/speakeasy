@@ -28,3 +28,45 @@ fallback
 - Invalid JSON cannot update mastery or review state.
 - Off-topic turns should trigger repair before advancing.
 
+## P0.1 Training State Machine
+
+Owning increment: `docs/product/increments/p0-1-expression-automation-training/`。
+
+```text
+training_loading
+-> micro_action_ready
+-> learner_attempting
+-> transcribing
+-> ai_candidate_generating
+-> planner_deciding
+-> feedback_ready
+-> retry_ready
+-> micro_action_ready
+```
+
+Completion and pressure paths:
+
+```text
+feedback_ready -> pressure_check_ready -> learner_attempting
+feedback_ready -> recap_ready -> training_completed
+```
+
+Fallback paths:
+
+```text
+transcribing -> recoverable_error -> learner_attempting
+ai_candidate_generating -> recoverable_error -> planner_deciding
+planner_deciding -> retry_ready
+recap_ready -> evidence_write_retryable
+```
+
+## P0.1 Transition Guards
+
+- `training_loading -> micro_action_ready` requires valid official scene, level, action chain step and current micro-action.
+- `learner_attempting -> transcribing` applies only to voice input; text fallback goes directly to `ai_candidate_generating`.
+- `transcribing -> recoverable_error` on ASR failure must not set learner failure.
+- `ai_candidate_generating -> planner_deciding` requires valid `TrainingFeedbackCandidate` schema or deterministic fallback candidate.
+- `planner_deciding` may only apply allowed next actions from domain rules.
+- `feedback_ready -> pressure_check_ready` requires planner decision, not raw LLM recommendation.
+- `recap_ready -> training_completed` must preserve user-visible recap even if evidence write later retries.
+- No P0.1 state may create a third scenario, cross-day plan, complete L0-L5 state, billing state, or final mastery without evidence rules.

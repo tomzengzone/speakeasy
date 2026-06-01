@@ -98,6 +98,14 @@ Draft - 从 legacy P0.1 spec 迁移生成，作为本 increment 的标准 requir
 - ASR 失败不能直接判定用户不会，必须允许重录或文本兜底。
 - 服务失败不得阻断用户退出 session 或查看已可用的 recap。
 
+### P01-FR-011 后端 AI Provider Gateway
+- 系统必须在当前 Spring Boot 后端的 `AiProviderGateway` 抽象后接入真实 LLM/TTS/ASR provider，不得切换到旧后端工程或让 Flutter 直连 provider。
+- 系统必须保留 `DeterministicAiProviderGateway` 作为默认 test/dev provider，并通过配置选择真实 DashScope provider。
+- DashScope provider 必须覆盖 Qwen LLM、DashScope TTS 和 Paraformer ASR 的 normalized result mapping：成功返回 `available`/`success`，失败返回 `no_result`、`provider_unavailable`、`invalid_schema` 或 recoverable fallback。
+- `audio_ref` 必须是后端/provider 可访问且带后端签名媒体元数据的媒体引用；客户端本地文件路径或未签名 HTTP ref 不得被当作真实 ASR 输入并产生伪成功 transcript。
+- TTS 必须使用稳定 cache key 避免同一 text/model/voice 在同一后端进程内重复调用 provider；持久对象存储缓存属于后续 release-hardening，不作为本轮通过条件。
+- LLM 输出不得直接写最终 mastery、entitlement、billing 或 review schedule；后端必须先做结构化 JSON 映射和 fallback。
+
 ## 成功标准
 - 用户能在两个官方场景中进入训练型 Agent session。
 - 用户每一步只面对一个明确 micro-action。
@@ -105,6 +113,7 @@ Draft - 从 legacy P0.1 spec 迁移生成，作为本 increment 的标准 requir
 - 连续通过后，系统减少提示并进入轻量追问或近场景复现。
 - ASR、麦克风或外部服务失败时存在可恢复路径。
 - 本轮结束后学习证据写回，并能影响至少一个后续学习入口。
+- 当前后端能够在不暴露 provider secret 的前提下，通过可配置 provider adapter 调用真实 DashScope LLM/TTS/ASR，且默认测试仍不依赖第三方服务。
 
 ## 非目标
 - 不新增第三个官方场景。
@@ -116,9 +125,10 @@ Draft - 从 legacy P0.1 spec 迁移生成，作为本 increment 的标准 requir
 - 不把完整评分体系、学习报告或商业权益 gating 作为 P0.1 阻塞项。
 
 ## 假设
-- 当前 TTS、录音、ASR/转写、LLM 教练反馈和基础评分链路可复用。
+- 当前 TTS、录音、ASR/转写、LLM 教练反馈和基础评分链路可复用，但真实 provider 调用必须落在当前 Spring Boot AI Gateway 后端边界内。
 - 官方场景资产已提供目标表达、等级轨道和示范对话。
 - P0.1 学习证据本地优先写回；是否云端同步由后续 API/domain contract 决定。
+- 真实 ASR live E2E 需要后端可访问的音频对象或 URL；本轮不把 Flutter 本地文件路径视为有效 provider 输入。
 
 ## 开放问题
 - P0.1 session 状态是否只本地持久化，还是需要 repository-backed 同步。

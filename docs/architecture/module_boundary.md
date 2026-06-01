@@ -62,6 +62,52 @@ api layer
 - Planner、hint level、retry、pressure check、evidence write-back 的最终裁决属于 deterministic domain rules。
 - Invalid JSON、provider timeout、ASR/TTS/评分失败必须产生 typed fallback，而不是阻塞整条学习主流程。
 
+## P0.1 Training Planner Increment Boundary
+
+Owning increment: `docs/product/increments/p0-1-expression-automation-training/`。
+
+### Boundary Decision
+
+P0.1 第一版实现应采用 **frontend-rendered, deterministic planner module, local-first session draft** 的切片方式：
+- 新增或抽取可测试的 `Training Planner` domain/application 模块，承接 action chain、micro-action、hint ladder、retry、pressure check 和 recap state transition。
+- 现有 `lib/features/interview/interview_practice_page.dart` 可作为入口或承载页面，但不得继续把 planner 决策、AI 候选解析、学习证据写回和 UI rendering 混成不可测试的页面内逻辑。
+- 现有 `interview_engine`、`interview_models`、`interview_wiki_store`、`audio_service`、`voice_chat_service`、`oral_assessment_service` 可复用，但必须通过 planner/application boundary 调用。
+- P0.1 本轮实现不强制新增后端 migration；如果选择 repository-backed sync 或新增后端 API，必须先补 API contract 和后端 test cases。
+
+### Module Responsibilities
+
+| Module | Owns | Must not own |
+| --- | --- | --- |
+| Training planner rules | next micro-action, hint level transition, retry/continue/pressure/recap decision, reason code | AI free-form parsing, UI layout, provider secret, final commercial entitlement |
+| Training session state | session status, current action step, current micro-action, resumable local draft | cross-day schedule, full L0-L5, arbitrary scene generation |
+| Training feedback adapter | maps schema-valid `TrainingFeedbackCandidate` into planner-readable signals | final mastery write, unsupported next action application |
+| Training screen | renders one active micro-action, hint, recorder/text fallback, feedback, recap, recoverable error | planner rules, AI schema validation, backend facts |
+| Existing practice/session services | audio playback, recording, ASR/TTS/scoring calls, Product Base practice compatibility | direct P0.1 state advancement without planner decision |
+| Learning evidence adapter | converts accepted planner/evidence rule output to local wiki/home/queue recap input | accepting raw LLM candidates as final mastery |
+| Backend AI provider adapter | maps configured provider calls to `AiProviderGateway` results for LLM/TTS/ASR/scoring, keeps provider secrets server-side, emits typed fallback | exposing provider credentials to Flutter, copying old backend routes, bypassing usage reservation, treating local file path as successful ASR input |
+
+### Integration Boundaries
+
+| Existing area | P0.1 integration rule |
+| --- | --- |
+| `interview_practice_page.dart` | May route into a dedicated training session view or host it behind a clearly separated widget/controller; page must not become the planner source of truth. |
+| `interview_engine.dart` | May provide content lookup, target expression selection and existing session helpers; P0.1 planner decisions should be extracted into a small testable module. |
+| `interview_llm_scheduler.dart` / coach schema | May request AI feedback candidates; output must validate against `TrainingFeedbackCandidate` before UI consumption. |
+| `interview_wiki_store.dart` | May receive accepted evidence/recap updates; raw AI candidates must not be persisted as final mastery. |
+| `audio_service.dart` and `ApiClient.transcribeAudio` | Provide voice-first input and ASR fallback; ASR failure returns recoverable state, not learner failure. |
+| OpenAPI Training family | Existing documented future/server contract remains available only if implementation chooses backend sync; local-first P0.1 does not require consuming all endpoints. |
+| Current Spring Boot AI Gateway | Owns real provider adapter selection. `deterministic` remains test/dev default; `dashscope` implements Qwen LLM, DashScope TTS and Paraformer ASR behind the existing AI REST API. |
+
+### Forbidden Couplings
+
+- UI widget directly decides final mastery, review schedule, entitlement, or billing state.
+- LLM output directly advances action chain or writes accepted learning evidence.
+- Training planner creates third official scene, arbitrary scene prompt, cross-day schedule, or L0-L5 state.
+- P0.1 implementation closes commercial release blockers or depends on P0 commercial payment evidence.
+- Backend API expansion starts without API contract, tests, and governance review.
+- DashScope, VolcEngine, OpenAI or LiveKit credentials are sent to Flutter or accepted from Flutter request bodies.
+- A client local file path is treated as a provider-accessible `audio_ref` and converted into a successful ASR transcript.
+
 ## Cross-Boundary Rules
 - 新 API 必须先更新 `docs/architecture/api_contract.md` 或后续 OpenAPI source。
 - 新持久化事实必须先更新 domain schema 和 migration 计划。

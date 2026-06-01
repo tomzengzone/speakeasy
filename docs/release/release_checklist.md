@@ -59,5 +59,21 @@ Required before commercial store submission:
 - [ ] Android signing secrets、Sentry DSN、symbol upload evidence 和 rollback rehearsal evidence are present in release secrets/vars.
 - [ ] `ENABLE_TEST_PHONE_LOGIN` is disabled and `ENV=production`.
 
+## 2026-06-01 P0 Commercial AI Provider Hardening Gate
+
+Status: planned / blocked until implementation and external evidence are supplied.
+
+Required before paid AI voice or real DashScope provider release:
+- [ ] `commercial-ai-provider-hardening` requirements/spec/acceptance/test_cases/traceability remain in sync.
+- [ ] TC-COM-AI-001 trusted media upload/reference tests passed.
+- [ ] TC-COM-AI-002 production ASR rejects local paths, unsigned URLs and forged metadata.
+- [ ] TC-COM-AI-003 persistent TTS cache tests passed for multi-instance/restart/expiry behavior.
+- [ ] TC-COM-AI-004 DashScope LLM/ASR/TTS sandbox or controlled live evidence recorded in `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`.
+- [ ] TC-COM-AI-005 AI cost dashboard evidence recorded in `AI_COST_DASHBOARD_EVIDENCE_REF`.
+- [ ] TC-COM-AI-006 and TC-COM-AI-007 AI retention/deletion tests passed.
+- [ ] Object storage lifecycle and signed media ref evidence recorded in `AI_MEDIA_STORAGE_EVIDENCE_REF`.
+- [ ] AI retention policy and deletion proof recorded in `AI_RETENTION_POLICY_EVIDENCE_REF`.
+- [ ] `P01-GAP-008` remains Partial until the above items are implemented, tested and independently reviewed.
+
 Reference:
 - `docs/release/commercial_release_runbook.md`
