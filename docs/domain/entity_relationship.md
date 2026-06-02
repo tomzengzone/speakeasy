@@ -195,6 +195,8 @@ Owning increment：`commercial-ai-provider-hardening`。这些关系是 `P0-AI-A
 | User | owns | MediaAsset | 1 -> many | Media Storage | 每个录音 media ref 必须有服务端 owner，客户端不能提交裸 URL 作为生产 ASR 输入。 |
 | MediaAsset | may be source for | TranscribeRequest / PronunciationRequest | 1 -> many | AI Gateway | `/ai/transcribe` 和 `/ai/pronunciation` 只接受 validated backend media refs。 |
 | MediaAsset | may back | TtsCacheEntry | 1 -> many | Media Cache | TTS 输出对象通过 media_id/audio_ref 复用，不暴露对象存储内部 key。 |
+| User | may own | TtsCacheOwner | 1 -> many hashed refs | Media Cache / Security | TTS cache 多租户复用必须按 user hash 记录 owner ref；账号删除删除该用户 ref，最后一个 owner 删除时才删除 cache entry。 |
+| TtsCacheOwner | references | TtsCacheEntry | many -> one | Media Cache / Security | shared cache 不再依赖 first-owner 字段；legacy `owner_hash` 仅作为旧数据兜底。 |
 | TtsCacheEntry | references | ProviderInvocationMetric | many -> many aggregate | Usage / Ops | cache hit/miss 必须进入成本聚合，不能只作为进程内行为。 |
 | ProviderSandboxRun | validates | AiProviderGateway capability | many -> one capability | AI Runtime / QA | LLM、ASR、TTS 每类能力都需要 approved evidence 才能关闭 paid AI voice gate。 |
 | ProviderInvocationMetric | rolls up from | UsageReservation / provider call | many -> many | Usage / Ops | 成本看板只读 user hash、plan、provider、model、status、cache hit、duration/token estimate 和 cost。 |

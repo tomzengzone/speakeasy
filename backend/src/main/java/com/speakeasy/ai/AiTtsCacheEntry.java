@@ -149,13 +149,21 @@ public class AiTtsCacheEntry {
 
   public void markDeleted(Instant now) {
     this.status = "deleted";
+    this.ownerHash = null;
     this.deletedAt = now;
   }
 
   public void attachOwner(String ownerHash) {
     String cleaned = ownerHash == null ? "" : ownerHash.trim();
-    if (!cleaned.isBlank()) {
+    if (!cleaned.isBlank() && (this.ownerHash == null || this.ownerHash.isBlank())) {
       this.ownerHash = cleaned;
+    }
+  }
+
+  public void clearOwnerIfMatches(String ownerHash) {
+    String cleaned = ownerHash == null ? "" : ownerHash.trim();
+    if (!cleaned.isBlank() && cleaned.equals(this.ownerHash)) {
+      this.ownerHash = null;
     }
   }
 

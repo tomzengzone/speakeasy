@@ -1,7 +1,7 @@
 # Implementation Report
 
 ## Current Status
-Latest implementation update recorded: `P0-AI-REPORT-001 Commercial AI Provider Hardening Evidence Summary` completed local implementation, validation and independent review records for P0-AI-ARCH-001 through P0-AI-SEC-001. Paid AI release remains blocked until external DashScope, media storage, cost dashboard and retention evidence refs are supplied.
+Latest implementation update recorded: `P0-AI-EXT-RECHECK-001 External Evidence Recheck And TTS Cache Multi-Owner Closure` executed the requested five residual-risk gates in order. Local media/cost/retention gates still pass, TTS cache first-owner risk is closed locally with owner refs, and paid AI release remains blocked by invalid DashScope credentials plus missing media storage, cost dashboard and retention external evidence refs.
 
 ## Report Format
 Each completed change should append:
@@ -14,6 +14,53 @@ Each completed change should append:
 - results
 - risks
 - follow-up
+
+## 2026-06-02 - P0-AI-EXT-RECHECK-001 External Evidence Recheck And TTS Cache Multi-Owner Closure
+
+Change request:
+- Execute the five remaining P0-AI residual-risk items in order: real DashScope sandbox, object storage upload/read/expiry/delete evidence, cost dashboard/budget alert evidence, retention/privacy deletion proof and TTS cache multi-tenant policy review.
+- Keep each item independently reviewed and do not declare release readiness without required external evidence refs.
+
+Requirement mapping:
+- Increment: `docs/product/increments/commercial-ai-provider-hardening/`.
+- Stage Scope: COM-SI-013 through COM-SI-017.
+- Requirements: FR-COM-AI-001 through FR-COM-AI-005.
+- Test cases: TC-COM-AI-001 through TC-COM-AI-007.
+- Traceability rows: COM-AI-TR-001 through COM-AI-TR-005.
+
+Files changed:
+- Added TTS cache multi-owner persistence: `AiTtsCacheOwner.java`, `AiTtsCacheOwnerRepository.java`, `V202606020001__commercial_ai_tts_cache_owners.sql`.
+- Updated deletion behavior: `AiRetentionService.java`, `AiTtsCacheEntry.java`.
+- Updated regression coverage: `BackendIntegrationTestSupport.java`, `AiAccountDeletionMediaCleanupTest.java`.
+- Updated domain/traceability/reports: `docs/domain/domain_schema.md`, `docs/domain/entity_relationship.md`, `docs/product/increments/commercial-ai-provider-hardening/spec.md`, `test_cases.md`, `traceability.md`, `docs/reports/test_report.md`, `docs/reports/quality_report.md`, `docs/reports/implementation_report.md`.
+
+Implementation summary:
+- DashScope controlled probe was executed with the available `DASHSCOPE_API_KEY`; provider returned `invalid_api_key` / `InvalidApiKey`, so TC-COM-AI-004 remains blocked and no external evidence ref was supplied.
+- Object storage, cost dashboard and retention release evidence were revalidated locally but remain blocked for production evidence because no real bucket/CDN/KMS, PM/Ops alert destination or approved retention evidence refs are configured in this environment.
+- TTS cache policy decision: persistent cache now records one `TtsCacheOwner` per `(cache_id, owner_hash)`. Account deletion removes the deleting user's owner ref; shared cache stays active while other owners remain; the final owner deletion marks the cache entry deleted. Legacy `owner_hash` remains only as a fallback for old rows and is cleared when it matches the deleting user.
+
+Validation:
+- Sanitized inline DashScope probe - executed; LLM and TTS returned 401 invalid API key; ASR-valid blocked because no generated provider-accessible audio URL was available.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MediaUploadReferenceServiceTest,ProductionAsrMediaRefTest,AiRetentionPolicyTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiCostDashboardTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiRetentionPolicyTest,AiAccountDeletionMediaCleanupTest,AccountDeletionLearningDataTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiAccountDeletionMediaCleanupTest,AiRetentionPolicyTest,PersistentTtsCacheTest,AiCostDashboardTest,FoundationMigrationTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=PostgresFoundationMigrationTest test` - passed.
+
+Result:
+- Local TTS cache first-owner cleanup risk is closed by multi-owner refs and regression tests.
+- Local media upload/ref, cost dashboard and retention gates remain passed after the change.
+- Paid AI voice release is still not ready because `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF` are still missing or not valid.
+
+Residual risk:
+- DashScope credentials must be replaced or corrected and the full LLM/ASR/TTS matrix rerun before `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` can be supplied.
+- Real object storage upload/read/lifecycle deletion and CDN/KMS evidence remain external.
+- Production PM/Ops budget thresholds, alert destinations and dashboard evidence remain external.
+- Approved privacy/retention policy evidence and real object-store deletion proof remain external.
+
+Follow-up:
+- Supply valid provider/storage/Ops/Security evidence refs and rerun strict `scripts/check_release_readiness.sh`.
+- Include the new TTS cache owner refs in production retention runbooks and privacy review.
 
 ## 2026-06-01 - P0-AI-REPORT-001 Commercial AI Provider Hardening Evidence Summary
 

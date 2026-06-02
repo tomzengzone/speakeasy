@@ -20,6 +20,7 @@ public class AiRetentionService {
   private final AiRetentionJobRepository jobs;
   private final AiMediaAssetRepository mediaAssets;
   private final AiTtsCacheEntryRepository ttsCacheEntries;
+  private final AiTtsCacheOwnerRepository ttsCacheOwners;
   private final AiProviderInvocationMetricRepository providerMetrics;
   private final AuditLogRepository auditLogs;
   private final JdbcTemplate jdbcTemplate;
@@ -29,6 +30,7 @@ public class AiRetentionService {
       AiRetentionJobRepository jobs,
       AiMediaAssetRepository mediaAssets,
       AiTtsCacheEntryRepository ttsCacheEntries,
+      AiTtsCacheOwnerRepository ttsCacheOwners,
       AiProviderInvocationMetricRepository providerMetrics,
       AuditLogRepository auditLogs,
       JdbcTemplate jdbcTemplate,
@@ -36,6 +38,7 @@ public class AiRetentionService {
     this.jobs = jobs;
     this.mediaAssets = mediaAssets;
     this.ttsCacheEntries = ttsCacheEntries;
+    this.ttsCacheOwners = ttsCacheOwners;
     this.providerMetrics = providerMetrics;
     this.auditLogs = auditLogs;
     this.jdbcTemplate = jdbcTemplate;
@@ -87,8 +90,10 @@ public class AiRetentionService {
     try {
       UUID parsed = UUID.fromString(cacheId);
       ttsCacheEntries.findById(parsed).ifPresent(entry -> {
+        Instant now = Instant.now(clock);
         entry.attachOwner(userHashFor(userId));
         ttsCacheEntries.save(entry);
+        attachOwnerRef(parsed, userHashFor(userId), now);
       });
     } catch (IllegalArgumentException ignored) {
       // Non-UUID media ids are legacy/dev results and do not carry persistent cache ownership.
@@ -143,6 +148,7 @@ public class AiRetentionService {
     var expiredCache = ttsCacheEntries.findByStatusAndExpiresAtBefore("active", now);
     expiredCache.forEach(entry -> entry.markDeleted(now));
     ttsCacheEntries.saveAll(expiredCache);
+    expiredCache.forEach(entry -> ttsCacheOwners.deleteByCacheId(entry.getCacheId()));
     return new Counts(expiredMedia.size(), 0, expiredCache.size(), 0);
   }
 
@@ -163,11 +169,45 @@ public class AiRetentionService {
       transcriptCount = countUserTranscriptRefs(userId);
     }
 
-    var ownedCache = ttsCacheEntries.findByOwnerHashAndDeletedAtIsNull(hash);
-    ownedCache.forEach(entry -> entry.markDeleted(now));
-    ttsCacheEntries.saveAll(ownedCache);
+    java.util.Set<UUID> deletedCacheIds = new java.util.HashSet<>();
+    for (AiTtsCacheOwner ownerRef : ttsCacheOwners.findByOwnerHash(hash)) {
+      UUID cacheId = ownerRef.getCacheId();
+      ttsCacheOwners.delete(ownerRef);
+      long remainingOwners = ttsCacheOwners.countByCacheId(cacheId);
+      ttsCacheEntries.findById(cacheId)
+          .ifPresent(entry -> {
+            entry.clearOwnerIfMatches(hash);
+            if (remainingOwners == 0 && entry.getDeletedAt() == null) {
+              entry.markDeleted(now);
+              ttsCacheOwners.deleteByCacheId(cacheId);
+              deletedCacheIds.add(cacheId);
+            }
+            ttsCacheEntries.save(entry);
+          });
+    }
+
+    var legacyOwnedCache = ttsCacheEntries.findByOwnerHashAndDeletedAtIsNull(hash);
+    legacyOwnedCache.stream()
+        .filter(entry -> !deletedCacheIds.contains(entry.getCacheId()))
+        .filter(entry -> ttsCacheOwners.countByCacheId(entry.getCacheId()) == 0)
+        .forEach(entry -> {
+          entry.markDeleted(now);
+          ttsCacheEntries.save(entry);
+          ttsCacheOwners.deleteByCacheId(entry.getCacheId());
+          deletedCacheIds.add(entry.getCacheId());
+        });
     long redactedMetrics = providerMetrics.deleteByUserHash(hash);
-    return new Counts(mediaCount, transcriptCount, ownedCache.size(), Math.toIntExact(redactedMetrics));
+    return new Counts(mediaCount, transcriptCount, deletedCacheIds.size(), Math.toIntExact(redactedMetrics));
+  }
+
+  private void attachOwnerRef(UUID cacheId, String ownerHash, Instant now) {
+    ttsCacheOwners.findByCacheIdAndOwnerHash(cacheId, ownerHash)
+        .ifPresentOrElse(
+            owner -> {
+              owner.markHit(now);
+              ttsCacheOwners.save(owner);
+            },
+            () -> ttsCacheOwners.save(new AiTtsCacheOwner(UUID.randomUUID(), cacheId, ownerHash, now)));
   }
 
   private int countUserTranscriptRefs(UUID userId) {

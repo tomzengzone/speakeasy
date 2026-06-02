@@ -11,6 +11,7 @@ import com.speakeasy.ai.AiMediaAssetRepository;
 import com.speakeasy.ai.AiProviderInvocationMetricRepository;
 import com.speakeasy.ai.AiRetentionJobRepository;
 import com.speakeasy.ai.AiTtsCacheEntryRepository;
+import com.speakeasy.ai.AiTtsCacheOwnerRepository;
 import com.speakeasy.commerce.EntitlementSnapshotRepository;
 import com.speakeasy.commerce.PaymentProviderEventRepository;
 import com.speakeasy.commerce.PurchaseRepository;
@@ -77,6 +78,7 @@ abstract class BackendIntegrationTestSupport {
   @Autowired UserAccountRepository users;
   @Autowired AiMediaAssetRepository mediaAssets;
   @Autowired AiTtsCacheEntryRepository ttsCacheEntries;
+  @Autowired AiTtsCacheOwnerRepository ttsCacheOwners;
   @Autowired AiProviderInvocationMetricRepository aiProviderMetrics;
   @Autowired AiRetentionJobRepository aiRetentionJobs;
 
@@ -85,6 +87,7 @@ abstract class BackendIntegrationTestSupport {
     deletionJobs.deleteAll();
     aiRetentionJobs.deleteAll();
     aiProviderMetrics.deleteAll();
+    ttsCacheOwners.deleteAll();
     ttsCacheEntries.deleteAll();
     mediaAssets.deleteAll();
     auditLogs.deleteAll();

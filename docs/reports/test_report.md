@@ -1,7 +1,7 @@
 # Test Report
 
 ## Current Status
-Latest recorded validation: `P0-AI-REPORT-001 Final Verification` passed combined backend, OpenAPI, script and release syntax gates. Strict DashScope, media storage, cost dashboard and retention release evidence refs remain required before paid AI release.
+Latest recorded validation: `P0-AI-EXT-RECHECK-001` executed the requested five residual-risk gates in order. Local media/ref, cost dashboard, retention and TTS multi-owner tests passed; real DashScope execution was attempted but blocked by provider `invalid_api_key`; strict external evidence refs remain required before paid AI release.
 
 ## Required Sections
 - test scope
@@ -11,6 +11,44 @@ Latest recorded validation: `P0-AI-REPORT-001 Final Verification` passed combine
 - skipped tests
 - acceptance criteria coverage
 - residual risk
+
+## 2026-06-02 P0-AI External Gate Recheck And TTS Cache Multi-Owner Tests
+
+Test scope:
+- Increment `commercial-ai-provider-hardening`.
+- Requested five residual-risk gates: DashScope sandbox, object storage media lifecycle, cost dashboard/budget alerts, retention/privacy deletion proof and TTS cache multi-tenant policy.
+- Test cases TC-COM-AI-001 through TC-COM-AI-007.
+
+Commands run:
+- Sanitized inline DashScope provider probe using the available `DASHSCOPE_API_KEY` - executed; LLM returned `401 invalid_api_key`, TTS returned `401 InvalidApiKey`, ASR-valid blocked because no provider-accessible audio URL was generated.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MediaUploadReferenceServiceTest,ProductionAsrMediaRefTest,AiRetentionPolicyTest test` from `backend/` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiCostDashboardTest test` from `backend/` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiRetentionPolicyTest,AiAccountDeletionMediaCleanupTest,AccountDeletionLearningDataTest test` from `backend/` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiAccountDeletionMediaCleanupTest,AiRetentionPolicyTest,PersistentTtsCacheTest,AiCostDashboardTest,FoundationMigrationTest test` from `backend/` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=PostgresFoundationMigrationTest test` from `backend/` - passed.
+
+Passing tests:
+- TC-COM-AI-001 and TC-COM-AI-002 local backend media upload/ref and ASR guard tests passed.
+- TC-COM-AI-005 cost dashboard tests passed for sanitized aggregation, OPS-only access, budget warning and provider anomaly.
+- TC-COM-AI-006 and TC-COM-AI-007 retention/account deletion tests passed.
+- TC-COM-AI-007 now includes shared TTS cache owner refs: deleting the first owner leaves the shared cache active, clears the legacy first-owner hash and removes that owner ref; deleting the final owner marks the cache entry deleted and removes owner refs.
+- PostgreSQL migration validation applied `V202606020001__commercial_ai_tts_cache_owners.sql` successfully.
+
+Failing or blocked tests:
+- TC-COM-AI-004 real DashScope sandbox did not pass. Sanitized probe evidence: LLM `qwen-plus` returned `invalid_api_key` at 1937 ms; TTS `qwen3-tts-flash` returned `InvalidApiKey` at 1588 ms; ASR-valid was not executed because TTS did not produce a provider-accessible audio URL.
+
+Skipped or external tests:
+- Real object storage bucket/CDN/KMS upload/read/lifecycle deletion was not executed because no object-storage credentials or evidence ref are configured in the local environment.
+- Production PM/Ops dashboard screenshots, threshold approval and alert destination proof were not executed because no production evidence ref is configured.
+- Approved privacy/retention policy evidence and real object-store deletion proof were not supplied.
+
+Acceptance criteria coverage:
+- AC-COM-AI-001, AC-COM-AI-004 and AC-COM-AI-005 retain local automated evidence.
+- AC-COM-AI-002 has stronger local evidence for multi-owner TTS cache deletion semantics.
+- AC-COM-AI-003 remains blocked until valid DashScope credentials and full LLM/ASR/TTS evidence are supplied.
+
+Residual risk:
+- Paid AI voice release remains blocked by missing or invalid `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF`.
 
 ## 2026-06-01 - P0.1 Backend AI Provider Gateway Test Report
 

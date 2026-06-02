@@ -41,7 +41,9 @@ Draft - 可作为 acceptance criteria 的直接上游输入；实现前仍需 AP
 2. 后端按 normalized text hash、model、voice、language 计算 cache key。
 3. 命中有效 cache 时返回已有 media ref。
 4. 未命中时调用 DashScope TTS，保存音频到对象存储和 cache metadata。
-5. 账号删除、retention job 或 cache expiry 可以删除或失效该对象。
+5. 每次 cache 创建或命中都记录 user hash owner ref。
+6. 账号删除移除对应 owner ref；没有剩余 owner 时删除或失效 cache entry。
+7. retention job 或 cache expiry 删除 cache entry 时同时清理 owner refs。
 
 ### Flow-AI-004 DashScope sandbox / controlled live evidence
 1. QA 准备脱敏文本、短音频、异常音频和不同格式样本。
@@ -57,7 +59,7 @@ Draft - 可作为 acceptance criteria 的直接上游输入；实现前仍需 AP
 
 ### Flow-AI-006 数据保留和删除
 1. retention policy 定义每类 AI 数据的保存期限和处理方式。
-2. 账号删除 job 查找用户 audio refs、transcripts、TTS cache ownership 和 provider-derived feedback。
+2. 账号删除 job 查找用户 audio refs、transcripts、TTS cache owner refs 和 provider-derived feedback。
 3. 系统删除、匿名化或保留最小审计字段。
 4. 删除失败进入 retry/manual ops，并记录脱敏证据。
 

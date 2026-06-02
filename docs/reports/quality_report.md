@@ -1,7 +1,7 @@
 # Quality Report
 
 ## Current Status
-`P0-AI-ARCH-001` passed architecture/API/security contract review, `P0-AI-BE-001` passed local backend media upload / ASR ref review, `P0-AI-BE-002` passed local persistent TTS cache review, `P0-AI-QA-001` passed the structural DashScope evidence gate review, `P0-AI-OPS-001` passed local AI cost dashboard review, `P0-AI-SEC-001` passed local AI retention/deletion execution review, and `P0-AI-REPORT-001` passed final evidence summary review. Real DashScope evidence and final external release evidence refs remain open gates.
+`P0-AI-EXT-RECHECK-001` completed the requested five residual-risk reviews in order. Local media/ref, cost dashboard and retention regressions passed; TTS cache first-owner cleanup risk is closed locally with multi-owner refs; real DashScope execution was attempted but blocked by provider `invalid_api_key`. Paid AI release still requires valid `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF`.
 
 ## 2026-06-01 P0 Commercial AI Provider Hardening Documentation Review
 
@@ -1196,3 +1196,122 @@ Required corrections:
 
 Residual risk:
 - External evidence refs are still missing; do not declare paid AI voice release ready.
+
+## 2026-06-02 P0-AI DashScope Sandbox Execution Independent Review
+
+Result: blocker. Real provider was contacted, but the available DashScope credential is invalid; this is not a provider compatibility pass.
+
+Checked step:
+- Reviewed TC-COM-AI-004 / AC-COM-AI-003.
+- Reviewed sanitized probe output for Qwen LLM, DashScope TTS, ASR-valid prerequisite and provider-error handling.
+- Confirmed no API key, raw prompt, full audio URL or raw transcript was written to reports.
+
+Findings:
+- Blocker. Qwen valid scenario returned provider `invalid_api_key` with HTTP 401, so schema-valid LLM evidence was not produced.
+- Blocker. TTS generation returned `InvalidApiKey` with HTTP 401, so no TTS audio ref, cache evidence or ASR input fixture was produced.
+- Blocker. ASR-valid was blocked by missing provider-accessible audio URL. This does not prove Paraformer latency, format compatibility or transcript status.
+- No blocker in reporting. The run preserves `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` as missing and does not claim release readiness.
+
+Validation:
+- Sanitized inline DashScope probe - executed; result blocked by provider invalid API key.
+
+Required corrections:
+- Replace or correct `DASHSCOPE_API_KEY`, rerun the full matrix with sanitized fixtures, then set `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` only after independent evidence review.
+
+Residual risk:
+- TC-COM-AI-004 remains open.
+- Paid AI voice release remains blocked.
+
+## 2026-06-02 P0-AI Object Storage Evidence Independent Review
+
+Result: pass for local media/ref regression; blocker for production object-storage evidence.
+
+Checked step:
+- Reviewed TC-COM-AI-001, TC-COM-AI-002 and the retention deletion path touching media assets.
+- Checked local environment for object-storage/media storage configuration and found no production object storage evidence vars.
+
+Findings:
+- No local blocker. Media upload/ref and ASR guard tests passed after the TTS ownership change.
+- No local blocker. Expired media deletion still works through the retention job.
+- Release blocker. Real bucket upload/read, CDN/public object serving, KMS/secret configuration, lifecycle expiry and object deletion proof were not executed.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MediaUploadReferenceServiceTest,ProductionAsrMediaRefTest,AiRetentionPolicyTest test` - passed.
+
+Required corrections:
+- Configure real object storage and media public/upload base URLs in staging or release CI.
+- Execute upload, read, expiry and delete proof with sanitized audio, then set `AI_MEDIA_STORAGE_EVIDENCE_REF`.
+
+Residual risk:
+- Object-store lifecycle and CDN/KMS proof remain external release blockers.
+
+## 2026-06-02 P0-AI Cost Dashboard Evidence Independent Review
+
+Result: pass for local cost dashboard and budget/anomaly behavior; blocker for production PM/Ops evidence.
+
+Checked step:
+- Reviewed TC-COM-AI-005 / AC-COM-AI-004.
+- Revalidated dashboard aggregation, budget warning, provider anomaly and OPS-only access.
+
+Findings:
+- No local blocker. Cost metrics remain sanitized and do not expose raw user id or raw text.
+- No local blocker. Budget warning and provider anomaly states are visible to OPS.
+- Release blocker. Production thresholds, alert destinations, dashboard screenshots/API evidence and PM/Ops approval were not supplied.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiCostDashboardTest test` - passed.
+
+Required corrections:
+- Configure production thresholds and alert channels.
+- Capture dashboard/API evidence covering plan, user hash, provider/model/capability/status/cache hit/cost/margin risk, then set `AI_COST_DASHBOARD_EVIDENCE_REF`.
+
+Residual risk:
+- Commercial pricing remains release-blocked until production cost evidence is reviewed.
+
+## 2026-06-02 P0-AI Retention And Privacy Evidence Independent Review
+
+Result: pass for local retention/account deletion execution; blocker for approved policy and external deletion evidence.
+
+Checked step:
+- Reviewed TC-COM-AI-006 and TC-COM-AI-007.
+- Reviewed retention job counts, account deletion cleanup, provider metric redaction and TTS cache owner refs.
+
+Findings:
+- No local blocker. Expired media/cache deletion and account deletion regression tests passed.
+- No local blocker. Shared TTS cache now records owner refs and does not delete shared cache until the final owner is removed.
+- Release blocker. Approved privacy/retention policy version and real object-store deletion evidence were not supplied.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiRetentionPolicyTest,AiAccountDeletionMediaCleanupTest,AccountDeletionLearningDataTest test` - passed.
+
+Required corrections:
+- Security/PM must approve the production retention policy.
+- Run retention/account deletion against staging object storage and store redacted execution proof in `AI_RETENTION_POLICY_EVIDENCE_REF`.
+
+Residual risk:
+- Production policy approval and external deletion proof remain release blockers.
+
+## 2026-06-02 P0-AI TTS Cache Multi-Tenant Policy Independent Review
+
+Result: pass. The prior first-owner local cleanup risk is closed by owner refs and tests.
+
+Checked step:
+- Reviewed `AiTtsCacheOwner`, `AiTtsCacheOwnerRepository`, migration `V202606020001__commercial_ai_tts_cache_owners.sql`, `AiRetentionService` and `AiAccountDeletionMediaCleanupTest`.
+- Reviewed domain, spec, test case and traceability updates for multi-owner ownership.
+
+Findings:
+- No blocker. `ai_tts_cache_owners` records `(cache_id, owner_hash)` with a uniqueness constraint and timestamps.
+- No blocker. Account deletion removes only the deleting user's owner ref; cache remains active while another owner exists.
+- No blocker. Deleting the final owner marks the cache entry deleted and removes owner refs.
+- No blocker. Expired cache deletion also removes owner refs.
+- No blocker. Legacy `owner_hash` remains a fallback for old rows, no longer overwrites first ownership on subsequent hits and is cleared when it matches the deleting user.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiAccountDeletionMediaCleanupTest,AiRetentionPolicyTest,PersistentTtsCacheTest,AiCostDashboardTest,FoundationMigrationTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=PostgresFoundationMigrationTest test` - passed.
+
+Required corrections:
+- None for local implementation.
+
+Residual risk:
+- Production privacy policy still must explicitly approve cross-user reuse of identical normalized TTS cache entries before paid AI release.

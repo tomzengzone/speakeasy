@@ -105,4 +105,51 @@ class AiAccountDeletionMediaCleanupTest extends BackendIntegrationTestSupport {
     assertThat(job.getProviderPayloadRedactedCount()).isEqualTo(1);
     assertThat(job.getRedactedEvidenceRef()).startsWith("audit:ai_retention:");
   }
+
+  @Test
+  void tcComAi007SharedTtsCacheDeletesOnlyAfterLastOwnerIsRemoved() throws Exception {
+    AuthTokens firstTokens = loginPhone("+15550002003");
+    AuthTokens secondTokens = loginPhone("+15550002004");
+    UUID firstUserId = UUID.fromString(firstTokens.userId());
+    UUID secondUserId = UUID.fromString(secondTokens.userId());
+    Instant now = Instant.now();
+    UUID cacheId = UUID.randomUUID();
+
+    AiTtsCacheEntry cache = new AiTtsCacheEntry(
+        cacheId,
+        "shared-cache-key",
+        "shared-normalized-hash",
+        "qwen3-tts-flash",
+        "Cherry",
+        "Auto",
+        "https://media.test.local/tts/shared.mp3",
+        now.plusSeconds(3600),
+        now.minusSeconds(60));
+    ttsCacheEntries.save(cache);
+    aiRetentionService.attachTtsCacheOwner(cacheId.toString(), firstUserId);
+    aiRetentionService.attachTtsCacheOwner(cacheId.toString(), secondUserId);
+
+    mvc.perform(delete("/user/me")
+            .header(HttpHeaders.AUTHORIZATION, bearer(firstTokens.accessToken()))
+            .header("Idempotency-Key", "ai-account-delete-shared-first")
+            .header("X-Request-Id", "req-ai-account-delete-shared-first"))
+        .andExpect(status().isAccepted())
+        .andExpect(jsonPath("$.status").value("completed"));
+
+    AiTtsCacheEntry cacheAfterFirstDeletion = ttsCacheEntries.findById(cacheId).orElseThrow();
+    assertThat(cacheAfterFirstDeletion.getStatus()).isEqualTo("active");
+    assertThat(cacheAfterFirstDeletion.getOwnerHash()).isNull();
+    assertThat(ttsCacheOwners.findByOwnerHash(aiRetentionService.userHashFor(firstUserId))).isEmpty();
+    assertThat(ttsCacheOwners.findByOwnerHash(aiRetentionService.userHashFor(secondUserId))).hasSize(1);
+
+    mvc.perform(delete("/user/me")
+            .header(HttpHeaders.AUTHORIZATION, bearer(secondTokens.accessToken()))
+            .header("Idempotency-Key", "ai-account-delete-shared-second")
+            .header("X-Request-Id", "req-ai-account-delete-shared-second"))
+        .andExpect(status().isAccepted())
+        .andExpect(jsonPath("$.status").value("completed"));
+
+    assertThat(ttsCacheEntries.findById(cacheId).orElseThrow().getStatus()).isEqualTo("deleted");
+    assertThat(ttsCacheOwners.findByOwnerHash(aiRetentionService.userHashFor(secondUserId))).isEmpty();
+  }
 }
