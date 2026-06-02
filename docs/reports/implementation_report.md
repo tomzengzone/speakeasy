@@ -1,7 +1,7 @@
 # Implementation Report
 
 ## Current Status
-Latest implementation update recorded: `P0-AI-EXT-RECHECK-001 External Evidence Recheck And TTS Cache Multi-Owner Closure` executed the requested five residual-risk gates in order. Local media/cost/retention gates still pass, TTS cache first-owner risk is closed locally with owner refs, and paid AI release remains blocked by invalid DashScope credentials plus missing media storage, cost dashboard and retention external evidence refs.
+Latest implementation update recorded: `P0-P01-BLOCKER-CLOSURE-20260603` closed TC-P01-013 and TC-P01-014 locally, added repeatable DashScope evidence-prep tooling for TC-COM-AI-004, and reran strict commercial external gates. P0.1 route/eval local blockers are closed. Commercial release and paid AI voice remain blocked by explicit external/native/store/release evidence refs and independent review.
 
 ## Report Format
 Each completed change should append:
@@ -14,6 +14,101 @@ Each completed change should append:
 - results
 - risks
 - follow-up
+
+## 2026-06-03 - P0-P01-BLOCKER-CLOSURE-20260603 Local Blocker Closure And External Gate Revalidation
+
+Change request:
+- Execute in order: TC-P01-013, TC-P01-014, TC-COM-AI-004 evidence preparation, then TC-COM-012/015/019/021/022 commercial external gates.
+- Follow local development workflow and perform an independent review after each step.
+
+Requirement mapping:
+- P0.1 increment: `docs/product/increments/p0-1-expression-automation-training/`.
+- Commercial subscription readiness: `docs/product/increments/commercial-subscription-readiness/`.
+- Commercial AI provider hardening: `docs/product/increments/commercial-ai-provider-hardening/`.
+- Release gates: `docs/release/commercial_release_runbook.md`, `docs/release/release_checklist.md`.
+
+Files changed:
+- TC-P01-013 route integration: `lib/features/interview/interview_training_loop_page.dart`, `lib/pages/home_page.dart`, `integration_test/p0_1_training_loop_test.dart`, `scripts/run_mvp_system_e2e.sh`.
+- TC-P01-014 executable validator: `scripts/check_ai_eval_cases.dart`, `tests/ai_runtime/p0_1_ai_eval_cases.json`, `docs/ai_runtime/ai_eval_cases.md`, plus runtime guard hardening in `lib/features/interview/interview_training_agent.dart` and regression coverage in `test/features/interview/interview_training_feedback_schema_test.dart`.
+- TC-COM-AI-004 evidence prep: `scripts/run_dashscope_sandbox_matrix.py` and generated sanitized local report under `build/reports/`.
+- Reports and PM/traceability documents updated in this section and downstream product docs.
+
+Implementation summary:
+- Added a dedicated P0.1 training route host that wraps the existing Training Agent/session view, wires it from the home hero, exercises voice-first ASR failure fallback, feedback, pressure/continue and recap without writing final mastery, entitlement or billing state.
+- Added a stable `p0-1-training-loop` suite to the system E2E runner so the integration test uses isolated backend, HOME and Hive namespace.
+- Converted P0.1 AI eval cases into a machine-readable fixture and a Dart validator that calls the runtime `TrainingFeedbackCandidate` schema validator.
+- Hardened runtime schema validation to reject prohibited final-state fields anywhere in an LLM feedback candidate, not only inside learning evidence candidates.
+- Added a sanitized DashScope evidence-prep matrix script. It records hashes, status, latency, model and cost buckets, but not API keys, raw signed URLs, full transcripts or raw provider payloads.
+
+Validation:
+- `./scripts/run_mvp_system_e2e.sh --suite p0-1-training-loop` - passed.
+- `dart run scripts/check_ai_eval_cases.dart` - passed.
+- `flutter test test/features/interview/interview_training_feedback_schema_test.dart` - passed.
+- Relevant `flutter analyze` commands for TC-P01-013 and TC-P01-014 files - passed.
+- `python3 scripts/run_dashscope_sandbox_matrix.py` - passed and wrote `build/reports/dashscope-sandbox-20260602T223557Z-3359fcc82fafa457.json`.
+- `python3 -m py_compile scripts/run_dashscope_sandbox_matrix.py` - passed.
+- Commercial non-strict gates - passed: manual evidence plan, copy contract, provider sandbox matrix, AI provider matrix and store submission matrix.
+- Commercial strict gates - failed as expected on missing external/native/store/release evidence refs and release production env.
+- `git diff --check` and `python3 scripts/project_agent_runner.py validate` - passed.
+- Sanitized report review found no API key, Bearer token, raw URL or raw provider reference.
+
+Result:
+- Close locally: TC-P01-013 and TC-P01-014.
+- Prepared but not release-closed: TC-COM-AI-004. Controlled live sanitized matrix exists, but `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` and independent external review remain required.
+- Keep release-blocked: TC-COM-012, TC-COM-015, TC-COM-019, TC-COM-021 and TC-COM-022.
+
+Residual risk:
+- The TC-P01-013 route host is local-first and does not introduce backend persistence or final mastery writes.
+- The DashScope matrix report is a local evidence-prep artifact; it must not be used as the external evidence ref by itself.
+- Commercial release still lacks production social-login config, Apple/Google sandbox/internal evidence, store metadata/reviewer/privacy/support evidence, signing/Sentry/symbol/rollback evidence and production API/env configuration.
+
+Follow-up:
+- Supply and independently review external evidence refs, then rerun strict commercial release gates.
+- After PM review, update any Product Base merge-back decision for P0.1 based on the now-passing TC-P01-013/014 evidence.
+
+## 2026-06-02 - P0-P01-BLOCKER-RETEST-20260602 Blocker Retest, E2E Fixes And PM Status Update
+
+Change request:
+- Recheck prior P0/P0.1 blocker items, rerun related tests and E2E suites, decide which blockers can close, update related documents and PM status, then perform independent review.
+
+Requirement mapping:
+- P0.1 increment: `docs/product/increments/p0-1-expression-automation-training/`.
+- P0 commercial subscription increment: `docs/product/increments/commercial-subscription-readiness/`.
+- P0 commercial AI provider increment: `docs/product/increments/commercial-ai-provider-hardening/`.
+- MVP system E2E validation: `docs/product/increments/mvp-system-e2e-validation/`.
+
+Files changed:
+- `scripts/run_mvp_system_e2e.sh`: passes an OPS bearer token to protected `/admin/release-health` readiness checks and defaults E2E backend provider to deterministic, isolating local E2E from shell-level `SPEAKEASY_AI_PROVIDER=dashscope`.
+- `integration_test/mvp_system_membership_boundary_test.dart`: scrolls to `membership_restore_purchases_button` before asserting it, preserving the restore-entry assertion without assuming same-viewport layout.
+- `backend/src/main/java/com/speakeasy/ops/AuditLog.java`: exposes `eventType` for precise audit assertions.
+- `backend/src/test/java/com/speakeasy/CommercialAccountDeletionProcessorTest.java`: verifies idempotency by counting `account_deletion_completed` audit events instead of assuming only one audit row exists after AI retention cleanup also records audit evidence.
+- Updated reports and PM/product status documents listed in this section.
+
+Implementation summary:
+- Closed test-environment blockers rather than weakening product gates: protected OPS health now uses an E2E token, E2E provider selection is deterministic by default, and membership E2E scrolls to the restore button before assertion.
+- Corrected a stale commercial account-deletion test assumption introduced by additional AI retention audit logging.
+- Revalidated DashScope credentials with a sanitized direct probe. LLM, TTS and ASR controlled live sanity passed; signed audio URLs, task ids, raw transcripts and secrets were not written to docs.
+
+Validation:
+- P0.1 Flutter training core suite - passed.
+- Commercial/backend deterministic suites for AI provider hardening and subscription readiness - passed.
+- Commercial Flutter widget/integration suites - passed.
+- `npm run check:api-contract` - passed.
+- MVP system E2E suites `smoke`, `scene-catalog`, `learning-memory`, `practice-feedback`, `profile-settings`, `membership-boundary` and `commercial-boundary` - passed.
+- Non-strict external evidence gates - passed and reported expected missing evidence refs.
+- Sanitized DashScope LLM/TTS/ASR controlled live probe - passed with `http=200` for all submitted calls and ASR final status `SUCCEEDED`.
+
+Result:
+- Close: stale `invalid_api_key` DashScope credential blocker, stale `CommercialAccountDeletionProcessorTest` audit-count blocker, E2E release-health auth blocker, E2E provider contamination blocker and membership restore-button viewport assumption.
+- Superseded 2026-06-03: TC-P01-013 and TC-P01-014 are locally closed. Keep open: TC-COM-012 native social-login strict evidence, TC-COM-015 external copy/store/privacy/support evidence, TC-COM-019 Apple/Google provider evidence, TC-COM-021 store/reviewer/privacy/support evidence, TC-COM-022 strict release evidence and TC-COM-AI-004 strict external evidence ref.
+
+Residual risk:
+- Controlled DashScope sanity proves credential validity and basic LLM/TTS/ASR reachability only; it does not replace full matrix evidence, cost review or independent external evidence refs.
+- E2E logs retain non-blocking `/user/stats` and macOS notification warnings.
+
+Follow-up:
+- Superseded 2026-06-03: TC-P01-013 and TC-P01-014 are implemented and passed; PM should review updated traceability before marking P0.1 completion.
+- Collect external/native/store/release evidence refs and rerun strict release gates before commercial release approval.
 
 ## 2026-06-02 - P0-AI-EXT-RECHECK-001 External Evidence Recheck And TTS Cache Multi-Owner Closure
 
@@ -35,12 +130,12 @@ Files changed:
 - Updated domain/traceability/reports: `docs/domain/domain_schema.md`, `docs/domain/entity_relationship.md`, `docs/product/increments/commercial-ai-provider-hardening/spec.md`, `test_cases.md`, `traceability.md`, `docs/reports/test_report.md`, `docs/reports/quality_report.md`, `docs/reports/implementation_report.md`.
 
 Implementation summary:
-- DashScope controlled probe was executed with the available `DASHSCOPE_API_KEY`; provider returned `invalid_api_key` / `InvalidApiKey`, so TC-COM-AI-004 remains blocked and no external evidence ref was supplied.
+- An earlier DashScope controlled probe in this workstream returned `invalid_api_key` / `InvalidApiKey`; `P0-P01-BLOCKER-RETEST-20260602` superseded that symptom with a valid controlled live LLM/TTS/ASR sanity pass. TC-COM-AI-004 still lacks the required external evidence ref.
 - Object storage, cost dashboard and retention release evidence were revalidated locally but remain blocked for production evidence because no real bucket/CDN/KMS, PM/Ops alert destination or approved retention evidence refs are configured in this environment.
 - TTS cache policy decision: persistent cache now records one `TtsCacheOwner` per `(cache_id, owner_hash)`. Account deletion removes the deleting user's owner ref; shared cache stays active while other owners remain; the final owner deletion marks the cache entry deleted. Legacy `owner_hash` remains only as a fallback for old rows and is cleared when it matches the deleting user.
 
 Validation:
-- Sanitized inline DashScope probe - executed; LLM and TTS returned 401 invalid API key; ASR-valid blocked because no generated provider-accessible audio URL was available.
+- Earlier sanitized inline DashScope probe returned 401 invalid API key; later retest passed LLM/TTS/ASR controlled live sanity. Strict evidence ref remains missing.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MediaUploadReferenceServiceTest,ProductionAsrMediaRefTest,AiRetentionPolicyTest test` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiCostDashboardTest test` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiRetentionPolicyTest,AiAccountDeletionMediaCleanupTest,AccountDeletionLearningDataTest test` - passed.
@@ -50,10 +145,10 @@ Validation:
 Result:
 - Local TTS cache first-owner cleanup risk is closed by multi-owner refs and regression tests.
 - Local media upload/ref, cost dashboard and retention gates remain passed after the change.
-- Paid AI voice release is still not ready because `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF` are still missing or not valid.
+- Paid AI voice release is still not ready because `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF` are still missing.
 
 Residual risk:
-- DashScope credentials must be replaced or corrected and the full LLM/ASR/TTS matrix rerun before `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` can be supplied.
+- The full LLM/ASR/TTS matrix, cost/format/fallback evidence and independent review must run before `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` can be supplied.
 - Real object storage upload/read/lifecycle deletion and CDN/KMS evidence remain external.
 - Production PM/Ops budget thresholds, alert destinations and dashboard evidence remain external.
 - Approved privacy/retention policy evidence and real object-store deletion proof remain external.
@@ -102,11 +197,11 @@ Validation:
 
 Result:
 - Local implementation and regression coverage passed for TC-COM-AI-001, TC-COM-AI-002, TC-COM-AI-003, TC-COM-AI-005, TC-COM-AI-006 and TC-COM-AI-007.
-- TC-COM-AI-004 is structurally gated but not closed because real DashScope LLM/ASR/TTS sandbox or controlled live evidence has not been supplied.
+- Superseded 2026-06-03: TC-COM-AI-004 now has structural gate evidence and a sanitized controlled-live evidence-prep report, but strict release is still not closed because `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` and independent external review have not been supplied.
 - `scripts/check_release_readiness.sh` now requires `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF` in strict release mode.
 
 Residual risk:
-- No real DashScope sandbox/controlled live call was executed in this local run.
+- Superseded 2026-06-03: controlled-live LLM/TTS/ASR evidence-prep was executed locally with sanitized output; strict external evidence packaging and independent review remain open.
 - Object-store bucket/KMS/CDN lifecycle and external deletion evidence are still external release work.
 - Production budget thresholds and alert destinations need PM/Ops evidence.
 - TTS cache ownership is first-owner based for local cleanup; shared-cache multi-owner policy needs review before broad multi-tenant production use.
@@ -250,18 +345,17 @@ Validation:
 
 Result:
 - P0.1 gates are ready and Training Agent core implementation is in place with automated evidence for TC-P01-001 through TC-P01-012.
-- P01-GAP-006 is partial, not closed: production route integration and end-to-end loop remain pending.
-- P01-GAP-007 is partial, not closed: TC-P01-013 integration and TC-P01-014 document-level AI eval remain pending.
+- Superseded 2026-06-03: P01-GAP-006 and P01-GAP-007 are locally closed by TC-P01-013 route integration and TC-P01-014 executable AI eval evidence.
 
 Residual risk:
-- `InterviewTrainingSessionView` is not yet wired into `interview_practice_page.dart` or a production route.
+- Superseded 2026-06-03: `InterviewTrainingSessionView` is now wired through the dedicated P0.1 training route and homepage active-learning entry; `interview_practice_page.dart` remains outside this local blocker scope.
 - Full audio recording, ASR/TTS/LLM/scoring provider behavior is not covered by this deterministic slice.
 - Local-first recap/evidence filtering exists, but server/wiki/home write-back integration is pending.
 
 Follow-up:
-- Wire the Training Agent into the existing interview practice entry or a dedicated P0.1 route.
-- Add `integration_test/p0_1_training_loop_test.dart` for TC-P01-013 after route integration.
-- Convert `docs/ai_runtime/ai_eval_cases.md` into runnable AI eval/schema evidence for TC-P01-014.
+- Completed locally 2026-06-03: wire the Training Agent into a dedicated P0.1 route.
+- Completed locally 2026-06-03: add `integration_test/p0_1_training_loop_test.dart` for TC-P01-013.
+- Completed locally 2026-06-03: convert `docs/ai_runtime/ai_eval_cases.md` into runnable AI eval/schema evidence for TC-P01-014.
 
 ## 2026-05-29 - P0-COM-MANUAL-EVIDENCE-PLAN-001 Manual External Evidence Plan
 

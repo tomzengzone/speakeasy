@@ -589,6 +589,10 @@ class InterviewTrainingFeedbackCandidate {
       errors.add('pronunciation source must be server_side_adapter');
     }
 
+    if (_containsBannedOutputField(json)) {
+      errors.add('feedback candidate contains final mastery or billing field');
+    }
+
     for (final Map<String, dynamic> evidence in _mapList(
       json['learning_evidence_candidates'],
     )) {
@@ -1187,6 +1191,25 @@ bool _containsBannedEvidenceField(Map<String, dynamic> evidence) {
     }
   }
   return false;
+}
+
+bool _containsBannedOutputField(dynamic value) {
+  if (value is Map) {
+    for (final MapEntry<dynamic, dynamic> entry in value.entries) {
+      final String key = entry.key.toString().trim();
+      if (_bannedEvidenceFields.contains(key)) {
+        return true;
+      }
+      if (_containsBannedOutputField(entry.value)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  if (value is List) {
+    return value.any(_containsBannedOutputField);
+  }
+  return value is String && _bannedEvidenceFields.contains(value.trim());
 }
 
 String _stringValue(dynamic value, {String fallback = ''}) {

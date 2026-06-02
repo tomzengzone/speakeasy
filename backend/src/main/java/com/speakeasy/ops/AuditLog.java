@@ -66,4 +66,8 @@ public class AuditLog {
   public String getRedactedDetails() {
     return redactedDetails;
   }
+
+  public String getEventType() {
+    return eventType;
+  }
 }

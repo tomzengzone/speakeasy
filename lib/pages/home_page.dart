@@ -11,6 +11,7 @@ import 'package:speakeasy/features/interview/interview_expression_learning_page.
 import 'package:speakeasy/features/interview/interview_models.dart';
 import 'package:speakeasy/features/interview/interview_practice_page.dart';
 import 'package:speakeasy/features/interview/interview_scene_listening_page.dart';
+import 'package:speakeasy/features/interview/interview_training_loop_page.dart';
 import 'package:speakeasy/features/interview/interview_wiki_store.dart';
 import 'package:speakeasy/models/app_models.dart';
 import 'package:speakeasy/models/learning_stats_model.dart';
@@ -654,6 +655,29 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
     }
   }
 
+  Future<void> _openTrainingLoop(_InterviewSceneHomeStatus status) async {
+    if (!_canAccessSceneTargetLevel(status.selectedTargetLevel)) {
+      _showCommercialScenarioGate();
+      return;
+    }
+    await _addLearningScene(status, setActive: true);
+    if (!mounted) {
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => InterviewTrainingLoopPage(
+          sceneId: status.entry.id,
+          levelCode: status.selectedTargetLevel,
+        ),
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    unawaited(_loadInterviewSceneStatuses());
+  }
+
   Future<void> _practiceExpressionInSceneById(
     _InterviewSceneHomeStatus status,
     String nodeId,
@@ -968,6 +992,8 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
                   ),
                 ),
                 onOpenScene: (status) => unawaited(_openInterviewScene(status)),
+                onOpenTrainingLoop: (status) =>
+                    unawaited(_openTrainingLoop(status)),
                 onWarmupExpressions: (status) => unawaited(
                   _openExpressionWarmupDeck(
                     status,
@@ -1448,6 +1474,7 @@ class _ActiveLearningSceneCarousel extends StatelessWidget {
     required this.selectedSceneIds,
     required this.onListenScene,
     required this.onOpenScene,
+    required this.onOpenTrainingLoop,
     required this.onWarmupExpressions,
     required this.onRemoveScene,
     required this.onPageChanged,
@@ -1460,6 +1487,7 @@ class _ActiveLearningSceneCarousel extends StatelessWidget {
   final List<String> selectedSceneIds;
   final ValueChanged<_InterviewSceneHomeStatus> onListenScene;
   final ValueChanged<_InterviewSceneHomeStatus> onOpenScene;
+  final ValueChanged<_InterviewSceneHomeStatus> onOpenTrainingLoop;
   final ValueChanged<_InterviewSceneHomeStatus> onWarmupExpressions;
   final ValueChanged<_InterviewSceneHomeStatus> onRemoveScene;
   final ValueChanged<_InterviewSceneHomeStatus> onPageChanged;
@@ -1553,6 +1581,7 @@ class _ActiveLearningSceneCarousel extends StatelessWidget {
                 status: status,
                 onListenScene: onListenScene,
                 onOpenScene: onOpenScene,
+                onOpenTrainingLoop: onOpenTrainingLoop,
                 onWarmupExpressions: onWarmupExpressions,
                 onRemoveScene: isUserSelected
                     ? () => unawaited(_confirmRemoveScene(context, status))
@@ -1575,6 +1604,7 @@ class _ActiveLearningSceneHero extends StatelessWidget {
     required this.status,
     required this.onListenScene,
     required this.onOpenScene,
+    required this.onOpenTrainingLoop,
     required this.onWarmupExpressions,
     required this.onRemoveScene,
   });
@@ -1582,6 +1612,7 @@ class _ActiveLearningSceneHero extends StatelessWidget {
   final _InterviewSceneHomeStatus? status;
   final ValueChanged<_InterviewSceneHomeStatus> onListenScene;
   final ValueChanged<_InterviewSceneHomeStatus> onOpenScene;
+  final ValueChanged<_InterviewSceneHomeStatus> onOpenTrainingLoop;
   final ValueChanged<_InterviewSceneHomeStatus> onWarmupExpressions;
   final VoidCallback? onRemoveScene;
 
@@ -1745,6 +1776,7 @@ class _ActiveLearningSceneHero extends StatelessWidget {
               status: current,
               onListenScene: () => onListenScene(current),
               onOpenScene: () => onOpenScene(current),
+              onOpenTrainingLoop: () => onOpenTrainingLoop(current),
               onWarmupExpressions: () => onWarmupExpressions(current),
             ),
           ),
@@ -1830,12 +1862,14 @@ class _HeroNextStepPanel extends StatelessWidget {
     required this.status,
     required this.onListenScene,
     required this.onOpenScene,
+    required this.onOpenTrainingLoop,
     required this.onWarmupExpressions,
   });
 
   final _InterviewSceneHomeStatus status;
   final VoidCallback onListenScene;
   final VoidCallback onOpenScene;
+  final VoidCallback onOpenTrainingLoop;
   final VoidCallback onWarmupExpressions;
 
   List<String> get _coachChips {
@@ -1942,7 +1976,16 @@ class _HeroNextStepPanel extends StatelessWidget {
                     onPressed: onListenScene,
                   ),
                 ),
-                const SizedBox(width: 9),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _HeroBottomAction(
+                    key: const ValueKey<String>('home_hero_training_button'),
+                    icon: Icons.record_voice_over_rounded,
+                    label: '训练闭环',
+                    onPressed: onOpenTrainingLoop,
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: _HeroBottomAction(
                     key: const ValueKey<String>('home_hero_practice_button'),

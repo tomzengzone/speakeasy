@@ -1,7 +1,7 @@
 # P0.1 Test Cases：表达自动化训练 Agent
 
 ## 状态
-Draft - AC-to-TC gate ready；P0.1 training Agent core tests executed for TC-P01-001 through TC-P01-012；backend provider adapter tests executed for TC-P01-015 through TC-P01-020；TC-P01-013 integration loop and TC-P01-014 document-level AI eval remain planned。
+Executed partial - AC-to-TC gate ready；2026-06-03 local blocker closure passed TC-P01-013 and TC-P01-014；TC-P01-001 through TC-P01-012 and TC-P01-015 through TC-P01-020 retain earlier local evidence。P0.1 still excludes full commercial release, arbitrary scenes, cross-day scheduling and final mastery writes.
 
 ## 上游来源
 - `docs/product/increments/p0-1-expression-automation-training/requirements.md`
@@ -20,10 +20,10 @@ Draft - AC-to-TC gate ready；P0.1 training Agent core tests executed for TC-P01
 | --- | --- |
 | Gate | P0.1 pre-implementation AC-to-TC mapping |
 | Result | Passed for implementation routing |
-| Date | 2026-06-01 |
+| Date | 2026-06-03 |
 | Scope | P0.1 官方场景 `job_interview`、`onboarding_introduction` 的训练型 Agent 行为；当前后端 AI Provider Gateway |
 | Boundary | 不覆盖第三官方场景、任意场景生成、跨天调度、完整 L0-L5、完整商业 release gating；仅覆盖当前 AI Gateway provider policy 和 usage boundary |
-| Execution status | TC-P01-001 through TC-P01-012 passed on 2026-06-01；TC-P01-015 through TC-P01-020 passed on 2026-06-01；TC-P01-013 and TC-P01-014 remain planned |
+| Execution status | TC-P01-001 through TC-P01-012 passed again on 2026-06-02；TC-P01-013 passed on 2026-06-03 via isolated system E2E；TC-P01-014 passed on 2026-06-03 via executable AI eval validator；TC-P01-015 through TC-P01-020 passed again on 2026-06-02 through backend provider deterministic retest |
 | Evidence report | `docs/reports/test_report.md` |
 
 ## Test Case Library
@@ -41,8 +41,8 @@ Draft - AC-to-TC gate ready；P0.1 training Agent core tests executed for TC-P01
 | TC-P01-010 | P01-SI-009 | P01-FR-009 | P01-SPEC-009 | AC-P01-010 | P01-TR-009 | P01-GAP-006 | unit | automated | `test/features/interview/interview_training_evidence_test.dart` | `flutter test test/features/interview/interview_training_evidence_test.dart` | passed | `docs/reports/test_report.md` |
 | TC-P01-011 | P01-SI-011 | P01-FR-010 | P01-SPEC-010 | AC-P01-011 | P01-TR-011 | P01-GAP-006 | unit | automated | `test/features/interview/interview_training_recoverable_failure_test.dart` | `flutter test test/features/interview/interview_training_recoverable_failure_test.dart` | passed | `docs/reports/test_report.md` |
 | TC-P01-012 | P01-SI-010 | P0.1 非目标边界 | P01-SPEC-011 | AC-P01-012 | P01-TR-010 | P01-GAP-007 | release-check | automated | `test/features/interview/interview_training_scope_boundary_test.dart` | `flutter test test/features/interview/interview_training_scope_boundary_test.dart` | passed | `docs/reports/test_report.md` |
-| TC-P01-013 | P01-SI-001, P01-SI-002, P01-SI-004, P01-SI-008, P01-SI-009, P01-SI-010 | P01-FR-001, P01-FR-004, P01-FR-003, P01-FR-007, P01-FR-009, P0.1 非目标边界 | P01-SPEC-001, P01-SPEC-004, P01-SPEC-003, P01-SPEC-007, P01-SPEC-009, P01-SPEC-011 | AC-P01-001, AC-P01-003, AC-P01-004, AC-P01-008, AC-P01-010, AC-P01-012 | P01-TR-001, P01-TR-002, P01-TR-004, P01-TR-008, P01-TR-009, P01-TR-010 | P01-GAP-006 | integration | planned | `integration_test/p0_1_training_loop_test.dart` | `flutter test integration_test/p0_1_training_loop_test.dart` | planned | `docs/product/increments/p0-1-expression-automation-training/test_cases.md`; execution report pending |
-| TC-P01-014 | P01-SI-008, P01-SI-011 | P01-FR-007, P01-FR-010 | P01-SPEC-007, P01-SPEC-010 | AC-P01-008, AC-P01-011 | P01-TR-008, P01-TR-011 | P01-GAP-006 | ai-eval | planned | `docs/ai_runtime/ai_eval_cases.md` | `N/A - document-level AI eval cases until schema validator implementation is available` | planned | `docs/product/increments/p0-1-expression-automation-training/test_cases.md`; execution report pending |
+| TC-P01-013 | P01-SI-001, P01-SI-002, P01-SI-004, P01-SI-008, P01-SI-009, P01-SI-010 | P01-FR-001, P01-FR-004, P01-FR-003, P01-FR-007, P01-FR-009, P0.1 非目标边界 | P01-SPEC-001, P01-SPEC-004, P01-SPEC-003, P01-SPEC-007, P01-SPEC-009, P01-SPEC-011 | AC-P01-001, AC-P01-003, AC-P01-004, AC-P01-008, AC-P01-010, AC-P01-012 | P01-TR-001, P01-TR-002, P01-TR-004, P01-TR-008, P01-TR-009, P01-TR-010 | P01-GAP-006 | integration | automated | `integration_test/p0_1_training_loop_test.dart` | `./scripts/run_mvp_system_e2e.sh --suite p0-1-training-loop` | passed | `docs/reports/test_report.md#2026-06-03-p01-local-blocker-closure-and-commercial-external-gate-revalidation` |
+| TC-P01-014 | P01-SI-008, P01-SI-011 | P01-FR-007, P01-FR-010 | P01-SPEC-007, P01-SPEC-010 | AC-P01-008, AC-P01-011 | P01-TR-008, P01-TR-011 | P01-GAP-006 | ai-eval | automated | `tests/ai_runtime/p0_1_ai_eval_cases.json`; `scripts/check_ai_eval_cases.dart` | `dart run scripts/check_ai_eval_cases.dart` | passed | `docs/reports/test_report.md#2026-06-03-p01-local-blocker-closure-and-commercial-external-gate-revalidation` |
 | TC-P01-015 | P01-SI-007, P01-SI-008, P01-SI-011 | P01-FR-011 | P01-SPEC-012 | AC-P01-013 | P01-TR-012 | P01-GAP-008 | unit | automated | `backend/src/test/java/com/speakeasy/DashScopeProviderGatewayTest.java` | `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=DashScopeProviderGatewayTest,DashScopeProviderGatewayIntegrationTest,ProviderGatewaySecurityContractTest,ProviderGatewayControllerTest,ProviderGatewayFailureTest,FeedbackFailureHandlingTest,CommercialAbuseControlTest,UsageQuotaGateTest test` | passed | `docs/reports/test_report.md` |
 | TC-P01-016 | P01-SI-007, P01-SI-011 | P01-FR-011 | P01-SPEC-012 | AC-P01-013 | P01-TR-012 | P01-GAP-008 | contract | automated | `backend/src/test/java/com/speakeasy/DashScopeProviderGatewayTest.java`, `backend/src/test/java/com/speakeasy/DashScopeProviderGatewayIntegrationTest.java` | `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=DashScopeProviderGatewayTest,DashScopeProviderGatewayIntegrationTest,ProviderGatewaySecurityContractTest,ProviderGatewayControllerTest,ProviderGatewayFailureTest,FeedbackFailureHandlingTest,CommercialAbuseControlTest,UsageQuotaGateTest test` | passed | `docs/reports/test_report.md` |
 | TC-P01-017 | P01-SI-007, P01-SI-011 | P01-FR-011 | P01-SPEC-012 | AC-P01-013 | P01-TR-012 | P01-GAP-008 | unit | automated | `backend/src/test/java/com/speakeasy/DashScopeProviderGatewayTest.java`, `backend/src/test/java/com/speakeasy/DashScopeProviderGatewayIntegrationTest.java` | `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=DashScopeProviderGatewayTest,DashScopeProviderGatewayIntegrationTest,ProviderGatewaySecurityContractTest,ProviderGatewayControllerTest,ProviderGatewayFailureTest,FeedbackFailureHandlingTest,CommercialAbuseControlTest,UsageQuotaGateTest test` | passed | `docs/reports/test_report.md` |
@@ -53,19 +53,19 @@ Draft - AC-to-TC gate ready；P0.1 training Agent core tests executed for TC-P01
 ## Coverage Map
 | Acceptance Criteria | Primary TC | Supporting TC | Coverage status |
 | --- | --- | --- | --- |
-| AC-P01-001 | TC-P01-001 | TC-P01-013 | Core entry/resume/unsupported-scene checks passed；integration remains planned |
-| AC-P01-002 | TC-P01-002 | TC-P01-013 | Action chain mapping checks passed；integration remains planned |
-| AC-P01-003 | TC-P01-003 | TC-P01-013 | Micro-action state checks passed；integration remains planned |
-| AC-P01-004 | TC-P01-004 | TC-P01-013 | Planner decision checks passed；integration remains planned |
+| AC-P01-001 | TC-P01-001 | TC-P01-013 | Core entry/resume/unsupported-scene checks passed；route-level integration passed |
+| AC-P01-002 | TC-P01-002 | TC-P01-013 | Action chain mapping checks passed；route-level integration passed |
+| AC-P01-003 | TC-P01-003 | TC-P01-013 | Micro-action state checks passed；route-level integration passed |
+| AC-P01-004 | TC-P01-004 | TC-P01-013 | Planner decision checks passed；route-level integration passed |
 | AC-P01-005 | TC-P01-005 | TC-P01-004 | Hint ladder checks passed |
-| AC-P01-006 | TC-P01-006 | TC-P01-013 | Voice control widget checks passed；integration remains planned |
+| AC-P01-006 | TC-P01-006 | TC-P01-013 | Voice control widget checks passed；route-level ASR fallback integration passed |
 | AC-P01-007 | TC-P01-007 | TC-P01-011 | Text fallback and recoverable failure checks passed |
-| AC-P01-008 | TC-P01-008 | TC-P01-014 | Feedback schema checks passed；AI eval remains planned |
-| AC-P01-009 | TC-P01-009 | TC-P01-013 | Pressure check planner checks passed；integration remains planned |
-| AC-P01-010 | TC-P01-010 | TC-P01-013 | Learning evidence candidate and recap checks passed；integration remains planned |
-| AC-P01-011 | TC-P01-011 | TC-P01-014 | Recoverable failure checks passed；AI eval remains planned |
-| AC-P01-012 | TC-P01-012 | TC-P01-013 | Scope boundary checks passed；integration remains planned |
-| AC-P01-013 | TC-P01-015, TC-P01-016, TC-P01-017, TC-P01-018, TC-P01-019, TC-P01-020 | TC-MVP-BE-016 through TC-MVP-BE-019 | Backend provider adapter, media ref guard, TTS cache, LLM schema fallback, usage boundary, tier policy telemetry and no-secret contract passed in local fake-provider suite；live provider/object-storage evidence remains release residual |
+| AC-P01-008 | TC-P01-008 | TC-P01-014 | Feedback schema checks passed；AI eval validator passed all seven P0.1 cases |
+| AC-P01-009 | TC-P01-009 | TC-P01-013 | Pressure check planner checks passed；route-level continue/pressure loop passed |
+| AC-P01-010 | TC-P01-010 | TC-P01-013 | Learning evidence candidate and recap checks passed；route-level recap asserts `pending_local_write` only |
+| AC-P01-011 | TC-P01-011 | TC-P01-014 | Recoverable failure checks passed；AI eval validator covers ASR fallback and schema rejection |
+| AC-P01-012 | TC-P01-012 | TC-P01-013 | Scope boundary checks passed；integration asserts no final mastery, entitlement or billing state |
+| AC-P01-013 | TC-P01-015, TC-P01-016, TC-P01-017, TC-P01-018, TC-P01-019, TC-P01-020 | TC-MVP-BE-016 through TC-MVP-BE-019 | Backend provider adapter, media ref guard, TTS cache, LLM schema fallback, usage boundary, tier policy telemetry and no-secret contract passed again in local deterministic suite；2026-06-02 controlled live provider sanity passed；full external evidence/object-storage evidence remains release residual |
 
 ## AC-P01-013 Detailed Coverage
 | Design obligation | Primary TC | Required assertions |
@@ -90,4 +90,5 @@ Draft - AC-to-TC gate ready；P0.1 training Agent core tests executed for TC-P01
 ## Execution Evidence Policy
 - 本文件只关闭 pre-implementation 的 AC-to-TC mapping gate。
 - 未执行的用例不得标记为 `passed`。
+- TC-P01-013 和 TC-P01-014 已有可执行证据；后续若修改 route、schema、AI eval fixture 或训练状态机，必须重跑对应命令。
 - 实现完成后，QA 必须把实际命令、结果、失败原因和证据链接写入 `docs/reports/test_report.md`，并回写本增量 traceability 的 Test Evidence。

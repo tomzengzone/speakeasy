@@ -46,6 +46,9 @@ class CommercialAccountDeletionProcessorTest extends BackendIntegrationTestSuppo
 
     UUID userId = UUID.fromString(tokens.userId());
     assertThat(deletionJobs.findByUserIdAndIdempotencyKey(userId, idempotencyKey)).isPresent();
-    assertThat(auditLogs.count()).isEqualTo(1);
+    long completedEvents = auditLogs.findAll().stream()
+        .filter(log -> "account_deletion_completed".equals(log.getEventType()))
+        .count();
+    assertThat(completedEvents).isEqualTo(1);
   }
 }

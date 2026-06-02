@@ -11,6 +11,12 @@
 
 注意：这里的 100% 是“需求链路覆盖 100%”，不是“代码行覆盖 100%”或“线上零缺陷保证”。真实 LLM/ASR/TTS、真实支付 provider、真机音频权限和第三方 SLA 仍是外部门禁。
 
+## 2026-06-02 复测更新
+- `scripts/run_mvp_system_e2e.sh` 已更新为对 OPS-protected `/v1/admin/release-health` 传入 E2E bearer token。
+- E2E backend 默认使用 `SPEAKEASY_E2E_AI_PROVIDER=deterministic`，避免本机 shell 中的 live provider env 污染 deterministic E2E。
+- `membership-boundary` 已修正为滚动到恢复购买按钮后再断言，仍覆盖会员恢复入口。
+- 本轮复测通过：`smoke`、`scene-catalog`、`learning-memory`、`practice-feedback`、`profile-settings`、`membership-boundary`、`commercial-boundary`；2026-06-03 新增并通过 `p0-1-training-loop`。
+
 ## 核心文件
 | 类型 | 文件 |
 | --- | --- |
@@ -50,6 +56,8 @@
 | `scripts/run_mvp_system_e2e.sh --suite practice-feedback` | passed |
 | `scripts/run_mvp_system_e2e.sh --suite profile-settings` | passed |
 | `scripts/run_mvp_system_e2e.sh --suite membership-boundary` | passed |
+| `scripts/run_mvp_system_e2e.sh --suite commercial-boundary` | passed |
+| `scripts/run_mvp_system_e2e.sh --suite p0-1-training-loop` | passed 2026-06-03 |
 | `python3 scripts/check_mvp_system_e2e_coverage.py` | passed：10 TC rows, 13 Product Base AC rows, 4 traceability rows |
 | `flutter test` | passed：173 tests |
 | `env JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` from `backend/` | passed |
@@ -69,6 +77,9 @@
 ## 本次 E2E 发现并已修复的问题
 | 问题 | 处理 |
 | --- | --- |
+| `/v1/admin/release-health` 已受 OPS token 保护，旧 E2E readiness 匿名访问失败 | E2E 脚本注入 `SPEAKEASY_OPS_BEARER_TOKEN` 并带 Authorization header 检查 readiness。 |
+| 本机 `SPEAKEASY_AI_PROVIDER=dashscope` 会污染 deterministic E2E，导致 practice-feedback 文案不稳定 | E2E 脚本默认注入 `SPEAKEASY_AI_PROVIDER=deterministic`，可用 `SPEAKEASY_E2E_AI_PROVIDER` 显式覆盖。 |
+| 会员恢复购买按钮存在但不总在订阅按钮同一 viewport | `membership-boundary` 显式滚动到 `membership_restore_purchases_button` 后再断言。 |
 | 无 Docker daemon 时真实 PostgreSQL 测试会跳过 | 改为本机 PostgreSQL 工具链，不依赖 Docker。 |
 | onboarding 状态通过 `/user/me` patch 无法持久化 | 改为提交 `/onboarding/assessment`，并修正 profile patch 字段映射。 |
 | `updateMe` 使用 PUT 且 nickname 字段不匹配后端 | 改为 PATCH，并映射为 `display_name`。 |

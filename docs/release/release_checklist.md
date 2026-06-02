@@ -61,19 +61,23 @@ Required before commercial store submission:
 
 ## 2026-06-01 P0 Commercial AI Provider Hardening Gate
 
-Status: planned / blocked until implementation and external evidence are supplied.
+Status: local implementation/evidence-prep passed / blocked until strict external evidence is supplied.
 
 Required before paid AI voice or real DashScope provider release:
 - [ ] `commercial-ai-provider-hardening` requirements/spec/acceptance/test_cases/traceability remain in sync.
-- [ ] TC-COM-AI-001 trusted media upload/reference tests passed.
-- [ ] TC-COM-AI-002 production ASR rejects local paths, unsigned URLs and forged metadata.
-- [ ] TC-COM-AI-003 persistent TTS cache tests passed for multi-instance/restart/expiry behavior.
+- [x] TC-COM-AI-001 trusted media upload/reference tests passed locally.
+- [x] TC-COM-AI-002 production ASR rejects local paths, unsigned URLs and forged metadata locally.
+- [x] TC-COM-AI-003 persistent TTS cache tests passed locally for metadata, owner refs, expiry and deletion behavior.
 - [ ] TC-COM-AI-004 DashScope LLM/ASR/TTS sandbox or controlled live evidence recorded in `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`.
 - [ ] TC-COM-AI-005 AI cost dashboard evidence recorded in `AI_COST_DASHBOARD_EVIDENCE_REF`.
-- [ ] TC-COM-AI-006 and TC-COM-AI-007 AI retention/deletion tests passed.
+- [x] TC-COM-AI-006 and TC-COM-AI-007 AI retention/deletion tests passed locally.
 - [ ] Object storage lifecycle and signed media ref evidence recorded in `AI_MEDIA_STORAGE_EVIDENCE_REF`.
 - [ ] AI retention policy and deletion proof recorded in `AI_RETENTION_POLICY_EVIDENCE_REF`.
 - [ ] `P01-GAP-008` remains Partial until the above items are implemented, tested and independently reviewed.
+
+Latest local evidence:
+- `python3 scripts/run_dashscope_sandbox_matrix.py` passed on 2026-06-03 and wrote sanitized report `build/reports/dashscope-sandbox-20260602T223557Z-3359fcc82fafa457.json`.
+- `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external` still fails without `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`.
 
 Reference:
 - `docs/release/commercial_release_runbook.md`

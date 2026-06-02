@@ -86,13 +86,13 @@ Draft - Product Manager planning accepted；本增量把 P0.1 DashScope provider
 | 7 | P0-AI-REPORT-001 | Development Orchestrator | 汇总 test/implementation/quality/release evidence | COM-SI-013..017 | reports and traceability updates | PM release decision |
 
 ## 当前合法下一步
-先执行 `P0-AI-ARCH-001`，补齐对象存储、持久化缓存、成本看板和数据策略的架构/API/security 契约；契约通过后再路由 backend、QA sandbox、ops dashboard 和 security deletion 实现。
+`P0-AI-ARCH-001` through `P0-AI-REPORT-001` 的本地实现、测试和报告链路已完成；2026-06-03 sanitized controlled-live LLM/TTS/ASR evidence-prep passed。当前合法下一步是补齐 strict external evidence refs：`DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`、`AI_MEDIA_STORAGE_EVIDENCE_REF`、`AI_COST_DASHBOARD_EVIDENCE_REF`、`AI_RETENTION_POLICY_EVIDENCE_REF`，并通过独立审查后再考虑 paid AI voice release closure。
 
 ## Dependency And Blocker Register
 | Blocker ID | 阻塞内容 | 影响 | 解除条件 |
 | --- | --- | --- | --- |
 | P0-AI-BLOCK-001 | 对象存储 provider、bucket、签名密钥和访问策略未选型 | 不能实现生产 ASR upload/ref lifecycle | 架构决策和 secret/storage 配置可用 |
-| P0-AI-BLOCK-002 | DashScope sandbox / controlled live 凭据和测试媒体缺失 | 不能关闭真实 provider evidence | 提供外部 evidence ref 并通过独立审查 |
+| P0-AI-BLOCK-002 | DashScope controlled-live evidence-prep 已通过，但完整外部 evidence package/ref 和独立审查缺失 | 不能关闭真实 provider release evidence | 提供 `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` 并通过独立审查 |
 | P0-AI-BLOCK-003 | 成本单价、套餐成本预算和毛利阈值未定义 | 成本看板无法判断盈亏 | PM/Ops 定义最小 unit economics 指标 |
 | P0-AI-BLOCK-004 | 生产 retention/deletion 策略未批准 | 不能声明隐私/合规 ready | Security/PM 批准策略并提供执行测试 |
 

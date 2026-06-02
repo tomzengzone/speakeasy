@@ -1,19 +1,19 @@
 # 产品开发状态
 
 ## 状态
-Validated - MVP 后端与数据库全量补齐已完成，系统 E2E gate 已通过
+Revalidated - TC-P01-013/014 local blockers closed；commercial release and paid AI voice remain blocked by explicit external/native/store/release evidence
 
 ## Owner
 Product Manager Agent
 
 ## Current Date
-2026-06-01
+2026-06-03
 
 ## 活动目标
-以 Product Base 活需求库承载已接受稳定能力。当前 MVP 后端与数据库补齐 stage 已完成实现、测试、发布证据和本地系统 E2E gate；后续工作进入新 stage/increment 时必须继续从 Product Base 和对应 increment 追溯，不得把本次完成状态扩展为 P0.1 或商业化自动批准。
-- MVP 后端线：Product Base 已接受的登录、首评、官方场景、练习会话、AI/语音、推荐表达、学习记忆、会员边界和测试发布证据已补齐为当前后端/API/数据库事实，并通过本地 Flutter macOS + Spring Boot + 真实 PostgreSQL 系统 E2E 验证。
-- 商业发布线：P0 商业化订阅上线准备是 P0.1 之上的商业软件功能补齐和付费发布阻塞 stage；若今天目标是商业软件功能补齐、真实收费准备或 paid AI voice 准备，应优先进入该 stage 的订阅和 AI provider 生产化下游门禁。
-- 价值体验线：P0.1“口语优先、文本兜底的 FSI 式表达自动化训练闭环”保持 next value-experience stage；可以做不混入商业承诺的规划或预研，但不替代 P0 商业发布门禁。
+以 Product Base 活需求库承载已接受稳定能力。本轮已按顺序完成 TC-P01-013、TC-P01-014、TC-COM-AI-004 evidence preparation 和 TC-COM-012/015/019/021/022 strict gate revalidation，并完成独立审核；后续工作进入新 stage/increment 时必须继续从 Product Base 和对应 increment 追溯，不得把本地通过扩展为商业发布批准。
+- MVP 后端线：Product Base 已接受能力仍以本地 Flutter macOS + Spring Boot + 真实 PostgreSQL 系统 E2E 为 baseline；2026-06-02 复测通过 `smoke`、`scene-catalog`、`learning-memory`、`practice-feedback`、`profile-settings`、`membership-boundary` 和 `commercial-boundary`。
+- 商业发布线：P0 商业化订阅和 AI provider 生产化本地实现/测试边界已复测通过；2026-06-03 strict gates 确认真实支付 provider、native social login、store/reviewer/privacy/support、strict release 和外部 AI evidence refs 仍是商业发布阻断项。
+- 价值体验线：P0.1“口语优先、文本兜底的 FSI 式表达自动化训练闭环”保持 next value-experience stage；TC-P01-013 路由级 integration loop 和 TC-P01-014 AI eval validator 已于 2026-06-03 本地关闭。
 
 ## 产品对象状态
 - Product Base requirements：`docs/product/base/requirements.md`
@@ -60,6 +60,7 @@ Product Manager Agent
 - `mvp-system-e2e-validation` 已验证 TC-MVP-E2E-001 到 TC-MVP-E2E-010；其中真实支付 provider 只作为 manual/external gate 保留，不作为本地自动化通过项。
 - P0 `commercial-subscription-readiness` 是商业软件功能补齐和付费发布阻塞 stage；完成实现、验收、追溯、测试、发布和外部门禁后，才允许 Product Manager 批准商业发布口径。
 - P0.1 `expression-automation-training` 是 next value-experience stage；完成实现、验收、追溯、测试和报告后，才允许由 Product Manager 批准 merge back 到 Product Base。
+- 2026-06-03 复测结论：P0.1 TC-P01-013/014 本地关闭；TC-COM-AI-004 controlled-live evidence-prep 报告已生成；所有 strict external/native/store/release evidence blockers 仍不得关闭。
 - 后续每个多步骤产品、需求、工作流或文档治理任务，每一步完成后必须由独立 checker agent 审查是否符合预期、是否偏离、是否存在非预期变更。
 
 ## 当前已实现能力判断
@@ -78,7 +79,7 @@ Product Manager Agent
 | 个人 Wiki/复习沉淀 | 已实现本地优先 | `lib/features/interview/interview_wiki_store.dart` | 作为记忆引擎基础 |
 | 会员页 | 已有页面和 Apple IAP 前端接入 | `lib/pages/membership_page.dart`, `lib/services/apple_payment_service.dart` | 不作为 P0.1 训练闭环阻塞项；作为商业化订阅上线准备的输入，不等同于真实付费闭环 |
 | MVP 后端与数据库 | 当前 stage 已完成 | `backend/`, `docs/architecture/openapi/speakeasy-api.yaml`, `docs/product/stages/mvp-backend-foundation.md`, `docs/reports/test_report.md` | Product Base 当前 MVP 能力已有后端/API/DB、测试和发布证据；真实支付 provider 和真实第三方 provider 质量仍走外部门禁 |
-| 本地系统 E2E gate | 已通过 TC-MVP-E2E-001 到 TC-MVP-E2E-010 | `docs/product/increments/mvp-system-e2e-validation/`, `integration_test/`, `scripts/run_mvp_system_e2e.sh`, `docs/reports/mvp_system_e2e_handoff.md` | 电脑端可自动化验证 Flutter UI + Spring Boot + 真实 PostgreSQL；真实支付 provider 保留 manual/external gate |
+| 本地系统 E2E gate | 2026-06-02 已复测通过 TC-MVP-E2E-001 到 TC-MVP-E2E-010 相关 suites | `docs/product/increments/mvp-system-e2e-validation/`, `integration_test/`, `scripts/run_mvp_system_e2e.sh`, `docs/reports/mvp_system_e2e_handoff.md` | 电脑端可自动化验证 Flutter UI + Spring Boot + 真实 PostgreSQL；脚本已补 OPS auth 和 deterministic provider isolation；真实支付 provider 保留 manual/external gate |
 | 离线包/成就/旧课程/通用场景 | 存在页面或代码但非主流程 | `lib/pages/offline_content_page.dart`, `lib/pages/achievements_page.dart`, `lib/pages/learning_page.dart`, `lib/features/scenario/scene_page.dart` | 暂不进入下一阶段主线 |
 
 ## 新需求阶段映射
@@ -105,7 +106,7 @@ Product Manager Agent
 | 商业风控和 AI 成本控制 | 接受，付费流量开放前必须定义速率限制、用量、审计和滥用检测 | P0/P1 |
 | 对象存储上传链路 | 接受，真实 ASR 生产可用前必须由后端生成可信 `audio_ref` | P0 |
 | 持久化 TTS 缓存 | 接受，付费 AI 流量规模化前必须具备跨实例/重启可复用缓存；命中率和 CDN 优化可后续迭代 | P0/P1 |
-| 真实 DashScope sandbox / controlled live 测试 | 接受，不能用 fake transport 替代真实 provider latency/error/cost/format evidence | P0 |
+| 真实 DashScope sandbox / controlled live 测试 | 接受；本地 evidence-prep 已生成，但不能用本地报告替代外部 evidence ref、provider latency/error/cost/format evidence 和独立审查 | P0 |
 | AI 成本看板 | 接受，P0 需要最小套餐/用户/provider 成本看板；P1 做高级毛利分析和 provider A/B | P0/P1 |
 | 生产级 AI 数据策略 | 接受，音频、转写、provider payload、TTS cache、日志和账号注销保留删除必须在 paid AI voice 前明确 | P0 |
 | MVP 后端与数据库全量补齐 | 已完成当前 MVP stage；后续只允许通过新 owning increment 扩展能力或关闭外部门禁 | MVP - Validated |
@@ -137,10 +138,12 @@ Product Manager Agent
 24. 2026-05-29 本轮执行目标是由 Development Orchestrator 路由 `P0-COM-DOM-001`、`P0-COM-API-001`、`P0-COM-ARCH-001`、`P0-COM-UX-001` 和 `P0-COM-QA-001`，并在 AC-to-TC gate 通过后再进入商业 foundation、权益 gating、支付 provider、Flutter 商业 UI、release 和 QA 执行批次。
 25. 2026-05-29 已完成 `P0-COM-DOM-001`、`P0-COM-API-001`、`P0-COM-ARCH-001`、`P0-COM-UX-001` 和 `P0-COM-QA-001` 的文档门禁补齐；`docs/product/increments/commercial-subscription-readiness/test_cases.md` 已建立。
 26. P0 商业化需求到测试用例的 100% 追溯已建立：`FR-COM-001` 到 `FR-COM-012` 均通过 `AC-COM-001` 到 `AC-COM-014` 映射到 `TC-COM-001` 到 `TC-COM-023`；`TC-COM-023` OpenAPI contract gate 已通过。
-27. P0 商业化仍不是商业发布 ready：`TC-COM-001` 到 `TC-COM-022` 尚未实现或执行，Apple/Google sandbox/internal test、社交登录生产配置、release secrets、签名、符号表、商店材料、implementation report 和 quality report 仍是后续阻塞项。
+27. P0 商业化仍不是商业发布 ready：`TC-COM-001` 到 `TC-COM-023` 已有追溯和部分本地自动化/系统 E2E/contract evidence；但 TC-COM-012/015/019/021/022 strict native/social/store/provider/release gates 在 2026-06-03 复测仍失败，Apple/Google sandbox/internal test、社交登录生产配置、release secrets、签名、符号表、商店材料、外部 evidence refs 和独立审查仍是发布阻塞项。
 28. 2026-06-01 Product Manager 已接受 `CR-20260601-002 商业 AI Provider 生产化加固`，并新增 `commercial-ai-provider-hardening` increment，承接对象存储上传、持久化 TTS cache、真实 DashScope evidence、AI 成本看板和生产 AI 数据策略。
-29. `commercial-ai-provider-hardening` 的规划追溯已建立：`FR-COM-AI-001` 到 `FR-COM-AI-005` 均通过 `AC-COM-AI-001` 到 `AC-COM-AI-005` 映射到 `TC-COM-AI-001` 到 `TC-COM-AI-007`；实现和执行证据尚未开始。
-30. 当前合法下一步是执行 `P0-AI-ARCH-001`，先补齐 AI provider 生产化的 architecture/API/security/test gates，再进入 backend/media/cache/live provider/cost dashboard/data retention 实现。
+29. `commercial-ai-provider-hardening` 的本地实现和测试证据已建立：TC-COM-AI-001 through TC-COM-AI-003、TC-COM-AI-005 through TC-COM-AI-007 通过；TC-COM-AI-004 结构化 evidence gate 通过，2026-06-03 脱敏 controlled-live evidence-prep 通过，但 strict external evidence ref 仍未供应。
+30. 2026-06-02 P0/P0.1 blocker 复测完成：P0.1 local core/provider suites、P0 commercial backend/Flutter/API contract suites、MVP system E2E suites 均通过；测试环境修复包括 OPS health auth、E2E deterministic provider isolation、会员 restore button 滚动断言和账号注销 audit event 断言。
+31. 2026-06-03 已按顺序关闭本地可控 P0.1 blockers：TC-P01-013 通过 `./scripts/run_mvp_system_e2e.sh --suite p0-1-training-loop`，TC-P01-014 通过 `dart run scripts/check_ai_eval_cases.dart`。
+32. 当前合法下一步不是重复 `P0-AI-ARCH-001` 或继续补本地 P0.1 blocker，而是补齐 TC-COM-012/015/019/021/022 和 TC-COM-AI-004 的外部/native/store/release evidence refs 并 rerun strict gates。
 
 ## 风险与边界
 - 当前只有 2 个真实官方场景，内容规模不足以支撑“任意场景”承诺。
@@ -151,8 +154,8 @@ Product Manager Agent
 - P0.1 只接管 session 内训练；跨 session、跨天、跨场景的长期调度放入 P0.2。
 - 当前商业化能力仍不是完整付费上线闭环；真实支付 provider、Android/iOS 生产校验、webhook、退款/恢复、商业 gating 和付费流量风控必须由 `commercial-subscription-readiness` 或后续 owning increment 承接。
 - 会员边界 UI 已有系统 E2E 证据，但会员页涉及真实权益兑现的文案、入口和 provider 状态仍需在商业化发布前单独验收。
-- P0.1 DashScope adapter 只有本地 fake-provider 边界证据；paid AI voice 仍需 `commercial-ai-provider-hardening` 关闭对象存储上传、持久化 TTS cache、真实 DashScope evidence、成本看板和生产数据策略。
+- P0.1 DashScope adapter 已有本地 fake-provider 边界证据和 2026-06-03 脱敏 controlled-live evidence-prep；paid AI voice 仍需 `commercial-ai-provider-hardening` 关闭完整外部 evidence matrix、对象存储上传、外部 evidence refs、成本看板审批和生产数据策略。
 - `/user/stats` 和 macOS notification 初始化在本地 E2E 中仍有非阻断日志，已记录为后续兼容性/测试环境清理项。
 
 ## 状态口径
-当前不是从零开发新 MVP，而是在已有语音场景训练基线上继续升级。当前开发口径已从“先完成 MVP 后端与数据库全量补齐”更新为“以已验证的 MVP 后端/API/DB/系统 E2E baseline 为基础，优先识别 P0 商业软件功能补齐和 P0.1 训练体验升级两条线；商业发布或真实收费目标必须先走 P0 商业化订阅上线准备，所有新增能力仍需重新走 owning increment、契约、测试和发布门禁”。
+当前不是从零开发新 MVP，而是在已有语音场景训练基线上继续升级。当前开发口径是“以已复测的 MVP 后端/API/DB/系统 E2E baseline 为基础，P0.1 TC-P01-013/014 本地 blocker 已关闭，P0 商业软件本地边界继续收敛外部/native/store/release evidence；任何商业发布、真实收费或 paid AI voice 目标必须先通过 owning increment、契约、测试、strict evidence gate 和独立审核”。

@@ -84,6 +84,26 @@ void main() {
     );
   });
 
+  test('TC-P01-014 rejects top-level final mastery or review schedule', () {
+    final Map<String, dynamic> json = p01ValidTrainingFeedbackJson(
+      nextAction: 'continue',
+    );
+    json['mastered'] = true;
+    json['review_scheduled'] = 'tomorrow';
+
+    final InterviewTrainingFeedbackValidationResult validation =
+        InterviewTrainingFeedbackCandidate.validateJson(
+          json,
+          plannerNextAction: InterviewTrainingNextActionType.continueAction,
+        );
+
+    expect(validation.isValid, isFalse);
+    expect(
+      validation.errors,
+      contains('feedback candidate contains final mastery or billing field'),
+    );
+  });
+
   test('TC-P01-008 recoverable errors require fallback-safe signals', () {
     final Map<String, dynamic> invalid = p01ValidTrainingFeedbackJson(
       nextAction: 'continue',

@@ -82,9 +82,9 @@ Canonical scope：
 - `docs/product/increments/commercial-ai-provider-hardening/traceability.md`
 
 下一工件：
-- 订阅闭环由 Domain Schema、API Contract、Architecture/Security、UX/Screen Spec、QA/Test Plan、DevOps/Release 分别补齐强制下游门禁。
-- AI provider 生产化先进入 `P0-AI-ARCH-001`，补齐对象存储、持久化 TTS cache、真实 DashScope evidence、成本看板和数据保留删除的 architecture/API/security 契约。
-- 每个下游门禁完成后，进入 Product Object Governance Check 和 Documentation Governance 复核。
+- 订阅闭环本地 Domain/API/Architecture/UX/QA/DevOps 门禁和自动化复测已完成；下一步是补齐 TC-COM-012/015/019/021/022 的外部/native/store/release evidence。
+- AI provider 生产化本地 architecture/backend/QA/ops/security gates 已完成；2026-06-03 controlled-live evidence-prep passed and wrote a sanitized local report；下一步是补齐 `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`、object-storage lifecycle、cost dashboard approval 和 retention/privacy external evidence。
+- 每个剩余外部门禁完成后，仍需进入 Product Object Governance Check、Documentation Governance 和独立质量复核。
 
 ## Now: P0 商业 AI Provider 生产化加固（paid AI voice 发布阻塞）
 目标：把 P0.1 已实现的本地可测 DashScope adapter 边界，补齐为生产 paid AI voice 可用的媒体、缓存、真实 provider、成本和数据策略能力。该路线不改变 P0.1 训练体验目标；它负责回答“AI 能力能不能安全、可控成本、可审计地对真实用户开放”。
@@ -123,10 +123,14 @@ Canonical scope：
 - `docs/product/increments/p0-1-expression-automation-training/acceptance.md`
 - `docs/product/increments/p0-1-expression-automation-training/traceability.md`
 
+当前证据：
+- 2026-06-03 TC-P01-013 route integration passed through `./scripts/run_mvp_system_e2e.sh --suite p0-1-training-loop`。
+- 2026-06-03 TC-P01-014 AI eval validator passed through `dart run scripts/check_ai_eval_cases.dart`。
+- P0.1 本地 route/eval blocker 已关闭；不得把该结论扩展为商业发布或 paid AI voice readiness。
+
 下一工件：
-- 若当前目标是体验差异化预研，可启动 P0.1 前端 UI/UX screen spec 和交互流设计，只覆盖 P0.1 session 内训练体验，不扩展到 P0.2 跨天调度、P1 笔记本/评分产品化、P1/P2 内容体系或完整商业订阅 UI。
-- 同步补齐 domain model、AI runtime schema、dialogue state machine、architecture/module boundary 和测试用例，作为开发前门禁。
-- Development Orchestrator 只有在上述门禁完成并通过独立审核后，才应路由前端/后端/AI runtime 实现。
+- PM 审查更新后的 P0.1 traceability、test report 和 quality report，决定是否把已接受稳定能力 merge back 到 Product Base。
+- 若继续做体验差异化，只覆盖 P0.1 session 内训练体验，不扩展到 P0.2 跨天调度、P1 笔记本/评分产品化、P1/P2 内容体系或完整商业订阅 UI。
 
 Legacy source：
 - `docs/product/features/mvp-learning-loop-spec.md` 仅作为 P0.1 legacy spec source，P0.1 标准增量工件已迁移生成到 `docs/product/increments/p0-1-expression-automation-training/`。

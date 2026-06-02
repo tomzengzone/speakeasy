@@ -49,6 +49,14 @@ void main() {
         find.byKey(const ValueKey<String>('membership_subscribe_button')),
         findsOneWidget,
       );
+      await scrollUntilFound(
+        tester,
+        find.byKey(
+          const ValueKey<String>('membership_restore_purchases_button'),
+        ),
+        direction: E2eScrollDirection.down,
+        timeout: const Duration(seconds: 20),
+      );
       expect(
         find.byKey(
           const ValueKey<String>('membership_restore_purchases_button'),

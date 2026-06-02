@@ -1,7 +1,7 @@
 # Test Cases：商业化订阅上线准备
 
 ## 状态
-Executed partial - AC-to-TC gate 已通过；已实现自动化用例完成执行并记录证据；manual/external/release-blocker 用例保持阻断状态，商业发布不得视为 ready。
+Executed partial - AC-to-TC gate 已通过；2026-06-02 已实现自动化用例和商业/system E2E 完成复测并记录证据；manual/external/release-blocker 用例保持阻断状态，商业发布不得视为 ready。
 
 ## Owner
 Test Case Development Agent
@@ -81,6 +81,31 @@ The overlay below is the authoritative execution status for completed commercial
 | TC-COM-022 | env-fixture passed / strict blocked | `scripts/check_release_readiness.sh --env-only` passed; strict mode blocks native iOS social-login config; release evidence steps in `tests/commercial/manual_external_evidence_checklist.md` |
 | TC-COM-023 | passed | `npm run check:api-contract` passed outside sandbox after sandbox `uv` panic |
 
+## 2026-06-02 QA Revalidation Overlay
+The overlay below records the blocker retest result. It does not close manual/external/native/release gates.
+
+| Area | Current result | Evidence |
+| --- | --- | --- |
+| Backend subscription/commercial local tests | passed | `AppleSubscriptionVerificationTest`, `GoogleSubscriptionVerificationTest`, `SubscriptionCredentialValidationTest`, `SubscriptionRestoreTest`, `SubscriptionRestoreEmptyTest`, `EntitlementGateServiceTest`, `UsageQuotaGateTest`, `CommercialAccountDeletionProcessorTest`, `UsageReservationLifecycleTest`, `CommercialAbuseControlTest`, `AiCostDashboardTest` |
+| Account deletion idempotency | passed after stale assertion update | `CommercialAccountDeletionProcessorTest` now counts `account_deletion_completed` audit events instead of all audit rows |
+| Flutter commercial widget tests | passed | `scenario_gating_consistency_test.dart`, `entitlement_downgrade_widget_test.dart`, `account_deletion_cleanup_test.dart` |
+| Commercial boundary integration | passed | `flutter test integration_test/commercial_boundary_test.dart` |
+| System E2E commercial paths | passed | `scripts/run_mvp_system_e2e.sh --suite membership-boundary` and `--suite commercial-boundary` |
+| API contract | passed | `npm run check:api-contract`; 68 paths, 73 operations, generated Dart drift passed |
+| Evidence gates | non-strict passed / strict external blocked | `check_provider_sandbox_evidence.py`, `check_store_submission_evidence.py`, `check_manual_external_evidence_plan.py`, `check_commercial_copy_contract.py` |
+| Remaining blockers | open | TC-COM-012 native social-login strict evidence, TC-COM-015 external copy/privacy/support, TC-COM-019 Apple/Google provider evidence, TC-COM-021 store/reviewer/privacy/support evidence, TC-COM-022 strict release evidence |
+
+## 2026-06-03 Strict External Gate Overlay
+The overlay below records the latest external gate execution. It supersedes fixture-only wording where it could be misread as release readiness.
+
+| TC ID | Current result | Latest evidence |
+| --- | --- | --- |
+| TC-COM-012 | strict blocked | `scripts/check_social_login_release_config.sh --env-only` failed because `WECHAT_APP_ID` and `WECHAT_UNIVERSAL_LINK` are missing；full strict also failed because iOS still has the placeholder WeChat URL scheme and lacks Apple Sign In entitlement。 |
+| TC-COM-015 | local copy passed / strict external blocked | `python3 scripts/check_commercial_copy_contract.py` passed in non-strict mode；`--strict-external` failed because `STORE_METADATA_EVIDENCE_REF`, `PRIVACY_URL` and `SUPPORT_URL` are missing。 |
+| TC-COM-019 | evidence matrix passed / strict external blocked | `python3 scripts/check_provider_sandbox_evidence.py` passed in non-strict mode；`--strict-external` failed because `APPLE_SANDBOX_EVIDENCE_REF` and `GOOGLE_PLAY_INTERNAL_EVIDENCE_REF` are missing。 |
+| TC-COM-021 | evidence matrix passed / strict external blocked | `python3 scripts/check_store_submission_evidence.py` passed in non-strict mode；`--strict-external` failed because `STORE_METADATA_EVIDENCE_REF`, `REVIEWER_ACCOUNT_REF`, `PRIVACY_URL` and `SUPPORT_URL` are missing。 |
+| TC-COM-022 | strict release blocked | `scripts/check_release_configuration.sh`, `scripts/check_release_readiness.sh --env-only` and full `scripts/check_release_readiness.sh` failed because production API/env, social/native config, Sentry/signing, provider/store/AI evidence refs, symbol upload, rollback and privacy/support URLs are missing。 |
+
 ## Out-of-Scope AI Provider Hardening Tests
 - `TC-COM-001` through `TC-COM-023` cover subscription, entitlement, usage gating, commercial copy, store/release and payment-provider evidence.
 - Production AI provider hardening has separate stable IDs `TC-COM-AI-001` through `TC-COM-AI-007` in `docs/product/increments/commercial-ai-provider-hardening/test_cases.md`.
@@ -116,7 +141,7 @@ The overlay below is the authoritative execution status for completed commercial
 ## Gate Result
 - AC-to-TC mapping: pass. `AC-COM-001` through `AC-COM-014` all map to one or more stable TC IDs.
 - Requirement-to-test coverage: pass. `FR-COM-001` through `FR-COM-012` all map through AC IDs to TC IDs.
-- Implementation/QA status: partial pass. Implemented automated cases passed; TC-COM-015 external evidence, TC-COM-019 external evidence, TC-COM-021 external evidence and strict release evidence remain blockers.
+- Implementation/QA status: partial pass. Implemented automated cases passed; 2026-06-03 strict gates confirm TC-COM-012, TC-COM-015, TC-COM-019, TC-COM-021 and TC-COM-022 remain external/native/store/release blockers.
 - External/manual exceptions: `TC-COM-012`, `TC-COM-015`, `TC-COM-019`, `TC-COM-021`, and `TC-COM-022` are explicit manual/external/native/release gates with detailed execution steps in `tests/commercial/manual_external_evidence_checklist.md`; they block commercial release readiness until executed and independently reviewed.
 
 ## Handoff Notes

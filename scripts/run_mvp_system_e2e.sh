@@ -39,6 +39,9 @@ case "$SUITE" in
   commercial-boundary)
     FLUTTER_TEST_FILE="integration_test/commercial_boundary_test.dart"
     ;;
+  p0-1-training-loop)
+    FLUTTER_TEST_FILE="integration_test/p0_1_training_loop_test.dart"
+    ;;
   *)
     echo "[e2e] unsupported suite: $SUITE" >&2
     exit 2
@@ -87,6 +90,8 @@ fi
 
 PG_PORT="${SPEAKEASY_E2E_PG_PORT:-$(pick_free_port)}"
 BACKEND_PORT="${SPEAKEASY_E2E_BACKEND_PORT:-$(pick_free_port)}"
+OPS_BEARER_TOKEN="${SPEAKEASY_E2E_OPS_BEARER_TOKEN:-ops-e2e-token}"
+AI_PROVIDER="${SPEAKEASY_E2E_AI_PROVIDER:-deterministic}"
 E2E_ROOT="${TMPDIR:-/tmp}/speakeasy-mvp-system-e2e-$$"
 PGDATA="$E2E_ROOT/postgres"
 E2E_HOME="$E2E_ROOT/home"
@@ -132,6 +137,8 @@ echo "[e2e] starting backend on 127.0.0.1:$BACKEND_PORT"
   SPEAKEASY_DB_URL="jdbc:postgresql://127.0.0.1:$PG_PORT/postgres" \
   SPEAKEASY_DB_USERNAME="speakeasy" \
   SPEAKEASY_DB_PASSWORD="" \
+  SPEAKEASY_OPS_BEARER_TOKEN="$OPS_BEARER_TOKEN" \
+  SPEAKEASY_AI_PROVIDER="$AI_PROVIDER" \
   SERVER_PORT="$BACKEND_PORT" \
   JAVA_HOME="$JAVA_HOME" \
   mvn -Dmaven.repo.local="$ROOT_DIR/.m2/repository" -DskipTests spring-boot:run
@@ -140,7 +147,7 @@ BACKEND_PID=$!
 
 BACKEND_READY=0
 for _ in {1..360}; do
-  if curl -fsS "http://127.0.0.1:$BACKEND_PORT/v1/admin/release-health" >/dev/null 2>&1; then
+  if curl -fsS -H "Authorization: Bearer $OPS_BEARER_TOKEN" "http://127.0.0.1:$BACKEND_PORT/v1/admin/release-health" >/dev/null 2>&1; then
     BACKEND_READY=1
     break
   fi
@@ -158,7 +165,7 @@ if [[ "$BACKEND_READY" != "1" ]]; then
   exit 1
 fi
 
-curl -fsS "http://127.0.0.1:$BACKEND_PORT/v1/admin/release-health" >/dev/null
+curl -fsS -H "Authorization: Bearer $OPS_BEARER_TOKEN" "http://127.0.0.1:$BACKEND_PORT/v1/admin/release-health" >/dev/null
 echo "[e2e] backend ready with /v1 context path"
 
 echo "[e2e] running Flutter suite '$SUITE' on macOS"

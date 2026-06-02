@@ -1,7 +1,68 @@
 # Quality Report
 
 ## Current Status
-`P0-AI-EXT-RECHECK-001` completed the requested five residual-risk reviews in order. Local media/ref, cost dashboard and retention regressions passed; TTS cache first-owner cleanup risk is closed locally with multi-owner refs; real DashScope execution was attempted but blocked by provider `invalid_api_key`. Paid AI release still requires valid `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF`.
+`P0-P01-BLOCKER-CLOSURE-20260603` completed independent review after each requested step. TC-P01-013 and TC-P01-014 are locally closed with executable evidence. TC-COM-AI-004 has a repeatable sanitized controlled-live evidence-prep report, but paid AI and commercial release still require strict external evidence refs and independent review. TC-COM-012/015/019/021/022 remain release blockers.
+
+## 2026-06-03 P0/P0.1 Blocker Closure Independent Review
+
+Result: pass for local P0.1 blocker closure and evidence-prep tooling. This is not commercial release approval.
+
+Checked steps:
+- TC-P01-013 training route integration and E2E.
+- TC-P01-014 executable AI eval validator and runtime schema hardening.
+- TC-COM-AI-004 sanitized DashScope evidence-prep matrix.
+- TC-COM-012/015/019/021/022 strict commercial external gates.
+
+Independent review findings:
+- PASS for TC-P01-013. The new route uses the existing Training Agent/session view, enters only after entitlement/scene checks, covers ASR failure text fallback, feedback, pressure/continue and recap, and the E2E asserts no entitlement, billing or final mastery write.
+- PASS for TC-P01-014. The validator directly calls the runtime schema validator and covers all seven documented P0.1 AI eval cases; runtime schema now rejects prohibited final-state fields recursively.
+- PASS for TC-COM-AI-004 evidence preparation. The generated report contains only hashes/status/latency/model/cost buckets and explicitly records that strict release is not closable without `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`.
+- PASS for commercial gate execution discipline. Non-strict structure gates pass, while strict gates fail for concrete missing external evidence/configuration; no release blocker was incorrectly marked closed.
+
+Validation performed:
+- `./scripts/run_mvp_system_e2e.sh --suite p0-1-training-loop` - passed.
+- `dart run scripts/check_ai_eval_cases.dart` - passed.
+- `flutter test test/features/interview/interview_training_feedback_schema_test.dart` - passed.
+- Relevant `flutter analyze` commands - passed.
+- `python3 scripts/run_dashscope_sandbox_matrix.py` - passed with sanitized report `build/reports/dashscope-sandbox-20260602T223557Z-3359fcc82fafa457.json`.
+- Commercial non-strict gates - passed.
+- Commercial strict gates - failed as expected on missing external/native/store/release evidence refs and production env.
+- `git diff --check` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Residual risk:
+- Commercial release remains blocked by TC-COM-012/015/019/021/022 and TC-COM-AI-004 strict external evidence.
+- The local DashScope report is evidence-prep only; an external package and independent reviewer must still supply the release ref.
+- Native iOS social-login configuration still contains a placeholder WeChat URL scheme and lacks Apple Sign In entitlement.
+
+## 2026-06-02 P0/P0.1 Blocker Retest Independent Review
+
+Result: pass for the local blocker retest and documentation update. This is not commercial release approval and not P0.1 completion approval.
+
+Checked step:
+- P0.1 training-agent retest, P0 commercial subscription/AI-provider retest, system E2E revalidation and PM status refresh.
+- Code changes in `scripts/run_mvp_system_e2e.sh`, `integration_test/mvp_system_membership_boundary_test.dart`, `AuditLog.java` and `CommercialAccountDeletionProcessorTest.java`.
+- Updated evidence reports and product traceability documents.
+
+Independent review finding:
+- PASS. The code changes address test-environment drift and stale assertions without weakening product gates.
+- E2E health readiness now respects the OPS-protected endpoint by passing an E2E bearer token.
+- E2E provider selection is deterministic by default, so local system E2E cannot be polluted by shell-level live-provider env vars.
+- Membership boundary E2E still verifies the restore-purchases entry; it now scrolls to the button before asserting it.
+- Account deletion idempotency now asserts the relevant completed deletion audit event instead of assuming AI retention cleanup will never add its own audit record.
+
+Validation performed:
+- P0.1 Flutter training core suite - passed.
+- P0 commercial backend and AI backend deterministic suites - passed.
+- Commercial Flutter widget/integration suites - passed.
+- `npm run check:api-contract` - passed.
+- MVP system E2E suites `smoke`, `scene-catalog`, `learning-memory`, `practice-feedback`, `profile-settings`, `membership-boundary`, `commercial-boundary` - passed.
+- Sanitized DashScope LLM/TTS/ASR controlled live sanity - passed.
+
+Residual risk:
+- Superseded 2026-06-03: TC-P01-013 and TC-P01-014 are locally closed by route E2E and executable AI eval evidence; P0.1 PM completion now depends on acceptance of the updated traceability and explicit non-goal boundaries.
+- TC-COM-012/015/019/021/022 and TC-COM-AI-004 strict evidence ref remain open; commercial and paid AI release are not approved.
+- Controlled live DashScope sanity proves reachability only; it does not provide the full evidence matrix or external reviewer evidence.
 
 ## 2026-06-01 P0 Commercial AI Provider Hardening Documentation Review
 
@@ -1199,7 +1260,7 @@ Residual risk:
 
 ## 2026-06-02 P0-AI DashScope Sandbox Execution Independent Review
 
-Result: blocker. Real provider was contacted, but the available DashScope credential is invalid; this is not a provider compatibility pass.
+Result: historical blocker, superseded by `2026-06-02 P0/P0.1 Blocker Retest Independent Review`. Real provider was contacted in this earlier probe, but that run used an invalid DashScope credential; a later controlled live LLM/TTS/ASR sanity probe passed. This historical section still does not grant release evidence closure.
 
 Checked step:
 - Reviewed TC-COM-AI-004 / AC-COM-AI-003.
@@ -1207,16 +1268,16 @@ Checked step:
 - Confirmed no API key, raw prompt, full audio URL or raw transcript was written to reports.
 
 Findings:
-- Blocker. Qwen valid scenario returned provider `invalid_api_key` with HTTP 401, so schema-valid LLM evidence was not produced.
-- Blocker. TTS generation returned `InvalidApiKey` with HTTP 401, so no TTS audio ref, cache evidence or ASR input fixture was produced.
-- Blocker. ASR-valid was blocked by missing provider-accessible audio URL. This does not prove Paraformer latency, format compatibility or transcript status.
+- Historical blocker. Qwen valid scenario returned provider `invalid_api_key` with HTTP 401, so schema-valid LLM evidence was not produced in this earlier run.
+- Historical blocker. TTS generation returned `InvalidApiKey` with HTTP 401, so no TTS audio ref, cache evidence or ASR input fixture was produced in this earlier run.
+- Historical blocker. ASR-valid was blocked by missing provider-accessible audio URL in this earlier run. Later controlled live sanity produced ASR `SUCCEEDED`, but full matrix evidence is still missing.
 - No blocker in reporting. The run preserves `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` as missing and does not claim release readiness.
 
 Validation:
 - Sanitized inline DashScope probe - executed; result blocked by provider invalid API key.
 
 Required corrections:
-- Replace or correct `DASHSCOPE_API_KEY`, rerun the full matrix with sanitized fixtures, then set `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` only after independent evidence review.
+- Superseded credential correction: later controlled live sanity passed with the configured key. Remaining correction is to rerun the full matrix with sanitized fixtures, then set `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` only after independent evidence review.
 
 Residual risk:
 - TC-COM-AI-004 remains open.

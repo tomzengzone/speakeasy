@@ -36,6 +36,16 @@
 
 ## P0.1 Training AI Eval Cases
 
+Executable validator:
+
+```bash
+dart run scripts/check_ai_eval_cases.dart
+```
+
+Fixture: `tests/ai_runtime/p0_1_ai_eval_cases.json`。
+
+Scope: TC-P01-014 validates the documented P0.1 `TrainingFeedbackCandidate` AI eval cases by calling the runtime schema validator in `lib/features/interview/interview_training_agent.dart`。The validator checks all seven P0.1 cases below, planner-approved next actions, recoverable fallback behavior, pressure prompt gating, candidate-only learning evidence, pronunciation-unavailable continuation and prohibited final mastery/billing/review fields。
+
 | Case ID | Owning increment | Input | Expected |
 | --- | --- | --- | --- |
 | AI-EVAL-P01-001 | `p0-1-expression-automation-training` | `job_interview`, `SayOne`, sentence-frame hint, learner covers opening intent with slightly unnatural wording | Valid `TrainingFeedbackCandidate`; `completion_signal.status=met` or `partial`; one concise naturalness suggestion; evidence remains `candidate`; no final mastery. |
