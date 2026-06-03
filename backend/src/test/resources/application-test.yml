@@ -18,14 +18,17 @@ spring:
 
 speakeasy:
   ai:
+    provider: deterministic
     media:
       metadata-signing-key: media-test-signing-key
       public-base-url: https://media.test.local/audio
       upload-base-url: https://upload.test.local/audio
       upload-ttl: 15m
+      provider-read-ttl: 10m
       tts-cache-ttl: 7d
       max-upload-bytes: 10000000
       max-upload-duration-seconds: 120
+      storage-provider: local
   ops:
     bearer-token: ops-test-token
   payment:

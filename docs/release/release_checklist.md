@@ -65,6 +65,7 @@ Status: local implementation/evidence-prep passed / blocked until strict externa
 
 Required before paid AI voice or real DashScope provider release:
 - [ ] `commercial-ai-provider-hardening` requirements/spec/acceptance/test_cases/traceability remain in sync.
+- [x] Paid AI external evidence checklist and strict aggregate gate exist: `tests/commercial/ai_external_release_evidence_checklist.md`, `scripts/check_ai_external_release_evidence.py`.
 - [x] TC-COM-AI-001 trusted media upload/reference tests passed locally.
 - [x] TC-COM-AI-002 production ASR rejects local paths, unsigned URLs and forged metadata locally.
 - [x] TC-COM-AI-003 persistent TTS cache tests passed locally for metadata, owner refs, expiry and deletion behavior.
@@ -78,6 +79,7 @@ Required before paid AI voice or real DashScope provider release:
 Latest local evidence:
 - `python3 scripts/run_dashscope_sandbox_matrix.py` passed on 2026-06-03 and wrote sanitized report `build/reports/dashscope-sandbox-20260602T223557Z-3359fcc82fafa457.json`.
 - `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external` still fails without `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`.
+- `python3 scripts/check_ai_external_release_evidence.py --strict-external` still fails without `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF`.
 
 Reference:
 - `docs/release/commercial_release_runbook.md`

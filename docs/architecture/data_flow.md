@@ -136,11 +136,11 @@ Provider-specific rules:
 ```text
 Flutter records audio
   -> POST /media/audio/uploads creates backend-owned media upload session
-  -> Flutter uploads audio to backend or signed object storage upload URL
+  -> Flutter uploads audio to backend-signed阿里云 OSS private bucket URL or equivalent storage adapter URL
   -> POST /media/audio/uploads/{media_id}/complete validates metadata/checksum
   -> backend validates mime, duration, size, entitlement and retention policy
-  -> backend writes MediaAsset metadata and returns trusted audio_ref/media id
-  -> /ai/transcribe consumes trusted audio_ref only
+  -> backend writes MediaAsset metadata, canonical object_ref and returns trusted audio_ref/media id
+  -> /ai/transcribe consumes trusted audio_ref only and backend signs provider read URL just-in-time
   -> DashScope ASR/LLM/TTS provider calls emit sanitized metrics
   -> TTS results are stored in persistent cache/object storage by text hash/model/voice/language
   -> GET /admin/ai/cost-metrics aggregates plan/user/provider/model/status/cache metrics

@@ -1,7 +1,7 @@
 # Implementation Report
 
 ## Current Status
-Latest implementation update recorded: `P0-P01-BLOCKER-CLOSURE-20260603` closed TC-P01-013 and TC-P01-014 locally, added repeatable DashScope evidence-prep tooling for TC-COM-AI-004, and reran strict commercial external gates. P0.1 route/eval local blockers are closed. Commercial release and paid AI voice remain blocked by explicit external/native/store/release evidence refs and independent review.
+Latest implementation update recorded: `P0-AI-OSS-STORAGE-20260603` implemented the local Aliyun OSS media storage adapter, canonical object refs, signed upload/read URL flow and forged object_ref rejection inside `commercial-ai-provider-hardening`. Paid AI voice remains blocked until the four external evidence refs are supplied and independently reviewed.
 
 ## Report Format
 Each completed change should append:
@@ -14,6 +14,94 @@ Each completed change should append:
 - results
 - risks
 - follow-up
+
+## 2026-06-03 - P0-AI-OSS-STORAGE-20260603 Aliyun OSS Media Storage Implementation
+
+Change request:
+- Put the object-storage plan into the existing `commercial-ai-provider-hardening` stage, preserve 100% requirement-to-test traceability, implement the backend storage path and complete local tests.
+- Do not create a new stage and do not claim release-candidate external evidence without Aliyun credentials.
+
+Requirement mapping:
+- Increment: `commercial-ai-provider-hardening`.
+- Stage Scope: `COM-SI-013`, with release evidence dependency on `COM-SI-017`.
+- Requirement/spec/acceptance: `FR-COM-AI-001`, `COM-AI-SPEC-001`, `AC-COM-AI-001`.
+- Test cases: `TC-COM-AI-001`, `TC-COM-AI-002`, `TC-COM-AI-008`.
+- Traceability row: `COM-AI-TR-001`.
+
+Files changed:
+- Backend storage implementation: `AiMediaStorageService`, `LocalAiMediaStorageService`, `AliyunOssMediaStorageService`, `AiMediaStorageConfiguration`.
+- Backend media flow updates: `AiMediaUploadService`, `AiMediaReferenceService`, `AiRetentionService`, `AiMediaAsset`, `AiMediaProperties`, `MediaController`, `application.yml`, `application-test.yml`, `pom.xml`.
+- Tests: `MediaUploadReferenceServiceTest`, `AiMediaStorageServiceTest`, `AiCostDashboardTest` test-provider isolation.
+- Product/architecture docs: requirements, spec, acceptance, OpenAPI, API contract, domain schema, security design, data flow, test cases, traceability and external evidence checklist.
+
+Implementation summary:
+- Added a storage abstraction with local fallback and Aliyun OSS implementation.
+- Media upload creation now returns backend-owned canonical `object_ref`, upload URL and required upload headers; complete rejects forged `object_ref`.
+- ASR provider access resolves validated `media://audio/{media_id}` assets into backend-signed provider read URLs instead of trusting client URLs.
+- Retention/account deletion calls the storage adapter delete hook before marking media deleted.
+- Local tests cover OSS canonical `oss://bucket/key`, signed PUT/GET URL generation, KMS/SSE header propagation, delete key derivation and forged object_ref rejection.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MediaUploadReferenceServiceTest,AiMediaStorageServiceTest,ProductionAsrMediaRefTest,PersistentTtsCacheTest,AiCostDashboardTest,AiRetentionPolicyTest,AiAccountDeletionMediaCleanupTest,DashScopeProviderGatewayIntegrationTest,DashScopeProviderGatewayTest,CommercialFoundationControllerTest,AccountDeletionLearningDataTest,FoundationMigrationTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
+- `npm run check:api-contract` - passed after updating the generated Dart OpenAPI hash marker and drift manifest.
+- `python3 scripts/check_ai_external_release_evidence.py` - passed with expected release blockers.
+- `python3 scripts/check_ai_external_release_evidence.py --strict-external` - failed as expected because the four external refs are not set.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- `COM-AI-GAP-001` is closed for local backend adapter implementation and automated regression coverage.
+- `AI_MEDIA_STORAGE_EVIDENCE_REF` is still not closed because no staging/release Aliyun account, bucket, KMS policy or lifecycle evidence was supplied in this local environment.
+
+Residual risk:
+- Real OSS upload, provider read access, URL expiry and object deletion must still be executed in staging/release candidate and reviewed before paid AI release.
+
+## 2026-06-03 - P0-AI-EXTERNAL-GATE-20260603 Paid AI External Evidence Gate
+
+Change request:
+- Close the remaining paid AI release evidence planning/gate gaps without falsely marking external evidence as passed.
+- Follow the project workflow: preserve AC-to-TC traceability, add executable gates, run validation, and record independent review for each of the four evidence scopes.
+
+Requirement mapping:
+- Increment: `commercial-ai-provider-hardening`.
+- Stage Scope: `COM-SI-013`, `COM-SI-015`, `COM-SI-016`, `COM-SI-017`.
+- Acceptance: `AC-COM-AI-001`, `AC-COM-AI-003`, `AC-COM-AI-004`, `AC-COM-AI-005`.
+- Test cases: `TC-COM-AI-001`, `TC-COM-AI-002`, `TC-COM-AI-004`, `TC-COM-AI-005`, `TC-COM-AI-006`, `TC-COM-AI-007`.
+- Traceability rows: `COM-AI-TR-001`, `COM-AI-TR-003`, `COM-AI-TR-004`, `COM-AI-TR-005`.
+
+Files changed:
+- Added `tests/commercial/ai_external_release_evidence_checklist.md`.
+- Added `scripts/check_ai_external_release_evidence.py`.
+- Updated `scripts/check_release_readiness.sh` to run the paid AI external evidence gate.
+- Updated `docs/product/increments/commercial-ai-provider-hardening/definition.md`, `test_cases.md` and `traceability.md`.
+- Updated `docs/product/development_status.md`, `docs/release/commercial_release_runbook.md` and `docs/release/release_checklist.md`.
+- Updated implementation/test/quality reports.
+
+Implementation summary:
+- Defined external evidence scenarios for DashScope LLM/ASR/TTS, object storage signed media refs, AI cost dashboard/unit economics, and retention/deletion proof.
+- Added a strict script that validates the checklist contract and requires `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF` for paid AI release.
+- The script rejects placeholder refs and repo/local paths such as `docs/`, `tests/`, `build/` and `file://` in strict mode.
+- Connected the gate to the aggregate release readiness script and product/release traceability documents.
+
+Validation:
+- `python3 scripts/check_ai_external_release_evidence.py` - passed and reported all four missing refs as release blockers.
+- `python3 scripts/check_ai_external_release_evidence.py --strict-external` - failed as expected because the four external refs are not set.
+- `python3 -m py_compile scripts/check_ai_external_release_evidence.py scripts/check_ai_provider_sandbox_evidence.py scripts/check_manual_external_evidence_plan.py` - passed.
+- `bash -n scripts/check_release_readiness.sh` - passed.
+- `python3 scripts/check_ai_provider_sandbox_evidence.py` - passed with expected DashScope release blocker.
+- `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external` - failed as expected without `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`.
+- `python3 scripts/check_manual_external_evidence_plan.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- Fixture `scripts/check_release_readiness.sh --env-only` with dummy external refs and release env - passed; this validates gate wiring only, not real external evidence.
+- `git diff --check` - passed.
+
+Result:
+- Strategy/gate closure complete for all four paid AI open items.
+- Not release-closed: no real external evidence package or external reviewer approval was supplied in this local environment.
+
+Residual risk:
+- Paid AI voice and real DashScope provider release remain blocked until all four evidence refs point to real, reviewed, external evidence packages and strict gates pass in the target release environment.
 
 ## 2026-06-03 - P0-P01-BLOCKER-CLOSURE-20260603 Local Blocker Closure And External Gate Revalidation
 

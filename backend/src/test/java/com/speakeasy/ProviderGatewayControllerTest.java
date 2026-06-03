@@ -7,7 +7,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import com.speakeasy.ai.AiMediaReferenceService;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
@@ -15,15 +17,18 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest
+@SpringBootTest(properties = "speakeasy.ai.provider=deterministic")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class ProviderGatewayControllerTest extends BackendIntegrationTestSupport {
+  @Autowired AiMediaReferenceService mediaReferences;
+
   @Test
   void gatewayReturnsNormalizedSuccessResults() throws Exception {
     AuthTokens tokens = loginPhone("+8613800138210");
     String auth = bearer(tokens.accessToken());
     String sessionId = startSession(tokens);
+    String signedAudioRef = mediaReferences.signTrustedAudioRef("https://media.example.com/answer.wav", 8, 1024);
 
     mvc.perform(post("/ai/transcribe")
             .header(HttpHeaders.AUTHORIZATION, auth)
@@ -31,9 +36,9 @@ class ProviderGatewayControllerTest extends BackendIntegrationTestSupport {
             .content("""
                 {
                   "schema_version": 1,
-                  "audio_ref": "audio://valid"
+                  "audio_ref": "%s"
                 }
-                """))
+                """.formatted(signedAudioRef)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("available"))
         .andExpect(jsonPath("$.transcript", not(blankOrNullString())));
@@ -57,10 +62,10 @@ class ProviderGatewayControllerTest extends BackendIntegrationTestSupport {
             .content("""
                 {
                   "schema_version": 1,
-                  "audio_ref": "audio://valid",
+                  "audio_ref": "%s",
                   "reference_text": "Could you tell me about yourself?"
                 }
-                """))
+                """.formatted(signedAudioRef)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.score_signal.status").value("available"))
         .andExpect(jsonPath("$.score_signal.source").value("server_side_adapter"));

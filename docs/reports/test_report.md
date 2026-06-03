@@ -1,7 +1,7 @@
 # Test Report
 
 ## Current Status
-Latest recorded validation: `P0-P01-BLOCKER-CLOSURE-20260603` closed the two local P0.1 blockers TC-P01-013 and TC-P01-014, prepared a repeatable sanitized TC-COM-AI-004 DashScope evidence-prep matrix, and reran commercial external gates. TC-P01-013 and TC-P01-014 now pass locally. TC-COM-AI-004 controlled live evidence is prepared but strict release still requires `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` and independent external review. TC-COM-012/015/019/021/022 remain strict external/native/store/release blockers.
+Latest recorded validation: `P0-AI-OSS-STORAGE-20260603` passed local backend tests for Aliyun OSS media storage adapter, canonical object refs, signed upload/read URLs and forged object_ref rejection. Strict paid AI release remains blocked until `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF` are supplied and independently reviewed.
 
 ## Required Sections
 - test scope
@@ -11,6 +11,78 @@ Latest recorded validation: `P0-P01-BLOCKER-CLOSURE-20260603` closed the two loc
 - skipped tests
 - acceptance criteria coverage
 - residual risk
+
+## 2026-06-03 P0-AI OSS Storage Implementation
+
+Test scope:
+- `commercial-ai-provider-hardening` object storage implementation for `COM-SI-013`.
+- AC/TC: `AC-COM-AI-001`; `TC-COM-AI-001`, `TC-COM-AI-002`, `TC-COM-AI-008`.
+
+Commands run:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MediaUploadReferenceServiceTest,AiMediaStorageServiceTest,ProductionAsrMediaRefTest,PersistentTtsCacheTest,AiCostDashboardTest,AiRetentionPolicyTest,AiAccountDeletionMediaCleanupTest,DashScopeProviderGatewayIntegrationTest,DashScopeProviderGatewayTest,CommercialFoundationControllerTest,AccountDeletionLearningDataTest,FoundationMigrationTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
+- `npm run check:api-contract` - passed.
+- `python3 scripts/check_ai_external_release_evidence.py` - passed and reported the four missing paid AI external evidence refs as release blockers.
+- `python3 scripts/check_ai_external_release_evidence.py --strict-external` - failed as expected because the four refs are not set.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Passing tests:
+- `MediaUploadReferenceServiceTest` verifies backend-created upload sessions, upload headers, complete flow and forged `object_ref` rejection.
+- `AiMediaStorageServiceTest` verifies Aliyun OSS canonical `oss://bucket/key`, signed upload/read URLs, KMS/SSE upload header handling, object deletion key resolution and local adapter mismatch rejection.
+- Existing ASR, TTS cache, cost dashboard, retention/account deletion and DashScope gateway tests still pass after the storage adapter was introduced.
+- Full backend test suite passed after locking the test profile to deterministic provider by default and keeping DashScope-specific tests explicit.
+
+Failing or blocked tests:
+- No local failure remains for TC-COM-AI-008.
+- Strict external release evidence remains blocked until `AI_MEDIA_STORAGE_EVIDENCE_REF` points to reviewed staging/release candidate OSS evidence.
+
+Skipped or external tests:
+- Real Aliyun OSS bucket upload, provider read access, URL expiry, lifecycle/delete proof and KMS/ACL review were not executed because no Aliyun account/credentials were provided.
+
+Acceptance criteria coverage:
+- `AC-COM-AI-001` now has automated coverage for backend-owned object refs, signed upload/read URL generation and client-forged object_ref rejection.
+- Release evidence coverage for the real bucket lifecycle remains governed by `P0-AI-STORAGE-001` and `AI_MEDIA_STORAGE_EVIDENCE_REF`.
+
+Residual risk:
+- Local mocked OSS signing does not prove real-region bucket policy, KMS behavior, provider fetchability, expiry enforcement or deletion in staging/release.
+
+## 2026-06-03 P0-AI External Evidence Gate Validation
+
+Test scope:
+- `commercial-ai-provider-hardening` paid AI external evidence strategy and release gates.
+- Coverage: `COM-SI-013`, `COM-SI-015`, `COM-SI-016`, `COM-SI-017`.
+- AC/TC: `AC-COM-AI-001`, `AC-COM-AI-003`, `AC-COM-AI-004`, `AC-COM-AI-005`; `TC-COM-AI-001`, `TC-COM-AI-002`, `TC-COM-AI-004`, `TC-COM-AI-005`, `TC-COM-AI-006`, `TC-COM-AI-007`.
+
+Commands run:
+- `python3 scripts/check_ai_external_release_evidence.py` - passed; reported missing `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF`.
+- `python3 scripts/check_ai_external_release_evidence.py --strict-external` - failed as expected because the four refs are not set.
+- `python3 -m py_compile scripts/check_ai_external_release_evidence.py scripts/check_ai_provider_sandbox_evidence.py scripts/check_manual_external_evidence_plan.py` - passed.
+- `bash -n scripts/check_release_readiness.sh` - passed.
+- `python3 scripts/check_ai_provider_sandbox_evidence.py` - passed; reported missing `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`.
+- `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external` - failed as expected.
+- `python3 scripts/check_manual_external_evidence_plan.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- Fixture `scripts/check_release_readiness.sh --env-only` with dummy external evidence refs and release env - passed; fixture only validates gate wiring.
+- `git diff --check` - passed.
+
+Passing tests:
+- Paid AI external checklist structure passed in non-strict mode.
+- The new gate is wired into aggregate release readiness and accepts non-local external-style fixture refs in env-only validation.
+- Existing manual external evidence plan and DashScope matrix structure gate still pass in non-strict mode.
+
+Failing or blocked tests:
+- Strict paid AI external evidence gate fails until all four required external refs are supplied.
+- Strict DashScope provider evidence gate still fails until `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` is supplied.
+
+Skipped or external tests:
+- No real DashScope full matrix, object-storage lifecycle, PM/Ops dashboard evidence, retention/account deletion external proof or independent external reviewer approval was executed in this local environment.
+
+Acceptance criteria coverage:
+- `AC-COM-AI-001`, `AC-COM-AI-003`, `AC-COM-AI-004` and `AC-COM-AI-005` now have explicit external release evidence scenarios and strict gate mappings in addition to existing local automated evidence.
+
+Residual risk:
+- Paid AI voice remains blocked for real users until the four external evidence refs are populated from reviewed evidence packages and strict gates pass in the release candidate environment.
 
 ## 2026-06-03 P0.1 Local Blocker Closure And Commercial External Gate Revalidation
 

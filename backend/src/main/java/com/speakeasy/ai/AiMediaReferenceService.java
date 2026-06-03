@@ -28,24 +28,37 @@ public class AiMediaReferenceService {
 
   private final AiMediaProperties properties;
   private final AiMediaAssetRepository mediaAssets;
+  private final AiMediaStorageService mediaStorage;
   private final HttpClient httpClient;
 
   @Autowired
-  public AiMediaReferenceService(AiMediaProperties properties, AiMediaAssetRepository mediaAssets) {
-    this(properties, mediaAssets, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
+  public AiMediaReferenceService(
+      AiMediaProperties properties,
+      AiMediaAssetRepository mediaAssets,
+      AiMediaStorageService mediaStorage) {
+    this(properties, mediaAssets, mediaStorage, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
   }
 
   public AiMediaReferenceService(AiMediaProperties properties) {
-    this(properties, null, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
+    this(properties, null, null, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
   }
 
   AiMediaReferenceService(AiMediaProperties properties, HttpClient httpClient) {
-    this(properties, null, httpClient);
+    this(properties, null, null, httpClient);
   }
 
   AiMediaReferenceService(AiMediaProperties properties, AiMediaAssetRepository mediaAssets, HttpClient httpClient) {
+    this(properties, mediaAssets, null, httpClient);
+  }
+
+  AiMediaReferenceService(
+      AiMediaProperties properties,
+      AiMediaAssetRepository mediaAssets,
+      AiMediaStorageService mediaStorage,
+      HttpClient httpClient) {
     this.properties = properties;
     this.mediaAssets = mediaAssets;
+    this.mediaStorage = mediaStorage;
     this.httpClient = httpClient;
   }
 
@@ -98,8 +111,8 @@ public class AiMediaReferenceService {
     if (!asset.isValidatedAt(now)) {
       return TrustedAudioRef.invalid(value, "media_not_validated");
     }
-    return TrustedAudioRef.trusted(
-        asset.getProviderRef(), asset.getAuditRef(), asset.getDurationSeconds(), asset.getByteSize());
+    String providerRef = mediaStorage == null ? asset.getProviderRef() : mediaStorage.providerReadRef(asset, now);
+    return TrustedAudioRef.trusted(providerRef, asset.getAuditRef(), asset.getDurationSeconds(), asset.getByteSize());
   }
 
   public String signTrustedAudioRef(String providerAudioRef, int durationSeconds, long bytes) {

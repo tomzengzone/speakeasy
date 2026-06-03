@@ -17,16 +17,19 @@ public class AiMediaUploadService {
 
   private final AiMediaAssetRepository mediaAssets;
   private final AiMediaReferenceService mediaReferences;
+  private final AiMediaStorageService mediaStorage;
   private final AiMediaProperties properties;
   private final Clock clock;
 
   public AiMediaUploadService(
       AiMediaAssetRepository mediaAssets,
       AiMediaReferenceService mediaReferences,
+      AiMediaStorageService mediaStorage,
       AiMediaProperties properties,
       Clock clock) {
     this.mediaAssets = mediaAssets;
     this.mediaReferences = mediaReferences;
+    this.mediaStorage = mediaStorage;
     this.properties = properties;
     this.clock = clock;
   }
@@ -45,34 +48,46 @@ public class AiMediaUploadService {
     if (effectiveClientUploadId != null) {
       var existing = mediaAssets.findByUserIdAndClientUploadId(userId, effectiveClientUploadId);
       if (existing.isPresent()) {
-        return existing.get();
+        AiMediaAsset media = existing.get();
+        media.setUploadHeaders(mediaStorage.uploadHeaders(media));
+        return media;
       }
     }
     validateUploadRequest(purpose, contentType, byteSize, durationSeconds);
     UUID mediaId = UUID.randomUUID();
     Instant now = Instant.now(clock);
     Instant expiresAt = now.plus(properties.getUploadTtl());
-    String extension = extensionFor(contentType);
-    String providerRef = properties.getPublicBaseUrl() + "/" + mediaId + extension;
-    String signedProviderRef = mediaReferences.signTrustedAudioRef(providerRef, durationSeconds, byteSize);
-    String uploadUrl = properties.getUploadBaseUrl() + "/" + mediaId + extension;
+    AiMediaStorageService.PreparedUpload upload = mediaStorage.prepareUpload(new AiMediaStorageService.UploadRequest(
+        mediaId,
+        userId,
+        purpose,
+        contentType,
+        byteSize,
+        durationSeconds,
+        checksumSha256,
+        expiresAt));
     String audioRef = "media://audio/" + mediaId;
     String auditRef = mediaReferences.auditRef(audioRef);
-    return mediaAssets.save(new AiMediaAsset(
+    AiMediaAsset media = new AiMediaAsset(
         mediaId,
         userId,
         effectiveClientUploadId,
         purpose,
         audioRef,
-        signedProviderRef,
+        upload.providerRef(),
         auditRef,
-        uploadUrl,
+        upload.uploadUrl(),
         contentType,
         byteSize,
         durationSeconds,
         checksumSha256,
         expiresAt,
-        now));
+        now);
+    media.assignObjectRef(upload.objectRef());
+    media.setUploadHeaders(upload.uploadHeaders());
+    AiMediaAsset saved = mediaAssets.save(media);
+    saved.setUploadHeaders(upload.uploadHeaders());
+    return saved;
   }
 
   @Transactional
@@ -99,9 +114,22 @@ public class AiMediaUploadService {
       throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "Media checksum mismatch.");
     }
     if (!"validated".equals(asset.getStatus())) {
-      asset.markValidated(objectRef, checksumSha256, now);
+      String completedObjectRef;
+      try {
+        completedObjectRef = mediaStorage.resolveCompletedObjectRef(asset, objectRef);
+      } catch (IllegalArgumentException e) {
+        asset.markRejected(now);
+        throw new ApiException(
+            HttpStatus.UNPROCESSABLE_ENTITY,
+            "SCHEMA_VALIDATION_FAILED",
+            "Media object reference mismatch.",
+            Map.of("media_error", e.getMessage()));
+      }
+      asset.markValidated(completedObjectRef, checksumSha256, now);
     }
-    return mediaAssets.save(asset);
+    AiMediaAsset saved = mediaAssets.save(asset);
+    saved.setUploadHeaders(mediaStorage.uploadHeaders(saved));
+    return saved;
   }
 
   private void validateUploadRequest(String purpose, String contentType, long byteSize, int durationSeconds) {
@@ -134,15 +162,5 @@ public class AiMediaUploadService {
     }
     String cleanedSecond = second == null ? "" : second.trim();
     return cleanedSecond.isBlank() ? null : cleanedSecond;
-  }
-
-  private String extensionFor(String contentType) {
-    return switch (contentType) {
-      case "audio/m4a", "audio/mp4" -> ".m4a";
-      case "audio/mpeg" -> ".mp3";
-      case "audio/wav" -> ".wav";
-      case "audio/webm" -> ".webm";
-      default -> ".audio";
-    };
   }
 }

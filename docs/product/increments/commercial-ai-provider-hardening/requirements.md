@@ -37,7 +37,7 @@ Draft - P0 商业化发布阻塞增量需求；尚未实现。
 ## Functional Requirements
 
 ### FR-COM-AI-001 对象存储上传链路
-系统必须支持 Flutter 录音上传到后端或对象存储，后端生成 provider 可访问、可审计、带可信元数据的 `audio_ref`，并阻止客户端提交裸 URL 或本地路径作为生产 ASR 输入。
+系统必须支持 Flutter 录音通过后端创建上传任务并上传到后端受控对象存储，当前实现方案采用阿里云 OSS private bucket + 后端预签名 URL；后端必须生成 provider 可访问、可审计、带可信元数据的 `audio_ref`，并阻止客户端提交裸 URL、本地路径、伪造 `object_ref` 或长期 OSS 凭据作为生产 ASR 输入。
 
 ### FR-COM-AI-002 持久化 TTS 媒体缓存
 系统必须按 text hash、model、voice 和语言生成稳定 cache key，把 TTS 音频、元数据、过期时间和删除状态持久化，避免多实例或重启后重复调用 provider。

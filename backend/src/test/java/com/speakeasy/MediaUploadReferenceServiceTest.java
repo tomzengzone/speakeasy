@@ -29,6 +29,8 @@ class MediaUploadReferenceServiceTest extends BackendIntegrationTestSupport {
         .andExpect(jsonPath("$.media.media_id", not(blankOrNullString())))
         .andExpect(jsonPath("$.media.audio_ref", org.hamcrest.Matchers.startsWith("media://audio/")))
         .andExpect(jsonPath("$.media.upload_url", org.hamcrest.Matchers.startsWith("https://upload.test.local/audio/")))
+        .andExpect(jsonPath("$.media.upload_headers.Content-Type").value("audio/m4a"))
+        .andExpect(jsonPath("$.media.upload_headers.x-speakeasy-media-purpose").value("asr_input"))
         .andExpect(jsonPath("$.media.status").value("pending"))
         .andExpect(jsonPath("$.media.duration_seconds").value(12))
         .andReturn();
@@ -45,14 +47,36 @@ class MediaUploadReferenceServiceTest extends BackendIntegrationTestSupport {
             .content("""
                 {
                   "schema_version": 1,
-                  "checksum_sha256": "checksum-1",
-                  "object_ref": "object://speakeasy-ai-media/test/audio.m4a"
+                  "checksum_sha256": "checksum-1"
                 }
                 """))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.schema_version").value(1))
         .andExpect(jsonPath("$.media.media_id").value(mediaId))
         .andExpect(jsonPath("$.media.status").value("validated"));
+  }
+
+  @Test
+  void rejectsForgedObjectRefOnUploadCompletion() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800138402");
+    MvcResult createResult = createUpload(tokens, "upload-idem-forged-object-ref", "rec-forged-001")
+        .andExpect(status().isCreated())
+        .andReturn();
+    String mediaId = JsonPath.read(createResult.getResponse().getContentAsString(), "$.media.media_id");
+
+    mvc.perform(post("/media/audio/uploads/%s/complete".formatted(mediaId))
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "checksum_sha256": "checksum-1",
+                  "object_ref": "object://speakeasy-ai-media/attacker/audio.m4a"
+                }
+                """))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"))
+        .andExpect(jsonPath("$.error.details.media_error").value("media_object_ref_mismatch"));
   }
 
   @Test

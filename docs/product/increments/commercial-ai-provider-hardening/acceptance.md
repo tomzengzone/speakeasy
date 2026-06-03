@@ -18,7 +18,7 @@ Draft - 来自 `commercial-ai-provider-hardening` spec 的增量验收标准。
 | COM-SI-017 | FR-COM-AI-005 | COM-AI-SPEC-005 | AC-COM-AI-005 |
 
 ## AC-COM-AI-001 可信媒体上传和 ASR 输入
-给定用户完成录音，当进入生产 ASR 流程时，系统必须通过后端上传或对象存储生成可信 `audio_ref`，并拒绝本地路径、裸 HTTP URL、伪造签名、超时长或超大小输入。
+给定用户完成录音，当进入生产 ASR 流程时，系统必须通过后端创建阿里云 OSS private bucket 上传任务、生成短期 signed upload URL 和可信 `media://audio/{media_id}`；complete 时必须拒绝本地路径、裸 HTTP URL、伪造 `object_ref`、伪造签名、超时长、超大小或 checksum mismatch 输入，DashScope ASR 只能使用后端为 validated media asset 短期签发的 provider read URL。
 
 ## AC-COM-AI-002 持久化 TTS 缓存
 给定相同 normalized text、model、voice 和 language，当系统多次请求 TTS 且缓存仍有效时，系统必须返回同一持久化 media ref，不重复调用 provider；当缓存过期或删除时，系统必须重新生成或返回 typed unavailable。

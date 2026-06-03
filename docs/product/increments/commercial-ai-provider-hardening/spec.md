@@ -24,15 +24,16 @@ Draft - 可作为 acceptance criteria 的直接上游输入；实现前仍需 AP
 
 ### Flow-AI-001 录音上传与可信 audio_ref
 1. Flutter 完成录音。
-2. Flutter 请求后端上传授权或直接上传音频到后端。
-3. 后端校验用户、套餐、文件大小、格式和时长。
-4. 后端写入 media metadata，并生成 provider 可访问的 signed media ref。
-5. 后端返回客户端只可用于后续 AI REST 的 `audio_ref` 或 media id。
+2. Flutter 请求后端创建上传任务，后端校验用户、套餐、文件大小、格式、时长和 checksum。
+3. 后端为阿里云 OSS private bucket 生成单对象短 TTL upload URL、required upload headers、canonical `object_ref` 和 server-owned media metadata；客户端不得获得 OSS AccessKey。
+4. Flutter 只使用后端返回的 upload URL 上传音频，然后调用 complete。
+5. 后端重新校验 owner、object_ref、checksum、格式、大小和时长，写入 validated media metadata。
+6. 后端返回客户端只可用于后续 AI REST 的 `media://audio/{media_id}`；真实 provider 访问 URL 只能由后端在调用时短期签发。
 
 ### Flow-AI-002 生产 ASR 调用
 1. Flutter 调用 `/ai/transcribe`，提交后端签发的 `audio_ref`。
 2. 后端解析 media metadata，校验 entitlement、usage、retention 状态和签名。
-3. 后端调用 DashScope Paraformer。
+3. 后端根据 validated `MediaAsset.object_ref` 生成短 TTL provider read URL，并调用 DashScope Paraformer。
 4. 成功返回 transcript；失败返回 typed fallback。
 5. usage/audit 只记录 media hash/ref，不记录完整 signed URL。
 
@@ -73,7 +74,7 @@ Draft - 可作为 acceptance criteria 的直接上游输入；实现前仍需 AP
 ## Required Downstream Contracts
 - API Contract：media upload/signing、AI media ref resolution、cost dashboard read、admin/provider evidence status。
 - Domain Schema：MediaAsset、TtsCacheEntry、ProviderInvocationMetric、ProviderSandboxRun、RetentionPolicy。
-- Security：object storage ACL、signed URL TTL、KMS/secret、hash-only audit、no raw transcript logs。
+- Security：阿里云 OSS private bucket、RAM/STS 或后端 AccessKey secret、signed upload/read URL TTL、KMS/SSE、hash-only audit、no raw transcript logs。
 - AI Runtime：DashScope real-call eval cases and fallback mapping。
 - DevOps：bucket lifecycle、budget alert、provider sandbox evidence refs、retention job schedule。
 

@@ -17,6 +17,7 @@
 | Manual external evidence plan | `python3 scripts/check_manual_external_evidence_plan.py` | 剩余人工/外部 blocker 缺少逐步执行脚本、预期结果、实际结果字段或独立审查要求 | TC-COM-012、TC-COM-015、TC-COM-019、TC-COM-021、TC-COM-022 |
 | Commercial copy contract | `python3 scripts/check_commercial_copy_contract.py --strict-external` | 会员页/应用内 upsell 承诺未映射到已实现权益、仍承诺未上线能力、商店/隐私/支持外部证据缺失 | TC-COM-015、TC-COM-016 |
 | Provider sandbox evidence | `python3 scripts/check_provider_sandbox_evidence.py --strict-external` | Apple sandbox 或 Google Play internal test 证据引用缺失，或 TC-COM-019 场景矩阵不完整 | TC-COM-019 |
+| Paid AI external evidence | `python3 scripts/check_ai_external_release_evidence.py --strict-external` | DashScope、对象存储、成本看板或 retention 外部证据 ref 缺失，或 paid AI 外部证据清单不完整 | TC-COM-AI-001..007 |
 | Store submission evidence | `python3 scripts/check_store_submission_evidence.py --strict-external` | 商店元数据、订阅条款、隐私/Data safety、隐私/支持 URL 或审核账号证据缺失 | TC-COM-021 |
 | Social login configuration | `scripts/check_social_login_release_config.sh` | WeChat AppID/Universal Link 仍为占位、iOS WeChat URL scheme 未替换、Apple Sign In entitlement 缺失、Android WXEntryActivity 缺失 | TC-COM-012 |
 | Commercial readiness | `scripts/check_release_readiness.sh` | 任一前置 gate 失败、签名/符号/监控 secret 缺失、商店/隐私/审核账号证据缺失、provider sandbox/internal evidence 缺失 | TC-COM-021、TC-COM-022 |
@@ -43,12 +44,13 @@
 | `ROLLBACK_REHEARSAL_REF` | release var | 指向回滚流程演练或审批记录 |
 | `PRIVACY_URL` / `SUPPORT_URL` | release vars | HTTPS URL，必须与商店配置一致 |
 | Manual external checklist | repo document | `tests/commercial/manual_external_evidence_checklist.md` 必须列出 TC-COM-012/015/019/021/022 的人工步骤、预期结果、实际结果字段和独立审查要求 |
+| Paid AI external checklist | repo document | `tests/commercial/ai_external_release_evidence_checklist.md` 必须列出 DashScope、对象存储、成本看板、retention/deletion 的外部步骤、证据字段、脱敏规则和独立审查要求 |
 
 ## 手工/外部门禁
 - TC-COM-015 必须由会员页、商店元数据、隐私/支持说明截图或等价证据关闭；本地脚本只能证明仓库内文案契约。
 - TC-COM-019 必须由 Apple sandbox 和 Google Play internal test 证据关闭；本地脚本不能替代真实 provider 证据。
 - TC-COM-AI-004 必须由 DashScope LLM/ASR/TTS sandbox 或 controlled live 证据关闭；fake transport 和 deterministic provider 不能替代。
-- Paid AI voice 发布还必须关闭 TC-COM-AI-001 到 TC-COM-AI-007：media upload/ref、persistent TTS cache、DashScope evidence、cost dashboard、retention/deletion。
+- Paid AI voice 发布还必须按 `tests/commercial/ai_external_release_evidence_checklist.md` 关闭 TC-COM-AI-001 到 TC-COM-AI-007：media upload/ref、persistent TTS cache、DashScope evidence、cost dashboard、retention/deletion。
 - TC-COM-021 必须由 App Store Connect / Play Console 元数据、订阅条款、隐私/支持 URL、审核账号证据关闭。
 - TC-COM-012 和 TC-COM-022 必须由原生配置截图、真实登录 smoke、release secrets/signing/symbol/rollback 证据和 strict gate 输出关闭。
 - 所有人工结果必须按 `tests/commercial/manual_external_evidence_checklist.md` 的模板记录 `Actual result`、`Evidence ref`、执行人、日期和 reviewer。
@@ -61,14 +63,15 @@
 4. 运行 `scripts/check_release_configuration.sh`。
 5. 运行 `python3 scripts/check_commercial_copy_contract.py --strict-external`。
 6. 运行 `python3 scripts/check_provider_sandbox_evidence.py --strict-external`。
-7. 运行 `python3 scripts/check_store_submission_evidence.py --strict-external`。
-8. 运行 `scripts/check_social_login_release_config.sh`。
-9. 运行 `scripts/check_release_readiness.sh`。
-10. 在 tag release 前确认 provider evidence、store metadata evidence、reviewer account、privacy/support URL 均已登记。
-11. 触发 `.github/workflows/release.yml` tag workflow。
-12. 上传或确认 dSYM / ProGuard mapping，记录 artifact、commit、tag、证据链接。
-13. 完成 rollback rehearsal 或发布负责人审批，并记录 `ROLLBACK_REHEARSAL_REF`。
-14. 若本次 release 打开 paid AI voice 或真实 DashScope provider，确认 `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`、`AI_MEDIA_STORAGE_EVIDENCE_REF`、`AI_COST_DASHBOARD_EVIDENCE_REF` 和 `AI_RETENTION_POLICY_EVIDENCE_REF` 均已登记，并且 `commercial-ai-provider-hardening` traceability 不存在 open release blocker。
+7. 若本次 release 打开 paid AI voice 或真实 DashScope provider，按 `tests/commercial/ai_external_release_evidence_checklist.md` 执行四类 AI 外部证据场景，并运行 `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external` 和 `python3 scripts/check_ai_external_release_evidence.py --strict-external`。
+8. 运行 `python3 scripts/check_store_submission_evidence.py --strict-external`。
+9. 运行 `scripts/check_social_login_release_config.sh`。
+10. 运行 `scripts/check_release_readiness.sh`。
+11. 在 tag release 前确认 provider evidence、store metadata evidence、reviewer account、privacy/support URL 均已登记。
+12. 触发 `.github/workflows/release.yml` tag workflow。
+13. 上传或确认 dSYM / ProGuard mapping，记录 artifact、commit、tag、证据链接。
+14. 完成 rollback rehearsal 或发布负责人审批，并记录 `ROLLBACK_REHEARSAL_REF`。
+15. 若本次 release 打开 paid AI voice 或真实 DashScope provider，确认 `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`、`AI_MEDIA_STORAGE_EVIDENCE_REF`、`AI_COST_DASHBOARD_EVIDENCE_REF` 和 `AI_RETENTION_POLICY_EVIDENCE_REF` 均已登记，并且 `commercial-ai-provider-hardening` traceability 不存在 open release blocker。
 
 ## 禁止事项
 - 不得把 DashScope、OpenAI、Apple、Google、WeChat、Sentry 或签名密钥写入仓库。

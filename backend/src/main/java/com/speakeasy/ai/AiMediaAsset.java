@@ -3,8 +3,10 @@ package com.speakeasy.ai;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Transient;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -64,6 +66,9 @@ public class AiMediaAsset {
 
   @Column(name = "deleted_at")
   private Instant deletedAt;
+
+  @Transient
+  private Map<String, String> uploadHeaders = Map.of();
 
   protected AiMediaAsset() {}
 
@@ -171,8 +176,20 @@ public class AiMediaAsset {
     return deletedAt;
   }
 
+  public Map<String, String> getUploadHeaders() {
+    return uploadHeaders;
+  }
+
+  public void setUploadHeaders(Map<String, String> uploadHeaders) {
+    this.uploadHeaders = uploadHeaders == null ? Map.of() : Map.copyOf(uploadHeaders);
+  }
+
   public boolean isValidatedAt(Instant now) {
     return "validated".equals(status) && deletedAt == null && expiresAt.isAfter(now);
+  }
+
+  public void assignObjectRef(String objectRef) {
+    this.objectRef = clean(objectRef);
   }
 
   public void markValidated(String objectRef, String checksumSha256, Instant completedAt) {

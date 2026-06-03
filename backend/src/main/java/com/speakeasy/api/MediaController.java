@@ -101,7 +101,7 @@ public class MediaController {
           media.getByteSize(),
           media.getDurationSeconds(),
           media.getUploadUrl(),
-          Map.of("x-speakeasy-media-purpose", media.getPurpose()),
+          media.getUploadHeaders().isEmpty() ? Map.of("x-speakeasy-media-purpose", media.getPurpose()) : media.getUploadHeaders(),
           media.getChecksumSha256(),
           media.getExpiresAt());
     }

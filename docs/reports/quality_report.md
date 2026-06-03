@@ -1,7 +1,84 @@
 # Quality Report
 
 ## Current Status
-`P0-P01-BLOCKER-CLOSURE-20260603` completed independent review after each requested step. TC-P01-013 and TC-P01-014 are locally closed with executable evidence. TC-COM-AI-004 has a repeatable sanitized controlled-live evidence-prep report, but paid AI and commercial release still require strict external evidence refs and independent review. TC-COM-012/015/019/021/022 remain release blockers.
+`P0-AI-OSS-STORAGE-20260603` passed local quality review for the Aliyun OSS storage adapter, canonical object refs, signed upload/read URL path and forged object_ref rejection. Paid AI and commercial release still require real external evidence refs and independent reviewer approval before release closure.
+
+## 2026-06-03 P0-AI OSS Storage Implementation Independent Review
+
+Result: pass for local backend implementation and traceability. Not a paid AI release approval.
+
+Findings:
+- No local blocker. `FR-COM-AI-001 -> COM-AI-SPEC-001 -> AC-COM-AI-001 -> TC-COM-AI-001/002/008 -> COM-AI-TR-001` is fully mapped.
+- No local blocker. Backend upload creation now owns `object_ref` generation and complete rejects forged refs before provider access.
+- No local blocker. The Aliyun OSS adapter produces canonical `oss://bucket/key` refs, short signed PUT/GET URLs, optional SSE/KMS upload headers and delete-object hooks; the local fallback remains available for test/dev.
+- No local blocker. Existing ASR, TTS cache, cost dashboard and retention tests still pass with the storage abstraction.
+- Release blocker. Real Aliyun OSS bucket/KMS/ACL/lifecycle/provider-access evidence is not supplied; `AI_MEDIA_STORAGE_EVIDENCE_REF` remains required.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MediaUploadReferenceServiceTest,AiMediaStorageServiceTest,ProductionAsrMediaRefTest,PersistentTtsCacheTest,AiCostDashboardTest,AiRetentionPolicyTest,AiAccountDeletionMediaCleanupTest,DashScopeProviderGatewayIntegrationTest,DashScopeProviderGatewayTest,CommercialFoundationControllerTest,AccountDeletionLearningDataTest,FoundationMigrationTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
+- `npm run check:api-contract` - passed.
+- `python3 scripts/check_ai_external_release_evidence.py` - passed with expected release blockers.
+- `python3 scripts/check_ai_external_release_evidence.py --strict-external` - failed as expected without external refs.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Residual risk:
+- Real staging/release candidate execution must still prove bucket policy, signed URL expiry, provider fetchability and delete/lifecycle behavior before paid AI voice can be opened to real users.
+
+## 2026-06-03 P0-AI External Evidence Gate Independent Reviews
+
+Result: pass for local strategy, checklist, strict gate wiring and traceability. Not a paid AI release approval.
+
+### P0-AI-EXT-001 DashScope Evidence Review
+Findings:
+- No local blocker. `tests/commercial/ai_external_release_evidence_checklist.md` carries all seven DashScope scenarios and preserves the existing `tests/commercial/ai_provider_sandbox_matrix.md` contract.
+- No local blocker. `scripts/check_ai_external_release_evidence.py --strict-external` requires `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` and cannot be satisfied by a repo/local path.
+- Release blocker. The actual full DashScope evidence package and external reviewer approval are still missing.
+
+Validation:
+- `python3 scripts/check_ai_provider_sandbox_evidence.py` - passed with expected release blocker.
+- `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external` - failed as expected without `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`.
+- `python3 scripts/check_ai_external_release_evidence.py --strict-external` - failed as expected while the ref is missing.
+
+### P0-AI-STORAGE-001 Media Storage Evidence Review
+Findings:
+- No local blocker. The checklist now defines bucket/KMS/TTL/lifecycle, upload/complete, provider access, expiry, deletion and illegal-ref rejection evidence.
+- No local blocker. Traceability maps the external storage gate back to `COM-AI-TR-001`, `COM-AI-TR-005`, `AC-COM-AI-001`, `AC-COM-AI-005`, `TC-COM-AI-001`, `TC-COM-AI-002`, `TC-COM-AI-006` and `TC-COM-AI-007`.
+- Release blocker. Real bucket upload/read/provider-access/expiry/deletion proof is not present; `AI_MEDIA_STORAGE_EVIDENCE_REF` remains missing.
+
+Validation:
+- `python3 scripts/check_ai_external_release_evidence.py` - passed and reported `AI_MEDIA_STORAGE_EVIDENCE_REF` as a release blocker.
+- Fixture `scripts/check_release_readiness.sh --env-only` - passed with dummy external-style ref, proving aggregate gate wiring only.
+
+### P0-AI-COST-001 Cost Dashboard Evidence Review
+Findings:
+- No local blocker. The checklist requires provider cost samples, dashboard dimensions, budget/provider/cache alerts, raw-content guard evidence and PM/Ops unit-economics approval.
+- No local blocker. The external gate maps to `COM-AI-TR-004`, `AC-COM-AI-004` and `TC-COM-AI-005`.
+- Release blocker. Production dashboard/API evidence, alert threshold approval and PM/Ops unit-economics approval are not supplied; `AI_COST_DASHBOARD_EVIDENCE_REF` remains missing.
+
+Validation:
+- `python3 scripts/check_ai_external_release_evidence.py` - passed and reported `AI_COST_DASHBOARD_EVIDENCE_REF` as a release blocker.
+- `bash -n scripts/check_release_readiness.sh` - passed after adding the paid AI external evidence gate.
+
+### P0-AI-RETENTION-001 Retention Evidence Review
+Findings:
+- No local blocker. The checklist requires policy approval, audio deletion, transcript redaction, TTS owner/cache cleanup, metric sanitization and retry/manual failure evidence.
+- No local blocker. The external gate maps to `COM-AI-TR-005`, `AC-COM-AI-005`, `TC-COM-AI-006` and `TC-COM-AI-007`.
+- Release blocker. Approved production retention policy and staging/release object-store deletion proof are not supplied; `AI_RETENTION_POLICY_EVIDENCE_REF` remains missing.
+
+Validation:
+- `python3 scripts/check_ai_external_release_evidence.py` - passed and reported `AI_RETENTION_POLICY_EVIDENCE_REF` as a release blocker.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Overall validation:
+- `python3 -m py_compile scripts/check_ai_external_release_evidence.py scripts/check_ai_provider_sandbox_evidence.py scripts/check_manual_external_evidence_plan.py` - passed.
+- `python3 scripts/check_manual_external_evidence_plan.py` - passed.
+- `git diff --check` - passed.
+
+Residual risk:
+- The four release blockers are now explicit and executable, but not externally closed.
+- Do not enable paid AI voice for real users until all four evidence refs are set from reviewed external evidence packages and strict gates pass in the release candidate environment.
 
 ## 2026-06-03 P0/P0.1 Blocker Closure Independent Review
 

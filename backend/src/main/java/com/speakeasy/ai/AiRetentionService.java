@@ -22,6 +22,7 @@ public class AiRetentionService {
   private final AiTtsCacheEntryRepository ttsCacheEntries;
   private final AiTtsCacheOwnerRepository ttsCacheOwners;
   private final AiProviderInvocationMetricRepository providerMetrics;
+  private final AiMediaStorageService mediaStorage;
   private final AuditLogRepository auditLogs;
   private final JdbcTemplate jdbcTemplate;
   private final Clock clock;
@@ -32,6 +33,7 @@ public class AiRetentionService {
       AiTtsCacheEntryRepository ttsCacheEntries,
       AiTtsCacheOwnerRepository ttsCacheOwners,
       AiProviderInvocationMetricRepository providerMetrics,
+      AiMediaStorageService mediaStorage,
       AuditLogRepository auditLogs,
       JdbcTemplate jdbcTemplate,
       Clock clock) {
@@ -40,6 +42,7 @@ public class AiRetentionService {
     this.ttsCacheEntries = ttsCacheEntries;
     this.ttsCacheOwners = ttsCacheOwners;
     this.providerMetrics = providerMetrics;
+    this.mediaStorage = mediaStorage;
     this.auditLogs = auditLogs;
     this.jdbcTemplate = jdbcTemplate;
     this.clock = clock;
@@ -142,7 +145,10 @@ public class AiRetentionService {
   private Counts runExpiredMedia() {
     Instant now = Instant.now(clock);
     var expiredMedia = mediaAssets.findByDeletedAtIsNullAndExpiresAtBefore(now);
-    expiredMedia.forEach(asset -> asset.markDeleted(now));
+    expiredMedia.forEach(asset -> {
+      mediaStorage.deleteObject(asset);
+      asset.markDeleted(now);
+    });
     mediaAssets.saveAll(expiredMedia);
 
     var expiredCache = ttsCacheEntries.findByStatusAndExpiresAtBefore("active", now);
@@ -163,7 +169,10 @@ public class AiRetentionService {
     int transcriptCount = 0;
     if (userId != null) {
       var userMedia = mediaAssets.findByUserIdAndDeletedAtIsNull(userId);
-      userMedia.forEach(asset -> asset.markDeleted(now));
+      userMedia.forEach(asset -> {
+        mediaStorage.deleteObject(asset);
+        asset.markDeleted(now);
+      });
       mediaAssets.saveAll(userMedia);
       mediaCount = userMedia.size();
       transcriptCount = countUserTranscriptRefs(userId);

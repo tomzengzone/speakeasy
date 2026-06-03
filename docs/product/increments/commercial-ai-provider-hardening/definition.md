@@ -86,7 +86,20 @@ Draft - Product Manager planning accepted；本增量把 P0.1 DashScope provider
 | 7 | P0-AI-REPORT-001 | Development Orchestrator | 汇总 test/implementation/quality/release evidence | COM-SI-013..017 | reports and traceability updates | PM release decision |
 
 ## 当前合法下一步
-`P0-AI-ARCH-001` through `P0-AI-REPORT-001` 的本地实现、测试和报告链路已完成；2026-06-03 sanitized controlled-live LLM/TTS/ASR evidence-prep passed。当前合法下一步是补齐 strict external evidence refs：`DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`、`AI_MEDIA_STORAGE_EVIDENCE_REF`、`AI_COST_DASHBOARD_EVIDENCE_REF`、`AI_RETENTION_POLICY_EVIDENCE_REF`，并通过独立审查后再考虑 paid AI voice release closure。
+`P0-AI-ARCH-001` through `P0-AI-REPORT-001` 的本地实现、测试和报告链路已完成；2026-06-03 sanitized controlled-live LLM/TTS/ASR evidence-prep passed；2026-06-03 阿里云 OSS storage adapter、canonical object_ref、signed upload/read URL 和 forged object_ref regression 已在本 stage 内完成并通过本地测试。当前合法下一步是补齐 strict external evidence refs：`DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`、`AI_MEDIA_STORAGE_EVIDENCE_REF`、`AI_COST_DASHBOARD_EVIDENCE_REF`、`AI_RETENTION_POLICY_EVIDENCE_REF`，并通过独立审查后再考虑 paid AI voice release closure。
+
+## 2026-06-03 PM 下一步执行批次
+本增量当前不需要重新做 `P0-AI-ARCH-001` 或本地 fake-provider 测试；下一阶段必须把本地 evidence-prep 升级为可审查的 strict external evidence package。
+
+| Order | Work Package ID | Route / Owner | Scope | Stage Scope Items | Required evidence | Gate / checker |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | P0-AI-EXT-001 | AI Runtime / QA / Product Manager | DashScope LLM/ASR/TTS sandbox 或 controlled-live 外部 evidence package | COM-SI-015 | `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`，覆盖 latency、error、cost、format compatibility、fallback 和独立 reviewer 结论 | `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external`、AI Runtime review |
+| 2 | P0-AI-STORAGE-001 | DevOps / Security | 对象存储 bucket、signed media ref、provider 可访问性和生命周期删除外部证据；本地 backend adapter 已完成 | COM-SI-013, COM-SI-017 | `AI_MEDIA_STORAGE_EVIDENCE_REF` | Security review、Documentation Governance |
+| 3 | P0-AI-COST-001 | Backend / Ops / Product Manager | 最小 AI 成本看板、预算阈值、告警和套餐毛利风险证据 | COM-SI-016 | `AI_COST_DASHBOARD_EVIDENCE_REF` | Ops review、PM unit-economics approval |
+| 4 | P0-AI-RETENTION-001 | Security / Backend / Product Manager | 音频、转写、provider payload、TTS cache、日志和账号注销删除策略批准与执行证据 | COM-SI-017 | `AI_RETENTION_POLICY_EVIDENCE_REF` | Security review、privacy/release review |
+| 5 | P0-AI-QA-002 | QA / Product Object Governance Check | 汇总 strict AI evidence 并 rerun paid AI release gates | COM-SI-013..017 | `tests/commercial/ai_external_release_evidence_checklist.md`、`docs/reports/test_report.md`、`docs/reports/quality_report.md`、release checklist updates | `python3 scripts/check_ai_external_release_evidence.py --strict-external`、PM paid AI voice release decision |
+
+PM 只在四类 external evidence refs 均可追踪、`python3 scripts/check_ai_external_release_evidence.py --strict-external` 和聚合 release gate 通过且独立审核完成后，才允许把 `P01-GAP-008` 从 Partial 推向 release closure。controlled-live local report 可作为 evidence-prep 输入，不能单独作为 paid AI voice release evidence。
 
 ## Dependency And Blocker Register
 | Blocker ID | 阻塞内容 | 影响 | 解除条件 |

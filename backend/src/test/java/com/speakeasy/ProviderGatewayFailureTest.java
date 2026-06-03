@@ -14,7 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest
+@SpringBootTest(properties = "speakeasy.ai.provider=deterministic")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class ProviderGatewayFailureTest extends BackendIntegrationTestSupport {

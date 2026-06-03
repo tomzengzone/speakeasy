@@ -145,6 +145,55 @@ Product Manager Agent
 31. 2026-06-03 已按顺序关闭本地可控 P0.1 blockers：TC-P01-013 通过 `./scripts/run_mvp_system_e2e.sh --suite p0-1-training-loop`，TC-P01-014 通过 `dart run scripts/check_ai_eval_cases.dart`。
 32. 当前合法下一步不是重复 `P0-AI-ARCH-001` 或继续补本地 P0.1 blocker，而是补齐 TC-COM-012/015/019/021/022 和 TC-COM-AI-004 的外部/native/store/release evidence refs 并 rerun strict gates。
 
+## PM 下一阶段开发计划
+
+### Product Manager 理解与执行方式
+本次规划请求属于 product direction / planning request，产品对象模式为 `feature-increment` 和 release-readiness planning。PM 已以 `docs/product/roadmap.md`、`docs/product/feature_registry.md`、`docs/product/stages/p0-commercial-readiness.md`、`docs/product/stages/p0-1-expression-automation.md`、三个活跃 increment definition、`docs/reports/test_report.md` 和 `docs/reports/quality_report.md` 为输入，先判断当前事实，再制定后续开发顺序。
+
+执行步骤：
+1. 确认 Product Base、feature registry、active stages 和 increment coverage。
+2. 区分本地已关闭项、商业发布外部门禁、paid AI voice 外部门禁和 P0.1 价值体验合入复核。
+3. 只在 PM 拥有的产品状态和 increment definition 中记录计划，不新增详细需求、测试用例或实现任务细节。
+4. 将下一步交给 Development Orchestrator 路由，但要求每一步完成后进入独立 checker 审查。
+
+### PM 结论
+当前项目不需要重新启动 MVP 后端或继续补本地 P0.1 blocker。下一阶段主计划是先关闭 P0 商业发布和 paid AI voice 的外部/native/store/release evidence，再做 P0.1 已实现训练闭环的 Product Base 合入复核；P0.2/P1 只进入排期和预研，不进入当前实现批次。
+
+### Now - P0 商业发布外部门禁关闭
+目标：把 `commercial-subscription-readiness` 从“本地边界和契约通过”推进到“可被 PM 判断是否进入商业发布口径”。
+
+优先批次：
+1. `P0-COM-EXT-001`：补齐 TC-COM-019 支付 provider evidence，提供 `APPLE_SANDBOX_EVIDENCE_REF` 和 `GOOGLE_PLAY_INTERNAL_EVIDENCE_REF`，覆盖购买、恢复、空恢复、退款、过期、宽限期和账号切换。
+2. `P0-COM-NATIVE-001`：补齐 TC-COM-012 native social login evidence，替换 iOS WeChat placeholder URL scheme，提供 `WECHAT_APP_ID`、`WECHAT_UNIVERSAL_LINK` 和 Apple Sign In entitlement 证据。
+3. `P0-COM-STORE-001`：补齐 TC-COM-015/021 store evidence，提供 `STORE_METADATA_EVIDENCE_REF`、`REVIEWER_ACCOUNT_REF`、`PRIVACY_URL` 和 `SUPPORT_URL`，并复核会员页、商店文案、隐私说明和真实权益一致。
+4. `P0-COM-REL-002`：补齐 TC-COM-022 release evidence，提供生产 API URL、`ENV=production`、release signing、Sentry/symbol upload、rollback rehearsal、release secrets 和 strict gate 运行证据。
+5. `P0-COM-QA-003`：rerun `scripts/check_provider_sandbox_evidence.py --strict-external`、`scripts/check_store_submission_evidence.py --strict-external`、`scripts/check_social_login_release_config.sh` 和 `scripts/check_release_readiness.sh`，并把结果写回 test/quality/release reports。
+
+### Now - P0 paid AI voice 外部门禁关闭
+目标：把 `commercial-ai-provider-hardening` 从“本地实现和 controlled-live evidence-prep 通过”推进到“真实 paid AI voice 可被 PM 审查”。
+
+优先批次：
+1. `P0-AI-EXT-001`：补齐 `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`，外部 evidence package 必须覆盖 LLM/ASR/TTS latency、error、cost、format compatibility、fallback 和独立审查。
+2. `P0-AI-STORAGE-001`：本地阿里云 OSS storage adapter、canonical object_ref、signed upload/read URL 和 forged object_ref regression 已完成；后续补齐 `AI_MEDIA_STORAGE_EVIDENCE_REF`，证明真实对象存储 bucket、signed media ref、生命周期删除和 provider 可访问性。
+3. `P0-AI-COST-001`：补齐 `AI_COST_DASHBOARD_EVIDENCE_REF`，确认套餐/用户/provider/model/cache hit/status 维度的最小成本看板、预算阈值和告警。
+4. `P0-AI-RETENTION-001`：补齐 `AI_RETENTION_POLICY_EVIDENCE_REF`，证明音频、转写、provider payload、TTS cache、日志和账号注销删除策略已批准并可执行。
+5. `P0-AI-QA-002`：rerun `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external`、`python3 scripts/check_ai_external_release_evidence.py --strict-external` 和 aggregate release gates；若 strict evidence 缺失，继续保持 paid AI voice blocked。
+
+### Next - P0.1 Product Base 合入复核
+目标：在不扩大 P0.1 范围的前提下，判断 `expression-automation-training` 的本地训练闭环是否可以作为稳定能力合入 Product Base。
+
+优先批次：
+1. `P01-PM-ACCEPT-001`：PM 复核 P0.1 traceability、test report、quality report，确认 TC-P01-013/014 已关闭且 P0.1 非目标边界仍有效。
+2. `P01-GOV-001`：Product Object Governance Check 独立复核 P01-SI-001 到 P01-SI-011 是否仍由 `p0-1-expression-automation-training` 完整覆盖。
+3. `P01-BASE-001`：若复核通过，只把已验证的 session 内训练能力合入 `docs/product/base/`；不得合入 P0.2 跨天调度、P1 笔记本/评分产品化或商业权益 gating。
+4. `P01-REG-001`：更新 feature registry 中 `expression-automation-training` 的状态，并保留 paid AI voice release residual 指向 `commercial-ai-provider-hardening`。
+
+### Later - 暂不进入当前实现
+- P0.2 跨 session 训练编排与记忆引擎强化：等待 P0 商业外部门禁和 P0.1 合入复核后再创建 active increment。
+- P1 笔记本与评分产品化：只保留 backlog，不进入当前实现。
+- P1 场景包扩展和 P2 A1-C2 内容体系：只保留内容战略，不进入当前实现。
+- 任意场景、公开社区、真人导师市场、课程市场：继续 Not Now。
+
 ## 风险与边界
 - 当前只有 2 个真实官方场景，内容规模不足以支撑“任意场景”承诺。
 - 当前 L1/L2/L3 不等同于完整 CEFR A1-C2，需要单独设计映射。

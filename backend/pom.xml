@@ -20,6 +20,7 @@
   <properties>
     <java.version>17</java.version>
     <testcontainers.version>2.0.5</testcontainers.version>
+    <aliyun.oss.version>3.18.5</aliyun.oss.version>
   </properties>
 
   <dependencies>
@@ -51,6 +52,11 @@
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.aliyun.oss</groupId>
+      <artifactId>aliyun-sdk-oss</artifactId>
+      <version>${aliyun.oss.version}</version>
     </dependency>
     <dependency>
       <groupId>com.h2database</groupId>

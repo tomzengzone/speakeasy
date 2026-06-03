@@ -22,6 +22,7 @@ run_gate "manual external evidence plan" python3 "$ROOT_DIR/scripts/check_manual
 run_gate "commercial copy contract" python3 "$ROOT_DIR/scripts/check_commercial_copy_contract.py" --strict-external
 run_gate "provider sandbox evidence" python3 "$ROOT_DIR/scripts/check_provider_sandbox_evidence.py" --strict-external
 run_gate "AI provider sandbox evidence" python3 "$ROOT_DIR/scripts/check_ai_provider_sandbox_evidence.py" --strict-external
+run_gate "paid AI external evidence" python3 "$ROOT_DIR/scripts/check_ai_external_release_evidence.py" --strict-external
 run_gate "store submission evidence" python3 "$ROOT_DIR/scripts/check_store_submission_evidence.py" --strict-external
 
 if [[ "$MODE" == "--env-only" ]]; then

@@ -4850,7 +4850,7 @@ components:
           type: string
         object_ref:
           type: string
-          description: Optional object-store ref when upload is completed through a signed direct upload.
+          description: Optional canonical object-store ref returned by the backend upload session, such as oss://bucket/key; client-supplied refs must match the server-owned media asset.
     MediaAssetResponse:
       type: object
       required:
@@ -4905,9 +4905,10 @@ components:
           type: integer
         upload_url:
           type: string
-          description: Short-lived signed upload URL when direct object-store upload is used.
+          description: Short-lived signed upload URL when direct object-store upload is used; never exposes permanent object-store credentials.
         upload_headers:
           type: object
+          description: Required headers for the signed upload URL, such as Content-Type, OSS metadata and SSE/KMS headers.
           additionalProperties:
             type: string
         checksum_sha256:
@@ -6032,7 +6033,7 @@ components:
       value:
         schema_version: 1
         checksum_sha256: 7d3f8f7a8c9d
-        object_ref: object://speakeasy-ai-media/users/u_hash/media_123.m4a
+        object_ref: oss://speakeasy-ai-media-staging/audio/uploads/user_hash/media_123.m4a
     MediaAssetResponseExample:
       summary: media asset response example
       value:
@@ -6046,9 +6047,11 @@ components:
           content_type: audio/m4a
           byte_size: 240000
           duration_seconds: 12
-          upload_url: https://storage.example/upload/redacted
+          upload_url: https://speakeasy-ai-media-staging.oss-cn-hangzhou.aliyuncs.com/audio/uploads/user_hash/media_123.m4a?Expires=redacted&Signature=redacted
           upload_headers:
-            x-amz-server-side-encryption: aws:kms
+            Content-Type: audio/m4a
+            x-oss-meta-speakeasy-purpose: asr_input
+            x-oss-server-side-encryption: KMS
           checksum_sha256: 7d3f8f7a8c9d
           expires_at: '2026-06-02T12:00:00Z'
     AiProviderEvidenceListResponseExample:

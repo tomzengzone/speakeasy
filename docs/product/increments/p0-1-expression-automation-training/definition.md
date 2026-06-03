@@ -73,6 +73,18 @@ Draft - active increment definition。
 - 必要时更新 `docs/domain/`、`docs/architecture/`、`docs/ai_runtime/`、`docs/ux/`
 - 实现完成后更新 `docs/reports/implementation_report.md` 和质量/测试报告
 
+## 2026-06-03 PM 下一步执行批次
+TC-P01-013 和 TC-P01-014 已经本地关闭；本增量下一步不是继续扩大训练功能，而是进行 Product Base 合入复核。
+
+| Order | Work Package ID | Route / Owner | Scope | Stage Scope Items | Required output | Gate / checker |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | P01-PM-ACCEPT-001 | Product Manager | 复核 P0.1 traceability、test report、quality report 和非目标边界 | P01-SI-001..011 | PM acceptance finding in `docs/product/development_status.md` | Product Object Governance Check |
+| 2 | P01-GOV-001 | Product Object Governance Check | 独立确认 P01-SI-001..011 均由本 increment 覆盖，且未把 P0.2/P1/P2 范围误记为完成 | P01-SI-001..011 | checker finding | Documentation Governance as needed |
+| 3 | P01-BASE-001 | Product Manager / Requirement Development | 若复核通过，将已验证 session 内训练能力合入 `docs/product/base/` | P01-SI-001..011 | Product Base requirements/spec/acceptance/traceability updates | PM approval |
+| 4 | P01-REG-001 | Product Manager | 更新 `expression-automation-training` feature 状态，并保留 paid AI voice residual 指向 `commercial-ai-provider-hardening` | P01-SI-007, P01-SI-008, P01-SI-011 | `docs/product/feature_registry.md` update | Product Object Governance Check |
+
+合入范围只允许覆盖两个官方场景中的 session 内训练 planner、action chain、micro-action、hint ladder、pressure check、语音主路径/文本兜底、反馈边界、学习证据写回和可恢复失败。跨 session/跨天调度、完整 L0-L5、笔记本、完整评分产品化、场景包扩展和商业权益 gating 均不进入本次 Product Base 合入。
+
 ## Owner Agent
 Product Manager Agent
 
