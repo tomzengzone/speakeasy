@@ -1,7 +1,7 @@
 # P0.1 Acceptance Criteria：表达自动化训练 Agent
 
 ## 状态
-Draft - 基于 P0.1 increment spec 生成，供 QA、测试用例和实现计划使用。
+Draft - 基于 P0.1 increment spec 生成，供 QA、测试用例和实现计划使用；2026-06-03 增加商业软件整改 AC，仍归属本 P0.1 stage / increment。
 
 ## 上游来源
 - `docs/product/increments/p0-1-expression-automation-training/requirements.md`
@@ -22,6 +22,12 @@ Draft - 基于 P0.1 increment spec 生成，供 QA、测试用例和实现计划
 | P01-SI-010 | P0.1 非目标边界 | P01-SPEC-011 | AC-P01-012 |
 | P01-SI-011 | P01-FR-010 | P01-SPEC-010 | AC-P01-011 |
 | P01-SI-007, P01-SI-008, P01-SI-011 | P01-FR-011 | P01-SPEC-012 | AC-P01-013 |
+| P01-SI-001, P01-SI-002, P01-SI-004, P01-SI-011 | P01-FR-012 | P01-SPEC-013 | AC-P01-014 |
+| P01-SI-009, P01-SI-011 | P01-FR-013 | P01-SPEC-014 | AC-P01-015 |
+| P01-SI-001, P01-SI-003, P01-SI-004, P01-SI-010 | P01-FR-014 | P01-SPEC-015 | AC-P01-016 |
+| P01-SI-007, P01-SI-008, P01-SI-011 | P01-FR-015 | P01-SPEC-016 | AC-P01-017 |
+| P01-SI-002, P01-SI-005, P01-SI-006, P01-SI-008, P01-SI-010 | P01-FR-016 | P01-SPEC-017 | AC-P01-018 |
+| P01-SI-007, P01-SI-008, P01-SI-009, P01-SI-011 | P01-FR-017 | P01-SPEC-018 | AC-P01-019 |
 
 ## AC-P01-001 官方场景入口
 - 给定用户打开 `job_interview` 或 `onboarding_introduction` 的当前等级，当用户进入训练入口时，必须进入训练型 Agent session。
@@ -84,7 +90,7 @@ Draft - 基于 P0.1 increment spec 生成，供 QA、测试用例和实现计划
 - 给定服务失败发生在 recap 前，系统不得进入无反馈的死状态。
 
 ## AC-P01-012 P0.1 范围边界
-- P0.1 不得新增第三个官方场景。
+- P0.1 不得由 Flutter 新增第三个官方场景或任意场景；未来官方场景必须通过后端 scenario/version/mapping 审核链路进入。
 - P0.1 不得承诺任意场景生成或用户自定义公开场景。
 - P0.1 不得把跨 session、跨天、跨场景长期调度验收为已完成。
 - P0.1 不得把完整 L0-L5 掌握阶梯、完整笔记本、完整评分产品化或商业权益 gating 作为完成条件。
@@ -100,3 +106,40 @@ Draft - 基于 P0.1 increment spec 生成，供 QA、测试用例和实现计划
 - 给定用户处于 free、pro 或 enterprise 等不同 entitlement tier，provider policy 必须能基于后端事实选择允许的模型、调用频率、音频时长和文本长度；本轮如未实现高级模型差异，也必须以配置和测试证明 free/pro/enterprise 策略不会由 Flutter 决定。
 - 给定 ASR 请求，系统必须限制或拒绝不满足后端 policy 的音频输入，包括空 ref、本地文件路径、超长 duration、超大媒体对象或过高频率调用；不满足 policy 时必须返回 typed failure 或 usage limit，而不是调用 provider。
 - 给定账号删除、日志或错误上报路径，系统不得记录 raw audio、完整敏感 transcript、provider key 或 raw provider payload；audio/transcript retention 必须遵守 `docs/architecture/security_design.md`。
+
+## AC-P01-014 后端 Training API 与服务端事实源
+- 给定 OpenAPI 已声明 `/training/sessions...` endpoint，当后端尚未实现对应 controller/service/test 时，Product Base 合入和 production training release 必须标记为 blocked，不得显示为 ready。
+- 给定后端实现 `POST /training/sessions`，当用户从两个官方场景进入训练时，后端必须创建或恢复归属当前 authenticated user 的 session，并返回当前 action step、micro-action、hint state 和 scenario version。
+- 给定 `POST /training/sessions/{session_id}/turns` 使用相同 `Idempotency-Key` 重复提交，系统不得重复扣减用量、重复写 learning evidence 或推进多个 planner decision。
+- 给定用户尝试读取或推进不属于自己的 training session，系统必须返回授权错误或 not found，不得泄露训练状态。
+- 给定 `ENABLE_BACKEND_TRAINING` 关闭或后端 training 不可用，Flutter 必须关闭训练入口或显示服务不可用，不得创建本地 draft session、前端 planner decision、假 feedback 或 `pending_local_write` evidence。
+
+## AC-P01-015 Learning evidence 写回、rule trace 与数据治理
+- 给定训练 session 产生 learning evidence candidate，后端必须通过 deterministic rule 接受、拒绝或合并，并记录 source turn、rule name、reason code、schema version 和时间戳。
+- 给定 evidence 写回失败，用户可见 recap 必须保留，session/evidence 状态必须标记为 retryable 或 failed-with-reason，不得伪装为 accepted evidence。
+- 给定账号删除或 retention job 执行，P0.1 training session、turn、media ref、recap 和 evidence rule trace 必须被删除、匿名化或保留最小审计证明。
+- 给定 LLM 输出包含 final mastery、billing、entitlement 或 review schedule 字段，系统必须拒绝作为 accepted evidence。
+
+## AC-P01-016 版本化训练内容和 action chain 映射
+- 给定 production training session 启动，当前 action chain 和 target expression 必须来自 `scenario_version_id` 对应的 reviewed mapping 或明确 reviewed fallback，不能只依赖未版本化 Flutter 常量。
+- 给定内容映射缺失，系统必须返回可恢复错误或 reviewed fallback reason，不得让 LLM 即兴生成官方 training step。
+- 给定场景内容版本更新，已创建 session 必须继续引用原 scenario version，历史 planner decision 和 evidence 含义不得被重写。
+- 给定请求未发布、非官方或缺少 reviewed training mapping 的场景，系统必须 fail closed 并保留 P0.1 非目标边界；增加未来官方场景必须通过后端 scenario/version/mapping，而不是 Flutter allowlist。
+
+## AC-P01-017 真实语音、media 和 AI pipeline
+- 给定需要语音输入的 training turn，系统必须只接受后端可信 `audio_ref` 或 text fallback，不得把客户端本地文件路径当作 successful ASR 输入。
+- 给定 ASR/TTS/LLM/provider timeout、invalid schema 或 no result，系统必须返回 typed recoverable state，并释放或记录 usage reservation，用户可继续重试、文本兜底或退出。
+- 给定 pronunciation signal 不可用或低置信度，planner 不得仅因发音失败阻断 expression/task feedback。
+- 给定生产模式打开，Flutter training UI 不得用固定假 feedback、固定假 transcript 或 local draft adapter 代表真实 provider/Training service 结果；deterministic fixture 只能存在于后端 test/dev provider 边界。
+
+## AC-P01-018 Planner service 审计、配置和回放
+- 给定任一 applied planner decision，系统必须持久化或输出可追踪 decision record：source turn、decision type、next micro-action、hint level、reason code、rule/schema version。
+- 给定相同 session state、turn、AI candidate、score signal 和 rule version，planner replay 必须生成相同 decision。
+- 给定 LLM recommended next action 不在 planner allowed-action set 中，系统必须拒绝该候选并记录 reason code，不得推进 session。
+- 给定 hint ladder 或 pressure threshold 被调整，配置或 rule version 必须更新，旧 session replay 必须仍使用旧 rule version。
+
+## AC-P01-019 训练运营指标、商业边界和 rollout gates
+- 给定用户训练一次 session，系统必须产生脱敏 funnel/quality/evidence/provider 指标，至少覆盖 start/resume、turn submit、fallback、hint、pressure、recap、evidence 和 provider status。
+- 给定日志或指标上报，系统不得包含 raw audio、完整敏感 transcript、provider key 或 raw provider payload。
+- 给定 feature flag 或 kill switch 关闭 P0.1 training，用户必须看到可恢复降级或入口关闭状态，不得进入半可用训练页。
+- 给定 paid AI voice strict evidence 未通过，P0.1 训练不得声明 paid AI voice ready；若训练能力进入付费权益，必须复用 P0 commercial entitlement/usage/release gates。

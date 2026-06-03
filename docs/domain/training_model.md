@@ -1,7 +1,7 @@
 # Training Model：P0.1 表达自动化训练闭环
 
 ## 状态
-Proposed - P0.1 Domain Gate Ready。
+Proposed - P0.1 Domain Gate Ready；2026-06-03 commercial production-hardening domain addendum added.
 
 本文是 `p0-1-expression-automation-training` 的专项领域模型，用于关闭 `P01-GAP-001`。本文只定义领域对象、关系、生命周期、不变量和持久化边界，不定义 API request/response、不写数据库 migration、不实现 Flutter 或 backend 代码。
 
@@ -13,7 +13,7 @@ Proposed - P0.1 Domain Gate Ready。
 | Active stage | `docs/product/stages/p0-1-expression-automation.md` |
 | Primary feature | `expression-automation-training` |
 | Affected features | `voice-scenario-practice`, `official-scenario-library`, `listening-shadowing`, `expression-practice-queue`, `learning-memory-review`, `scoring-feedback` |
-| Covered gap | `P01-GAP-001` |
+| Covered gap | `P01-GAP-001`, `P01-GAP-009` through `P01-GAP-014` |
 
 ## Source Inputs
 
@@ -34,12 +34,13 @@ Proposed - P0.1 Domain Gate Ready。
 - 每次训练只暴露一个主要 micro-action，且必须有通过信号、重试路径或可恢复失败路径。
 - Learning evidence 的最终写入必须由应用规则执行；AI 输出不能直接改变最终掌握状态。
 - 语音是默认主路径；文本只作为 ASR 失败、麦克风拒绝或调试兜底。
+- Local-first state 只允许作为本地草稿、demo 或可恢复 fallback；Product Base 合入和商业生产训练必须由后端 Training API 拥有 session、turn、planner decision、evidence handoff 和审计事实，除非 release/Product Base 状态显式 blocked。
 
 ## Entities
 
 | Entity | Owner | 关键字段 | 不变量 |
 | --- | --- | --- | --- |
-| `TrainingSession` | Training Planner domain | `training_session_id`, `user_id`, `scene_id`, `level_code`, `scenario_version_id`, `status`, `current_action_step_key`, `current_micro_action_type`, `started_at`, `completed_at` | 一个 active session 必须绑定一个用户、一个官方场景、一个等级和一个内容版本；非 P0.1 场景不得创建 session。 |
+| `TrainingSession` | Training Planner domain | `training_session_id`, `user_id`, `scene_id`, `level_code`, `scenario_version_id`, `status`, `current_action_step_key`, `current_micro_action_type`, `started_at`, `completed_at` | 一个 active session 必须绑定一个用户、一个官方可用场景、一个等级和一个已发布内容版本；缺少 reviewed training mapping 的场景不得创建 production session。 |
 | `ActionChainStep` | Content + Training Planner domain | `step_key`, `scene_id`, `scenario_version_id`, `order_index`, `learner_task`, `success_condition`, `target_expression_ids` | P0.1 step 集合固定为开场、说明目的、表达观点、回应追问、确认下一步、结束；缺少资产标注时允许本地映射，但必须可追溯。 |
 | `MicroAction` | Training Planner domain | `micro_action_type`, `target_expression_id`, `prompt_ref`, `pass_signal_rule`, `fallback_rule` | 当前类型只能是 `ListenOne`, `ChooseOne`, `SayOne`, `ShadowOne`, `FillOne`, `ContinueUnderPrompt`；一次只允许一个 active micro-action。 |
 | `TrainingTurn` | Training Planner domain | `training_turn_id`, `training_session_id`, `micro_action_type`, `input_mode`, `transcript_ref`, `audio_ref`, `answer_text`, `result`, `created_at` | 每次用户尝试形成一条 turn；ASR 失败不能直接写成表达失败，只能进入重录、文本兜底或可恢复错误。 |
@@ -49,6 +50,8 @@ Proposed - P0.1 Domain Gate Ready。
 | `TrainingFeedback` | AI Gateway + Training domain | `feedback_id`, `source_turn_id`, `ai_result_ref_id`, `completion_signal`, `task_signal`, `pronunciation_signal_ref`, `suggestion_text`, `validation_status` | 反馈可以使用 LLM 候选和评分信号，但通过/失败必须结合表达完成度和场景任务完成度；发音低分不能单独阻断。 |
 | `LearningEvidenceCandidate` | Learning Evidence domain | `candidate_id`, `source_turn_id`, `source_feedback_id`, `evidence_type`, `target_expression_id`, `confidence`, `status`, `reject_reason` | 候选证据不能直接改 mastery；必须被 evidence rules 接受、拒绝或合并去重。 |
 | `TrainingRecap` | Training + Learning Evidence domain | `recap_id`, `training_session_id`, `summary`, `evidence_refs`, `next_focus`, `status` | recap 是用户可见结果；即使 evidence 写回失败，也不得丢失已可见 recap。 |
+| `TrainingContentMapping` | Content + Training Planner domain | `mapping_version`, `scenario_version_id`, `action_chain_version`, `step_key`, `target_expression_ids`, `review_status` | 生产训练只能使用 reviewed mapping；缺失映射必须进入 recoverable/blocked 状态，不得生成未审核场景内容。 |
+| `TrainingMetricEvent` | Training + Ops domain | `event_id`, `training_session_id`, `event_type`, `status`, `provider_family`, `latency_bucket`, `fallback_reason`, `schema_version` | 指标必须脱敏；不得包含 provider secret、raw audio、full transcript、raw provider payload 或完整 signed URL。 |
 
 ## Lifecycle State Machines
 
@@ -135,11 +138,23 @@ Rules:
 
 | Boundary | P0.1 决策 |
 | --- | --- |
-| Local first | P0.1 第一版允许 `TrainingSession`、`HintState`、`PlannerDecision` 和 `TrainingRecap` 先本地持久化或复用现有 practice session storage。 |
-| Server sync | 如果实现选择 repository-backed sync，必须先补 API contract；没有 API contract 时不得新增后端接口。 |
-| Existing backend | 当前 Product Base backend 的 `PracticeSession`、`PracticeTurn`、`LearningEvidence` 可作为后续服务端事实源，但 P0.1 不强制在第一切片新增 migration。 |
+| Backend-only Training | `TrainingSession`、`HintState`、`PlannerDecision` 和 `TrainingRecap` 的 Product Base/production 事实源只能在后端 Training bounded context。Flutter 只能渲染后端状态或服务不可用状态，不得本地持久化可进入训练的 draft session。 |
+| Server sync | 2026-06-03 商业整改要求 Product Base 合入前实现 repository-backed Training API sync，或在 Product Base/release 状态中显式 blocked；没有 API contract/test cases 时不得新增后端接口。 |
+| Existing backend | 当前 Product Base backend 的 `PracticeSession`、`PracticeTurn`、`LearningEvidence` 可复用，但不足以自动关闭 P0.1 生产训练事实源；必须有 Training-specific controller/service/repository 或明确的复用映射和测试。 |
 | AI output | `AIResultRef` 和 structured feedback 只保存 schema-valid、脱敏、可追溯字段；raw provider payload 不能作为 UI 或 evidence 的事实源。 |
-| Account deletion | 若 P0.1 数据被持久化，必须纳入账号删除和本地清理策略。 |
+| Account deletion | 若 P0.1 数据被本地或服务端持久化，必须纳入账号删除、本地清理、AI/media retention 和 redacted audit 策略。 |
+
+## Production Hardening Domain Addendum
+
+| Domain concern | Required decision |
+| --- | --- |
+| Training API source of truth | Product Base/production mode must persist authenticated `TrainingSession`, `TrainingTurn`, `PlannerDecision`, `HintState`, `TrainingRecap` and evidence handoff state on the server. Local draft may be resumed or synced, but cannot overwrite accepted server facts without version and owner checks. |
+| Idempotency and authorization | `TrainingTurn` creation uses idempotency key plus session owner scope. Replays cannot duplicate turns, evidence writes, usage charges, provider calls or metric events. |
+| Versioned training content | `TrainingContentMapping` links each session to reviewed `scenario_version_id`, `action_chain_version`, `step_key` and stable target expressions. Mapping drift requires explicit migration, backward-compatible replay or blocked status. |
+| Planner replay | `PlannerDecision` stores rule version, normalized input snapshot refs, AI candidate refs where used, selected next action, hint level and reason code so Backend/QA can reproduce the decision from fixtures. |
+| Evidence rule trace | Accepted evidence stores deterministic rule trace and source turn; rejected or merged duplicate candidates remain auditable but must not update final mastery projections. |
+| Media and AI pipeline | `TrainingTurn.audio_ref` must be a trusted backend media ref in production. Provider failures become typed fallback and must release or settle usage reservations according to auditable AI Gateway rules. |
+| Metrics and rollout | `TrainingMetricEvent` supports rollout, fallback, latency, completion and evidence-write health without storing sensitive payloads. Rollout gates must separate local pass, Product Base merge readiness and paid AI release readiness. |
 
 ## Test And Contract Handoff
 
@@ -148,8 +163,10 @@ Rules:
 | Domain tests | 覆盖 `TrainingSession` 状态、action chain fallback、micro-action pass/fallback、hint ladder、pressure check、evidence candidate acceptance/rejection。 |
 | AI runtime | 输出 schema 必须支持 `completion_signal`、`task_signal`、`suggestion`、`retry_hint`、`pressure_prompt_candidate`，且不能直接写 mastery。 |
 | UX | 训练页必须能呈现一个 micro-action、当前 hint、录音/文本兜底、feedback、pressure check 和 recap。 |
-| Architecture | 必须决定复用现有 `InterviewPracticeSession`/`interview_engine` 还是拆新 training planner 模块。 |
-| QA | `AC-P01-001` 到 `AC-P01-012` 必须映射到稳定 `TC-P01-*`，缺口只能使用明确例外。 |
+| Architecture | 必须决定复用现有 `InterviewPracticeSession`/`interview_engine` 还是拆新 training planner 模块；Product Base/production mode 还必须落在后端 Training source-of-truth boundary。 |
+| Backend/API | OpenAPI Training family、Learning Evidence、Media/AI Gateway 和 deletion/retention contracts 必须覆盖 `P01-FR-012` through `P01-FR-017`。 |
+| Ops/Release | 指标、feature flag、kill switch、provider fallback 和 paid AI release blockers 必须能把 local pass、Product Base merge 和 commercial release 明确分开。 |
+| QA | `AC-P01-001` 到 `AC-P01-019` 必须映射到稳定 `TC-P01-*`，缺口只能使用明确例外。 |
 
 ## P01-GAP-001 Coverage
 
@@ -162,6 +179,12 @@ Rules:
 | `P01-TR-006` | `PressureCheck` 定义连续通过后的 session 内轻量施压。 |
 | `P01-TR-008` | `TrainingFeedback`, `LearningEvidenceCandidate` 定义反馈和评分边界。 |
 | `P01-TR-009` | `LearningEvidenceCandidate`, `TrainingRecap` 定义证据写回前置候选和 recap 保留。 |
+| `P01-TR-013` | `TrainingSession`, `TrainingTurn`, `PlannerDecision`, server persistence boundary 定义后端 Training API/source-of-truth 闭环。 |
+| `P01-TR-014` | `LearningEvidenceCandidate` 和 evidence rule trace 定义服务端证据接受、拒绝、合并和删除保留边界。 |
+| `P01-TR-015` | `TrainingContentMapping` 定义版本化 action chain、step 和 target expression 映射。 |
+| `P01-TR-016` | `TrainingTurn.audio_ref`, `TrainingFeedback` 和 AI Gateway boundary 定义真实媒体/AI pipeline 约束。 |
+| `P01-TR-017` | `PlannerDecision` 定义 planner 配置、审计和 replay 证据。 |
+| `P01-TR-018` | `TrainingMetricEvent` 定义商业运营指标、脱敏观测和 rollout gate。 |
 
 ## Explicit Non-goals
 
@@ -171,3 +194,4 @@ Rules:
 - 不实现完整 L0-L5 掌握阶梯。
 - 不产品化任意词句笔记本。
 - 不把完整评分体系或商业权益 gating 作为 P0.1 完成条件。
+- 不在 P0.1 内创建独立计费、权益或 paid AI release 事实源；这些仍由 P0 commercial gates 管理。

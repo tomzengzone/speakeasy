@@ -1,7 +1,7 @@
 # P0.1 Increment Spec：表达自动化训练 Agent
 
 ## 状态
-Draft - 可作为 P0.1 acceptance criteria 的直接上游输入。
+Draft - 可作为 P0.1 acceptance criteria 的直接上游输入；2026-06-03 增加商业软件整改设计，要求在本 stage / 本 increment 内解决 local-first 与生产事实源之间的差距。
 
 ## 上游引用
 - Increment definition: `docs/product/increments/p0-1-expression-automation-training/definition.md`
@@ -31,6 +31,52 @@ Draft - 可作为 P0.1 acceptance criteria 的直接上游输入。
 | P01-SPEC-010 | P01-SI-011 | P01-FR-010 | State Model `RecoverableError`, Failure Handling |
 | P01-SPEC-011 | P01-SI-010 | P0.1 非目标边界 | Non-goals |
 | P01-SPEC-012 | P01-SI-007, P01-SI-008, P01-SI-011 | P01-FR-011 | Backend AI Provider Gateway, media ref handling, provider fallback |
+| P01-SPEC-013 | P01-SI-001, P01-SI-002, P01-SI-004, P01-SI-011 | P01-FR-012 | Backend Training API implementation and source-of-truth alignment |
+| P01-SPEC-014 | P01-SI-009, P01-SI-011 | P01-FR-013 | Learning evidence write-back, rule trace and data governance |
+| P01-SPEC-015 | P01-SI-001, P01-SI-003, P01-SI-004, P01-SI-010 | P01-FR-014 | Versioned training content and action-chain mapping |
+| P01-SPEC-016 | P01-SI-007, P01-SI-008, P01-SI-011 | P01-FR-015 | Real voice/media/AI training-turn pipeline |
+| P01-SPEC-017 | P01-SI-002, P01-SI-005, P01-SI-006, P01-SI-008, P01-SI-010 | P01-FR-016 | Planner service audit, replay and configuration |
+| P01-SPEC-018 | P01-SI-007, P01-SI-008, P01-SI-009, P01-SI-011 | P01-FR-017 | Training observability, commercial boundaries and rollout gates |
+
+## Baseline Spec Definitions
+
+P01-SPEC-001 through P01-SPEC-012 是本 spec 的原始训练 Agent 设计定义。早期文档把这些 ID 只放在 trace table 中，并通过 `Inputs`、`State Model`、`Planner Rules`、`Micro-action Contract`、`Failure Handling` 和 `Backend AI Provider Gateway Contract` 等区域承载正文；2026-06-03 之后为避免查找歧义，以下小节作为可搜索的 canonical definition anchors。
+
+### P01-SPEC-001 Official Scene Entry And Session Readiness
+P0.1 session 只能从 `job_interview` 或 `onboarding_introduction` 进入。系统必须加载场景、等级、目标表达、历史 evidence 和当前 session draft，并在 `Loading -> Ready` 或 `Loading -> RecoverableError` 之间给出明确状态。
+
+### P01-SPEC-002 Action Chain
+每个 P0.1 session 按开场、说明目的、表达观点、回应追问、确认下一步、结束推进。`actionChainStep` 是 planner 输入，不得由 LLM 自由生成；Product Base/production 模式必须满足 `P01-SPEC-015` 的后端版本化内容映射，Flutter 不得再提供本地 action-chain fallback。
+
+### P01-SPEC-003 Micro-action Flow
+用户每次只面对一个主要 micro-action：`ListenOne`、`ChooseOne`、`SayOne`、`ShadowOne`、`FillOne` 或 `ContinueUnderPrompt`。UI 必须围绕当前 micro-action 呈现任务、输入、反馈和下一步，不得同时暴露多条训练主线。
+
+### P01-SPEC-004 Session Planner
+Planner 根据 scene、level、action chain step、target expression、attempt result、ASR status、score signal 和 learning evidence 选择 retry、hint、next micro-action、pressure check 或 recap。最终推进由 deterministic rules 决定，不能由 LLM 文本直接推进。
+
+### P01-SPEC-005 Hint Ladder
+连续失败时 hint level 按 none -> sentence frame -> options -> chunk shadowing -> model-then-retry 升级；连续通过时降低支架、升级 micro-action 或进入 pressure check。hint 阈值在 production 模式下还必须满足 `P01-SPEC-017` 的规则版本和 replay 要求。
+
+### P01-SPEC-006 Voice Primary And Text Fallback
+语音是默认训练输入路径；麦克风拒绝、ASR 失败或无结果时进入重录、文本兜底或可恢复错误。production 模式下语音输入还必须满足 `P01-SPEC-016` 的 trusted `audio_ref` 和 AI Gateway pipeline。
+
+### P01-SPEC-007 Feedback And Pronunciation Boundary
+即时反馈综合表达完成度、场景任务完成度、地道表达建议和可用评分信号。发音评分不可用或低置信度不能单独阻断；LLM/provider 输出只能作为候选反馈或候选 evidence 输入。
+
+### P01-SPEC-008 In-session Pressure Check
+连续通过后，planner 可以触发 session 内轻量追问或近场景复现。pressure check 不创建跨天计划、不进入完整 L0-L5，也不扩大到 P0.2/P1/P2。
+
+### P01-SPEC-009 Recap And Learning Evidence Handoff
+训练收尾必须展示 recap、下一步建议和 learning evidence handoff 状态。Product Base/production 模式必须满足 `P01-SPEC-014` 的服务端 rule trace 和数据治理；Flutter 不得再生成 `pending_local_write` 作为训练 evidence 状态。
+
+### P01-SPEC-010 Recoverable Failure Handling
+场景加载、音频、麦克风、ASR、LLM、评分或写回失败必须进入可恢复路径。失败不能让训练页空白，也不能把 provider failure 伪装为学习失败或成功 evidence。
+
+### P01-SPEC-011 P0.1 Scope Boundary
+P0.1 不新增第三个官方场景、不实现任意场景生成、跨天长期 planner、完整 L0-L5、任意词句笔记本、完整评分产品或商业权益事实源。商业权益和 paid AI release 仍由 P0 commercial gates 管理。
+
+### P01-SPEC-012 Backend AI Provider Gateway
+当前 Spring Boot `AiProviderGateway` 负责真实 LLM/TTS/ASR provider adapter、schema validation、fallback、usage reservation/commit/release、telemetry 和 secret isolation。该 spec 关闭本地 provider adapter 边界，但 full external provider/storage/cost/retention release evidence 仍由 `commercial-ai-provider-hardening` 管理。
 
 ## Goal
 把现有语音场景模拟升级为训练型 Agent：系统在 session 内接管训练组织、节奏控制、难度拆解、重复推进、即时反馈和轻量场景施压，用户只完成可快速响应的小动作。
@@ -96,9 +142,99 @@ Draft - 可作为 P0.1 acceptance criteria 的直接上游输入。
 | Domain | 需要训练 session、action chain step、micro-action、hint level、pressure check、learning evidence 模型 |
 | AI runtime | 需要结构化反馈、提示、重试、下一步建议和追问建议 schema |
 | UX | 训练页需要呈现一个 micro-action、hint level、反馈、重试、pressure check 和 recap |
-| API | AI REST path 复用现有 `/ai/transcribe`、`/ai/tts`、`/ai/pronunciation`、`/ai/coach-turn`、`/ai/feedback`；如果训练状态云端同步，需要额外 API contract |
+| Flutter module namespace | Training 生产 UI/adapter/contract 必须位于 `lib/features/training/`，测试位于 `test/features/training/`；`interview` 仅作为场景/练习内容命名空间，不得承载 Training bounded context |
+| API | AI REST path 复用现有 `/ai/transcribe`、`/ai/tts`、`/ai/pronunciation`、`/ai/coach-turn`、`/ai/feedback`；Product Base/production training 必须实现 OpenAPI Training family 并满足 `P01-SPEC-013`；Flutter 不得保留 local draft adapter 作为可进入训练路径 |
 | Backend AI Provider | 需要在当前 Spring Boot `AiProviderGateway` 后新增可配置 DashScope provider adapter，保留 deterministic provider 作为 test/dev 默认 |
 | Tests | 需要 planner、hint ladder、micro-action、AI schema、widget 和回归测试 |
+
+## Baseline Spec Applicability With Production Hardening
+
+`State Model`、`Planner Rules` 和 `Micro-action Contract` 仍然适用，但它们现在是 P0.1 训练体验和领域行为的 baseline，不再足以单独证明 Product Base/production readiness。2026-06-03 新增的 `P01-SPEC-013` through `P01-SPEC-018` 是生产加固 overlay：
+- state model 仍定义用户可见 session 流程；production 模式必须把 `TrainingSession`、`TrainingTurn`、`PlannerDecision`、`TrainingRecap` 和 evidence handoff 落到后端事实源。Flutter 只能渲染 `server_synced` 或后端可恢复失败状态，不得产生 `local_draft` training session。
+- action chain 和 micro-action contract 仍定义训练组织方式；production 模式必须使用 reviewed `scenario_version_id` / `action_chain_version` / `step_key` / target expression mapping，不能只靠 Flutter 常量解释。
+- planner rules 仍定义 deterministic 决策；production 模式必须增加 rule version、reason code、input snapshot refs 和 replay tests。
+- voice/text/fallback rules 仍定义学习体验；production 模式必须走 trusted media ref、AI Gateway usage reservation、schema validation、typed fallback 和 redacted metrics。
+
+## Commercial Software Remediation Design
+
+本节把 2026-06-03 识别的 6 个商业软件风险和 7 个执行步骤落回本 P0.1 increment。它不新增 stage，也不把 P0 commercial release blockers 合并进 P0.1；它只定义 P0.1 作为可维护商业软件能力时必须具备的事实源、一致性、可审计和可运营边界。
+
+### P01-SPEC-013 Backend Training API And Source Of Truth
+
+Target architecture:
+```text
+Flutter Training UI
+  -> OpenAPI generated client
+  -> Spring Boot TrainingController
+  -> TrainingSessionService / TrainingPlannerService
+  -> AI Gateway and Media service when a turn needs ASR/TTS/LLM
+  -> LearningEvidenceService for accepted evidence
+  -> redacted audit / metrics
+```
+
+Rules:
+- The OpenAPI Training family is not optional once Product Base merge is requested. `/training/sessions`, `/{session_id}`, `/turns`, `/planner/next`, `/hints`, `/pressure-check` and `/complete` must either have Spring Boot implementation and tests, or release/Product Base merge remains blocked.
+- `POST /training/sessions` must validate `scenario_id` against the backend official available scenario catalog, published `scenario_version_id`, supported level and reviewed training content mapping. Unsupported, non-official or unmapped scenes fail closed and cannot be converted into generated or user-defined training content. Current P0.1 seed/acceptance fixtures include `job_interview` and `onboarding_introduction`, but production code must not hard-code those two ids as the API boundary.
+- `POST /training/sessions/{session_id}/turns` must use `Idempotency-Key`; duplicate keys return the previous accepted turn result or `409` conflict without double decision, double evidence or double usage.
+- Session ownership is resolved from authenticated backend user. Request body user ids, Flutter nickname or client display ids are display/cache data only.
+- Flutter Training route requires a backend adapter. If backend training is disabled or unavailable, the entry must be closed or render a service-unavailable state; it must not instantiate a frontend planner, local session, local recap or synthetic feedback fallback.
+
+### P01-SPEC-014 Learning Evidence And Data Governance
+
+Design:
+- `LearningEvidenceCandidate` remains candidate-only until a deterministic evidence rule accepts, rejects or merges it.
+- Accepted evidence must store `source_turn_id`, `source_feedback_id` or AI result ref, `rule_name`, `rule_input_hash`, `decision`, `schema_version`, `accepted_at` and deletion/retention policy version.
+- Training recap is user-visible and may survive temporary evidence write failure, but the session status must expose `evidence_write_status=retryable` until backend write succeeds or is explicitly abandoned.
+- Account deletion must remove or anonymize training sessions, turns, media refs, recap text and evidence refs according to security retention policy; audit rows keep only redacted proof fields.
+
+### P01-SPEC-015 Versioned Training Content
+
+Design:
+- Production training uses `scenario_version_id` and reviewed mapping for action chain, micro-action prompt, target expression ids and fallback text.
+- For current P0.1 seed evidence, reviewed content exists for `job_interview` and `onboarding_introduction`; adding a third seed fixture is still out of scope for this increment. The production mapping mechanism itself is scenario-version based and must support any future official scenario that has reviewed content.
+- If mapping is missing, the system may use a reviewed bundled fallback with `fallback_reason=missing_content_mapping`, or return recoverable error. LLM-generated unreviewed content cannot create official training steps.
+- Existing sessions continue using the version they started with; content version changes must not rewrite historical planner decisions or evidence meaning.
+
+### P01-SPEC-016 Real Voice / Media / AI Training Turn Pipeline
+
+Design:
+```text
+record audio
+  -> create media upload / trusted audio_ref
+  -> submit training turn with media ref or text fallback
+  -> backend usage reservation
+  -> ASR/TTS/LLM through AiProviderGateway
+  -> schema validation and typed fallback
+  -> planner decision
+  -> usage commit/release
+  -> response renders next micro-action
+```
+
+Rules:
+- Local file paths, unsigned URLs or client-generated provider refs fail before provider calls.
+- Pronunciation status can be `available`, `low_confidence` or `unavailable`; unavailable cannot block expression/task feedback.
+- Training UI cannot synthesize production feedback from hardcoded local strings. Deterministic behavior is allowed only behind the backend deterministic provider/test fixture boundary, not inside Flutter Training state management.
+
+### P01-SPEC-017 Planner Service Audit And Replay
+
+Design:
+- Planner logic is a deterministic domain service, not page event glue.
+- Every applied decision records: `planner_decision_id`, `training_session_id`, `source_turn_id`, `decision_type`, `next_micro_action_type`, `hint_level`, `reason_code`, `schema_version`, `rule_version`, `applied_at`.
+- Rule thresholds such as consecutive-success pressure trigger and hint escalation order are versioned configuration.
+- Replay test input is the session state, source turn, score/AI candidate and existing evidence; replay must produce the same decision for the same rule version.
+
+### P01-SPEC-018 Observability, Commercial Boundary And Rollout
+
+Metrics:
+- funnel：start/resume、turn submit、feedback ready、recap shown、finish。
+- training quality：hint escalation/lowering、pressure enter/pass/fail、retry count、text fallback count、unsupported scene rejection。
+- evidence：candidate generated、accepted、rejected、merged_duplicate、write_failed。
+- provider/cost：provider family/model/status、latency bucket、fallback reason、token/audio duration estimate、usage reservation result。
+
+Rollout rules:
+- P0.1 must have feature flag, kill switch and provider rollback.
+- Paid AI voice exposure is blocked until `commercial-ai-provider-hardening` strict evidence passes.
+- If P0.1 becomes part of paid entitlement, entitlement/usage decisions remain owned by P0 commercial modules; P0.1 cannot create its own billing truth.
 
 ## Backend AI Provider Gateway Contract
 

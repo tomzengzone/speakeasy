@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:speakeasy/features/interview/interview_training_agent.dart';
-import 'package:speakeasy/features/interview/interview_training_session_view.dart';
+import 'package:speakeasy/features/training/training_contract.dart';
+import 'package:speakeasy/features/training/training_session_view.dart';
 
-import 'interview_training_test_helpers.dart';
+import 'training_test_helpers.dart';
 
 void main() {
   testWidgets('TC-P01-006 spoken micro-action shows voice controls', (
@@ -16,9 +16,9 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: InterviewTrainingSessionView(
+          body: TrainingSessionView(
             session: p01TrainingSession(
-              currentMicroAction: InterviewTrainingMicroAction.sayOne,
+              currentMicroAction: TrainingMicroAction.sayOne,
             ),
             onRecord: () => recordCount += 1,
             onCancelRecording: () => cancelCount += 1,
@@ -29,17 +29,13 @@ void main() {
     );
 
     await tester.tap(
-      find.byKey(const ValueKey<String>('interview_training_record_button')),
+      find.byKey(const ValueKey<String>('training_record_button')),
     );
     await tester.tap(
-      find.byKey(
-        const ValueKey<String>('interview_training_cancel_recording_button'),
-      ),
+      find.byKey(const ValueKey<String>('training_cancel_recording_button')),
     );
     await tester.tap(
-      find.byKey(
-        const ValueKey<String>('interview_training_submit_recording_button'),
-      ),
+      find.byKey(const ValueKey<String>('training_submit_recording_button')),
     );
 
     expect(recordCount, 1);
@@ -55,9 +51,9 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: InterviewTrainingSessionView(
+          body: TrainingSessionView(
             session: p01TrainingSession(
-              currentMicroAction: InterviewTrainingMicroAction.listenOne,
+              currentMicroAction: TrainingMicroAction.listenOne,
             ),
             onReplay: () => replayCount += 1,
           ),
@@ -66,7 +62,7 @@ void main() {
     );
 
     await tester.tap(
-      find.byKey(const ValueKey<String>('interview_training_replay_button')),
+      find.byKey(const ValueKey<String>('training_replay_button')),
     );
 
     expect(replayCount, 1);

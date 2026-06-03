@@ -3,7 +3,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:speakeasy/features/interview/interview_training_agent.dart';
+import 'package:speakeasy/features/training/training_contract.dart';
 
 const Set<String> _requiredCaseIds = <String>{
   'AI-EVAL-P01-001',
@@ -111,7 +111,7 @@ void _validateCase(Map<String, dynamic> evalCase, List<String> errors) {
   final Map<String, dynamic> candidate = _asMap(evalCase['candidate']);
   final Map<String, dynamic> expected = _asMap(evalCase['expected']);
   final bool expectedValid = expected['valid'] == true;
-  final InterviewTrainingNextActionType? plannerNextAction = _plannerNextAction(
+  final TrainingNextActionType? plannerNextAction = _plannerNextAction(
     evalCase['planner_next_action'],
   );
   if (evalCase.containsKey('planner_next_action') &&
@@ -119,8 +119,8 @@ void _validateCase(Map<String, dynamic> evalCase, List<String> errors) {
     errors.add('$caseId: planner_next_action is not allowed');
   }
 
-  final InterviewTrainingFeedbackValidationResult validation =
-      InterviewTrainingFeedbackCandidate.validateJson(
+  final TrainingFeedbackValidationResult validation =
+      TrainingFeedbackCandidate.validateJson(
         candidate,
         plannerNextAction: plannerNextAction,
       );
@@ -149,11 +149,11 @@ void _validateCase(Map<String, dynamic> evalCase, List<String> errors) {
     final Map<String, dynamic> fallback = _asMap(
       evalCase['fallback_candidate'],
     );
-    final InterviewTrainingNextActionType? fallbackPlanner = _plannerNextAction(
+    final TrainingNextActionType? fallbackPlanner = _plannerNextAction(
       _firstString(expected['fallback_next_action_type_in']),
     );
-    final InterviewTrainingFeedbackValidationResult fallbackValidation =
-        InterviewTrainingFeedbackCandidate.validateJson(
+    final TrainingFeedbackValidationResult fallbackValidation =
+        TrainingFeedbackCandidate.validateJson(
           fallback,
           plannerNextAction: fallbackPlanner,
         );
@@ -197,9 +197,9 @@ void _validateAcceptedCandidate(
   Map<String, dynamic> expected,
   List<String> errors,
 ) {
-  late final InterviewTrainingFeedbackCandidate parsed;
+  late final TrainingFeedbackCandidate parsed;
   try {
-    parsed = InterviewTrainingFeedbackCandidate.fromJson(candidate);
+    parsed = TrainingFeedbackCandidate.fromJson(candidate);
   } on FormatException catch (error) {
     errors.add('$caseId: fromJson failed unexpectedly: ${error.message}');
     return;
@@ -265,7 +265,7 @@ void _validateAcceptedCandidate(
     expected['all_evidence_status'],
   );
   if (expectedEvidenceStatus.isNotEmpty) {
-    for (final InterviewTrainingLearningEvidenceCandidate evidence
+    for (final TrainingLearningEvidenceCandidate evidence
         in parsed.learningEvidenceCandidates) {
       if (evidence.status != expectedEvidenceStatus) {
         errors.add('$caseId: evidence status must be $expectedEvidenceStatus');
@@ -294,12 +294,12 @@ void _expectIn(
   }
 }
 
-InterviewTrainingNextActionType? _plannerNextAction(dynamic value) {
+TrainingNextActionType? _plannerNextAction(dynamic value) {
   final String key = _string(value);
   if (key.isEmpty) {
     return null;
   }
-  return InterviewTrainingNextActionType.fromKey(key);
+  return TrainingNextActionType.fromKey(key);
 }
 
 String _firstString(dynamic value) {

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:speakeasy/features/interview/interview_training_agent.dart';
+import 'package:speakeasy/features/training/training_contract.dart';
 
-import 'interview_training_test_helpers.dart';
+import 'training_test_helpers.dart';
 
 void main() {
   test('TC-P01-008 accepts valid training feedback candidate', () {
@@ -19,15 +19,15 @@ void main() {
       ],
     );
 
-    final InterviewTrainingFeedbackValidationResult validation =
-        InterviewTrainingFeedbackCandidate.validateJson(
+    final TrainingFeedbackValidationResult validation =
+        TrainingFeedbackCandidate.validateJson(
           json,
-          plannerNextAction: InterviewTrainingNextActionType.pressureCheck,
+          plannerNextAction: TrainingNextActionType.pressureCheck,
         );
-    final InterviewTrainingFeedbackCandidate candidate =
-        InterviewTrainingFeedbackCandidate.fromJson(
+    final TrainingFeedbackCandidate candidate =
+        TrainingFeedbackCandidate.fromJson(
           json,
-          plannerNextAction: InterviewTrainingNextActionType.pressureCheck,
+          plannerNextAction: TrainingNextActionType.pressureCheck,
         );
 
     expect(validation.isValid, isTrue);
@@ -36,20 +36,17 @@ void main() {
     expect(candidate.learningEvidenceCandidates.single.status, 'candidate');
   });
 
-  test('TC-P01-008 rejects unsupported scenes and bad next actions', () {
+  test('TC-P01-008 rejects missing scenes and bad next actions', () {
     final Map<String, dynamic> json = p01ValidTrainingFeedbackJson(
-      sceneId: 'custom_scene',
+      sceneId: '',
       nextAction: 'invent_new_scene',
     );
 
-    final InterviewTrainingFeedbackValidationResult validation =
-        InterviewTrainingFeedbackCandidate.validateJson(json);
+    final TrainingFeedbackValidationResult validation =
+        TrainingFeedbackCandidate.validateJson(json);
 
     expect(validation.isValid, isFalse);
-    expect(
-      validation.errors,
-      contains('scene_id is outside P0.1 official scenes'),
-    );
+    expect(validation.errors, contains('scene_id is required'));
     expect(
       validation.errors,
       contains('recommended_next_action.type is not allowed'),
@@ -70,8 +67,8 @@ void main() {
       ],
     );
 
-    final InterviewTrainingFeedbackValidationResult validation =
-        InterviewTrainingFeedbackCandidate.validateJson(json);
+    final TrainingFeedbackValidationResult validation =
+        TrainingFeedbackCandidate.validateJson(json);
 
     expect(validation.isValid, isFalse);
     expect(
@@ -91,10 +88,10 @@ void main() {
     json['mastered'] = true;
     json['review_scheduled'] = 'tomorrow';
 
-    final InterviewTrainingFeedbackValidationResult validation =
-        InterviewTrainingFeedbackCandidate.validateJson(
+    final TrainingFeedbackValidationResult validation =
+        TrainingFeedbackCandidate.validateJson(
           json,
-          plannerNextAction: InterviewTrainingNextActionType.continueAction,
+          plannerNextAction: TrainingNextActionType.continueAction,
         );
 
     expect(validation.isValid, isFalse);
@@ -124,14 +121,8 @@ void main() {
       },
     );
 
-    expect(
-      InterviewTrainingFeedbackCandidate.validateJson(invalid).isValid,
-      isFalse,
-    );
-    expect(
-      InterviewTrainingFeedbackCandidate.validateJson(valid).isValid,
-      isTrue,
-    );
+    expect(TrainingFeedbackCandidate.validateJson(invalid).isValid, isFalse);
+    expect(TrainingFeedbackCandidate.validateJson(valid).isValid, isTrue);
   });
 
   test('TC-P01-008 malformed field types return validation errors', () {
@@ -148,20 +139,15 @@ void main() {
       'enabled': 'yes',
     };
 
-    late final InterviewTrainingFeedbackValidationResult validation;
+    late final TrainingFeedbackValidationResult validation;
 
     expect(
-      () => validation = InterviewTrainingFeedbackCandidate.validateJson(
-        malformed,
-      ),
+      () => validation = TrainingFeedbackCandidate.validateJson(malformed),
       returnsNormally,
     );
     expect(validation.isValid, isFalse);
     expect(validation.errors, contains('schema_version must be 1'));
-    expect(
-      validation.errors,
-      contains('scene_id is outside P0.1 official scenes'),
-    );
+    expect(validation.errors, contains('scene_id is required'));
     expect(
       validation.errors,
       contains('completion_signal.status is not allowed'),
@@ -175,7 +161,7 @@ void main() {
       contains('pressure_prompt_candidate.enabled must be boolean'),
     );
     expect(
-      () => InterviewTrainingFeedbackCandidate.fromJson(malformed),
+      () => TrainingFeedbackCandidate.fromJson(malformed),
       throwsA(isA<FormatException>()),
     );
   });

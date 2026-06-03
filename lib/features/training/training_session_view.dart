@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'package:speakeasy/features/interview/interview_training_agent.dart';
+import 'package:speakeasy/features/training/training_contract.dart';
 
-class InterviewTrainingSessionView extends StatelessWidget {
-  const InterviewTrainingSessionView({
+class TrainingSessionView extends StatelessWidget {
+  const TrainingSessionView({
     super.key,
     required this.session,
     this.rejection,
@@ -18,8 +18,8 @@ class InterviewTrainingSessionView extends StatelessWidget {
     this.onTextChanged,
   });
 
-  final InterviewTrainingSessionState? session;
-  final InterviewTrainingPlannerDecision? rejection;
+  final TrainingSessionState? session;
+  final TrainingPlannerDecision? rejection;
   final VoidCallback? onRecord;
   final VoidCallback? onCancelRecording;
   final VoidCallback? onSubmitRecording;
@@ -32,15 +32,15 @@ class InterviewTrainingSessionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final InterviewTrainingSessionState? current = session;
+    final TrainingSessionState? current = session;
     if (current == null) {
       return _UnsupportedTrainingState(reasonCode: rejection?.reasonCode ?? '');
     }
-    if (current.status == InterviewTrainingSessionStatus.unsupportedScene) {
+    if (current.status == TrainingSessionStatus.unsupportedScene) {
       return _UnsupportedTrainingState(reasonCode: current.lastReasonCode);
     }
     return ListView(
-      key: const ValueKey<String>('interview_training_session_view'),
+      key: const ValueKey<String>('training_session_view'),
       padding: const EdgeInsets.all(16),
       children: <Widget>[
         _SessionHeader(session: current),
@@ -58,17 +58,17 @@ class InterviewTrainingSessionView extends StatelessWidget {
           const SizedBox(height: 12),
           _FeedbackPanel(feedback: current.lastFeedback!),
         ],
-        if (current.status == InterviewTrainingSessionStatus.pressureCheck)
+        if (current.status == TrainingSessionStatus.pressureCheck)
           const _StatusBanner(
-            key: ValueKey<String>('interview_training_pressure_banner'),
+            key: ValueKey<String>('training_pressure_banner'),
             text: 'Pressure check',
           ),
-        if (current.status == InterviewTrainingSessionStatus.recoverableError)
+        if (current.status == TrainingSessionStatus.recoverableError)
           _StatusBanner(
-            key: const ValueKey<String>('interview_training_error_banner'),
+            key: const ValueKey<String>('training_error_banner'),
             text: 'Recoverable error: ${current.lastReasonCode}',
           ),
-        if (current.status == InterviewTrainingSessionStatus.recap &&
+        if (current.status == TrainingSessionStatus.recap &&
             current.recap != null)
           _RecapPanel(recap: current.recap!),
         const SizedBox(height: 16),
@@ -91,7 +91,7 @@ class _UnsupportedTrainingState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      key: const ValueKey<String>('interview_training_unsupported_scene'),
+      key: const ValueKey<String>('training_unsupported_scene'),
       child: Text(
         reasonCode.isEmpty
             ? 'P0.1 training is unavailable for this scene.'
@@ -105,13 +105,13 @@ class _UnsupportedTrainingState extends StatelessWidget {
 class _SessionHeader extends StatelessWidget {
   const _SessionHeader({required this.session});
 
-  final InterviewTrainingSessionState session;
+  final TrainingSessionState session;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return Column(
-      key: const ValueKey<String>('interview_training_session_header'),
+      key: const ValueKey<String>('training_session_header'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
@@ -121,13 +121,13 @@ class _SessionHeader extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           session.currentStep.label,
-          key: const ValueKey<String>('interview_training_action_step_label'),
+          key: const ValueKey<String>('training_action_step_label'),
           style: theme.textTheme.bodyMedium,
         ),
-        if (session.hintLevel != InterviewTrainingHintLevel.none) ...<Widget>[
+        if (session.hintLevel != TrainingHintLevel.none) ...<Widget>[
           const SizedBox(height: 8),
           _StatusBanner(
-            key: const ValueKey<String>('interview_training_hint_banner'),
+            key: const ValueKey<String>('training_hint_banner'),
             text: 'Hint: ${session.hintLevel.key}',
           ),
         ],
@@ -147,7 +147,7 @@ class _MicroActionPanel extends StatelessWidget {
     required this.onTextChanged,
   });
 
-  final InterviewTrainingSessionState session;
+  final TrainingSessionState session;
   final VoidCallback? onRecord;
   final VoidCallback? onCancelRecording;
   final VoidCallback? onSubmitRecording;
@@ -158,7 +158,7 @@ class _MicroActionPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      key: const ValueKey<String>('interview_training_micro_action_panel'),
+      key: const ValueKey<String>('training_micro_action_panel'),
       decoration: BoxDecoration(
         border: Border.all(color: Theme.of(context).dividerColor),
         borderRadius: BorderRadius.circular(8),
@@ -170,7 +170,7 @@ class _MicroActionPanel extends StatelessWidget {
           children: <Widget>[
             Text(
               session.currentMicroAction.wireName,
-              key: const ValueKey<String>('interview_training_micro_action'),
+              key: const ValueKey<String>('training_micro_action'),
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 8),
@@ -178,7 +178,7 @@ class _MicroActionPanel extends StatelessWidget {
             const SizedBox(height: 12),
             if (_needsPlayback(session))
               OutlinedButton.icon(
-                key: const ValueKey<String>('interview_training_replay_button'),
+                key: const ValueKey<String>('training_replay_button'),
                 onPressed: onReplay,
                 icon: const Icon(Icons.play_arrow),
                 label: const Text('Replay'),
@@ -189,16 +189,14 @@ class _MicroActionPanel extends StatelessWidget {
                 runSpacing: 8,
                 children: <Widget>[
                   FilledButton.icon(
-                    key: const ValueKey<String>(
-                      'interview_training_record_button',
-                    ),
+                    key: const ValueKey<String>('training_record_button'),
                     onPressed: onRecord,
                     icon: const Icon(Icons.mic),
                     label: const Text('Record'),
                   ),
                   OutlinedButton.icon(
                     key: const ValueKey<String>(
-                      'interview_training_cancel_recording_button',
+                      'training_cancel_recording_button',
                     ),
                     onPressed: onCancelRecording,
                     icon: const Icon(Icons.close),
@@ -206,7 +204,7 @@ class _MicroActionPanel extends StatelessWidget {
                   ),
                   FilledButton.tonalIcon(
                     key: const ValueKey<String>(
-                      'interview_training_submit_recording_button',
+                      'training_submit_recording_button',
                     ),
                     onPressed: onSubmitRecording,
                     icon: const Icon(Icons.check),
@@ -217,9 +215,7 @@ class _MicroActionPanel extends StatelessWidget {
             if (session.textFallbackAvailable) ...<Widget>[
               const SizedBox(height: 12),
               TextField(
-                key: const ValueKey<String>(
-                  'interview_training_text_fallback_field',
-                ),
+                key: const ValueKey<String>('training_text_fallback_field'),
                 onChanged: onTextChanged,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
@@ -229,9 +225,7 @@ class _MicroActionPanel extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
-                key: const ValueKey<String>(
-                  'interview_training_text_fallback_button',
-                ),
+                key: const ValueKey<String>('training_text_fallback_button'),
                 onPressed: onTextFallback,
                 icon: const Icon(Icons.keyboard),
                 label: const Text('Use text fallback'),
@@ -243,25 +237,22 @@ class _MicroActionPanel extends StatelessWidget {
     );
   }
 
-  bool _needsPlayback(InterviewTrainingSessionState session) {
-    return session.currentMicroAction ==
-            InterviewTrainingMicroAction.listenOne ||
-        session.currentMicroAction == InterviewTrainingMicroAction.shadowOne;
+  bool _needsPlayback(TrainingSessionState session) {
+    return session.currentMicroAction == TrainingMicroAction.listenOne ||
+        session.currentMicroAction == TrainingMicroAction.shadowOne;
   }
 
-  String _instructionFor(InterviewTrainingSessionState session) {
+  String _instructionFor(TrainingSessionState session) {
     return switch (session.currentMicroAction) {
-      InterviewTrainingMicroAction.listenOne =>
+      TrainingMicroAction.listenOne =>
         'Listen to one model line before continuing.',
-      InterviewTrainingMicroAction.chooseOne =>
+      TrainingMicroAction.chooseOne =>
         'Choose the best response for this step.',
-      InterviewTrainingMicroAction.sayOne =>
-        'Say one complete response for this step.',
-      InterviewTrainingMicroAction.shadowOne =>
-        'Shadow the model in short chunks.',
-      InterviewTrainingMicroAction.fillOne =>
+      TrainingMicroAction.sayOne => 'Say one complete response for this step.',
+      TrainingMicroAction.shadowOne => 'Shadow the model in short chunks.',
+      TrainingMicroAction.fillOne =>
         'Fill the missing chunk in the sentence frame.',
-      InterviewTrainingMicroAction.continueUnderPrompt =>
+      TrainingMicroAction.continueUnderPrompt =>
         'Answer one short follow-up under the current prompt.',
     };
   }
@@ -270,12 +261,12 @@ class _MicroActionPanel extends StatelessWidget {
 class _FeedbackPanel extends StatelessWidget {
   const _FeedbackPanel({required this.feedback});
 
-  final InterviewTrainingFeedbackCandidate feedback;
+  final TrainingFeedbackCandidate feedback;
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      key: const ValueKey<String>('interview_training_feedback_panel'),
+      key: const ValueKey<String>('training_feedback_panel'),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
@@ -291,9 +282,7 @@ class _FeedbackPanel extends StatelessWidget {
             if (feedback.pronunciationAvailable)
               const Text(
                 'Pronunciation feedback available',
-                key: ValueKey<String>(
-                  'interview_training_pronunciation_feedback',
-                ),
+                key: ValueKey<String>('training_pronunciation_feedback'),
               ),
           ],
         ),
@@ -305,12 +294,12 @@ class _FeedbackPanel extends StatelessWidget {
 class _RecapPanel extends StatelessWidget {
   const _RecapPanel({required this.recap});
 
-  final InterviewTrainingRecap recap;
+  final TrainingRecap recap;
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      key: const ValueKey<String>('interview_training_recap_panel'),
+      key: const ValueKey<String>('training_recap_panel'),
       decoration: BoxDecoration(
         border: Border.all(color: Theme.of(context).colorScheme.primary),
         borderRadius: BorderRadius.circular(8),
@@ -338,16 +327,16 @@ class _ActionButtons extends StatelessWidget {
     required this.onFinish,
   });
 
-  final InterviewTrainingSessionState session;
+  final TrainingSessionState session;
   final VoidCallback? onRetry;
   final VoidCallback? onContinue;
   final VoidCallback? onFinish;
 
   @override
   Widget build(BuildContext context) {
-    if (session.status == InterviewTrainingSessionStatus.recap) {
+    if (session.status == TrainingSessionStatus.recap) {
       return FilledButton(
-        key: const ValueKey<String>('interview_training_finish_button'),
+        key: const ValueKey<String>('training_finish_button'),
         onPressed: onFinish,
         child: const Text('Finish'),
       );
@@ -357,12 +346,12 @@ class _ActionButtons extends StatelessWidget {
       runSpacing: 8,
       children: <Widget>[
         OutlinedButton(
-          key: const ValueKey<String>('interview_training_retry_button'),
+          key: const ValueKey<String>('training_retry_button'),
           onPressed: onRetry,
           child: const Text('Retry'),
         ),
         FilledButton(
-          key: const ValueKey<String>('interview_training_continue_button'),
+          key: const ValueKey<String>('training_continue_button'),
           onPressed: onContinue,
           child: const Text('Continue'),
         ),

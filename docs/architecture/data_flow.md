@@ -85,6 +85,30 @@ Boundary notes:
 - If `TrainingSession` sync, remote planner, or backend evidence write is implemented, the API contract must be reviewed first.
 - Local-first recap/evidence must still be compatible with account deletion/local cleanup and later server-owned evidence facts.
 - Local-first mode cannot be used to bypass AI schema validation or planner unit tests.
+- 2026-06-03 backend-only correction: Flutter local-first Training source-of-truth is removed. Product Base merge, commercial production mode or release readiness requires the production-hardened Training flow below, or an explicit blocked status/service-unavailable entry gate.
+
+## P0.1 Production-Hardened Training Flow
+```text
+Flutter training screen
+  -> OpenAPI generated Training client
+  -> POST /training/sessions creates/resumes authenticated server session
+  -> media upload flow returns trusted audio_ref when voice input is used
+  -> POST /training/sessions/{id}/turns with Idempotency-Key
+  -> backend TrainingSessionService verifies owner/content version/session state
+  -> TrainingPlannerService replays deterministic planner rules with versioned config
+  -> AI Gateway provides schema-valid candidate feedback or typed fallback
+  -> LearningEvidenceService writes accepted evidence with deterministic rule trace
+  -> TrainingMetricEvent emits redacted start/turn/fallback/completion/evidence metrics
+  -> Flutter renders server next action, recoverable state or recap
+```
+
+Production-hardening rules:
+- Server owns accepted `TrainingSession`, `TrainingTurn`, `PlannerDecision`, `TrainingRecap` and learning evidence handoff facts.
+- Turn replay must be idempotent and cannot duplicate provider calls, evidence writes, usage charges or metrics.
+- Training content must be tied to reviewed `scenario_version_id`, `action_chain_version`, `step_key` and stable target expression ids.
+- Raw AI output, client-generated recap text, client-generated turns and full transcript/audio payloads cannot directly become final mastery facts.
+- Paid AI voice remains blocked until media/object-storage/provider/cost/retention evidence passes in `commercial-ai-provider-hardening`.
+- Rollout metrics and kill switch status must distinguish local pass, Product Base merge readiness and commercial release readiness.
 
 ## Product Base Practice Turn Flow
 ```text

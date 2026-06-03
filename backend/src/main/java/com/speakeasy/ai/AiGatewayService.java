@@ -93,6 +93,17 @@ public class AiGatewayService {
   public AiProviderGateway.CoachResult coach(UUID userId, UUID sessionId, String transcript, List<String> targetExpressionIds) {
     sessions.findByPracticeSessionIdAndUserId(sessionId, userId)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Practice session was not found."));
+    return coachProvider(userId, sessionId, transcript, targetExpressionIds);
+  }
+
+  @Transactional
+  public AiProviderGateway.CoachResult coachTraining(
+      UUID userId, UUID trainingSessionId, String transcript, List<String> targetExpressionIds) {
+    return coachProvider(userId, trainingSessionId, transcript, targetExpressionIds);
+  }
+
+  private AiProviderGateway.CoachResult coachProvider(
+      UUID userId, UUID sessionId, String transcript, List<String> targetExpressionIds) {
     policyService.validateText(userId, "ai", transcript);
     UsageReservation reservation = usageService.reserveProviderCall(userId, "ai", sessionId.toString());
     try {

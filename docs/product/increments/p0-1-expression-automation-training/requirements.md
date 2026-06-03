@@ -1,7 +1,7 @@
 # P0.1 Increment Requirements：表达自动化训练 Agent
 
 ## 状态
-Draft - 从 legacy P0.1 spec 迁移生成，作为本 increment 的标准 requirements。
+Draft - 从 legacy P0.1 spec 迁移生成，作为本 increment 的标准 requirements；2026-06-03 增加商业软件整改要求，仍归属本 P0.1 stage 和 `p0-1-expression-automation-training` increment。
 
 ## Product Object
 - Classification: `feature-increment`
@@ -20,17 +20,17 @@ Draft - 从 legacy P0.1 spec 迁移生成，作为本 increment 的标准 requir
 ## Stage Scope Coverage
 | Stage Scope ID | Requirement ID | Coverage status |
 | --- | --- | --- |
-| P01-SI-001 | P01-FR-001 | Covered |
-| P01-SI-002 | P01-FR-004 | Covered |
-| P01-SI-003 | P01-FR-002 | Covered |
-| P01-SI-004 | P01-FR-003 | Covered |
-| P01-SI-005 | P01-FR-005 | Covered |
-| P01-SI-006 | P01-FR-008 | Covered |
-| P01-SI-007 | P01-FR-006 | Covered |
-| P01-SI-008 | P01-FR-007 | Covered |
-| P01-SI-009 | P01-FR-009 | Covered |
+| P01-SI-001 | P01-FR-001, P01-FR-012, P01-FR-014 | Covered；production hardening adds backend session source-of-truth and versioned content mapping |
+| P01-SI-002 | P01-FR-004, P01-FR-012, P01-FR-016 | Covered；production hardening adds backend planner contract and decision audit |
+| P01-SI-003 | P01-FR-002, P01-FR-014 | Covered；production hardening replaces hardcoded-only action chain with versioned content mapping |
+| P01-SI-004 | P01-FR-003, P01-FR-012, P01-FR-014 | Covered；production hardening requires backend turn state and versioned micro-action references |
+| P01-SI-005 | P01-FR-005, P01-FR-016 | Covered；production hardening adds planner audit for hint transitions |
+| P01-SI-006 | P01-FR-008, P01-FR-016 | Covered；production hardening adds pressure-check decision audit |
+| P01-SI-007 | P01-FR-006, P01-FR-011, P01-FR-015, P01-FR-017 | Covered；production hardening connects voice path to trusted media and rollout gates |
+| P01-SI-008 | P01-FR-007, P01-FR-011, P01-FR-015, P01-FR-016, P01-FR-017 | Covered；production hardening keeps AI output candidate-only and auditable |
+| P01-SI-009 | P01-FR-009, P01-FR-013, P01-FR-017 | Covered；production hardening adds server evidence write-back, rule trace and metrics |
 | P01-SI-010 | P0.1 非目标边界 | Covered by non-goals and AC-P01-012 |
-| P01-SI-011 | P01-FR-010 | Covered |
+| P01-SI-011 | P01-FR-010, P01-FR-012, P01-FR-013, P01-FR-015, P01-FR-017 | Covered；production hardening adds recoverable backend/API/media/evidence failure handling |
 
 ## 用户目标
 学习者在现有官方场景中不再面对开放式“大任务”，而是在训练型 Agent 引导下完成一个个小动作，通过语音优先、文本兜底的训练闭环，把目标表达练到能在场景中自然说出。
@@ -106,6 +106,43 @@ Draft - 从 legacy P0.1 spec 迁移生成，作为本 increment 的标准 requir
 - TTS 必须使用稳定 cache key 避免同一 text/model/voice 在同一后端进程内重复调用 provider；持久对象存储缓存属于后续 release-hardening，不作为本轮通过条件。
 - LLM 输出不得直接写最终 mastery、entitlement、billing 或 review schedule；后端必须先做结构化 JSON 映射和 fallback。
 
+### P01-FR-012 后端 Training API 与服务端训练事实源
+- 系统必须将 `docs/architecture/openapi/speakeasy-api.yaml` 中已定义的 `/training/sessions`、`/training/sessions/{session_id}`、`/training/sessions/{session_id}/turns`、`/planner/next`、`/hints`、`/pressure-check` 和 `/complete` 明确实现为当前 Spring Boot 后端能力，或在 release gate 中显式标记为未实现并阻断 Product Base 合入。
+- 生产训练 session 的事实源必须是后端 Training bounded context；Flutter 只能缓存和渲染当前状态，不得独立生成可被当作服务端事实的 session、turn、planner decision 或 accepted evidence。
+- `submitTrainingTurn` 必须要求幂等键，重复提交同一 turn 不得重复扣减用量、重复生成学习证据或推进两个 planner decision。
+- 后端必须基于当前用户身份校验 session ownership；客户端不得通过传入 `user_id`、`provider_tier` 或本地 session id 越权恢复或推进训练。
+- Flutter production training entry 必须依赖后端 Training API；当 `ENABLE_BACKEND_TRAINING` 关闭或后端 training 不可用时，训练入口必须关闭或显示服务不可用，不得降级到前端本地 Training 状态机、假 session、假 planner decision 或假 feedback。
+
+### P01-FR-013 学习证据写回、rule trace 与数据治理
+- 训练结束或关键 turn 完成后，系统必须由后端规则接受、拒绝或合并 `LearningEvidenceCandidate`，并为 accepted evidence 记录 source turn、feedback/schema version、rule name、reason code 和 created_at。
+- Recap 必须来自后端 Training API 或明确的后端可恢复失败状态；服务端 evidence 写回失败时必须保持 `retryable` 或 failed-with-reason，不得在 Flutter 里生成 `pending_local_write` 作为生产证据。
+- 账号删除、数据导出、retention job 和安全日志必须覆盖 P0.1 training session、turn、media refs、planner decision、recap 和 evidence rule trace。
+- LLM 或 provider payload 不得直接进入 accepted evidence；只有 schema-valid candidate 加 deterministic evidence rule trace 后才可写入。
+
+### P01-FR-014 版本化训练内容与 action chain 映射
+- P0.1 仍只覆盖 `job_interview` 和 `onboarding_introduction`，但 production-ready 训练不得只依赖 Flutter 本地常量；必须有版本化 content mapping 或受审核 bundled asset 作为 action chain、micro-action prompt 和 target expression 的事实源。
+- 每个 `ActionChainStep` 必须引用 stable `scenario_version_id`、`step_key`、`order_index`、`target_expression_id` 或明确的 reviewed fallback reason。
+- 内容版本变更必须可灰度、回滚和测试；旧 session 必须继续引用其创建时的 scenario version，不得因内容更新而改变历史证据含义。
+- 缺少内容映射时，系统必须 fail closed 到可恢复错误或 reviewed fallback，不得由 LLM 即兴生成新官方场景内容。
+
+### P01-FR-015 真实语音/media/AI pipeline 接入训练 turn
+- 需要语音作答的 training turn 必须通过后端 media upload 或可信 `audio_ref` 链路进入 ASR，不得把客户端本地文件路径当作 provider-accessible 输入。
+- Training turn 必须经过 AI Gateway usage reservation、provider call、schema validation、fallback 和 usage commit/release；失败时返回 typed recoverable state。
+- TTS、ASR、LLM 和 pronunciation signal 的 normalized status 必须进入 planner input，但发音不可用或低分不得单独阻断训练。
+- Flutter 训练页必须调用后端 Training API；生产入口不得继续使用 local draft adapter、固定假 feedback、固定假 transcript 或前端 planner 代表真实 provider/Training service 结果。
+
+### P01-FR-016 Planner service 审计、配置和回放
+- Planner 必须作为 deterministic domain service 存在于可测试边界内，并输出 `PlannerDecision`、`reason_code`、`source_turn_id`、`next_micro_action_type`、`hint_level`、`schema_version` 和 `applied_at`。
+- Hint ladder、pressure check、retry、recap 和 text fallback 的阈值必须来自配置或版本化规则，不得散落在页面事件处理里。
+- 每个 applied decision 必须能根据 session、turn、AI candidate、score signal 和 existing evidence 重放；重放结果不一致必须成为测试或审计失败。
+- LLM recommended next action 不得绕过 planner allowed-action set；不合法候选必须被拒绝并记录 reason code。
+
+### P01-FR-017 训练运营指标、商业边界和 rollout gates
+- 系统必须记录 P0.1 training funnel 指标：session start/resume、turn submit、ASR fallback、hint escalation、pressure check enter/pass/fail、recap shown、evidence accepted/rejected/write_failed、provider status 和 latency/cost bucket。
+- 指标必须使用 user hash、session id、request id 和 redacted metadata；不得记录 raw audio、完整敏感 transcript、provider key 或 raw provider payload。
+- P0.1 训练功能必须有 feature flag、kill switch 和 provider rollback 路径；provider failure 或成本异常时可切换到后端 deterministic provider、关闭训练入口或关闭 paid AI voice，不得回退到 Flutter 本地 Training 状态机。
+- 若 P0.1 训练被纳入付费权益，必须复用 P0 commercial entitlement/usage/release gates；P0.1 本身不得绕过 `p0-commercial-readiness` 或 `commercial-ai-provider-hardening` 的 strict blockers。
+
 ## 成功标准
 - 用户能在两个官方场景中进入训练型 Agent session。
 - 用户每一步只面对一个明确 micro-action。
@@ -114,6 +151,10 @@ Draft - 从 legacy P0.1 spec 迁移生成，作为本 increment 的标准 requir
 - ASR、麦克风或外部服务失败时存在可恢复路径。
 - 本轮结束后学习证据写回，并能影响至少一个后续学习入口。
 - 当前后端能够在不暴露 provider secret 的前提下，通过可配置 provider adapter 调用真实 DashScope LLM/TTS/ASR，且默认测试仍不依赖第三方服务。
+- Product Base 合入前，OpenAPI Training endpoints 与 Spring Boot 实现状态一致；若未实现，Product Base 合入必须 blocked。
+- 服务端能保存或明确阻断 TrainingSession、TrainingTurn、PlannerDecision、TrainingRecap、LearningEvidenceCandidate 和 rule trace；Flutter 不再保留本地 Training 状态机事实源。
+- 训练内容映射有版本和回滚策略；当前两个官方场景的 action chain 不再只能靠 Flutter 常量解释。
+- 训练 turn 的真实语音/media/AI pipeline、observability、usage/cost 和 rollout gate 均有测试或明确外部阻断证据。
 
 ## 非目标
 - 不新增第三个官方场景。
@@ -127,10 +168,11 @@ Draft - 从 legacy P0.1 spec 迁移生成，作为本 increment 的标准 requir
 ## 假设
 - 当前 TTS、录音、ASR/转写、LLM 教练反馈和基础评分链路可复用，但真实 provider 调用必须落在当前 Spring Boot AI Gateway 后端边界内。
 - 官方场景资产已提供目标表达、等级轨道和示范对话。
-- P0.1 学习证据本地优先写回；是否云端同步由后续 API/domain contract 决定。
+- P0.1 第一版曾允许学习证据本地优先写回；本轮商业软件整改要求 Product Base 合入前必须给出服务端事实源实现或明确阻断口径。
 - 真实 ASR live E2E 需要后端可访问的音频对象或 URL；本轮不把 Flutter 本地文件路径视为有效 provider 输入。
+- 本轮不新增 stage；新增 FR 均追溯到现有 P01-SI-001..011 和 `p0-1-expression-automation-training`。
 
 ## 开放问题
-- P0.1 session 状态是否只本地持久化，还是需要 repository-backed 同步。
-- action chain 映射先写在本地常量、场景资产扩展字段，还是独立内容 schema。
-- 训练页是改造现有 `interview_practice_page`，还是拆出专门的 training session view。
+- P0.1 session 状态是否只本地持久化，还是需要 repository-backed 同步。2026-06-03 商业整改决策：Product Base 合入前必须 repository-backed sync 或显式 blocked。
+- action chain 映射先写在本地常量、场景资产扩展字段，还是独立内容 schema。2026-06-03 商业整改决策：生产 ready 必须有版本化 content mapping 或 reviewed bundled asset。
+- 训练页是改造现有 `interview_practice_page`，还是拆出专门的 training session view。2026-06-03 商业整改决策：UI 形态可继续拆页，但生产模式必须通过后端 Training API；Flutter local draft adapter 不再作为可进入的训练路径。

@@ -44,7 +44,7 @@ dart run scripts/check_ai_eval_cases.dart
 
 Fixture: `tests/ai_runtime/p0_1_ai_eval_cases.json`。
 
-Scope: TC-P01-014 validates the documented P0.1 `TrainingFeedbackCandidate` AI eval cases by calling the runtime schema validator in `lib/features/interview/interview_training_agent.dart`。The validator checks all seven P0.1 cases below, planner-approved next actions, recoverable fallback behavior, pressure prompt gating, candidate-only learning evidence, pronunciation-unavailable continuation and prohibited final mastery/billing/review fields。
+Scope: TC-P01-014 validates the documented P0.1 `TrainingFeedbackCandidate` AI eval cases by calling the runtime schema validator in `lib/features/training/training_contract.dart`。The validator checks all seven P0.1 cases below, planner-approved next actions, recoverable fallback behavior, pressure prompt gating, candidate-only learning evidence, pronunciation-unavailable continuation and prohibited final mastery/billing/review fields。Official scenario/version allowlist is owned by backend Training content mapping; the Flutter schema validator must not hard-code the two original scenes.
 
 | Case ID | Owning increment | Input | Expected |
 | --- | --- | --- | --- |
@@ -54,4 +54,4 @@ Scope: TC-P01-014 validates the documented P0.1 `TrainingFeedbackCandidate` AI e
 | AI-EVAL-P01-004 | `p0-1-expression-automation-training` | ASR failure with audio ref and no transcript | Recoverable fallback candidate; `recommended_next_action.type=retry` or `text_fallback`; no weak evidence candidate. |
 | AI-EVAL-P01-005 | `p0-1-expression-automation-training` | Consecutive success context with planner allowing pressure check | Valid schema; may include `pressure_prompt_candidate.enabled=true` only with `recommended_next_action.type=pressure_check`; prompt stays in current session/scenario. |
 | AI-EVAL-P01-006 | `p0-1-expression-automation-training` | LLM attempts to output `mastered=true` or a cross-day schedule | Validation rejects or strips prohibited fields; deterministic fallback returns candidate-only feedback. |
-| AI-EVAL-P01-007 | `p0-1-expression-automation-training` | Non-P0.1 scene id or invented target expression | Validation fails; output cannot create session, scene, target expression or action chain step. |
+| AI-EVAL-P01-007 | `p0-1-expression-automation-training` | Future/custom scene id with invented target expression/action step | Validation fails for invented action-chain step or micro-action; scene officialness is fail-closed by backend scenario/version/mapping, not a Flutter two-scene allowlist. |

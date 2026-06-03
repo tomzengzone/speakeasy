@@ -1,7 +1,7 @@
 # 产品开发状态
 
 ## 状态
-Revalidated - TC-P01-013/014 local blockers closed；commercial release and paid AI voice remain blocked by explicit external/native/store/release evidence
+Revalidated / P0.1 production-hardening planned - TC-P01-013/014 local blockers closed；2026-06-03 P0.1 commercial software remediation added Product Base/production blockers `P01-GAP-009` through `P01-GAP-014` inside the existing P0.1 stage；commercial release and paid AI voice remain blocked by explicit external/native/store/release evidence
 
 ## Owner
 Product Manager Agent
@@ -10,10 +10,10 @@ Product Manager Agent
 2026-06-03
 
 ## 活动目标
-以 Product Base 活需求库承载已接受稳定能力。本轮已按顺序完成 TC-P01-013、TC-P01-014、TC-COM-AI-004 evidence preparation 和 TC-COM-012/015/019/021/022 strict gate revalidation，并完成独立审核；后续工作进入新 stage/increment 时必须继续从 Product Base 和对应 increment 追溯，不得把本地通过扩展为商业发布批准。
+以 Product Base 活需求库承载已接受稳定能力。本轮已按顺序完成 TC-P01-013、TC-P01-014、TC-COM-AI-004 evidence preparation 和 TC-COM-012/015/019/021/022 strict gate revalidation，并完成独立审核；2026-06-03 又在同一 P0.1 stage/increment 内补充商业软件整改设计、需求、验收、测试和追踪口径。后续工作不得把本地通过扩展为 Product Base 合入、生产训练或商业发布批准。
 - MVP 后端线：Product Base 已接受能力仍以本地 Flutter macOS + Spring Boot + 真实 PostgreSQL 系统 E2E 为 baseline；2026-06-02 复测通过 `smoke`、`scene-catalog`、`learning-memory`、`practice-feedback`、`profile-settings`、`membership-boundary` 和 `commercial-boundary`。
 - 商业发布线：P0 商业化订阅和 AI provider 生产化本地实现/测试边界已复测通过；2026-06-03 strict gates 确认真实支付 provider、native social login、store/reviewer/privacy/support、strict release 和外部 AI evidence refs 仍是商业发布阻断项。
-- 价值体验线：P0.1“口语优先、文本兜底的 FSI 式表达自动化训练闭环”保持 next value-experience stage；TC-P01-013 路由级 integration loop 和 TC-P01-014 AI eval validator 已于 2026-06-03 本地关闭。
+- 价值体验线：P0.1“口语优先、文本兜底的 FSI 式表达自动化训练闭环”保持 next value-experience stage；TC-P01-013 路由级 integration loop 和 TC-P01-014 AI eval validator 已于 2026-06-03 本地关闭。Product Base 合入或生产训练还必须关闭 TC-P01-021 through TC-P01-028，覆盖后端 Training API/source-of-truth、证据治理、内容版本、真实 media/AI pipeline、planner audit 和 rollout gates。
 
 ## 产品对象状态
 - Product Base requirements：`docs/product/base/requirements.md`
@@ -35,6 +35,7 @@ Product Manager Agent
 - P0.1 increment requirements：`docs/product/increments/p0-1-expression-automation-training/requirements.md`
 - P0.1 increment spec：`docs/product/increments/p0-1-expression-automation-training/spec.md`
 - P0.1 acceptance criteria：`docs/product/increments/p0-1-expression-automation-training/acceptance.md`
+- P0.1 test cases：`docs/product/increments/p0-1-expression-automation-training/test_cases.md`
 - P0.1 traceability：`docs/product/increments/p0-1-expression-automation-training/traceability.md`
 - Commercial readiness increment definition：`docs/product/increments/commercial-subscription-readiness/definition.md`
 - Commercial readiness requirements：`docs/product/increments/commercial-subscription-readiness/requirements.md`
@@ -60,7 +61,7 @@ Product Manager Agent
 - `mvp-system-e2e-validation` 已验证 TC-MVP-E2E-001 到 TC-MVP-E2E-010；其中真实支付 provider 只作为 manual/external gate 保留，不作为本地自动化通过项。
 - P0 `commercial-subscription-readiness` 是商业软件功能补齐和付费发布阻塞 stage；完成实现、验收、追溯、测试、发布和外部门禁后，才允许 Product Manager 批准商业发布口径。
 - P0.1 `expression-automation-training` 是 next value-experience stage；完成实现、验收、追溯、测试和报告后，才允许由 Product Manager 批准 merge back 到 Product Base。
-- 2026-06-03 复测结论：P0.1 TC-P01-013/014 本地关闭；TC-COM-AI-004 controlled-live evidence-prep 报告已生成；所有 strict external/native/store/release evidence blockers 仍不得关闭。
+- 2026-06-03 复测结论：P0.1 TC-P01-013/014 本地关闭；P0.1 商业软件整改新增 TC-P01-021 through TC-P01-028 planned blockers before Product Base merge or production training readiness；TC-COM-AI-004 controlled-live evidence-prep 报告已生成；所有 strict external/native/store/release evidence blockers 仍不得关闭。
 - 后续每个多步骤产品、需求、工作流或文档治理任务，每一步完成后必须由独立 checker agent 审查是否符合预期、是否偏离、是否存在非预期变更。
 
 ## 当前已实现能力判断
@@ -143,7 +144,8 @@ Product Manager Agent
 29. `commercial-ai-provider-hardening` 的本地实现和测试证据已建立：TC-COM-AI-001 through TC-COM-AI-003、TC-COM-AI-005 through TC-COM-AI-007 通过；TC-COM-AI-004 结构化 evidence gate 通过，2026-06-03 脱敏 controlled-live evidence-prep 通过，但 strict external evidence ref 仍未供应。
 30. 2026-06-02 P0/P0.1 blocker 复测完成：P0.1 local core/provider suites、P0 commercial backend/Flutter/API contract suites、MVP system E2E suites 均通过；测试环境修复包括 OPS health auth、E2E deterministic provider isolation、会员 restore button 滚动断言和账号注销 audit event 断言。
 31. 2026-06-03 已按顺序关闭本地可控 P0.1 blockers：TC-P01-013 通过 `./scripts/run_mvp_system_e2e.sh --suite p0-1-training-loop`，TC-P01-014 通过 `dart run scripts/check_ai_eval_cases.dart`。
-32. 当前合法下一步不是重复 `P0-AI-ARCH-001` 或继续补本地 P0.1 blocker，而是补齐 TC-COM-012/015/019/021/022 和 TC-COM-AI-004 的外部/native/store/release evidence refs 并 rerun strict gates。
+32. 2026-06-03 新增 P0.1 商业软件整改批次：不新增 stage，在 `p0-1-expression-automation-training` 内补齐 P01-FR-012 through P01-FR-017、P01-SPEC-013 through P01-SPEC-018、AC-P01-014 through AC-P01-019、TC-P01-021 through TC-P01-028、P01-TR-013 through P01-TR-018 和 `P01-GAP-009` through `P01-GAP-014`。
+33. P0 商业发布外部门禁仍必须补齐 TC-COM-012/015/019/021/022 和 TC-COM-AI-004 的外部/native/store/release evidence refs 并 rerun strict gates；这些不被 P0.1 本地或生产整改文档替代。
 
 ## PM 下一阶段开发计划
 
@@ -158,6 +160,18 @@ Product Manager Agent
 
 ### PM 结论
 当前项目不需要重新启动 MVP 后端或继续补本地 P0.1 blocker。下一阶段主计划是先关闭 P0 商业发布和 paid AI voice 的外部/native/store/release evidence，再做 P0.1 已实现训练闭环的 Product Base 合入复核；P0.2/P1 只进入排期和预研，不进入当前实现批次。
+
+### Now - P0.1 Training Product Base/Production Hardening
+目标：不新增 stage，在现有 `p0-1-expression-automation-training` increment 内把已通过本地验证的训练 Agent 加固到商业软件可接受的后端事实源、证据治理和运营门禁。
+
+优先批次：
+1. `P01-HARDEN-001`：实现或显式阻断后端 Training API/source-of-truth，关闭 TC-P01-021/022。
+2. `P01-HARDEN-002`：实现 learning evidence rule trace、删除保留和数据治理，关闭 TC-P01-023/024。
+3. `P01-HARDEN-003`：建立 reviewed versioned content/action-chain/target-expression mapping，关闭 TC-P01-025。
+4. `P01-HARDEN-004`：接入真实 media/AI Training pipeline 和 usage reservation/fallback 规则，关闭 TC-P01-026；paid AI voice 仍受 P0 AI provider hardening gate 约束。
+5. `P01-HARDEN-005`：补 planner decision audit、配置版本和 replay fixture，关闭 TC-P01-027。
+6. `P01-HARDEN-006`：补训练运营指标、feature flag、kill switch 和 rollout health gate，关闭 TC-P01-028。
+7. `P01-HARDEN-007`：执行 AC-to-TC、traceability、test report、quality report 和 release checklist 同步复核，不允许用顶层 `[x] All required tests pass` 覆盖具体 blocked sections。
 
 ### Now - P0 商业发布外部门禁关闭
 目标：把 `commercial-subscription-readiness` 从“本地边界和契约通过”推进到“可被 PM 判断是否进入商业发布口径”。

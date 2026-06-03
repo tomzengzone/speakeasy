@@ -510,7 +510,6 @@
       "expected": {
         "valid": false,
         "errors_contain": [
-          "scene_id is outside P0.1 official scenes",
           "action_chain_step is not allowed",
           "micro_action is not allowed"
         ],

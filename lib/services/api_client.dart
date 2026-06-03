@@ -371,6 +371,153 @@ class ApiClient {
     return response;
   }
 
+  static Future<Map<String, dynamic>> createAudioUpload({
+    required String purpose,
+    required String contentType,
+    required int byteSize,
+    required int durationSeconds,
+    String? checksumSha256,
+    String? clientUploadId,
+    String? idempotencyKey,
+  }) async {
+    final String requestKey =
+        idempotencyKey ??
+        'audio-upload-${DateTime.now().millisecondsSinceEpoch}';
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.mediaAudioUploads,
+      <String, dynamic>{
+        'schema_version': 1,
+        'purpose': purpose.trim(),
+        'content_type': contentType.trim(),
+        'byte_size': byteSize,
+        'duration_seconds': durationSeconds,
+        if (checksumSha256 != null && checksumSha256.trim().isNotEmpty)
+          'checksum_sha256': checksumSha256.trim(),
+        if (clientUploadId != null && clientUploadId.trim().isNotEmpty)
+          'client_upload_id': clientUploadId.trim(),
+      },
+      headers: <String, String>{'Idempotency-Key': requestKey},
+    );
+    _ensureSuccess(response, fallback: '创建音频上传失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> completeAudioUpload({
+    required String mediaId,
+    String? checksumSha256,
+    String? objectRef,
+  }) async {
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.mediaAudioUploadComplete(mediaId),
+      <String, dynamic>{
+        'schema_version': 1,
+        if (checksumSha256 != null && checksumSha256.trim().isNotEmpty)
+          'checksum_sha256': checksumSha256.trim(),
+        if (objectRef != null && objectRef.trim().isNotEmpty)
+          'object_ref': objectRef.trim(),
+      },
+    );
+    _ensureSuccess(response, fallback: '确认音频上传失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> startTrainingSession({
+    required String scenarioId,
+    required String levelCode,
+    bool resumeExisting = true,
+  }) async {
+    final Map<String, dynamic> response =
+        await _post(SpeakeasyApiPaths.trainingSessions, <String, dynamic>{
+          'schema_version': 1,
+          'scenario_id': scenarioId.trim(),
+          'level_code': levelCode.trim(),
+          'resume_existing': resumeExisting,
+        });
+    _ensureSuccess(response, fallback: '训练会话创建失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> getTrainingSession(
+    String sessionId,
+  ) async {
+    final Map<String, dynamic> response = await _get(
+      SpeakeasyApiPaths.trainingSession(sessionId),
+    );
+    _ensureSuccess(response, fallback: '训练会话加载失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> submitTrainingTurn({
+    required String sessionId,
+    required String idempotencyKey,
+    String? transcript,
+    String? audioRef,
+    String? selectedOptionId,
+    int? clientStateVersion,
+  }) async {
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.trainingSessionTurns(sessionId),
+      <String, dynamic>{
+        'schema_version': 1,
+        if (transcript != null && transcript.trim().isNotEmpty)
+          'transcript': transcript.trim(),
+        if (audioRef != null && audioRef.trim().isNotEmpty)
+          'audio_ref': audioRef.trim(),
+        if (selectedOptionId != null && selectedOptionId.trim().isNotEmpty)
+          'selected_option_id': selectedOptionId.trim(),
+        'client_state_version': ?clientStateVersion,
+      },
+      timeout: const Duration(seconds: 25),
+      headers: <String, String>{'Idempotency-Key': idempotencyKey.trim()},
+    );
+    _ensureSuccess(response, fallback: '训练回合提交失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> requestTrainingPlannerNext(
+    String sessionId,
+  ) async {
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.trainingSessionPlannerNext(sessionId),
+      <String, dynamic>{'schema_version': 1},
+    );
+    _ensureSuccess(response, fallback: '训练 planner 加载失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> requestTrainingHint(
+    String sessionId,
+  ) async {
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.trainingSessionHints(sessionId),
+      <String, dynamic>{'schema_version': 1},
+    );
+    _ensureSuccess(response, fallback: '训练提示加载失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> startTrainingPressureCheck(
+    String sessionId,
+  ) async {
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.trainingSessionPressureCheck(sessionId),
+      <String, dynamic>{'schema_version': 1},
+    );
+    _ensureSuccess(response, fallback: '训练压力检查启动失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> completeTrainingSession(
+    String sessionId,
+  ) async {
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.trainingSessionComplete(sessionId),
+      <String, dynamic>{'schema_version': 1},
+    );
+    _ensureSuccess(response, fallback: '训练复盘生成失败');
+    return response;
+  }
+
   static Future<LearningStatsModel> getLearningStats() async {
     final Map<String, dynamic> res = await _get('/user/stats');
     if (res['code'] != 0) {

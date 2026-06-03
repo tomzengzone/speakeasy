@@ -1,26 +1,26 @@
-import 'package:speakeasy/features/interview/interview_training_agent.dart';
+import 'package:speakeasy/features/training/training_contract.dart';
 
-InterviewTrainingSessionState p01TrainingSession({
+TrainingSessionState p01TrainingSession({
   String userId = 'user-1',
   String sceneId = 'job_interview',
   String levelCode = 'beginner',
-  InterviewTrainingSessionStatus status = InterviewTrainingSessionStatus.ready,
-  InterviewTrainingActionStep currentStep = InterviewTrainingActionStep.opening,
-  InterviewTrainingMicroAction currentMicroAction =
-      InterviewTrainingMicroAction.sayOne,
-  InterviewTrainingHintLevel hintLevel = InterviewTrainingHintLevel.none,
+  TrainingSessionStatus status = TrainingSessionStatus.ready,
+  TrainingActionStep currentStep = TrainingActionStep.opening,
+  TrainingMicroAction currentMicroAction = TrainingMicroAction.sayOne,
+  TrainingHintLevel hintLevel = TrainingHintLevel.none,
   int failureCount = 0,
   int successCount = 0,
   bool textFallbackAvailable = false,
-  InterviewTrainingFeedbackCandidate? lastFeedback,
-  InterviewTrainingRecap? recap,
+  TrainingFeedbackCandidate? lastFeedback,
+  TrainingRecap? recap,
+  String scenarioVersionId = 'backend-version-test',
 }) {
-  return InterviewTrainingSessionState(
+  return TrainingSessionState(
     sessionId: 'p01_${userId}_${sceneId}_$levelCode',
     userId: userId,
     sceneId: sceneId,
     levelCode: levelCode,
-    scenarioVersionId: p01TrainingScenarioVersionId,
+    scenarioVersionId: scenarioVersionId,
     status: status,
     currentStep: currentStep,
     currentMicroAction: currentMicroAction,
@@ -97,12 +97,12 @@ Map<String, dynamic> p01ValidTrainingFeedbackJson({
   };
 }
 
-InterviewTrainingFeedbackCandidate p01FeedbackCandidate({
+TrainingFeedbackCandidate p01FeedbackCandidate({
   String nextAction = 'retry',
   List<Map<String, dynamic>> learningEvidenceCandidates =
       const <Map<String, dynamic>>[],
 }) {
-  return InterviewTrainingFeedbackCandidate.fromJson(
+  return TrainingFeedbackCandidate.fromJson(
     p01ValidTrainingFeedbackJson(
       nextAction: nextAction,
       learningEvidenceCandidates: learningEvidenceCandidates,

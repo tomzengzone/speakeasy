@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:speakeasy/config/app_config.dart';
 import 'package:speakeasy/features/commercial/commercial_scenario_gate.dart';
 import 'package:speakeasy/features/interview/expression_daily_queue_coordinator.dart';
 import 'package:speakeasy/features/interview/interview_engine.dart';
@@ -11,7 +12,8 @@ import 'package:speakeasy/features/interview/interview_expression_learning_page.
 import 'package:speakeasy/features/interview/interview_models.dart';
 import 'package:speakeasy/features/interview/interview_practice_page.dart';
 import 'package:speakeasy/features/interview/interview_scene_listening_page.dart';
-import 'package:speakeasy/features/interview/interview_training_loop_page.dart';
+import 'package:speakeasy/features/training/training_backend_adapter.dart';
+import 'package:speakeasy/features/training/training_session_loop_page.dart';
 import 'package:speakeasy/features/interview/interview_wiki_store.dart';
 import 'package:speakeasy/models/app_models.dart';
 import 'package:speakeasy/models/learning_stats_model.dart';
@@ -660,15 +662,20 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
       _showCommercialScenarioGate();
       return;
     }
+    if (!AppConfig.enableBackendTraining) {
+      _showTrainingBackendUnavailable();
+      return;
+    }
     await _addLearningScene(status, setActive: true);
     if (!mounted) {
       return;
     }
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (BuildContext context) => InterviewTrainingLoopPage(
+        builder: (BuildContext context) => TrainingSessionLoopPage(
           sceneId: status.entry.id,
           levelCode: status.selectedTargetLevel,
+          backendAdapter: const TrainingBackendAdapter(),
         ),
       ),
     );
@@ -758,6 +765,12 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text(CommercialScenarioGate.lockedMessage)),
     );
+  }
+
+  void _showTrainingBackendUnavailable() {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('训练服务暂不可用，请稍后再试')));
   }
 
   Future<void> _persistLearningSceneSelection({

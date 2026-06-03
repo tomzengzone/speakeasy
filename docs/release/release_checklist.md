@@ -7,17 +7,19 @@
 - [x] API contract updated.
 - [x] Domain schema updated.
 - [x] AI output schemas validated.
-- [x] All required tests pass.
+- [x] Required local/automated tests for the dated evidence packets below pass.
 - [x] Implementation report updated.
 - [x] Quality report updated.
 - [x] Version log updated.
 - [x] Rollback plan reviewed.
 
+Scope note: the top checklist is a baseline documentation/process checklist. It does not override the dated P0 Commercial Subscription, P0 Commercial AI Provider Hardening, or P0.1 Training Product Base/Production Hardening sections below; unchecked, planned, or blocked items in those sections remain blockers for their stated release/Product Base promotion scope.
+
 ## Production Controls
 - [x] Provider secrets are not bundled in client.
 - [x] Runtime configuration uses release-safe values.
 - [x] Error logging avoids sensitive payloads.
-- [x] Payment and auth settings are production-ready if enabled.
+- [x] Payment and auth release checks exist for enabled paths; production-ready status is governed by the P0 Commercial Subscription Release Gate below.
 
 ## 2026-05-29 MVP Backend Stage Release Evidence
 
@@ -80,6 +82,27 @@ Latest local evidence:
 - `python3 scripts/run_dashscope_sandbox_matrix.py` passed on 2026-06-03 and wrote sanitized report `build/reports/dashscope-sandbox-20260602T223557Z-3359fcc82fafa457.json`.
 - `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external` still fails without `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`.
 - `python3 scripts/check_ai_external_release_evidence.py --strict-external` still fails without `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF`.
+
+## 2026-06-03 P0.1 Training Product Base/Production Hardening Gate
+
+Status: local executed / passed for Product Base production-hardening evidence. Existing TC-P01-013/014 local route and AI eval evidence remain valid only after the 2026-06-03 backend-only correction; TC-P01-021 through TC-P01-031 now cover backend/Flutter production-hardening and frontend source-of-truth enforcement inside this stage.
+
+Required before P0.1 Training is promoted to Product Base stable capability or production training mode:
+- [x] AC-P01-014 / TC-P01-021 / TC-P01-022: backend Training API, server source of truth, owner authorization and turn idempotency pass locally.
+- [x] AC-P01-015 / TC-P01-023 / TC-P01-024: learning evidence rule trace, accepted/rejected evidence governance, account deletion and retention coverage pass locally.
+- [x] AC-P01-016 / TC-P01-025: reviewed versioned training content, action chain and target-expression mapping pass locally.
+- [x] AC-P01-017 / TC-P01-026: real media/AI Training pipeline passes locally against trusted `audio_ref`, usage reservation/commit/release and typed fallback. Paid AI voice still depends on the P0 Commercial AI Provider Hardening Gate above.
+- [x] AC-P01-018 / TC-P01-027: planner audit, config versioning and deterministic replay pass locally.
+- [x] AC-P01-019 / TC-P01-028: redacted training metrics, rollout health, feature flag and kill switch readiness pass locally.
+- [x] AC-P01-014 / AC-P01-019 / TC-P01-029 / TC-P01-031: Flutter product training entry and loop are backend-only; backend disabled/unavailable blocks entry or renders service unavailable and does not create a local state-machine session.
+- [x] AC-P01-017 / TC-P01-030: missing trusted media does not create fake ASR/feedback/evidence; typed fallback submits through backend Training API only.
+- [x] Frontend source-of-truth guard exists and passes: `scripts/check_p0_1_training_frontend_source_of_truth.py`.
+- [x] Training frontend bounded-context namespace is in force: production code under `lib/features/training/`, tests under `test/features/training/`, and no executable `InterviewTraining*` / `interview_training_*` names remain.
+- [x] `docs/product/increments/p0-1-expression-automation-training/traceability.md`, `docs/reports/test_report.md` and `docs/reports/quality_report.md` are updated with executed evidence, not only planned rows.
+
+Current blocker register:
+- `P01-GAP-006`, `P01-GAP-007` and `P01-GAP-009` through `P01-GAP-014` are closed locally for P0.1 Product Base/production hardening by TC-P01-001 through TC-P01-013 and TC-P01-021 through TC-P01-031.
+- Commercial release and paid AI voice release still remain blocked by the dated P0 Commercial Subscription and P0 Commercial AI Provider Hardening gates above until their external evidence refs pass.
 
 Reference:
 - `docs/release/commercial_release_runbook.md`

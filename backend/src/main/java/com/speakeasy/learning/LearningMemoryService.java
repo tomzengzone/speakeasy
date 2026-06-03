@@ -105,6 +105,9 @@ public class LearningMemoryService {
         score != null && score >= 0.8 ? "mastered_expression" : "weak_expression",
         item.getTargetExpressionId(),
         score == null ? 0.7 : score,
+        null,
+        null,
+        null,
         now);
     return new ExpressionTaskProgressView(
         attempt.getAttemptId(), item.getQueueItemId(), item.getTargetExpressionId(), result, score, evidence.getEvidenceId());
@@ -140,7 +143,33 @@ public class LearningMemoryService {
   public LearningEvidence createEvidence(
       UUID userId, String sourceType, String sourceId, String evidenceType, UUID targetExpressionId, Double confidence) {
     requireUser(userId);
-    return createEvidenceInternal(userId, sourceType, sourceId, evidenceType, targetExpressionId, confidence, Instant.now(clock));
+    return createEvidenceInternal(
+        userId, sourceType, sourceId, evidenceType, targetExpressionId, confidence, null, null, null, Instant.now(clock));
+  }
+
+  @Transactional
+  public LearningEvidence createEvidenceWithRuleTrace(
+      UUID userId,
+      String sourceType,
+      String sourceId,
+      String evidenceType,
+      UUID targetExpressionId,
+      Double confidence,
+      String ruleName,
+      String reasonCode,
+      Integer schemaVersion) {
+    requireUser(userId);
+    return createEvidenceInternal(
+        userId,
+        sourceType,
+        sourceId,
+        evidenceType,
+        targetExpressionId,
+        confidence,
+        clean(ruleName),
+        clean(reasonCode),
+        schemaVersion,
+        Instant.now(clock));
   }
 
   @Transactional(readOnly = true)
@@ -196,6 +225,9 @@ public class LearningMemoryService {
       String evidenceType,
       UUID targetExpressionId,
       Double confidence,
+      String ruleName,
+      String reasonCode,
+      Integer schemaVersion,
       Instant now) {
     boolean accepted = targetExpressionId != null && confidence != null && confidence >= 0.6;
     LearningEvidence evidence = evidences.save(new LearningEvidence(
@@ -208,6 +240,9 @@ public class LearningMemoryService {
         confidence,
         accepted ? "accepted" : "rejected",
         accepted ? null : "low_confidence_or_missing_target",
+        ruleName,
+        reasonCode,
+        schemaVersion,
         now));
     if (accepted) {
       applyAcceptedEvidence(userId, evidence, now);
@@ -287,6 +322,11 @@ public class LearningMemoryService {
 
   private String expressionTextOrDefault(String expressionText, TargetExpression target) {
     return expressionText == null || expressionText.isBlank() ? target.getText() : expressionText;
+  }
+
+  private String clean(String value) {
+    String cleaned = value == null ? "" : value.trim();
+    return cleaned.isBlank() ? null : cleaned;
   }
 
   private void requireUser(UUID userId) {

@@ -38,6 +38,13 @@ import com.speakeasy.practice.CoachFeedbackRepository;
 import com.speakeasy.practice.PracticeSessionRepository;
 import com.speakeasy.practice.PracticeTurnRepository;
 import com.speakeasy.practice.SessionSummaryRepository;
+import com.speakeasy.training.TrainingEvidenceCandidateRepository;
+import com.speakeasy.training.TrainingContentMappingRepository;
+import com.speakeasy.training.TrainingMetricEventRepository;
+import com.speakeasy.training.TrainingPlannerDecisionRepository;
+import com.speakeasy.training.TrainingRecapRepository;
+import com.speakeasy.training.TrainingSessionRepository;
+import com.speakeasy.training.TrainingTurnRepository;
 import com.speakeasy.usage.UsageLedgerRepository;
 import com.speakeasy.usage.UsageReservationRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,6 +88,13 @@ abstract class BackendIntegrationTestSupport {
   @Autowired AiTtsCacheOwnerRepository ttsCacheOwners;
   @Autowired AiProviderInvocationMetricRepository aiProviderMetrics;
   @Autowired AiRetentionJobRepository aiRetentionJobs;
+  @Autowired TrainingContentMappingRepository trainingContentMappings;
+  @Autowired TrainingMetricEventRepository trainingMetrics;
+  @Autowired TrainingEvidenceCandidateRepository trainingEvidenceCandidates;
+  @Autowired TrainingPlannerDecisionRepository trainingPlannerDecisions;
+  @Autowired TrainingTurnRepository trainingTurns;
+  @Autowired TrainingRecapRepository trainingRecaps;
+  @Autowired TrainingSessionRepository trainingSessions;
 
   @BeforeEach
   void cleanUserData() {
@@ -91,6 +105,12 @@ abstract class BackendIntegrationTestSupport {
     ttsCacheEntries.deleteAll();
     mediaAssets.deleteAll();
     auditLogs.deleteAll();
+    trainingMetrics.deleteAll();
+    trainingEvidenceCandidates.deleteAll();
+    trainingPlannerDecisions.deleteAll();
+    trainingTurns.deleteAll();
+    trainingRecaps.deleteAll();
+    trainingSessions.deleteAll();
     expressionAttempts.deleteAll();
     favoriteExpressions.deleteAll();
     practiceQueueItems.deleteAll();

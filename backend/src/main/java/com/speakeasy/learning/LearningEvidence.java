@@ -19,6 +19,9 @@ public class LearningEvidence {
   private Double confidence;
   private String acceptedStatus;
   private String rejectionReason;
+  private String ruleName;
+  private String reasonCode;
+  private Integer schemaVersion;
   private Instant createdAt;
 
   protected LearningEvidence() {}
@@ -34,6 +37,36 @@ public class LearningEvidence {
       String acceptedStatus,
       String rejectionReason,
       Instant createdAt) {
+    this(
+        evidenceId,
+        userId,
+        sourceType,
+        sourceId,
+        evidenceType,
+        targetExpressionId,
+        confidence,
+        acceptedStatus,
+        rejectionReason,
+        null,
+        null,
+        null,
+        createdAt);
+  }
+
+  public LearningEvidence(
+      UUID evidenceId,
+      UUID userId,
+      String sourceType,
+      String sourceId,
+      String evidenceType,
+      UUID targetExpressionId,
+      Double confidence,
+      String acceptedStatus,
+      String rejectionReason,
+      String ruleName,
+      String reasonCode,
+      Integer schemaVersion,
+      Instant createdAt) {
     this.evidenceId = evidenceId;
     this.userId = userId;
     this.sourceType = sourceType;
@@ -43,6 +76,9 @@ public class LearningEvidence {
     this.confidence = confidence;
     this.acceptedStatus = acceptedStatus;
     this.rejectionReason = rejectionReason;
+    this.ruleName = ruleName;
+    this.reasonCode = reasonCode;
+    this.schemaVersion = schemaVersion;
     this.createdAt = createdAt;
   }
 
@@ -68,6 +104,18 @@ public class LearningEvidence {
 
   public String getAcceptedStatus() {
     return acceptedStatus;
+  }
+
+  public String getRuleName() {
+    return ruleName;
+  }
+
+  public String getReasonCode() {
+    return reasonCode;
+  }
+
+  public Integer getSchemaVersion() {
+    return schemaVersion;
   }
 
   public Instant getCreatedAt() {

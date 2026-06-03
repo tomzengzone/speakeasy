@@ -60,7 +60,7 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | Onboarding | `Onboarding` | Product Base FR-002 | In OpenAPI, including assessment and route creation |
 | Scenario / Content | `Scenario`, `Home` | Product Base FR-003, FR-004, FR-005; P0.1 P01-FR-001, P01-FR-002 | In OpenAPI, including official content, user scenario state, and home summary |
 | Product Base practice | `Practice` | Product Base FR-007, FR-008, FR-009; `mvp-backend-practice-ai` MVP-SI-008/MVP-SI-009 | In OpenAPI, including start/resume/get/turn/complete, recoverable provider failure, and summary candidate input |
-| P0.1 training planner | `Training`, `Planner` | P0.1 P01-FR-001..P01-FR-010 | In OpenAPI |
+| P0.1 training planner | `Training`, `Planner` | P0.1 P01-FR-001..P01-FR-017 | In OpenAPI; Product Base/production readiness blocked until backend Training implementation, tests and rollout gates close `P01-GAP-009` through `P01-GAP-014` or are explicitly marked blocked |
 | Learning / Review / Favorites | `Learning`, `Review`, `Favorites` | Product Base FR-005, FR-006, FR-009; P0.1 P01-FR-009 | In OpenAPI |
 | Subscription / Entitlement | `Subscription`, `Entitlement` | P0 FR-COM-001..FR-COM-007, FR-COM-009 | In OpenAPI |
 | Usage / AI Gateway | `Usage`, `AI Gateway` | P0 FR-COM-010; Product Base FR-004, FR-008; P0.1 P01-FR-006, P01-FR-007; `mvp-backend-practice-ai` MVP-SI-006/MVP-SI-009 | In OpenAPI, including server-side ASR/TTS/pronunciation/coach adapters, no client provider secret field, and typed fallback results |
@@ -97,6 +97,23 @@ Owning increment: `docs/product/increments/commercial-ai-provider-hardening/`.
 | P0-AI-ARCH-001 | `POST /admin/ai/retention-jobs` and `GET /admin/ai/retention-jobs/{job_id}` expose retention execution status, aggregate deletion/redaction counts and redacted evidence refs only. | FR-COM-AI-005, AC-COM-AI-005, TC-COM-AI-006, TC-COM-AI-007 |
 
 P0-AI-ARCH-001 gate result: OpenAPI now contains implementation-level contracts for media upload/signing, persistent TTS cache metadata, provider evidence, cost metrics and AI retention jobs. Backend implementation may proceed only against these paths and must keep raw media, provider payloads, full signed URLs and provider secrets out of request/response DTOs and logs.
+
+## P0.1 Training Production-Hardening Contract Gate
+
+Owning increment: `docs/product/increments/p0-1-expression-automation-training/`；remediation batch 2026-06-03。
+
+| Work package | Contract decision | Traceability |
+| --- | --- | --- |
+| P01-HARDEN-001 | `/training/sessions`, `/training/sessions/{session_id}`, `/training/sessions/{session_id}/turns` and `/training/sessions/{session_id}/complete` are the Product Base/production Training source-of-truth boundary. These endpoints must be authenticated, owner-scoped and backed by server persistence before P0.1 can be promoted from local route to stable product capability. | P01-FR-012, P01-SPEC-013, AC-P01-014, TC-P01-021, TC-P01-022, P01-TR-013 |
+| P01-HARDEN-001 | Training turn replay requires `Idempotency-Key` plus `session_id`; duplicate keys with the same body return the prior turn result, while mismatched replay returns `IDEMPOTENCY_CONFLICT`. Flutter cannot create local draft attempts that count as accepted server turns. | P01-FR-012, AC-P01-014, TC-P01-022, TC-P01-029 |
+| P01-HARDEN-002 | Learning evidence writes from training must preserve `source_turn_id`, `target_expression_id`, deterministic rule trace, schema version and acceptance/rejection status. Raw AI candidates or local recap text cannot directly become final mastery facts. | P01-FR-013, P01-SPEC-014, AC-P01-015, TC-P01-023, P01-TR-014 |
+| P01-HARDEN-002 | Account deletion and retention jobs must cover server-backed TrainingSession, TrainingTurn, TrainingRecap, LearningEvidenceCandidate, media refs and redacted audit refs. | P01-FR-013, AC-P01-015, TC-P01-024 |
+| P01-HARDEN-003 | Training responses must reference reviewed `scenario_version_id`, `action_chain_version`, `step_key` and target expression ids. Missing content mapping must produce explicit recoverable or blocked status, not generated unreviewed scenario content. | P01-FR-014, P01-SPEC-015, AC-P01-016, TC-P01-025, P01-TR-015 |
+| P01-HARDEN-004 | Voice training must consume trusted backend media refs from the Media/AI Gateway contract, reuse usage reservation/commit/release, and return typed fallback for ASR/TTS/LLM/pronunciation failures. Paid AI voice remains blocked by `commercial-ai-provider-hardening` evidence until that gate passes. | P01-FR-015, P01-SPEC-016, AC-P01-017, TC-P01-026, P01-TR-016 |
+| P01-HARDEN-005 | Planner endpoints and services must emit replayable `PlannerDecision` data with rule version, input snapshot refs, reason codes and AI candidate refs when applicable. Config changes must be versioned and testable against fixed fixtures. | P01-FR-016, P01-SPEC-017, AC-P01-018, TC-P01-027, P01-TR-017 |
+| P01-HARDEN-006 | Training observability must expose redacted metrics for start, turn, fallback, completion, evidence write, provider status, latency and rollout gate health. Metrics cannot include provider secrets, raw audio, full transcript or raw provider payload. | P01-FR-017, P01-SPEC-018, AC-P01-019, TC-P01-028, P01-TR-018 |
+
+P0.1 Training hardening gate result: the OpenAPI Training family is the Product Base/production source-of-truth boundary. The previous local-first Training route is retired；local-first 只是历史 local draft, not Product Base or production ready. Product Base merge, commercial production readiness or release checklist pass claims require `AC-P01-014` through `AC-P01-019` and `TC-P01-021` through `TC-P01-031` to pass, or the corresponding Product Base/release status must explicitly remain blocked.
 
 ## Error Model
 

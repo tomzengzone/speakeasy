@@ -89,6 +89,12 @@ public class AccountDeletionService {
     delete("saved_expressions", userId);
     delete("mastery_records", userId);
     delete("learning_history_entries", userId);
+    delete("training_metric_events", userId);
+    delete("training_evidence_candidates", userId);
+    delete("training_planner_decisions", userId);
+    delete("training_turns", userId);
+    delete("training_recaps", userId);
+    delete("training_sessions", userId);
     delete("learning_evidences", userId);
     delete("session_summaries", userId);
     delete("practice_turns", userId);

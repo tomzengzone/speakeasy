@@ -1,7 +1,7 @@
 # Increment Definition：P0.1 表达自动化训练 Agent
 
 ## 状态
-Draft - active increment definition。
+Draft - active increment definition with production-hardening remediation overlay。P0.1 本地训练闭环已执行通过，但作为商业软件能力合入 Product Base 前，必须在本 stage / 本 increment 内关闭后端训练事实源、学习证据、内容版本、真实语音链路、planner 审计和运营指标缺口；不得新增 stage。
 
 ## Increment ID
 `p0-1-expression-automation-training`
@@ -35,6 +35,7 @@ Draft - active increment definition。
 - 定义 in-session pressure check：连续通过后减少提示并进入轻量追问。
 - 语音为主路径，文本为 ASR 失败、麦克风拒绝或调试兜底。
 - 训练结束写回学习证据：掌握、薄弱、复习、个人素材、下一步建议。
+- 商业软件整改覆盖同一 P0.1 stage：实现或明确阻断后端 Training API、服务端训练事实源、学习证据 rule trace、版本化训练内容、真实 media/AI pipeline、planner decision audit、训练运营指标和 rollout/release gates。
 
 ## Covered Stage Scope Items
 | Stage Scope ID | Coverage note |
@@ -84,6 +85,19 @@ TC-P01-013 和 TC-P01-014 已经本地关闭；本增量下一步不是继续扩
 | 4 | P01-REG-001 | Product Manager | 更新 `expression-automation-training` feature 状态，并保留 paid AI voice residual 指向 `commercial-ai-provider-hardening` | P01-SI-007, P01-SI-008, P01-SI-011 | `docs/product/feature_registry.md` update | Product Object Governance Check |
 
 合入范围只允许覆盖两个官方场景中的 session 内训练 planner、action chain、micro-action、hint ladder、pressure check、语音主路径/文本兜底、反馈边界、学习证据写回和可恢复失败。跨 session/跨天调度、完整 L0-L5、笔记本、完整评分产品化、场景包扩展和商业权益 gating 均不进入本次 Product Base 合入。
+
+## 2026-06-03 商业软件整改执行批次
+本批次不新增 stage、不新增 increment、不扩大到 P0.2/P1/P2；它只把已验证的 P0.1 session 内训练能力从 local-first demo hardening 为可被商业软件接受的后端事实源、可审计证据、可运营训练能力。
+
+| Order | Work Package ID | Route / Owner | Scope | Stage Scope Items | Required output | Gate / checker |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | P01-HARDEN-001 | Product Manager / Requirement Development / System Architect | 决定并落实 `/training/sessions...` OpenAPI 与后端实现的一致性；未实现时不得把 API 当作可用能力 | P01-SI-001, P01-SI-002, P01-SI-004, P01-SI-011 | requirements/spec/API contract/traceability updates | Product Object Governance Check |
+| 2 | P01-HARDEN-002 | Domain / Backend / Security | 将 TrainingSession、TrainingTurn、PlannerDecision、TrainingRecap、LearningEvidenceCandidate 和 rule trace 纳入服务端事实源与账号删除/retention 边界 | P01-SI-002, P01-SI-009, P01-SI-011 | domain model and test case updates | QA + Security review |
+| 3 | P01-HARDEN-003 | Product / Backend / Content | 把本地 action chain 常量升级为版本化训练内容映射，仍只覆盖两个官方场景 | P01-SI-001, P01-SI-003, P01-SI-004, P01-SI-010 | content versioning contract and migration plan | Product Object Governance Check |
+| 4 | P01-HARDEN-004 | Backend / AI Runtime / Frontend | 将训练 turn 接入 media upload、可信 `audio_ref`、ASR/TTS/LLM gateway、schema validator 和 fallback | P01-SI-007, P01-SI-008, P01-SI-011 | backend/frontend/API integration design and tests | QA + AI Runtime review |
+| 5 | P01-HARDEN-005 | Backend / AI Runtime | 将 planner 抽成可回放、可配置、可审计的 deterministic domain service；LLM 仍只能给候选 | P01-SI-002, P01-SI-005, P01-SI-006, P01-SI-008, P01-SI-010 | planner decision audit contract and tests | QA |
+| 6 | P01-HARDEN-006 | Ops / Backend / Product | 增加训练 funnel、fallback、hint、pressure、evidence、provider cost 运营指标和 rollout controls | P01-SI-007, P01-SI-008, P01-SI-009, P01-SI-011 | observability/release gate requirements and tests | Ops + QA |
+| 7 | P01-HARDEN-007 | QA / Product Object Governance Check | 为以上整改补齐 AC-to-TC、traceability、报告和 Product Base 合入前验收口径 | P01-SI-001..011 | updated acceptance/test_cases/traceability and PM acceptance readiness finding | Product Object Governance Check |
 
 ## Owner Agent
 Product Manager Agent

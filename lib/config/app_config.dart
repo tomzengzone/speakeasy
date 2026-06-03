@@ -24,6 +24,9 @@ class AppConfig {
   static const String _enableTestPhoneLoginDefine = String.fromEnvironment(
     'ENABLE_TEST_PHONE_LOGIN',
   );
+  static const String _enableBackendTrainingDefine = String.fromEnvironment(
+    'ENABLE_BACKEND_TRAINING',
+  );
 
   static String get apiBaseUrl => _getRequired('API_BASE_URL');
 
@@ -66,6 +69,9 @@ class AppConfig {
   static bool get enableTestPhoneLogin =>
       _getOptional('ENABLE_TEST_PHONE_LOGIN').toLowerCase() == 'true';
 
+  static bool get enableBackendTraining =>
+      _getOptional('ENABLE_BACKEND_TRAINING').toLowerCase() == 'true';
+
   static String _getRequired(String key) {
     final String value = _getOptional(key);
     if (value.isEmpty) {
@@ -103,6 +109,7 @@ class AppConfig {
       'CHAT_MODEL' => _chatModelDefine,
       'FEEDBACK_MODEL' => _feedbackModelDefine,
       'ENABLE_TEST_PHONE_LOGIN' => _enableTestPhoneLoginDefine,
+      'ENABLE_BACKEND_TRAINING' => _enableBackendTrainingDefine,
       _ => '',
     };
   }

@@ -1,7 +1,100 @@
 # Quality Report
 
 ## Current Status
-`P0-AI-OSS-STORAGE-20260603` passed local quality review for the Aliyun OSS storage adapter, canonical object refs, signed upload/read URL path and forged object_ref rejection. Paid AI and commercial release still require real external evidence refs and independent reviewer approval before release closure.
+`P01-TRAINING-NAMING-MIGRATION-20260603` passed independent review for Training bounded-context naming migration. Executable Flutter Training code/tests now use `lib/features/training` and `test/features/training`, with no `InterviewTraining*` or `interview_training_*` executable Training namespace remaining. Commercial release and paid AI voice remain blocked by P0 external evidence gates.
+
+## 2026-06-03 P0.1 Training Naming Migration Review
+
+Result: pass for namespace migration, traceability and regression coverage. No behavior change intended.
+
+Findings:
+- No blocker. Training production code now lives under `lib/features/training/` with `TrainingBackendAdapter`, `TrainingSessionLoopPage`, `TrainingSessionView` and `Training*` contract types.
+- No blocker. Training tests now live under `test/features/training/`; TC IDs and AC mappings were preserved rather than renumbered.
+- No blocker. `scripts/check_p0_1_training_frontend_source_of_truth.py` now forbids `InterviewTraining*`, `interview_training_*`, legacy Training files under `lib/features/interview/`, and frontend `training_agent.dart`.
+- No blocker. `scripts/check_ai_eval_cases.dart` validates feedback schema through `training_contract.dart`, not a local planner/agent.
+- No blocker. Architecture boundary now states that `interview` is a scenario/practice namespace, while Training frontend belongs to `lib/features/training/`.
+
+Validation:
+- `python3 scripts/check_p0_1_training_frontend_source_of_truth.py` - passed.
+- `python3 scripts/check_p0_1_training_rollout_readiness.py` - passed.
+- `flutter test test/features/training/training_entry_test.dart test/features/training/training_backend_only_loop_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter test integration_test/p0_1_training_loop_test.dart` - passed.
+- `flutter analyze lib/features/training/training_contract.dart lib/features/training/training_backend_adapter.dart lib/features/training/training_session_view.dart lib/features/training/training_session_loop_page.dart lib/pages/home_page.dart test/features/training/training_entry_test.dart test/features/training/training_backend_only_loop_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_test_helpers.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart scripts/check_ai_eval_cases.dart` - passed.
+- `flutter analyze integration_test/p0_1_training_loop_test.dart` - passed.
+- `dart run scripts/check_ai_eval_cases.dart` - passed: 7 cases.
+
+Residual risk:
+- Historical report entries may still mention the old file names as past evidence. Current source-of-truth docs and executable paths use the Training bounded-context names.
+
+## 2026-06-03 P0.1 Training Backend-Only Frontend Source-Of-Truth Review
+
+Result: pass for local Flutter backend-only source-of-truth implementation and traceability. Not a commercial release approval.
+
+Findings:
+- No local blocker. The retired `interview_training_agent.dart` production fallback is deleted, and the new contract file contains only API-facing DTO/validation helpers, not a planner/session state machine.
+- No local blocker. `TrainingSessionLoopPage` requires a backend adapter and calls backend start/get/hint/submit/complete paths; backend start failure renders service-unavailable state instead of creating a local draft session.
+- No local blocker. `HomePage` blocks training entry when `ENABLE_BACKEND_TRAINING=false`; it no longer opens a local-first route.
+- No local blocker. Voice failure no longer fabricates ASR transcript, feedback, planner decisions or evidence. Missing trusted `audio_ref` becomes a recoverable state, and typed fallback submits to backend only.
+- No local blocker. `scripts/check_p0_1_training_frontend_source_of_truth.py` blocks the retired agent file and known local fallback patterns, giving future changes an executable guard.
+- Release blocker remains outside this increment. Paid AI voice and commercial release still require P0 external DashScope, object storage, cost dashboard and retention evidence.
+
+Validation:
+- `python3 scripts/check_p0_1_training_frontend_source_of_truth.py` - passed.
+- `flutter test test/features/training/training_entry_test.dart test/features/training/training_backend_only_loop_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter test integration_test/p0_1_training_loop_test.dart` - passed.
+- `flutter analyze lib/features/training/training_contract.dart lib/features/training/training_backend_adapter.dart lib/features/training/training_session_view.dart lib/features/training/training_session_loop_page.dart lib/pages/home_page.dart test/features/training/training_entry_test.dart test/features/training/training_backend_only_loop_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_test_helpers.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter analyze integration_test/p0_1_training_loop_test.dart` - passed.
+
+Residual risk:
+- Device-level TC-P01-031 integration now runs with a self-contained local fixture; broader system E2E login/onboarding suites remain separate from this source-of-truth correction.
+- Future local demos must stay isolated from the product training entry and cannot be described as Product Base or production ready.
+
+## 2026-06-03 P0.1 Training Product Base Hardening Review
+
+Result: pass for local backend/Flutter production-hardening implementation and traceability, including the backend-only frontend source-of-truth correction. Not a commercial release approval.
+
+Findings:
+- No local blocker. Backend Training source-of-truth is implemented with authenticated owner scope, session/turn persistence, idempotency replay/conflict and generic official scenario validation based on scenario/version/level/content mapping rather than hard-coded two scene IDs.
+- No local blocker. Evidence governance now writes accepted Training evidence through `LearningMemoryService` with rule trace and covers deletion cleanup for Training tables.
+- No local blocker. Training turns can use trusted backend `audio_ref` and route ASR/scoring/LLM through `AiGatewayService` while keeping typed fallback behavior.
+- No local blocker. Planner decisions are deterministic, versioned and audited with replay-friendly snapshots that do not include raw transcript content.
+- No local blocker. Flutter has a production backend adapter, config gate and backend-only source-of-truth guard; local-first has been retired from the product training entry and cannot be represented as Product Base/production ready.
+- Release blocker remains outside this increment. Paid AI voice and commercial release still require P0 external DashScope, object storage, cost dashboard and retention evidence.
+
+Validation:
+- `cd backend && mvn -q -DskipTests compile` - passed.
+- `cd backend && mvn -q -Dtest=TrainingSessionControllerTest,TrainingTurnIdempotencyTest,TrainingSessionAuthorizationTest,TrainingEvidenceRuleTraceTest,TrainingAccountDeletionRetentionTest,TrainingContentVersioningTest,TrainingMediaAiPipelineTest,TrainingPlannerReplayTest,TrainingObservabilityTest test` - passed.
+- `cd backend && mvn -q test` - passed; full backend regression passed after adding Training user-data cascade cleanup semantics.
+- `flutter test test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter analyze lib/config/app_config.dart lib/services/api_client.dart lib/features/training/training_backend_adapter.dart lib/features/training/training_session_loop_page.dart lib/pages/home_page.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `python3 scripts/check_p0_1_training_rollout_readiness.py` - passed.
+- `npm run check:api-contract` - passed with OpenAPI/Dart drift hash unchanged.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Residual risk:
+- OpenAPI/Dart generated artifacts were intentionally left unchanged after the user's OpenAPI rollback request; future contract regeneration should be a separate explicit change.
+- Production rollout requires setting `ENABLE_BACKEND_TRAINING=true`, operating existing AI/media environment gates and preserving P0 commercial release blockers.
+
+## 2026-06-03 P0.1 Commercial Software Remediation Documentation Review
+
+Result: pass for documentation/design remediation and traceability. Not a Product Base merge approval, production training approval or commercial release approval.
+
+Findings:
+- No documentation blocker. The remediation stays inside the existing P0.1 stage and `p0-1-expression-automation-training` increment; no new stage or unrelated P0.2/P1/P2 scope was introduced.
+- No documentation blocker. `P01-FR-012..017 -> P01-SPEC-013..018 -> AC-P01-014..019 -> TC-P01-021..031 -> P01-TR-013..018` is now represented in the increment docs.
+- No documentation blocker. Architecture and domain docs now state the commercial software boundary: local-first P0.1 evidence is local/draft only; Product Base/production Training requires backend source-of-truth, evidence governance, content versioning, real media/AI pipeline, planner audit and rollout metrics.
+- No documentation blocker. The release checklist now has an explicit P0.1 Training Product Base/Production Hardening Gate, so the top-level checked checklist cannot override planned or blocked P0.1 sections.
+- Remaining implementation blocker. No backend Training source-of-truth implementation, evidence persistence, production media/AI Training pipeline, planner replay fixtures or rollout metrics were implemented in this batch.
+
+Validation:
+- `rg -n "P01-FR-012|P01-SPEC-013|AC-P01-014|TC-P01-021|P01-TR-013|P01-GAP-009|P01-HARDEN-001|Product Base/production" ...` - passed.
+- `npm run check:api-contract` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check -- <changed docs>` - passed.
+
+Residual risk:
+- TC-P01-021 through TC-P01-028 remain planned; P0.1 cannot be promoted to Product Base stable capability or production training readiness until those tests pass or blockers are explicitly accepted.
+- Paid AI voice and commercial release remain governed by P0 commercial subscription and commercial AI provider hardening gates.
 
 ## 2026-06-03 P0-AI OSS Storage Implementation Independent Review
 
@@ -99,7 +192,7 @@ Independent review findings:
 Validation performed:
 - `./scripts/run_mvp_system_e2e.sh --suite p0-1-training-loop` - passed.
 - `dart run scripts/check_ai_eval_cases.dart` - passed.
-- `flutter test test/features/interview/interview_training_feedback_schema_test.dart` - passed.
+- `flutter test test/features/training/training_feedback_schema_test.dart` - passed.
 - Relevant `flutter analyze` commands - passed.
 - `python3 scripts/run_dashscope_sandbox_matrix.py` - passed with sanitized report `build/reports/dashscope-sandbox-20260602T223557Z-3359fcc82fafa457.json`.
 - Commercial non-strict gates - passed.

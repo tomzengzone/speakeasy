@@ -1,7 +1,7 @@
 # Implementation Report
 
 ## Current Status
-Latest implementation update recorded: `P0-AI-OSS-STORAGE-20260603` implemented the local Aliyun OSS media storage adapter, canonical object refs, signed upload/read URL flow and forged object_ref rejection inside `commercial-ai-provider-hardening`. Paid AI voice remains blocked until the four external evidence refs are supplied and independently reviewed.
+Latest implementation update recorded: `P01-TRAINING-NAMING-MIGRATION-20260603` moved Flutter Training production code/tests into the Training bounded-context namespace (`lib/features/training`, `test/features/training`) and removed `InterviewTraining*` / `interview_training_*` naming from executable Training code. TC-P01-001 through TC-P01-013 and TC-P01-021 through TC-P01-031 remain local executed / passed.
 
 ## Report Format
 Each completed change should append:
@@ -14,6 +14,177 @@ Each completed change should append:
 - results
 - risks
 - follow-up
+
+## 2026-06-03 - P01-TRAINING-NAMING-MIGRATION-20260603 Training Bounded-Context Naming Migration
+
+Change request:
+- Rename Flutter Training production code and tests from the historical `interview_training_*` namespace to the bounded-context `training_*` namespace.
+- Keep behavior unchanged while updating documents, tests and source-of-truth guards.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-1-expression-automation.md`.
+- Increment: `docs/product/increments/p0-1-expression-automation-training/`.
+- Architecture contract: `docs/architecture/module_boundary.md` now owns Training frontend under `lib/features/training/` and `test/features/training/`.
+- Tests: existing `TC-P01-001` through `TC-P01-013`, `TC-P01-021` through `TC-P01-031` keep their IDs; script paths are renamed.
+
+Files changed:
+- Production namespace: `lib/features/training/training_contract.dart`, `training_backend_adapter.dart`, `training_session_loop_page.dart`, `training_session_view.dart`.
+- Test namespace: `test/features/training/training_*_test.dart` and `training_test_helpers.dart`.
+- Imports and class names: `TrainingBackendAdapter`, `TrainingSessionLoopPage`, `TrainingSessionView`, `TrainingSessionState`, `TrainingPlannerDecision`, `TrainingFeedbackCandidate`.
+- Guards/docs: `scripts/check_p0_1_training_frontend_source_of_truth.py`, `scripts/check_p0_1_training_rollout_readiness.py`, architecture/increment/report/release docs.
+
+Implementation summary:
+- `interview` remains a scenario/content namespace only; Training UI/adapter/contract no longer live under `lib/features/interview/`.
+- No `TrainingAgent` production file was introduced. The legacy `lib/features/interview/interview_training_agent.dart` deletion remains in force, and `lib/features/training/training_agent.dart` is now explicitly forbidden.
+- UI test keys were renamed from `interview_training_*` to `training_*`.
+
+Validation:
+- `python3 scripts/check_p0_1_training_frontend_source_of_truth.py` - passed.
+- `python3 scripts/check_p0_1_training_rollout_readiness.py` - passed.
+- `flutter test test/features/training/training_entry_test.dart test/features/training/training_backend_only_loop_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter test integration_test/p0_1_training_loop_test.dart` - passed.
+- `flutter analyze lib/features/training/training_contract.dart lib/features/training/training_backend_adapter.dart lib/features/training/training_session_view.dart lib/features/training/training_session_loop_page.dart lib/pages/home_page.dart test/features/training/training_entry_test.dart test/features/training/training_backend_only_loop_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_test_helpers.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart scripts/check_ai_eval_cases.dart` - passed.
+- `flutter analyze integration_test/p0_1_training_loop_test.dart` - passed.
+- `dart run scripts/check_ai_eval_cases.dart` - passed: 7 cases.
+
+Result:
+- Naming migration is complete for executable Flutter Training code/tests and current P0.1 evidence docs.
+- Training behavior remains backend-only; this change is a namespace/architecture cleanup.
+
+Residual risk:
+- Historical report sections may still mention legacy files as past evidence. Current source-of-truth docs and executable code use the Training bounded-context namespace.
+
+## 2026-06-03 - P01-TRAINING-BACKEND-ONLY-FRONTEND-SOT-20260603 Backend-Only Flutter Source Of Truth
+
+Change request:
+- Enforce the product decision that when backend Training is disabled or unavailable, the training entry is blocked or shows backend unavailable, and never falls back to a Flutter Training state machine.
+- Keep all work in the current P0.1 stage/increment and preserve bidirectional requirement-design-test traceability.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-1-expression-automation.md`.
+- Increment: `docs/product/increments/p0-1-expression-automation-training/`.
+- Requirements/spec/acceptance: `P01-FR-001` through `P01-FR-010`, `P01-FR-012`, `P01-FR-015`, `P01-FR-017`; `P01-SPEC-001` through `P01-SPEC-011`, `P01-SPEC-013`, `P01-SPEC-016`, `P01-SPEC-018`; `AC-P01-001` through `AC-P01-012`, `AC-P01-014`, `AC-P01-017`, `AC-P01-019`.
+- Tests: `TC-P01-001` through `TC-P01-013`, `TC-P01-029`, `TC-P01-030`, `TC-P01-031`.
+- Traceability: `P01-TR-001` through `P01-TR-011`, `P01-TR-013`, `P01-TR-016`, `P01-TR-018`; gaps `P01-GAP-006`, `P01-GAP-007`, `P01-GAP-009`, `P01-GAP-012`, `P01-GAP-014`.
+
+Files changed:
+- Deleted legacy production fallback: `lib/features/interview/interview_training_agent.dart`; no replacement `lib/features/training/training_agent.dart` exists.
+- Added backend-only Flutter contract: `lib/features/training/training_contract.dart`.
+- Updated Flutter product entry and route: `lib/pages/home_page.dart`, `lib/features/training/training_session_loop_page.dart`, `lib/features/training/training_session_view.dart`, `lib/features/training/training_backend_adapter.dart`.
+- Updated tests: `test/features/training/training_entry_test.dart`, `test/features/training/training_backend_only_loop_test.dart`, `test/features/training/training_text_fallback_test.dart`, `test/features/training/training_recoverable_failure_test.dart`, `test/features/training/training_feedback_schema_test.dart`, `test/features/training/training_voice_flow_test.dart`, `test/features/training/training_test_helpers.dart`, `integration_test/p0_1_training_loop_test.dart`.
+- Added static guard: `scripts/check_p0_1_training_frontend_source_of_truth.py`.
+- Docs/reports updated: P0.1 requirements/spec/acceptance/test cases/traceability, architecture/domain/API boundary docs, release checklist, test report and quality report.
+
+Implementation summary:
+- Removed the Flutter local Training Agent/state machine from the production path.
+- `TrainingSessionLoopPage` now requires a backend adapter, starts sessions through backend Training API, refreshes/hints/submits/completes through backend only, and renders backend unavailable on start failure.
+- Home training entry now blocks with service-unavailable UI when `ENABLE_BACKEND_TRAINING=false`; it no longer navigates to a local draft session.
+- Voice failure no longer fabricates transcript, feedback, planner state or evidence; missing trusted `audio_ref` produces a recoverable state and text fallback submits to backend `submitTurn`.
+- Added a source-of-truth guard script that fails if the retired agent file or forbidden local fallback patterns return.
+
+Validation:
+- `python3 scripts/check_p0_1_training_frontend_source_of_truth.py` - passed.
+- `flutter test test/features/training/training_entry_test.dart test/features/training/training_backend_only_loop_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter test integration_test/p0_1_training_loop_test.dart` - passed; TC-P01-031 now uses a self-contained HomePage/local-session fixture and does not require `API_BASE_URL`.
+- `flutter analyze lib/features/training/training_contract.dart lib/features/training/training_backend_adapter.dart lib/features/training/training_session_view.dart lib/features/training/training_session_loop_page.dart lib/pages/home_page.dart test/features/training/training_entry_test.dart test/features/training/training_backend_only_loop_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_test_helpers.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter analyze integration_test/p0_1_training_loop_test.dart` - passed.
+- `dart format ...` for the changed Flutter/test files - completed.
+
+Result:
+- Production training entry is backend-only. Backend disabled/unavailable no longer falls back to a Flutter state machine.
+- Traceability and tests now include the explicit backend-only frontend source-of-truth cases TC-P01-029 through TC-P01-031.
+
+Residual risk:
+- The backend-only source-of-truth evidence is covered by widget tests, direct integration and static guard.
+- Paid AI voice, commercial release and external provider/media evidence remain governed by P0 strict gates.
+
+## 2026-06-03 - P01-TRAINING-PRODUCT-BASE-HARDENING-20260603 Backend/Flutter Production Hardening
+
+Change request:
+- Complete backend and Flutter production code for the 2026-06-03 P0.1 commercial software remediation batch.
+- Keep all work in the current P0.1 stage/increment and preserve 100% requirements-design-test-traceability.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-1-expression-automation.md`.
+- Increment: `docs/product/increments/p0-1-expression-automation-training/`.
+- Requirements: `P01-FR-012`, `P01-FR-013`, `P01-FR-014`, `P01-FR-015`, `P01-FR-016`, `P01-FR-017`.
+- Specs: `P01-SPEC-013` through `P01-SPEC-018`.
+- Acceptance: `AC-P01-014` through `AC-P01-019`.
+- Tests: `TC-P01-021` through `TC-P01-031`.
+- Traceability: `P01-TR-013` through `P01-TR-018`; gaps `P01-GAP-009` through `P01-GAP-014` closed locally.
+
+Files changed:
+- Backend Training API/source-of-truth: `TrainingController`, `TrainingService`, `TrainingPlannerService`, Training entities/repositories, migration `V202606030001__p0_1_training_source_of_truth.sql`.
+- Backend integrations: `AiGatewayService.coachTraining`, `LearningEvidence` rule trace fields, `LearningMemoryService.createEvidenceWithRuleTrace`, `AccountDeletionService` training cleanup.
+- Flutter production adapter and entry gate: `TrainingBackendAdapter`, Training API methods in `ApiClient`, `ENABLE_BACKEND_TRAINING` config flag, backend-only page adapter, disabled-entry block and frontend source-of-truth guard.
+- Tests: `TrainingSessionControllerTest`, `TrainingTurnIdempotencyTest`, `TrainingSessionAuthorizationTest`, `TrainingEvidenceRuleTraceTest`, `TrainingAccountDeletionRetentionTest`, `TrainingContentVersioningTest`, `TrainingMediaAiPipelineTest`, `TrainingPlannerReplayTest`, `TrainingObservabilityTest`, and three Flutter adapter tests.
+- Rollout gate: `scripts/check_p0_1_training_rollout_readiness.py`.
+- Docs: P0.1 spec/test_cases/traceability, API/domain/release reports updated from planned/open to implemented/local executed.
+
+Implementation summary:
+- Added authenticated backend Training sessions/turns with server-owned state, reviewed content mapping, idempotency replay/conflict and user ownership.
+- Added rule-traced evidence write-back into LearningMemory and account deletion cleanup for Training data.
+- Added trusted media/AI pipeline for Training turns through existing AI Gateway ASR/scoring/LLM paths.
+- Added deterministic planner service with versioned decisions, audit rows and replay-friendly snapshots.
+- Added redacted Training metrics, rollout readiness script and frontend source-of-truth guard.
+- Added Flutter backend adapter and API client methods; the previous local-first route is retired from the product training entry. Production mode is enabled only through `ENABLE_BACKEND_TRAINING` and backend Training availability.
+
+Validation:
+- `cd backend && mvn -q -DskipTests compile` - passed.
+- `cd backend && mvn -q -Dtest=TrainingSessionControllerTest,TrainingTurnIdempotencyTest,TrainingSessionAuthorizationTest,TrainingEvidenceRuleTraceTest,TrainingAccountDeletionRetentionTest,TrainingContentVersioningTest,TrainingMediaAiPipelineTest,TrainingPlannerReplayTest,TrainingObservabilityTest test` - passed.
+- `cd backend && mvn -q test` - passed; full backend regression passed after adding Training user-data cascade cleanup semantics.
+- `flutter test test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter analyze lib/config/app_config.dart lib/services/api_client.dart lib/features/training/training_backend_adapter.dart lib/features/training/training_session_loop_page.dart lib/pages/home_page.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `python3 scripts/check_p0_1_training_rollout_readiness.py` - passed.
+- `npm run check:api-contract` - passed with the rolled-back OpenAPI/Dart drift hash unchanged.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Result:
+- P01-FR-012 through P01-FR-017 are implemented with local automated evidence.
+- P01-GAP-009 through P01-GAP-014 are closed locally for P0.1 Product Base/production hardening.
+
+Residual risk:
+- This is not commercial release approval. Paid AI voice and store release still require P0 commercial and external AI/media/cost/retention evidence.
+- OpenAPI generated client artifacts were not changed because the prior OpenAPI change was explicitly rolled back; the handwritten adapter uses existing generated path constants.
+
+## 2026-06-03 - P01-PRODUCTION-HARDENING-DOCS-20260603 P0.1 Commercial Software Remediation Design
+
+Change request:
+- Convert the six identified P0.1 commercial software risks and seven execution steps into a complete remediation plan and design.
+- Follow the project development workflow, update requirements/design/test/traceability/release documents, and do not create a new stage.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-1-expression-automation.md`.
+- Increment: `docs/product/increments/p0-1-expression-automation-training/`.
+- New requirements/spec/acceptance/test/traceability: `P01-FR-012` through `P01-FR-017`, `P01-SPEC-013` through `P01-SPEC-018`, `AC-P01-014` through `AC-P01-019`, `TC-P01-021` through `TC-P01-031`, `P01-TR-013` through `P01-TR-018`.
+- New blocker register: `P01-GAP-009` through `P01-GAP-014`.
+
+Files changed:
+- P0.1 increment docs: definition, requirements, spec, acceptance, test cases and traceability.
+- Architecture/domain docs: API contract, module boundary, data flow and training domain model.
+- Governance/release docs: P0.1 stage scope, development status and release checklist.
+- Reports: implementation report, test report and quality report.
+
+Implementation summary:
+- Kept the work inside the existing P0.1 stage and `p0-1-expression-automation-training` increment.
+- Added a backend Training API/source-of-truth design, evidence rule trace and data governance, versioned content mapping, real media/AI pipeline integration, planner audit/replay, metrics/rollout gates and QA/governance sync.
+- Clarified that TC-P01-013/014 local passed evidence remains valid but cannot be read as Product Base merge, production training readiness or commercial release approval.
+- Added explicit Product Base/production blockers to release checklist so the top-level checklist cannot override detailed P0.1 blocked sections.
+
+Validation:
+- `rg -n "P01-FR-012|P01-SPEC-013|AC-P01-014|TC-P01-021|P01-TR-013|P01-GAP-009|P01-HARDEN-001|Product Base/production" ...` - passed; new IDs appear across increment, architecture, domain, stage, development status and release docs.
+- `npm run check:api-contract` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check -- <changed docs>` - passed.
+
+Result:
+- Documentation/design remediation is complete for the current workflow step.
+- Implementation remains planned: backend/source-of-truth, evidence governance, content mapping, media/AI pipeline, planner audit and rollout gates still require TC-P01-021 through TC-P01-028 execution.
+
+Residual risk:
+- No backend or Flutter production Training implementation was added in this documentation batch.
+- P0.1 still cannot be promoted to Product Base stable capability or production training mode until the new planned test cases pass or blockers are explicitly accepted.
+- Commercial release and paid AI voice remain governed by the P0 commercial and commercial AI provider gates.
 
 ## 2026-06-03 - P0-AI-OSS-STORAGE-20260603 Aliyun OSS Media Storage Implementation
 
@@ -116,8 +287,8 @@ Requirement mapping:
 - Release gates: `docs/release/commercial_release_runbook.md`, `docs/release/release_checklist.md`.
 
 Files changed:
-- TC-P01-013 route integration: `lib/features/interview/interview_training_loop_page.dart`, `lib/pages/home_page.dart`, `integration_test/p0_1_training_loop_test.dart`, `scripts/run_mvp_system_e2e.sh`.
-- TC-P01-014 executable validator: `scripts/check_ai_eval_cases.dart`, `tests/ai_runtime/p0_1_ai_eval_cases.json`, `docs/ai_runtime/ai_eval_cases.md`, plus runtime guard hardening in `lib/features/interview/interview_training_agent.dart` and regression coverage in `test/features/interview/interview_training_feedback_schema_test.dart`.
+- TC-P01-013 route integration: `lib/features/training/training_session_loop_page.dart`, `lib/pages/home_page.dart`, `integration_test/p0_1_training_loop_test.dart`, `scripts/run_mvp_system_e2e.sh`.
+- TC-P01-014 executable validator: `scripts/check_ai_eval_cases.dart`, `tests/ai_runtime/p0_1_ai_eval_cases.json`, `docs/ai_runtime/ai_eval_cases.md`, plus runtime guard hardening in `lib/features/training/training_agent.dart` and regression coverage in `test/features/training/training_feedback_schema_test.dart`.
 - TC-COM-AI-004 evidence prep: `scripts/run_dashscope_sandbox_matrix.py` and generated sanitized local report under `build/reports/`.
 - Reports and PM/traceability documents updated in this section and downstream product docs.
 
@@ -131,7 +302,7 @@ Implementation summary:
 Validation:
 - `./scripts/run_mvp_system_e2e.sh --suite p0-1-training-loop` - passed.
 - `dart run scripts/check_ai_eval_cases.dart` - passed.
-- `flutter test test/features/interview/interview_training_feedback_schema_test.dart` - passed.
+- `flutter test test/features/training/training_feedback_schema_test.dart` - passed.
 - Relevant `flutter analyze` commands for TC-P01-013 and TC-P01-014 files - passed.
 - `python3 scripts/run_dashscope_sandbox_matrix.py` - passed and wrote `build/reports/dashscope-sandbox-20260602T223557Z-3359fcc82fafa457.json`.
 - `python3 -m py_compile scripts/run_dashscope_sandbox_matrix.py` - passed.
@@ -410,9 +581,9 @@ Requirement mapping:
 - Traceability rows: P01-TR-001 through P01-TR-011.
 
 Files changed:
-- Added `lib/features/interview/interview_training_agent.dart`.
-- Added `lib/features/interview/interview_training_session_view.dart`.
-- Added P0.1 tests under `test/features/interview/interview_training_*.dart`.
+- Added `lib/features/training/training_agent.dart`.
+- Added `lib/features/training/training_session_view.dart`.
+- Added P0.1 tests under `test/features/training/training_*.dart`.
 - Added `docs/product/increments/p0-1-expression-automation-training/test_cases.md`.
 - Updated P0.1 Domain, AI Runtime, UX, Architecture, traceability, test report and this implementation report.
 
@@ -425,9 +596,9 @@ Implementation summary:
 
 Validation:
 - `dart format ...` on new P0.1 code/tests - passed.
-- `flutter test test/features/interview/interview_training_entry_test.dart test/features/interview/interview_training_planner_test.dart test/features/interview/interview_training_hint_ladder_test.dart test/features/interview/interview_training_voice_flow_test.dart test/features/interview/interview_training_text_fallback_test.dart test/features/interview/interview_training_feedback_schema_test.dart test/features/interview/interview_training_pressure_check_test.dart test/features/interview/interview_training_evidence_test.dart test/features/interview/interview_training_recoverable_failure_test.dart test/features/interview/interview_training_scope_boundary_test.dart` - passed after one local compile fix.
+- `flutter test test/features/training/training_entry_test.dart test/features/training/training_planner_test.dart test/features/training/training_hint_ladder_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_pressure_check_test.dart test/features/training/training_evidence_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_scope_boundary_test.dart` - passed after one local compile fix.
 - Same P0.1 `flutter test` command rerun after independent review corrections for blank scene ids and malformed schema field types - passed.
-- `flutter analyze lib/features/interview/interview_training_agent.dart lib/features/interview/interview_training_session_view.dart test/features/interview/interview_training_entry_test.dart test/features/interview/interview_training_planner_test.dart test/features/interview/interview_training_hint_ladder_test.dart test/features/interview/interview_training_voice_flow_test.dart test/features/interview/interview_training_text_fallback_test.dart test/features/interview/interview_training_feedback_schema_test.dart test/features/interview/interview_training_pressure_check_test.dart test/features/interview/interview_training_evidence_test.dart test/features/interview/interview_training_recoverable_failure_test.dart test/features/interview/interview_training_scope_boundary_test.dart` - passed with no issues.
+- `flutter analyze lib/features/training/training_agent.dart lib/features/training/training_session_view.dart test/features/training/training_entry_test.dart test/features/training/training_planner_test.dart test/features/training/training_hint_ladder_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_pressure_check_test.dart test/features/training/training_evidence_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_scope_boundary_test.dart` - passed with no issues.
 - `git diff --check` - passed.
 - `python3 scripts/project_agent_runner.py validate` - passed.
 
@@ -436,7 +607,7 @@ Result:
 - Superseded 2026-06-03: P01-GAP-006 and P01-GAP-007 are locally closed by TC-P01-013 route integration and TC-P01-014 executable AI eval evidence.
 
 Residual risk:
-- Superseded 2026-06-03: `InterviewTrainingSessionView` is now wired through the dedicated P0.1 training route and homepage active-learning entry; `interview_practice_page.dart` remains outside this local blocker scope.
+- Superseded 2026-06-03: `TrainingSessionView` is now wired through the dedicated P0.1 training route and homepage active-learning entry; `interview_practice_page.dart` remains outside this local blocker scope.
 - Full audio recording, ASR/TTS/LLM/scoring provider behavior is not covered by this deterministic slice.
 - Local-first recap/evidence filtering exists, but server/wiki/home write-back integration is pending.
 
