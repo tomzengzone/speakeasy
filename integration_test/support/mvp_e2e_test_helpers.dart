@@ -258,8 +258,17 @@ Future<void> completeOnboardingThroughSessionIfStillNeeded(
   if (onboardingPage.evaluate().isEmpty) {
     return;
   }
-  final BuildContext context = tester.element(onboardingPage.first);
-  final AppSession session = AppSessionScope.of(context);
+  final Finder sessionScopeFinder = find.byType(AppSessionScope);
+  if (sessionScopeFinder.evaluate().isEmpty) {
+    return;
+  }
+  final AppSessionScope sessionScope = tester.widget<AppSessionScope>(
+    sessionScopeFinder.first,
+  );
+  final AppSession? session = sessionScope.notifier;
+  if (session == null) {
+    return;
+  }
   await session.completeOnboarding(
     goals: const <String>['E2E fallback onboarding completion'],
     level: 1,
@@ -298,7 +307,7 @@ Future<int> pumpUntilAny(
   }
 
   final String labels = finders
-      .map((Finder finder) => finder.description)
+      .map((Finder finder) => finder.describeMatch(Plurality.many))
       .join(', ');
   fail(
     'Timed out waiting for any finder: $labels; '
@@ -420,7 +429,7 @@ String _scrollTimeoutMessage(
       rectText = 'unavailable: $error';
     }
   }
-  return 'Timed out scrolling for finder: ${finder.description}; '
+  return 'Timed out scrolling for finder: ${finder.describeMatch(Plurality.many)}; '
       'finderCount=$finderCount; rect=$rectText; '
       'scrollableCount=$scrollableCount';
 }
