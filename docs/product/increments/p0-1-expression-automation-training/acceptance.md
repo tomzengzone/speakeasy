@@ -1,7 +1,7 @@
 # P0.1 Acceptance Criteria：表达自动化训练 Agent
 
 ## 状态
-Draft - 基于 P0.1 increment spec 生成，供 QA、测试用例和实现计划使用；2026-06-03 增加商业软件整改 AC，仍归属本 P0.1 stage / increment。
+Implementation-review ready - 基于 P0.1 increment spec 生成；AC-P01-014 through AC-P01-019 已映射到 TC-P01-021 through TC-P01-031 并在 2026-06-04 implementation review 中保持 local executed / passed；PM Product Base merge approval and P0 commercial / paid AI external gates remain separate。
 
 ## 上游来源
 - `docs/product/increments/p0-1-expression-automation-training/requirements.md`

@@ -70,6 +70,9 @@ def main():
         boundary = deferred.get(key)
         if not isinstance(boundary, dict):
             errors.append(f"missing deferred boundary metadata: {key}")
+        elif key == "p0_2" and boundary.get("status") == "implementation_level":
+            if boundary.get("prohibited_endpoint_generation") is not False:
+                errors.append("p0_2 implementation boundary must explicitly allow endpoint generation")
         elif boundary.get("prohibited_endpoint_generation") is not True:
             errors.append(f"deferred boundary is not protected from endpoint generation: {key}")
 

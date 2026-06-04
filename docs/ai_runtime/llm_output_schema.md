@@ -183,3 +183,112 @@ Owning increment: `docs/product/increments/p0-1-expression-automation-training/`
 - `learning_evidence_candidates[*].status` must be `candidate`; AI output must not contain `accepted`, `mastered`, `review_scheduled`, `entitled`, or billing state fields.
 - `pronunciation_signal.source` must be `server_side_adapter` when pronunciation feedback is available.
 - If `recoverable_error` is present, completion and task signals must use `unknown` or `partial`, and `recommended_next_action.type` must be `retry`, `text_fallback`, or `fallback`.
+
+## P0.2 Goal Autopilot Candidate Schemas
+
+Owning stage: `docs/product/stages/p0-2-training-memory.md`。
+Owning increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy`, `p0-2-autopilot-progress-checkpoint`。
+
+P0.2 AI output is candidate-only. Backend deterministic rules own `GoalProfile`, `DiagnosticAssessment`, `DailyTrainingPlan`, `ProgressForecast`, `OutcomeCheckpoint`, L0-L5 transition, review schedule, entitlement and claim guard decisions.
+
+### Diagnostic Candidate
+
+```json
+{
+  "schema_version": 1,
+  "output_type": "goal_diagnostic_candidate",
+  "goal_profile_id": "uuid",
+  "target_rubric": "ielts_speaking_internal_v1",
+  "sample_count": 3,
+  "rubric_scores": [
+    {
+      "dimension": "fluency",
+      "score": 5.5,
+      "evidence_ref": "sample_1",
+      "confidence": 0.72
+    }
+  ],
+  "weakness_tags": [
+    {
+      "tag": "limited_extension",
+      "severity": "high",
+      "dimension": "fluency",
+      "recommended_training_direction": "longer turn expansion",
+      "evidence_ref": "sample_2"
+    }
+  ],
+  "confidence_band": "medium",
+  "confidence_reasons": [
+    "minimum_sample_met"
+  ],
+  "claim_guard": {
+    "official_score_equivalence": false,
+    "allowed_claim": "product_internal_progress_only"
+  },
+  "recoverable_error": null
+}
+```
+
+Validation rules:
+- `output_type` must be `goal_diagnostic_candidate`.
+- `confidence_band` must be `low`, `medium` or `high`.
+- Candidate output cannot contain `supported`, `unsupported`, `goal_achieved`, `official_score`, `certified`, `entitlement`, `final_mastery_level` or `review_due_at` fields.
+- `official_score_equivalence` must be false for IELTS/TOEFL style goals.
+- Backend must downgrade to low confidence or recoverable diagnostic state if schema validation fails, sample count is insufficient, provider confidence is low or required rubric dimensions are missing.
+
+### Plan Explanation Candidate
+
+```json
+{
+  "schema_version": 1,
+  "output_type": "goal_plan_explanation_candidate",
+  "goal_profile_id": "uuid",
+  "plan_version": "goal-plan-v1",
+  "short_explanation": "Today focuses on high-risk fluency retrieval before a short scenario task.",
+  "learner_visible_reason": "Your fluency evidence is weaker than your pronunciation evidence.",
+  "risk_notes": [
+    "checkpoint_due_this_week"
+  ],
+  "forbidden_decision_fields_present": false,
+  "recoverable_error": null
+}
+```
+
+Validation rules:
+- `output_type` must be `goal_plan_explanation_candidate`.
+- Candidate text can explain deterministic decisions but cannot set item order, due dates, mastery levels, pressure level, quota state or entitlement.
+- If forbidden decision fields are present, backend rejects the candidate and uses deterministic explanation fallback.
+
+### Forecast And Checkpoint Candidate
+
+```json
+{
+  "schema_version": 1,
+  "output_type": "goal_checkpoint_feedback_candidate",
+  "goal_profile_id": "uuid",
+  "checkpoint_type": "weekly_mock",
+  "rubric_observations": [
+    {
+      "dimension": "task_response",
+      "summary": "Answer addressed the topic but lacked examples.",
+      "evidence_ref": "checkpoint_sample_1"
+    }
+  ],
+  "forecast_explanation_candidate": {
+    "gap_summary": "Main gap remains fluency under follow-up pressure.",
+    "risk_reason": "Recent missed review increased retrieval risk.",
+    "confidence_band": "medium"
+  },
+  "claim_guard": {
+    "goal_completion_claim_allowed": false,
+    "official_score_equivalence": false
+  },
+  "recoverable_error": null
+}
+```
+
+Validation rules:
+- `output_type` must be `goal_checkpoint_feedback_candidate`.
+- Candidate may explain checkpoint evidence and forecast risk, but backend owns `eta_date`, `risk_level`, `plan_update_signal`, goal completion and stale-plan decisions.
+- Low confidence or partial support must block high-precision ETA wording.
+- Candidate output must not contain official certification, guaranteed outcome, payment status, raw transcript, raw audio, provider secret or unrestricted personal data fields.

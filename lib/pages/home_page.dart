@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import 'package:speakeasy/config/app_config.dart';
 import 'package:speakeasy/features/commercial/commercial_scenario_gate.dart';
+import 'package:speakeasy/features/goal_autopilot/goal_autopilot_panel.dart';
 import 'package:speakeasy/features/interview/expression_daily_queue_coordinator.dart';
 import 'package:speakeasy/features/interview/interview_engine.dart';
 import 'package:speakeasy/features/interview/interview_expression_learning_page.dart';
@@ -1019,6 +1020,8 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
                 onPageChanged: (status) =>
                     unawaited(_setActiveLearningScene(status)),
               ),
+              const SizedBox(height: 16),
+              const GoalAutopilotPanel(),
               const SizedBox(height: 16),
               _HomeSceneCategoryModule(
                 loading: _interviewScenesLoading,

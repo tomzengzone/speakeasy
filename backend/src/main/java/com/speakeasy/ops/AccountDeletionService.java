@@ -83,6 +83,14 @@ public class AccountDeletionService {
 
   private void purgeUserOwnedData(UUID userId) {
     delete("expression_practice_attempts", userId);
+    delete("goal_outcome_checkpoints", userId);
+    delete("goal_progress_forecasts", userId);
+    delete("goal_plan_items", userId);
+    delete("goal_daily_plans", userId);
+    delete("goal_backplans", userId);
+    delete("goal_mastery_initial_states", userId);
+    delete("goal_diagnostic_assessments", userId);
+    delete("goal_profiles", userId);
     delete("favorite_expressions", userId);
     delete("practice_queue_items", userId);
     delete("review_items", userId);

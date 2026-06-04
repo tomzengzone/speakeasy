@@ -15,7 +15,7 @@ Proposed - Domain Schema Baseline + P0/P0.1 Extension。
 | Product Base accepted domain | access-onboarding、official-scenario-library、listening-shadowing、expression-practice-queue、voice-scenario-practice、learning-memory-review、profile-membership 的当前稳定能力 | In scope |
 | P0 extension | subscription、purchase、entitlement、usage、account deletion、commercial audit、production identity hardening、AI provider operations | In scope |
 | P0.1 extension | training session、training turn、planner decision、action chain step、micro-action、hint state、pressure check、learning evidence hardening | In scope |
-| Explicit deferred | P0.2 跨 session/跨天训练编排、完整 L0-L5、P1 notebook/评分产品化、P2 A1-C2/CMS、任意场景生成 | Out of scope |
+| Explicit deferred | P1 notebook/评分产品化、P2 A1-C2/CMS、任意场景生成 | Out of scope |
 
 ## Source Inventory
 
@@ -228,6 +228,53 @@ P0-AI-ARCH-001 结论：Domain Schema 对 `commercial-ai-provider-hardening` 的
 
 P0.1-DOM-001 结论：`docs/domain/training_model.md`、本文和 `docs/domain/entity_relationship.md` 已覆盖 P0.1 domain model gate。后续 AI、UX、Architecture 和 Test gates 仍需单独完成。
 
+## P0.2 Goal Autopilot Domain Extension
+
+Owning stage: `docs/product/stages/p0-2-training-memory.md`。
+Owning increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy`, `p0-2-autopilot-progress-checkpoint`。
+
+| Entity | Owner | 关键字段 | 生命周期 / 不变量 | Persistence / migration implication | API boundary recommendation | Test impact | Traceability note |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| GoalProfile | Goal Autopilot domain | goal_profile_id, user_id, goal_type, target_score, target_ability, deadline, daily_minutes, intensity_preference, support_status, status, revision | 目标是 P0.2 planner、forecast 和 checkpoint 的事实源；目标修改必须产生 revision 并让下游 plan/forecast stale | 需要 `goal_profiles`，user + status/revision 索引；不把官方考试目标声明为认证分数 | `POST /goal-autopilot/goals`, `GET /goal-autopilot/summary` | goal intake、revision、partial/unsupported、claim guard 测试 | P02-SI-007; P02-DIAG-FR-001, P02-DIAG-FR-002 |
+| SupportedGoalMatrixDecision | Goal Policy domain | decision_id, goal_profile_id, support_status, reason_code, limitation_message, rubric_available, content_coverage | supported/partial/unsupported 是后续计划和 autopilot 的硬门禁；unsupported 不生成 full plan、ETA 或达标承诺 | 可内嵌在 goal profile 或独立 decision 表；必须可审计 | goal intake response and summary | supported/partial/unsupported matrix tests | P02-PG-002; P02-DIAG-FR-002 |
+| DiagnosticAssessment | Diagnostic domain | diagnostic_assessment_id, goal_profile_id, confidence_band, rubric_scores, weakness_tags, sample_count, status, claim_guard | 诊断只能提供产品内 rubric 和起点；低置信度只能驱动保守计划或复测 | 需要 `diagnostic_assessments`；弱项/rubric 可用 JSON text 保存结构化摘要 | goal intake response and summary | minimum sample、low confidence、provider fallback、weakness decomposition tests | P02-SI-008; P02-DIAG-FR-003..005 |
+| MasteryInitialState | Learning Memory domain | state_id, goal_profile_id, dimension_key, initial_level, evidence_ref, source | 初始 L0-L5 只是 starting state；不得作为 final mastery 或达标证据 | 可落在 diagnostic summary 或后续 mastery 表 extension；必须标记 `initial_from_diagnostic` | summary/backplan input only | L0-L5 initialization and no-LLM-final-mastery tests | P02-SI-003; P02-DIAG-FR-006, P02-PLAN-FR-004 |
+| WeeklyBackplan | Planner domain | weekly_backplan_id, goal_profile_id, plan_version, start_date, end_date, milestone, session_count, checkpoint_due_date, status | 从目标倒排；目标、诊断或 checkpoint 改变后变 stale 并可重算 | 需要 `goal_backplans` 或 plan projection；保留 stale reason | `POST /goal-autopilot/plans/generate` | backplan feasibility、stale/replan、deadline tests | P02-SI-004, P02-SI-009; P02-PLAN-FR-001, P02-PLAN-FR-002 |
+| DailyTrainingPlan | Planner domain | daily_plan_id, backplan_id, plan_date, total_minutes, status, limitation_message | 每日计划必须尊重每日分钟数、恢复规则和过载保护；不能堆积 missed-day 任务 | 需要 `goal_daily_plans` 和 plan item 子表 | `GET /goal-autopilot/daily-plan` | daily planner、recovery、overload guard tests | P02-SI-001, P02-SI-005; P02-PLAN-FR-003, P02-PLAN-FR-006 |
+| PlanItem | Planner + Autopilot domain | plan_item_id, daily_plan_id, item_type, title, reason_code, duration_minutes, status, memory_risk, pressure_level | plan item 是 autopilot 的执行单元；完成/跳过/延期都要记录 | 需要 `goal_plan_items`；按 user/date/status 查询 | `GET /goal-autopilot/actions/next`, `POST /goal-autopilot/actions/{plan_item_id}/complete` | no-choice execution、complete/defer、reason code tests | P02-SI-010; P02-AUTO-FR-001..003 |
+| MemoryCurvePolicy | Learning Memory domain | policy_version, intervals, forgetting_risk_formula, overlearning_cap, interleaving_rule | 复习间隔、遗忘风险、过度学习和 interleaving 由 deterministic policy 裁决；LLM 不写 review schedule | 可版本化配置，不一定独立表；policy_version 必须进 planner audit | plan generation and replay | due calculation、risk、overlearning、interleaving tests | P02-SI-011; P02-PLAN-FR-004, P02-PLAN-FR-005 |
+| PlannerDecisionAudit | Planner domain | decision_id, goal_profile_id, plan_item_id, rule_version, input_snapshot_ref, reason_code, replay_hash | 计划选择和重算必须可 replay；snapshot 最小化敏感 transcript | 需要 `goal_planner_audits` 或 audit text field | plan generation and daily plan response | replay fixture and data minimization tests | P02-PG-003, P02-PG-005; P02-PLAN-FR-007 |
+| ProgressForecast | Forecast domain | forecast_id, goal_profile_id, gap_summary, eta_date, confidence_band, risk_level, risk_reason, next_checkpoint_date | ETA 是区间/日期预测，不得对 low confidence 或 partial goal 显示高精度达标承诺 | 需要 `goal_progress_forecasts`；checkpoint 后更新 | `GET /goal-autopilot/forecast` | forecast gap、risk、claim guard tests | P02-SI-012; P02-AUTO-FR-004 |
+| OutcomeCheckpoint | Checkpoint domain | checkpoint_id, goal_profile_id, checkpoint_type, cadence, result_status, confidence_band, summary, plan_update_signal | 每周/双周复测更新 evidence、risk、forecast 和 plan stale/replan signal | 需要 `goal_outcome_checkpoints`；checkpoint result 与 plan stale 关联 | `POST /goal-autopilot/checkpoints` | weekly/biweekly checkpoint、stale plan、no official score claim tests | P02-SI-013; P02-AUTO-FR-005 |
+| UserAutopilotControl | Autopilot domain | control_id, user_id, paused, quiet_hours, intensity_override, notification_consent, missed_day_policy | 自动带练必须有暂停、恢复、安静时段、强度调整和 missed-day recovery | 可先作为 profile/control projection；提醒和通知由平台权限门禁决定 | summary/action response | pause/resume、quiet hours、skip/defer、recovery tests | P02-PG-003; P02-AUTO-FR-003 |
+
+### P0.2 Lifecycle Notes
+
+| 状态机 | 状态 |
+| --- | --- |
+| GoalProfile | `draft -> supported/partial/unsupported`; `supported/partial -> active`; target edit creates new `revision` and marks downstream facts `stale` |
+| DiagnosticAssessment | `pending -> collecting_samples -> evaluating -> complete`; low-confidence path enters `low_confidence`; provider or schema failure enters `recoverable_error` |
+| GoalBackplan | `input_ready -> generated -> active`; goal/diagnostic/checkpoint change enters `stale`; missed day enters `recovery_replan` |
+| DailyTrainingPlan | `planned -> ready_for_autopilot -> in_progress -> completed`; skipped/deferred item enters `recovery_required` without task pile-up |
+| PlanItem | `pending -> active -> completed`; `pending/active -> skipped/deferred`; stale parent plan supersedes pending items |
+| ProgressForecast | `computed -> current`; low confidence/partial support blocks high-precision ETA and goal-complete claims |
+| OutcomeCheckpoint | `scheduled -> submitted -> evaluated -> plan_update_emitted`; unsupported goal cannot produce official-score certification |
+
+### P0.2-DOM-001 Gate Coverage
+
+| Stage Scope / Policy ID | Requirement | Domain evidence | Test impact |
+| --- | --- | --- | --- |
+| P02-SI-007 | GoalProfile | `GoalProfile`, `SupportedGoalMatrixDecision` | goal intake and revision tests |
+| P02-SI-008 | DiagnosticAssessment | `DiagnosticAssessment`, `MasteryInitialState` | diagnostic confidence, weakness and L0-L5 initialization tests |
+| P02-SI-001, P02-SI-004, P02-SI-009 | Daily/weekly/long-term planner | `WeeklyBackplan`, `DailyTrainingPlan`, `PlanItem` | plan generation, daily selection and stale replan tests |
+| P02-SI-002, P02-SI-003, P02-SI-011 | Pressure/memory/L0-L5 | `MemoryCurvePolicy`, `PlannerDecisionAudit`, `PlanItem.pressure_level` | memory risk, pressure ladder and replay tests |
+| P02-SI-010 | AutopilotTraining | `PlanItem`, `UserAutopilotControl` | next action, complete/defer, pause/quiet hours tests |
+| P02-SI-012 | ProgressForecast | `ProgressForecast` | ETA/risk/confidence claim guard tests |
+| P02-SI-013 | OutcomeCheckpoint | `OutcomeCheckpoint` | checkpoint cadence, evidence update and replan signal tests |
+| P02-PG-001..005 | Policy gates | Support status, claim guard, cost/data/control fields across all P0.2 entities | full partial/unsupported, entitlement, data minimization and policy downgrade tests |
+
+P0.2-DOM-001 结论：Domain Schema 现在覆盖三个 P0.2 increment 的实现前置领域对象、状态机、持久化方向、API boundary recommendation 和测试影响。代码实现仍需先通过 API/OpenAPI、AI runtime、UX screen spec 和 traceability gate。
+
 ## Cross-Domain Invariants
 
 | Invariant | 说明 |
@@ -249,6 +296,7 @@ P0.1-DOM-001 结论：`docs/domain/training_model.md`、本文和 `docs/domain/e
 | `content_*` | Scenario、ScenarioVersion、ScenarioLevel、TargetExpression、DialogueAsset、ActionChainStep |
 | `training_*` | PracticeSession、DialogueTurn、ListeningWarmup、ShadowingAttempt、TrainingSession、TrainingTurn、PlannerDecision、HintState、PressureCheck、TrainingRecap |
 | `learning_*` | FavoriteExpression、SavedExpression、LearningEvidence、LearningEvidenceCandidate、EvidenceRuleTrace、MasteryRecord、ReviewItem、SessionSummary、LearningHistoryEntry |
+| `goal_*` | GoalProfile、SupportedGoalMatrixDecision、DiagnosticAssessment、WeeklyBackplan、DailyTrainingPlan、PlanItem、PlannerDecisionAudit、ProgressForecast、OutcomeCheckpoint、UserAutopilotControl |
 | `commerce_*` | SubscriptionPlan、Purchase、Subscription、EntitlementSnapshot、EntitlementRule、PaymentProviderEvent |
 | `usage_*` | UsageLedger、UsageReservation、ProviderUsageEvent、ScoreSignal provider linkage |
 | `media_*` / `ai_media_*` | MediaAsset、TtsCacheEntry、provider-accessible signed media refs、object lifecycle metadata |
@@ -307,6 +355,7 @@ Owning increment: `docs/product/increments/mvp-backend-membership-boundary/`.
 | Product Base accepted domain | 保持启动门禁、首评、双场景、听力热身、表达队列、收藏、语音会话、学习沉淀、个人中心回归测试。 |
 | P0 commercial | 增加购买、恢复、无效凭据、退款/过期/撤销、权益刷新、用量额度、账号注销、商业文案一致、release gate 测试。 |
 | P0.1 training | 增加 action chain、micro-action、planner decision、hint ladder、pressure check、ASR fallback、AI schema fallback、learning evidence write-back 测试。 |
+| P0.2 goal autopilot | 增加 goal intake、diagnostic、backplan、daily plan、memory curve、autopilot action、forecast、checkpoint、partial/unsupported 降级和 policy gate 测试。 |
 | Cross-domain | 增加删除/匿名化、审计脱敏、source trace、client cache stale、idempotency 和 provider failure 测试。 |
 
 ## Omitted Scope
@@ -319,7 +368,6 @@ Owning increment: `docs/product/increments/mvp-backend-membership-boundary/`.
 | AI prompt/schema/eval | 由 AI Runtime 阶段负责。 |
 | UX screen spec | 由 UX/Screen Spec 阶段负责。 |
 | QA test case detail / DevOps release workflow | 由 QA / DevOps 阶段负责。 |
-| P0.2 跨 session/跨天 planner 和完整 L0-L5 | Future stage。 |
 | P1 notebook、评分产品化、更多场景包 | Future stage。 |
 | P2 A1-C2、CMS、内容生产工具 | Future stage。 |
 | 旧 `E:/ZhenChe/APP/speakeasy_backend` | 不作为当前目标架构依据。 |

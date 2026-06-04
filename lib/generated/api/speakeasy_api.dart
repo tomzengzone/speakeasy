@@ -5,7 +5,7 @@ class SpeakeasyApiContract {
   const SpeakeasyApiContract._();
 
   static const String openApiSha256 =
-      'cc57332b5379dfa5cc0174ebabfc48d5c89ad88013a8f8e823255e283eed917b';
+      '87c9218d93a5be9879e52390a1cd2c92de6fd198938a613bbcfc89ae5e0e4f98';
 
   static const List<String> pathTemplates = <String>[
     '/achievements/status',
@@ -32,6 +32,14 @@ class SpeakeasyApiContract {
     '/expressions/tasks/{queue_item_id}/complete',
     '/favorites/expressions',
     '/favorites/expressions/{favorite_id}',
+    '/goal-autopilot/actions/next',
+    '/goal-autopilot/actions/{plan_item_id}/complete',
+    '/goal-autopilot/checkpoints',
+    '/goal-autopilot/daily-plan',
+    '/goal-autopilot/forecast',
+    '/goal-autopilot/goals',
+    '/goal-autopilot/plans/generate',
+    '/goal-autopilot/summary',
     '/home/summary',
     '/learning/evidence',
     '/learning/history',
@@ -102,6 +110,14 @@ class SpeakeasyApiPaths {
   static const String entitlementsRefresh = '/entitlements/refresh';
   static const String expressionsQueue = '/expressions/queue';
   static const String favoritesExpressions = '/favorites/expressions';
+  static const String goalAutopilotActionsNext = '/goal-autopilot/actions/next';
+  static const String goalAutopilotCheckpoints = '/goal-autopilot/checkpoints';
+  static const String goalAutopilotDailyPlan = '/goal-autopilot/daily-plan';
+  static const String goalAutopilotForecast = '/goal-autopilot/forecast';
+  static const String goalAutopilotGoals = '/goal-autopilot/goals';
+  static const String goalAutopilotPlansGenerate =
+      '/goal-autopilot/plans/generate';
+  static const String goalAutopilotSummary = '/goal-autopilot/summary';
   static const String homeSummary = '/home/summary';
   static const String learningEvidence = '/learning/evidence';
   static const String learningHistory = '/learning/history';
@@ -147,6 +163,9 @@ class SpeakeasyApiPaths {
 
   static String favoriteExpression(String favoriteId) =>
       '/favorites/expressions/${_path(favoriteId)}';
+
+  static String goalAutopilotActionComplete(String planItemId) =>
+      '/goal-autopilot/actions/${_path(planItemId)}/complete';
 
   static String learningHistoryEntry(String historyEntryId) =>
       '/learning/history/${_path(historyEntryId)}';

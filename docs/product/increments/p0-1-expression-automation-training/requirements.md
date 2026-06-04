@@ -1,7 +1,7 @@
 # P0.1 Increment Requirements：表达自动化训练 Agent
 
 ## 状态
-Draft - 从 legacy P0.1 spec 迁移生成，作为本 increment 的标准 requirements；2026-06-03 增加商业软件整改要求，仍归属本 P0.1 stage 和 `p0-1-expression-automation-training` increment。
+Implementation-review ready - 从 legacy P0.1 spec 迁移生成，作为本 increment 的标准 requirements；2026-06-04 P0.1 Product Base/production-hardening local implementation review passed，仍归属本 P0.1 stage 和 `p0-1-expression-automation-training` increment；PM Product Base merge approval and P0 commercial / paid AI external gates remain separate。
 
 ## Product Object
 - Classification: `feature-increment`

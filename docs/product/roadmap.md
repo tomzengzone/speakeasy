@@ -17,6 +17,8 @@ Product Manager Agent
 
 **Next 价值体验线：口语优先、文本兜底的 FSI 式表达自动化训练闭环。**
 
+**Next 目标达成线：目标画像、真实诊断、目标倒排计划、自动带练、记忆曲线、进度预测和周期复测。**
+
 **外部门禁线：真实 payment provider、真实 AI provider、对象存储、商店配置、支付沙盒/生产校验、合规和发布证据。**
 
 PM 复查判断：`p0-commercial-readiness` 是 P0 级 stage，位于 P0.1 训练体验升级之上。今天如果目标是“商业软件功能补齐”或“面向真实用户收费前准备”，下一步应先路由 P0 商业化订阅上线准备，而不是直接做 P0.1 前端 UI 设计。P0.1 仍是核心价值体验升级线，可以在不混入商业发布承诺的前提下做规划或并行预研，但不能替代 P0 的账号、支付、权益、合规、风控和发布门禁。
@@ -135,15 +137,45 @@ Canonical scope：
 Legacy source：
 - `docs/product/features/mvp-learning-loop-spec.md` 仅作为 P0.1 legacy spec source，P0.1 标准增量工件已迁移生成到 `docs/product/increments/p0-1-expression-automation-training/`。
 
-## Next: P0.2 跨 session 训练编排与记忆引擎强化
-目标：让用户不需要自己决定今天练什么、练几组、哪些旧表达要复现、哪些薄弱点要插入新场景。
+## Next: P0.2 目标驱动自动带练与跨 session 记忆引擎
+目标：让用户不只是“不用决定今天练什么”，而是可以输入短期目标，例如 IELTS/TOEFL 口语目标分、商务英语口语能力、截止日期、每日可投入时间和强度偏好；系统诊断真实水平，倒排周计划/日计划/每次训练内容，并自动带用户完成训练、复习和复测，持续更新达标预测。
 
 范围：
+- GoalProfile：目标类型、目标分数/能力、截止日期、每日可投入时间、强度偏好。
+- DiagnosticAssessment：初始口语测评、目标 rubric、弱项分解、置信度。
+- GoalBackplan：从目标倒推周计划、日计划和每次训练内容。
+- AutopilotTraining：系统自动开练、自动切换训练/复习/复测，不依赖用户自律。
+- MemoryCurvePolicy：明确间隔复习算法、遗忘风险、复现、过度学习和 interleaving。
+- ProgressForecast：当前距目标差距、预计达标日期、风险提醒、阶段复测。
+- OutcomeCheckpoint：每周或每两周模拟考试/商务任务复测，更新计划。
 - Daily training planner：根据到期复习、薄弱表达、未完成 session、当前场景目标自动生成今日训练。
 - Cross-session pressure ladder：跨轮次逐步减少提示、增强追问、提高复现要求。
 - Mastery ladder：L0 未见过、L1 认得、L2 能跟读、L3 能提示下说出、L4 能场景中说出、L5 能压力下自然说出。
 - Long-term session planner：系统决定跨天练几组、何时复习、何时复现、何时换场景。
 - 训练证据进入首页推荐、表达队列和个人 Wiki。
+
+现有 stage 覆盖审查：
+- Product Base 首评只覆盖目标方向、当前输出水平和每日分钟数，不能覆盖目标分数、截止日期、强度偏好或真实水平诊断。
+- P0.1 覆盖 session 内训练自动化，不覆盖跨天目标倒排、达标预测或周期复测。
+- 旧单体记忆调度设计覆盖 daily planner、pressure ladder、mastery 和 long-term schedule，但缺少 GoalProfile、DiagnosticAssessment、GoalBackplan、AutopilotTraining、MemoryCurvePolicy、ProgressForecast 和 OutcomeCheckpoint。
+- P1 笔记本/评分产品化和 P1/P2 内容扩展可增强 rubric、内容和评分，但太靠后，不能作为目标驱动自动带练的前置核心。
+
+重新规划的 P0.2 增量拆分：
+- `p0-2-goal-diagnostic-foundation`：GoalProfile + DiagnosticAssessment，建立目标事实源、诊断测评、目标 rubric、弱项分解和置信度。
+- `p0-2-goal-backplan-memory-policy`：GoalBackplan + MemoryCurvePolicy，基于目标、诊断、每日可投入时间和记忆曲线生成周计划/日计划/每次训练内容。
+- `p0-2-autopilot-progress-checkpoint`：AutopilotTraining + ProgressForecast + OutcomeCheckpoint，自动开练、自动切换训练/复习/复测，并周期性更新目标差距和计划。
+
+已启动标准增量文档设计：
+- `docs/product/stages/p0-2-training-memory.md`
+- `docs/product/increments/p0-2-goal-diagnostic-foundation/definition.md`
+- `docs/product/increments/p0-2-goal-backplan-memory-policy/definition.md`
+- `docs/product/increments/p0-2-autopilot-progress-checkpoint/definition.md`
+- `docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening/definition.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/definition.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/definition.md`
+- `docs/product/increments/p0-2-followup-d-release-gate-hardening/definition.md`
+
+当前口径：旧单体记忆调度 artifact 已删除并被新的目标驱动 P0.2 stage scope 吸收。P0.2 stage scope 扩展到 P02-SI-001 到 P02-SI-013；三个新 increment 已完成 requirements/spec/acceptance/test_cases/traceability 下沉设计并保留 P02-PG-001 through P02-PG-005 横向 policy gates。Followup-A through Followup-D 已建立正式 definition 和 WP traceability scaffold，用于把完整 GoalProfile UI、pause/resume/notification、Queue/Wiki propagation、commercial/cost/data/release gates 拆成可实施小增量。任何 follow-up 代码启动前仍必须补齐 requirements/spec/acceptance/test_cases、domain/API/AI/UX 契约、实际代码、性能测试、>=80% 代码覆盖率证据和独立 checker 复核。
 
 ## Next: P1 笔记本与评分产品化
 目标：把“收藏表达”升级为真正的学习笔记与评分系统。

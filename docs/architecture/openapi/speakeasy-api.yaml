@@ -3,8 +3,8 @@ info:
   title: SpeakEasy API
   version: 0.1.0
   description: 'Machine-readable OpenAPI source of truth for SpeakEasy server-backed Product Base behavior, P0 commercial
-    subscription readiness, and P0.1 expression automation training. P0.2/P1/P2 roadmap items are intentionally
-    excluded from implementation-level paths until they have owning increments.
+    subscription readiness, P0.1 expression automation training, and P0.2 goal-driven learning autopilot. P1/P2
+    roadmap items are intentionally excluded from implementation-level paths until they have owning increments.
 
     '
   license:
@@ -31,6 +31,8 @@ tags:
   description: P0.1 expression automation training sessions and turns.
 - name: Planner
   description: P0.1 deterministic planner, hints, and pressure check.
+- name: Goal Autopilot
+  description: P0.2 goal intake, diagnostic, backplan, daily autopilot, forecast, and checkpoint.
 - name: Learning
   description: Learning evidence, mastery, and history.
 - name: Review
@@ -57,17 +59,17 @@ x-product-scope:
   - p0-commercial-readiness
   - commercial-ai-provider-hardening
   - p0-1-expression-automation-training
-  deferred_boundaries:
   - p0-2-training-memory
+  deferred_boundaries:
   - p1-notebook-vocabulary
   - p1-scoring-productization
   - p1-scenario-content-expansion
   - p2-a1-c2-cms
 x-deferred-boundaries:
   p0_2:
-    status: deferred
-    reason: Stage exists but owning increment definition/spec is not approved.
-    prohibited_endpoint_generation: true
+    status: implementation_level
+    reason: Three owning P0.2 increments have approved requirements/spec/acceptance/test_cases/traceability and policy gates.
+    prohibited_endpoint_generation: false
   p1:
     status: deferred
     reason: Roadmap/future feature boundary only.
@@ -820,6 +822,285 @@ paths:
               examples:
                 default:
                   $ref: '#/components/examples/ErrorResponseExample'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /goal-autopilot/goals:
+    post:
+      tags:
+      - Goal Autopilot
+      operationId: createGoalAutopilotGoal
+      summary: Create or revise the active P0.2 goal profile and diagnostic baseline.
+      x-traceability:
+        product_objects:
+        - p0-2-training-memory
+        - p0-2-goal-diagnostic-foundation
+        requirements:
+        - P02-DIAG-FR-001
+        - P02-DIAG-FR-002
+        - P02-DIAG-FR-003
+        - P02-DIAG-FR-004
+        - P02-DIAG-FR-005
+        - P02-DIAG-FR-006
+        - P02-DIAG-FR-007
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalAutopilotGoalRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/GoalAutopilotGoalRequestExample'
+      responses:
+        '200':
+          description: Goal profile, support decision and diagnostic baseline created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalAutopilotSummaryResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/GoalAutopilotSummaryResponseExample'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /goal-autopilot/summary:
+    get:
+      tags:
+      - Goal Autopilot
+      operationId: getGoalAutopilotSummary
+      summary: Get current P0.2 goal, diagnostic, plan, action, forecast and checkpoint projection.
+      x-traceability:
+        product_objects:
+        - p0-2-training-memory
+        - p0-2-autopilot-progress-checkpoint
+        requirements:
+        - P02-AUTO-FR-001
+        - P02-AUTO-FR-002
+        - P02-AUTO-FR-004
+        - P02-AUTO-FR-006
+      responses:
+        '200':
+          description: Current goal autopilot projection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalAutopilotSummaryResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/GoalAutopilotSummaryResponseExample'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /goal-autopilot/plans/generate:
+    post:
+      tags:
+      - Goal Autopilot
+      operationId: generateGoalAutopilotPlan
+      summary: Generate or recalculate deterministic P0.2 weekly and daily plans.
+      x-traceability:
+        product_objects:
+        - p0-2-training-memory
+        - p0-2-goal-backplan-memory-policy
+        requirements:
+        - P02-PLAN-FR-001
+        - P02-PLAN-FR-002
+        - P02-PLAN-FR-003
+        - P02-PLAN-FR-004
+        - P02-PLAN-FR-005
+        - P02-PLAN-FR-006
+        - P02-PLAN-FR-007
+        - P02-PLAN-FR-008
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateGoalPlanRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/GenerateGoalPlanRequestExample'
+      responses:
+        '200':
+          description: Goal backplan and daily plan generated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalPlanResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/GoalPlanResponseExample'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /goal-autopilot/daily-plan:
+    get:
+      tags:
+      - Goal Autopilot
+      operationId: getGoalAutopilotDailyPlan
+      summary: Get the active P0.2 daily training plan.
+      x-traceability:
+        product_objects:
+        - p0-2-training-memory
+        - p0-2-goal-backplan-memory-policy
+        requirements:
+        - P02-PLAN-FR-003
+        - P02-PLAN-FR-004
+        - P02-PLAN-FR-005
+        - P02-PLAN-FR-006
+      responses:
+        '200':
+          description: Active daily plan.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyPlanResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/DailyPlanResponseExample'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /goal-autopilot/actions/next:
+    get:
+      tags:
+      - Goal Autopilot
+      operationId: getGoalAutopilotNextAction
+      summary: Get the one primary P0.2 action for no-choice daily execution.
+      x-traceability:
+        product_objects:
+        - p0-2-training-memory
+        - p0-2-autopilot-progress-checkpoint
+        requirements:
+        - P02-AUTO-FR-001
+        - P02-AUTO-FR-002
+        - P02-AUTO-FR-003
+      responses:
+        '200':
+          description: Next autopilot action.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutopilotActionResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/AutopilotActionResponseExample'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /goal-autopilot/actions/{plan_item_id}/complete:
+    post:
+      tags:
+      - Goal Autopilot
+      operationId: completeGoalAutopilotAction
+      summary: Complete, skip or defer the current P0.2 plan item.
+      x-traceability:
+        product_objects:
+        - p0-2-training-memory
+        - p0-2-autopilot-progress-checkpoint
+        requirements:
+        - P02-AUTO-FR-002
+        - P02-AUTO-FR-003
+        - P02-AUTO-FR-006
+      parameters:
+      - $ref: '#/components/parameters/PlanItemId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompletePlanItemRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/CompletePlanItemRequestExample'
+      responses:
+        '200':
+          description: Plan item status updated and next action returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutopilotActionResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/AutopilotActionResponseExample'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /goal-autopilot/forecast:
+    get:
+      tags:
+      - Goal Autopilot
+      operationId: getGoalAutopilotForecast
+      summary: Get P0.2 progress forecast with gap, ETA confidence and risk.
+      x-traceability:
+        product_objects:
+        - p0-2-training-memory
+        - p0-2-autopilot-progress-checkpoint
+        requirements:
+        - P02-AUTO-FR-004
+        - P02-AUTO-FR-007
+      responses:
+        '200':
+          description: Current progress forecast.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalForecastResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/GoalForecastResponseExample'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /goal-autopilot/checkpoints:
+    post:
+      tags:
+      - Goal Autopilot
+      operationId: submitGoalAutopilotCheckpoint
+      summary: Submit a weekly or biweekly P0.2 outcome checkpoint.
+      x-traceability:
+        product_objects:
+        - p0-2-training-memory
+        - p0-2-autopilot-progress-checkpoint
+        requirements:
+        - P02-AUTO-FR-004
+        - P02-AUTO-FR-005
+        - P02-AUTO-FR-007
+        - P02-AUTO-FR-008
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitCheckpointRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/SubmitCheckpointRequestExample'
+      responses:
+        '200':
+          description: Checkpoint recorded and forecast updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckpointResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/CheckpointResponseExample'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /training/sessions/{session_id}:
@@ -2669,6 +2950,12 @@ components:
       required: true
       schema:
         type: string
+    PlanItemId:
+      name: plan_item_id
+      in: path
+      required: true
+      schema:
+        type: string
     ReviewItemId:
       name: review_item_id
       in: path
@@ -3622,6 +3909,649 @@ components:
             type: string
         next_focus:
           type: string
+    GoalType:
+      type: string
+      enum:
+      - ielts_speaking
+      - toefl_speaking
+      - business_meeting
+      - job_interview
+      - onboarding_introduction
+    GoalSupportStatus:
+      type: string
+      enum:
+      - supported
+      - partial
+      - unsupported
+    GoalConfidenceBand:
+      type: string
+      enum:
+      - low
+      - medium
+      - high
+    GoalAutopilotGoalRequest:
+      type: object
+      required:
+      - schema_version
+      - goal_type
+      - deadline
+      - daily_minutes
+      - intensity_preference
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        goal_type:
+          $ref: '#/components/schemas/GoalType'
+        target_score:
+          type: number
+          nullable: true
+        target_ability:
+          type: string
+          nullable: true
+        deadline:
+          type: string
+          format: date
+        daily_minutes:
+          type: integer
+          minimum: 5
+          maximum: 240
+        intensity_preference:
+          type: string
+          enum:
+          - gentle
+          - standard
+          - intensive
+        diagnostic_samples:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiagnosticSampleInput'
+        autopilot_control:
+          $ref: '#/components/schemas/UserAutopilotControl'
+    DiagnosticSampleInput:
+      type: object
+      properties:
+        sample_ref:
+          type: string
+        transcript:
+          type: string
+        audio_ref:
+          type: string
+        duration_seconds:
+          type: integer
+          minimum: 0
+    GoalAutopilotSummaryResponse:
+      type: object
+      required:
+      - schema_version
+      - goal_profile
+      - support_decision
+      - diagnostic
+      - forecast
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        goal_profile:
+          $ref: '#/components/schemas/GoalProfile'
+        support_decision:
+          $ref: '#/components/schemas/SupportedGoalMatrixDecision'
+        diagnostic:
+          $ref: '#/components/schemas/DiagnosticAssessment'
+        weekly_backplan:
+          $ref: '#/components/schemas/WeeklyBackplan'
+        daily_plan:
+          $ref: '#/components/schemas/DailyTrainingPlan'
+        next_action:
+          $ref: '#/components/schemas/AutopilotAction'
+        forecast:
+          $ref: '#/components/schemas/ProgressForecast'
+        latest_checkpoint:
+          $ref: '#/components/schemas/OutcomeCheckpoint'
+    GoalProfile:
+      type: object
+      required:
+      - goal_profile_id
+      - goal_type
+      - deadline
+      - daily_minutes
+      - intensity_preference
+      - support_status
+      - status
+      - revision
+      properties:
+        goal_profile_id:
+          type: string
+        goal_type:
+          $ref: '#/components/schemas/GoalType'
+        target_score:
+          type: number
+          nullable: true
+        target_ability:
+          type: string
+          nullable: true
+        deadline:
+          type: string
+          format: date
+        daily_minutes:
+          type: integer
+        intensity_preference:
+          type: string
+        support_status:
+          $ref: '#/components/schemas/GoalSupportStatus'
+        status:
+          type: string
+          enum:
+          - active
+          - needs_more_diagnostic
+          - partial
+          - unsupported
+        revision:
+          type: integer
+          minimum: 1
+    SupportedGoalMatrixDecision:
+      type: object
+      required:
+      - decision_id
+      - support_status
+      - reason_code
+      - limitation_message
+      properties:
+        decision_id:
+          type: string
+        support_status:
+          $ref: '#/components/schemas/GoalSupportStatus'
+        reason_code:
+          type: string
+        limitation_message:
+          type: string
+        rubric_available:
+          type: boolean
+        content_coverage:
+          type: string
+    DiagnosticAssessment:
+      type: object
+      required:
+      - diagnostic_assessment_id
+      - status
+      - confidence_band
+      - sample_count
+      - rubric_scores
+      - weakness_tags
+      - claim_guard
+      properties:
+        diagnostic_assessment_id:
+          type: string
+        status:
+          type: string
+          enum:
+          - complete
+          - low_confidence
+          - recoverable_error
+          - unsupported
+        confidence_band:
+          $ref: '#/components/schemas/GoalConfidenceBand'
+        sample_count:
+          type: integer
+          minimum: 0
+        rubric_scores:
+          type: array
+          items:
+            $ref: '#/components/schemas/RubricScore'
+        weakness_tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeaknessTag'
+        claim_guard:
+          $ref: '#/components/schemas/GoalClaimGuard'
+    RubricScore:
+      type: object
+      required:
+      - dimension
+      - score
+      - confidence
+      properties:
+        dimension:
+          type: string
+        score:
+          type: number
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        evidence_ref:
+          type: string
+    WeaknessTag:
+      type: object
+      required:
+      - tag
+      - severity
+      - dimension
+      - recommended_training_direction
+      properties:
+        tag:
+          type: string
+        severity:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+        dimension:
+          type: string
+        recommended_training_direction:
+          type: string
+        evidence_ref:
+          type: string
+    GoalClaimGuard:
+      type: object
+      required:
+      - official_score_equivalence
+      - goal_completion_claim_allowed
+      - allowed_claim
+      properties:
+        official_score_equivalence:
+          type: boolean
+        goal_completion_claim_allowed:
+          type: boolean
+        allowed_claim:
+          type: string
+    GenerateGoalPlanRequest:
+      type: object
+      required:
+      - schema_version
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        force_replan:
+          type: boolean
+        reason_code:
+          type: string
+    GoalPlanResponse:
+      type: object
+      required:
+      - schema_version
+      - weekly_backplan
+      - daily_plan
+      - next_action
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        weekly_backplan:
+          $ref: '#/components/schemas/WeeklyBackplan'
+        daily_plan:
+          $ref: '#/components/schemas/DailyTrainingPlan'
+        next_action:
+          $ref: '#/components/schemas/AutopilotAction'
+    DailyPlanResponse:
+      type: object
+      required:
+      - schema_version
+      - daily_plan
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        daily_plan:
+          $ref: '#/components/schemas/DailyTrainingPlan'
+    AutopilotActionResponse:
+      type: object
+      required:
+      - schema_version
+      - action
+      - forecast
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        action:
+          $ref: '#/components/schemas/AutopilotAction'
+        forecast:
+          $ref: '#/components/schemas/ProgressForecast'
+        plan_update_signal:
+          $ref: '#/components/schemas/PlanUpdateSignal'
+    GoalForecastResponse:
+      type: object
+      required:
+      - schema_version
+      - forecast
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        forecast:
+          $ref: '#/components/schemas/ProgressForecast'
+    CheckpointResponse:
+      type: object
+      required:
+      - schema_version
+      - checkpoint
+      - forecast
+      - plan_update_signal
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        checkpoint:
+          $ref: '#/components/schemas/OutcomeCheckpoint'
+        forecast:
+          $ref: '#/components/schemas/ProgressForecast'
+        plan_update_signal:
+          $ref: '#/components/schemas/PlanUpdateSignal'
+    WeeklyBackplan:
+      type: object
+      required:
+      - weekly_backplan_id
+      - plan_version
+      - start_date
+      - end_date
+      - milestone
+      - status
+      properties:
+        weekly_backplan_id:
+          type: string
+        plan_version:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        milestone:
+          type: string
+        session_count:
+          type: integer
+        review_windows:
+          type: array
+          items:
+            type: string
+        checkpoint_due_date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+          - active
+          - stale
+          - partial
+    DailyTrainingPlan:
+      type: object
+      required:
+      - daily_plan_id
+      - plan_date
+      - total_minutes
+      - status
+      - items
+      - memory_policy
+      properties:
+        daily_plan_id:
+          type: string
+        plan_date:
+          type: string
+          format: date
+        total_minutes:
+          type: integer
+        status:
+          type: string
+          enum:
+          - ready
+          - completed
+          - stale
+          - recovery_required
+          - partial
+        limitation_message:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanItem'
+        memory_policy:
+          $ref: '#/components/schemas/MemoryCurvePolicy'
+    PlanItem:
+      type: object
+      required:
+      - plan_item_id
+      - item_type
+      - title
+      - reason_code
+      - duration_minutes
+      - status
+      - memory_risk
+      - pressure_level
+      properties:
+        plan_item_id:
+          type: string
+        item_type:
+          type: string
+          enum:
+          - training
+          - review
+          - checkpoint
+          - recovery
+        title:
+          type: string
+        reason_code:
+          type: string
+        duration_minutes:
+          type: integer
+        status:
+          type: string
+          enum:
+          - pending
+          - active
+          - completed
+          - skipped
+          - deferred
+        memory_risk:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+        pressure_level:
+          type: string
+          enum:
+          - low
+          - standard
+          - high
+    MemoryCurvePolicy:
+      type: object
+      required:
+      - policy_version
+      - forgetting_risk
+      - next_review_interval_days
+      - overlearning_cap
+      - interleaving_rule
+      properties:
+        policy_version:
+          type: string
+        forgetting_risk:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+        next_review_interval_days:
+          type: integer
+        overlearning_cap:
+          type: integer
+        interleaving_rule:
+          type: string
+    AutopilotAction:
+      type: object
+      required:
+      - action_id
+      - plan_item_id
+      - action_type
+      - title
+      - reason_code
+      - expected_duration_minutes
+      - status
+      properties:
+        action_id:
+          type: string
+        plan_item_id:
+          type: string
+        action_type:
+          type: string
+          enum:
+          - start_training
+          - continue_training
+          - review_due
+          - checkpoint_due
+          - recovery
+          - blocked
+        title:
+          type: string
+        reason_code:
+          type: string
+        expected_duration_minutes:
+          type: integer
+        status:
+          type: string
+          enum:
+          - ready
+          - paused
+          - blocked
+          - completed
+        explanation:
+          type: string
+    ProgressForecast:
+      type: object
+      required:
+      - forecast_id
+      - gap_summary
+      - confidence_band
+      - risk_level
+      - risk_reason
+      - next_checkpoint_date
+      - claim_guard
+      properties:
+        forecast_id:
+          type: string
+        gap_summary:
+          type: string
+        eta_date:
+          type: string
+          format: date
+          nullable: true
+        eta_window:
+          type: string
+        confidence_band:
+          $ref: '#/components/schemas/GoalConfidenceBand'
+        risk_level:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+        risk_reason:
+          type: string
+        next_checkpoint_date:
+          type: string
+          format: date
+        claim_guard:
+          $ref: '#/components/schemas/GoalClaimGuard'
+    OutcomeCheckpoint:
+      type: object
+      required:
+      - checkpoint_id
+      - checkpoint_type
+      - cadence
+      - result_status
+      - confidence_band
+      - summary
+      properties:
+        checkpoint_id:
+          type: string
+        checkpoint_type:
+          type: string
+          enum:
+          - weekly_mock
+          - biweekly_mock
+          - business_task
+        cadence:
+          type: string
+          enum:
+          - weekly
+          - biweekly
+        result_status:
+          type: string
+          enum:
+          - recorded
+          - low_confidence
+          - recoverable_error
+        confidence_band:
+          $ref: '#/components/schemas/GoalConfidenceBand'
+        summary:
+          type: string
+    PlanUpdateSignal:
+      type: object
+      required:
+      - signal_type
+      - reason_code
+      properties:
+        signal_type:
+          type: string
+          enum:
+          - none
+          - stale_plan
+          - recovery_replan
+          - checkpoint_replan
+        reason_code:
+          type: string
+    CompletePlanItemRequest:
+      type: object
+      required:
+      - schema_version
+      - outcome
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        outcome:
+          type: string
+          enum:
+          - completed
+          - skipped
+          - deferred
+        evidence_ref:
+          type: string
+        learner_note:
+          type: string
+    SubmitCheckpointRequest:
+      type: object
+      required:
+      - schema_version
+      - checkpoint_type
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        checkpoint_type:
+          type: string
+          enum:
+          - weekly_mock
+          - biweekly_mock
+          - business_task
+        transcript:
+          type: string
+        audio_ref:
+          type: string
+        score_hint:
+          type: number
+    UserAutopilotControl:
+      type: object
+      properties:
+        paused:
+          type: boolean
+        quiet_hours_start:
+          type: string
+          pattern: ^([01][0-9]|2[0-3]):[0-5][0-9]$
+        quiet_hours_end:
+          type: string
+          pattern: ^([01][0-9]|2[0-3]):[0-5][0-9]$
+        notification_consent:
+          type: boolean
+        intensity_override:
+          type: string
+          enum:
+          - gentle
+          - standard
+          - intensive
     TrainingSessionResponse:
       type: object
       required:
@@ -5575,6 +6505,289 @@ components:
           weak_points:
           - sample
           next_focus: sample
+    GoalAutopilotGoalRequestExample:
+      summary: createGoalAutopilotGoal request example
+      value:
+        schema_version: 1
+        goal_type: ielts_speaking
+        target_score: 8
+        target_ability: confident speaking under IELTS part 2 and part 3 pressure
+        deadline: '2026-08-31'
+        daily_minutes: 30
+        intensity_preference: standard
+        diagnostic_samples:
+        - sample_ref: diagnostic_sample_1
+          transcript: I can answer familiar questions, but I often stop when I need examples.
+          duration_seconds: 45
+        autopilot_control:
+          paused: false
+          quiet_hours_start: '22:00'
+          quiet_hours_end: '08:00'
+          notification_consent: true
+          intensity_override: standard
+    GoalAutopilotSummaryResponseExample:
+      summary: getGoalAutopilotSummary response 200 example
+      value:
+        schema_version: 1
+        goal_profile:
+          goal_profile_id: goal_profile_id_sample
+          goal_type: ielts_speaking
+          target_score: 8
+          target_ability: confident speaking under IELTS part 2 and part 3 pressure
+          deadline: '2026-08-31'
+          daily_minutes: 30
+          intensity_preference: standard
+          support_status: supported
+          status: active
+          revision: 1
+        support_decision:
+          decision_id: decision_id_sample
+          support_status: supported
+          reason_code: rubric_and_content_available
+          limitation_message: Product-internal rubric only; no official score certification.
+          rubric_available: true
+          content_coverage: sufficient_for_local_plan
+        diagnostic:
+          diagnostic_assessment_id: diagnostic_id_sample
+          status: complete
+          confidence_band: medium
+          sample_count: 3
+          rubric_scores:
+          - dimension: fluency
+            score: 5.5
+            confidence: 0.72
+            evidence_ref: diagnostic_sample_1
+          weakness_tags:
+          - tag: limited_extension
+            severity: high
+            dimension: fluency
+            recommended_training_direction: longer turn expansion
+            evidence_ref: diagnostic_sample_1
+          claim_guard:
+            official_score_equivalence: false
+            goal_completion_claim_allowed: false
+            allowed_claim: product_internal_progress_only
+        weekly_backplan:
+          weekly_backplan_id: weekly_backplan_id_sample
+          plan_version: goal-plan-v1
+          start_date: '2026-06-04'
+          end_date: '2026-06-10'
+          milestone: stabilize fluency under follow-up pressure
+          session_count: 5
+          review_windows:
+          - D1
+          - D3
+          - D7
+          checkpoint_due_date: '2026-06-11'
+          status: active
+        daily_plan:
+          daily_plan_id: daily_plan_id_sample
+          plan_date: '2026-06-04'
+          total_minutes: 30
+          status: ready
+          limitation_message: ''
+          items:
+          - plan_item_id: plan_item_id_sample
+            item_type: training
+            title: Fluency expansion drill
+            reason_code: highest_weakness_and_memory_risk
+            duration_minutes: 12
+            status: active
+            memory_risk: high
+            pressure_level: standard
+          memory_policy:
+            policy_version: memory-curve-v1
+            forgetting_risk: high
+            next_review_interval_days: 1
+            overlearning_cap: 2
+            interleaving_rule: rotate_fluency_pronunciation_scenario_fit
+        next_action:
+          action_id: action_id_sample
+          plan_item_id: plan_item_id_sample
+          action_type: start_training
+          title: Fluency expansion drill
+          reason_code: highest_weakness_and_memory_risk
+          expected_duration_minutes: 12
+          status: ready
+          explanation: Start with the highest-risk fluency item first.
+        forecast:
+          forecast_id: forecast_id_sample
+          gap_summary: About 2 product-rubric bands below target in fluency.
+          eta_date: '2026-08-24'
+          eta_window: 2026-08-17..2026-08-31
+          confidence_band: medium
+          risk_level: medium
+          risk_reason: checkpoint evidence is not available yet
+          next_checkpoint_date: '2026-06-11'
+          claim_guard:
+            official_score_equivalence: false
+            goal_completion_claim_allowed: false
+            allowed_claim: product_internal_progress_only
+    GenerateGoalPlanRequestExample:
+      summary: generateGoalAutopilotPlan request example
+      value:
+        schema_version: 1
+        force_replan: false
+        reason_code: initial_backplan
+    GoalPlanResponseExample:
+      summary: generateGoalAutopilotPlan response 200 example
+      value:
+        schema_version: 1
+        weekly_backplan:
+          weekly_backplan_id: weekly_backplan_id_sample
+          plan_version: goal-plan-v1
+          start_date: '2026-06-04'
+          end_date: '2026-06-10'
+          milestone: stabilize fluency under follow-up pressure
+          session_count: 5
+          review_windows:
+          - D1
+          - D3
+          - D7
+          checkpoint_due_date: '2026-06-11'
+          status: active
+        daily_plan:
+          daily_plan_id: daily_plan_id_sample
+          plan_date: '2026-06-04'
+          total_minutes: 30
+          status: ready
+          limitation_message: ''
+          items:
+          - plan_item_id: plan_item_id_sample
+            item_type: training
+            title: Fluency expansion drill
+            reason_code: highest_weakness_and_memory_risk
+            duration_minutes: 12
+            status: active
+            memory_risk: high
+            pressure_level: standard
+          memory_policy:
+            policy_version: memory-curve-v1
+            forgetting_risk: high
+            next_review_interval_days: 1
+            overlearning_cap: 2
+            interleaving_rule: rotate_fluency_pronunciation_scenario_fit
+        next_action:
+          action_id: action_id_sample
+          plan_item_id: plan_item_id_sample
+          action_type: start_training
+          title: Fluency expansion drill
+          reason_code: highest_weakness_and_memory_risk
+          expected_duration_minutes: 12
+          status: ready
+          explanation: Start with the highest-risk fluency item first.
+    DailyPlanResponseExample:
+      summary: getGoalAutopilotDailyPlan response 200 example
+      value:
+        schema_version: 1
+        daily_plan:
+          daily_plan_id: daily_plan_id_sample
+          plan_date: '2026-06-04'
+          total_minutes: 30
+          status: ready
+          limitation_message: ''
+          items:
+          - plan_item_id: plan_item_id_sample
+            item_type: training
+            title: Fluency expansion drill
+            reason_code: highest_weakness_and_memory_risk
+            duration_minutes: 12
+            status: active
+            memory_risk: high
+            pressure_level: standard
+          memory_policy:
+            policy_version: memory-curve-v1
+            forgetting_risk: high
+            next_review_interval_days: 1
+            overlearning_cap: 2
+            interleaving_rule: rotate_fluency_pronunciation_scenario_fit
+    AutopilotActionResponseExample:
+      summary: getGoalAutopilotNextAction response 200 example
+      value:
+        schema_version: 1
+        action:
+          action_id: action_id_sample
+          plan_item_id: plan_item_id_sample
+          action_type: start_training
+          title: Fluency expansion drill
+          reason_code: highest_weakness_and_memory_risk
+          expected_duration_minutes: 12
+          status: ready
+          explanation: Start with the highest-risk fluency item first.
+        forecast:
+          forecast_id: forecast_id_sample
+          gap_summary: About 2 product-rubric bands below target in fluency.
+          eta_date: '2026-08-24'
+          eta_window: 2026-08-17..2026-08-31
+          confidence_band: medium
+          risk_level: medium
+          risk_reason: checkpoint evidence is not available yet
+          next_checkpoint_date: '2026-06-11'
+          claim_guard:
+            official_score_equivalence: false
+            goal_completion_claim_allowed: false
+            allowed_claim: product_internal_progress_only
+        plan_update_signal:
+          signal_type: none
+          reason_code: no_replan_needed
+    CompletePlanItemRequestExample:
+      summary: completeGoalAutopilotAction request example
+      value:
+        schema_version: 1
+        outcome: completed
+        evidence_ref: training_session_id_sample
+        learner_note: ''
+    GoalForecastResponseExample:
+      summary: getGoalAutopilotForecast response 200 example
+      value:
+        schema_version: 1
+        forecast:
+          forecast_id: forecast_id_sample
+          gap_summary: About 2 product-rubric bands below target in fluency.
+          eta_date: '2026-08-24'
+          eta_window: 2026-08-17..2026-08-31
+          confidence_band: medium
+          risk_level: medium
+          risk_reason: checkpoint evidence is not available yet
+          next_checkpoint_date: '2026-06-11'
+          claim_guard:
+            official_score_equivalence: false
+            goal_completion_claim_allowed: false
+            allowed_claim: product_internal_progress_only
+    SubmitCheckpointRequestExample:
+      summary: submitGoalAutopilotCheckpoint request example
+      value:
+        schema_version: 1
+        checkpoint_type: weekly_mock
+        transcript: I spoke for two minutes with one example and one follow-up answer.
+        score_hint: 6
+    CheckpointResponseExample:
+      summary: submitGoalAutopilotCheckpoint response 200 example
+      value:
+        schema_version: 1
+        checkpoint:
+          checkpoint_id: checkpoint_id_sample
+          checkpoint_type: weekly_mock
+          cadence: weekly
+          result_status: recorded
+          confidence_band: medium
+          summary: Fluency improved, but example expansion still needs review.
+        forecast:
+          forecast_id: forecast_id_sample
+          gap_summary: About 1.8 product-rubric bands below target in fluency.
+          eta_date: '2026-08-24'
+          eta_window: 2026-08-17..2026-08-31
+          confidence_band: medium
+          risk_level: medium
+          risk_reason: checkpoint confirmed progress but fluency remains the main risk
+          next_checkpoint_date: '2026-06-18'
+          claim_guard:
+            official_score_equivalence: false
+            goal_completion_claim_allowed: false
+            allowed_claim: product_internal_progress_only
+        plan_update_signal:
+          signal_type: checkpoint_replan
+          reason_code: checkpoint_updated_gap
     TrainingSessionResponseExample:
       summary: startTrainingSession response 200 example
       value:

@@ -1,7 +1,7 @@
 # Test Report
 
 ## Current Status
-Latest recorded validation: `P01-TRAINING-NAMING-MIGRATION-20260603` passed Training bounded-context namespace migration checks. Executable Flutter Training code/tests now live under `lib/features/training` and `test/features/training`; TC-P01-001 through TC-P01-013 and TC-P01-021 through TC-P01-031 remain local executed / passed. Commercial release and paid AI voice remain governed by P0 external evidence gates.
+Latest recorded implementation validation: `P02-FOLLOWUP-A-GOAL-INTAKE-DIAGNOSTIC-HARDENING-20260604` passed local Flutter widget/adapter tests, analyzer, backend regression/performance, strengthened traceability and P0.2 coverage gates for FR-001..009, including No-goal Explore Mode. Coverage evidence: backend changed-code line 96.3% / branch 88.6%, Flutter feature line 90.9%. Followup-B pause/resume/notification/memory control, Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
 
 ## Required Sections
 - test scope
@@ -11,6 +11,311 @@ Latest recorded validation: `P01-TRAINING-NAMING-MIGRATION-20260603` passed Trai
 - skipped tests
 - acceptance criteria coverage
 - residual risk
+
+## 2026-06-04 P02 Followup-A No-goal Explore Mode Implementation Validation
+
+Test scope:
+- Followup-A FR-009 local implementation for no active goal empty state, explicit `Set a goal` transition and no-goal Explore/sample drill boundary.
+- Covered code: `lib/features/goal_autopilot/goal_autopilot_panel.dart`, `test/features/goal_autopilot/goal_autopilot_adapter_test.dart` and strengthened `scripts/check_p0_2_goal_autopilot_traceability.py`.
+
+Commands run:
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter analyze lib/features/goal_autopilot lib/services/api_client.dart lib/pages/home_page.dart test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter test --coverage test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest,GoalAutopilotPerformanceTest test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter line 90.9%.
+- `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check -- <Followup-A FR-009 changed files>` - passed.
+- Followup-A FR-009 touched-file whitespace audit - passed.
+
+Passing tests:
+- TC-P02-FUA-014: no active goal renders `No active goal`, `Set a goal`, `Explore practice` and `Try a sample drill`; it does not render GoalProfile form or create a goal by default.
+- TC-P02-FUA-015: `Set a goal` opens editable intake and no non-summary goal-autopilot operation runs before valid submit.
+- TC-P02-FUA-016: `Explore practice` renders ordinary sample drill feedback, does not call create/generate/complete/checkpoint/forecast/memory goal-autopilot operations and does not show target gap, ETA, achieved-goal, guaranteed or official-score copy.
+
+Failing or blocked tests:
+- No Followup-A FR-009 functional, analyzer, coverage or backend regression failure remains.
+
+Skipped or external tests:
+- Full Explore Practice content library, recommender and ordinary practice persistence are not Followup-A scope.
+
+Acceptance criteria coverage:
+- AC-P02-FUA-009 maps to executed TC-P02-FUA-014, TC-P02-FUA-015 and TC-P02-FUA-016.
+
+Residual risk:
+- Followup-B/C/D remain unimplemented and must not be inferred from Followup-A.
+
+## 2026-06-04 P02 Followup-A No-goal Explore Mode Planned Test Audit
+
+Superseded status note: this planned-test audit is superseded by the implementation validation above, where TC-P02-FUA-014..016 passed locally.
+
+Test scope:
+- Documentation-only planned test audit for `P02-FUA-FR-009 No-goal Explore Mode`.
+- Covered behavior: no active goal empty state, explicit `Set a goal` transition, no default-goal creation, Explore/sample drill isolation from goal-autopilot APIs, ordinary practice/session evidence boundary and prohibited goal claims.
+
+Commands run:
+- Followup-A No-goal Explore Mode document audit - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
+- `git diff --check -- docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening docs/reports/quality_report.md docs/reports/test_report.md scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
+- Followup-A no-goal touched-file whitespace audit - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Passing checks:
+- AC-P02-FUA-009 maps to TC-P02-FUA-014, TC-P02-FUA-015 and TC-P02-FUA-016.
+- P02-FUA-TR-009 maps WP-009 -> FR-009 -> SPEC-009 -> AC-009 -> TC-014..016.
+- Test cases explicitly require no GoalProfile, DiagnosticAssessment, ProgressForecast, GoalBackplan, DailyPlan, AutopilotAction or MemoryCurve schedule during no-goal browsing.
+
+Failing or blocked tests:
+- No documentation traceability failure remains.
+- Historical note from this documentation-only audit: TC-P02-FUA-014, TC-P02-FUA-015 and TC-P02-FUA-016 were blocked until code implementation started. This is superseded by the implementation validation above.
+
+Skipped or planned tests:
+- Historical note from this documentation-only audit: Flutter widget/adapter tests for FR-009 were planned but not run because that earlier step intentionally did not change code. This is superseded by the implementation validation above.
+
+Acceptance criteria coverage:
+- Historical note from this documentation-only audit: AC-P02-FUA-009 had planned coverage through TC-P02-FUA-014..016. It now has executed coverage in the implementation validation above.
+- AC-P02-FUA-001 was narrowed so editable intake is required after explicit `Set a goal` or edit, not as the default no-active-goal browsing state.
+
+Residual risk:
+- Historical note from this documentation-only audit: the app still needed implementation work at that time. This is superseded by the implementation validation above.
+
+## 2026-06-04 P02 Followup-A Implementation Validation
+
+Test scope:
+- Followup-A local implementation for editable GoalProfile intake, SupportedGoalMatrix pre-plan UI, diagnostic sample capture, candidate-only diagnostic transport, revision/stale visibility, claim guard copy and Followup-A traceability.
+- Covered code: `lib/features/goal_autopilot/goal_autopilot_adapter.dart`, `lib/features/goal_autopilot/goal_autopilot_models.dart`, `lib/features/goal_autopilot/goal_autopilot_panel.dart`, `test/features/goal_autopilot/goal_autopilot_adapter_test.dart` and strengthened `scripts/check_p0_2_goal_autopilot_traceability.py`.
+
+Commands run:
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter analyze lib/features/goal_autopilot lib/services/api_client.dart lib/pages/home_page.dart test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter test --coverage test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed and generated `coverage/lcov.info`.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest,GoalAutopilotPerformanceTest test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed and regenerated `backend/target/site/jacoco/jacoco.csv`.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter line 90.5%.
+- `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed after the script was strengthened to include Followup-A docs, code and test names.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Passing tests:
+- TC-P02-FUA-001/002: editable GoalProfile form renders, blocks invalid empty diagnostic submission, sends user-entered goal fields and no longer uses default-goal-only production UI.
+- TC-P02-FUA-003/004: diagnostic samples filter empty text, preserve stable sample refs and do not send fake `audio_ref`.
+- TC-P02-FUA-005/006/007: supported, partial/low-confidence and unsupported states render correctly; unsupported goals fail closed with Edit goal recovery only.
+- TC-P02-FUA-008/009: claim guards block official/guaranteed copy; revision/stale state blocks stale Done action and sends force replan recovery.
+- TC-P02-FUA-010/012: backend regression and local performance checks still pass; no backend/API/domain code changed for Followup-A.
+- TC-P02-FUA-011/013: coverage and strengthened traceability gates pass.
+
+Failing or blocked tests:
+- No Followup-A local functional, analyzer, coverage or traceability failure remains.
+
+Skipped or external tests:
+- Production audio capture, paid AI diagnostic quality, commercial entitlement/cost telemetry and release rollout are not Followup-A scope.
+- Followup-B/C/D behavior remains unimplemented and must not be inferred from Followup-A.
+
+Acceptance criteria coverage:
+- AC-P02-FUA-001 through AC-P02-FUA-008 all map to executed TC-P02-FUA evidence in `docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening/test_cases.md`.
+
+Residual risk:
+- Followup-A closes editable intake and diagnostic hardening locally, but does not close pause/resume, notification scheduling, Queue/Wiki propagation, commercial release, paid AI evidence or Product Base approval.
+
+## 2026-06-04 P02 Goal Autopilot Local Implementation Validation - P02-GOAL-AUTOPILOT-LOCAL-IMPLEMENTATION-20260604
+
+Test scope:
+- P0.2 local deterministic vertical slice for `GoalProfile`, `DiagnosticAssessment`, `GoalBackplan`, `MemoryCurvePolicy`, `AutopilotTraining`, `ProgressForecast` and `OutcomeCheckpoint`.
+- Covered contracts: domain model, OpenAPI/API path registry, candidate AI-runtime schemas and UX screen spec routing.
+- Covered code: backend goal-autopilot persistence/service/controller, account deletion cleanup, Flutter API adapter, Home learn-tab goal-autopilot panel and focused widget/adapter tests.
+
+Commands run:
+- `npm run check:api-contract` - passed; OpenAPI lint, contract gate and generated Dart drift gate passed with hash `87c9218d93a5be9879e52390a1cd2c92de6fd198938a613bbcfc89ae5e0e4f98`.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest,GoalAutopilotPerformanceTest test` - passed.
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter analyze lib/features/goal_autopilot lib/services/api_client.dart lib/pages/home_page.dart test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest,GoalAutopilotPerformanceTest test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed and generated `backend/target/site/jacoco/jacoco.csv`.
+- `flutter test --coverage test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed and generated `coverage/lcov.info`.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter feature line 82.1%.
+- `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
+
+Passing tests:
+- Backend integration tests cover goal creation, supported/partial/unsupported goal matrix, diagnostic confidence/claim guard, weakness decomposition, L0-L5 mastery seed, weekly/daily plan generation, memory policy, next-action orchestration, completion recovery signal, unsupported-goal fail-closed behavior, checkpoint-driven forecast update and account deletion purge.
+- Backend performance test covers local p95 budgets for goal intake, daily plan, next action and forecast.
+- Flutter tests cover API path-registry usage, summary parsing, default goal creation, plan generation, next action, action completion, checkpoint envelope and Home panel start/autopilot rendering.
+
+Failing or blocked tests:
+- No functional local P0.2 test failure remains.
+- No coverage failure remains for the implemented local slice. Backend changed-code line/branch coverage and Flutter feature line coverage are above 80%. Dart coverage tooling does not emit branch coverage, so Flutter branch coverage is not separately measurable by the local toolchain.
+
+Skipped or external tests:
+- Paid AI entitlement/cost telemetry, production notification scheduling, pause/resume endpoint semantics, Queue/Wiki progress-surface propagation, broader checkpoint task library, full adaptive workload tuning and commercial release checks remain outside this local slice.
+
+Acceptance criteria coverage:
+- `AC-P02-DIAG-001..007`, `AC-P02-PLAN-001..008` and `AC-P02-AUTO-001..008` now have planned TC mappings plus local executed evidence addenda in their increment test case files.
+- Local code/test/coverage traceability is complete for the deterministic vertical slice; release traceability is not complete until the residual product gates above are closed or explicitly re-scoped.
+
+Residual risk:
+- The Flutter entry currently provides a compact default goal setup rather than the full editable GoalProfile UI.
+- Autopilot user control is partial: skip/defer and quiet-hour fields exist, but pause/resume endpoints and notification scheduler behavior are not implemented.
+- Goal progress appears on the Home learn tab only; Queue/Wiki propagation remains a future surface obligation.
+
+## 2026-06-04 P02 Downstream Requirements Spec AC TC Traceability Audit
+
+Test scope:
+- Documentation-only audit for the three P0.2 increments:
+  `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy` and `p0-2-autopilot-progress-checkpoint`.
+- Coverage: P02-SI-001 through P02-SI-013, P02-PG-001 through P02-PG-005, all new FR/Spec/AC/TC/Traceability IDs, performance budgets and >=80% code coverage gates.
+
+Commands run:
+- `p02-diagnostic-chain` audit - passed.
+- `p02-plan-chain` audit - passed.
+- `p02-auto-chain` audit - passed.
+- `p02-stage-scope-traceability` audit - passed.
+- `p02-policy-gate-downstream` audit - passed.
+- `p02-ac-tc-trace-prefixes` audit - passed.
+- `git diff --check -- <P0.2 downstream docs and reports>` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Passing checks:
+- Every P02-SI-001 through P02-SI-013 appears in at least one increment traceability matrix.
+- Every P02-PG-001 through P02-PG-005 is represented in downstream increment docs.
+- Every P0.2 AC family has planned TC IDs and traceability rows.
+- Each increment includes explicit performance budgets and changed-code line/branch coverage >=80% as implementation completion gates.
+
+Failing or blocked tests:
+- No documentation traceability failure remains.
+
+Skipped or planned tests:
+- All P0.2 functional, performance and coverage tests are planned, not executed. No code was implemented in this documentation batch.
+
+Acceptance criteria coverage:
+- `AC-P02-DIAG-001..007`, `AC-P02-PLAN-001..008` and `AC-P02-AUTO-001..008` are mapped to planned TC IDs.
+
+Residual risk:
+- This audit proves 100% documentation traceability for planned P0.2 scope. It does not prove runtime behavior, performance, code coverage or release readiness.
+- Domain/API/AI/UX contracts, implementation code, CI coverage reports, performance results and executed test evidence remain open gates.
+
+## 2026-06-04 P02 Policy Gate Commercial Product Review Audit
+
+Test scope:
+- Documentation-only audit for P0.2 product-engineering and commercial-software policy gates.
+- Coverage: P02-PG-001 through P02-PG-005, the seven previously identified P0.2 defects, P0.2 stage entry/exit gates and the three planned increment definitions.
+
+Commands run:
+- P02 policy gate ID audit - passed; all P02-PG-001 through P02-PG-005 appear in the stage and applicable increment definitions.
+- P02 seven-defect closure audit - passed at planning-gate level; each defect maps to at least one policy gate and an owning downstream artifact obligation.
+- `git diff --check -- <P0.2 policy gate docs and reports>` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Passing checks:
+- Goal achievement, supported-goal/content coverage, autopilot control/planner feasibility, commercial entitlement/cost and data governance are now explicit implementation gates.
+- The three P0.2 increments must carry applicable policy gates into requirements/spec/acceptance/test_cases/traceability before implementation.
+- No policy gate claims implementation readiness, release approval or official exam-score certification.
+
+Failing or blocked tests:
+- No documentation-gate failure remains.
+
+Skipped or planned tests:
+- Functional, API, UX, AI-runtime and data-governance tests remain planned because downstream P0.2 docs and implementation do not exist yet.
+
+Acceptance criteria coverage:
+- No new AC was created in this step. P02-PG-001 through P02-PG-005 are upstream gate obligations that future AC/TC must cover.
+
+Residual risk:
+- The seven defects are closed only at planning-gate level. They still require downstream FR/Spec/AC/TC/Traceability, domain/API/AI/UX contracts and independent checker review before implementation.
+
+## 2026-06-04 P02 Superseded Memory Artifact Removal Audit
+
+Test scope:
+- P0.2 documentation source-of-truth cleanup after goal-driven stage replanning.
+- Coverage: stage plan, roadmap, feature registry, development status, new P0.2 increment definitions and report records.
+
+Commands run:
+- Superseded artifact slug reference audit across `docs/product` and `docs/reports` - passed with no remaining matches.
+- Directory removal check for the old P0.2 memory-planner artifact - passed.
+- Active P0.2 increment link audit for `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy` and `p0-2-autopilot-progress-checkpoint` - passed.
+- `git diff --check -- <P0.2 supersession docs>` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Passing checks:
+- Old artifact links are removed from active product and report documentation.
+- P02-SI-001 through P02-SI-013 remain represented in the P0.2 stage plan and route to the three goal-driven planned increments.
+- The earlier memory-planner audit is described as superseded historical evidence, not active implementation input.
+
+Failing or blocked tests:
+- No documentation cleanup failure remains.
+
+Skipped or planned tests:
+- Functional P0.2 tests remain planned because no P0.2 implementation or downstream contracts were created in this cleanup.
+
+Acceptance criteria coverage:
+- No new AC was created. This cleanup protects the P0.2 planning gate by removing a superseded implementation entry and preserving stage-scope routing to the new increment definitions.
+
+Residual risk:
+- The three new P0.2 increments still need requirements/spec/acceptance/test_cases/traceability and independent checker review before implementation.
+
+## 2026-06-04 P02 Documentation Design And Traceability Audit
+
+Test scope:
+- Superseded historical P0.2 memory-planner documentation design.
+- Coverage: P02-SI-001 through P02-SI-006, P02-FR-001 through P02-FR-010, P02-SPEC-001 through P02-SPEC-010, AC-P02-001 through AC-P02-010, TC-P02-001 through TC-P02-014 and P02-TR-001 through P02-TR-010.
+
+Commands run:
+- P02 documentation ID coverage audit - passed; `missing_ids=[]`, `forbidden_hits=[]`.
+- `git diff --check -- <historical P0.2 memory-planner docs>` - passed before supersession.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- P02 traceability `rg` audit - passed before supersession.
+
+Passing checks:
+- TC-P02-014 documentation traceability audit passed.
+- P02-SI-001..006 all have owning increment coverage.
+- Every P02-FR maps to a P02-SPEC and at least one AC.
+- Every AC-P02-001..010 maps to at least one stable TC-P02 ID.
+- Traceability rows explicitly keep Code Evidence and functional Test Evidence as not started/planned.
+
+Failing or blocked tests:
+- No documentation traceability failure remains.
+
+Skipped or planned tests:
+- TC-P02-001 through TC-P02-013 are planned functional tests and were not run because implementation and P02 domain/API/AI/UX contracts do not exist yet.
+
+Acceptance criteria coverage:
+- AC-P02-001 through AC-P02-010 have complete planned TC coverage.
+- P02-GAP-001 through P02-GAP-006 remain implementation blockers or contract blockers and are not closed by this documentation audit.
+
+Residual risk:
+- This historical audit is not P0.2 implementation evidence, Product Base merge approval or release approval.
+- This historical audit is superseded by the goal-driven stage replanning. Active P0.2 implementation remains blocked until the three new increments generate their own requirements/spec/AC/TC/traceability, domain/API/AI/UX contracts, scope guard and executable functional tests.
+
+## 2026-06-04 P01 Product Base Implementation Review And API Drift Sync
+
+Test scope:
+- P0.1 `p0-1-expression-automation-training` Product Base implementation review.
+- Coverage: `P01-FR-012` through `P01-FR-017`, `P01-SPEC-013` through `P01-SPEC-018`, `AC-P01-014` through `AC-P01-019`, `TC-P01-021` through `TC-P01-031`, plus backend-only frontend regressions `TC-P01-001` through `TC-P01-013`.
+
+Commands run:
+- `cd backend && mvn -q -DskipTests compile` - passed.
+- `cd backend && mvn -q -Dtest=TrainingSessionControllerTest,TrainingTurnIdempotencyTest,TrainingSessionAuthorizationTest,TrainingEvidenceRuleTraceTest,TrainingAccountDeletionRetentionTest,TrainingContentVersioningTest,TrainingMediaAiPipelineTest,TrainingPlannerReplayTest,TrainingObservabilityTest test` - passed.
+- `npm run check:api-contract` - passed after syncing generated Dart drift pins to OpenAPI hash `4880e61f8dae8673c13eb2aff5c66e690de70e67663bae45608f57206502fcbf`.
+- `python3 scripts/check_p0_1_training_frontend_source_of_truth.py` - passed.
+- `python3 scripts/check_p0_1_training_rollout_readiness.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `flutter test test/features/training/training_entry_test.dart test/features/training/training_backend_only_loop_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter analyze lib/config/app_config.dart lib/services/api_client.dart lib/features/training/training_backend_adapter.dart lib/features/training/training_session_loop_page.dart lib/pages/home_page.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter test integration_test/p0_1_training_loop_test.dart` - passed.
+
+Passing tests:
+- TC-P01-021 through TC-P01-028 remain covered by backend Training tests for server source-of-truth, idempotency, evidence governance, deletion cleanup, versioned content, media/AI, planner replay and observability.
+- TC-P01-029 through TC-P01-031 remain covered by Flutter backend-only loop, fallback and backend-disabled entry tests.
+- Contract drift is closed by `npm run check:api-contract`.
+
+Failing or blocked tests:
+- No local implementation-review failure remains.
+
+Skipped or external tests:
+- Real paid AI DashScope full matrix, object storage, production cost dashboard and retention evidence remain outside this P0.1 local Product Base review and are governed by P0 commercial AI gates.
+
+Acceptance criteria coverage:
+- AC-P01-014 through AC-P01-019 are covered by TC-P01-021 through TC-P01-031 and traceability rows P01-TR-013 through P01-TR-018.
+
+Residual risk:
+- Product Base merge approval, paid AI voice and commercial release remain separate gates.
 
 ## 2026-06-03 P01 Training Bounded-Context Naming Migration
 
@@ -123,10 +428,12 @@ Acceptance criteria coverage:
 - AC-P01-014 through AC-P01-019 are covered by TC-P01-021 through TC-P01-031 and traceability rows P01-TR-013 through P01-TR-018.
 
 Residual risk:
-- OpenAPI generated hash was not changed in this code batch because the prior OpenAPI change was explicitly rolled back; backend and Flutter handwritten adapter now satisfy the existing Training family paths.
+- Superseded by 2026-06-04 implementation review: generated Dart OpenAPI drift pins are now synced to current OpenAPI hash `4880e61f8dae8673c13eb2aff5c66e690de70e67663bae45608f57206502fcbf`.
 - Production enablement still requires configuration of `ENABLE_BACKEND_TRAINING=true` and the existing P0 paid AI/commercial release evidence gates before paid voice or app-store release claims.
 
 ## 2026-06-03 P0.1 Commercial Software Remediation Documentation Gate
+
+Superseded status note: this section records the earlier documentation-only gate. The later `2026-06-03 P01 Training Product Base Production Hardening` section supersedes its planned-test status for TC-P01-021 through TC-P01-028 and records local passed evidence for TC-P01-021 through TC-P01-031.
 
 Test scope:
 - P0.1 documentation/design remediation inside `p0-1-expression-automation-training`.
@@ -145,7 +452,7 @@ Passing tests:
 
 Failing or blocked tests:
 - No documentation gate failure remains.
-- TC-P01-021 through TC-P01-028 are planned and not executed; they remain Product Base/production blockers.
+- Historical note from this documentation-only gate: at that time TC-P01-021 through TC-P01-028 were planned and not executed. This statement is superseded by the later Product Base Production Hardening section, where TC-P01-021 through TC-P01-031 have local passed evidence.
 
 Skipped or external tests:
 - Backend Training controller/service/repository tests, Flutter generated-client wiring tests, media/AI production pipeline tests and rollout/observability checks were not run because this batch changed documentation only and did not implement those systems.
@@ -155,7 +462,7 @@ Acceptance criteria coverage:
 - Existing TC-P01-013/014 local evidence remains valid for local route/AI eval only and does not close the new Product Base/production hardening gate.
 
 Residual risk:
-- P0.1 cannot be promoted to Product Base stable capability or production training readiness until TC-P01-021 through TC-P01-028 pass or their blockers are explicitly accepted.
+- Historical note from this documentation-only gate: P0.1 could not be promoted until TC-P01-021 through TC-P01-028 passed or blockers were accepted. This planned-test warning is superseded by the later Product Base Production Hardening section; PM approval and Product Base merge review remain separate gates.
 - Commercial release and paid AI voice remain controlled by the P0 commercial release and commercial AI provider hardening gates.
 
 ## 2026-06-03 P0-AI OSS Storage Implementation

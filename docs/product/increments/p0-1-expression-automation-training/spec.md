@@ -1,7 +1,7 @@
 # P0.1 Increment Spec：表达自动化训练 Agent
 
 ## 状态
-Draft - 可作为 P0.1 acceptance criteria 的直接上游输入；2026-06-03 增加商业软件整改设计，要求在本 stage / 本 increment 内解决 local-first 与生产事实源之间的差距。
+Implementation-review ready - 作为 P0.1 acceptance criteria 的直接上游输入；2026-06-04 P0.1 Product Base/production-hardening local implementation review passed，local-first 与生产事实源之间的差距已由 backend Training source-of-truth、evidence governance、content versioning、media/AI pipeline、planner audit 和 rollout gates 本地关闭；PM Product Base merge approval and P0 commercial / paid AI external gates remain separate。
 
 ## 上游引用
 - Increment definition: `docs/product/increments/p0-1-expression-automation-training/definition.md`
@@ -183,9 +183,9 @@ Rules:
 
 Design:
 - `LearningEvidenceCandidate` remains candidate-only until a deterministic evidence rule accepts, rejects or merges it.
-- Accepted evidence must store `source_turn_id`, `source_feedback_id` or AI result ref, `rule_name`, `rule_input_hash`, `decision`, `schema_version`, `accepted_at` and deletion/retention policy version.
+- Accepted evidence must store `source_turn_id`, `source_feedback_id` or AI result ref, `planner_decision_id` when applicable, `rule_name`, `rule_input_hash`, `decision`, `reason_code`, `schema_version`, `created_at`, `accepted_at` and deletion/retention policy version.
 - Training recap is user-visible and may survive temporary evidence write failure, but the session status must expose `evidence_write_status=retryable` until backend write succeeds or is explicitly abandoned.
-- Account deletion must remove or anonymize training sessions, turns, media refs, recap text and evidence refs according to security retention policy; audit rows keep only redacted proof fields.
+- Account deletion, data export, retention jobs and security logs must cover training sessions, turns, planner decisions, media refs, recap text, evidence candidates and accepted evidence refs according to the security retention policy; audit rows keep only redacted proof fields.
 
 ### P01-SPEC-015 Versioned Training Content
 
@@ -222,6 +222,7 @@ Design:
 - Every applied decision records: `planner_decision_id`, `training_session_id`, `source_turn_id`, `decision_type`, `next_micro_action_type`, `hint_level`, `reason_code`, `schema_version`, `rule_version`, `applied_at`.
 - Rule thresholds such as consecutive-success pressure trigger and hint escalation order are versioned configuration.
 - Replay test input is the session state, source turn, score/AI candidate and existing evidence; replay must produce the same decision for the same rule version.
+- LLM recommended next actions are candidate-only. If a candidate is outside the planner allowed-action set for the current session state, the planner must reject it, keep the session in a valid deterministic state and record the rejection `reason_code`.
 
 ### P01-SPEC-018 Observability, Commercial Boundary And Rollout
 
@@ -230,6 +231,7 @@ Metrics:
 - training quality：hint escalation/lowering、pressure enter/pass/fail、retry count、text fallback count、unsupported scene rejection。
 - evidence：candidate generated、accepted、rejected、merged_duplicate、write_failed。
 - provider/cost：provider family/model/status、latency bucket、fallback reason、token/audio duration estimate、usage reservation result。
+- identity and privacy：metrics use user hash, session id, request id and redacted metadata only; metrics must not include raw audio, complete sensitive transcript, provider key or raw provider payload.
 
 Rollout rules:
 - P0.1 must have feature flag, kill switch and provider rollback.
@@ -268,6 +270,8 @@ Provider adapter must not:
 ## Required Downstream Artifacts
 - Acceptance: `docs/product/increments/p0-1-expression-automation-training/acceptance.md`
 - Traceability: `docs/product/increments/p0-1-expression-automation-training/traceability.md`
+- API contract and OpenAPI Training family: `docs/architecture/api_contract.md`, `docs/architecture/openapi/speakeasy-api.yaml`
+- Architecture/data/module boundaries: `docs/architecture/module_boundary.md`, `docs/architecture/data_flow.md`
 - Domain model update under `docs/domain/`
 - AI runtime prompt/schema update under `docs/ai_runtime/`
 - UX screen spec update under `docs/ux/`

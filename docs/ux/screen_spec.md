@@ -36,11 +36,11 @@ Owning increment: `p0-1-expression-automation-training`。
 - Primary user action: complete the current micro-action by listening, choosing, speaking, shadowing, filling, or continuing under prompt.
 - Core components: session header, current action chain step label, one active micro-action panel, target expression or prompt, hint ladder surface, voice recorder controls, text fallback field, feedback card, retry/continue action, pressure check prompt, recap summary, recoverable error banner.
 - States: `loading`, `ready`, `listening`, `recording`, `transcribing`, `evaluating`, `feedback`, `retry`, `pressure_check`, `recap`, `recoverable_error`, `unsupported_scene`.
-- API dependencies: none required for local-first P0.1 slice; if repository-backed sync is selected later, use existing OpenAPI Training family only after API contract review. AI dependencies are `TrainingFeedbackCandidate` from `docs/ai_runtime/llm_output_schema.md`; ASR/TTS/scoring use existing AI gateway or local deterministic fixtures.
+- API dependencies: Product Base/production Training uses the backend Training API as the source of truth: `POST /training/sessions`, `GET /training/sessions/{session_id}`, `POST /training/sessions/{session_id}/turns`, planner/hint/pressure-check endpoints and `POST /training/sessions/{session_id}/complete`. If backend Training is disabled or unavailable, the screen must show service-unavailable or close the entry; it must not create a local draft session, local planner decision, synthetic feedback or `pending_local_write` evidence. AI dependencies are backend-owned feedback candidates from `docs/ai_runtime/llm_output_schema.md`; ASR/TTS/scoring use the backend AI gateway or backend deterministic test provider.
 - Empty state: if no valid action chain or target expression is available for the selected official scene, show a recoverable unavailable state and route back to scenario detail; do not create a fake third scene or arbitrary prompt.
 - Loading state: show that scene, level, action step, history and audio resources are loading; keep the previous resumable state if available.
 - Error state: preserve learner input or audio reference when possible; ASR failure offers retry recording or text fallback; LLM/schema failure offers deterministic retry/fallback; evidence write failure preserves recap and marks write-back retryable.
-- Acceptance criteria mapping: AC-P01-001, AC-P01-002, AC-P01-003, AC-P01-004, AC-P01-005, AC-P01-006, AC-P01-007, AC-P01-008, AC-P01-009, AC-P01-010, AC-P01-011, AC-P01-012.
+- Acceptance criteria mapping: AC-P01-001, AC-P01-002, AC-P01-003, AC-P01-004, AC-P01-005, AC-P01-006, AC-P01-007, AC-P01-008, AC-P01-009, AC-P01-010, AC-P01-011, AC-P01-012, AC-P01-014, AC-P01-015, AC-P01-016, AC-P01-017, AC-P01-018, AC-P01-019.
 
 ### Training Session State Contract
 | State | User sees | Primary action | Next states |
@@ -74,6 +74,47 @@ Owning increment: `p0-1-expression-automation-training`。
 - Hint level changes must be visible through the current prompt, sentence frame, options, chunk shadowing or model-then-retry UI.
 - Recap must remain visible even when learning evidence write-back is retryable or delayed.
 - The screen must not display cross-day scheduling, full L0-L5 mastery, third-scene creation, arbitrary scene generation, commercial entitlement status, or billing state as P0.1 completion proof.
+
+## P0.2 Goal Autopilot Screens
+
+Owning stage: `docs/product/stages/p0-2-training-memory.md`。
+Owning increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy`, `p0-2-autopilot-progress-checkpoint`。
+
+### Goal Setup And Diagnostic
+- Purpose: capture the learner's target, deadline, daily time and intensity, then show supported/partial/unsupported status and diagnostic confidence.
+- Entry points: onboarding completion, home goal setup entry, profile goal edit entry, unsupported/partial plan recovery entry.
+- Primary user action: submit or revise the goal and provide diagnostic samples when required.
+- Core components: goal type picker, target score/ability input, deadline input, daily minutes input, intensity selector, support status panel, diagnostic confidence panel, weakness tags, claim guard note, continue-to-plan action.
+- States: `draft`, `checking_support`, `supported`, `partial_supported`, `unsupported`, `collecting_diagnostic`, `evaluating_diagnostic`, `diagnostic_complete`, `low_confidence`, `recoverable_error`.
+- API dependencies: `POST /goal-autopilot/goals`, `GET /goal-autopilot/summary`. Diagnostic AI output follows `docs/ai_runtime/llm_output_schema.md#P0.2-Goal-Autopilot-Candidate-Schemas` and is candidate-only.
+- Empty state: no active goal; show compact goal setup form, not a marketing page.
+- Loading state: support check and diagnostic evaluation disable duplicate submit while keeping entered goal facts visible.
+- Error state: provider/schema failure shows retry or conservative low-confidence path; unsupported goals show limitation and do not create a full plan.
+- Acceptance criteria mapping: P0.2 diagnostic ACs for P02-DIAG-FR-001 through P02-DIAG-FR-007.
+
+### Daily Autopilot
+- Purpose: show one primary action so the learner does not manually decide what to practice next.
+- Entry points: app home, active goal summary, due review, missed-day recovery, checkpoint due banner.
+- Primary user action: start the selected training/review/checkpoint item; secondary controls are pause, defer, lower intensity and resume.
+- Core components: goal progress header, next action block, reason code, expected duration, daily plan compact list, pause/defer controls, partial/unsupported limitation state, quiet-hours state.
+- States: `loading`, `ready`, `paused`, `quiet_hours`, `stale_plan`, `unsupported_or_partial`, `executing`, `completed`, `deferred`, `recovery_required`, `recoverable_error`.
+- API dependencies: `GET /goal-autopilot/summary`, `POST /goal-autopilot/plans/generate`, `GET /goal-autopilot/daily-plan`, `GET /goal-autopilot/actions/next`, `POST /goal-autopilot/actions/{plan_item_id}/complete`.
+- Empty state: no active plan; if supported goal exists, offer generate plan; otherwise route to goal setup.
+- Loading state: show current cached summary as stale if available and avoid local plan computation.
+- Error state: stale plan, quota, policy or provider failure shows retry/replan/defer; Flutter must not synthesize next action or final mastery locally.
+- Acceptance criteria mapping: P0.2 plan/autopilot ACs for P02-PLAN-FR-001 through P02-PLAN-FR-008 and P02-AUTO-FR-001 through P02-AUTO-FR-003.
+
+### Progress Forecast And Checkpoint
+- Purpose: show target gap, ETA confidence, risk and next checkpoint, and collect weekly/biweekly checkpoint results.
+- Entry points: daily autopilot completion, progress surface, due checkpoint action, profile goal progress entry.
+- Primary user action: review forecast or submit checkpoint result when due.
+- Core components: gap summary, ETA/date or uncertainty state, risk reason, next checkpoint date, latest checkpoint summary, checkpoint submit action, plan update signal.
+- States: `loading`, `current`, `low_confidence`, `partial_supported`, `checkpoint_due`, `submitting_checkpoint`, `checkpoint_recorded`, `plan_update_required`, `recoverable_error`.
+- API dependencies: `GET /goal-autopilot/forecast`, `POST /goal-autopilot/checkpoints`, `GET /goal-autopilot/summary`.
+- Empty state: no forecast until active goal, diagnostic and plan exist; show required upstream step.
+- Loading state: recompute or submit keeps previous forecast visible as stale.
+- Error state: low confidence and partial support block high-precision ETA; checkpoint failure can be retried without claiming goal completion.
+- Acceptance criteria mapping: P0.2 forecast/checkpoint ACs for P02-AUTO-FR-004 through P02-AUTO-FR-008.
 
 ### Notebook
 - Purpose: review saved expressions.

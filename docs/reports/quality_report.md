@@ -1,7 +1,308 @@
 # Quality Report
 
 ## Current Status
-`P01-TRAINING-NAMING-MIGRATION-20260603` passed independent review for Training bounded-context naming migration. Executable Flutter Training code/tests now use `lib/features/training` and `test/features/training`, with no `InterviewTraining*` or `interview_training_*` executable Training namespace remaining. Commercial release and paid AI voice remain blocked by P0 external evidence gates.
+`P02-FOLLOWUP-A-GOAL-INTAKE-DIAGNOSTIC-HARDENING-20260604` passed local Followup-A Flutter implementation, analyzer, backend regression/performance, coverage and strengthened traceability gates for FR-001..009, including No-goal Explore Mode. Independent review does not approve full P0.2 release because Followup-B pause/resume/notification/memory control, Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open. Followup-B through Followup-D remain at formal definition and WP traceability scaffold level; they are not requirements/spec/AC/TC approval and not implementation approval.
+
+## 2026-06-04 P02 Followup-A No-goal Explore Mode Implementation Independent Review
+
+Result: pass for local Followup-A FR-009 implementation and traceability. Not a full P0.2 release approval, not Product Base merge approval and not commercial launch approval.
+
+Findings:
+- No blocker found for no-active-goal entry. `GoalAutopilotPanel` now renders `No active goal` with `Set a goal`, `Explore practice` and `Try a sample drill` instead of opening the GoalProfile form by default.
+- No blocker found for explicit goal creation. `Set a goal` opens the editable intake form but does not call create-goal transport or `createDefaultGoal()` before valid submit.
+- No blocker found for Explore Mode isolation. `Explore practice` renders ordinary sample drill feedback and does not call create/generate-plan/complete/checkpoint/forecast/memory goal-autopilot operations beyond the initial summary lookup.
+- No prohibited claim blocker found. Explore Mode does not render target gap, ETA, achieved-goal, guaranteed outcome, official-score-equivalence or next autopilot/memory item copy.
+- No coverage blocker. `scripts/check_p0_2_goal_autopilot_coverage.py` passed with backend line 96.3%, backend branch 88.6% and Flutter feature line 90.9%.
+- No traceability blocker. `P02-FUA-TR-009` now has code evidence, executed TC-P02-FUA-014..016 evidence and strengthened traceability-script coverage.
+
+Validation:
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter analyze lib/features/goal_autopilot lib/services/api_client.dart lib/pages/home_page.dart test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter test --coverage test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest,GoalAutopilotPerformanceTest test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check -- <Followup-A FR-009 changed files>` - passed.
+- Followup-A FR-009 touched-file whitespace audit - passed.
+
+Residual risk:
+- Followup-A still does not implement a full Explore Practice content library; FR-009 intentionally implements the no-goal boundary and sample drill entry only.
+- Followup-B/C/D remain open and must not inherit Followup-A's local pass status.
+
+## 2026-06-04 P02 Followup-A No-goal Explore Mode Requirement/Test Documentation Review
+
+Superseded status note: this documentation-only review is superseded by the implementation review above, where FR-009 code and TC-P02-FUA-014..016 passed locally.
+
+Result: pass for documentation addendum and traceability readiness. Not a code implementation approval, not executed test evidence and not release approval.
+
+Findings:
+- Current Followup-A docs did not fully cover users who browse without setting a goal. The previous no-active-goal flow routed directly to editable goal intake, which could mislead later implementation toward default or forced GoalProfile creation.
+- No documentation blocker remains for the no-goal boundary. `P02-FUA-FR-009`, `P02-FUA-SPEC-009`, `AC-P02-FUA-009`, `TC-P02-FUA-014..016` and `P02-FUA-TR-009` now define empty state, `Set a goal` transition, Explore/sample entry and goal-autopilot fact isolation.
+- The addendum explicitly prohibits creating or persisting GoalProfile, DiagnosticAssessment, ProgressForecast, GoalBackplan, DailyPlan, AutopilotAction or MemoryCurve schedule during no-goal browsing.
+- The addendum requires casual practice evidence to remain ordinary practice/session evidence and blocks goal gap, ETA, forecast, achieved-goal, guaranteed outcome and official-score-equivalence copy in Explore Mode.
+- Historical note from this documentation-only review: prior local Followup-A implementation evidence covered only FR-001..008 at that time. This is superseded by the implementation review above, where FR-009 code and TC-P02-FUA-014..016 passed locally.
+
+Validation:
+- Followup-A No-goal Explore Mode document audit - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
+- `git diff --check -- docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening docs/reports/quality_report.md docs/reports/test_report.md scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
+- Followup-A no-goal touched-file whitespace audit - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Residual risk:
+- Historical note from this documentation-only review: no code had been changed for FR-009 in that earlier step. This is superseded by the implementation review above.
+
+## 2026-06-04 P02 Followup-A Local Implementation Independent Review
+
+Result: pass for local Followup-A implementation and traceability. Not a full P0.2 release approval, not Product Base merge approval and not commercial launch approval.
+
+Findings:
+- No blocker found for P02-FUA-FR-001 editable intake. Production `GoalAutopilotPanel` now renders editable GoalProfile fields and calls `widget.adapter.createGoal`; strengthened traceability check fails if the production panel calls `createDefaultGoal()`.
+- No blocker found for P02-FUA-FR-003/P02-FUA-FR-004 diagnostic sample handling. `GoalDiagnosticSampleInput` provides a typed input boundary, adapter filters empty samples, preserves stable refs and does not send fake `audio_ref`.
+- No blocker found for P02-FUA-FR-002/P02-FUA-FR-006 support and claim boundaries. Flutter parses `support_decision`, diagnostic sample/confidence facts and diagnostic/forecast claim guards; unsupported goals hide Generate plan/Checkpoint/Done, partial/low-confidence states show limitation copy, and guarded copy is sanitized away from official-score/guaranteed outcome wording.
+- No blocker found for P02-FUA-FR-005 revision/stale behavior. Flutter exposes revision, blocks stale/blocked next actions and sends force replan recovery instead of auto-executing, notifying or reordering memory queue.
+- No coverage blocker. `scripts/check_p0_2_goal_autopilot_coverage.py` passed with backend line 96.3%, backend branch 88.6% and Flutter feature line 90.5%.
+- No traceability blocker. `scripts/check_p0_2_goal_autopilot_traceability.py` now covers Followup-A docs, code and test names in addition to the earlier P0.2 vertical slice evidence.
+
+Validation:
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter analyze lib/features/goal_autopilot lib/services/api_client.dart lib/pages/home_page.dart test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter test --coverage test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest,GoalAutopilotPerformanceTest test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Residual risk:
+- Followup-A did not implement production audio capture, paid AI diagnostic calibration or commercial entitlement/cost behavior.
+- Followup-B/C/D remain open and must not inherit Followup-A's local pass status.
+
+## 2026-06-04 P02 Followup-A Requirements Spec AC TC Traceability Independent Review
+
+Result: pass for Followup-A documentation readiness and code-routing gate. Not a code implementation approval, not executed test evidence and not release approval.
+
+Findings:
+- Requirements review passed. `P02-FUA-FR-001` through `P02-FUA-FR-008` map to `P02-FUA-WP-001` through `P02-FUA-WP-008`, include P02-SI-007/P02-SI-008/P02-SI-009 coverage, and include all five policy gates P02-PG-001 through P02-PG-005. A real gap was found and fixed during review: Followup-A initially omitted P02-PG-003, so definition and requirements now explicitly state revision/stale visibility must not auto-execute, notify or reorder memory queue before Followup-B.
+- Spec review passed. `P02-FUA-SPEC-001` through `P02-FUA-SPEC-008` define editable GoalProfile intake, SupportedGoalMatrix pre-plan state, diagnostic sample capture, candidate-only transport, revision/stale visibility, claim guard copy, coverage/performance gates and independent review evidence.
+- Acceptance review passed. `AC-P02-FUA-001` through `AC-P02-FUA-008` are observable pass/fail criteria covering form validation, custom payload, sample filtering, supported/partial/unsupported gating, low-confidence downgrade, prohibited claims, stale-plan recovery, coverage, performance and traceability.
+- Test case review passed. `TC-P02-FUA-001` through `TC-P02-FUA-013` map every AC to stable widget/adapter/model/backend-regression/coverage/performance/traceability checks. All Followup-A test results remain `planned`; no unexecuted pass is claimed.
+- Traceability review passed. `P02-FUA-TR-001` through `P02-FUA-TR-008` now include Stage Scope ID, Policy Gate, WP, FR, Spec, AC, TC, contract evidence, planned code evidence, planned test evidence, review gate and status. Gap register entries identify exactly what code must close.
+
+Validation already performed:
+- Requirements audit - passed after P02-PG-003 correction.
+- Definition policy-gate audit - passed after P02-PG-003 correction.
+- Spec audit - passed.
+- Acceptance audit - passed after replacing ambiguous future-closeout wording that could be misread as implementation evidence.
+- Test case audit - passed.
+- Traceability audit - passed.
+
+Final validation before code:
+- `git diff --check -- docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening docs/reports/quality_report.md` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- Followup-A FR/Spec/AC/TC/traceability chain audit - passed.
+
+Residual risk:
+- Followup-A code has not started. Current local Flutter still has the known gaps: default-goal-only setup, hard-coded diagnostic samples, under-parsed summary fields and incomplete partial/unsupported/revision UI gating.
+- Followup-B/C/D remain scaffold-only and must not be treated as implementation-ready.
+
+## 2026-06-04 P02 Followup A-D Definition And WP Traceability Scaffold Independent Review
+
+Result: pass for formal follow-up path setup and WP-level traceability scaffold. Not a requirements/spec/acceptance/test_cases approval, not code implementation approval and not release approval.
+
+Findings:
+- No path-governance blocker. Four canonical increment paths now exist under `docs/product/increments/`: `p0-2-followup-a-goal-intake-diagnostic-hardening`, `p0-2-followup-b-autopilot-control-planner-memory`, `p0-2-followup-c-checkpoint-forecast-surfaces` and `p0-2-followup-d-release-gate-hardening`.
+- No traceability-scaffold blocker. Every follow-up has stable WP IDs, mapped Stage Scope IDs, mapped P02-PG policy gates, explicit upstream rows, required downstream artifacts, contract impact, code evidence status, test evidence status and review gate.
+- No scope-regression blocker. Followup-A owns editable GoalProfile and diagnostic hardening; Followup-B owns autopilot control, notification semantics, planner/memory and L0-L5 transition hardening; Followup-C owns checkpoint, forecast and Home/Queue/Wiki projection; Followup-D owns release, commercial, cost, data, telemetry and Product Base/release gates.
+- Implementation remains blocked. The scaffold explicitly states requirements/spec/acceptance/test_cases are not started for A-D and code evidence is `Not started`, preventing the previous local deterministic slice from being mistaken for full P0.2 completion.
+
+Validation:
+- P02 Followup path audit - passed.
+- P02 Followup WP ID and policy-gate audit - passed.
+- Stage/roadmap/development-status/feature-registry reference audit - passed.
+- `git diff --check -- <modified P0.2 product status docs>` - passed.
+- Followup new-file non-empty and trailing-whitespace audit - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Residual risk:
+- A-D still need full requirements/spec/acceptance/test_cases generation and independent review before any code changes.
+- Product Base merge, commercial release, paid AI external evidence and official-score-equivalence claims remain blocked.
+
+## 2026-06-04 P02 Goal Autopilot Local Implementation Independent Review
+
+Result: conditional pass for the local deterministic implementation slice. Not a Product Base merge approval and not a commercial release approval.
+
+Findings:
+- No coverage blocker remains for the implemented local slice. `scripts/check_p0_2_goal_autopilot_coverage.py` passed with backend changed-code line 96.3%, backend branch 88.6% and Flutter feature line 82.1%. Dart coverage tooling does not emit branch coverage, so Flutter branch coverage is not separately measurable by the local toolchain.
+- Product-scope blocker. The Flutter surface currently starts a compact default IELTS goal rather than exposing the full editable `GoalProfile` intake fields for goal type, target score/ability, deadline, daily available time and intensity preference. Backend contracts support these fields, but the user-facing setup is incomplete.
+- Product-scope blocker. Autopilot user control is only partially implemented: skip/defer recovery and quiet-hour fields exist, but pause/resume endpoint behavior and production notification scheduling are not implemented.
+- Product-scope blocker. Progress evidence is surfaced on the Home learn tab only. The planned “at least two product surfaces” behavior is not yet complete because Queue/Wiki propagation remains future work.
+- No local code blocker found in the implemented deterministic backend/API/Flutter slice after review. The implemented service/controller/adapter tests cover supported-goal routing, diagnostic facts, plan generation, memory policy, next action, checkpoint forecast update, deletion cleanup and OpenAPI path drift.
+
+Validation:
+- `npm run check:api-contract` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest,GoalAutopilotPerformanceTest test` - passed.
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter analyze lib/features/goal_autopilot lib/services/api_client.dart lib/pages/home_page.dart test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- Backend JaCoCo command - passed and generated `backend/target/site/jacoco/jacoco.csv`.
+- `flutter test --coverage test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed and generated `coverage/lcov.info`.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
+
+Seven-defect closure review after implementation:
+- 达标判定与承诺边界：implemented locally through supported-goal fail-closed behavior, confidence, claim guard and no official-score-equivalence claim; paid/external certification evidence remains outside release.
+- 诊断可信度：implemented locally through deterministic rubric/weakness decomposition, confidence and L0-L5 initial mastery seed; real speech/audio diagnostic calibration remains a later AI/runtime evidence gate.
+- 自动带练过度自动化：partially implemented through next-action orchestration, completion recovery and user-visible checkpoints; pause/resume and notification scheduling remain blockers.
+- 商业边界不足：partially implemented by fail-closed unsupported goals and no paid-AI claim; entitlement/cost telemetry remains a release blocker.
+- 计划引擎可执行约束不足：implemented locally through weekly/daily plan generation, memory policy and performance tests; full adaptive workload tuning remains future work.
+- 内容覆盖与目标类型未绑定：implemented locally through supported/partial/unsupported goal matrix; broader task/content libraries remain future expansion.
+- 隐私、数据保留和解释性缺口：implemented locally through account deletion purge and redacted planner audit fields; export/retention UI remains future work.
+
+Residual risk:
+- The implementation can continue into the next coding increment, but completion status must remain “conditional/local slice” until full intake/control/surface behavior and commercial gates are closed or explicitly re-scoped.
+
+## 2026-06-04 P02 Downstream Documentation Independent Review
+
+Result: pass for software-development readiness at documentation level. Not an implementation approval, not executed test evidence and not a release approval.
+
+Findings:
+- No documentation blocker. `p0-2-goal-diagnostic-foundation` has GoalProfile, SupportedGoalMatrix, DiagnosticAssessment, rubric/confidence, weakness tags, initial L0-L5 state and diagnostic commercial/data governance mapped through FR/Spec/AC/TC/Traceability.
+- No documentation blocker. `p0-2-goal-backplan-memory-policy` has GoalBackplan, weekly/daily planner, MemoryCurvePolicy, L0-L5 transition, cross-session pressure, cross-day orchestration, commercial/data governance, deterministic replay, performance and >=80% coverage gates mapped through FR/Spec/AC/TC/Traceability.
+- No documentation blocker. `p0-2-autopilot-progress-checkpoint` has AutopilotTraining, no-choice execution, user control, ProgressForecast, OutcomeCheckpoint, progress surfaces, commercial/claim/data governance, performance and >=80% coverage gates mapped through FR/Spec/AC/TC/Traceability.
+- No documentation blocker. P02-SI-001 through P02-SI-013 all have downstream traceability rows, and every AC family has stable planned TC IDs.
+- Required implementation blocker remains. The >=80% code coverage and performance budgets are acceptance/test gates only; they are not executed evidence until code and CI reports exist.
+
+Validation:
+- `p02-diagnostic-chain=passed`.
+- `p02-plan-chain=passed`.
+- `p02-auto-chain=passed`.
+- `p02-stage-scope-traceability=passed`.
+- `p02-policy-gate-downstream=passed`.
+- `p02-ac-tc-trace-prefixes=passed`.
+- `git diff --check -- <P0.2 downstream docs and reports>` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Residual risk:
+- Product engineering can use these docs to start downstream domain/API/AI/UX contract generation, but implementation must remain blocked until those contracts, code, tests, coverage reports, performance results and executed traceability evidence exist.
+- Any future implementation that cannot meet >=80% changed-code line/branch coverage or defined p95 performance budgets must be blocked or explicitly re-scoped before completion.
+
+## 2026-06-04 P02 Policy Gate Commercial Product Review
+
+Result: pass for planning-gate completeness and commercial/product landing guard. Not a requirements/spec/AC/TC approval and not implementation approval.
+
+Findings:
+- No planning blocker. P02-PG-001 prevents false achievement, ETA and official-score-equivalence claims by requiring product-internal achievement thresholds, confidence bands, diagnostic reliability and prohibited-claim rules.
+- No planning blocker. P02-PG-002 prevents unsupported-goal planning by requiring a supported/partial/unsupported goal matrix tied to rubric, scenario, task and content coverage.
+- No planning blocker. P02-PG-003 prevents over-automation and unstable planner behavior by requiring user control, quiet hours, missed-day recovery, fatigue/overload protection, deterministic planner constraints and replay evidence.
+- No planning blocker. P02-PG-004 prevents commercial ambiguity by requiring entitlement boundaries, AI usage budgets, cost telemetry, quota downgrade and membership-display limits.
+- No planning blocker. P02-PG-005 prevents sensitive-data and explainability gaps by requiring consent, retention/deletion/export, minimization, audit trail and forecast/checkpoint explanation rules.
+
+Seven-defect closure review:
+- 达标判定与承诺边界：closed at planning gate by P02-PG-001.
+- 诊断可信度：closed at planning gate by P02-PG-001 and P02-PG-005.
+- 自动带练过度自动化：closed at planning gate by P02-PG-003.
+- 商业边界不足：closed at planning gate by P02-PG-004.
+- 计划引擎可执行约束不足：closed at planning gate by P02-PG-003.
+- 内容覆盖与目标类型未绑定：closed at planning gate by P02-PG-002.
+- 隐私、数据保留和解释性缺口：closed at planning gate by P02-PG-005.
+
+Validation:
+- P02 policy gate ID audit - passed.
+- P02 seven-defect closure audit - passed at planning-gate level.
+- `git diff --check -- <P0.2 policy gate docs and reports>` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Residual risk:
+- The seven defects are not implemented away yet. They are now hard gates for the next requirements/spec/AC/TC/traceability and contract-generation steps.
+- Any downstream increment that omits an applicable P02-PG row must be blocked by independent checker review.
+
+## 2026-06-04 P02 Superseded Memory Artifact Removal Review
+
+Result: pass for documentation governance, link cleanup and implementation-entry guard. Not a requirements/spec/AC/TC approval for the new increments and not implementation approval.
+
+Findings:
+- No blocker. The old single memory-planner artifact was removed from the active increment directory.
+- No blocker. Stage, roadmap, feature registry and development status now point to `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy` and `p0-2-autopilot-progress-checkpoint` as the only P0.2 planned increment sources.
+- No blocker. Reports now describe the earlier memory-planner audit as superseded historical evidence, not as an implementation-ready source of truth.
+- Required gate remains. The three new P0.2 increments still need full requirements, specs, acceptance criteria, test cases, traceability and independent checker review before implementation.
+
+Validation:
+- Superseded artifact reference audit - passed after active links were removed.
+- Directory removal check - passed.
+- `git diff --check -- <P0.2 supersession docs>` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Residual risk:
+- The new P0.2 increments currently have PM definitions only. They still need downstream docs and contract gates before any code work can start.
+
+## 2026-06-04 P02 Goal-Driven Stage Replanning Review
+
+Result: pass for roadmap/stage replanning and PM-owned increment definitions. Not a requirements/spec/AC/TC approval for the new increments and not implementation approval.
+
+Findings:
+- No planning blocker. Existing Product Base, P0.1, old P0.2 and P1/P2 were reviewed against the goal-driven autopilot chain; none fully covered GoalProfile, DiagnosticAssessment, GoalBackplan, AutopilotTraining, MemoryCurvePolicy, ProgressForecast and OutcomeCheckpoint.
+- No planning blocker. `goal-driven-learning-autopilot` is now registered as the P0.2 primary feature, with `learning-memory-review` as an affected feature.
+- No planning blocker. P0.2 stage scope now includes P02-SI-001 through P02-SI-013 and routes the new scope into three planned increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy` and `p0-2-autopilot-progress-checkpoint`.
+- No planning blocker. The earlier single memory-planner artifact was identified as incomplete and is now removed from the active implementation path.
+
+Validation:
+- P0.2 goal-driven stage audit - passed with no missing P02-SI-001..013 or requirement-chain terms.
+- `git diff --check -- <P0.2 stage replanning docs>` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Residual risk:
+- The three new P0.2 increments currently have PM definitions only. They still need requirements, specs, acceptance criteria, test cases, traceability, domain/API/AI/UX contracts and independent checker review before implementation.
+- Earlier single memory-planner requirements/spec/AC/TC are no longer valid as active P0.2 source of truth.
+
+## 2026-06-04 P02 Documentation Design Independent Review
+
+Result: pass for documentation design, AC-to-TC planning and bidirectional traceability. Not an implementation approval.
+
+Independent step reviews:
+- PM/stage review passed before supersession. The earlier memory-planner documentation covered P02-SI-001 through P02-SI-006, but it is now historical evidence only.
+- Requirement review passed. `P02-FR-001` through `P02-FR-010` cover all P02 stage scope items and keep P0.2 non-goals explicit.
+- Spec review passed. `P02-SPEC-001` through `P02-SPEC-010` preserve the upstream Stage Scope IDs and define inputs, outputs, states, failure handling, audit/replay and module impact.
+- Acceptance review passed. `AC-P02-001` through `AC-P02-010` are binary enough for QA and reverse-reference FR/Spec/Stage Scope.
+- Test case review passed. `TC-P02-001` through `TC-P02-014` include required fields and keep functional tests as `planned`; only TC-P02-014 documentation traceability audit is marked passed.
+- Traceability review passed. `P02-TR-001` through `P02-TR-010` form the required Stage Scope -> Increment -> FR -> Spec -> AC -> TC chain and clearly separate planned contract/code/test evidence from real implementation evidence.
+
+Validation:
+- P02 documentation ID coverage audit - passed with no missing IDs and no forbidden implementation/release claims.
+- `git diff --check -- <P0.2 documentation paths>` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- P02 traceability `rg` audit - passed before supersession.
+
+Residual risk:
+- P02-GAP-001 through P02-GAP-006 remain open by design: domain model, UX/screen spec, AI runtime schema, API/OpenAPI contract, implementation/tests and scope guard must be created before implementation can start or complete.
+- P0.2 documentation design must not be used to claim Product Base merge, commercial release, paid AI voice readiness or P1/P2 content expansion.
+
+## 2026-06-04 P0.1 Product Base Implementation Review
+
+Result: pass for local implementation review, API drift sync, traceability and regression coverage. Not a commercial release approval.
+
+Findings:
+- No local blocker. Backend Training API/source-of-truth, evidence governance, versioned content mapping, media/AI pipeline, planner audit and redacted metrics remain implemented and covered by TC-P01-021 through TC-P01-028.
+- No local blocker. Flutter Training entry, adapter, voice/text fallback and backend-disabled gate remain backend-only and covered by TC-P01-029 through TC-P01-031.
+- No local blocker. `npm run check:api-contract` now passes after syncing `dart-client-drift-manifest.json`, `.openapi-sha256` and `SpeakeasyApiContract.openApiSha256` to the current OpenAPI hash.
+- No local blocker. `P01-FR-012..017 -> P01-SPEC-013..018 -> AC-P01-014..019 -> TC-P01-021..031 -> P01-TR-013..018` remains complete and bidirectional.
+- No local blocker after independent review. The independent implementation reviewer initially blocked on a stale `test_cases.md` hash wording; AC-P01-014 now states that generated Dart OpenAPI drift pins are synced to `4880e61f8dae8673c13eb2aff5c66e690de70e67663bae45608f57206502fcbf`, and re-review passed.
+- Release blocker remains outside this increment. PM Product Base merge approval, paid AI voice and commercial release still require their owning gates.
+
+Validation:
+- `cd backend && mvn -q -DskipTests compile` - passed.
+- `cd backend && mvn -q -Dtest=TrainingSessionControllerTest,TrainingTurnIdempotencyTest,TrainingSessionAuthorizationTest,TrainingEvidenceRuleTraceTest,TrainingAccountDeletionRetentionTest,TrainingContentVersioningTest,TrainingMediaAiPipelineTest,TrainingPlannerReplayTest,TrainingObservabilityTest test` - passed.
+- `npm run check:api-contract` - passed.
+- `python3 scripts/check_p0_1_training_frontend_source_of_truth.py` - passed.
+- `python3 scripts/check_p0_1_training_rollout_readiness.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `flutter test test/features/training/training_entry_test.dart test/features/training/training_backend_only_loop_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter analyze lib/config/app_config.dart lib/services/api_client.dart lib/features/training/training_backend_adapter.dart lib/features/training/training_session_loop_page.dart lib/pages/home_page.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter test integration_test/p0_1_training_loop_test.dart` - passed.
+- Independent implementation re-review - passed after resolving the stale hash wording in `test_cases.md`.
+
+Residual risk:
+- This implementation review does not approve commercial release, paid AI voice, external provider/media/cost/retention evidence or PM Product Base merge.
 
 ## 2026-06-03 P0.1 Training Naming Migration Review
 
@@ -68,14 +369,16 @@ Validation:
 - `flutter test test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
 - `flutter analyze lib/config/app_config.dart lib/services/api_client.dart lib/features/training/training_backend_adapter.dart lib/features/training/training_session_loop_page.dart lib/pages/home_page.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
 - `python3 scripts/check_p0_1_training_rollout_readiness.py` - passed.
-- `npm run check:api-contract` - passed with OpenAPI/Dart drift hash unchanged.
+- `npm run check:api-contract` - passed in the original batch; 2026-06-04 revalidation passed after generated Dart drift pins were synced to current OpenAPI hash `4880e61f8dae8673c13eb2aff5c66e690de70e67663bae45608f57206502fcbf`.
 - `python3 scripts/project_agent_runner.py validate` - passed.
 
 Residual risk:
-- OpenAPI/Dart generated artifacts were intentionally left unchanged after the user's OpenAPI rollback request; future contract regeneration should be a separate explicit change.
+- Superseded by 2026-06-04 implementation review: generated Dart OpenAPI drift pins are now synced to the current OpenAPI hash.
 - Production rollout requires setting `ENABLE_BACKEND_TRAINING=true`, operating existing AI/media environment gates and preserving P0 commercial release blockers.
 
 ## 2026-06-03 P0.1 Commercial Software Remediation Documentation Review
+
+Superseded status note: this section records the earlier documentation-only review. The later `2026-06-03 P0.1 Training Product Base Hardening Review` supersedes its remaining implementation blocker for TC-P01-021 through TC-P01-028 and records local passed evidence for TC-P01-021 through TC-P01-031.
 
 Result: pass for documentation/design remediation and traceability. Not a Product Base merge approval, production training approval or commercial release approval.
 
@@ -93,7 +396,7 @@ Validation:
 - `git diff --check -- <changed docs>` - passed.
 
 Residual risk:
-- TC-P01-021 through TC-P01-028 remain planned; P0.1 cannot be promoted to Product Base stable capability or production training readiness until those tests pass or blockers are explicitly accepted.
+- Historical note from this documentation-only review: TC-P01-021 through TC-P01-028 were planned at that time. This statement is superseded by the later P0.1 Training Product Base Hardening Review, where TC-P01-021 through TC-P01-031 have local passed evidence; PM approval and Product Base merge review remain separate gates.
 - Paid AI voice and commercial release remain governed by P0 commercial subscription and commercial AI provider hardening gates.
 
 ## 2026-06-03 P0-AI OSS Storage Implementation Independent Review

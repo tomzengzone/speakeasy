@@ -1,0 +1,72 @@
+# P0.2 Followup-A Test Cases：目标录入与诊断加固
+
+## 状态
+Planned + local executed evidence addendum - 本文件定义 Followup-A 测试用例，并记录 2026-06-04 本地实现后的执行证据；Flutter feature line coverage 已由自动脚本校验为 90.9%。TC-P02-FUA-014..016 已覆盖 FR-009 No-goal Explore Mode 并通过本地执行。
+
+## 上游来源
+- `docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening/requirements.md`
+- `docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening/spec.md`
+- `docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening/acceptance.md`
+- `docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening/traceability.md`
+
+## AC-to-TC Gate Result
+| 字段 | 值 |
+| --- | --- |
+| Gate | P0.2 Followup-A pre-implementation AC-to-TC mapping |
+| Result | Passed for documentation routing and local Followup-A implementation evidence, including FR-009 Explore Mode |
+| Date | 2026-06-04 |
+| Scope | Editable GoalProfile intake, SupportedGoalMatrix boundary, diagnostic sample capture, diagnostic transport, revision/stale visibility, claim guard, no-goal Explore Mode, coverage/performance/review gates |
+| Execution status | Local Flutter widget/adapter tests, analyzer, backend regression/performance, coverage and traceability checks executed for TC-P02-FUA-001..016 |
+| Evidence report | `docs/reports/test_report.md#2026-06-04-p02-followup-a-implementation-validation` |
+
+## Test Case Library
+| TC ID | Stage Scope ID | Policy Gate | FR | Spec | AC | Traceability Row | 测试层级 | 自动化状态 | 测试脚本路径 | 执行命令 | 结果状态 | 证据报告 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| TC-P02-FUA-001 | P02-SI-007 | P02-PG-001, P02-PG-002, P02-PG-005 | P02-FUA-FR-001 | P02-FUA-SPEC-001 | AC-P02-FUA-001 | P02-FUA-TR-001 | widget | planned | `test/features/goal_autopilot/goal_autopilot_adapter_test.dart` | `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart --name \"Followup-A form renders editable goal intake and blocks invalid values\"` | planned | `docs/reports/test_report.md#p02-followup-a-planned` |
+| TC-P02-FUA-002 | P02-SI-007 | P02-PG-001, P02-PG-002, P02-PG-005 | P02-FUA-FR-001 | P02-FUA-SPEC-001 | AC-P02-FUA-001 | P02-FUA-TR-001 | widget/adapter | planned | `test/features/goal_autopilot/goal_autopilot_adapter_test.dart` | `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart --name \"Followup-A submits user-entered GoalProfile payload without default goal path\"` | planned | `docs/reports/test_report.md#p02-followup-a-planned` |
+| TC-P02-FUA-003 | P02-SI-008 | P02-PG-001, P02-PG-005 | P02-FUA-FR-003 | P02-FUA-SPEC-003 | AC-P02-FUA-003 | P02-FUA-TR-003 | widget/adapter | planned | `test/features/goal_autopilot/goal_autopilot_adapter_test.dart` | `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart --name \"Followup-A filters diagnostic samples and preserves stable refs\"` | planned | `docs/reports/test_report.md#p02-followup-a-planned` |
+| TC-P02-FUA-004 | P02-SI-008 | P02-PG-001, P02-PG-004, P02-PG-005 | P02-FUA-FR-004 | P02-FUA-SPEC-004 | AC-P02-FUA-004 | P02-FUA-TR-004 | adapter/model | planned | `test/features/goal_autopilot/goal_autopilot_adapter_test.dart` | `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart --name \"Followup-A sends diagnostic candidate evidence without fake audio facts\"` | planned | `docs/reports/test_report.md#p02-followup-a-planned` |
+| TC-P02-FUA-005 | P02-SI-007 | P02-PG-001, P02-PG-002 | P02-FUA-FR-002 | P02-FUA-SPEC-002 | AC-P02-FUA-002 | P02-FUA-TR-002 | widget/model | planned | `test/features/goal_autopilot/goal_autopilot_adapter_test.dart` | `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart --name \"Followup-A renders supported state with support decision and plan entry\"` | planned | `docs/reports/test_report.md#p02-followup-a-planned` |
+| TC-P02-FUA-006 | P02-SI-007, P02-SI-008 | P02-PG-001, P02-PG-002, P02-PG-004, P02-PG-005 | P02-FUA-FR-002, P02-FUA-FR-006 | P02-FUA-SPEC-002, P02-FUA-SPEC-006 | AC-P02-FUA-002, AC-P02-FUA-006 | P02-FUA-TR-002, P02-FUA-TR-006 | widget/model | planned | `test/features/goal_autopilot/goal_autopilot_adapter_test.dart` | `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart --name \"Followup-A renders partial low-confidence state without high-certainty claims\"` | planned | `docs/reports/test_report.md#p02-followup-a-planned` |
+| TC-P02-FUA-007 | P02-SI-007, P02-SI-008 | P02-PG-001, P02-PG-002, P02-PG-004, P02-PG-005 | P02-FUA-FR-002, P02-FUA-FR-006 | P02-FUA-SPEC-002, P02-FUA-SPEC-006 | AC-P02-FUA-002, AC-P02-FUA-006 | P02-FUA-TR-002, P02-FUA-TR-006 | widget/model | planned | `test/features/goal_autopilot/goal_autopilot_adapter_test.dart` | `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart --name \"Followup-A fail-closes unsupported goals and exposes edit recovery only\"` | planned | `docs/reports/test_report.md#p02-followup-a-planned` |
+| TC-P02-FUA-008 | P02-SI-007, P02-SI-008 | P02-PG-001, P02-PG-002, P02-PG-004, P02-PG-005 | P02-FUA-FR-006 | P02-FUA-SPEC-006 | AC-P02-FUA-006 | P02-FUA-TR-006 | adapter/model/widget | planned | `test/features/goal_autopilot/goal_autopilot_adapter_test.dart` | `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart --name \"Followup-A parses claim guards and blocks official or guaranteed outcome copy\"` | planned | `docs/reports/test_report.md#p02-followup-a-planned` |
+| TC-P02-FUA-009 | P02-SI-007, P02-SI-009 | P02-PG-003, P02-PG-005 | P02-FUA-FR-005 | P02-FUA-SPEC-005 | AC-P02-FUA-005 | P02-FUA-TR-005 | widget/adapter | planned | `test/features/goal_autopilot/goal_autopilot_adapter_test.dart` | `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart --name \"Followup-A exposes revision and blocks stale next action after edit\"` | planned | `docs/reports/test_report.md#p02-followup-a-planned` |
+| TC-P02-FUA-010 | P02-SI-007, P02-SI-008 | P02-PG-001, P02-PG-002, P02-PG-003, P02-PG-004, P02-PG-005 | P02-FUA-FR-001..006 | P02-FUA-SPEC-001..006 | AC-P02-FUA-001..006 | P02-FUA-TR-001..006 | backend regression | conditional planned | `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`; `backend/src/test/java/com/speakeasy/FoundationMigrationTest.java` | `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest,GoalAutopilotPerformanceTest test` | planned if backend/API/domain changes; regression recommended otherwise | `docs/reports/test_report.md#p02-followup-a-planned` |
+| TC-P02-FUA-011 | P02-SI-007, P02-SI-008 | P02-PG-001, P02-PG-002, P02-PG-003, P02-PG-004, P02-PG-005 | P02-FUA-FR-007 | P02-FUA-SPEC-007 | AC-P02-FUA-007 | P02-FUA-TR-007 | coverage release-check | planned | `scripts/check_p0_2_goal_autopilot_coverage.py` | `flutter test --coverage test/features/goal_autopilot/goal_autopilot_adapter_test.dart && python3 scripts/check_p0_2_goal_autopilot_coverage.py` | planned | `docs/reports/test_report.md#p02-followup-a-planned` |
+| TC-P02-FUA-012 | P02-SI-007, P02-SI-008 | P02-PG-001, P02-PG-002, P02-PG-003, P02-PG-004, P02-PG-005 | P02-FUA-FR-007 | P02-FUA-SPEC-007 | AC-P02-FUA-007 | P02-FUA-TR-007 | performance release-check | conditional planned | `backend/src/test/java/com/speakeasy/GoalAutopilotPerformanceTest.java` | `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotPerformanceTest test` | planned if backend performance-sensitive code changes; regression recommended otherwise | `docs/reports/test_report.md#p02-followup-a-planned` |
+| TC-P02-FUA-013 | P02-SI-007, P02-SI-008 | P02-PG-001, P02-PG-002, P02-PG-003, P02-PG-004, P02-PG-005 | P02-FUA-FR-008 | P02-FUA-SPEC-008 | AC-P02-FUA-008 | P02-FUA-TR-008 | traceability/review release-check | planned | `scripts/check_p0_2_goal_autopilot_traceability.py`; `docs/reports/quality_report.md` | `python3 scripts/check_p0_2_goal_autopilot_traceability.py && python3 scripts/project_agent_runner.py validate` | planned | `docs/reports/test_report.md#p02-followup-a-planned` |
+| TC-P02-FUA-014 | P02-SI-007 | P02-PG-001, P02-PG-002, P02-PG-003, P02-PG-005 | P02-FUA-FR-009 | P02-FUA-SPEC-009 | AC-P02-FUA-009 | P02-FUA-TR-009 | widget | planned | `test/features/goal_autopilot/goal_autopilot_adapter_test.dart` | `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart --name "Followup-A no active goal renders empty state without creating goal"` | planned | `docs/reports/test_report.md#2026-06-04-p02-followup-a-no-goal-explore-mode-planned-test-audit` |
+| TC-P02-FUA-015 | P02-SI-007 | P02-PG-001, P02-PG-002, P02-PG-003, P02-PG-005 | P02-FUA-FR-009 | P02-FUA-SPEC-009 | AC-P02-FUA-009 | P02-FUA-TR-009 | widget/adapter | planned | `test/features/goal_autopilot/goal_autopilot_adapter_test.dart` | `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart --name "Followup-A Set a goal opens intake without default goal creation"` | planned | `docs/reports/test_report.md#2026-06-04-p02-followup-a-no-goal-explore-mode-planned-test-audit` |
+| TC-P02-FUA-016 | P02-SI-007 | P02-PG-001, P02-PG-002, P02-PG-003, P02-PG-005 | P02-FUA-FR-009 | P02-FUA-SPEC-009 | AC-P02-FUA-009 | P02-FUA-TR-009 | widget/adapter/integration | planned | `test/features/goal_autopilot/goal_autopilot_adapter_test.dart` | `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart --name "Followup-A Explore practice bypasses goal-autopilot facts and claims"` | planned | `docs/reports/test_report.md#2026-06-04-p02-followup-a-no-goal-explore-mode-planned-test-audit` |
+
+## Coverage Map
+| Acceptance Criteria | Primary TC | Supporting TC | Coverage status |
+| --- | --- | --- | --- |
+| AC-P02-FUA-001 | TC-P02-FUA-001, TC-P02-FUA-002 | TC-P02-FUA-013 | Covered planned |
+| AC-P02-FUA-002 | TC-P02-FUA-005, TC-P02-FUA-006, TC-P02-FUA-007 | TC-P02-FUA-010, TC-P02-FUA-013 | Covered planned |
+| AC-P02-FUA-003 | TC-P02-FUA-003 | TC-P02-FUA-002, TC-P02-FUA-013 | Covered planned |
+| AC-P02-FUA-004 | TC-P02-FUA-004 | TC-P02-FUA-010, TC-P02-FUA-013 | Covered planned |
+| AC-P02-FUA-005 | TC-P02-FUA-009 | TC-P02-FUA-010, TC-P02-FUA-013 | Covered planned |
+| AC-P02-FUA-006 | TC-P02-FUA-006, TC-P02-FUA-007, TC-P02-FUA-008 | TC-P02-FUA-013 | Covered planned |
+| AC-P02-FUA-007 | TC-P02-FUA-011, TC-P02-FUA-012 | TC-P02-FUA-010, TC-P02-FUA-013 | Covered planned |
+| AC-P02-FUA-008 | TC-P02-FUA-013 | TC-P02-FUA-001..012 | Covered planned |
+| AC-P02-FUA-009 | TC-P02-FUA-014, TC-P02-FUA-015, TC-P02-FUA-016 | TC-P02-FUA-013 | Covered executed |
+
+## Execution Rules
+- No TC-P02-FUA row may be marked passed without command output and evidence report updates.
+- Flutter implementation must run `flutter analyze` on changed Flutter files before closeout.
+- Flutter feature line coverage must be >=80%.
+- Backend line and branch coverage >=80% are required if backend/domain/API code changes.
+- Backend performance tests are required if backend performance-sensitive code changes; otherwise they remain recommended regression evidence.
+
+## 2026-06-04 Local Executed Evidence Addendum
+| TC coverage | Actual script path | Command | Result | Notes |
+| --- | --- | --- | --- | --- |
+| TC-P02-FUA-001, TC-P02-FUA-002, TC-P02-FUA-003, TC-P02-FUA-004, TC-P02-FUA-005, TC-P02-FUA-006, TC-P02-FUA-007, TC-P02-FUA-008, TC-P02-FUA-009 | `test/features/goal_autopilot/goal_autopilot_adapter_test.dart` | `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` | passed 2026-06-04 | Covers editable GoalProfile form, validation, user-entered payload, diagnostic sample filtering, candidate-only text fallback, support states, claim guard, revision/stale recovery and no default-goal-only production path. |
+| TC-P02-FUA-010, TC-P02-FUA-012 | `backend/src/test/java/com/speakeasy/FoundationMigrationTest.java`; `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`; `backend/src/test/java/com/speakeasy/GoalAutopilotPerformanceTest.java` | `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest,GoalAutopilotPerformanceTest test org.jacoco:jacoco-maven-plugin:0.8.12:report` | passed 2026-06-04 | Backend/API/domain did not change, but regression and local performance evidence were rerun; Jacoco report regenerated. |
+| TC-P02-FUA-011 | `scripts/check_p0_2_goal_autopilot_coverage.py` | `flutter test --coverage test/features/goal_autopilot/goal_autopilot_adapter_test.dart`; `python3 scripts/check_p0_2_goal_autopilot_coverage.py` | passed 2026-06-04 | Coverage gate passed: backend line 96.3%, backend branch 88.6%, Flutter feature line 90.9%. |
+| TC-P02-FUA-013 | `scripts/check_p0_2_goal_autopilot_traceability.py`; `scripts/project_agent_runner.py` | `python3 scripts/check_p0_2_goal_autopilot_traceability.py`; `python3 scripts/project_agent_runner.py validate`; `git diff --check` | passed 2026-06-04 | Traceability script was strengthened to include Followup-A docs, code, test names and a guard that production `GoalAutopilotPanel` must not call `createDefaultGoal()`. |
+| TC-P02-FUA-014, TC-P02-FUA-015, TC-P02-FUA-016 | `test/features/goal_autopilot/goal_autopilot_adapter_test.dart` | `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` | passed 2026-06-04 | Covers no active goal empty state, Set-a-goal transition without default goal creation, and Explore Mode isolation from goal-autopilot facts/claims. |
+
+## Test Case Independent Review
+Result: pass after implementation evidence update. Every AC-P02-FUA-001 through AC-P02-FUA-009 maps to at least one stable TC ID and local executed evidence. AC-P02-FUA-009 has dedicated passing tests for empty state, Set-a-goal transition and Explore Mode fact/claim isolation.

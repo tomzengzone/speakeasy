@@ -53,6 +53,14 @@ class FoundationMigrationTest {
             "usage_reservations",
             "payment_provider_events",
             "account_deletion_jobs",
-            "audit_logs");
+            "audit_logs",
+            "goal_profiles",
+            "goal_diagnostic_assessments",
+            "goal_mastery_initial_states",
+            "goal_backplans",
+            "goal_daily_plans",
+            "goal_plan_items",
+            "goal_progress_forecasts",
+            "goal_outcome_checkpoints");
   }
 }

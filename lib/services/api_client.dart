@@ -518,6 +518,108 @@ class ApiClient {
     return response;
   }
 
+  static Future<Map<String, dynamic>> createGoalAutopilotGoal(
+    Map<String, dynamic> payload,
+  ) async {
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.goalAutopilotGoals,
+      payload,
+    );
+    _ensureSuccess(response, fallback: '目标创建失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> getGoalAutopilotSummary() async {
+    final Map<String, dynamic> response = await _get(
+      SpeakeasyApiPaths.goalAutopilotSummary,
+    );
+    _ensureSuccess(response, fallback: '目标进度加载失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> generateGoalAutopilotPlan({
+    bool forceReplan = false,
+    String reasonCode = 'flutter_request',
+  }) async {
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.goalAutopilotPlansGenerate,
+      <String, dynamic>{
+        'schema_version': 1,
+        'force_replan': forceReplan,
+        'reason_code': reasonCode.trim(),
+      },
+    );
+    _ensureSuccess(response, fallback: '目标计划生成失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> getGoalAutopilotDailyPlan() async {
+    final Map<String, dynamic> response = await _get(
+      SpeakeasyApiPaths.goalAutopilotDailyPlan,
+    );
+    _ensureSuccess(response, fallback: '今日计划加载失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> getGoalAutopilotNextAction() async {
+    final Map<String, dynamic> response = await _get(
+      SpeakeasyApiPaths.goalAutopilotActionsNext,
+    );
+    _ensureSuccess(response, fallback: '下一步训练加载失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> completeGoalAutopilotAction({
+    required String planItemId,
+    required String outcome,
+    String? evidenceRef,
+    String? learnerNote,
+  }) async {
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.goalAutopilotActionComplete(planItemId),
+      <String, dynamic>{
+        'schema_version': 1,
+        'outcome': outcome.trim(),
+        if (evidenceRef != null && evidenceRef.trim().isNotEmpty)
+          'evidence_ref': evidenceRef.trim(),
+        if (learnerNote != null && learnerNote.trim().isNotEmpty)
+          'learner_note': learnerNote.trim(),
+      },
+    );
+    _ensureSuccess(response, fallback: '训练项更新失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> getGoalAutopilotForecast() async {
+    final Map<String, dynamic> response = await _get(
+      SpeakeasyApiPaths.goalAutopilotForecast,
+    );
+    _ensureSuccess(response, fallback: '目标预测加载失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> submitGoalAutopilotCheckpoint({
+    required String checkpointType,
+    String? transcript,
+    String? audioRef,
+    double? scoreHint,
+  }) async {
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.goalAutopilotCheckpoints,
+      <String, dynamic>{
+        'schema_version': 1,
+        'checkpoint_type': checkpointType.trim(),
+        if (transcript != null && transcript.trim().isNotEmpty)
+          'transcript': transcript.trim(),
+        if (audioRef != null && audioRef.trim().isNotEmpty)
+          'audio_ref': audioRef.trim(),
+        'score_hint': ?scoreHint,
+      },
+    );
+    _ensureSuccess(response, fallback: '阶段复测提交失败');
+    return response;
+  }
+
   static Future<LearningStatsModel> getLearningStats() async {
     final Map<String, dynamic> res = await _get('/user/stats');
     if (res['code'] != 0) {

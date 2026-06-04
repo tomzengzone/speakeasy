@@ -18,6 +18,14 @@ import com.speakeasy.commerce.PurchaseRepository;
 import com.speakeasy.commerce.SubscriptionRepository;
 import com.speakeasy.commerce.SubscriptionPlanRepository;
 import com.speakeasy.content.UserScenarioStateRepository;
+import com.speakeasy.goal.GoalBackplanRepository;
+import com.speakeasy.goal.GoalDailyPlanRepository;
+import com.speakeasy.goal.GoalDiagnosticAssessmentRepository;
+import com.speakeasy.goal.GoalMasteryInitialStateRepository;
+import com.speakeasy.goal.GoalOutcomeCheckpointRepository;
+import com.speakeasy.goal.GoalPlanItemRepository;
+import com.speakeasy.goal.GoalProfileRepository;
+import com.speakeasy.goal.GoalProgressForecastRepository;
 import com.speakeasy.identity.AuthIdentityRepository;
 import com.speakeasy.identity.AuthSessionRepository;
 import com.speakeasy.identity.LearningRouteRepository;
@@ -95,6 +103,14 @@ abstract class BackendIntegrationTestSupport {
   @Autowired TrainingTurnRepository trainingTurns;
   @Autowired TrainingRecapRepository trainingRecaps;
   @Autowired TrainingSessionRepository trainingSessions;
+  @Autowired GoalOutcomeCheckpointRepository goalCheckpoints;
+  @Autowired GoalProgressForecastRepository goalForecasts;
+  @Autowired GoalPlanItemRepository goalPlanItems;
+  @Autowired GoalDailyPlanRepository goalDailyPlans;
+  @Autowired GoalBackplanRepository goalBackplans;
+  @Autowired GoalMasteryInitialStateRepository goalMasteryInitialStates;
+  @Autowired GoalDiagnosticAssessmentRepository goalDiagnostics;
+  @Autowired GoalProfileRepository goalProfiles;
 
   @BeforeEach
   void cleanUserData() {
@@ -111,6 +127,14 @@ abstract class BackendIntegrationTestSupport {
     trainingTurns.deleteAll();
     trainingRecaps.deleteAll();
     trainingSessions.deleteAll();
+    goalCheckpoints.deleteAll();
+    goalForecasts.deleteAll();
+    goalPlanItems.deleteAll();
+    goalDailyPlans.deleteAll();
+    goalBackplans.deleteAll();
+    goalMasteryInitialStates.deleteAll();
+    goalDiagnostics.deleteAll();
+    goalProfiles.deleteAll();
     expressionAttempts.deleteAll();
     favoriteExpressions.deleteAll();
     practiceQueueItems.deleteAll();

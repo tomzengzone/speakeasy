@@ -1,7 +1,7 @@
 # Increment Definition：P0.1 表达自动化训练 Agent
 
 ## 状态
-Draft - active increment definition with production-hardening remediation overlay。P0.1 本地训练闭环已执行通过，但作为商业软件能力合入 Product Base 前，必须在本 stage / 本 increment 内关闭后端训练事实源、学习证据、内容版本、真实语音链路、planner 审计和运营指标缺口；不得新增 stage。
+Implementation-review ready - active increment definition with production-hardening remediation overlay。2026-06-04 P0.1 Product Base/production-hardening local implementation review and API drift sync passed；PM Product Base merge approval and P0 commercial / paid AI external gates remain separate；不得新增 stage。
 
 ## Increment ID
 `p0-1-expression-automation-training`

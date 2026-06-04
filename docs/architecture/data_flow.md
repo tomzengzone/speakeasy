@@ -67,7 +67,7 @@ State boundaries:
 - Planner decides whether a step is satisfied.
 - Mastery/evidence updates include source turn, rule trace, schema version, and timestamp.
 
-## P0.1 Local-First Implementation Flow
+## Historical P0.1 Local-First Draft Flow - Superseded
 ```text
 official scene entry
   -> local TrainingSession draft created or resumed
@@ -81,11 +81,10 @@ official scene entry
 ```
 
 Boundary notes:
-- This flow is allowed for the first P0.1 implementation slice and does not require new backend endpoints.
-- If `TrainingSession` sync, remote planner, or backend evidence write is implemented, the API contract must be reviewed first.
-- Local-first recap/evidence must still be compatible with account deletion/local cleanup and later server-owned evidence facts.
-- Local-first mode cannot be used to bypass AI schema validation or planner unit tests.
-- 2026-06-03 backend-only correction: Flutter local-first Training source-of-truth is removed. Product Base merge, commercial production mode or release readiness requires the production-hardened Training flow below, or an explicit blocked status/service-unavailable entry gate.
+- This flow is retained only as historical context for the first local draft slice.
+- It is superseded for Product Base merge, production training, commercial production mode and release readiness.
+- Flutter local-first Training source-of-truth is removed from the product Training entry. Current Product Base/production design requires the production-hardened Training flow below, or an explicit blocked status/service-unavailable entry gate.
+- Local-first demos, fixtures or experiments must remain isolated from the product Training entry and cannot be used as accepted TrainingSession, TrainingTurn, PlannerDecision, TrainingRecap or learning evidence facts.
 
 ## P0.1 Production-Hardened Training Flow
 ```text
