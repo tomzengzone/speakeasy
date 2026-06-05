@@ -71,6 +71,7 @@ public class GoalAutopilotService {
   private final MemoryCurvePolicy memoryCurvePolicy = new MemoryCurvePolicy();
   private final MasteryTransitionPolicy masteryTransitionPolicy = new MasteryTransitionPolicy();
   private final ProgressForecastPolicy progressForecastPolicy = new ProgressForecastPolicy();
+  private final CheckpointCadencePolicy checkpointCadencePolicy = new CheckpointCadencePolicy();
 
   public GoalAutopilotService(
       UserAccountRepository users,
@@ -587,12 +588,26 @@ public class GoalAutopilotService {
     return forecastView(requireForecast(profile));
   }
 
+  @Transactional(readOnly = true)
+  public CheckpointTaskDecisionView checkpointTask(UUID userId) {
+    GoalProfile profile = requireActiveGoal(userId);
+    return checkpointTaskView(checkpointTaskDecision(profile));
+  }
+
   @Transactional
   public CheckpointResult submitCheckpoint(UUID userId, CheckpointInput input, String requestId) {
     GoalProfile profile = requireActiveGoal(userId);
     GoalDiagnosticAssessment diagnostic = requireDiagnostic(profile);
     String checkpointType = cleanOrDefault(input.checkpointType(), "weekly_mock");
-    if (!Set.of("weekly_mock", "biweekly_mock", "business_task").contains(checkpointType)) {
+    CheckpointCadencePolicy.Decision taskDecision = checkpointTaskDecision(profile);
+    if ("CheckpointUnavailable".equals(taskDecision.checkpointState())) {
+      throw new ApiException(
+          HttpStatus.CONFLICT,
+          "CONFLICT",
+          "Checkpoint task is unavailable for the active goal.",
+          Map.of("reason_code", taskDecision.limitationReason()));
+    }
+    if (!allowedCheckpointTypes(profile).contains(checkpointType)) {
       throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "checkpoint_type is invalid.");
     }
     Instant now = Instant.now(clock);
@@ -603,7 +618,7 @@ public class GoalAutopilotService {
         profile.getGoalProfileId(),
         userId,
         checkpointType,
-        "biweekly_mock".equals(checkpointType) ? "biweekly" : "weekly",
+        "biweekly_mock".equals(checkpointType) ? "biweekly" : taskDecision.cadence(),
         "low".equals(confidence) ? "low_confidence" : "recorded",
         confidence,
         summary,
@@ -1157,6 +1172,44 @@ public class GoalAutopilotService {
 
   private GoalOutcomeCheckpoint latestCheckpoint(GoalProfile profile) {
     return checkpoints.findFirstByGoalProfileIdOrderByCreatedAtDesc(profile.getGoalProfileId()).orElse(null);
+  }
+
+  private CheckpointCadencePolicy.Decision checkpointTaskDecision(GoalProfile profile) {
+    GoalBackplan backplan = latestBackplan(profile);
+    GoalOutcomeCheckpoint checkpoint = latestCheckpoint(profile);
+    LocalDate latestCheckpointDate = checkpoint == null
+        ? null
+        : LocalDate.ofInstant(checkpoint.getCreatedAt(), clock.getZone());
+    return checkpointCadencePolicy.evaluate(new CheckpointCadencePolicy.Input(
+        CheckpointCadencePolicy.RULE_VERSION,
+        profile.getGoalType(),
+        profile.getSupportStatus(),
+        contentCoverageFor(profile),
+        LocalDate.now(clock),
+        backplan == null ? null : backplan.getCheckpointDueDate(),
+        latestCheckpointDate,
+        true,
+        true,
+        true));
+  }
+
+  private Set<String> allowedCheckpointTypes(GoalProfile profile) {
+    return switch (profile.getGoalType()) {
+      case "business_meeting", "job_interview", "onboarding_introduction" -> Set.of("business_task");
+      default -> "partial".equals(profile.getSupportStatus())
+          ? Set.of("biweekly_mock")
+          : Set.of("weekly_mock", "biweekly_mock");
+    };
+  }
+
+  private String contentCoverageFor(GoalProfile profile) {
+    if ("unsupported".equals(profile.getSupportStatus())) {
+      return "none";
+    }
+    if ("partial".equals(profile.getSupportStatus())) {
+      return "partial_content_and_time";
+    }
+    return "sufficient_for_local_plan";
   }
 
   private GoalPlanItem requireNextItem(GoalDailyPlan dailyPlan) {
@@ -1955,6 +2008,36 @@ public class GoalAutopilotService {
         checkpoint.getSummary());
   }
 
+  private CheckpointTaskDecisionView checkpointTaskView(CheckpointCadencePolicy.Decision decision) {
+    return new CheckpointTaskDecisionView(
+        decision.checkpointState(),
+        decision.dueStatus(),
+        decision.dueDate(),
+        decision.nextDueDate(),
+        decision.cadence(),
+        decision.limitationReason(),
+        decision.supportStatus(),
+        decision.contentCoverage(),
+        decision.task() == null ? null : checkpointTaskDefinitionView(decision.task()),
+        decision.ruleVersion());
+  }
+
+  private CheckpointTaskDefinitionView checkpointTaskDefinitionView(CheckpointCadencePolicy.TaskDefinition task) {
+    return new CheckpointTaskDefinitionView(
+        task.taskId(),
+        task.taskType(),
+        task.cadence(),
+        task.goalType(),
+        task.promptRef(),
+        task.estimatedDurationMinutes(),
+        task.requiredEvidence(),
+        task.rubricRef(),
+        task.supportStatus(),
+        task.limitationReason(),
+        task.aiDepth(),
+        task.scoringBoundary());
+  }
+
   private SupportDecision supportDecisionFrom(GoalProfile profile) {
     return new SupportDecision(
         UUID.nameUUIDFromBytes((profile.getGoalProfileId() + ":support").getBytes()).toString(),
@@ -2196,6 +2279,32 @@ public class GoalAutopilotService {
   public record RetentionRuleView(String dataClass, String action, String trigger, String minimization) {}
 
   public record CheckpointResult(CheckpointView checkpoint, ForecastView forecast, PlanUpdateSignalView planUpdateSignal) {}
+
+  public record CheckpointTaskDecisionView(
+      String checkpointState,
+      String dueStatus,
+      LocalDate dueDate,
+      LocalDate nextDueDate,
+      String cadence,
+      String limitationReason,
+      String supportStatus,
+      String contentCoverage,
+      CheckpointTaskDefinitionView task,
+      String ruleVersion) {}
+
+  public record CheckpointTaskDefinitionView(
+      String taskId,
+      String taskType,
+      String cadence,
+      String goalType,
+      String promptRef,
+      int estimatedDurationMinutes,
+      List<String> requiredEvidence,
+      String rubricRef,
+      String supportStatus,
+      String limitationReason,
+      String aiDepth,
+      String scoringBoundary) {}
 
   public record GoalProfileView(
       UUID goalProfileId,

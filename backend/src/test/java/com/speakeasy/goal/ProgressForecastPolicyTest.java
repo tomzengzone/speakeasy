@@ -38,6 +38,16 @@ class ProgressForecastPolicyTest {
     assertLimited(input().supportStatus("unsupported").goalStatus("unsupported").build(), "unsupported", "unsupported_goal");
     assertLimited(input().confidenceBand("low").build(), "low_confidence", "low_confidence");
     assertLimited(input().stalePlan(true).build(), "stale_plan", "stale_plan");
+    assertLimited(input()
+        .eventSource("checkpoint")
+        .checkpointEvidenceAvailable(true)
+        .stalePlan(true)
+        .build(), "stale_plan", "stale_plan");
+    assertLimited(input()
+        .eventSource("completed")
+        .checkpointEvidenceAvailable(true)
+        .stalePlan(true)
+        .build(), "stale_plan", "stale_plan");
     assertLimited(input().eventSource("skipped").recoveryRequired(true).build(), "recovery_required", "recovery_required");
     assertLimited(input().deleted(true).build(), "deleted", "deleted");
     assertLimited(input().unavailable(true).build(), "unavailable", "unavailable");
@@ -48,7 +58,6 @@ class ProgressForecastPolicyTest {
     ProgressForecastPolicy.Decision checkpoint = policy.evaluate(input()
         .eventSource("checkpoint")
         .checkpointEvidenceAvailable(true)
-        .stalePlan(true)
         .build());
     ProgressForecastPolicy.Decision completed = policy.evaluate(input()
         .eventSource("completed")

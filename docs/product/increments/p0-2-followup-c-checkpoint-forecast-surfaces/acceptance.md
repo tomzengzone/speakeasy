@@ -1,7 +1,7 @@
 # P0.2 Followup-C Acceptance Criteria：周期复测、预测与多产品面加固
 
 ## 状态
-S001 acceptance locally executed / S002-S007 implementation gated - 本文件基于 Followup-C requirements 和 spec 定义验收标准。S000 文档链验收已通过 TC-P02-FUC-000；S001 ProgressForecast model hardening 已通过 TC-P02-FUC-001..003；S002-S007 实现前 AC 规划完成但代码、契约、测试、coverage、performance 和 release evidence 均为 planned/not started。Followup-C is not release-ready；Product Base merge is not approved。
+S001 and S002 acceptance locally executed / S003-S007 implementation gated - 本文件基于 Followup-C requirements 和 spec 定义验收标准。S000 文档链验收已通过 TC-P02-FUC-000；S001 ProgressForecast model hardening 已通过 TC-P02-FUC-001..003；S002 Checkpoint cadence and task library 已通过 TC-P02-FUC-004..006；S003-S007 实现前 AC 规划完成但代码、契约、测试、coverage、performance 和 release evidence 均为 planned/not started。Followup-C is not release-ready；Product Base merge is not approved。
 
 ## 上游来源
 - `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/requirements.md`
@@ -26,7 +26,7 @@ S001 acceptance locally executed / S002-S007 implementation gated - 本文件基
 | --- | --- | --- | --- | --- |
 | P02-FUC-S000 | Followup-C document chain and routing | AC-P02-FUC-000 | TC-P02-FUC-000 | `git diff --check`, traceability review, quality review |
 | P02-FUC-S001 | ProgressForecast model hardening | AC-P02-FUC-001 | TC-P02-FUC-001..003 | backend/API forecast tests and claim guard review |
-| P02-FUC-S002 | Checkpoint cadence and task library | AC-P02-FUC-002 | TC-P02-FUC-004..006 | cadence/task library tests and content/scoring review |
+| P02-FUC-S002 | Checkpoint cadence and task library | AC-P02-FUC-002 | TC-P02-FUC-004..006 | Passed locally: cadence/task library tests, API/OpenAPI contract drift and content/scoring review |
 | P02-FUC-S003 | Checkpoint-to-plan update | AC-P02-FUC-003 | TC-P02-FUC-007..009 | checkpoint result, forecast update and stale/replan tests |
 | P02-FUC-S004 | Backend goal-progress projection | AC-P02-FUC-004 | TC-P02-FUC-010..012 | projection source-of-truth tests and contract checks |
 | P02-FUC-S005 | Home/Queue/Wiki surface propagation | AC-P02-FUC-005 | TC-P02-FUC-013..016 | widget/integration tests for Home, Queue and Wiki; partial surface routes cannot close S005 |

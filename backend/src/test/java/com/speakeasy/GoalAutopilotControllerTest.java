@@ -928,11 +928,99 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.checkpoint.result_status").value("recorded"))
         .andExpect(jsonPath("$.plan_update_signal.signal_type").value("checkpoint_replan"))
-        .andExpect(jsonPath("$.forecast.risk_reason").value("checkpoint evidence updated the goal gap"))
+        .andExpect(jsonPath("$.forecast.forecast_state").value("stale_plan"))
+        .andExpect(jsonPath("$.forecast.eta_date").doesNotExist())
+        .andExpect(jsonPath("$.forecast.eta_range").doesNotExist())
+        .andExpect(jsonPath("$.forecast.eta_unavailable_reason").value("stale_plan"))
+        .andExpect(jsonPath("$.forecast.risk_reason_code").value("stale_plan"))
+        .andExpect(jsonPath("$.forecast.risk_reason").value("stale plan requires replan before forecast precision"))
         .andExpect(jsonPath("$.forecast.claim_guard.official_score_equivalence").value(false));
 
     assertThat(jdbcTemplate.queryForObject(
         "SELECT COUNT(*) FROM goal_backplans WHERE status = 'stale'", Integer.class)).isGreaterThan(0);
+  }
+
+  @Test
+  void tcP02Fuc002CheckpointTaskLibrary() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140292");
+    UUID userId = UUID.fromString(tokens.userId());
+    createSupportedGoal(tokens).andExpect(status().isOk());
+    generatePlan(tokens, false, "initial_backplan").andExpect(status().isOk());
+
+    MvcResult notDueTask = mvc.perform(get("/goal-autopilot/checkpoints/task")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.schema_version").value(1))
+        .andExpect(jsonPath("$.checkpoint_task.checkpoint_state").value("CheckpointNotDue"))
+        .andExpect(jsonPath("$.checkpoint_task.due_status").value("not_due"))
+        .andExpect(jsonPath("$.checkpoint_task.cadence").value("weekly"))
+        .andExpect(jsonPath("$.checkpoint_task.next_due_date", not(blankOrNullString())))
+        .andExpect(jsonPath("$.checkpoint_task.task").doesNotExist())
+        .andReturn();
+    assertThat(notDueTask.getResponse().getContentAsString()).doesNotContain("\"task\":");
+
+    jdbcTemplate.update(
+        "UPDATE goal_backplans SET checkpoint_due_date = ? WHERE user_id = ?",
+        java.sql.Date.valueOf(LocalDate.now().minusDays(1)),
+        userId);
+
+    mvc.perform(get("/goal-autopilot/checkpoints/task")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.checkpoint_task.checkpoint_state").value("CheckpointDue"))
+        .andExpect(jsonPath("$.checkpoint_task.due_status").value("overdue"))
+        .andExpect(jsonPath("$.checkpoint_task.task.task_type").value("weekly_mock"))
+        .andExpect(jsonPath("$.checkpoint_task.task.prompt_ref").value("checkpoint/ielts_speaking/weekly_mock"))
+        .andExpect(jsonPath("$.checkpoint_task.task.required_evidence", hasSize(2)))
+        .andExpect(jsonPath("$.checkpoint_task.task.scoring_boundary")
+            .value("product_internal_rubric_only_no_official_score_certification"));
+
+    AuthTokens partialTokens = loginPhone("+8613800140293");
+    createGoal(partialTokens, """
+        {
+          "schema_version": 1,
+          "goal_type": "ielts_speaking",
+          "target_score": 8,
+          "deadline": "%s",
+          "daily_minutes": 10,
+          "intensity_preference": "standard"
+        }
+        """.formatted(LocalDate.now().plusDays(75)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.goal_profile.support_status").value("partial"));
+
+    mvc.perform(get("/goal-autopilot/checkpoints/task")
+            .header(HttpHeaders.AUTHORIZATION, bearer(partialTokens.accessToken())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.checkpoint_task.checkpoint_state").value("CheckpointLimited"))
+        .andExpect(jsonPath("$.checkpoint_task.cadence").value("biweekly"))
+        .andExpect(jsonPath("$.checkpoint_task.limitation_reason").value("partial_goal_limited"))
+        .andExpect(jsonPath("$.checkpoint_task.task.task_type").value("biweekly_mock"))
+        .andExpect(jsonPath("$.checkpoint_task.task.ai_depth").value("deterministic_low_cost"));
+
+    AuthTokens unsupportedTokens = loginPhone("+8613800140294");
+    createGoal(unsupportedTokens, """
+        {
+          "schema_version": 1,
+          "goal_type": "medical_board_exam_speaking",
+          "target_ability": "pass a specialized medical board role play",
+          "deadline": "%s",
+          "daily_minutes": 30,
+          "intensity_preference": "standard"
+        }
+        """.formatted(LocalDate.now().plusDays(75)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.goal_profile.support_status").value("unsupported"));
+
+    MvcResult unsupportedTask = mvc.perform(get("/goal-autopilot/checkpoints/task")
+            .header(HttpHeaders.AUTHORIZATION, bearer(unsupportedTokens.accessToken())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.checkpoint_task.checkpoint_state").value("CheckpointUnavailable"))
+        .andExpect(jsonPath("$.checkpoint_task.due_status").value("unavailable"))
+        .andExpect(jsonPath("$.checkpoint_task.limitation_reason").value("unsupported_goal"))
+        .andExpect(jsonPath("$.checkpoint_task.task").doesNotExist())
+        .andReturn();
+    assertThat(unsupportedTask.getResponse().getContentAsString()).doesNotContain("\"task\":");
   }
 
   @Test

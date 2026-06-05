@@ -244,3 +244,9 @@ If a model is used, it must return valid JSON matching `FollowupCForecastExplana
 - `guardrails.official_score_equivalence`, `guardrails.goal_completion_claim_allowed` and `guardrails.guaranteed_eta_claim_allowed` must be false.
 - `guardrails.persistent_decision_fields_present` must be false and `forbidden_fields_detected` must be empty for successful consumption.
 - Any forbidden persistent field, official-score claim, guaranteed ETA claim, raw transcript/audio/provider payload or unknown top-level field must trigger deterministic fallback and must not update `ProgressForecast`, `GoalProfile`, `OutcomeCheckpoint`, plan state, entitlement or billing facts.
+
+## P0.2 Followup-C Checkpoint Task Boundary
+
+Followup-C S002 has no live provider prompt path. `CheckpointCadenceDecision` and `CheckpointTaskDefinition` are selected by deterministic backend policy from goal type, support status, content coverage, latest backplan/checkpoint dates and entitlement/quota/cost fallback inputs.
+
+AI output may explain checkpoint feedback only after a submitted checkpoint, but it must not choose cadence, due status, task type, evidence requirements, rubric boundary, `ai_depth`, entitlement, quota, cost state or goal completion.

@@ -1,7 +1,7 @@
 # Increment Definition：P0.2 Followup-C 周期复测、预测与多产品面加固
 
 ## 状态
-S001 forecast hardening locally implemented and tested / implementation still gated for S002-S007。该增量已建立正式 definition、requirements、spec、acceptance、test_cases 和 FR/Spec/AC/TC traceability，并把 S000-S007 implementation slice routing 写入文档链。S000 文档链、实现前 AC-to-TC mapping、验证命令和独立审核已完成；S001 ProgressForecast gap/ETA/confidence/risk/claim guard hardening 已有本地 domain/API/AI fallback 合同、后端代码和 TC-P02-FUC-001..003 测试证据；S002-S007 checkpoint、projection、surface、downgrade、performance、coverage 和 release evidence 仍未进入代码实现。Followup-C is not release-ready；Product Base merge is not approved。
+S001 forecast hardening and S002 checkpoint task library locally implemented and tested / implementation still gated for S003-S007。该增量已建立正式 definition、requirements、spec、acceptance、test_cases 和 FR/Spec/AC/TC traceability，并把 S000-S007 implementation slice routing 写入文档链。S000 文档链、实现前 AC-to-TC mapping、验证命令和独立审核已完成；S001 ProgressForecast gap/ETA/confidence/risk/claim guard hardening 已有本地 domain/API/AI fallback 合同、后端代码和 TC-P02-FUC-001..003 测试证据；S002 Checkpoint cadence/task library 已有本地 domain/API/OpenAPI/AI/UX 合同、后端代码和 TC-P02-FUC-004..006 测试证据；S003-S007 checkpoint-to-plan、projection、surface、downgrade、performance、coverage 和 release evidence 仍未进入代码实现。Followup-C is not release-ready；Product Base merge is not approved。
 
 ## Increment ID
 `p0-2-followup-c-checkpoint-forecast-surfaces`
@@ -60,7 +60,7 @@ The current local P0.2 slice can produce deterministic forecast and checkpoint r
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | P02-FUC-S000 | P02-FUC-WP-000 | P02-FUC-FR-000 | P02-FUC-SPEC-000 | AC-P02-FUC-000 | TC-P02-FUC-000 | Followup-C docs and S000-S007 traceability are ready for implementation routing | Validated / no code |
 | P02-FUC-S001 | P02-FUC-WP-001 | P02-FUC-FR-001 | P02-FUC-SPEC-001 | AC-P02-FUC-001 | TC-P02-FUC-001..003 | Forecast gap/ETA/confidence/risk/claim guard hardening | Implemented locally / TC-P02-FUC-001..003 passed |
-| P02-FUC-S002 | P02-FUC-WP-002 | P02-FUC-FR-002 | P02-FUC-SPEC-002 | AC-P02-FUC-002 | TC-P02-FUC-004..006 | Checkpoint cadence and goal-type task library | Planned / not started |
+| P02-FUC-S002 | P02-FUC-WP-002 | P02-FUC-FR-002 | P02-FUC-SPEC-002 | AC-P02-FUC-002 | TC-P02-FUC-004..006 | Checkpoint cadence and goal-type task library | Implemented locally / TC-P02-FUC-004..006 passed |
 | P02-FUC-S003 | P02-FUC-WP-003 | P02-FUC-FR-003 | P02-FUC-SPEC-003 | AC-P02-FUC-003 | TC-P02-FUC-007..009 | Checkpoint result updates forecast and plan stale/replan signal | Planned / not started |
 | P02-FUC-S004 | P02-FUC-WP-004 | P02-FUC-FR-004 | P02-FUC-SPEC-004 | AC-P02-FUC-004 | TC-P02-FUC-010..012 | Backend-owned goal-progress projection | Planned / not started |
 | P02-FUC-S005 | P02-FUC-WP-005 | P02-FUC-FR-005 | P02-FUC-SPEC-005 | AC-P02-FUC-005 | TC-P02-FUC-013..016 | Home/Queue/Wiki surface propagation | Planned / not started |
@@ -108,4 +108,4 @@ S005 may be routed as S005-A Home, S005-B Expression Queue and S005-C Personal W
 ## Completion Gate
 Followup-C cannot be marked complete unless every slice has FR/Spec/AC/TC/Traceability coverage, contract evidence, code evidence, test evidence, >=80% changed-code coverage where implementation occurs, performance evidence, and independent review in `docs/reports/quality_report.md`.
 
-S001 completion only means local forecast hardening evidence for TC-P02-FUC-001..003. It does not approve S002-S007 implementation, Followup-C completion, release readiness or Product Base merge.
+S001 completion only means local forecast hardening evidence for TC-P02-FUC-001..003. S002 completion only means local checkpoint cadence/task-library evidence for TC-P02-FUC-004..006. These do not approve S003-S007 implementation, Followup-C completion, release readiness or Product Base merge.

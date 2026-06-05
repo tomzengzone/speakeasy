@@ -1407,6 +1407,34 @@ paths:
           $ref: '#/components/responses/NotFound'
     parameters:
     - $ref: '#/components/parameters/RequestId'
+  /goal-autopilot/checkpoints/task:
+    get:
+      tags:
+      - Goal Autopilot
+      operationId: getGoalAutopilotCheckpointTask
+      summary: Get the current P0.2 checkpoint cadence and task-library decision.
+      x-traceability:
+        product_objects:
+        - p0-2-training-memory
+        - p0-2-autopilot-progress-checkpoint
+        - p0-2-followup-c-checkpoint-forecast-surfaces
+        requirements:
+        - P02-AUTO-FR-005
+        - P02-FUC-FR-002
+      responses:
+        '200':
+          description: Current checkpoint task decision.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckpointTaskResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/CheckpointTaskResponseExample'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
   /goal-autopilot/checkpoints:
     post:
       tags:
@@ -1417,11 +1445,13 @@ paths:
         product_objects:
         - p0-2-training-memory
         - p0-2-autopilot-progress-checkpoint
+        - p0-2-followup-c-checkpoint-forecast-surfaces
         requirements:
         - P02-AUTO-FR-004
         - P02-AUTO-FR-005
         - P02-AUTO-FR-007
         - P02-AUTO-FR-008
+        - P02-FUC-FR-002
       requestBody:
         required: true
         content:
@@ -4560,6 +4590,16 @@ components:
           $ref: '#/components/schemas/SchemaVersion'
         forecast:
           $ref: '#/components/schemas/ProgressForecast'
+    CheckpointTaskResponse:
+      type: object
+      required:
+      - schema_version
+      - checkpoint_task
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        checkpoint_task:
+          $ref: '#/components/schemas/CheckpointTaskDecision'
     CheckpointResponse:
       type: object
       required:
@@ -4886,6 +4926,125 @@ components:
           - invalid_candidate
         candidate_only:
           type: boolean
+    CheckpointTaskDecision:
+      type: object
+      required:
+      - checkpoint_state
+      - due_status
+      - due_date
+      - cadence
+      - support_status
+      - content_coverage
+      - rule_version
+      properties:
+        checkpoint_state:
+          type: string
+          enum:
+          - CheckpointDue
+          - CheckpointNotDue
+          - CheckpointLimited
+          - CheckpointUnavailable
+        due_status:
+          type: string
+          enum:
+          - due_now
+          - overdue
+          - not_due
+          - unavailable
+        due_date:
+          type: string
+          format: date
+        next_due_date:
+          type: string
+          format: date
+          nullable: true
+        cadence:
+          type: string
+          enum:
+          - weekly
+          - biweekly
+        limitation_reason:
+          type: string
+          nullable: true
+          enum:
+          - partial_goal_limited
+          - unsupported_goal
+          - entitlement_limited
+          - cost_quota_limited
+        support_status:
+          type: string
+          enum:
+          - supported
+          - partial
+          - unsupported
+        content_coverage:
+          type: string
+        task:
+          $ref: '#/components/schemas/CheckpointTaskDefinition'
+        rule_version:
+          type: string
+    CheckpointTaskDefinition:
+      type: object
+      required:
+      - task_id
+      - task_type
+      - cadence
+      - goal_type
+      - prompt_ref
+      - estimated_duration_minutes
+      - required_evidence
+      - rubric_ref
+      - support_status
+      - ai_depth
+      - scoring_boundary
+      properties:
+        task_id:
+          type: string
+        task_type:
+          type: string
+          enum:
+          - weekly_mock
+          - biweekly_mock
+          - business_task
+        cadence:
+          type: string
+          enum:
+          - weekly
+          - biweekly
+        goal_type:
+          type: string
+        prompt_ref:
+          type: string
+        estimated_duration_minutes:
+          type: integer
+          minimum: 1
+        required_evidence:
+          type: array
+          items:
+            type: string
+        rubric_ref:
+          type: string
+        support_status:
+          type: string
+          enum:
+          - supported
+          - partial
+          - unsupported
+        limitation_reason:
+          type: string
+          nullable: true
+          enum:
+          - partial_goal_limited
+          - unsupported_goal
+          - entitlement_limited
+          - cost_quota_limited
+        ai_depth:
+          type: string
+          enum:
+          - deterministic_candidate_allowed
+          - deterministic_low_cost
+        scoring_boundary:
+          type: string
     OutcomeCheckpoint:
       type: object
       required:
@@ -8201,6 +8360,33 @@ components:
             fallback_reason: deterministic_no_provider_path
             candidate_only: true
           updated_at: '2026-06-05T09:00:00Z'
+    CheckpointTaskResponseExample:
+      summary: getGoalAutopilotCheckpointTask response 200 example
+      value:
+        schema_version: 1
+        checkpoint_task:
+          checkpoint_state: CheckpointDue
+          due_status: due_now
+          due_date: '2026-06-12'
+          next_due_date: '2026-06-12'
+          cadence: weekly
+          support_status: supported
+          content_coverage: sufficient_for_local_plan
+          task:
+            task_id: ielts_speaking:weekly_mock:weekly
+            task_type: weekly_mock
+            cadence: weekly
+            goal_type: ielts_speaking
+            prompt_ref: checkpoint/ielts_speaking/weekly_mock
+            estimated_duration_minutes: 15
+            required_evidence:
+            - checkpoint_transcript
+            - rubric_observation
+            rubric_ref: product_speaking_rubric_v1
+            support_status: supported
+            ai_depth: deterministic_candidate_allowed
+            scoring_boundary: product_internal_rubric_only_no_official_score_certification
+          rule_version: fuc-checkpoint-task-v1
     SubmitCheckpointRequestExample:
       summary: submitGoalAutopilotCheckpoint request example
       value:

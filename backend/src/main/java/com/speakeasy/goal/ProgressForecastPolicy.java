@@ -88,6 +88,9 @@ public class ProgressForecastPolicy {
     if (input.recoveryRequired() || isOneOf(clean(input.eventSource()), "skipped", "deferred", "learner_skipped", "learner_deferred")) {
       return new Reason("recovery_required", "missed or deferred work requires recovery planning");
     }
+    if (input.stalePlan()) {
+      return new Reason("stale_plan", "stale plan requires replan before forecast precision");
+    }
     if ("low".equals(confidence)) {
       return new Reason("low_confidence", "low confidence evidence requires another checkpoint before ETA");
     }
@@ -97,9 +100,6 @@ public class ProgressForecastPolicy {
     }
     if ("completed".equals(source)) {
       return new Reason("latest_action_completed", "latest action completed; keep the memory curve active");
-    }
-    if (input.stalePlan()) {
-      return new Reason("stale_plan", "stale plan requires replan before forecast precision");
     }
     if (!input.checkpointEvidenceAvailable()) {
       return new Reason("checkpoint_evidence_missing", "checkpoint evidence is not available yet");

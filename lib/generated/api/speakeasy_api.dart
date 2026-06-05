@@ -5,7 +5,7 @@ class SpeakeasyApiContract {
   const SpeakeasyApiContract._();
 
   static const String openApiSha256 =
-      '617ce817ef055efb851641a1664211238229d9ed365e01711244da15a75c621c';
+      '3bacdd487b700676793dd2a2c4629d330079cf34dbf2f1e35f9ed46f8f166351';
 
   static const List<String> pathTemplates = <String>[
     '/achievements/status',
@@ -35,6 +35,7 @@ class SpeakeasyApiContract {
     '/goal-autopilot/actions/next',
     '/goal-autopilot/actions/{plan_item_id}/complete',
     '/goal-autopilot/checkpoints',
+    '/goal-autopilot/checkpoints/task',
     '/goal-autopilot/control',
     '/goal-autopilot/control/pause',
     '/goal-autopilot/control/resume',
@@ -121,6 +122,8 @@ class SpeakeasyApiPaths {
   static const String favoritesExpressions = '/favorites/expressions';
   static const String goalAutopilotActionsNext = '/goal-autopilot/actions/next';
   static const String goalAutopilotCheckpoints = '/goal-autopilot/checkpoints';
+  static const String goalAutopilotCheckpointsTask =
+      '/goal-autopilot/checkpoints/task';
   static const String goalAutopilotControl = '/goal-autopilot/control';
   static const String goalAutopilotControlPause =
       '/goal-autopilot/control/pause';

@@ -201,6 +201,11 @@ public class GoalAutopilotController {
     return GoalForecastResponse.from(service.forecast(currentUser.userId()));
   }
 
+  @GetMapping("/goal-autopilot/checkpoints/task")
+  public CheckpointTaskResponse checkpointTask(@AuthenticationPrincipal CurrentUser currentUser) {
+    return CheckpointTaskResponse.from(service.checkpointTask(currentUser.userId()));
+  }
+
   @PostMapping("/goal-autopilot/checkpoints")
   public CheckpointResponse checkpoint(
       @AuthenticationPrincipal CurrentUser currentUser,
@@ -661,6 +666,13 @@ public class GoalAutopilotController {
     }
   }
 
+  public record CheckpointTaskResponse(int schemaVersion, CheckpointTaskDecisionDto checkpointTask)
+      implements SchemaResponse {
+    static CheckpointTaskResponse from(GoalAutopilotService.CheckpointTaskDecisionView view) {
+      return new CheckpointTaskResponse(1, CheckpointTaskDecisionDto.from(view));
+    }
+  }
+
   public record GoalProfileDto(
       UUID goalProfileId,
       String goalType,
@@ -900,6 +912,63 @@ public class GoalAutopilotController {
     static OutcomeCheckpointDto from(GoalAutopilotService.CheckpointView view) {
       return new OutcomeCheckpointDto(
           view.checkpointId(), view.checkpointType(), view.cadence(), view.resultStatus(), view.confidenceBand(), view.summary());
+    }
+  }
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record CheckpointTaskDecisionDto(
+      String checkpointState,
+      String dueStatus,
+      LocalDate dueDate,
+      LocalDate nextDueDate,
+      String cadence,
+      String limitationReason,
+      String supportStatus,
+      String contentCoverage,
+      CheckpointTaskDefinitionDto task,
+      String ruleVersion) {
+    static CheckpointTaskDecisionDto from(GoalAutopilotService.CheckpointTaskDecisionView view) {
+      return new CheckpointTaskDecisionDto(
+          view.checkpointState(),
+          view.dueStatus(),
+          view.dueDate(),
+          view.nextDueDate(),
+          view.cadence(),
+          view.limitationReason(),
+          view.supportStatus(),
+          view.contentCoverage(),
+          view.task() == null ? null : CheckpointTaskDefinitionDto.from(view.task()),
+          view.ruleVersion());
+    }
+  }
+
+  public record CheckpointTaskDefinitionDto(
+      String taskId,
+      String taskType,
+      String cadence,
+      String goalType,
+      String promptRef,
+      int estimatedDurationMinutes,
+      List<String> requiredEvidence,
+      String rubricRef,
+      String supportStatus,
+      String limitationReason,
+      String aiDepth,
+      String scoringBoundary) {
+    static CheckpointTaskDefinitionDto from(GoalAutopilotService.CheckpointTaskDefinitionView view) {
+      return new CheckpointTaskDefinitionDto(
+          view.taskId(),
+          view.taskType(),
+          view.cadence(),
+          view.goalType(),
+          view.promptRef(),
+          view.estimatedDurationMinutes(),
+          view.requiredEvidence(),
+          view.rubricRef(),
+          view.supportStatus(),
+          view.limitationReason(),
+          view.aiDepth(),
+          view.scoringBoundary());
     }
   }
 

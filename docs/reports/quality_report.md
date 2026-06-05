@@ -1,17 +1,49 @@
 # Quality Report
 
 ## Current Status
-`P02-FOLLOWUP-C-S001-FORECAST-HARDENING-20260605` passes independent review for local S001 forecast hardening and closes TC-P02-FUC-001, TC-P02-FUC-002 and TC-P02-FUC-003. Followup-C S002-S007 checkpoint, projection, surface propagation, downgrade, performance, coverage and release evidence remain planned/not started. Followup-C is not release-ready. Product Base merge is not approved. `P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-TRACEABILITY-20260605` remains locally passed for TC-P02-FUB-001..017. Followup-D commercial/release gates remain open.
+`P02-FOLLOWUP-C-S002-CHECKPOINT-TASK-LIBRARY-20260605` passes independent review for local S002 checkpoint cadence/task-library behavior and closes TC-P02-FUC-004, TC-P02-FUC-005 and TC-P02-FUC-006 after S002 policy, API, contract drift, generated Dart, coverage and regression gates passed. S001 forecast hardening remains locally passed for TC-P02-FUC-001..003. Followup-C S003-S007 checkpoint-to-plan update, backend projection, Home/Queue/Wiki propagation, downgrade/data governance, performance, coverage and release evidence remain planned/not started. Followup-C is not release-ready. Product Base merge is not approved. `P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-TRACEABILITY-20260605` remains locally passed for TC-P02-FUB-001..017. Followup-D commercial/release gates remain open.
+
+## 2026-06-05 P02 Followup-C S002 Checkpoint Task Library Independent Review
+
+Review ID: `P02-FOLLOWUP-C-S002-CHECKPOINT-TASK-LIBRARY-20260605`
+
+Result: pass for local S002 checkpoint cadence/task-library behavior after deterministic policy, read-only API, submit validation, OpenAPI/generated Dart drift, coverage and regression validation passed. This review does not approve S003-S007, release readiness or Product Base merge.
+
+Findings:
+- No blocker found for deterministic checkpoint cadence. `CheckpointCadencePolicy` maps supported speaking goals to weekly/biweekly mock tasks, business goals to business tasks, recent checkpoint facts to not-due decisions, overdue backplan checkpoint facts to due decisions and unsupported goals to unavailable decisions under rule version `fuc-checkpoint-task-v1`.
+- No blocker found for partial and cost-limited safety. Partial supported goals return limited biweekly/business task definitions, unsupported goals return no full task, and entitlement/quota/cost fallback inputs downgrade `ai_depth` to `deterministic_low_cost` without emitting official-score, completion-guarantee, entitlement, quota or commercial-provider claims.
+- No blocker found for backend source-of-truth ownership. `GET /goal-autopilot/checkpoints/task` returns the server-owned checkpoint task decision, and checkpoint submission rejects unsupported goals or checkpoint types outside the server task library instead of accepting client-selected cadence/task truth.
+- Fixed before close: independent review found the no-task response could serialize a nullable `task` property while the OpenAPI contract models `task` as optional. `CheckpointTaskDecisionDto` now omits null fields, and the controller regression asserts no `task` property is serialized for not-due or unsupported no-full-task responses.
+- No blocker found for API and generated client alignment. OpenAPI includes the S002 task endpoint and schemas, API contract drift passed, and the generated Dart hash was synced to `3bacdd487b700676793dd2a2c4629d330079cf34dbf2f1e35f9ed46f8f166351`.
+- No blocker found for AI and UX boundaries. S002 keeps task type, cadence, due state, AI depth, scoring boundary, entitlement, quota and cost facts deterministic and backend-owned; AI output and UI surfaces may render or phrase server facts but must not choose those fields locally.
+- Scope boundary is correct. S002 does not claim checkpoint-to-plan mutation, Home/Queue/Wiki propagation, downgrade/data governance completion, p95 performance closure, release readiness, Product Base merge or Flutter surface changes.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CheckpointCadencePolicyTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc002CheckpointTaskLibrary test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CheckpointCadencePolicyTest,ProgressForecastPolicyTest,ForecastExplanationSchemaTest,GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard+tcP02Fuc002CheckpointTaskLibrary+tcP02AutoCheckpoint001CheckpointUpdatesForecastAndStalesPlan test` - passed.
+- `npm run check:api-contract` - passed; the six remaining Redocly warnings are pre-existing nullable `$ref` warnings outside the new S002 endpoint, and S002 added no new warning.
+- `flutter analyze lib/generated/api/speakeasy_api.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 95.7%, backend branch 80.8%, Flutter line 90.9%.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Residual risk:
+- Followup-C remains incomplete, not release-ready and not Product Base-ready.
+- S003-S007 remain implementation gated, including checkpoint-to-plan update, cross-surface propagation, downgrade/data governance, p95 performance evidence and final traceability script.
+- The S002 service path currently uses deterministic local commercial/cost fallback facts because no live entitlement/quota/cost provider integration is in scope for this slice; any future provider or CMS-backed task-library change must rerun TC-P02-FUC-004..006, API drift and coverage gates.
 
 ## 2026-06-05 P02 Followup-C S001 Forecast Hardening Independent Review
 
 Review ID: `P02-FOLLOWUP-C-S001-FORECAST-HARDENING-20260605`
 
-Result: pass for local S001 forecast hardening after migration syntax was fixed and S001 tests, API contract drift, generated Dart analysis and controller regression passed. This review does not approve S002-S007, release readiness or Product Base merge.
+Result: pass for local S001 forecast hardening after migration syntax and stale-plan precedence were fixed, and S001 tests, API contract drift, generated Dart analysis, controller regression and broad coverage gate passed. This review does not approve S002-S007, release readiness or Product Base merge.
 
 Findings:
 - No blocker found for deterministic forecast policy. `ProgressForecastPolicy` maps server-owned goal/plan/checkpoint facts to forecast state, source goal revision, ETA range/unavailable reason, confidence band, risk level, risk reason code, next checkpoint date, explanation metadata, rule version and claim guard.
 - No blocker found for downgrade safety. Partial, unsupported, low-confidence, stale-plan, recovery-required, deleted and unavailable inputs suppress precise ETA claims and return limited/unavailable forecast states with explicit reasons.
+- Fixed before close: independent review found `stale_plan` was evaluated after checkpoint/completed event reasons, allowing ETA under a stale plan. `ProgressForecastPolicy` now gives stale plan blocking precedence, and tests assert checkpoint/completed events cannot override it.
 - No blocker found for API and persistence shape. `GoalProgressForecast`, migration `V202606050004__p0_2_followup_c_forecast_hardening.sql`, `GoalAutopilotService` and `GoalAutopilotController` persist and expose the hardened fields through existing forecast read paths without client-owned forecast writes.
 - Fixed before close: the first migration used multi-column `ALTER TABLE ... ADD COLUMN` syntax that H2 rejected. The migration now uses one `ALTER TABLE ... ADD COLUMN` statement per added column, and the controller test passes against the migration.
 - No blocker found for AI claim guard. `ForecastExplanationCandidateValidator` accepts safe candidate-only explanations and rejects forbidden persistent fields, direct ETA writes, entitlement/quota/provider state writes and official/completion/guaranteed-outcome claims. S001 executes deterministic no-provider fallback only.
@@ -23,8 +55,11 @@ Validation:
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProgressForecastPolicyTest,ForecastExplanationSchemaTest test` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard test` - passed after migration syntax fix.
 - `npm run check:api-contract` - passed.
-- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProgressForecastPolicyTest test && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard test && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ForecastExplanationSchemaTest test` - passed.
-- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProgressForecastPolicyTest,GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard,ForecastExplanationSchemaTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - failed once after stale-plan precedence fix because the older checkpoint regression expected checkpoint reason copy under stale plan; assertion was updated.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - passed after assertion update.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 95.8%, backend branch 80.6%, Flutter line 90.9%.
 - `flutter analyze lib/generated/api/speakeasy_api.dart` - passed.
 - `git diff --check` - passed.
 

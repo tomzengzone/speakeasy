@@ -1,7 +1,7 @@
 # P0.2 Followup-C Requirements：周期复测、预测与多产品面加固
 
 ## 状态
-S001 forecast hardening locally implemented and tested / S002-S007 implementation gated - 本文件定义 `p0-2-followup-c-checkpoint-forecast-surfaces` 的需求边界，并把 Followup-C 拆分为 S000-S007 小粒度 slice。S000 文档链、AC-to-TC 规划、traceability 入口和独立审核已完成；S001 已完成 ProgressForecast model hardening 的本地代码、contract 和 TC-P02-FUC-001..003 测试证据；S002-S007 尚未进入代码实现。Followup-C is not release-ready；Product Base merge is not approved。
+S001 forecast hardening and S002 checkpoint task library locally implemented and tested / S003-S007 implementation gated - 本文件定义 `p0-2-followup-c-checkpoint-forecast-surfaces` 的需求边界，并把 Followup-C 拆分为 S000-S007 小粒度 slice。S000 文档链、AC-to-TC 规划、traceability 入口和独立审核已完成；S001 已完成 ProgressForecast model hardening 的本地代码、contract 和 TC-P02-FUC-001..003 测试证据；S002 已完成 Checkpoint cadence/task library 的本地代码、contract 和 TC-P02-FUC-004..006 测试证据；S003-S007 尚未进入代码实现。Followup-C is not release-ready；Product Base merge is not approved。
 
 ## Product Object
 - 分类：`feature-increment`
@@ -147,7 +147,7 @@ Followup-C 是 P0.2 自动带练的 forecast、checkpoint 和多产品面 projec
 ## 下游交接边界
 - `spec.md`、`acceptance.md`、`test_cases.md`、`traceability.md`、domain/API/OpenAPI/UX/AI contracts 和 reports may consume this file as the Followup-C requirement source of truth, but they must not renumber or redefine P02-FUC-FR-000 through P02-FUC-FR-007 without a versioned Followup-C change.
 - Implementation and test execution status belongs in `test_cases.md`, `traceability.md`, `docs/reports/test_report.md`, `docs/reports/implementation_report.md` and `docs/reports/quality_report.md`; this file may summarize current workflow status but must not replace executable evidence records.
-- S001 forecast hardening local completion does not approve S002-S007 code implementation, release readiness, paid AI/provider evidence, Product Base merge or commercial gates.
+- S001 forecast hardening local completion and S002 checkpoint task-library local completion do not approve S003-S007 code implementation, release readiness, paid AI/provider evidence, Product Base merge or commercial gates.
 
 ## Excluded Stage Scope Items
 - P02-SI-007 和 P02-SI-008 是 Followup-A 的上游输入，不在 Followup-C 中实现。
