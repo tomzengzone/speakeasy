@@ -128,6 +128,38 @@ public class GoalAutopilotController {
         idempotencyKey));
   }
 
+  @PostMapping("/goal-autopilot/item-policy/decisions")
+  public ItemPolicyDecisionResponse itemPolicyDecisions(
+      @AuthenticationPrincipal CurrentUser currentUser,
+      @RequestHeader(name = "X-Request-Id", required = false) String requestId,
+      @Valid @RequestBody ItemPolicyDecisionRequest request) {
+    return ItemPolicyDecisionResponse.from(service.itemPolicyDecisions(
+        currentUser.userId(),
+        new GoalAutopilotService.ItemPolicyDecisionInput(
+            request.policyVersion(),
+            request.itemRefs(),
+            request.dailyTimeBudgetMinutes(),
+            request.items() == null
+                ? List.of()
+                : request.items().stream()
+                    .map(item -> new GoalAutopilotService.MemoryItemPolicyInput(
+                        item.itemType(),
+                        item.itemRef(),
+                        item.interleavingGroup(),
+                        item.currentMasteryLevel(),
+                        item.evidenceRefs(),
+                        item.lastReviewedAt(),
+                        item.exposureCount(),
+                        item.overlearningCount(),
+                        item.forgettingRisk(),
+                        item.retrievalSuccess(),
+                        item.recentFailures(),
+                        item.pressureLevel(),
+                        item.estimatedMinutes()))
+                    .toList()),
+        requestId));
+  }
+
   @PostMapping("/goal-autopilot/plans/generate")
   public GoalPlanResponse generatePlan(
       @AuthenticationPrincipal CurrentUser currentUser,
@@ -216,6 +248,28 @@ public class GoalAutopilotController {
       @NotBlank String sourceEvent,
       UUID planItemId,
       String preferredPolicy) {}
+
+  public record ItemPolicyDecisionRequest(
+      @NotNull @Min(1) @Max(1) Integer schemaVersion,
+      @NotBlank String policyVersion,
+      List<String> itemRefs,
+      @Min(0) @Max(240) Integer dailyTimeBudgetMinutes,
+      List<MemoryItemPolicyInputRequest> items) {}
+
+  public record MemoryItemPolicyInputRequest(
+      String itemType,
+      String itemRef,
+      String interleavingGroup,
+      String currentMasteryLevel,
+      List<String> evidenceRefs,
+      Instant lastReviewedAt,
+      Integer exposureCount,
+      Integer overlearningCount,
+      Double forgettingRisk,
+      Boolean retrievalSuccess,
+      Integer recentFailures,
+      String pressureLevel,
+      Integer estimatedMinutes) {}
 
   public record CompletePlanItemRequest(
       @NotNull @Min(1) @Max(1) Integer schemaVersion, @NotBlank String outcome, String evidenceRef, String learnerNote) {}
@@ -474,6 +528,55 @@ public class GoalAutopilotController {
           view.reasonCode(),
           view.ruleVersion(),
           view.createdAt());
+    }
+  }
+
+  public record ItemPolicyDecisionResponse(
+      int schemaVersion,
+      List<MemoryItemPolicyStateDto> decisions,
+      PlannerReplayAuditDto replayAudit)
+      implements SchemaResponse {
+    static ItemPolicyDecisionResponse from(GoalAutopilotService.ItemPolicyDecisionResult result) {
+      return new ItemPolicyDecisionResponse(
+          1,
+          result.decisions().stream().map(MemoryItemPolicyStateDto::from).toList(),
+          PlannerReplayAuditDto.from(result.replayAudit()));
+    }
+  }
+
+  public record MemoryItemPolicyStateDto(
+      String memoryItemStateId,
+      UUID userId,
+      String itemType,
+      String itemRef,
+      String interleavingGroup,
+      String currentMasteryLevel,
+      List<String> evidenceRefs,
+      Instant lastReviewedAt,
+      int exposureCount,
+      int overlearningCount,
+      String forgettingRisk,
+      String dueDecision,
+      Instant nextDueAt,
+      String reasonCode,
+      String ruleVersion) {
+    static MemoryItemPolicyStateDto from(GoalAutopilotService.MemoryItemPolicyStateView view) {
+      return new MemoryItemPolicyStateDto(
+          view.memoryItemStateId(),
+          view.userId(),
+          view.itemType(),
+          view.itemRef(),
+          view.interleavingGroup(),
+          view.currentMasteryLevel(),
+          view.evidenceRefs(),
+          view.lastReviewedAt(),
+          view.exposureCount(),
+          view.overlearningCount(),
+          view.forgettingRisk(),
+          view.dueDecision(),
+          view.nextDueAt(),
+          view.reasonCode(),
+          view.ruleVersion());
     }
   }
 

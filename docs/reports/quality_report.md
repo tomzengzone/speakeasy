@@ -1,7 +1,33 @@
 # Quality Report
 
 ## Current Status
-`P02-FOLLOWUP-B-S003-MISSED-DAY-RECOVERY-20260605` closes TC-P02-FUB-009 and TC-P02-FUB-010 for S003 missed-day recovery planner. Backend UserAutopilotControl source/update/pause/resume, current control governance, Flutter server-control binding, notification eligibility policy, notification outbox lifecycle/replay and missed-day recovery planner now have local evidence for TC-P02-FUB-001 through TC-P02-FUB-010. Followup-B requirements/spec/acceptance/test_cases/traceability, Domain, API/OpenAPI/generated client sync, AI runtime and UX contracts are present, but item-level memory, L0-L5 transition, global replay/performance, dedicated traceability script, final QA, Product Base merge and release approval remain open. Followup-A remains locally passed. Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
+`P02-FOLLOWUP-B-S004-ITEM-MEMORY-20260605` closes TC-P02-FUB-011 and TC-P02-FUB-012 for S004 item-level MemoryCurvePolicy. Backend UserAutopilotControl source/update/pause/resume, current control governance, Flutter server-control binding, notification eligibility policy, notification outbox lifecycle/replay, missed-day recovery planner and item-level memory policy now have local evidence for TC-P02-FUB-001 through TC-P02-FUB-012. Followup-B requirements/spec/acceptance/test_cases/traceability, Domain, API/OpenAPI/generated client sync, AI runtime and UX contracts are present, but L0-L5 transition, global replay/performance, dedicated traceability script, final QA, Product Base merge and release approval remain open. Followup-A remains locally passed. Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
+
+## 2026-06-05 P02 Followup-B S004 Item-Level Memory Independent Review
+
+Result: pass for TC-P02-FUB-011 and TC-P02-FUB-012 after replay-determinism and not-due `next_due_at` fixes. Not full Followup-B completion, not global replay/performance closure, not release approval and not Product Base merge approval.
+
+Findings:
+- Fixed before close: `GoalAutopilotService#itemPolicyDecisions` initially used sub-day `Instant.now` for memory `next_due_at`, so two identical same-day replay requests produced different output hashes. The service now evaluates item policy at day-level granularity and includes `evaluated_at` in the input snapshot while keeping audit creation time out of the replay hash.
+- Fixed before close: `review_not_due.next_due_at` initially reset the default interval from the evaluation day. `MemoryCurvePolicy` now returns the existing due date from `last_reviewed_at + default interval`, and `MemoryCurvePolicyTest` asserts the not-due interval output.
+- No blocker found for item-level decision coverage. `MemoryCurvePolicyTest` covers high risk `>=0.70`, due risk `>=0.45`, retrieval failure, retrieval success not-due, recent failure override, default intervals, overlearning cap, interleaving cap and daily memory budget defer.
+- No blocker found for control ownership. Paused and policy-blocked control states return `blocked_by_control`, and `MemoryCurveReplayTest` verifies pause through server-owned `/goal-autopilot/control/pause` rather than a client-supplied override.
+- No blocker found for replay audit determinism. The item-policy endpoint writes `item_policy` replay audit rows with deterministic input/output/replay hashes, expected decision, reason code and `memory-curve-v1`; same request on the same evaluation day returns identical decisions and replay hash.
+- No API contract drift blocker. `POST /goal-autopilot/item-policy/decisions` already existed; OpenAPI was extended for S004 by adding optional `MemoryItemPolicyInput` evidence fields while preserving the existing item-ref fallback, and `npm run check:api-contract` passed after generated Dart hash sync.
+- Scope boundary is correct. No L0-L5 mastery transition, global replay fixture, performance gate, Flutter UI or AI runtime behavior is claimed in this slice.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MemoryCurvePolicyTest,MemoryCurveReplayTest test` - passed after replay-determinism fix.
+- `npm run check:api-contract` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MemoryCurvePolicyTest,MemoryCurveReplayTest,GoalAutopilotControllerTest,GoalAutopilotRecoveryControllerTest test` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter line 90.9%.
+- `git diff --check` - passed.
+
+Residual risk:
+- Item-level memory p95 performance for 500 items is not closed by TC-P02-FUB-011/012 and remains routed to TC-P02-FUB-016.
+- L0-L5 transition, global replay fixtures, dedicated Followup-B traceability script and final Followup-B review remain open.
 
 ## 2026-06-05 P02 Followup-B S003 Missed-Day Recovery Independent Review
 

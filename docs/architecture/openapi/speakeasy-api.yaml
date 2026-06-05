@@ -5301,6 +5301,63 @@ components:
             type: string
         daily_time_budget_minutes:
           type: integer
+          minimum: 0
+          maximum: 240
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemoryItemPolicyInput'
+    MemoryItemPolicyInput:
+      type: object
+      required:
+      - item_type
+      - item_ref
+      - current_mastery_level
+      - forgetting_risk
+      properties:
+        item_type:
+          type: string
+          enum:
+          - expression
+          - scenario
+          - diagnostic_weakness
+          - plan_item
+        item_ref:
+          type: string
+        interleaving_group:
+          type: string
+        current_mastery_level:
+          $ref: '#/components/schemas/GoalMasteryLevel'
+        evidence_refs:
+          type: array
+          items:
+            type: string
+        last_reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        exposure_count:
+          type: integer
+          minimum: 0
+        overlearning_count:
+          type: integer
+          minimum: 0
+        forgetting_risk:
+          type: number
+          minimum: 0
+          maximum: 1
+        retrieval_success:
+          type: boolean
+          nullable: true
+        recent_failures:
+          type: integer
+          minimum: 0
+        pressure_level:
+          type: string
+        estimated_minutes:
+          type: integer
+          minimum: 1
+          maximum: 240
     ItemPolicyDecisionResponse:
       type: object
       required:
@@ -7786,6 +7843,35 @@ components:
         - target_expression_id_sample
         - diagnostic_weakness_limited_extension
         daily_time_budget_minutes: 30
+        items:
+        - item_type: expression
+          item_ref: target_expression_id_sample
+          interleaving_group: fluency_extension
+          current_mastery_level: L2
+          evidence_refs:
+          - evidence_id_sample
+          last_reviewed_at: '2026-06-03T09:00:00+08:00'
+          exposure_count: 2
+          overlearning_count: 1
+          forgetting_risk: 0.72
+          retrieval_success: false
+          recent_failures: 1
+          pressure_level: standard
+          estimated_minutes: 5
+        - item_type: diagnostic_weakness
+          item_ref: diagnostic_weakness_limited_extension
+          interleaving_group: scenario_fit
+          current_mastery_level: L1
+          evidence_refs:
+          - weakness_evidence_sample
+          last_reviewed_at: '2026-06-02T09:00:00+08:00'
+          exposure_count: 1
+          overlearning_count: 0
+          forgetting_risk: 0.48
+          retrieval_success: true
+          recent_failures: 0
+          pressure_level: high
+          estimated_minutes: 8
     ItemPolicyDecisionResponseExample:
       summary: evaluateGoalItemPolicyDecisions response 200 example
       value:

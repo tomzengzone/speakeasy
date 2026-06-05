@@ -1,7 +1,7 @@
 # Test Report
 
 ## Current Status
-Latest recorded Followup-B validation: `P02-FOLLOWUP-B-S003-MISSED-DAY-RECOVERY-20260605` closes TC-P02-FUB-009 and TC-P02-FUB-010 for S003 missed-day recovery planner: deterministic compress/defer/replace, hard safety/feasibility precedence, balanced tie-breaker, no overdue stacking, daily budget cap, stale/replan reason code, decision persistence, idempotent replay and recovery replay audit. TC-P02-FUB-001 through TC-P02-FUB-010 are passed. TC-P02-FUB-011..017 remain planned, including item-level memory, L0-L5 transition, global replay, performance and dedicated Followup-B traceability script. Followup-A remains locally passed; Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
+Latest recorded Followup-B validation: `P02-FOLLOWUP-B-S004-ITEM-MEMORY-20260605` closes TC-P02-FUB-011 and TC-P02-FUB-012 for S004 item-level MemoryCurvePolicy: forgetting risk thresholds, retrieval success/failure, paused/control-blocked handling, overlearning cap, interleaving cap, daily memory budget defer, default intervals, deterministic `POST /goal-autopilot/item-policy/decisions` response and `item_policy` replay audit. TC-P02-FUB-001 through TC-P02-FUB-012 are passed. TC-P02-FUB-013..017 remain planned, including L0-L5 transition, global replay, performance and dedicated Followup-B traceability script. Followup-A remains locally passed; Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
 
 ## Required Sections
 - test scope
@@ -11,6 +11,44 @@ Latest recorded Followup-B validation: `P02-FOLLOWUP-B-S003-MISSED-DAY-RECOVERY-
 - skipped tests
 - acceptance criteria coverage
 - residual risk
+
+## 2026-06-05 P02 Followup-B S004 Item-Level MemoryCurvePolicy
+
+Test scope:
+- TC-P02-FUB-011 backend unit validation for `MemoryCurvePolicy` item-level decisions, forgetting-risk thresholds, retrieval success/failure, default intervals, overlearning cap, interleaving cap, daily budget defer and paused/control-blocked decisions.
+- TC-P02-FUB-012 backend integration validation for `POST /goal-autopilot/item-policy/decisions`, deterministic response decisions, `item_policy` replay audit hashes and paused-control blocking through server-owned control state.
+- Regression scope: existing `GoalAutopilotControllerTest`, S003 `GoalAutopilotRecoveryControllerTest`, OpenAPI/generated Dart drift and API contract gates.
+
+Commands run:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MemoryCurvePolicyTest,MemoryCurveReplayTest test` - failed once because `next_due_at` used sub-day `Instant.now`, causing replay output hash drift; fixed by using day-level policy evaluation time in the input snapshot.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MemoryCurvePolicyTest,MemoryCurveReplayTest test` - passed.
+- `npm run check:api-contract` - passed after adding optional `MemoryItemPolicyInput` to the existing item-policy endpoint schema and syncing generated Dart hash artifacts.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MemoryCurvePolicyTest,MemoryCurveReplayTest,GoalAutopilotControllerTest,GoalAutopilotRecoveryControllerTest test` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter line 90.9%.
+- `git diff --check` - passed.
+- Independent review follow-up fixed `review_not_due.next_due_at` so it reflects `last_reviewed_at + default interval` instead of resetting the interval from the evaluation day; `MemoryCurvePolicyTest` now asserts this default-interval output.
+
+Passing tests:
+- TC-P02-FUB-011: high forgetting risk `>=0.70` returns `review_due` and overrides overlearning cap; due risk `>=0.45` plus retrieval failure returns `retrieval_failure_due`.
+- TC-P02-FUB-011: successful retrieval below due threshold remains `review_not_due`; elapsed default intervals for L0/L1/L2/L3/L4/L5 and not-due `next_due_at` are enforced through rule-versioned decisions.
+- TC-P02-FUB-011: overlearning cap returns `skip_overlearning_cap`; interleaving cap returns `interleave_alternative` when a viable different group exists; exhausted daily memory budget returns `defer_budget`.
+- TC-P02-FUB-011: paused and policy-blocked control states return `blocked_by_control` instead of selecting review work.
+- TC-P02-FUB-012: item-policy API returns deterministic memory item decisions and writes `item_policy` replay audit with `sha256:` input/output/replay hashes, expected decision, reason code and `memory-curve-v1`.
+- TC-P02-FUB-012: replaying the same item-policy request on the same evaluation day returns identical decisions and identical replay hash; pausing control causes all item decisions to become `blocked_by_control`.
+
+Failing or blocked tests:
+- No TC-P02-FUB-011/012 failure remains.
+- TC-P02-FUB-013..017 remain planned.
+
+Acceptance criteria coverage:
+- AC-P02-FUB-006 is executed for item-level memory state, forgetting risk, retrieval evidence, overlearning cap, interleaving cap, daily budget defer, default constants, paused/control-blocked handling and replay determinism.
+- AC-P02-FUB-008 remains planned for broader Followup-B global replay/performance/final traceability gates.
+
+Residual risk:
+- Followup-B is still not complete, not release-ready and not Product Base-ready.
+- L0-L5 transition, global replay fixtures, performance budgets, coverage evidence and the dedicated Followup-B traceability script remain open.
+- No Flutter UI or AI runtime behavior changed in this slice; those layers are N/A for TC-P02-FUB-011/012.
 
 ## 2026-06-05 P02 Followup-B S003 Missed-Day Recovery Planner
 

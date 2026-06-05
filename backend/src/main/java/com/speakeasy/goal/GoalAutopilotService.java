@@ -31,6 +31,7 @@ public class GoalAutopilotService {
   private static final String CONTROL_RULE_VERSION = "fub-control-v1";
   private static final String NOTIFICATION_RULE_VERSION = NotificationEligibilityPolicy.RULE_VERSION;
   private static final String RECOVERY_RULE_VERSION = MissedDayRecoveryPlanner.RULE_VERSION;
+  private static final String MEMORY_RULE_VERSION = MemoryCurvePolicy.RULE_VERSION;
   private static final String DEFAULT_TIMEZONE = "Asia/Shanghai";
   private static final String TIME_PATTERN = "^([01][0-9]|2[0-3]):[0-5][0-9]$";
   private static final Collection<String> ACTIVE_GOAL_STATUSES =
@@ -66,6 +67,7 @@ public class GoalAutopilotService {
   private final Clock clock;
   private final NotificationEligibilityPolicy notificationEligibilityPolicy = new NotificationEligibilityPolicy();
   private final MissedDayRecoveryPlanner missedDayRecoveryPlanner = new MissedDayRecoveryPlanner();
+  private final MemoryCurvePolicy memoryCurvePolicy = new MemoryCurvePolicy();
 
   public GoalAutopilotService(
       UserAccountRepository users,
@@ -480,6 +482,39 @@ public class GoalAutopilotService {
     upsertForecast(profile, diagnostic, "skipped", null, now);
     audit(userId, "goal_autopilot_recovery_replanned", "recovery_decision:" + decision.getDecisionId(), requestId, now);
     return recoveryPlanResult(decision);
+  }
+
+  @Transactional
+  public ItemPolicyDecisionResult itemPolicyDecisions(UUID userId, ItemPolicyDecisionInput input, String requestId) {
+    if (input == null) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "item policy request is required.");
+    }
+    GoalProfile profile = requireActiveGoal(userId);
+    Instant now = Instant.now(clock);
+    Instant policyEvaluatedAt = now.truncatedTo(ChronoUnit.DAYS);
+    GoalAutopilotControl control = ensureControl(profile, now);
+    String policyVersion = cleanOrDefault(input.policyVersion(), MEMORY_RULE_VERSION);
+    if (!MEMORY_RULE_VERSION.equals(policyVersion)) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "policy_version is invalid.");
+    }
+    int dailyBudget = input.dailyTimeBudgetMinutes() == null
+        ? profile.getDailyMinutes()
+        : input.dailyTimeBudgetMinutes();
+    String policyControlStatus = memoryPolicyControlStatus(profile, control);
+    List<MemoryCurvePolicy.ItemInput> itemInputs = memoryPolicyItems(profile, input);
+    MemoryCurvePolicy.Result policyResult = memoryCurvePolicy.evaluate(new MemoryCurvePolicy.Input(
+        policyVersion,
+        policyControlStatus,
+        policyEvaluatedAt,
+        dailyBudget,
+        itemInputs));
+    List<MemoryItemPolicyStateView> decisions = policyResult.decisions().stream()
+        .map(decision -> memoryItemPolicyStateView(profile, decision))
+        .toList();
+    PlannerReplayAudit replayAudit =
+        writeMemoryPolicyReplay(profile, policyControlStatus, policyEvaluatedAt, dailyBudget, itemInputs, decisions, now);
+    audit(userId, "goal_autopilot_item_policy_evaluated", "item_policy:" + profile.getGoalProfileId(), requestId, now);
+    return new ItemPolicyDecisionResult(decisions, replayAuditView(replayAudit));
   }
 
   @Transactional(readOnly = true)
@@ -1273,6 +1308,218 @@ public class GoalAutopilotService {
         new PlanUpdateSignalView("recovery_replan", decision.getReasonCode()));
   }
 
+  private String memoryPolicyControlStatus(GoalProfile profile, GoalAutopilotControl control) {
+    if ("paused".equals(control.getControlStatus())) {
+      return "paused";
+    }
+    String status = controlView(control, controlReason(profile, control)).controlStatus();
+    return "blocked_by_policy".equals(status) ? "blocked_by_policy" : "active";
+  }
+
+  private List<MemoryCurvePolicy.ItemInput> memoryPolicyItems(GoalProfile profile, ItemPolicyDecisionInput input) {
+    if (input.items() != null && !input.items().isEmpty()) {
+      return input.items().stream().map(this::memoryPolicyItem).toList();
+    }
+    GoalDailyPlan dailyPlan = requireDailyPlan(profile);
+    List<String> refs = input.itemRefs() == null ? List.of() : input.itemRefs();
+    return planItems.findByDailyPlanIdOrderByOrderIndexAsc(dailyPlan.getDailyPlanId()).stream()
+        .filter(item -> refs.isEmpty() || refs.contains(item.getPlanItemId().toString()))
+        .map(this::memoryPolicyItem)
+        .toList();
+  }
+
+  private MemoryCurvePolicy.ItemInput memoryPolicyItem(MemoryItemPolicyInput input) {
+    String itemType = cleanOrDefault(input.itemType(), "plan_item");
+    String itemRef = cleanRequired(input.itemRef(), "item_ref");
+    String interleavingGroup = cleanOrDefault(input.interleavingGroup(), itemType);
+    String masteryLevel = cleanOrDefault(input.currentMasteryLevel(), "L2");
+    List<String> evidenceRefs = input.evidenceRefs() == null ? List.of() : input.evidenceRefs().stream()
+        .filter(ref -> ref != null && !ref.isBlank())
+        .map(String::trim)
+        .toList();
+    return new MemoryCurvePolicy.ItemInput(
+        itemType,
+        itemRef,
+        interleavingGroup,
+        masteryLevel,
+        evidenceRefs,
+        input.lastReviewedAt(),
+        Math.max(0, input.exposureCount() == null ? 0 : input.exposureCount()),
+        Math.max(0, input.overlearningCount() == null ? 0 : input.overlearningCount()),
+        input.forgettingRisk() == null ? 0 : input.forgettingRisk(),
+        input.retrievalSuccess(),
+        Math.max(0, input.recentFailures() == null ? 0 : input.recentFailures()),
+        cleanOrDefault(input.pressureLevel(), "standard"),
+        input.estimatedMinutes() == null ? 5 : input.estimatedMinutes());
+  }
+
+  private MemoryCurvePolicy.ItemInput memoryPolicyItem(GoalPlanItem item) {
+    double risk = switch (item.getMemoryRisk()) {
+      case "high" -> 0.72;
+      case "medium" -> 0.50;
+      default -> 0.25;
+    };
+    Boolean retrievalSuccess = switch (item.getStatus()) {
+      case "completed" -> true;
+      case "skipped", "deferred" -> false;
+      default -> null;
+    };
+    return new MemoryCurvePolicy.ItemInput(
+        "plan_item",
+        item.getPlanItemId().toString(),
+        cleanOrDefault(item.getReasonCode(), item.getItemType()),
+        "L2",
+        List.of(item.getPlanItemId().toString()),
+        null,
+        "completed".equals(item.getStatus()) ? 1 : 0,
+        0,
+        risk,
+        retrievalSuccess,
+        Boolean.FALSE.equals(retrievalSuccess) ? 1 : 0,
+        item.getPressureLevel(),
+        item.getDurationMinutes());
+  }
+
+  private MemoryItemPolicyStateView memoryItemPolicyStateView(
+      GoalProfile profile, MemoryCurvePolicy.Decision decision) {
+    String stateId = UUID.nameUUIDFromBytes((
+            profile.getUserId()
+                + ":"
+                + profile.getGoalProfileId()
+                + ":"
+                + profile.getRevision()
+                + ":"
+                + decision.itemRef()
+                + ":"
+                + MEMORY_RULE_VERSION)
+        .getBytes(StandardCharsets.UTF_8)).toString();
+    return new MemoryItemPolicyStateView(
+        stateId,
+        profile.getUserId(),
+        decision.itemType(),
+        decision.itemRef(),
+        decision.interleavingGroup(),
+        decision.currentMasteryLevel(),
+        decision.evidenceRefs(),
+        decision.lastReviewedAt(),
+        decision.exposureCount(),
+        decision.overlearningCount(),
+        decision.forgettingRisk(),
+        decision.dueDecision(),
+        decision.nextDueAt(),
+        decision.reasonCode(),
+        decision.ruleVersion());
+  }
+
+  private PlannerReplayAudit writeMemoryPolicyReplay(
+      GoalProfile profile,
+      String controlStatus,
+      Instant policyEvaluatedAt,
+      int dailyBudget,
+      List<MemoryCurvePolicy.ItemInput> itemInputs,
+      List<MemoryItemPolicyStateView> decisions,
+      Instant now) {
+    String inputHash = sha256Prefixed(Map.of(
+        "user_id", profile.getUserId().toString(),
+        "goal_profile_id", profile.getGoalProfileId().toString(),
+        "goal_revision", Integer.toString(profile.getRevision()),
+        "control_status", controlStatus,
+        "evaluated_at", policyEvaluatedAt.toString(),
+        "daily_time_budget_minutes", Integer.toString(dailyBudget),
+        "policy_version", MEMORY_RULE_VERSION,
+        "items", memoryPolicyInputSnapshot(itemInputs)));
+    String outputHash = sha256Prefixed(Map.of(
+        "policy_version", MEMORY_RULE_VERSION,
+        "decisions", memoryPolicyOutputSnapshot(decisions)));
+    String expectedDecision = primaryMemoryDecision(decisions);
+    String reasonCode = primaryMemoryReason(decisions, expectedDecision);
+    String replayHash = sha256Prefixed(Map.of(
+        "input", inputHash,
+        "output", outputHash,
+        "expected_decision", expectedDecision,
+        "reason_code", reasonCode,
+        "rule_version", MEMORY_RULE_VERSION));
+    return replayAudits.save(new PlannerReplayAudit(
+        UUID.randomUUID(),
+        profile.getUserId(),
+        "item_policy",
+        "item_policy:" + profile.getGoalProfileId(),
+        inputHash,
+        outputHash,
+        expectedDecision,
+        reasonCode,
+        MEMORY_RULE_VERSION,
+        replayHash,
+        now));
+  }
+
+  private String memoryPolicyInputSnapshot(List<MemoryCurvePolicy.ItemInput> items) {
+    return toJson(items.stream()
+        .map(this::memoryPolicyInputRow)
+        .toList());
+  }
+
+  private TreeMap<String, String> memoryPolicyInputRow(MemoryCurvePolicy.ItemInput item) {
+    TreeMap<String, String> row = new TreeMap<>();
+    row.put("item_type", item.itemType());
+    row.put("item_ref", item.itemRef());
+    row.put("interleaving_group", nullableHashValue(item.interleavingGroup()));
+    row.put("current_mastery_level", item.currentMasteryLevel());
+    row.put("evidence_refs", String.join(",", item.evidenceRefs()));
+    row.put("last_reviewed_at", item.lastReviewedAt() == null ? "<null>" : item.lastReviewedAt().toString());
+    row.put("exposure_count", Integer.toString(item.exposureCount()));
+    row.put("overlearning_count", Integer.toString(item.overlearningCount()));
+    row.put("forgetting_risk", Double.toString(item.forgettingRisk()));
+    row.put("retrieval_success", nullableHashValue(item.retrievalSuccess()));
+    row.put("recent_failures", Integer.toString(item.recentFailures()));
+    row.put("pressure_level", nullableHashValue(item.pressureLevel()));
+    row.put("estimated_minutes", Integer.toString(item.estimatedMinutes()));
+    return row;
+  }
+
+  private String memoryPolicyOutputSnapshot(List<MemoryItemPolicyStateView> decisions) {
+    return toJson(decisions.stream()
+        .map(decision -> new TreeMap<>(Map.of(
+            "memory_item_state_id", decision.memoryItemStateId(),
+            "item_ref", decision.itemRef(),
+            "forgetting_risk", decision.forgettingRisk(),
+            "due_decision", decision.dueDecision(),
+            "reason_code", decision.reasonCode(),
+            "next_due_at", decision.nextDueAt() == null ? "<null>" : decision.nextDueAt().toString(),
+            "rule_version", decision.ruleVersion())))
+        .toList());
+  }
+
+  private String primaryMemoryDecision(List<MemoryItemPolicyStateView> decisions) {
+    return List.of("review_due", "blocked_by_control", "defer_budget", "skip_overlearning_cap", "interleave_alternative", "review_not_due")
+        .stream()
+        .filter(candidate -> decisions.stream().anyMatch(decision -> candidate.equals(decision.dueDecision())))
+        .findFirst()
+        .orElse("no_items");
+  }
+
+  private String primaryMemoryReason(List<MemoryItemPolicyStateView> decisions, String expectedDecision) {
+    return decisions.stream()
+        .filter(decision -> expectedDecision.equals(decision.dueDecision()))
+        .map(MemoryItemPolicyStateView::reasonCode)
+        .findFirst()
+        .orElse("no_items");
+  }
+
+  private NotificationOutboxService.PlannerReplayAuditView replayAuditView(PlannerReplayAudit audit) {
+    return new NotificationOutboxService.PlannerReplayAuditView(
+        audit.getReplayAuditId(),
+        audit.getDecisionFamily(),
+        audit.getSourceEntityRef(),
+        audit.getInputSnapshotHash(),
+        audit.getOutputSnapshotHash(),
+        audit.getExpectedDecision(),
+        audit.getReasonCode(),
+        audit.getRuleVersion(),
+        audit.getReplayHash(),
+        audit.getCreatedAt());
+  }
+
   private AutopilotActionView nextActionOrNull(GoalProfile profile) {
     try {
       GoalDailyPlan dailyPlan = latestDailyPlan(profile);
@@ -1536,6 +1783,27 @@ public class GoalAutopilotService {
 
   public record RecoveryReplanInput(String sourceEvent, UUID planItemId, String preferredPolicy) {}
 
+  public record ItemPolicyDecisionInput(
+      String policyVersion,
+      List<String> itemRefs,
+      Integer dailyTimeBudgetMinutes,
+      List<MemoryItemPolicyInput> items) {}
+
+  public record MemoryItemPolicyInput(
+      String itemType,
+      String itemRef,
+      String interleavingGroup,
+      String currentMasteryLevel,
+      List<String> evidenceRefs,
+      Instant lastReviewedAt,
+      Integer exposureCount,
+      Integer overlearningCount,
+      Double forgettingRisk,
+      Boolean retrievalSuccess,
+      Integer recentFailures,
+      String pressureLevel,
+      Integer estimatedMinutes) {}
+
   public record CheckpointInput(String checkpointType, String transcript, String audioRef, Double scoreHint) {}
 
   public record SummaryView(
@@ -1560,6 +1828,10 @@ public class GoalAutopilotService {
       RecoveryPlanDecisionView recoveryDecision,
       DailyPlanView dailyPlan,
       PlanUpdateSignalView planUpdateSignal) {}
+
+  public record ItemPolicyDecisionResult(
+      List<MemoryItemPolicyStateView> decisions,
+      NotificationOutboxService.PlannerReplayAuditView replayAudit) {}
 
   public record ControlResult(
       ControlView control,
@@ -1665,6 +1937,23 @@ public class GoalAutopilotService {
       String reasonCode,
       String ruleVersion,
       Instant createdAt) {}
+
+  public record MemoryItemPolicyStateView(
+      String memoryItemStateId,
+      UUID userId,
+      String itemType,
+      String itemRef,
+      String interleavingGroup,
+      String currentMasteryLevel,
+      List<String> evidenceRefs,
+      Instant lastReviewedAt,
+      int exposureCount,
+      int overlearningCount,
+      String forgettingRisk,
+      String dueDecision,
+      Instant nextDueAt,
+      String reasonCode,
+      String ruleVersion) {}
 
   public record SupportDecision(
       String decisionId,

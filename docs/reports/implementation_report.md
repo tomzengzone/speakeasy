@@ -1,7 +1,7 @@
 # Implementation Report
 
 ## Current Status
-Latest implementation update recorded: `P02-FOLLOWUP-B-S003-MISSED-DAY-RECOVERY-20260605` closed TC-P02-FUB-009 and TC-P02-FUB-010 for S003 missed-day recovery planner by adding deterministic compress/defer/replace policy logic, durable recovery decision persistence, recovery replan endpoint wiring, no-overdue-stacking daily plan replacement, replay audit writes, account-deletion cleanup and backend unit/integration tests. TC-P02-FUB-001..010 now have local evidence. Followup-B remains only partially implemented: item-level memory, mastery transition, global replay fixtures, performance evidence, dedicated Followup-B traceability script, final QA review, Product Base merge and release approval remain open.
+Latest implementation update recorded: `P02-FOLLOWUP-B-S004-ITEM-MEMORY-20260605` closed TC-P02-FUB-011 and TC-P02-FUB-012 for S004 item-level MemoryCurvePolicy by adding deterministic item-level memory policy logic, item-policy API wiring, optional OpenAPI item evidence input schema, local `item_policy` replay audit writes and backend unit/integration tests. TC-P02-FUB-001..012 now have local evidence. Followup-B remains only partially implemented: mastery transition, global replay fixtures, performance evidence, dedicated Followup-B traceability script, final QA review, Product Base merge and release approval remain open.
 
 ## Report Format
 Each completed change should append:
@@ -14,6 +14,65 @@ Each completed change should append:
 - results
 - risks
 - follow-up
+
+## 2026-06-05 - P02-FOLLOWUP-B-S004-ITEM-MEMORY-20260605
+
+Change request:
+- Strictly execute Followup-B S004 item-level MemoryCurvePolicy for AC-P02-FUB-006 / TC-P02-FUB-011/012 / FUB-FIX-006.
+- Explicit non-goal: do not claim L0-L5 mastery transition, global replay fixture closure, performance closure, Product Base merge, release approval or Followup-B completion.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`.
+- FR/Spec/AC/TC: P02-FUB-FR-006, P02-FUB-SPEC-006, AC-P02-FUB-006, TC-P02-FUB-011 and TC-P02-FUB-012.
+- Traceability row: P02-FUB-TR-006.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/MemoryCurvePolicy.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`
+- `backend/src/test/java/com/speakeasy/goal/MemoryCurvePolicyTest.java`
+- `backend/src/test/java/com/speakeasy/goal/MemoryCurveReplayTest.java`
+- `docs/architecture/openapi/speakeasy-api.yaml`
+- `docs/architecture/openapi/dart-client-drift-manifest.json`
+- `lib/generated/api/.openapi-sha256`
+- `lib/generated/api/speakeasy_api.dart`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/definition.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/requirements.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/spec.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/acceptance.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/test_cases.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added `MemoryCurvePolicy` with deterministic item-level decisions for forgetting-risk thresholds, retrieval success/failure, recent repeated failure override, overlearning cap, interleaving cap, daily budget defer, paused/control-blocked handling and default L0-L5 review intervals.
+- Implemented `POST /goal-autopilot/item-policy/decisions` through `GoalAutopilotService` and `GoalAutopilotController`, returning `MemoryItemPolicyState` projections and writing `item_policy` replay audit rows to the existing `goal_planner_replay_audits` table.
+- Fixed memory replay determinism by using day-level policy evaluation time and including it in the input snapshot; audit creation time remains a real timestamp and is excluded from replay hash.
+- Updated OpenAPI `ItemPolicyDecisionRequest` with optional detailed `MemoryItemPolicyInput` evidence fields while preserving existing `item_refs` fallback; synced generated Dart OpenAPI hash artifacts.
+- Added backend unit and integration tests for TC-P02-FUB-011/012 and updated traceability/test evidence.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MemoryCurvePolicyTest,MemoryCurveReplayTest test` - failed once because `next_due_at` used sub-day `Instant.now`, causing replay output hash drift; fixed before close.
+- Independent S004 review also corrected `review_not_due.next_due_at` to preserve the existing due date from `last_reviewed_at + default interval` instead of recalculating it from the evaluation day; the unit test now asserts that not-due default interval output.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MemoryCurvePolicyTest,MemoryCurveReplayTest test` - passed.
+- `npm run check:api-contract` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MemoryCurvePolicyTest,MemoryCurveReplayTest,GoalAutopilotControllerTest,GoalAutopilotRecoveryControllerTest test` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter line 90.9%.
+- `git diff --check` - passed.
+
+Result:
+- TC-P02-FUB-011 and TC-P02-FUB-012 are passed for S004 item-level MemoryCurvePolicy.
+- P02-FUB-GAP-006 is closed for item-level memory due decisions, overlearning/interleaving/budget caps, paused/control-blocked handling and memory replay determinism.
+- Followup-B is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- L0-L5 mastery transition, global Followup-B replay fixture, performance budgets, coverage evidence, dedicated Followup-B traceability script and final independent QA remain open.
+- Item-level memory p95 performance for 500 items is not closed in this slice; it remains part of TC-P02-FUB-016.
+- No Flutter UI or AI runtime behavior changed; those layers are N/A for this slice.
 
 ## 2026-06-05 - P02-FOLLOWUP-B-S003-MISSED-DAY-RECOVERY-20260605
 

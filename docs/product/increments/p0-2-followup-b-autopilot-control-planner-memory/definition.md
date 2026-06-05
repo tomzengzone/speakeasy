@@ -1,7 +1,7 @@
 # Increment Definition：P0.2 Followup-B 自动带练控制与计划记忆引擎加固
 
 ## 状态
-Contract-ready / partially implemented through S003 missed-day recovery / completion gated。该增量已建立正式 definition、requirements、spec、acceptance、test_cases 和 traceability，并已完成 Domain、API/OpenAPI/generated client sync、AI runtime 和 UX 合同门禁的独立审核。当前 backend UserAutopilotControl read/update/pause/resume、Flutter control binding、S002-A notification eligibility policy、S002-B notification outbox lifecycle/replay 和 S003 missed-day recovery planner 已有本地执行证据；item-level memory、L0-L5 transition、global replay/performance/coverage/final review 和 release evidence 仍未闭环。
+Contract-ready / partially implemented through S004 item-level memory / completion gated。该增量已建立正式 definition、requirements、spec、acceptance、test_cases 和 traceability，并已完成 Domain、API/OpenAPI/generated client sync、AI runtime 和 UX 合同门禁的独立审核。当前 backend UserAutopilotControl read/update/pause/resume、Flutter control binding、S002-A notification eligibility policy、S002-B notification outbox lifecycle/replay、S003 missed-day recovery planner 和 S004 item-level MemoryCurvePolicy 已有本地执行证据；L0-L5 transition、global replay/performance/coverage/final review 和 release evidence 仍未闭环。
 
 ## Increment ID
 `p0-2-followup-b-autopilot-control-planner-memory`
@@ -28,10 +28,10 @@ Contract-ready / partially implemented through S003 missed-day recovery / comple
 - P0.2 stage scope: `docs/product/stages/p0-2-training-memory.md`
 - Existing plan/memory increment: `docs/product/increments/p0-2-goal-backplan-memory-policy/`
 - Existing autopilot increment: `docs/product/increments/p0-2-autopilot-progress-checkpoint/`
-- Local implementation review: item-level memory, L0-L5 transition, global replay/performance/coverage, dedicated traceability script and final independent review remain blockers.
+- Local implementation review: L0-L5 transition, global replay/performance/coverage, dedicated traceability script and final independent review remain blockers.
 
 ## Problem Statement
-The current local P0.2 follow-up has partial implementation evidence for UserAutopilotControl, pause/resume/update-control, notification eligibility/outbox semantics and missed-day recovery. It still needs item-level memory algorithm evidence, evidence-driven L0-L5 promotion/demotion rules, global replay/performance/coverage gates and final independent review before Followup-B can be completed.
+The current local P0.2 follow-up has partial implementation evidence for UserAutopilotControl, pause/resume/update-control, notification eligibility/outbox semantics, missed-day recovery and item-level memory scheduling. It still needs evidence-driven L0-L5 promotion/demotion rules, global replay/performance/coverage gates and final independent review before Followup-B can be completed.
 
 ## Scope
 - Durable `UserAutopilotControl` state with pause/resume, quiet hours, intensity override, notification consent and missed-day policy.
@@ -88,11 +88,12 @@ The current local P0.2 follow-up has partial implementation evidence for UserAut
 - Completed for pre-implementation routing: API/OpenAPI updates for pause/resume/update-control, reminder eligibility, scheduler/outbox state, recovery/replan, item-policy decisions, mastery transitions and replay audits; generated Dart client drift has been synced.
 - Completed for pre-implementation routing: AI runtime updates for candidate-only mastery transition explanation schema, forbidden persistent fields and deterministic fallback.
 - Completed for pre-implementation routing: UX screen spec updates for paused, quiet-hours, notification-disabled, missed-day recovery, fatigue/intensity override and memory/mastery explanations.
-- Still required during remaining implementation routing: QA replay fixtures for memory/mastery/global replay decisions, executable tests for item-level memory、mastery transition、global replay/performance evidence, >=80% changed-code coverage evidence where new code changes, test report updates and quality report updates.
+- Still required during remaining implementation routing: QA replay fixtures for mastery/global replay decisions, executable tests for mastery transition and global replay/performance evidence, >=80% changed-code coverage evidence where new code changes, test report updates and quality report updates.
 - Completed for the first routed control slice: backend control source/update/pause/resume implementation evidence and Flutter control binding evidence are recorded in `docs/reports/implementation_report.md` and reconciled into `docs/reports/test_report.md` / `docs/reports/quality_report.md`.
 - Completed for S002-A: notification eligibility reason precedence, quiet-hours evaluation and Flutter blocked-reason/no-false-completion evidence are recorded in `docs/reports/implementation_report.md` and reconciled into `docs/reports/test_report.md` / `docs/reports/quality_report.md`.
 - Completed for S002-B: notification outbox lifecycle/replay, stable dedupe key, cancel/reschedule, retry/failure recovery, redacted payload projection and deletion cleanup evidence are recorded in `docs/reports/implementation_report.md` and reconciled into `docs/reports/test_report.md` / `docs/reports/quality_report.md`.
 - Completed for S003: missed-day recovery planner compress/defer/replace decisions, hard safety/feasibility precedence, no-overdue-stacking daily plan replacement, stale/replan markers, decision persistence, idempotent replay and recovery replay audit evidence are recorded in `docs/reports/implementation_report.md` and reconciled into `docs/reports/test_report.md` / `docs/reports/quality_report.md`.
+- Completed for S004: item-level MemoryCurvePolicy forgetting-risk thresholds, retrieval success/failure decisions, overlearning cap, interleaving cap, daily memory budget defer, paused/control-blocked handling, default review intervals, deterministic `POST /goal-autopilot/item-policy/decisions` response and `item_policy` replay audit evidence are recorded in `docs/reports/implementation_report.md` and reconciled into `docs/reports/test_report.md` / `docs/reports/quality_report.md`.
 
 ## Non-goals
 - Does not implement editable GoalProfile form or diagnostic sample capture.
