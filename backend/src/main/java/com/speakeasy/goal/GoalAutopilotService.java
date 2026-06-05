@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class GoalAutopilotService {
   private static final String CONTROL_RULE_VERSION = "fub-control-v1";
   private static final String NOTIFICATION_RULE_VERSION = NotificationEligibilityPolicy.RULE_VERSION;
+  private static final String RECOVERY_RULE_VERSION = MissedDayRecoveryPlanner.RULE_VERSION;
   private static final String DEFAULT_TIMEZONE = "Asia/Shanghai";
   private static final String TIME_PATTERN = "^([01][0-9]|2[0-3]):[0-5][0-9]$";
   private static final Collection<String> ACTIVE_GOAL_STATUSES =
@@ -42,6 +43,7 @@ public class GoalAutopilotService {
   private static final Set<String> VALID_MISSED_DAY_POLICIES = Set.of("balanced", "compress", "defer", "replace");
   private static final TypeReference<List<RubricScoreView>> RUBRIC_LIST = new TypeReference<>() {};
   private static final TypeReference<List<WeaknessTagView>> WEAKNESS_LIST = new TypeReference<>() {};
+  private static final TypeReference<List<String>> STRING_LIST = new TypeReference<>() {};
   private static final TypeReference<ClaimGuardView> CLAIM_GUARD = new TypeReference<>() {};
   private static final TypeReference<ControlResult> CONTROL_RESULT = new TypeReference<>() {};
 
@@ -56,11 +58,14 @@ public class GoalAutopilotService {
   private final GoalPlanItemRepository planItems;
   private final GoalProgressForecastRepository forecasts;
   private final GoalOutcomeCheckpointRepository checkpoints;
+  private final GoalRecoveryPlanDecisionRepository recoveryDecisions;
   private final NotificationOutboxService notificationOutboxService;
+  private final PlannerReplayAuditRepository replayAudits;
   private final AuditLogRepository auditLogs;
   private final ObjectMapper objectMapper;
   private final Clock clock;
   private final NotificationEligibilityPolicy notificationEligibilityPolicy = new NotificationEligibilityPolicy();
+  private final MissedDayRecoveryPlanner missedDayRecoveryPlanner = new MissedDayRecoveryPlanner();
 
   public GoalAutopilotService(
       UserAccountRepository users,
@@ -74,7 +79,9 @@ public class GoalAutopilotService {
       GoalPlanItemRepository planItems,
       GoalProgressForecastRepository forecasts,
       GoalOutcomeCheckpointRepository checkpoints,
+      GoalRecoveryPlanDecisionRepository recoveryDecisions,
       NotificationOutboxService notificationOutboxService,
+      PlannerReplayAuditRepository replayAudits,
       AuditLogRepository auditLogs,
       ObjectMapper objectMapper,
       Clock clock) {
@@ -89,7 +96,9 @@ public class GoalAutopilotService {
     this.planItems = planItems;
     this.forecasts = forecasts;
     this.checkpoints = checkpoints;
+    this.recoveryDecisions = recoveryDecisions;
     this.notificationOutboxService = notificationOutboxService;
+    this.replayAudits = replayAudits;
     this.auditLogs = auditLogs;
     this.objectMapper = objectMapper;
     this.clock = clock;
@@ -326,6 +335,11 @@ public class GoalAutopilotService {
                 "account_deletion_or_replay_window_expiry",
                 "exports deterministic replay hashes without raw diagnostic or notification payload"),
             new RetentionRuleView(
+                "goal_recovery_plan_decisions",
+                "hard_delete_on_account_deletion",
+                "account_deletion_or_replay_window_expiry",
+                "exports recovery mode, source event and hashed planner input only"),
+            new RetentionRuleView(
                 "audit_logs",
                 "retain_redacted_minimal_audit",
                 "ops_audit_policy",
@@ -334,9 +348,10 @@ public class GoalAutopilotService {
             "goal_autopilot_controls",
             "goal_autopilot_control_idempotency",
             "goal_notification_outbox_records",
+            "goal_recovery_plan_decisions",
             "goal_planner_replay_audits"),
         true,
-        "implemented_in_s002_b");
+        "implemented_through_s003_recovery");
   }
 
   @Transactional(readOnly = true)
@@ -406,6 +421,65 @@ public class GoalAutopilotService {
     GoalProfile profile = requireActiveGoal(userId);
     GoalDailyPlan dailyPlan = requireDailyPlan(profile);
     return dailyPlanView(dailyPlan);
+  }
+
+  @Transactional
+  public RecoveryPlanResult replanRecovery(
+      UUID userId, RecoveryReplanInput input, String requestId, String idempotencyKey) {
+    requireIdempotencyKey(idempotencyKey);
+    String sourceEvent = validateOneOf(
+        input.sourceEvent(),
+        Set.of("missed_day", "skipped", "deferred", "resume_after_pause_gap", "stale_plan", "expired_item"),
+        "source_event");
+    GoalProfile profile = requireActiveGoal(userId);
+    GoalAutopilotControl control = ensureControl(profile, Instant.now(clock));
+    String preferredPolicy = input.preferredPolicy() == null
+        ? control.getMissedDayPolicy()
+        : validateOneOf(input.preferredPolicy(), VALID_MISSED_DAY_POLICIES, "preferred_policy");
+    GoalRecoveryPlanDecision existing = recoveryDecisions
+        .findByUserIdAndGoalProfileIdAndGoalRevisionAndSourceEventAndRuleVersionAndIdempotencyKey(
+            userId, profile.getGoalProfileId(), profile.getRevision(), sourceEvent, RECOVERY_RULE_VERSION, idempotencyKey)
+        .orElse(null);
+    if (existing != null) {
+      return recoveryPlanResult(existing);
+    }
+
+    Instant now = Instant.now(clock);
+    GoalDailyPlan sourceDailyPlan = recoverySourceDailyPlan(profile, input.planItemId());
+    List<GoalPlanItem> sourceItems = planItems.findByDailyPlanIdOrderByOrderIndexAsc(sourceDailyPlan.getDailyPlanId());
+    MissedDayRecoveryPlanner.Decision plannerDecision = missedDayRecoveryPlanner.plan(new MissedDayRecoveryPlanner.Input(
+        sourceEvent,
+        preferredPolicy,
+        profile.getSupportStatus(),
+        !"unsupported".equals(profile.getSupportStatus()) && !sourceItems.isEmpty(),
+        LocalDate.now(clock),
+        profile.getDeadline(),
+        profile.getDailyMinutes(),
+        control.getIntensityOverride(),
+        sourceDailyPlan.getForgettingRisk(),
+        sourceItems.stream().map(this::recoveryPlannerItem).toList()));
+    String inputSnapshotHash = recoveryInputSnapshotHash(
+        profile, sourceDailyPlan, sourceEvent, preferredPolicy, plannerDecision.affectedPlanItemRefs());
+    GoalDailyPlan recoveryDailyPlan = applyRecoveryPlan(profile, sourceDailyPlan, plannerDecision, control.getIntensityOverride(), now);
+    GoalRecoveryPlanDecision decision = recoveryDecisions.save(new GoalRecoveryPlanDecision(
+        UUID.randomUUID(),
+        userId,
+        profile.getGoalProfileId(),
+        profile.getRevision(),
+        recoveryDailyPlan.getDailyPlanId(),
+        sourceEvent,
+        plannerDecision.recoveryMode(),
+        toJson(plannerDecision.affectedPlanItemRefs()),
+        inputSnapshotHash,
+        plannerDecision.reasonCode(),
+        plannerDecision.ruleVersion(),
+        idempotencyKey,
+        now));
+    writeRecoveryReplay(decision, recoveryDailyPlan, now);
+    GoalDiagnosticAssessment diagnostic = requireDiagnostic(profile);
+    upsertForecast(profile, diagnostic, "skipped", null, now);
+    audit(userId, "goal_autopilot_recovery_replanned", "recovery_decision:" + decision.getDecisionId(), requestId, now);
+    return recoveryPlanResult(decision);
   }
 
   @Transactional(readOnly = true)
@@ -583,6 +657,16 @@ public class GoalAutopilotService {
       return HexFormat.of().formatHex(digest);
     } catch (Exception e) {
       throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "CONFLICT", "Could not hash control idempotency payload.");
+    }
+  }
+
+  private String sha256Prefixed(Object value) {
+    try {
+      String payload = value instanceof Map<?, ?> map ? toJson(new TreeMap<>(map)) : value.toString();
+      byte[] digest = MessageDigest.getInstance("SHA-256").digest(payload.getBytes(StandardCharsets.UTF_8));
+      return "sha256:" + HexFormat.of().formatHex(digest);
+    } catch (Exception e) {
+      throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "CONFLICT", "Could not hash recovery planner payload.");
     }
   }
 
@@ -999,6 +1083,196 @@ public class GoalAutopilotService {
         .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "CONFLICT", "No active plan item is available."));
   }
 
+  private GoalDailyPlan recoverySourceDailyPlan(GoalProfile profile, UUID planItemId) {
+    if (planItemId != null) {
+      GoalPlanItem item = planItems.findByPlanItemIdAndUserId(planItemId, profile.getUserId())
+          .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Plan item was not found."));
+      if (!item.getGoalProfileId().equals(profile.getGoalProfileId())) {
+        throw new ApiException(HttpStatus.CONFLICT, "CONFLICT", "Plan item does not belong to the active goal.");
+      }
+      return dailyPlans.findById(item.getDailyPlanId())
+          .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Daily plan was not found."));
+    }
+    LocalDate today = LocalDate.now(clock);
+    return dailyPlans.findFirstByGoalProfileIdAndPlanDateAndStatusInOrderByCreatedAtDesc(
+            profile.getGoalProfileId(), today, List.of("ready", "partial", "recovery_required", "stale"))
+        .or(() -> dailyPlans.findFirstByGoalProfileIdAndStatusInOrderByPlanDateDesc(
+            profile.getGoalProfileId(), List.of("ready", "partial", "recovery_required", "stale")))
+        .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "CONFLICT", "Daily plan is required before recovery replan."));
+  }
+
+  private MissedDayRecoveryPlanner.RecoveryPlanItem recoveryPlannerItem(GoalPlanItem item) {
+    return new MissedDayRecoveryPlanner.RecoveryPlanItem(
+        item.getPlanItemId().toString(),
+        item.getItemType(),
+        item.getReasonCode(),
+        item.getDurationMinutes(),
+        item.getStatus(),
+        item.getMemoryRisk(),
+        item.getOrderIndex());
+  }
+
+  private GoalDailyPlan applyRecoveryPlan(
+      GoalProfile profile,
+      GoalDailyPlan sourceDailyPlan,
+      MissedDayRecoveryPlanner.Decision decision,
+      String intensity,
+      Instant now) {
+    backplans.findByGoalProfileIdAndStatusIn(profile.getGoalProfileId(), ACTIVE_PLAN_STATUSES)
+        .forEach(plan -> {
+          plan.markStale(decision.reasonCode(), now);
+          backplans.save(plan);
+        });
+    if (!"stale".equals(sourceDailyPlan.getStatus())) {
+      sourceDailyPlan.markStale(now);
+      dailyPlans.save(sourceDailyPlan);
+    }
+
+    GoalDiagnosticAssessment diagnostic = requireDiagnostic(profile);
+    boolean partial = "partial".equals(profile.getSupportStatus()) || "low".equals(diagnostic.getConfidenceBand());
+    LocalDate today = LocalDate.now(clock);
+    GoalBackplan recoveryBackplan = backplans.save(new GoalBackplan(
+        UUID.randomUUID(),
+        profile.getGoalProfileId(),
+        profile.getUserId(),
+        "goal-plan-v1",
+        today,
+        today.plusDays(6),
+        "recover missed work without overdue stacking",
+        sessionCount(profile, partial),
+        "D1,D3,D7",
+        today.plusDays(partial ? 14 : 7),
+        partial ? "partial" : "active",
+        now));
+    int totalMinutes = Math.min(recoveryDailyCap(profile.getDailyMinutes(), intensity), Math.max(5, decision.plannedMinutes()));
+    GoalDailyPlan recoveryDailyPlan = dailyPlans.save(new GoalDailyPlan(
+        UUID.randomUUID(),
+        recoveryBackplan.getWeeklyBackplanId(),
+        profile.getGoalProfileId(),
+        profile.getUserId(),
+        today,
+        totalMinutes,
+        partial ? "partial" : "ready",
+        recoveryLimitationMessage(decision.recoveryMode()),
+        "replace".equals(decision.recoveryMode()) ? "high" : riskFor(diagnostic, partial),
+        "replace".equals(decision.recoveryMode()) ? 1 : 3,
+        now));
+    planItems.save(new GoalPlanItem(
+        UUID.randomUUID(),
+        recoveryDailyPlan.getDailyPlanId(),
+        profile.getGoalProfileId(),
+        profile.getUserId(),
+        recoveryItemType(decision.recoveryMode()),
+        recoveryTitle(decision.recoveryMode()),
+        recoveryItemReason(decision.recoveryMode()),
+        totalMinutes,
+        "active",
+        "replace".equals(decision.recoveryMode()) ? "high" : riskFor(diagnostic, partial),
+        "replace".equals(decision.recoveryMode()) || partial ? "low" : "standard",
+        1,
+        now));
+    return recoveryDailyPlan;
+  }
+
+  private int recoveryDailyCap(int dailyMinutes, String intensity) {
+    int allowance = "intensive".equals(intensity)
+        ? Math.min(10, Math.max(5, dailyMinutes / 4))
+        : 0;
+    return dailyMinutes + allowance;
+  }
+
+  private String recoveryLimitationMessage(String recoveryMode) {
+    return switch (recoveryMode) {
+      case "defer" -> "Missed work was deferred without stacking all overdue tasks.";
+      case "compress" -> "Recovery work was compressed into a smaller feasible block.";
+      default -> "Impossible overdue work was replaced with a smaller recovery block.";
+    };
+  }
+
+  private String recoveryItemType(String recoveryMode) {
+    return "compress".equals(recoveryMode) ? "training" : "review";
+  }
+
+  private String recoveryTitle(String recoveryMode) {
+    return switch (recoveryMode) {
+      case "defer" -> "Short fluency risk review";
+      case "compress" -> "Compressed recovery training block";
+      default -> "Small recovery review block";
+    };
+  }
+
+  private String recoveryItemReason(String recoveryMode) {
+    return switch (recoveryMode) {
+      case "defer" -> "recovery_defer_preserve_risk";
+      case "compress" -> "recovery_compress_scope_reduced";
+      default -> "recovery_replace_safe_small_block";
+    };
+  }
+
+  private String recoveryInputSnapshotHash(
+      GoalProfile profile,
+      GoalDailyPlan sourceDailyPlan,
+      String sourceEvent,
+      String preferredPolicy,
+      List<String> affectedRefs) {
+    return sha256Prefixed(Map.of(
+        "goal_profile_id", profile.getGoalProfileId().toString(),
+        "goal_revision", Integer.toString(profile.getRevision()),
+        "source_daily_plan_id", sourceDailyPlan.getDailyPlanId().toString(),
+        "source_event", sourceEvent,
+        "preferred_policy", preferredPolicy,
+        "affected_refs", String.join(",", affectedRefs),
+        "daily_minutes", Integer.toString(profile.getDailyMinutes()),
+        "rule_version", RECOVERY_RULE_VERSION));
+  }
+
+  private void writeRecoveryReplay(GoalRecoveryPlanDecision decision, GoalDailyPlan dailyPlan, Instant now) {
+    String outputHash = sha256Prefixed(Map.of(
+        "decision_id", decision.getDecisionId().toString(),
+        "daily_plan_id", dailyPlan.getDailyPlanId().toString(),
+        "recovery_mode", decision.getRecoveryMode(),
+        "reason_code", decision.getReasonCode(),
+        "total_minutes", Integer.toString(dailyPlan.getTotalMinutes()),
+        "rule_version", decision.getRuleVersion()));
+    String replayHash = sha256Prefixed(Map.of(
+        "input", decision.getInputSnapshotHash(),
+        "output", outputHash,
+        "expected_decision", decision.getRecoveryMode(),
+        "reason_code", decision.getReasonCode(),
+        "rule_version", decision.getRuleVersion()));
+    replayAudits.save(new PlannerReplayAudit(
+        UUID.randomUUID(),
+        decision.getUserId(),
+        "missed_day_recovery",
+        "recovery_decision:" + decision.getDecisionId(),
+        decision.getInputSnapshotHash(),
+        outputHash,
+        decision.getRecoveryMode(),
+        decision.getReasonCode(),
+        decision.getRuleVersion(),
+        replayHash,
+        now));
+  }
+
+  private RecoveryPlanResult recoveryPlanResult(GoalRecoveryPlanDecision decision) {
+    GoalDailyPlan dailyPlan = dailyPlans.findById(decision.getDailyPlanId())
+        .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Recovery daily plan was not found."));
+    return new RecoveryPlanResult(
+        new RecoveryPlanDecisionView(
+            decision.getDecisionId(),
+            decision.getGoalProfileId(),
+            decision.getDailyPlanId(),
+            decision.getSourceEvent(),
+            decision.getRecoveryMode(),
+            fromJson(decision.getAffectedPlanItemRefsJson(), STRING_LIST),
+            decision.getInputSnapshotHash(),
+            decision.getReasonCode(),
+            decision.getRuleVersion(),
+            decision.getCreatedAt()),
+        dailyPlanView(dailyPlan),
+        new PlanUpdateSignalView("recovery_replan", decision.getReasonCode()));
+  }
+
   private AutopilotActionView nextActionOrNull(GoalProfile profile) {
     try {
       GoalDailyPlan dailyPlan = latestDailyPlan(profile);
@@ -1260,6 +1534,8 @@ public class GoalAutopilotService {
       String intensityOverride,
       String missedDayPolicy) {}
 
+  public record RecoveryReplanInput(String sourceEvent, UUID planItemId, String preferredPolicy) {}
+
   public record CheckpointInput(String checkpointType, String transcript, String audioRef, Double scoreHint) {}
 
   public record SummaryView(
@@ -1279,6 +1555,11 @@ public class GoalAutopilotService {
       ForecastView forecast) {}
 
   public record ActionResult(AutopilotActionView action, ForecastView forecast, PlanUpdateSignalView planUpdateSignal) {}
+
+  public record RecoveryPlanResult(
+      RecoveryPlanDecisionView recoveryDecision,
+      DailyPlanView dailyPlan,
+      PlanUpdateSignalView planUpdateSignal) {}
 
   public record ControlResult(
       ControlView control,
@@ -1372,6 +1653,18 @@ public class GoalAutopilotService {
       String explanationKey,
       Instant evaluatedAt,
       String ruleVersion) {}
+
+  public record RecoveryPlanDecisionView(
+      UUID decisionId,
+      UUID goalProfileId,
+      UUID dailyPlanId,
+      String sourceEvent,
+      String recoveryMode,
+      List<String> affectedPlanItemRefs,
+      String inputSnapshotHash,
+      String reasonCode,
+      String ruleVersion,
+      Instant createdAt) {}
 
   public record SupportDecision(
       String decisionId,

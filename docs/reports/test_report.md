@@ -1,7 +1,7 @@
 # Test Report
 
 ## Current Status
-Latest recorded Followup-B validation: `P02-FOLLOWUP-B-S002-B-NOTIFICATION-OUTBOX-20260605` closes TC-P02-FUB-007 and TC-P02-FUB-008 for S002-B notification outbox lifecycle/replay: pending/scheduled/blocked/cancelled/failed/expired/sent lifecycle, stable dedupe key, cancel/reschedule, retry/failure recovery, redacted payload projection, replay audit, OpenAPI/generated client sync and account-deletion cleanup. TC-P02-FUB-001 through TC-P02-FUB-008 are passed. TC-P02-FUB-009..017 remain planned, including missed-day recovery, item-level memory, L0-L5 transition, global replay, performance, coverage and dedicated Followup-B traceability script. Followup-A remains locally passed; Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
+Latest recorded Followup-B validation: `P02-FOLLOWUP-B-S003-MISSED-DAY-RECOVERY-20260605` closes TC-P02-FUB-009 and TC-P02-FUB-010 for S003 missed-day recovery planner: deterministic compress/defer/replace, hard safety/feasibility precedence, balanced tie-breaker, no overdue stacking, daily budget cap, stale/replan reason code, decision persistence, idempotent replay and recovery replay audit. TC-P02-FUB-001 through TC-P02-FUB-010 are passed. TC-P02-FUB-011..017 remain planned, including item-level memory, L0-L5 transition, global replay, performance and dedicated Followup-B traceability script. Followup-A remains locally passed; Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
 
 ## Required Sections
 - test scope
@@ -11,6 +11,47 @@ Latest recorded Followup-B validation: `P02-FOLLOWUP-B-S002-B-NOTIFICATION-OUTBO
 - skipped tests
 - acceptance criteria coverage
 - residual risk
+
+## 2026-06-05 P02 Followup-B S003 Missed-Day Recovery Planner
+
+Test scope:
+- TC-P02-FUB-009 backend unit validation for `MissedDayRecoveryPlanner` mode precedence, balanced tie-breaker, daily budget cap and no-overdue-stacking decisions.
+- TC-P02-FUB-010 backend integration validation for `/goal-autopilot/recovery/replan`, durable `RecoveryPlanDecision`, stale/replan plan updates, idempotent replay, bounded recovery daily plan and `missed_day_recovery` replay audit.
+- Regression scope: existing `GoalAutopilotControllerTest`, notification eligibility/outbox lifecycle/replay tests, OpenAPI/generated Dart drift, runner validation, diff check and project coverage script.
+
+Commands run:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MissedDayRecoveryPlannerTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotRecoveryControllerTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fub002ControlDataGovernanceAndValidationAreServerSide test` - passed after S003 governance status-marker fix.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MissedDayRecoveryPlannerTest,GoalAutopilotRecoveryControllerTest,GoalAutopilotControllerTest,NotificationEligibilityPolicyTest,NotificationOutboxServiceTest,NotificationOutboxReplayTest test` - passed.
+- `npm run check:api-contract` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter line 90.9%.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository jacoco:report` - failed because the project does not configure a resolvable `jacoco` Maven plugin prefix; this is a tooling gap for report refresh, not a failed TC-P02-FUB-009/010 assertion.
+
+Passing tests:
+- TC-P02-FUB-009: hard safety and high fatigue force `replace` before user preference.
+- TC-P02-FUB-009: `balanced` resolves deterministically to `defer` before `compress` and `replace` when feasible; specific `compress` and `replace` preferences are honored when viable.
+- TC-P02-FUB-009: compress recovery stays within daily minutes and affects only the risk-driving item instead of stacking every overdue item.
+- TC-P02-FUB-010: recovery replan from a skipped item returns `defer`, one affected lower-priority item ref, `sha256:` input snapshot, `fub-recovery-v1` rule version and `recovery_replan` signal.
+- TC-P02-FUB-010: recovery creates a new bounded daily plan with one active recovery block and leaves old daily/backplan rows stale with the recovery reason code.
+- TC-P02-FUB-010: replaying the same idempotency key returns the same recovery decision and daily plan without duplicate replacement plans.
+- TC-P02-FUB-010: `goal_recovery_plan_decisions` and `goal_planner_replay_audits` record recovery decision and `missed_day_recovery` replay evidence.
+- Regression: control data-governance export reports implementation through S003 recovery and includes the recovery decision retention/deletion table.
+
+Failing or blocked tests:
+- No TC-P02-FUB-009/010 failure remains.
+- TC-P02-FUB-011..017 remain planned.
+
+Acceptance criteria coverage:
+- AC-P02-FUB-005 is executed for missed/skipped/deferred recovery planner behavior, compress/defer/replace decision mode, no overdue stacking, stale/replan status and replayable decision evidence.
+- AC-P02-FUB-008 remains planned for broader Followup-B global replay/performance/final traceability gates.
+
+Residual risk:
+- Followup-B is still not complete, not release-ready and not Product Base-ready.
+- Item-level memory, L0-L5 transition, global replay fixtures, performance budgets and the dedicated Followup-B traceability script remain open.
+- No Flutter UI or AI runtime behavior changed in this slice; those layers are N/A for TC-P02-FUB-009/010.
 
 ## 2026-06-05 P02 Followup-B S002-B Notification Outbox Lifecycle And Replay
 

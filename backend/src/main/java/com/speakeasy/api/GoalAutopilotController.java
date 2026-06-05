@@ -114,6 +114,20 @@ public class GoalAutopilotController {
     return PlannerReplayAuditListResponse.from(service.replayAudits(currentUser.userId()));
   }
 
+  @PostMapping("/goal-autopilot/recovery/replan")
+  public RecoveryPlanResponse replanRecovery(
+      @AuthenticationPrincipal CurrentUser currentUser,
+      @RequestHeader(name = "X-Request-Id", required = false) String requestId,
+      @RequestHeader(name = "Idempotency-Key") String idempotencyKey,
+      @Valid @RequestBody RecoveryReplanRequest request) {
+    return RecoveryPlanResponse.from(service.replanRecovery(
+        currentUser.userId(),
+        new GoalAutopilotService.RecoveryReplanInput(
+            request.sourceEvent(), request.planItemId(), request.preferredPolicy()),
+        requestId,
+        idempotencyKey));
+  }
+
   @PostMapping("/goal-autopilot/plans/generate")
   public GoalPlanResponse generatePlan(
       @AuthenticationPrincipal CurrentUser currentUser,
@@ -196,6 +210,12 @@ public class GoalAutopilotController {
   public record ResumeAutopilotControlRequest(@NotNull @Min(1) @Max(1) Integer schemaVersion, String sourceEvent) {}
 
   public record GeneratePlanRequest(@NotNull @Min(1) @Max(1) Integer schemaVersion, Boolean forceReplan, String reasonCode) {}
+
+  public record RecoveryReplanRequest(
+      @NotNull @Min(1) @Max(1) Integer schemaVersion,
+      @NotBlank String sourceEvent,
+      UUID planItemId,
+      String preferredPolicy) {}
 
   public record CompletePlanItemRequest(
       @NotNull @Min(1) @Max(1) Integer schemaVersion, @NotBlank String outcome, String evidenceRef, String learnerNote) {}
@@ -413,6 +433,47 @@ public class GoalAutopilotController {
       implements SchemaResponse {
     static PlannerReplayAuditListResponse from(List<NotificationOutboxService.PlannerReplayAuditView> audits) {
       return new PlannerReplayAuditListResponse(1, audits.stream().map(PlannerReplayAuditDto::from).toList());
+    }
+  }
+
+  public record RecoveryPlanResponse(
+      int schemaVersion,
+      RecoveryPlanDecisionDto recoveryDecision,
+      DailyTrainingPlanDto dailyPlan,
+      PlanUpdateSignalDto planUpdateSignal)
+      implements SchemaResponse {
+    static RecoveryPlanResponse from(GoalAutopilotService.RecoveryPlanResult result) {
+      return new RecoveryPlanResponse(
+          1,
+          RecoveryPlanDecisionDto.from(result.recoveryDecision()),
+          DailyTrainingPlanDto.from(result.dailyPlan()),
+          PlanUpdateSignalDto.from(result.planUpdateSignal()));
+    }
+  }
+
+  public record RecoveryPlanDecisionDto(
+      UUID decisionId,
+      UUID goalProfileId,
+      UUID dailyPlanId,
+      String sourceEvent,
+      String recoveryMode,
+      List<String> affectedPlanItemRefs,
+      String inputSnapshotHash,
+      String reasonCode,
+      String ruleVersion,
+      Instant createdAt) {
+    static RecoveryPlanDecisionDto from(GoalAutopilotService.RecoveryPlanDecisionView view) {
+      return new RecoveryPlanDecisionDto(
+          view.decisionId(),
+          view.goalProfileId(),
+          view.dailyPlanId(),
+          view.sourceEvent(),
+          view.recoveryMode(),
+          view.affectedPlanItemRefs(),
+          view.inputSnapshotHash(),
+          view.reasonCode(),
+          view.ruleVersion(),
+          view.createdAt());
     }
   }
 

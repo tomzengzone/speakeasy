@@ -491,15 +491,17 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
             "goal_autopilot_control_idempotency:hard_delete_on_account_deletion",
             "goal_notification_outbox_records:hard_delete_on_account_deletion",
             "goal_planner_replay_audits:hard_delete_on_account_deletion",
+            "goal_recovery_plan_decisions:hard_delete_on_account_deletion",
             "audit_logs:retain_redacted_minimal_audit");
     assertThat(governanceExport.deletionTables())
         .contains(
             "goal_autopilot_controls",
             "goal_autopilot_control_idempotency",
             "goal_notification_outbox_records",
-            "goal_planner_replay_audits");
+            "goal_planner_replay_audits",
+            "goal_recovery_plan_decisions");
     assertThat(governanceExport.redactedAuditOnly()).isTrue();
-    assertThat(governanceExport.notificationOutboxStatus()).isEqualTo("implemented_in_s002_b");
+    assertThat(governanceExport.notificationOutboxStatus()).isEqualTo("implemented_through_s003_recovery");
 
     mvc.perform(delete("/user/me")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))

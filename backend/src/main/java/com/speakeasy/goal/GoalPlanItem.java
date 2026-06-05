@@ -109,6 +109,10 @@ public class GoalPlanItem {
     return dailyPlanId;
   }
 
+  public UUID getGoalProfileId() {
+    return goalProfileId;
+  }
+
   public String getItemType() {
     return itemType;
   }

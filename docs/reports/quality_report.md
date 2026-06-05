@@ -1,7 +1,35 @@
 # Quality Report
 
 ## Current Status
-`P02-FOLLOWUP-B-S002-B-NOTIFICATION-OUTBOX-20260605` closes TC-P02-FUB-007 and TC-P02-FUB-008 for S002-B notification outbox lifecycle/replay. Backend UserAutopilotControl source/update/pause/resume, current control governance, Flutter server-control binding, notification eligibility policy and notification outbox lifecycle/replay now have local evidence for TC-P02-FUB-001 through TC-P02-FUB-008. Followup-B requirements/spec/acceptance/test_cases/traceability, Domain, API/OpenAPI/generated client sync, AI runtime and UX contracts are present, but missed-day recovery, item-level memory, L0-L5 transition, global replay/performance/coverage, dedicated traceability script, final QA, Product Base merge and release approval remain open. Followup-A remains locally passed. Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
+`P02-FOLLOWUP-B-S003-MISSED-DAY-RECOVERY-20260605` closes TC-P02-FUB-009 and TC-P02-FUB-010 for S003 missed-day recovery planner. Backend UserAutopilotControl source/update/pause/resume, current control governance, Flutter server-control binding, notification eligibility policy, notification outbox lifecycle/replay and missed-day recovery planner now have local evidence for TC-P02-FUB-001 through TC-P02-FUB-010. Followup-B requirements/spec/acceptance/test_cases/traceability, Domain, API/OpenAPI/generated client sync, AI runtime and UX contracts are present, but item-level memory, L0-L5 transition, global replay/performance, dedicated traceability script, final QA, Product Base merge and release approval remain open. Followup-A remains locally passed. Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
+
+## 2026-06-05 P02 Followup-B S003 Missed-Day Recovery Independent Review
+
+Result: pass for TC-P02-FUB-009 and TC-P02-FUB-010 after one service-consistency fix. Not full Followup-B completion, not global replay/performance closure, not release approval and not Product Base merge approval.
+
+Findings:
+- Fixed before close: `GoalAutopilotService#applyRecoveryPlan` initially capped the generated recovery daily plan from `GoalProfile.intensityPreference` while the planner decision used server-owned `UserAutopilotControl.intensityOverride`. The application path now receives the control intensity as the same fact source, preserving Followup-B server-control ownership.
+- Fixed before close: the internal control data-governance export listed the new `goal_recovery_plan_decisions` data class but still reported the S002-B status marker. It now reports `implemented_through_s003_recovery`, and the control governance regression asserts the recovery decision retention/deletion table entry.
+- No blocker found for deterministic recovery mode selection. `MissedDayRecoveryPlannerTest` covers hard safety/feasibility override, fatigue replacement, user policy preference, `balanced` defer-before-compress behavior and compress daily budget cap.
+- No blocker found for no-overdue-stacking behavior. `GoalAutopilotRecoveryControllerTest` proves recovery creates one bounded active recovery block, leaves source plans stale and does not move all source plan items into the next day.
+- No blocker found for persistence and replay. Recovery decisions persist in `goal_recovery_plan_decisions` with input snapshot hash, affected refs, source event, reason code and `fub-recovery-v1`; replay audit writes `missed_day_recovery` decision evidence and idempotent replay returns the same decision/daily plan.
+- No API drift blocker. `/goal-autopilot/recovery/replan` already existed in OpenAPI/generated client contract; implementing the backend endpoint did not require contract changes, and `npm run check:api-contract` passed.
+- No deletion-retention blocker found. Account deletion and test cleanup now remove `goal_recovery_plan_decisions`, and control governance export records the recovery decision data class.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MissedDayRecoveryPlannerTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotRecoveryControllerTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fub002ControlDataGovernanceAndValidationAreServerSide test` - passed after S003 governance status-marker fix.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MissedDayRecoveryPlannerTest,GoalAutopilotRecoveryControllerTest,GoalAutopilotControllerTest,NotificationEligibilityPolicyTest,NotificationOutboxServiceTest,NotificationOutboxReplayTest test` - passed.
+- `npm run check:api-contract` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter line 90.9%.
+- `git diff --check` - passed.
+
+Residual risk:
+- `mvn jacoco:report` cannot refresh coverage because the backend project does not configure a resolvable `jacoco` Maven plugin prefix; the accepted coverage evidence for this slice is the existing project coverage script result above.
+- Recovery p95 performance is not closed by TC-P02-FUB-009/010 and remains routed to TC-P02-FUB-016.
+- Item-level memory, mastery transition, global replay fixtures, dedicated Followup-B traceability script and final Followup-B review remain open.
 
 ## 2026-06-05 P02 Followup-B S002-B Notification Outbox Independent Review
 

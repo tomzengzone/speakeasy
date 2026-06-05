@@ -1,7 +1,7 @@
 # Implementation Report
 
 ## Current Status
-Latest implementation update recorded: `P02-FOLLOWUP-B-S002-B-NOTIFICATION-OUTBOX-20260605` closed TC-P02-FUB-007 and TC-P02-FUB-008 for S002-B notification outbox lifecycle/replay by adding durable outbox and replay audit persistence, lifecycle service transitions, redacted hash projections, outbox/replay list API endpoints, account-deletion cleanup and OpenAPI/generated client sync. TC-P02-FUB-001..008 now have local evidence. Followup-B remains only partially implemented: missed-day recovery, memory/mastery integration, AI runtime scheduling/memory integration, dedicated Followup-B traceability script, coverage evidence, performance evidence, final QA review, Product Base merge and release approval remain open.
+Latest implementation update recorded: `P02-FOLLOWUP-B-S003-MISSED-DAY-RECOVERY-20260605` closed TC-P02-FUB-009 and TC-P02-FUB-010 for S003 missed-day recovery planner by adding deterministic compress/defer/replace policy logic, durable recovery decision persistence, recovery replan endpoint wiring, no-overdue-stacking daily plan replacement, replay audit writes, account-deletion cleanup and backend unit/integration tests. TC-P02-FUB-001..010 now have local evidence. Followup-B remains only partially implemented: item-level memory, mastery transition, global replay fixtures, performance evidence, dedicated Followup-B traceability script, final QA review, Product Base merge and release approval remain open.
 
 ## Report Format
 Each completed change should append:
@@ -14,6 +14,64 @@ Each completed change should append:
 - results
 - risks
 - follow-up
+
+## 2026-06-05 - P02-FOLLOWUP-B-S003-MISSED-DAY-RECOVERY-20260605
+
+Change request:
+- Strictly execute Followup-B S003 missed-day recovery planner for TC-P02-FUB-009/010.
+- Explicit non-goal: do not claim item-level memory, mastery transition, global replay fixture closure, performance closure, Product Base merge, release approval or Followup-B completion.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`.
+- FR/Spec/AC/TC: P02-FUB-FR-005, P02-FUB-SPEC-005, AC-P02-FUB-005, TC-P02-FUB-009 and TC-P02-FUB-010.
+- Traceability row: P02-FUB-TR-005.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/MissedDayRecoveryPlanner.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalRecoveryPlanDecision.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalRecoveryPlanDecisionRepository.java`
+- `backend/src/main/resources/db/migration/V202606050002__p0_2_followup_b_recovery_planner.sql`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalPlanItem.java`
+- `backend/src/main/java/com/speakeasy/ops/AccountDeletionService.java`
+- `backend/src/test/java/com/speakeasy/BackendIntegrationTestSupport.java`
+- `backend/src/test/java/com/speakeasy/goal/MissedDayRecoveryPlannerTest.java`
+- `backend/src/test/java/com/speakeasy/goal/GoalAutopilotRecoveryControllerTest.java`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/test_cases.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added `MissedDayRecoveryPlanner` with deterministic recovery mode selection for hard safety/feasibility override, user policy preference, `balanced` defer/compress/replace tie-breaker, daily budget cap and no overdue stacking.
+- Added durable `goal_recovery_plan_decisions` persistence with idempotency key, input snapshot hash, affected item refs, rule version and account-deletion cleanup.
+- Implemented `POST /goal-autopilot/recovery/replan` through existing OpenAPI/API contract, returning `RecoveryPlanDecision`, replacement `DailyTrainingPlan` and `recovery_replan` signal.
+- Recovery application marks the source daily/backplan stale, creates a new bounded recovery daily plan with one active recovery block and writes `missed_day_recovery` replay audit hashes.
+- Control data governance export now reports implementation through S003 recovery and includes `goal_recovery_plan_decisions` in retention/deletion evidence.
+- Added backend unit and integration tests for TC-P02-FUB-009/010 and updated traceability/test evidence.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MissedDayRecoveryPlannerTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotRecoveryControllerTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fub002ControlDataGovernanceAndValidationAreServerSide test` - passed after S003 governance status-marker fix.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MissedDayRecoveryPlannerTest,GoalAutopilotRecoveryControllerTest,GoalAutopilotControllerTest,NotificationEligibilityPolicyTest,NotificationOutboxServiceTest,NotificationOutboxReplayTest test` - passed.
+- `npm run check:api-contract` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter line 90.9%.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository jacoco:report` - failed because the project does not configure a resolvable `jacoco` Maven plugin prefix; coverage evidence above came from the existing project coverage script.
+
+Result:
+- TC-P02-FUB-009 and TC-P02-FUB-010 are passed for S003 missed-day recovery planner.
+- P02-FUB-GAP-005 is closed for deterministic recovery planner implementation, no-overdue-stacking daily plan replacement, decision persistence, idempotent replay and recovery replay audit.
+- Followup-B is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- Item-level memory, L0-L5 mastery transition, global Followup-B replay fixture, performance budgets, dedicated Followup-B traceability script and final independent QA remain open.
+- Recovery p95 performance is not closed in this slice; it remains part of TC-P02-FUB-016.
+- No Flutter UI or AI runtime behavior changed; those layers are N/A for this slice.
 
 ## 2026-06-05 - P02-FOLLOWUP-B-S002-B-NOTIFICATION-OUTBOX-20260605
 

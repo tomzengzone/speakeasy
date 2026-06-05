@@ -28,6 +28,7 @@ import com.speakeasy.goal.GoalOutcomeCheckpointRepository;
 import com.speakeasy.goal.GoalPlanItemRepository;
 import com.speakeasy.goal.GoalProfileRepository;
 import com.speakeasy.goal.GoalProgressForecastRepository;
+import com.speakeasy.goal.GoalRecoveryPlanDecisionRepository;
 import com.speakeasy.goal.NotificationOutboxRecordRepository;
 import com.speakeasy.goal.PlannerReplayAuditRepository;
 import com.speakeasy.identity.AuthIdentityRepository;
@@ -65,7 +66,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-abstract class BackendIntegrationTestSupport {
+public abstract class BackendIntegrationTestSupport {
   @Autowired protected MockMvc mvc;
   @Autowired AccountDeletionJobRepository deletionJobs;
   @Autowired AuditLogRepository auditLogs;
@@ -117,6 +118,7 @@ abstract class BackendIntegrationTestSupport {
   @Autowired GoalProfileRepository goalProfiles;
   @Autowired GoalAutopilotControlIdempotencyRepository goalAutopilotControlIdempotency;
   @Autowired GoalAutopilotControlRepository goalAutopilotControls;
+  @Autowired GoalRecoveryPlanDecisionRepository goalRecoveryPlanDecisions;
   @Autowired NotificationOutboxRecordRepository goalNotificationOutboxRecords;
   @Autowired PlannerReplayAuditRepository goalPlannerReplayAudits;
 
@@ -139,6 +141,7 @@ abstract class BackendIntegrationTestSupport {
     goalForecasts.deleteAll();
     goalPlannerReplayAudits.deleteAll();
     goalNotificationOutboxRecords.deleteAll();
+    goalRecoveryPlanDecisions.deleteAll();
     goalPlanItems.deleteAll();
     goalDailyPlans.deleteAll();
     goalBackplans.deleteAll();
