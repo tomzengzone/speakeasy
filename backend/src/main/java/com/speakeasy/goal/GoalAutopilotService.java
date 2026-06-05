@@ -70,6 +70,7 @@ public class GoalAutopilotService {
   private final MissedDayRecoveryPlanner missedDayRecoveryPlanner = new MissedDayRecoveryPlanner();
   private final MemoryCurvePolicy memoryCurvePolicy = new MemoryCurvePolicy();
   private final MasteryTransitionPolicy masteryTransitionPolicy = new MasteryTransitionPolicy();
+  private final ProgressForecastPolicy progressForecastPolicy = new ProgressForecastPolicy();
 
   public GoalAutopilotService(
       UserAccountRepository users,
@@ -571,7 +572,7 @@ public class GoalAutopilotService {
           });
     }
     GoalDiagnosticAssessment diagnostic = requireDiagnostic(profile);
-    GoalProgressForecast forecast = upsertForecast(profile, diagnostic, normalizedOutcome, signal.reasonCode(), now);
+    GoalProgressForecast forecast = upsertForecast(profile, diagnostic, normalizedOutcome, null, now);
     applyMasteryTransition(profile, item, diagnostic, normalizedOutcome, now);
     audit(userId, "goal_autopilot_action_" + normalizedOutcome, "plan_item:" + planItemId, requestId, now);
     GoalPlanItem current = planItems.findFirstByDailyPlanIdAndStatusInOrderByOrderIndexAsc(
@@ -1028,43 +1029,68 @@ public class GoalAutopilotService {
   private GoalProgressForecast upsertForecast(
       GoalProfile profile, GoalDiagnosticAssessment diagnostic, String source, String overrideConfidence, Instant now) {
     String confidence = overrideConfidence == null ? diagnostic.getConfidenceBand() : overrideConfidence;
-    boolean preciseEtaAllowed =
-        "supported".equals(profile.getSupportStatus()) && !"low".equals(confidence) && !"unsupported".equals(profile.getStatus());
     LocalDate today = LocalDate.now(clock);
-    LocalDate eta = preciseEtaAllowed ? profile.getDeadline().minusDays(Math.min(7, Math.max(0, profile.getDailyMinutes() / 10))) : null;
-    String etaWindow = preciseEtaAllowed
-        ? eta.minusDays(7) + ".." + eta.plusDays(7)
-        : "not_available_until_confidence_improves";
-    String risk = riskFor(diagnostic, !preciseEtaAllowed);
-    String riskReason = switch (source) {
-      case "completed" -> "latest action completed; keep the memory curve active";
-      case "skipped", "deferred" -> "missed or deferred work requires recovery planning";
-      case "checkpoint" -> "checkpoint evidence updated the goal gap";
-      default -> "checkpoint evidence is not available yet";
-    };
+    PlanFacts facts = planFacts(profile);
+    boolean recoveryRequired = "skipped".equals(source) || "deferred".equals(source);
+    ProgressForecastPolicy.Decision decision = progressForecastPolicy.evaluate(new ProgressForecastPolicy.Input(
+        ProgressForecastPolicy.RULE_VERSION,
+        profile.getSupportStatus(),
+        profile.getStatus(),
+        confidence,
+        profile.getDailyMinutes(),
+        profile.getDeadline(),
+        today,
+        profile.getRevision(),
+        source,
+        latestCheckpoint(profile) != null,
+        facts.stalePlan(),
+        recoveryRequired,
+        false,
+        false,
+        "deterministic_no_provider_path"));
     GoalProgressForecast forecast = forecasts.findFirstByGoalProfileIdOrderByUpdatedAtDesc(profile.getGoalProfileId())
         .orElseGet(() -> new GoalProgressForecast(
             UUID.randomUUID(),
             profile.getGoalProfileId(),
             profile.getUserId(),
+            profile.getRevision(),
+            "limited",
             "",
             null,
+            null,
+            null,
             "",
+            null,
             "low",
             "high",
             "",
+            "checkpoint_evidence_missing",
             today.plusDays(7),
             toJson(claimGuard(false)),
+            "checkpoint_evidence_missing",
+            "deterministic_policy",
+            "deterministic_no_provider_path",
+            ProgressForecastPolicy.RULE_VERSION,
             now));
     forecast.update(
-        gapSummary(profile, diagnostic, preciseEtaAllowed),
-        eta,
-        etaWindow,
-        confidence,
-        risk,
-        riskReason,
-        today.plusDays("partial".equals(profile.getSupportStatus()) ? 14 : 7),
-        toJson(claimGuard(false)),
+        decision.sourceGoalRevision(),
+        decision.forecastState(),
+        decision.gapSummary(),
+        decision.etaDate(),
+        decision.etaRangeStart(),
+        decision.etaRangeEnd(),
+        decision.etaWindow(),
+        decision.etaUnavailableReason(),
+        decision.confidenceBand(),
+        decision.riskLevel(),
+        decision.riskReason(),
+        decision.riskReasonCode(),
+        decision.nextCheckpointDate(),
+        toJson(claimGuard(decision.goalCompletionClaimAllowed())),
+        decision.explanationKey(),
+        decision.explanationSource(),
+        decision.aiExplanationUnavailableReason(),
+        decision.ruleVersion(),
         now);
     return forecasts.save(forecast);
   }
@@ -1896,14 +1922,27 @@ public class GoalAutopilotService {
   private ForecastView forecastView(GoalProgressForecast forecast) {
     return new ForecastView(
         forecast.getForecastId(),
+        forecast.getSourceGoalRevision(),
+        forecast.getForecastState(),
         forecast.getGapSummary(),
         forecast.getEtaDate(),
+        forecast.getEtaRangeStart() == null || forecast.getEtaRangeEnd() == null
+            ? null
+            : new ForecastEtaRangeView(forecast.getEtaRangeStart(), forecast.getEtaRangeEnd()),
         forecast.getEtaWindow(),
+        forecast.getEtaUnavailableReason(),
         forecast.getConfidenceBand(),
         forecast.getRiskLevel(),
         forecast.getRiskReason(),
+        forecast.getRiskReasonCode(),
         forecast.getNextCheckpointDate(),
-        fromJson(forecast.getClaimGuardJson(), CLAIM_GUARD));
+        fromJson(forecast.getClaimGuardJson(), CLAIM_GUARD),
+        new ForecastExplanationView(
+            forecast.getExplanationKey(),
+            forecast.getExplanationSource(),
+            forecast.getAiExplanationUnavailableReason(),
+            true),
+        forecast.getUpdatedAt());
   }
 
   private CheckpointView checkpointView(GoalOutcomeCheckpoint checkpoint) {
@@ -2298,14 +2337,25 @@ public class GoalAutopilotService {
 
   public record ForecastView(
       UUID forecastId,
+      int sourceGoalRevision,
+      String forecastState,
       String gapSummary,
       LocalDate etaDate,
+      ForecastEtaRangeView etaRange,
       String etaWindow,
+      String etaUnavailableReason,
       String confidenceBand,
       String riskLevel,
       String riskReason,
+      String riskReasonCode,
       LocalDate nextCheckpointDate,
-      ClaimGuardView claimGuard) {}
+      ClaimGuardView claimGuard,
+      ForecastExplanationView explanation,
+      Instant updatedAt) {}
+
+  public record ForecastEtaRangeView(LocalDate startDate, LocalDate endDate) {}
+
+  public record ForecastExplanationView(String key, String source, String fallbackReason, boolean candidateOnly) {}
 
   public record CheckpointView(
       UUID checkpointId, String checkpointType, String cadence, String resultStatus, String confidenceBand, String summary) {}

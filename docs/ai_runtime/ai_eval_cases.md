@@ -81,3 +81,22 @@ Planned validator target: backend/runtime schema validator for `FollowupBMastery
 | AI-EVAL-P02-FUB-007 | `p0-2-followup-b-autopilot-control-planner-memory` | Replay fixture reuses the same transition input, reason code and rule version | Deterministic replay compares decision, reason code, output state and rule version; candidate prose is not treated as source-of-truth evidence. |
 
 Forbidden-field assertion for `TC-P02-FUB-014`: every AI eval case that contains a forbidden persistent field must fail schema validation or be stripped before rendering, and must not update `MasteryTransitionDecision`, `MemoryItemPolicyState`, `NotificationOutboxRecord`, `UserAutopilotControl`, `RecoveryPlanDecision` or any review schedule.
+
+## P0.2 Followup-C Forecast Explanation Eval Cases
+
+Status: local S001 backend policy/schema validation。
+
+Owning increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`。
+
+Traceability:
+- `AC-P02-FUC-001`
+- `TC-P02-FUC-003`
+
+Validator target: backend deterministic `ProgressForecastPolicy` plus forecast explanation guardrails. S001 does not call a live provider; deterministic no-provider fallback is valid evidence when it returns explicit fallback metadata and keeps claim guards closed.
+
+| Case ID | Owning increment | Input | Expected |
+| --- | --- | --- | --- |
+| AI-EVAL-P02-FUC-001 | `p0-2-followup-c-checkpoint-forecast-surfaces` | Supported goal, medium/high confidence, checkpoint evidence missing, provider path not configured | Forecast returns deterministic explanation metadata, risk reason `checkpoint_evidence_missing`, no goal completion claim, no official-score equivalence and no provider entitlement fact. |
+| AI-EVAL-P02-FUC-002 | `p0-2-followup-c-checkpoint-forecast-surfaces` | Partial, unsupported, low-confidence, stale or recovery-required forecast | Forecast suppresses precise ETA and completion copy, exposes deterministic limitation reason and keeps AI explanation candidate-only. |
+| AI-EVAL-P02-FUC-003 | `p0-2-followup-c-checkpoint-forecast-surfaces` | Candidate output attempts `goal_completed`, official score/certification, guaranteed ETA, entitlement, quota or billing fields | Validator rejects/ignores candidate; deterministic fallback from `risk_reason_code` remains the rendered explanation and no forecast, checkpoint, plan, entitlement or billing state is mutated. |
+| AI-EVAL-P02-FUC-004 | `p0-2-followup-c-checkpoint-forecast-surfaces` | Candidate output includes raw transcript, raw audio ref, provider payload or sensitive diagnostic details | Candidate is rejected; fallback metadata is redacted and safe for Flutter/report surfaces. |

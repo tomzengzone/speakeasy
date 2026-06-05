@@ -1383,14 +1383,16 @@ paths:
       tags:
       - Goal Autopilot
       operationId: getGoalAutopilotForecast
-      summary: Get P0.2 progress forecast with gap, ETA confidence and risk.
+      summary: Get P0.2 progress forecast with gap, ETA confidence, risk and claim guard.
       x-traceability:
         product_objects:
         - p0-2-training-memory
         - p0-2-autopilot-progress-checkpoint
+        - p0-2-followup-c-checkpoint-forecast-surfaces
         requirements:
         - P02-AUTO-FR-004
         - P02-AUTO-FR-007
+        - P02-FUC-FR-001
       responses:
         '200':
           description: Current progress forecast.
@@ -4757,23 +4759,62 @@ components:
       type: object
       required:
       - forecast_id
+      - source_goal_revision
+      - forecast_state
       - gap_summary
+      - eta_window
       - confidence_band
       - risk_level
       - risk_reason
+      - risk_reason_code
       - next_checkpoint_date
       - claim_guard
+      - explanation
+      - updated_at
       properties:
         forecast_id:
           type: string
+        source_goal_revision:
+          type: integer
+          minimum: 1
+        forecast_state:
+          type: string
+          enum:
+          - ready
+          - limited
+          - unavailable
+          - deleted
+          - unsupported
+          - low_confidence
+          - stale_plan
+          - recovery_required
         gap_summary:
           type: string
         eta_date:
           type: string
           format: date
           nullable: true
+          description: Legacy compatibility date. Clients must prefer eta_range or eta_unavailable_reason for Followup-C S001.
         eta_window:
           type: string
+          description: Legacy compatibility text. For S001, use eta_range when present or eta_unavailable_reason when ETA is suppressed.
+        eta_range:
+          $ref: '#/components/schemas/ProgressForecastEtaRange'
+          nullable: true
+        eta_unavailable_reason:
+          type: string
+          nullable: true
+          enum:
+          - checkpoint_evidence_missing
+          - partial_goal_limited
+          - unsupported_goal
+          - low_confidence
+          - stale_plan
+          - recovery_required
+          - deleted
+          - unavailable
+          - ai_explanation_unavailable
+          - cost_quota_limited
         confidence_band:
           $ref: '#/components/schemas/GoalConfidenceBand'
         risk_level:
@@ -4784,11 +4825,67 @@ components:
           - high
         risk_reason:
           type: string
+        risk_reason_code:
+          type: string
+          enum:
+          - forecast_supported
+          - checkpoint_evidence_missing
+          - checkpoint_evidence_updated
+          - latest_action_completed
+          - recovery_required
+          - partial_goal_limited
+          - unsupported_goal
+          - low_confidence
+          - stale_plan
+          - deleted
+          - unavailable
         next_checkpoint_date:
           type: string
           format: date
         claim_guard:
           $ref: '#/components/schemas/GoalClaimGuard'
+        explanation:
+          $ref: '#/components/schemas/ProgressForecastExplanation'
+        updated_at:
+          type: string
+          format: date-time
+    ProgressForecastEtaRange:
+      type: object
+      required:
+      - start_date
+      - end_date
+      properties:
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+    ProgressForecastExplanation:
+      type: object
+      required:
+      - key
+      - source
+      - candidate_only
+      properties:
+        key:
+          type: string
+        source:
+          type: string
+          enum:
+          - deterministic_policy
+          - ai_candidate
+        fallback_reason:
+          type: string
+          nullable: true
+          enum:
+          - deterministic_no_provider_path
+          - ai_explanation_unavailable
+          - cost_quota_limited
+          - policy_blocked
+          - invalid_candidate
+        candidate_only:
+          type: boolean
     OutcomeCheckpoint:
       type: object
       required:
@@ -7630,17 +7727,29 @@ components:
           explanation: Start with the highest-risk fluency item first.
         forecast:
           forecast_id: forecast_id_sample
+          source_goal_revision: 1
+          forecast_state: ready
           gap_summary: About 2 product-rubric bands below target in fluency.
           eta_date: '2026-08-24'
           eta_window: 2026-08-17..2026-08-31
+          eta_range:
+            start_date: '2026-08-17'
+            end_date: '2026-08-31'
           confidence_band: medium
           risk_level: medium
           risk_reason: checkpoint evidence is not available yet
+          risk_reason_code: checkpoint_evidence_missing
           next_checkpoint_date: '2026-06-11'
           claim_guard:
             official_score_equivalence: false
             goal_completion_claim_allowed: false
             allowed_claim: product_internal_progress_only
+          explanation:
+            key: checkpoint_evidence_missing
+            source: deterministic_policy
+            fallback_reason: deterministic_no_provider_path
+            candidate_only: true
+          updated_at: '2026-06-05T09:00:00Z'
     UpdateAutopilotControlRequestExample:
       summary: updateGoalAutopilotControl request example
       value:
@@ -8030,17 +8139,29 @@ components:
           explanation: Start with the highest-risk fluency item first.
         forecast:
           forecast_id: forecast_id_sample
+          source_goal_revision: 1
+          forecast_state: ready
           gap_summary: About 2 product-rubric bands below target in fluency.
           eta_date: '2026-08-24'
           eta_window: 2026-08-17..2026-08-31
+          eta_range:
+            start_date: '2026-08-17'
+            end_date: '2026-08-31'
           confidence_band: medium
           risk_level: medium
           risk_reason: checkpoint evidence is not available yet
+          risk_reason_code: checkpoint_evidence_missing
           next_checkpoint_date: '2026-06-11'
           claim_guard:
             official_score_equivalence: false
             goal_completion_claim_allowed: false
             allowed_claim: product_internal_progress_only
+          explanation:
+            key: checkpoint_evidence_missing
+            source: deterministic_policy
+            fallback_reason: deterministic_no_provider_path
+            candidate_only: true
+          updated_at: '2026-06-05T09:00:00Z'
         plan_update_signal:
           signal_type: none
           reason_code: no_replan_needed
@@ -8057,17 +8178,29 @@ components:
         schema_version: 1
         forecast:
           forecast_id: forecast_id_sample
+          source_goal_revision: 1
+          forecast_state: ready
           gap_summary: About 2 product-rubric bands below target in fluency.
           eta_date: '2026-08-24'
           eta_window: 2026-08-17..2026-08-31
+          eta_range:
+            start_date: '2026-08-17'
+            end_date: '2026-08-31'
           confidence_band: medium
           risk_level: medium
           risk_reason: checkpoint evidence is not available yet
+          risk_reason_code: checkpoint_evidence_missing
           next_checkpoint_date: '2026-06-11'
           claim_guard:
             official_score_equivalence: false
             goal_completion_claim_allowed: false
             allowed_claim: product_internal_progress_only
+          explanation:
+            key: checkpoint_evidence_missing
+            source: deterministic_policy
+            fallback_reason: deterministic_no_provider_path
+            candidate_only: true
+          updated_at: '2026-06-05T09:00:00Z'
     SubmitCheckpointRequestExample:
       summary: submitGoalAutopilotCheckpoint request example
       value:
@@ -8088,17 +8221,29 @@ components:
           summary: Fluency improved, but example expansion still needs review.
         forecast:
           forecast_id: forecast_id_sample
+          source_goal_revision: 1
+          forecast_state: ready
           gap_summary: About 1.8 product-rubric bands below target in fluency.
           eta_date: '2026-08-24'
           eta_window: 2026-08-17..2026-08-31
+          eta_range:
+            start_date: '2026-08-17'
+            end_date: '2026-08-31'
           confidence_band: medium
           risk_level: medium
           risk_reason: checkpoint confirmed progress but fluency remains the main risk
+          risk_reason_code: checkpoint_evidence_updated
           next_checkpoint_date: '2026-06-18'
           claim_guard:
             official_score_equivalence: false
             goal_completion_claim_allowed: false
             allowed_claim: product_internal_progress_only
+          explanation:
+            key: checkpoint_evidence_updated
+            source: deterministic_policy
+            fallback_reason: deterministic_no_provider_path
+            candidate_only: true
+          updated_at: '2026-06-05T09:00:00Z'
         plan_update_signal:
           signal_type: checkpoint_replan
           reason_code: checkpoint_updated_gap

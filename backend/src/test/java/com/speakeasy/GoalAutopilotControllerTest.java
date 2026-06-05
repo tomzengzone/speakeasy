@@ -75,6 +75,33 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
   }
 
   @Test
+  void tcP02Fuc001ForecastHardeningClaimGuard() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140290");
+
+    createSupportedGoal(tokens)
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.forecast.source_goal_revision").value(1))
+        .andExpect(jsonPath("$.forecast.forecast_state").value("ready"))
+        .andExpect(jsonPath("$.forecast.eta_range.start_date", not(blankOrNullString())))
+        .andExpect(jsonPath("$.forecast.eta_range.end_date", not(blankOrNullString())))
+        .andExpect(jsonPath("$.forecast.risk_reason_code").value("checkpoint_evidence_missing"))
+        .andExpect(jsonPath("$.forecast.explanation.key").value("checkpoint_evidence_missing"))
+        .andExpect(jsonPath("$.forecast.explanation.source").value("deterministic_policy"))
+        .andExpect(jsonPath("$.forecast.explanation.fallback_reason").value("deterministic_no_provider_path"))
+        .andExpect(jsonPath("$.forecast.explanation.candidate_only").value(true))
+        .andExpect(jsonPath("$.forecast.claim_guard.official_score_equivalence").value(false))
+        .andExpect(jsonPath("$.forecast.claim_guard.goal_completion_claim_allowed").value(false))
+        .andExpect(jsonPath("$.forecast.updated_at", not(blankOrNullString())));
+
+    mvc.perform(get("/goal-autopilot/forecast")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.forecast.forecast_state").value("ready"))
+        .andExpect(jsonPath("$.forecast.risk_reason_code").value("checkpoint_evidence_missing"))
+        .andExpect(jsonPath("$.forecast.explanation.source").value("deterministic_policy"));
+  }
+
+  @Test
   void tcP02Diag002RejectsInvalidGoalInputsAndMissingActiveGoal() throws Exception {
     AuthTokens tokens = loginPhone("+8613800140206");
 

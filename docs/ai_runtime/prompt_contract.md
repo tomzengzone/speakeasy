@@ -198,3 +198,49 @@ You must not:
 - `guardrails.official_score_equivalence` must be false.
 - `guardrails.persistent_decision_fields_present` must be false and `forbidden_fields_detected` must be empty for successful consumption.
 - Any forbidden persistent field, official-score claim, raw transcript/audio/provider payload or unknown top-level field must trigger deterministic fallback and must not update `MasteryTransitionDecision` or `MemoryItemPolicyState`.
+
+## P0.2 Followup-C Forecast Explanation Boundary
+
+### Purpose
+Followup-C S001 uses deterministic forecast policy as the source of truth for gap, ETA range/unavailable reason, confidence, risk reason, next checkpoint and claim guard. Any provider-backed forecast explanation is candidate-only and is optional for S001; if provider use is not configured, the backend must return deterministic explanation metadata and a clear fallback reason.
+
+### Owning Product Object
+| 字段 | 值 |
+| --- | --- |
+| Increment | `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/` |
+| Acceptance | `AC-P02-FUC-001` |
+| Test cases | `TC-P02-FUC-003` |
+| Domain input | `ProgressForecast` in `docs/domain/domain_schema.md` |
+| API input | `GET /goal-autopilot/forecast` and summary forecast fragment in `docs/architecture/openapi/speakeasy-api.yaml` |
+
+### Required Inputs
+- `forecast_id`
+- `goal_profile_id`
+- `source_goal_revision`
+- `forecast_state`
+- `gap_summary`
+- `eta_range` or `eta_unavailable_reason`
+- `confidence_band`
+- `risk_level`
+- `risk_reason_code`
+- `next_checkpoint_date`
+- `claim_guard`
+- `rule_version`
+
+### Output Requirement
+If a model is used, it must return valid JSON matching `FollowupCForecastExplanationCandidate` in `docs/ai_runtime/llm_output_schema.md`. S001's local implementation may instead return deterministic fallback metadata with `explanation_source=deterministic_policy`.
+
+### Prompt Rules
+- Return JSON only; do not wrap JSON in markdown.
+- Explain only the supplied deterministic forecast decision.
+- Use product-internal progress language; do not imply official IELTS/TOEFL certification, official score equivalence, guaranteed outcome or guaranteed ETA.
+- Do not include raw transcript, raw audio, provider payload, provider name, provider secret, exact sensitive diagnostic details or unrestricted personal data.
+- Do not output or imply entitlement, quota, billing, goal completion, plan state, checkpoint status or persistent forecast fields.
+
+### Validation Requirement
+- JSON parse must pass if a provider candidate is present.
+- `output_type` must be `followup_c_forecast_explanation_candidate`.
+- `forecast_state` and `risk_reason_code` must echo deterministic input values.
+- `guardrails.official_score_equivalence`, `guardrails.goal_completion_claim_allowed` and `guardrails.guaranteed_eta_claim_allowed` must be false.
+- `guardrails.persistent_decision_fields_present` must be false and `forbidden_fields_detected` must be empty for successful consumption.
+- Any forbidden persistent field, official-score claim, guaranteed ETA claim, raw transcript/audio/provider payload or unknown top-level field must trigger deterministic fallback and must not update `ProgressForecast`, `GoalProfile`, `OutcomeCheckpoint`, plan state, entitlement or billing facts.

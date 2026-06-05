@@ -1,7 +1,7 @@
 # Test Report
 
 ## Current Status
-Latest recorded Followup-B validation: `P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-TRACEABILITY-20260605` closes TC-P02-FUB-015, TC-P02-FUB-016 and TC-P02-FUB-017 for S006 replay fixture, p95 performance, coverage and dedicated Followup-B traceability script. TC-P02-FUB-001 through TC-P02-FUB-017 are passed locally. Followup-B is not release-ready and Product Base merge is not approved. Followup-A remains locally passed; Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
+Latest recorded Followup-C validation: `P02-FOLLOWUP-C-S001-FORECAST-HARDENING-20260605` closes TC-P02-FUC-001, TC-P02-FUC-002 and TC-P02-FUC-003 locally for ProgressForecast policy hardening, claim-guarded API projection and deterministic AI-provider N/A fallback. Followup-C S002-S007 checkpoint, projection, surface propagation, downgrade, performance, coverage and release evidence remain planned/not started. Followup-C is not release-ready and Product Base merge is not approved. Prior Followup-B TC-P02-FUB-001 through TC-P02-FUB-017 remain passed locally; Followup-D commercial/release gates remain open.
 
 ## Required Sections
 - test scope
@@ -11,6 +11,51 @@ Latest recorded Followup-B validation: `P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-T
 - skipped tests
 - acceptance criteria coverage
 - residual risk
+
+## 2026-06-05 P02 Followup-C S001 Forecast Hardening
+
+Report ID:
+- `P02-FOLLOWUP-C-S001-FORECAST-HARDENING-20260605`
+
+Test scope:
+- TC-P02-FUC-001 backend unit validation for deterministic `ProgressForecastPolicy`, including supported forecast, ETA range, claim guard, confidence/risk, limited states and input validation.
+- TC-P02-FUC-002 backend API/integration validation for `/goal-autopilot/goals` and `GET /goal-autopilot/forecast`, including new ProgressForecast fields, persisted migration shape and closed outcome-claim guard.
+- TC-P02-FUC-003 AI fallback/schema validation for forecast explanation candidate-only behavior, deterministic no-provider fallback metadata and forbidden completion/ETA/entitlement/provider field rejection.
+- Contract/regression scope: OpenAPI/generated Dart drift, full `GoalAutopilotControllerTest` regression, generated API analysis and project runner validation.
+
+Commands run:
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProgressForecastPolicyTest,ForecastExplanationSchemaTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard test` - failed once because H2 rejected the first multi-column forecast migration syntax; migration was split into one `ALTER TABLE ... ADD COLUMN` statement per column.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard test` - passed after migration fix.
+- `npm run check:api-contract` - passed. Redocly reported existing nullable-example warnings, while OpenAPI validation and downstream drift gates passed with SHA `617ce817ef055efb851641a1664211238229d9ed365e01711244da15a75c621c`.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProgressForecastPolicyTest test && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard test && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ForecastExplanationSchemaTest test` - passed as formal S001 TC run.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - passed.
+- `flutter analyze lib/generated/api/speakeasy_api.dart` - passed.
+- `git diff --check` - passed.
+
+Passing tests:
+- TC-P02-FUC-001: `ProgressForecastPolicyTest` verifies supported forecasts expose source goal revision, forecast state, ETA range, ETA unavailable reason, confidence band, risk reason code, deterministic explanation metadata, rule version and closed claim guard.
+- TC-P02-FUC-001: partial goal, unsupported goal, low confidence, stale plan, recovery required, deleted and unavailable states return limited/unavailable forecast states without precise ETA claims.
+- TC-P02-FUC-002: `GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard` verifies API projections expose the hardened fields in both goal list and forecast detail responses after persistence migration.
+- TC-P02-FUC-003: `ForecastExplanationSchemaTest` accepts safe candidate-only explanations and rejects provider attempts to set persistent fields or unsafe official/completion/guaranteed outcome claims.
+- Regression: full `GoalAutopilotControllerTest`, OpenAPI contract/drift and generated Dart API analysis pass.
+
+Failing or blocked tests:
+- No TC-P02-FUC-001/002/003 failure remains after the migration syntax fix.
+- TC-P02-FUC-004 through TC-P02-FUC-022 remain planned for S002-S007 and were not executed in this S001 slice.
+
+Skipped tests:
+- Followup-C performance, coverage script, surface widget/integration and release gates are intentionally deferred to S005-S007.
+- No live AI provider path was executed; S001 validates deterministic no-provider fallback and candidate-only schema guardrails.
+
+Acceptance criteria coverage:
+- AC-P02-FUC-001 is executed locally for forecast state/risk/ETA range exposure, downgrade safety, deterministic explanation fallback, no official-score/guaranteed-outcome claim and API contract drift.
+
+Residual risk:
+- Followup-C is not complete, not release-ready and not Product Base-ready.
+- S002 checkpoint cadence/task library, S003 checkpoint-to-plan update, S004 backend projection, S005 Home/Queue/Wiki surface propagation, S006 downgrade/deletion handling and S007 performance/coverage/final traceability remain open.
+- The S001 AI runtime path is deterministic fallback only; future live/provider explanation support must keep the candidate-only boundary and rerun TC-P02-FUC-003.
 
 ## 2026-06-05 P02 Followup-B S006 Replay Performance Traceability
 

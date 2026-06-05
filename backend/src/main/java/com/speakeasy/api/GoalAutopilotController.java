@@ -847,25 +847,51 @@ public class GoalAutopilotController {
 
   public record ProgressForecastDto(
       UUID forecastId,
+      int sourceGoalRevision,
+      String forecastState,
       String gapSummary,
       LocalDate etaDate,
+      ProgressForecastEtaRangeDto etaRange,
       String etaWindow,
+      String etaUnavailableReason,
       String confidenceBand,
       String riskLevel,
       String riskReason,
+      String riskReasonCode,
       LocalDate nextCheckpointDate,
-      GoalClaimGuardDto claimGuard) {
+      GoalClaimGuardDto claimGuard,
+      ProgressForecastExplanationDto explanation,
+      Instant updatedAt) {
     static ProgressForecastDto from(GoalAutopilotService.ForecastView view) {
       return new ProgressForecastDto(
           view.forecastId(),
+          view.sourceGoalRevision(),
+          view.forecastState(),
           view.gapSummary(),
           view.etaDate(),
+          view.etaRange() == null ? null : ProgressForecastEtaRangeDto.from(view.etaRange()),
           view.etaWindow(),
+          view.etaUnavailableReason(),
           view.confidenceBand(),
           view.riskLevel(),
           view.riskReason(),
+          view.riskReasonCode(),
           view.nextCheckpointDate(),
-          GoalClaimGuardDto.from(view.claimGuard()));
+          GoalClaimGuardDto.from(view.claimGuard()),
+          ProgressForecastExplanationDto.from(view.explanation()),
+          view.updatedAt());
+    }
+  }
+
+  public record ProgressForecastEtaRangeDto(LocalDate startDate, LocalDate endDate) {
+    static ProgressForecastEtaRangeDto from(GoalAutopilotService.ForecastEtaRangeView view) {
+      return new ProgressForecastEtaRangeDto(view.startDate(), view.endDate());
+    }
+  }
+
+  public record ProgressForecastExplanationDto(String key, String source, String fallbackReason, boolean candidateOnly) {
+    static ProgressForecastExplanationDto from(GoalAutopilotService.ForecastExplanationView view) {
+      return new ProgressForecastExplanationDto(view.key(), view.source(), view.fallbackReason(), view.candidateOnly());
     }
   }
 

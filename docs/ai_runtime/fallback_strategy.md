@@ -74,3 +74,20 @@ Followup-B AI output is never a source of truth for L0-L5 transition, item-level
 | Replay verification detects explanation candidate mismatch | Mark explanation candidate invalid for replay; compare deterministic decision/reason/rule version only | Treat prose mismatch as evidence that the deterministic transition changed |
 
 Deterministic fallback text must be generated from safe fields only: `transition_direction`, `previous_level`, `accepted_level`, `reason_code`, `confidence_band`, `rule_version` and redacted evidence counts. Fallback must not create or modify `PlannerReplayAudit`; replay audit belongs to deterministic planner rules.
+
+## P0.2 Followup-C Forecast Explanation Fallback Mapping
+
+Owning increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`。
+Traceability: `AC-P02-FUC-001`, `TC-P02-FUC-003`。
+
+S001 forecast explanation is deterministic by default. Provider/LLM output may only be a future candidate explanation after deterministic `ProgressForecast` has already decided forecast state, ETA range/unavailable reason, risk reason code, next checkpoint, claim guard and source goal revision.
+
+| Failure or blocked condition | Required behavior | Prohibited behavior |
+| --- | --- | --- |
+| Provider path not configured for S001 | Return deterministic forecast explanation metadata with `explanation_source=deterministic_policy` and `ai_explanation_unavailable_reason=deterministic_no_provider_path` | Claim an AI explanation was generated or create entitlement/quota facts |
+| Entitlement, quota, cost or policy blocks AI explanation | Keep deterministic forecast facts, set fallback reason such as `cost_quota_limited` or `ai_explanation_unavailable`, and preserve claim guard | Infer paid entitlement, quota state, completion or official-score status from the block |
+| Candidate output includes `goal_completed`, official score/certification, guaranteed ETA, entitlement, quota, billing, plan state, checkpoint status or persistent forecast fields | Reject candidate and render deterministic explanation from `risk_reason_code` and `explanation_key` | Persist candidate fields or mutate `ProgressForecast`, `GoalProfile`, `OutcomeCheckpoint`, plan state or billing facts |
+| Candidate output exposes raw transcript, raw audio, provider payload or sensitive diagnostic detail | Reject candidate, log only redacted fallback metadata and return safe deterministic explanation | Send sensitive raw content to Flutter or reports |
+| Low-confidence, partial, unsupported, stale, deleted or unavailable forecast | Return limited/unavailable forecast state, suppress precise ETA and goal-complete copy, and show deterministic limitation reason | Rephrase limitation as high-confidence progress or guaranteed achievement |
+
+Deterministic fallback text must be generated from safe fields only: `forecast_state`, `gap_summary`, `risk_reason_code`, `eta_unavailable_reason`, `confidence_band`, `next_checkpoint_date`, `rule_version` and `source_goal_revision`.

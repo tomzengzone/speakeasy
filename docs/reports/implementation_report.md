@@ -1,7 +1,7 @@
 # Implementation Report
 
 ## Current Status
-Latest implementation update recorded: `P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-TRACEABILITY-20260605` closed TC-P02-FUB-015, TC-P02-FUB-016 and TC-P02-FUB-017 for S006 replay fixture, p95 performance, coverage and dedicated Followup-B traceability script. TC-P02-FUB-001..017 now have local evidence. Followup-B is not release-ready; Product Base merge is not approved.
+Latest implementation update recorded: `P02-FOLLOWUP-C-S001-FORECAST-HARDENING-20260605` closed TC-P02-FUC-001, TC-P02-FUC-002 and TC-P02-FUC-003 locally for forecast policy hardening, persisted/API forecast metadata, OpenAPI/generated client drift and deterministic AI-provider N/A fallback. Followup-C S002-S007 remain planned/not started. Followup-C is not release-ready; Product Base merge is not approved. Prior Followup-B TC-P02-FUB-001..017 remain locally passed.
 
 ## Report Format
 Each completed change should append:
@@ -14,6 +14,74 @@ Each completed change should append:
 - results
 - risks
 - follow-up
+
+## 2026-06-05 - P02-FOLLOWUP-C-S001-FORECAST-HARDENING-20260605
+
+Change request:
+- Strictly execute Followup-C S001 forecast hardening for P02-FUC-FR-001 / P02-FUC-SPEC-001 / AC-P02-FUC-001 / TC-P02-FUC-001..003.
+- Explicit non-goal: do not claim S002-S007 checkpoint, surface propagation, downgrade, performance, coverage, release approval or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`.
+- FR/Spec/AC/TC: P02-FUC-FR-001, P02-FUC-SPEC-001, AC-P02-FUC-001, TC-P02-FUC-001, TC-P02-FUC-002 and TC-P02-FUC-003.
+- Traceability row: P02-FUC-TR-001; gap closed locally: P02-FUC-GAP-001.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/ProgressForecastPolicy.java`
+- `backend/src/main/java/com/speakeasy/goal/ForecastExplanationCandidateValidator.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalProgressForecast.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`
+- `backend/src/main/resources/db/migration/V202606050004__p0_2_followup_c_forecast_hardening.sql`
+- `backend/src/test/java/com/speakeasy/goal/ProgressForecastPolicyTest.java`
+- `backend/src/test/java/com/speakeasy/goal/ForecastExplanationSchemaTest.java`
+- `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`
+- `docs/domain/domain_schema.md`
+- `docs/architecture/api_contract.md`
+- `docs/architecture/openapi/speakeasy-api.yaml`
+- `docs/architecture/openapi/dart-client-drift-manifest.json`
+- `lib/generated/api/.openapi-sha256`
+- `lib/generated/api/speakeasy_api.dart`
+- `docs/ai_runtime/llm_output_schema.md`
+- `docs/ai_runtime/fallback_strategy.md`
+- `docs/ai_runtime/ai_eval_cases.md`
+- `docs/ai_runtime/prompt_contract.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/definition.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/requirements.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/spec.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/acceptance.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/test_cases.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added `ProgressForecastPolicy` with rule version `fuc-forecast-v1` to derive `forecast_state`, source goal revision, ETA range/unavailable reason, confidence band, risk level/reason code, deterministic explanation key/source, fallback reason and claim-guard state from server-owned goal/plan/checkpoint facts.
+- Extended `GoalProgressForecast` and migration `V202606050004__p0_2_followup_c_forecast_hardening.sql` so the hardened forecast metadata is persisted and read through the existing forecast repository path.
+- Updated `GoalAutopilotService` and `GoalAutopilotController` so `/goal-autopilot/goals` and `GET /goal-autopilot/forecast` expose S001 fields without allowing client writes to deterministic forecast state.
+- Added `ForecastExplanationCandidateValidator` and AI runtime documentation for future provider candidate-only explanations; deterministic no-provider fallback is the only executed S001 AI path and does not mutate persistent forecast state.
+- Updated domain/API/OpenAPI/generated Dart drift artifacts and Followup-C documentation/traceability so S001 evidence is explicit and S002-S007 remain gated.
+
+Validation:
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProgressForecastPolicyTest,ForecastExplanationSchemaTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard test` - failed once on H2 migration syntax, then passed after splitting the migration into one-column `ALTER TABLE` statements.
+- `npm run check:api-contract` - passed; OpenAPI/Dart drift SHA is `617ce817ef055efb851641a1664211238229d9ed365e01711244da15a75c621c`.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProgressForecastPolicyTest test && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard test && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ForecastExplanationSchemaTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - passed.
+- `flutter analyze lib/generated/api/speakeasy_api.dart` - passed.
+- `git diff --check` - passed.
+
+Result:
+- TC-P02-FUC-001, TC-P02-FUC-002 and TC-P02-FUC-003 are passed locally for S001 forecast hardening.
+- P02-FUC-GAP-001 is closed for forecast state metadata, ETA/risk reasoning, deterministic explanation fallback, provider candidate-only guardrails and no official-score/guaranteed-outcome claim.
+- Followup-C is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- S002 checkpoint cadence/task library, S003 checkpoint-to-plan update, S004 backend-owned projection, S005 Home/Queue/Wiki propagation, S006 downgrade/deletion handling and S007 performance/coverage/final traceability remain open.
+- No Flutter surface behavior changed in S001; surface propagation is intentionally deferred to S005.
+- No live AI provider explanation path is enabled by this slice; future provider integration must preserve the candidate-only boundary and rerun schema/eval tests.
 
 ## 2026-06-05 - P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-TRACEABILITY-20260605
 

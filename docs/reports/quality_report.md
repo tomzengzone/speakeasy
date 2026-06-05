@@ -1,7 +1,61 @@
 # Quality Report
 
 ## Current Status
-`P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-TRACEABILITY-20260605` closes TC-P02-FUB-015, TC-P02-FUB-016 and TC-P02-FUB-017 for S006 replay fixture, p95 performance, coverage and dedicated Followup-B traceability script. Backend UserAutopilotControl source/update/pause/resume, current control governance, Flutter server-control binding, notification eligibility policy, notification outbox lifecycle/replay, missed-day recovery planner, item-level memory policy, mastery transition and S006 release-check gates now have local evidence for TC-P02-FUB-001 through TC-P02-FUB-017. Followup-B is not release-ready. Product Base merge is not approved. Followup-A remains locally passed. Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
+`P02-FOLLOWUP-C-S001-FORECAST-HARDENING-20260605` passes independent review for local S001 forecast hardening and closes TC-P02-FUC-001, TC-P02-FUC-002 and TC-P02-FUC-003. Followup-C S002-S007 checkpoint, projection, surface propagation, downgrade, performance, coverage and release evidence remain planned/not started. Followup-C is not release-ready. Product Base merge is not approved. `P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-TRACEABILITY-20260605` remains locally passed for TC-P02-FUB-001..017. Followup-D commercial/release gates remain open.
+
+## 2026-06-05 P02 Followup-C S001 Forecast Hardening Independent Review
+
+Review ID: `P02-FOLLOWUP-C-S001-FORECAST-HARDENING-20260605`
+
+Result: pass for local S001 forecast hardening after migration syntax was fixed and S001 tests, API contract drift, generated Dart analysis and controller regression passed. This review does not approve S002-S007, release readiness or Product Base merge.
+
+Findings:
+- No blocker found for deterministic forecast policy. `ProgressForecastPolicy` maps server-owned goal/plan/checkpoint facts to forecast state, source goal revision, ETA range/unavailable reason, confidence band, risk level, risk reason code, next checkpoint date, explanation metadata, rule version and claim guard.
+- No blocker found for downgrade safety. Partial, unsupported, low-confidence, stale-plan, recovery-required, deleted and unavailable inputs suppress precise ETA claims and return limited/unavailable forecast states with explicit reasons.
+- No blocker found for API and persistence shape. `GoalProgressForecast`, migration `V202606050004__p0_2_followup_c_forecast_hardening.sql`, `GoalAutopilotService` and `GoalAutopilotController` persist and expose the hardened fields through existing forecast read paths without client-owned forecast writes.
+- Fixed before close: the first migration used multi-column `ALTER TABLE ... ADD COLUMN` syntax that H2 rejected. The migration now uses one `ALTER TABLE ... ADD COLUMN` statement per added column, and the controller test passes against the migration.
+- No blocker found for AI claim guard. `ForecastExplanationCandidateValidator` accepts safe candidate-only explanations and rejects forbidden persistent fields, direct ETA writes, entitlement/quota/provider state writes and official/completion/guaranteed-outcome claims. S001 executes deterministic no-provider fallback only.
+- No OpenAPI/generated client drift blocker. `npm run check:api-contract` passed and generated Dart drift hash was synced to `617ce817ef055efb851641a1664211238229d9ed365e01711244da15a75c621c`; generated API analysis passed.
+- Scope boundary is correct. S001 does not claim checkpoint cadence/task library, checkpoint-to-plan update, Home/Queue/Wiki propagation, deletion downgrade, p95 performance, coverage, release approval or Product Base merge.
+
+Validation:
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProgressForecastPolicyTest,ForecastExplanationSchemaTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard test` - passed after migration syntax fix.
+- `npm run check:api-contract` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProgressForecastPolicyTest test && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard test && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ForecastExplanationSchemaTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - passed.
+- `flutter analyze lib/generated/api/speakeasy_api.dart` - passed.
+- `git diff --check` - passed.
+
+Residual risk:
+- Followup-C is not complete, not release-ready and not Product Base-ready.
+- S002-S007 remain implementation gated, including surface propagation, downgrade/data governance, performance/coverage and final traceability script.
+- Future live AI forecast explanations must keep the provider output candidate-only and rerun TC-P02-FUC-003 plus AI eval/schema gates.
+
+## 2026-06-05 P02 Followup-C S000 Document Chain Independent Review
+
+Review ID: `P02-FOLLOWUP-C-S000-DOCUMENT-CHAIN-20260605`
+
+Result: pass for S000 documentation-chain closure. This review approves Followup-C requirements/spec/acceptance/test_cases/traceability readiness for routed implementation planning only. It does not approve S001-S007 implementation, release readiness or Product Base merge.
+
+Findings:
+- No blocker found for required document existence. `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md` and `traceability.md` exist under `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`.
+- No blocker found for slice granularity. S000-S007 map to the agreed plan: document chain, forecast hardening, checkpoint cadence/task library, checkpoint-to-plan update, backend projection, Home/Queue/Wiki propagation, downgrade/data governance and final performance/coverage/review gates.
+- No blocker found for traceability. P02-FUC-FR-000..007 map to P02-FUC-SPEC-000..007, AC-P02-FUC-000..007, TC-P02-FUC-000..022 and P02-FUC-TR-000..007.
+- No blocker found for Stage Scope and policy coverage. Followup-C preserves P02-SI-006, P02-SI-010, P02-SI-012 and P02-SI-013, and keeps P02-PG-001..005 visible in requirements, acceptance and traceability.
+- No blocker found for scope boundary. Followup-C explicitly excludes Followup-A GoalProfile/Diagnostic work, Followup-B control/planner/memory/mastery work and Followup-D release/commercial/Product Base gates.
+- No blocker found for status accuracy. S000 is marked as documentation validation only; S001-S007 contract/code/test/performance/coverage evidence remains planned or not started.
+
+Validation:
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check -- docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces docs/reports/quality_report.md` - passed.
+
+Residual risk:
+- S001-S007 implementation has not started.
+- `scripts/check_p0_2_followup_c_traceability.py` is planned for S007 and does not exist yet.
+- Domain/API/OpenAPI/AI/UX contracts must be routed per slice before implementation completion when required.
+- Followup-C is not release-ready and Product Base merge is not approved.
 
 ## 2026-06-05 P02 Followup-B S006 Replay Performance Traceability Independent Review
 
@@ -384,7 +438,7 @@ Findings:
 - No coverage blocker remains for the implemented local slice. `scripts/check_p0_2_goal_autopilot_coverage.py` passed with backend changed-code line 96.3%, backend branch 88.6% and Flutter feature line 82.1%. Dart coverage tooling does not emit branch coverage, so Flutter branch coverage is not separately measurable by the local toolchain.
 - Product-scope blocker. The Flutter surface currently starts a compact default IELTS goal rather than exposing the full editable `GoalProfile` intake fields for goal type, target score/ability, deadline, daily available time and intensity preference. Backend contracts support these fields, but the user-facing setup is incomplete.
 - Superseded product-scope note. At the time of this local deterministic slice review, pause/resume endpoints were not implemented. This is now partially superseded by `P02-FOLLOWUP-B-CONTROL-SLICE-20260604`, where pause/resume/update-control backend behavior and Flutter binding passed target tests; production notification scheduling and full Followup-B control completion remain open.
-- Product-scope blocker. Progress evidence is surfaced on the Home learn tab only. The planned “at least two product surfaces” behavior is not yet complete because Queue/Wiki propagation remains future work.
+- Product-scope blocker. Progress evidence is surfaced on the Home learn tab only. The required Home/Queue/Wiki surface propagation is not yet complete because Queue/Wiki propagation remains future work; Followup-C S005 now requires all three surfaces for full local closure.
 - No local code blocker found in the implemented deterministic backend/API/Flutter slice after review. The implemented service/controller/adapter tests cover supported-goal routing, diagnostic facts, plan generation, memory policy, next action, checkpoint forecast update, deletion cleanup and OpenAPI path drift.
 
 Validation:
@@ -2096,3 +2150,30 @@ Required corrections:
 
 Residual risk:
 - Production privacy policy still must explicitly approve cross-user reuse of identical normalized TTS cache entries before paid AI release.
+
+## 2026-06-05 P02 Followup-C S000 Follow-up Documentation Correction Independent Review
+
+Result: pass for S000 documentation correction. Followup-C remains implementation-gated; S001-S007 are not implemented and are not release-ready.
+
+Checked step:
+- Reviewed `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md` and `traceability.md` after the S000 follow-up correction.
+- Checked the prior product/software-leader findings: S005 full completion gate, S001 forecast AI/cost boundary, and TC fixture/assertion entry points.
+- Rechecked that S000 documentation completion does not claim S001-S007 code, test, performance, coverage, release or Product Base evidence.
+
+Findings:
+- No blocker. S005 no longer permits one- or two-surface evidence to close full S005; Home, Queue and Wiki are all required for P02-SI-006 and Followup-C local completion.
+- No blocker. S001 now maps to P02-PG-004 and requires forecast AI explanation to respect entitlement, quota and cost fallback, or document deterministic N/A.
+- No blocker. `test_cases.md` now includes slice fixture/assertion entry points for forecast AI fallback, all three surface projections, Queue source-of-truth behavior, stale cache removal and S005 partial-only blocking.
+- No blocker. Traceability rows preserve S001-S007 as planned/not started and keep required downstream contract, code, test and report evidence pending.
+
+Validation:
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check -- docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces docs/reports/quality_report.md` - passed.
+- Stale S005 completion-gate phrase scan across Followup-C docs and `quality_report.md` - no current completion-gate residue.
+
+Required corrections:
+- None for the S000 follow-up documentation correction.
+
+Residual risk:
+- S001-S007 implementation remains blocked until each routed slice updates or explicitly marks N/A the relevant domain/API/OpenAPI/UX/AI contracts.
+- Followup-C is not release-ready and Product Base merge is not approved.

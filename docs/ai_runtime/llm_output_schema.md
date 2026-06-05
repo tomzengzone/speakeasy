@@ -293,6 +293,51 @@ Validation rules:
 - Low confidence or partial support must block high-precision ETA wording.
 - Candidate output must not contain official certification, guaranteed outcome, payment status, raw transcript, raw audio, provider secret or unrestricted personal data fields.
 
+### Followup-C Forecast Explanation Candidate
+
+Owning increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`。
+Traceability: `AC-P02-FUC-001`, `TC-P02-FUC-003`。
+
+S001 does not require a live LLM/provider call. If a provider-backed explanation is unavailable, blocked by policy, quota or cost, or intentionally not configured, backend must return deterministic explanation metadata on `ProgressForecast` and keep this candidate schema as the only allowed future provider shape.
+
+```json
+{
+  "schema_version": 1,
+  "output_type": "followup_c_forecast_explanation_candidate",
+  "forecast_id": "forecast_id_sample",
+  "goal_profile_id": "goal_profile_id_sample",
+  "source_goal_revision": 1,
+  "forecast_state": "limited",
+  "risk_reason_code": "checkpoint_evidence_missing",
+  "learner_visible_explanation": "The ETA is broad until a checkpoint confirms the current gap.",
+  "guardrails": {
+    "official_score_equivalence": false,
+    "goal_completion_claim_allowed": false,
+    "guaranteed_eta_claim_allowed": false,
+    "persistent_decision_fields_present": false,
+    "forbidden_fields_detected": []
+  },
+  "recoverable_error": null
+}
+```
+
+Allowed `forecast_state` values:
+- `ready`
+- `limited`
+- `unavailable`
+- `deleted`
+- `unsupported`
+- `low_confidence`
+- `stale_plan`
+- `recovery_required`
+
+Followup-C validation rules:
+- `output_type` must be `followup_c_forecast_explanation_candidate`.
+- Candidate text may explain deterministic `ProgressForecast` fields but cannot set `eta_date`, `eta_range`, `goal_completion_claim_allowed`, `official_score_equivalence`, `forecast_state`, entitlement, quota, billing state, checkpoint status or plan state.
+- Candidate output must not contain `goal_completed`, `official_score`, `certified`, `guaranteed_eta`, `eta_date`, `eta_range_start`, `eta_range_end`, `entitlement`, `quota_state`, `billing_state`, raw transcript, raw audio, raw provider payload or sensitive diagnostic details.
+- If provider use is blocked or not configured, backend returns deterministic fallback metadata such as `explanation_source=deterministic_policy` and `ai_explanation_unavailable_reason=deterministic_no_provider_path`.
+- Invalid, forbidden or low-confidence candidate output must not mutate `ProgressForecast`, `GoalProfile`, `OutcomeCheckpoint`, plan state, entitlement or billing facts.
+
 ## P0.2 Followup-B Mastery Transition Explanation Candidate
 
 Owning increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`。
