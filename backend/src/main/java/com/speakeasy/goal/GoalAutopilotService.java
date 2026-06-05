@@ -32,6 +32,7 @@ public class GoalAutopilotService {
   private static final String NOTIFICATION_RULE_VERSION = NotificationEligibilityPolicy.RULE_VERSION;
   private static final String RECOVERY_RULE_VERSION = MissedDayRecoveryPlanner.RULE_VERSION;
   private static final String MEMORY_RULE_VERSION = MemoryCurvePolicy.RULE_VERSION;
+  private static final String CHECKPOINT_PLAN_RULE_VERSION = "fuc-checkpoint-plan-v1";
   private static final String DEFAULT_TIMEZONE = "Asia/Shanghai";
   private static final String TIME_PATTERN = "^([01][0-9]|2[0-3]):[0-5][0-9]$";
   private static final Collection<String> ACTIVE_GOAL_STATUSES =
@@ -598,7 +599,20 @@ public class GoalAutopilotService {
   public CheckpointResult submitCheckpoint(UUID userId, CheckpointInput input, String requestId) {
     GoalProfile profile = requireActiveGoal(userId);
     GoalDiagnosticAssessment diagnostic = requireDiagnostic(profile);
+    Instant now = Instant.now(clock);
+    GoalAutopilotControl control = ensureControl(profile, now);
+    if ("paused".equals(control.getControlStatus())) {
+      throw new ApiException(
+          HttpStatus.CONFLICT,
+          "CONFLICT",
+          "Goal autopilot is paused.",
+          Map.of("reason_code", "paused", "control_id", control.getControlId().toString()));
+    }
     String checkpointType = cleanOrDefault(input.checkpointType(), "weekly_mock");
+    String requestedStatus = cleanOrDefault(input.resultStatus(), "recorded");
+    if (!Set.of("recorded", "failed", "skipped").contains(requestedStatus)) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "result_status is invalid.");
+    }
     CheckpointCadencePolicy.Decision taskDecision = checkpointTaskDecision(profile);
     if ("CheckpointUnavailable".equals(taskDecision.checkpointState())) {
       throw new ApiException(
@@ -610,27 +624,85 @@ public class GoalAutopilotService {
     if (!allowedCheckpointTypes(profile).contains(checkpointType)) {
       throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "checkpoint_type is invalid.");
     }
-    Instant now = Instant.now(clock);
-    String confidence = confidenceAfterCheckpoint(input, diagnostic);
+    String confidence = "recorded".equals(requestedStatus) ? confidenceAfterCheckpoint(input, diagnostic) : "low";
+    String resultStatus = checkpointResultStatus(requestedStatus, confidence);
+    String reasonCode = checkpointReasonCode(resultStatus);
     String summary = checkpointSummary(input, diagnostic);
+    PlanFacts planFactsBefore = planFacts(profile);
+    PlanUpdateSignalView baseSignal = checkpointPlanSignal(resultStatus, planFactsBefore, control);
     GoalOutcomeCheckpoint checkpoint = checkpoints.save(new GoalOutcomeCheckpoint(
         UUID.randomUUID(),
         profile.getGoalProfileId(),
         userId,
         checkpointType,
         "biweekly_mock".equals(checkpointType) ? "biweekly" : taskDecision.cadence(),
-        "low".equals(confidence) ? "low_confidence" : "recorded",
+        resultStatus,
         confidence,
         summary,
-        "checkpoint_replan",
-        "checkpoint_updated_gap",
+        baseSignal.signalType(),
+        baseSignal.reasonCode(),
         now));
-    markPlansStale(profile.getGoalProfileId(), "checkpoint_updated_gap", now);
-    GoalProgressForecast forecast = upsertForecast(profile, diagnostic, "checkpoint", confidence, now);
+    if ("checkpoint_replan".equals(baseSignal.signalType())) {
+      markPlansStale(profile.getGoalProfileId(), baseSignal.reasonCode(), now);
+      ensureControl(profile, now);
+    }
+    GoalProgressForecast forecast = upsertForecast(profile, diagnostic, checkpointForecastSource(resultStatus), confidence, now);
     applyCheckpointMasteryTransition(profile, checkpoint, confidence, now);
+    PlannerReplayAudit replayAudit = writeCheckpointPlanReplay(
+        profile, checkpoint, input, taskDecision, control, planFactsBefore, forecast, baseSignal, now);
     audit(userId, "goal_autopilot_checkpoint_recorded", "checkpoint:" + checkpoint.getCheckpointId(), requestId, now);
     return new CheckpointResult(
-        checkpointView(checkpoint), forecastView(forecast), new PlanUpdateSignalView("checkpoint_replan", "checkpoint_updated_gap"));
+        checkpointView(checkpoint),
+        forecastView(forecast),
+        new PlanUpdateSignalView(
+            baseSignal.signalType(),
+            baseSignal.reasonCode(),
+            checkpoint.getCheckpointId(),
+            CHECKPOINT_PLAN_RULE_VERSION,
+            replayAudit.getInputSnapshotHash(),
+            replayAudit.getReplayAuditId()));
+  }
+
+  private String checkpointResultStatus(String requestedStatus, String confidence) {
+    if ("failed".equals(requestedStatus) || "skipped".equals(requestedStatus)) {
+      return requestedStatus;
+    }
+    return "low".equals(confidence) ? "low_confidence" : "recorded";
+  }
+
+  private String checkpointReasonCode(String resultStatus) {
+    return switch (resultStatus) {
+      case "recorded" -> "checkpoint_updated_gap";
+      case "low_confidence" -> "low_confidence";
+      case "failed" -> "checkpoint_failed";
+      case "skipped" -> "checkpoint_skipped";
+      default -> "unsupported_goal";
+    };
+  }
+
+  private String checkpointForecastSource(String resultStatus) {
+    return switch (resultStatus) {
+      case "skipped" -> "skipped";
+      case "failed" -> "checkpoint_failed";
+      default -> "checkpoint";
+    };
+  }
+
+  private PlanUpdateSignalView checkpointPlanSignal(
+      String resultStatus, PlanFacts planFactsBefore, GoalAutopilotControl control) {
+    if (!"recorded".equals(resultStatus)) {
+      return new PlanUpdateSignalView("none", checkpointReasonCode(resultStatus));
+    }
+    if ("blocked_by_policy".equals(control.getControlStatus())) {
+      return new PlanUpdateSignalView("stale_plan", "control_blocked");
+    }
+    if (planFactsBefore.recoveryRequired()) {
+      return new PlanUpdateSignalView("recovery_replan", "recovery_required");
+    }
+    if (planFactsBefore.stalePlan()) {
+      return new PlanUpdateSignalView("stale_plan", "stale_plan");
+    }
+    return new PlanUpdateSignalView("checkpoint_replan", "checkpoint_updated_gap");
   }
 
   private GoalAutopilotControl ensureControl(GoalProfile profile, Instant now) {
@@ -863,7 +935,8 @@ public class GoalAutopilotService {
         : null;
     boolean missing = activeBackplan == null && staleBackplan == null
         || activeDailyPlan == null && staleDailyPlan == null;
-    return new PlanFacts(missing, staleBackplan != null || staleDailyPlan != null);
+    boolean recoveryRequired = activeDailyPlan != null && "recovery_required".equals(activeDailyPlan.getStatus());
+    return new PlanFacts(missing, staleBackplan != null || staleDailyPlan != null, recoveryRequired);
   }
 
   private UUID nextPlanItemIdOrNull(GoalProfile profile) {
@@ -1046,7 +1119,7 @@ public class GoalAutopilotService {
     String confidence = overrideConfidence == null ? diagnostic.getConfidenceBand() : overrideConfidence;
     LocalDate today = LocalDate.now(clock);
     PlanFacts facts = planFacts(profile);
-    boolean recoveryRequired = "skipped".equals(source) || "deferred".equals(source);
+    boolean recoveryRequired = facts.recoveryRequired() || "skipped".equals(source) || "deferred".equals(source);
     ProgressForecastPolicy.Decision decision = progressForecastPolicy.evaluate(new ProgressForecastPolicy.Input(
         ProgressForecastPolicy.RULE_VERSION,
         profile.getSupportStatus(),
@@ -1386,6 +1459,84 @@ public class GoalAutopilotService {
         decision.getRuleVersion(),
         replayHash,
         now));
+  }
+
+  private PlannerReplayAudit writeCheckpointPlanReplay(
+      GoalProfile profile,
+      GoalOutcomeCheckpoint checkpoint,
+      CheckpointInput input,
+      CheckpointCadencePolicy.Decision taskDecision,
+      GoalAutopilotControl control,
+      PlanFacts planFactsBefore,
+      GoalProgressForecast forecast,
+      PlanUpdateSignalView signal,
+      Instant now) {
+    String inputHash = checkpointPlanInputSnapshotHash(
+        profile, checkpoint, input, taskDecision, control, planFactsBefore);
+    String outputHash = sha256Prefixed(Map.of(
+        "checkpoint_id", checkpoint.getCheckpointId().toString(),
+        "result_status", checkpoint.getResultStatus(),
+        "confidence_band", checkpoint.getConfidenceBand(),
+        "forecast_id", forecast.getForecastId().toString(),
+        "forecast_state", forecast.getForecastState(),
+        "risk_reason_code", forecast.getRiskReasonCode(),
+        "signal_type", signal.signalType(),
+        "reason_code", signal.reasonCode(),
+        "rule_version", CHECKPOINT_PLAN_RULE_VERSION));
+    String replayHash = sha256Prefixed(Map.of(
+        "input", inputHash,
+        "output", outputHash,
+        "expected_decision", signal.signalType(),
+        "reason_code", signal.reasonCode(),
+        "rule_version", CHECKPOINT_PLAN_RULE_VERSION));
+    return replayAudits.save(new PlannerReplayAudit(
+        UUID.randomUUID(),
+        profile.getUserId(),
+        "checkpoint_plan_update",
+        "checkpoint:" + checkpoint.getCheckpointId(),
+        inputHash,
+        outputHash,
+        signal.signalType(),
+        signal.reasonCode(),
+        CHECKPOINT_PLAN_RULE_VERSION,
+        replayHash,
+        now));
+  }
+
+  private String checkpointPlanInputSnapshotHash(
+      GoalProfile profile,
+      GoalOutcomeCheckpoint checkpoint,
+      CheckpointInput input,
+      CheckpointCadencePolicy.Decision taskDecision,
+      GoalAutopilotControl control,
+      PlanFacts planFactsBefore) {
+    TreeMap<String, String> snapshot = new TreeMap<>();
+    snapshot.put("user_id", profile.getUserId().toString());
+    snapshot.put("goal_profile_id", profile.getGoalProfileId().toString());
+    snapshot.put("goal_revision", Integer.toString(profile.getRevision()));
+    snapshot.put("checkpoint_id", checkpoint.getCheckpointId().toString());
+    snapshot.put("checkpoint_type", checkpoint.getCheckpointType());
+    snapshot.put("requested_result_status", cleanOrDefault(input.resultStatus(), "recorded"));
+    snapshot.put("result_status", checkpoint.getResultStatus());
+    snapshot.put("confidence_band", checkpoint.getConfidenceBand());
+    snapshot.put("score_hint", nullableHashValue(input.scoreHint()));
+    snapshot.put("transcript_hash", redactedInputHash(input.transcript()));
+    snapshot.put("audio_ref_hash", redactedInputHash(input.audioRef()));
+    snapshot.put("task_state", taskDecision.checkpointState());
+    snapshot.put("task_due_status", taskDecision.dueStatus());
+    snapshot.put("task_rule_version", taskDecision.ruleVersion());
+    snapshot.put("support_status", profile.getSupportStatus());
+    snapshot.put("control_status", control.getControlStatus());
+    snapshot.put("plan_missing_before", Boolean.toString(planFactsBefore.missingPlan()));
+    snapshot.put("plan_stale_before", Boolean.toString(planFactsBefore.stalePlan()));
+    snapshot.put("recovery_required_before", Boolean.toString(planFactsBefore.recoveryRequired()));
+    snapshot.put("rule_version", CHECKPOINT_PLAN_RULE_VERSION);
+    return sha256Prefixed(snapshot);
+  }
+
+  private String redactedInputHash(String value) {
+    String cleaned = clean(value);
+    return cleaned == null ? "<null>" : sha256Prefixed(cleaned);
   }
 
   private RecoveryPlanResult recoveryPlanResult(GoalRecoveryPlanDecision decision) {
@@ -2005,7 +2156,9 @@ public class GoalAutopilotService {
         checkpoint.getCadence(),
         checkpoint.getResultStatus(),
         checkpoint.getConfidenceBand(),
-        checkpoint.getSummary());
+        checkpoint.getSummary(),
+        checkpoint.getPlanUpdateSignal(),
+        checkpoint.getReasonCode());
   }
 
   private CheckpointTaskDecisionView checkpointTaskView(CheckpointCadencePolicy.Decision decision) {
@@ -2083,6 +2236,13 @@ public class GoalAutopilotService {
   }
 
   private String checkpointSummary(CheckpointInput input, GoalDiagnosticAssessment diagnostic) {
+    String requestedStatus = cleanOrDefault(input.resultStatus(), "recorded");
+    if ("failed".equals(requestedStatus)) {
+      return "Checkpoint failed; risk state was updated without changing goal completion or ETA precision.";
+    }
+    if ("skipped".equals(requestedStatus)) {
+      return "Checkpoint was skipped; recovery planning is required before precise forecast updates.";
+    }
     if ("low".equals(confidenceAfterCheckpoint(input, diagnostic))) {
       return "Checkpoint recorded with low confidence; more evidence is required before precise forecast updates.";
     }
@@ -2186,7 +2346,7 @@ public class GoalAutopilotService {
       String pressureLevel,
       Integer estimatedMinutes) {}
 
-  public record CheckpointInput(String checkpointType, String transcript, String audioRef, Double scoreHint) {}
+  public record CheckpointInput(String checkpointType, String transcript, String audioRef, Double scoreHint, String resultStatus) {}
 
   public record SummaryView(
       GoalProfileView goalProfile,
@@ -2467,9 +2627,26 @@ public class GoalAutopilotService {
   public record ForecastExplanationView(String key, String source, String fallbackReason, boolean candidateOnly) {}
 
   public record CheckpointView(
-      UUID checkpointId, String checkpointType, String cadence, String resultStatus, String confidenceBand, String summary) {}
+      UUID checkpointId,
+      String checkpointType,
+      String cadence,
+      String resultStatus,
+      String confidenceBand,
+      String summary,
+      String planUpdateSignal,
+      String reasonCode) {}
 
-  public record PlanUpdateSignalView(String signalType, String reasonCode) {}
+  public record PlanUpdateSignalView(
+      String signalType,
+      String reasonCode,
+      UUID sourceCheckpointId,
+      String ruleVersion,
+      String inputSnapshotHash,
+      UUID replayAuditId) {
+    public PlanUpdateSignalView(String signalType, String reasonCode) {
+      this(signalType, reasonCode, null, null, null, null);
+    }
+  }
 
-  private record PlanFacts(boolean missingPlan, boolean stalePlan) {}
+  private record PlanFacts(boolean missingPlan, boolean stalePlan, boolean recoveryRequired) {}
 }

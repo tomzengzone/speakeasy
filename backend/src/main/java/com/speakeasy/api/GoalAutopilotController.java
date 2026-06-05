@@ -214,7 +214,7 @@ public class GoalAutopilotController {
     return CheckpointResponse.from(service.submitCheckpoint(
         currentUser.userId(),
         new GoalAutopilotService.CheckpointInput(
-            request.checkpointType(), request.transcript(), request.audioRef(), request.scoreHint()),
+            request.checkpointType(), request.transcript(), request.audioRef(), request.scoreHint(), request.resultStatus()),
         requestId));
   }
 
@@ -289,7 +289,8 @@ public class GoalAutopilotController {
       @NotBlank String checkpointType,
       String transcript,
       String audioRef,
-      Double scoreHint) {}
+      Double scoreHint,
+      String resultStatus) {}
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   public record GoalAutopilotSummaryResponse(
@@ -908,10 +909,24 @@ public class GoalAutopilotController {
   }
 
   public record OutcomeCheckpointDto(
-      UUID checkpointId, String checkpointType, String cadence, String resultStatus, String confidenceBand, String summary) {
+      UUID checkpointId,
+      String checkpointType,
+      String cadence,
+      String resultStatus,
+      String confidenceBand,
+      String summary,
+      String planUpdateSignal,
+      String reasonCode) {
     static OutcomeCheckpointDto from(GoalAutopilotService.CheckpointView view) {
       return new OutcomeCheckpointDto(
-          view.checkpointId(), view.checkpointType(), view.cadence(), view.resultStatus(), view.confidenceBand(), view.summary());
+          view.checkpointId(),
+          view.checkpointType(),
+          view.cadence(),
+          view.resultStatus(),
+          view.confidenceBand(),
+          view.summary(),
+          view.planUpdateSignal(),
+          view.reasonCode());
     }
   }
 
@@ -972,9 +987,22 @@ public class GoalAutopilotController {
     }
   }
 
-  public record PlanUpdateSignalDto(String signalType, String reasonCode) {
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record PlanUpdateSignalDto(
+      String signalType,
+      String reasonCode,
+      UUID sourceCheckpointId,
+      String ruleVersion,
+      String inputSnapshotHash,
+      UUID replayAuditId) {
     static PlanUpdateSignalDto from(GoalAutopilotService.PlanUpdateSignalView view) {
-      return new PlanUpdateSignalDto(view.signalType(), view.reasonCode());
+      return new PlanUpdateSignalDto(
+          view.signalType(),
+          view.reasonCode(),
+          view.sourceCheckpointId(),
+          view.ruleVersion(),
+          view.inputSnapshotHash(),
+          view.replayAuditId());
     }
   }
 }

@@ -112,6 +112,7 @@ Owning increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory
 - States: `loading`, `current`, `low_confidence`, `partial_supported`, `checkpoint_due`, `submitting_checkpoint`, `checkpoint_recorded`, `plan_update_required`, `recoverable_error`.
 - API dependencies: `GET /goal-autopilot/forecast`, `GET /goal-autopilot/checkpoints/task`, `POST /goal-autopilot/checkpoints`, `GET /goal-autopilot/summary`.
 - Followup-C S002 boundary: checkpoint due/not-due/limited/unavailable state, task type, evidence requirements, scoring boundary and limitation reason are rendered from the backend task decision; the UI must not infer cadence or full-task eligibility locally.
+- Followup-C S003 boundary: after checkpoint submit, UI must render `OutcomeCheckpoint.result_status`, `plan_update_signal.signal_type`, `plan_update_signal.reason_code` and optional replay metadata from the backend response; it must not infer goal completion, ETA precision, stale/replan status or next-action advancement locally. Paused/control-blocked/recovery-required/stale responses show the backend reason and route to replan/recovery instead of auto-starting the next action.
 - Empty state: no forecast until active goal, diagnostic and plan exist; show required upstream step.
 - Loading state: recompute or submit keeps previous forecast visible as stale.
 - Error state: low confidence and partial support block high-precision ETA; checkpoint failure can be retried without claiming goal completion.

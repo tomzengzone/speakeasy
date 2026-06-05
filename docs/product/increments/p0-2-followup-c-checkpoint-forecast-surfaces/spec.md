@@ -1,7 +1,7 @@
 # P0.2 Followup-C Spec：周期复测、预测与多产品面加固
 
 ## 状态
-S001 forecast hardening and S002 checkpoint task library locally implemented and tested / S003-S007 implementation gated - 本文件把 Followup-C requirements 下沉为可验收的行为规格，并建立 S000-S007 slice routing。S000 文档链和实现前契约规划已通过验证；S001 已完成 ProgressForecast domain/API/OpenAPI/AI fallback 合同、后端代码和 TC-P02-FUC-001..003 测试执行；S002 已完成 Checkpoint cadence/task library domain/API/OpenAPI/AI/UX 合同、后端代码和 TC-P02-FUC-004..006 测试执行；S003-S007 代码、契约更新、测试执行、coverage、performance 和 release evidence 均未开始。Followup-C is not release-ready；Product Base merge is not approved。
+S001 forecast hardening、S002 checkpoint task library and S003 checkpoint-to-plan locally implemented and tested / S004-S007 implementation gated - 本文件把 Followup-C requirements 下沉为可验收的行为规格，并建立 S000-S007 slice routing。S000 文档链和实现前契约规划已通过验证；S001 已完成 ProgressForecast domain/API/OpenAPI/AI fallback 合同、后端代码和 TC-P02-FUC-001..003 测试执行；S002 已完成 Checkpoint cadence/task library domain/API/OpenAPI/AI/UX 合同、后端代码和 TC-P02-FUC-004..006 测试执行；S003 已完成 Checkpoint-to-plan domain/API/OpenAPI/AI/UX 合同、后端代码、TC-P02-FUC-007..009 测试执行、coverage evidence 和独立审核；S004-S007 代码、契约更新、测试执行、performance 和 release evidence 均未开始。Followup-C is not release-ready；Product Base merge is not approved。
 
 ## 上游引用
 - Increment definition：`docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/definition.md`
@@ -49,7 +49,7 @@ Followup-C implementation must proceed by routed slice. Later slices may consume
 | P02-FUC-S000 | Documentation chain and implementation routing | `DocumentReady`, `ImplementationBlocked` | docs only | AC-P02-FUC-000 / TC-P02-FUC-000 | requirements/spec/acceptance/test_cases/traceability/definition updated; independent review recorded |
 | P02-FUC-S001 | ProgressForecast model hardening | `ForecastReady`, `ForecastLimited`, `ForecastUnavailable` | forecast service/domain/API/AI explanation candidate | AC-P02-FUC-001 / TC-P02-FUC-001..003 | backend/API/AI-schema tests for gap, ETA range, confidence, risk, claim guard, low-confidence/partial/unsupported limitation and AI explanation entitlement/quota/cost fallback or deterministic N/A |
 | P02-FUC-S002 | Checkpoint cadence and task library | `CheckpointDue`, `CheckpointNotDue`, `CheckpointLimited`, `CheckpointUnavailable` | checkpoint cadence/task library domain/API/content/AI boundary | AC-P02-FUC-002 / TC-P02-FUC-004..006 | Passed locally: task library and cadence tests for weekly/biweekly, goal type coverage, content limitation and entitlement/cost fallback |
-| P02-FUC-S003 | Checkpoint-to-plan update | `CheckpointRecorded`, `CheckpointLowConfidence`, `CheckpointFailed`, `PlanStaleForCheckpoint` | checkpoint result, forecast recompute, plan stale/replan signal | AC-P02-FUC-003 / TC-P02-FUC-007..009 | checkpoint result tests prove forecast update, stale/replan signal, no false goal completion and control/recovery compatibility |
+| P02-FUC-S003 | Checkpoint-to-plan update | `CheckpointRecorded`, `CheckpointLowConfidence`, `CheckpointFailed`, `PlanStaleForCheckpoint` | checkpoint result, forecast recompute, plan stale/replan signal | AC-P02-FUC-003 / TC-P02-FUC-007..009 | Passed locally: checkpoint result tests prove forecast update, stale/replan signal, replay audit evidence, no false goal completion and control/recovery compatibility |
 | P02-FUC-S004 | Backend goal-progress projection | `ProjectionReady`, `ProjectionLimited`, `ProjectionUnavailable` | projection domain/API/source ownership | AC-P02-FUC-004 / TC-P02-FUC-010..012 | projection source-of-truth tests and OpenAPI/generated client drift checks |
 | P02-FUC-S005 | Home/Queue/Wiki surface propagation | `HomeProjectionRendered`, `QueueProjectionRendered`, `WikiProjectionRendered` | Flutter adapter/widgets and existing surface APIs | AC-P02-FUC-005 / TC-P02-FUC-013..016 | Home, Queue and Wiki all covered by widget/integration tests; one- or two-surface evidence is partial only |
 | P02-FUC-S006 | Surface deletion/unavailable downgrade | `SurfaceDowngraded`, `SurfaceRemoved`, `SensitiveProgressHidden` | data governance, account deletion, unavailable projection, Flutter cache invalidation | AC-P02-FUC-006 / TC-P02-FUC-017..019 | deletion/unavailable/unsupported/low-confidence downgrade tests and privacy review |
@@ -149,7 +149,7 @@ The S005 full completion gate requires Home, expression queue and personal Wiki 
 ## P02-FUC-SPEC-000 S000 Document Chain And Slice Routing
 - S000 creates or updates `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `definition.md` and `traceability.md`.
 - S000 establishes S000-S007 routing, FR/Spec/AC/TC IDs, gap register, evidence columns and report entry points.
-- S000 must keep not-yet-implemented slices as planned/not started and must not claim code evidence. After S001 execution, S001 may claim only local forecast-hardening code/test evidence.
+- S000 must keep not-yet-implemented slices as planned/not started and must not claim code evidence. After S001/S002/S003 execution, those slices may claim only their own local code/test evidence.
 - S000 review must check Stage Scope IDs, policy gates, excluded scope, AC-to-TC mapping and release/Product Base non-claims.
 
 ## P02-FUC-SPEC-001 ProgressForecast Model Hardening

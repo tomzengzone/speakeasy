@@ -5,7 +5,7 @@ class SpeakeasyApiContract {
   const SpeakeasyApiContract._();
 
   static const String openApiSha256 =
-      '3bacdd487b700676793dd2a2c4629d330079cf34dbf2f1e35f9ed46f8f166351';
+      '226c6d86a691489c8c3cfeba8aa0735aae52aef12ce7d5d561cb46a56ce52860';
 
   static const List<String> pathTemplates = <String>[
     '/achievements/status',

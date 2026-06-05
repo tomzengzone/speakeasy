@@ -1,7 +1,7 @@
 # P0.2 Followup-C Acceptance Criteria：周期复测、预测与多产品面加固
 
 ## 状态
-S001 and S002 acceptance locally executed / S003-S007 implementation gated - 本文件基于 Followup-C requirements 和 spec 定义验收标准。S000 文档链验收已通过 TC-P02-FUC-000；S001 ProgressForecast model hardening 已通过 TC-P02-FUC-001..003；S002 Checkpoint cadence and task library 已通过 TC-P02-FUC-004..006；S003-S007 实现前 AC 规划完成但代码、契约、测试、coverage、performance 和 release evidence 均为 planned/not started。Followup-C is not release-ready；Product Base merge is not approved。
+S001、S002 and S003 acceptance locally executed / S004-S007 implementation gated - 本文件基于 Followup-C requirements 和 spec 定义验收标准。S000 文档链验收已通过 TC-P02-FUC-000；S001 ProgressForecast model hardening 已通过 TC-P02-FUC-001..003；S002 Checkpoint cadence and task library 已通过 TC-P02-FUC-004..006；S003 Checkpoint-to-plan update 已通过 TC-P02-FUC-007..009；S004-S007 实现前 AC 规划完成但代码、契约、测试、performance 和 release evidence 均为 planned/not started。Followup-C is not release-ready；Product Base merge is not approved。
 
 ## 上游来源
 - `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/requirements.md`
@@ -27,17 +27,17 @@ S001 and S002 acceptance locally executed / S003-S007 implementation gated - 本
 | P02-FUC-S000 | Followup-C document chain and routing | AC-P02-FUC-000 | TC-P02-FUC-000 | `git diff --check`, traceability review, quality review |
 | P02-FUC-S001 | ProgressForecast model hardening | AC-P02-FUC-001 | TC-P02-FUC-001..003 | backend/API forecast tests and claim guard review |
 | P02-FUC-S002 | Checkpoint cadence and task library | AC-P02-FUC-002 | TC-P02-FUC-004..006 | Passed locally: cadence/task library tests, API/OpenAPI contract drift and content/scoring review |
-| P02-FUC-S003 | Checkpoint-to-plan update | AC-P02-FUC-003 | TC-P02-FUC-007..009 | checkpoint result, forecast update and stale/replan tests |
+| P02-FUC-S003 | Checkpoint-to-plan update | AC-P02-FUC-003 | TC-P02-FUC-007..009 | Passed locally: checkpoint result, forecast update, stale/replan, replay audit and control/recovery tests |
 | P02-FUC-S004 | Backend goal-progress projection | AC-P02-FUC-004 | TC-P02-FUC-010..012 | projection source-of-truth tests and contract checks |
 | P02-FUC-S005 | Home/Queue/Wiki surface propagation | AC-P02-FUC-005 | TC-P02-FUC-013..016 | widget/integration tests for Home, Queue and Wiki; partial surface routes cannot close S005 |
 | P02-FUC-S006 | Surface deletion/unavailable downgrade | AC-P02-FUC-006 | TC-P02-FUC-017..019 | deletion/unavailable/unsupported/low-confidence downgrade tests |
 | P02-FUC-S007 | Automated tests, performance, coverage and final review | AC-P02-FUC-007 | TC-P02-FUC-020..022 | p95 budgets, coverage, traceability script and independent review |
 
 ## AC-P02-FUC-000 S000 Document Chain And Slice Routing
-- Given Followup-C implementation has not started, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `definition.md` and `traceability.md` must exist and reference the same increment id.
+- Given the S000 pre-implementation documentation gate runs, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `definition.md` and `traceability.md` must exist and reference the same increment id.
 - Given S000 is complete, the documents must contain S000-S007 slice routing and map every slice to FR, Spec, AC and TC IDs or a documented N/A for docs-only scope.
 - Given S000 is complete, traceability must preserve Stage Scope IDs P02-SI-006, P02-SI-010, P02-SI-012 and P02-SI-013 and applicable P02-PG-001..005 references.
-- Given S000 is complete, any not-yet-routed slice code evidence and test execution evidence must remain `Not started` or `planned`; after S001 execution, S001 may cite only TC-P02-FUC-001..003 local forecast-hardening evidence and no release-ready claim may appear.
+- Given S000 is complete, any not-yet-routed slice code evidence and test execution evidence must remain `Not started` or `planned`; after S001/S002/S003 execution, each slice may cite only its own local evidence and no release-ready claim may appear.
 - Given independent review runs, it must find no blocker in slice granularity, upstream/downstream path, AC-to-TC mapping, status wording or release/Product Base boundary.
 
 ## AC-P02-FUC-001 ProgressForecast Model Hardening
@@ -106,4 +106,4 @@ Every AC-P02-FUC-000 through AC-P02-FUC-007 maps to at least one stable TC-P02-F
 ## 下游交接边界
 - `test_cases.md`、`traceability.md`、domain/API/OpenAPI/UX/AI contracts 和 reports may consume this file as the AC source of truth, but they must not renumber or redefine AC-P02-FUC-000 through AC-P02-FUC-007 without a versioned Followup-C change.
 - Test execution status belongs in `test_cases.md`, `docs/reports/test_report.md` and `traceability.md`; this file may summarize current status but must not replace executable Test Evidence.
-- S001 local forecast-hardening pass does not approve S002-S007 implementation, Followup-C completion, release readiness or Product Base merge.
+- S001 local forecast-hardening pass, S002 local checkpoint task-library pass and S003 local checkpoint-to-plan pass do not approve S004-S007 implementation, Followup-C completion, release readiness or Product Base merge.

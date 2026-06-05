@@ -1,7 +1,40 @@
 # Quality Report
 
 ## Current Status
-`P02-FOLLOWUP-C-S002-CHECKPOINT-TASK-LIBRARY-20260605` passes independent review for local S002 checkpoint cadence/task-library behavior and closes TC-P02-FUC-004, TC-P02-FUC-005 and TC-P02-FUC-006 after S002 policy, API, contract drift, generated Dart, coverage and regression gates passed. S001 forecast hardening remains locally passed for TC-P02-FUC-001..003. Followup-C S003-S007 checkpoint-to-plan update, backend projection, Home/Queue/Wiki propagation, downgrade/data governance, performance, coverage and release evidence remain planned/not started. Followup-C is not release-ready. Product Base merge is not approved. `P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-TRACEABILITY-20260605` remains locally passed for TC-P02-FUB-001..017. Followup-D commercial/release gates remain open.
+`P02-FOLLOWUP-C-S003-CHECKPOINT-PLAN-UPDATE-20260605` passes independent review for local S003 checkpoint-to-plan behavior and closes TC-P02-FUC-007, TC-P02-FUC-008 and TC-P02-FUC-009 after S003 API, replay audit, control/recovery, generated Dart, changed-code coverage and regression gates passed. S001 forecast hardening remains locally passed for TC-P02-FUC-001..003, and S002 checkpoint task library remains locally passed for TC-P02-FUC-004..006. Followup-C S004-S007 backend projection, Home/Queue/Wiki propagation, downgrade/data governance, performance, final traceability and release evidence remain planned/not started. Followup-C is not release-ready. Product Base merge is not approved. `P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-TRACEABILITY-20260605` remains locally passed for TC-P02-FUB-001..017. Followup-D commercial/release gates remain open.
+
+## 2026-06-05 P02 Followup-C S003 Checkpoint Plan Update Independent Review
+
+Review ID: `P02-FOLLOWUP-C-S003-CHECKPOINT-PLAN-UPDATE-20260605`
+
+Result: pass for local S003 checkpoint-to-plan behavior after checkpoint result/status handling, replay audit evidence, OpenAPI/generated Dart drift, control/recovery compatibility, changed-code coverage and regression validation passed. This review does not approve S004-S007, release readiness or Product Base merge.
+
+Findings:
+- No blocker found for checkpoint result state handling. `POST /goal-autopilot/checkpoints` accepts omitted/recorded, failed and skipped result intents, derives low confidence from evidence quality, rejects invalid result status, and preserves unsupported/unavailable task rejection through the server-owned S002 task library.
+- No blocker found for no-false-completion behavior. Low-confidence, failed and skipped checkpoint paths return conservative forecast/claim-guard output, do not expose precise ETA and do not emit `checkpoint_replan`; skipped checkpoints move forecast risk into recovery-required handling.
+- No blocker found for control/recovery compatibility. Paused autopilot rejects checkpoint submission before persistence; recovery-required plans return `recovery_replan/recovery_required`; missing-plan/control-blocked accepted checkpoints return `stale_plan/control_blocked` instead of advancing next action silently.
+- No blocker found for replay/audit evidence. S003 writes one `checkpoint_plan_update` `PlannerReplayAudit` per checkpoint submit with source checkpoint ref, redacted input snapshot hash, output hash, expected decision, reason code, rule version `fuc-checkpoint-plan-v1` and replay hash.
+- No blocker found for data minimization. Checkpoint response and replay-audit response expose hashes and ids, while raw checkpoint transcript/audio values are not returned. The new replay test asserts learner transcript text is absent from the response.
+- No API contract drift blocker. OpenAPI includes S003 `OutcomeCheckpoint` result/status fields and `PlanUpdateSignal` replay metadata, including `stale_plan`; generated Dart drift hash was synced to `226c6d86a691489c8c3cfeba8aa0735aae52aef12ce7d5d561cb46a56ce52860`.
+- No test coverage blocker. TC-P02-FUC-007..009 cover accepted, low-confidence, failed, skipped, invalid status, paused, recovery-required and control-blocked branches; changed backend source coverage is line 98.4% and branch 92.0%.
+- Scope boundary is correct. S003 does not claim backend goal-progress projection, Home/Queue/Wiki propagation, deletion/unavailable downgrade, p95 performance closure, final traceability script, release readiness, Product Base merge, Flutter surface changes or live AI provider behavior.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc003CheckpointUpdatesForecastAndPlanSignal test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CheckpointReplayAuditTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc003CheckpointRespectsControlAndRecoveryState test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc003CheckpointFailedSkippedAndBlockedBranches test` - passed after fixture correction.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,CheckpointReplayAuditTest test` - passed.
+- `npm run check:api-contract` - passed; the six remaining Redocly warnings are existing nullable `$ref` warnings and do not block S003 contract drift.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,CheckpointReplayAuditTest org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- Changed backend source coverage: line 98.4%, branch 92.0%.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Residual risk:
+- Followup-C remains incomplete, not release-ready and not Product Base-ready.
+- S004-S007 remain implementation gated, including backend projection, Home/Queue/Wiki surfaces, deletion/unavailable downgrade, p95 performance evidence and final traceability script.
+- S003 uses deterministic backend policy only. Future provider-assisted checkpoint feedback must keep provider output candidate-only and rerun TC-P02-FUC-007..009 plus AI schema/eval gates.
 
 ## 2026-06-05 P02 Followup-C S002 Checkpoint Task Library Independent Review
 

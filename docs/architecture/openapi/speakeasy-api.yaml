@@ -5054,6 +5054,8 @@ components:
       - result_status
       - confidence_band
       - summary
+      - plan_update_signal
+      - reason_code
       properties:
         checkpoint_id:
           type: string
@@ -5073,10 +5075,22 @@ components:
           enum:
           - recorded
           - low_confidence
+          - failed
+          - skipped
+          - unsupported
           - recoverable_error
         confidence_band:
           $ref: '#/components/schemas/GoalConfidenceBand'
         summary:
+          type: string
+        plan_update_signal:
+          type: string
+          enum:
+          - none
+          - checkpoint_replan
+          - recovery_replan
+          - stale_plan
+        reason_code:
           type: string
     PlanUpdateSignal:
       type: object
@@ -5093,6 +5107,22 @@ components:
           - checkpoint_replan
         reason_code:
           type: string
+        source_checkpoint_id:
+          type: string
+          nullable: true
+          description: Source checkpoint id when a checkpoint result produced this signal.
+        rule_version:
+          type: string
+          nullable: true
+          description: Deterministic rule version that produced the signal.
+        input_snapshot_hash:
+          type: string
+          nullable: true
+          description: Redacted replay input hash; raw transcript and audio refs are not exposed.
+        replay_audit_id:
+          type: string
+          nullable: true
+          description: Replay audit id for the checkpoint-to-plan decision when one is recorded.
     CompletePlanItemRequest:
       type: object
       required:
@@ -5125,6 +5155,14 @@ components:
           - weekly_mock
           - biweekly_mock
           - business_task
+        result_status:
+          type: string
+          nullable: true
+          enum:
+          - recorded
+          - failed
+          - skipped
+          description: Optional learner/system checkpoint outcome intent. Low-confidence is derived server-side from evidence quality.
         transcript:
           type: string
         audio_ref:
@@ -8405,6 +8443,8 @@ components:
           result_status: recorded
           confidence_band: medium
           summary: Fluency improved, but example expansion still needs review.
+          plan_update_signal: checkpoint_replan
+          reason_code: checkpoint_updated_gap
         forecast:
           forecast_id: forecast_id_sample
           source_goal_revision: 1
@@ -8433,6 +8473,10 @@ components:
         plan_update_signal:
           signal_type: checkpoint_replan
           reason_code: checkpoint_updated_gap
+          source_checkpoint_id: checkpoint_id_sample
+          rule_version: fuc-checkpoint-plan-v1
+          input_snapshot_hash: sha256:checkpoint_input_snapshot_sample
+          replay_audit_id: replay_audit_id_sample
     TrainingSessionResponseExample:
       summary: startTrainingSession response 200 example
       value:

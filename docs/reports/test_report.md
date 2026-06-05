@@ -1,7 +1,7 @@
 # Test Report
 
 ## Current Status
-Latest recorded Followup-C validation: `P02-FOLLOWUP-C-S002-CHECKPOINT-TASK-LIBRARY-20260605` closes TC-P02-FUC-004, TC-P02-FUC-005 and TC-P02-FUC-006 locally for checkpoint cadence/task-library policy, API projection and OpenAPI/generated client drift. S001 forecast hardening remains locally passed after stale-plan precedence revalidation. Followup-C S003-S007 checkpoint-to-plan, projection, surface propagation, downgrade, performance, coverage and release evidence remain planned/not started. Followup-C is not release-ready and Product Base merge is not approved. Prior Followup-B TC-P02-FUB-001 through TC-P02-FUB-017 remain passed locally; Followup-D commercial/release gates remain open.
+Latest recorded Followup-C validation: `P02-FOLLOWUP-C-S003-CHECKPOINT-PLAN-UPDATE-20260605` closes TC-P02-FUC-007, TC-P02-FUC-008 and TC-P02-FUC-009 locally for checkpoint result handling, forecast update, stale/replan signal, replay audit evidence, no-false-completion guard and control/recovery compatibility. S001 forecast hardening and S002 checkpoint task library remain locally passed. Followup-C S004-S007 projection, surface propagation, downgrade, performance, final traceability and release evidence remain planned/not started. Followup-C is not release-ready and Product Base merge is not approved. Prior Followup-B TC-P02-FUB-001 through TC-P02-FUB-017 remain passed locally; Followup-D commercial/release gates remain open.
 
 ## Required Sections
 - test scope
@@ -11,6 +11,51 @@ Latest recorded Followup-C validation: `P02-FOLLOWUP-C-S002-CHECKPOINT-TASK-LIBR
 - skipped tests
 - acceptance criteria coverage
 - residual risk
+
+## 2026-06-05 P02 Followup-C S003 Checkpoint Plan Update
+
+Report ID:
+- `P02-FOLLOWUP-C-S003-CHECKPOINT-PLAN-UPDATE-20260605`
+
+Test scope:
+- TC-P02-FUC-007 backend integration validation for accepted checkpoint result, forecast recompute, plan stale/replan signal fields and no precise ETA or goal-complete claim under stale-plan output.
+- TC-P02-FUC-008 replay/audit validation for checkpoint-to-plan `PlannerReplayAudit` evidence, source checkpoint id, rule version, input/output/replay hashes and raw transcript/audio minimization.
+- TC-P02-FUC-009 backend integration validation for paused rejection, recovery-required compatibility, invalid result status rejection, failed/skipped checkpoint handling and control-blocked/no-plan behavior.
+- Contract/regression scope: S003 domain/API/OpenAPI/generated Dart drift, deterministic AI/UX source-of-truth boundaries and changed-code coverage.
+
+Commands run:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc003CheckpointUpdatesForecastAndPlanSignal test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CheckpointReplayAuditTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc003CheckpointRespectsControlAndRecoveryState test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc003CheckpointFailedSkippedAndBlockedBranches test` - failed once because the no-plan accepted-checkpoint fixture transcript was too short and correctly produced `low_confidence`; fixture was expanded to accepted-confidence evidence, then rerun passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,CheckpointReplayAuditTest test` - passed.
+- `npm run check:api-contract` - passed. Redocly reported six existing nullable `$ref` example warnings; OpenAPI validation, OpenAPI contract and Dart drift gates passed with SHA `226c6d86a691489c8c3cfeba8aa0735aae52aef12ce7d5d561cb46a56ce52860`.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,CheckpointReplayAuditTest org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- Backend changed source coverage from JaCoCo diff check: line 98.4% and branch 92.0% for changed `GoalAutopilotService` and `GoalAutopilotController` source lines.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Passing tests:
+- TC-P02-FUC-007: accepted-confidence checkpoint persists `recorded`, returns checkpoint reason `checkpoint_updated_gap`, emits `checkpoint_replan`, marks plans stale, recomputes forecast to conservative `stale_plan` output and writes one `checkpoint_plan_update` replay audit.
+- TC-P02-FUC-008: checkpoint plan signal returns source checkpoint id, `fuc-checkpoint-plan-v1`, input snapshot hash and replay audit id; replay-audit API exposes matching source ref, input/output/replay hashes, expected decision and reason without raw transcript text.
+- TC-P02-FUC-009: paused autopilot rejects checkpoint submit without checkpoint persistence; recovery-required plan returns `recovery_replan`; failed/skipped/low-confidence checkpoints return no completion claim; invalid `result_status` is rejected; missing-plan accepted checkpoint returns `stale_plan/control_blocked` instead of silently advancing next action.
+- Contract drift: `POST /goal-autopilot/checkpoints` request/response schemas, `OutcomeCheckpoint`, `PlanUpdateSignal` replay metadata and generated Dart hash are synchronized.
+
+Failing or blocked tests:
+- No TC-P02-FUC-007/008/009 failure remains after the fixture correction.
+- TC-P02-FUC-010 through TC-P02-FUC-022 remain planned for S004-S007 and were not executed as completed evidence in this S003 slice.
+
+Skipped tests:
+- No Flutter widget tests were run because S003 changed backend/API contracts and generated path metadata only; Home/Queue/Wiki projection and surfaces remain S004/S005.
+- No live AI provider path was executed; S003 checkpoint-to-plan status, signal and replay evidence are deterministic backend policy.
+
+Acceptance criteria coverage:
+- AC-P02-FUC-003 is executed locally for checkpoint result persistence, forecast update, stale/replan/control-blocked signal, replay/audit reference, no raw transcript/audio leakage, no false completion and paused/recovery compatibility.
+
+Residual risk:
+- Followup-C is not complete, not release-ready and not Product Base-ready.
+- S004 backend-owned projection, S005 Home/Queue/Wiki surface propagation, S006 downgrade/deletion handling and S007 performance/final traceability remain open.
+- The broad project coverage script still depends on unchanged Flutter coverage and final Followup-C S007 gates; S003 evidence uses changed-backend-source JaCoCo coverage because no Flutter source changed.
 
 ## 2026-06-05 P02 Followup-C S002 Checkpoint Task Library
 

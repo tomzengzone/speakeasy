@@ -289,8 +289,9 @@ Validation rules:
 
 Validation rules:
 - `output_type` must be `goal_checkpoint_feedback_candidate`.
-- Candidate may explain checkpoint evidence and forecast risk, but backend owns `eta_date`, `risk_level`, `plan_update_signal`, goal completion and stale-plan decisions.
+- Candidate may explain checkpoint evidence and forecast risk, but backend owns `OutcomeCheckpoint.result_status`, `eta_date`, `risk_level`, `plan_update_signal`, source checkpoint id, replay/audit hashes, goal completion and stale-plan decisions.
 - Followup-C S002 checkpoint cadence and task-library selection is deterministic backend policy. AI output may not select `task_type`, `cadence`, `due_status`, `ai_depth`, scoring boundary, entitlement, quota or cost state.
+- Followup-C S003 checkpoint-to-plan update is deterministic backend policy. AI output may not set `recorded`/`low_confidence`/`failed`/`skipped` status, replan requirement, input snapshot hash, replay audit id, control compatibility, next action advancement or goal completion.
 - Low confidence or partial support must block high-precision ETA wording.
 - Candidate output must not contain official certification, guaranteed outcome, payment status, raw transcript, raw audio, provider secret or unrestricted personal data fields.
 

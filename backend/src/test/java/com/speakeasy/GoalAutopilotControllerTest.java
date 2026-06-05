@@ -863,7 +863,15 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.checkpoint.cadence").value("biweekly"))
         .andExpect(jsonPath("$.checkpoint.result_status").value("low_confidence"))
-        .andExpect(jsonPath("$.forecast.confidence_band").value("low"));
+        .andExpect(jsonPath("$.checkpoint.reason_code").value("low_confidence"))
+        .andExpect(jsonPath("$.forecast.confidence_band").value("low"))
+        .andExpect(jsonPath("$.forecast.eta_date").doesNotExist())
+        .andExpect(jsonPath("$.forecast.claim_guard.goal_completion_claim_allowed").value(false))
+        .andExpect(jsonPath("$.plan_update_signal.signal_type").value("none"))
+        .andExpect(jsonPath("$.plan_update_signal.reason_code").value("low_confidence"))
+        .andExpect(jsonPath("$.plan_update_signal.source_checkpoint_id", not(blankOrNullString())))
+        .andExpect(jsonPath("$.plan_update_signal.input_snapshot_hash", startsWith("sha256:")))
+        .andExpect(jsonPath("$.plan_update_signal.replay_audit_id", not(blankOrNullString())));
   }
 
   @Test
@@ -908,7 +916,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
   }
 
   @Test
-  void tcP02AutoCheckpoint001CheckpointUpdatesForecastAndStalesPlan() throws Exception {
+  void tcP02Fuc003CheckpointUpdatesForecastAndPlanSignal() throws Exception {
     AuthTokens tokens = loginPhone("+8613800140204");
     createSupportedGoal(tokens).andExpect(status().isOk());
     generatePlan(tokens, false, "initial_backplan").andExpect(status().isOk());
@@ -927,7 +935,14 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
                 """))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.checkpoint.result_status").value("recorded"))
+        .andExpect(jsonPath("$.checkpoint.plan_update_signal").value("checkpoint_replan"))
+        .andExpect(jsonPath("$.checkpoint.reason_code").value("checkpoint_updated_gap"))
         .andExpect(jsonPath("$.plan_update_signal.signal_type").value("checkpoint_replan"))
+        .andExpect(jsonPath("$.plan_update_signal.reason_code").value("checkpoint_updated_gap"))
+        .andExpect(jsonPath("$.plan_update_signal.source_checkpoint_id", not(blankOrNullString())))
+        .andExpect(jsonPath("$.plan_update_signal.rule_version").value("fuc-checkpoint-plan-v1"))
+        .andExpect(jsonPath("$.plan_update_signal.input_snapshot_hash", startsWith("sha256:")))
+        .andExpect(jsonPath("$.plan_update_signal.replay_audit_id", not(blankOrNullString())))
         .andExpect(jsonPath("$.forecast.forecast_state").value("stale_plan"))
         .andExpect(jsonPath("$.forecast.eta_date").doesNotExist())
         .andExpect(jsonPath("$.forecast.eta_range").doesNotExist())
@@ -938,6 +953,158 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
 
     assertThat(jdbcTemplate.queryForObject(
         "SELECT COUNT(*) FROM goal_backplans WHERE status = 'stale'", Integer.class)).isGreaterThan(0);
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM goal_planner_replay_audits WHERE decision_family = 'checkpoint_plan_update'",
+        Integer.class)).isEqualTo(1);
+  }
+
+  @Test
+  void tcP02Fuc003CheckpointRespectsControlAndRecoveryState() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140293");
+    UUID userId = UUID.fromString(tokens.userId());
+    createSupportedGoal(tokens).andExpect(status().isOk());
+    MvcResult planResult = generatePlan(tokens, false, "initial_backplan").andExpect(status().isOk()).andReturn();
+    UUID planItemId = UUID.fromString(JsonPath.read(
+        planResult.getResponse().getContentAsString(),
+        "$.daily_plan.items[0].plan_item_id"));
+
+    mvc.perform(post("/goal-autopilot/control/pause")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("Idempotency-Key", "pause-before-checkpoint")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "pause_reason": "user_requested_break"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.control.control_status").value("paused"));
+
+    mvc.perform(post("/goal-autopilot/checkpoints")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "checkpoint_type": "weekly_mock",
+                  "transcript": "I gave a full checkpoint answer with concrete examples and one follow up answer."
+                }
+                """))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.error.details.reason_code").value("paused"));
+    assertThat(count("goal_outcome_checkpoints", userId)).isZero();
+
+    mvc.perform(post("/goal-autopilot/control/resume")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("Idempotency-Key", "resume-before-recovery-checkpoint")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "source_event": "manual_resume"
+                }
+                """))
+        .andExpect(status().isOk());
+
+    completePlanItem(tokens, planItemId, "skipped")
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.plan_update_signal.signal_type").value("recovery_replan"));
+
+    mvc.perform(post("/goal-autopilot/checkpoints")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("X-Request-Id", "req_p02_fuc003_recovery_checkpoint")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "checkpoint_type": "weekly_mock",
+                  "transcript": "I spoke for two minutes, gave a detailed example, answered one follow up question, and identified the same fluency issue without claiming completion."
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.checkpoint.result_status").value("recorded"))
+        .andExpect(jsonPath("$.forecast.forecast_state").value("recovery_required"))
+        .andExpect(jsonPath("$.forecast.claim_guard.goal_completion_claim_allowed").value(false))
+        .andExpect(jsonPath("$.plan_update_signal.signal_type").value("recovery_replan"))
+        .andExpect(jsonPath("$.plan_update_signal.reason_code").value("recovery_required"))
+        .andExpect(jsonPath("$.plan_update_signal.source_checkpoint_id", not(blankOrNullString())));
+  }
+
+  @Test
+  void tcP02Fuc003CheckpointFailedSkippedAndBlockedBranches() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140295");
+    createSupportedGoal(tokens).andExpect(status().isOk());
+    generatePlan(tokens, false, "initial_backplan").andExpect(status().isOk());
+
+    mvc.perform(post("/goal-autopilot/checkpoints")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "checkpoint_type": "weekly_mock",
+                  "result_status": "unsupported",
+                  "transcript": "This status should be rejected before checkpoint persistence."
+                }
+                """))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"));
+
+    mvc.perform(post("/goal-autopilot/checkpoints")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "checkpoint_type": "weekly_mock",
+                  "result_status": "failed",
+                  "transcript": "The checkpoint attempt failed before enough usable evidence was collected."
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.checkpoint.result_status").value("failed"))
+        .andExpect(jsonPath("$.checkpoint.summary").value(
+            "Checkpoint failed; risk state was updated without changing goal completion or ETA precision."))
+        .andExpect(jsonPath("$.plan_update_signal.signal_type").value("none"))
+        .andExpect(jsonPath("$.plan_update_signal.reason_code").value("checkpoint_failed"))
+        .andExpect(jsonPath("$.forecast.claim_guard.goal_completion_claim_allowed").value(false));
+
+    mvc.perform(post("/goal-autopilot/checkpoints")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "checkpoint_type": "weekly_mock",
+                  "result_status": "skipped",
+                  "transcript": "The learner skipped this checkpoint and needs recovery planning."
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.checkpoint.result_status").value("skipped"))
+        .andExpect(jsonPath("$.checkpoint.summary").value(
+            "Checkpoint was skipped; recovery planning is required before precise forecast updates."))
+        .andExpect(jsonPath("$.forecast.forecast_state").value("recovery_required"))
+        .andExpect(jsonPath("$.plan_update_signal.signal_type").value("none"))
+        .andExpect(jsonPath("$.plan_update_signal.reason_code").value("checkpoint_skipped"));
+
+    AuthTokens noPlanTokens = loginPhone("+8613800140296");
+    createSupportedGoal(noPlanTokens).andExpect(status().isOk());
+    mvc.perform(post("/goal-autopilot/checkpoints")
+            .header(HttpHeaders.AUTHORIZATION, bearer(noPlanTokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "checkpoint_type": "weekly_mock",
+                  "transcript": "I gave a complete checkpoint response with a clear example, one follow-up answer, a concrete reflection about fluency risk, and enough detail to be accepted, but no active plan exists yet so the next action must not advance silently."
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.checkpoint.result_status").value("recorded"))
+        .andExpect(jsonPath("$.plan_update_signal.signal_type").value("stale_plan"))
+        .andExpect(jsonPath("$.plan_update_signal.reason_code").value("control_blocked"));
   }
 
   @Test
