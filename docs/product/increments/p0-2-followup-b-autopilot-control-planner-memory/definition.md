@@ -1,7 +1,7 @@
 # Increment Definition：P0.2 Followup-B 自动带练控制与计划记忆引擎加固
 
 ## 状态
-Planned - formal follow-up scaffold only。该增量只建立正式 definition 和 work-package traceability scaffold；尚未生成 requirements/spec/acceptance/test_cases，也未进入代码实现。
+Contract-ready / partially implemented through S002-A / completion gated。该增量已建立正式 definition、requirements、spec、acceptance、test_cases 和 traceability，并已完成 Domain、API/OpenAPI/generated client sync、AI runtime 和 UX 合同门禁的独立审核。当前 backend UserAutopilotControl read/update/pause/resume、Flutter control binding 和 S002-A notification eligibility policy 已有本地执行证据；notification scheduler/outbox、missed-day recovery、item-level memory、L0-L5 transition、replay/performance/coverage/final review 和 release evidence 仍未闭环。
 
 ## Increment ID
 `p0-2-followup-b-autopilot-control-planner-memory`
@@ -83,12 +83,14 @@ The current local P0.2 slice can select and complete a next action, and can mark
 - Release-wide feature flag, kill switch, telemetry and Product Base merge gates are routed to Followup-D.
 
 ## Required Downstream Artifacts
-- `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md` and updated `traceability.md` for this follow-up before code routing.
-- Domain updates for UserAutopilotControl, notification schedule/outbox, planner audit, memory review item and mastery transition records.
-- API/OpenAPI updates for pause/resume/update-control, reminder eligibility and recovery/replan behavior.
-- UX screen spec updates for paused, quiet-hours, recovery, fatigue and intensity override states.
-- QA replay fixtures for planner/memory/control decisions.
-- Test case library mapping every Followup-B AC to stable TC IDs before implementation.
+- Completed for pre-implementation routing: `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md` and updated `traceability.md` for this follow-up.
+- Completed for pre-implementation routing: Domain updates for UserAutopilotControl, notification schedule/outbox, planner audit, memory review item and mastery transition records.
+- Completed for pre-implementation routing: API/OpenAPI updates for pause/resume/update-control, reminder eligibility, scheduler/outbox state, recovery/replan, item-policy decisions, mastery transitions and replay audits; generated Dart client drift has been synced.
+- Completed for pre-implementation routing: AI runtime updates for candidate-only mastery transition explanation schema, forbidden persistent fields and deterministic fallback.
+- Completed for pre-implementation routing: UX screen spec updates for paused, quiet-hours, notification-disabled, missed-day recovery, fatigue/intensity override and memory/mastery explanations.
+- Still required during remaining implementation routing: QA replay fixtures for planner/memory/control decisions, executable tests for scheduler/outbox、recovery、item-level memory、mastery transition, performance evidence, >=80% changed-code coverage evidence where new code changes, test report updates and quality report updates.
+- Completed for the first routed control slice: backend control source/update/pause/resume implementation evidence and Flutter control binding evidence are recorded in `docs/reports/implementation_report.md` and reconciled into `docs/reports/test_report.md` / `docs/reports/quality_report.md`.
+- Completed for S002-A: notification eligibility reason precedence, quiet-hours evaluation and Flutter blocked-reason/no-false-completion evidence are recorded in `docs/reports/implementation_report.md` and reconciled into `docs/reports/test_report.md` / `docs/reports/quality_report.md`; scheduler/outbox remains S002-B / TC-P02-FUB-007/008.
 
 ## Non-goals
 - Does not implement editable GoalProfile form or diagnostic sample capture.
@@ -97,4 +99,3 @@ The current local P0.2 slice can select and complete a next action, and can mark
 
 ## Completion Gate
 Followup-B cannot be marked complete unless every WP has FR/Spec/AC/TC/Traceability coverage, contract evidence, code evidence, test evidence, >=80% changed-code coverage where implementation occurs, performance/replay evidence, and independent review in `docs/reports/quality_report.md`.
-

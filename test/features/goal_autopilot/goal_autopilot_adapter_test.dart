@@ -383,6 +383,138 @@ void main() {
   );
 
   testWidgets(
+    'Followup-B renders server control state and does not override pause or eligibility',
+    (WidgetTester tester) async {
+      final List<GoalAutopilotRequest> requests = <GoalAutopilotRequest>[];
+      Map<String, dynamic> controlResponse = _controlFixture(
+        controlStatus: 'paused',
+        reminderReasonCode: 'paused',
+        notificationConsent: true,
+      );
+      final GoalAutopilotAdapter adapter = GoalAutopilotAdapter(
+        transport: (GoalAutopilotRequest request) async {
+          requests.add(request);
+          return switch (request.operation) {
+            GoalAutopilotOperation.summary => _summaryFixture(),
+            GoalAutopilotOperation.control => controlResponse,
+            GoalAutopilotOperation.resumeControl =>
+              controlResponse = _controlFixture(
+                controlStatus: 'active',
+                reminderReasonCode: 'consent_missing',
+                notificationConsent: false,
+              ),
+            GoalAutopilotOperation.updateControl =>
+              controlResponse = _controlFixture(
+                controlStatus: 'active',
+                reminderReasonCode: 'eligible',
+                notificationConsent: true,
+                reminderEligible: true,
+              ),
+            _ => _summaryFixture(),
+          };
+        },
+      );
+
+      await _pumpPanel(tester, adapter);
+
+      expect(find.text('Autopilot: paused'), findsOneWidget);
+      expect(find.text('Reminder: paused'), findsOneWidget);
+      expect(find.text('Resume autopilot'), findsOneWidget);
+      expect(find.text('Pause autopilot'), findsNothing);
+      expect(find.text('Done'), findsNothing);
+
+      await tester.tap(find.text('Resume autopilot'));
+      await tester.pumpAndSettle();
+
+      final GoalAutopilotRequest resumeRequest = requests.lastWhere(
+        (GoalAutopilotRequest request) =>
+            request.operation == GoalAutopilotOperation.resumeControl,
+      );
+      expect(resumeRequest.path, SpeakeasyApiPaths.goalAutopilotControlResume);
+      expect(resumeRequest.body['source_event'], 'manual_resume');
+      expect(resumeRequest.headers['Idempotency-Key'], isNotEmpty);
+      expect(find.text('Autopilot: active'), findsOneWidget);
+      expect(find.text('Reminder: consent_missing'), findsOneWidget);
+      expect(find.text('Pause autopilot'), findsOneWidget);
+      expect(find.text('Resume autopilot'), findsNothing);
+      expect(find.text('Done'), findsOneWidget);
+
+      await tester.tap(find.text('Turn reminders on'));
+      await tester.pumpAndSettle();
+
+      final GoalAutopilotRequest updateRequest = requests.lastWhere(
+        (GoalAutopilotRequest request) =>
+            request.operation == GoalAutopilotOperation.updateControl,
+      );
+      expect(updateRequest.path, SpeakeasyApiPaths.goalAutopilotControl);
+      expect(updateRequest.body['notification_consent'], isTrue);
+      expect(updateRequest.headers['Idempotency-Key'], isNotEmpty);
+      expect(find.text('Reminder: eligible'), findsOneWidget);
+      expect(
+        requests.where(
+          (GoalAutopilotRequest request) =>
+              request.operation == GoalAutopilotOperation.completeAction,
+        ),
+        isEmpty,
+      );
+    },
+  );
+
+  testWidgets(
+    'Followup-B shows quiet-hours and notification blocked reasons without treating them as completion',
+    (WidgetTester tester) async {
+      final List<GoalAutopilotRequest> requests = <GoalAutopilotRequest>[];
+      final List<String> blockedReasons = <String>[
+        'permission_denied',
+        'entitlement_blocked',
+        'quota_exhausted',
+      ];
+      int updateIndex = 0;
+      Map<String, dynamic> controlResponse = _controlFixture(
+        controlStatus: 'active',
+        reminderReasonCode: 'quiet_hours',
+        notificationConsent: true,
+      );
+      final GoalAutopilotAdapter adapter = GoalAutopilotAdapter(
+        transport: (GoalAutopilotRequest request) async {
+          requests.add(request);
+          return switch (request.operation) {
+            GoalAutopilotOperation.summary => _summaryFixture(),
+            GoalAutopilotOperation.control => controlResponse,
+            GoalAutopilotOperation.updateControl =>
+              controlResponse = _controlFixture(
+                controlStatus: 'active',
+                reminderReasonCode: blockedReasons[updateIndex++],
+                notificationConsent: true,
+              ),
+            _ => _summaryFixture(),
+          };
+        },
+      );
+
+      await _pumpPanel(tester, adapter);
+
+      expect(find.text('Autopilot: active'), findsOneWidget);
+      expect(find.text('Reminder: quiet_hours'), findsOneWidget);
+      expect(find.text('Done'), findsOneWidget);
+
+      for (final String reason in blockedReasons) {
+        await tester.tap(find.text('Turn reminders off'));
+        await tester.pumpAndSettle();
+        expect(find.text('Reminder: $reason'), findsOneWidget);
+      }
+
+      expect(
+        requests.where(
+          (GoalAutopilotRequest request) =>
+              request.operation == GoalAutopilotOperation.completeAction,
+        ),
+        isEmpty,
+      );
+    },
+  );
+
+  testWidgets(
     'Followup-A renders supported state with support decision and plan entry',
     (WidgetTester tester) async {
       final GoalAutopilotAdapter adapter = GoalAutopilotAdapter(
@@ -540,6 +672,57 @@ Future<void> _pumpPanel(
     ),
   );
   await tester.pumpAndSettle();
+}
+
+Map<String, dynamic> _controlFixture({
+  String controlStatus = 'active',
+  String reminderReasonCode = 'eligible',
+  bool reminderEligible = false,
+  bool notificationConsent = true,
+}) {
+  return <String, dynamic>{
+    'schema_version': 1,
+    'control': <String, dynamic>{
+      'control_id': 'control_id_sample',
+      'user_id': 'user_id_sample',
+      'goal_profile_id': 'goal_profile_id_sample',
+      'control_status': controlStatus,
+      'paused_at': controlStatus == 'paused' ? '2099-06-04T21:00:00Z' : null,
+      'pause_reason': controlStatus == 'paused' ? 'user_requested_break' : null,
+      'resumed_at': controlStatus == 'paused' ? null : '2099-06-04T22:00:00Z',
+      'quiet_hours_start': '22:00',
+      'quiet_hours_end': '08:00',
+      'timezone': 'Asia/Shanghai',
+      'notification_consent': notificationConsent,
+      'intensity_override': 'standard',
+      'missed_day_policy': 'balanced',
+      'updated_at': '2099-06-04T22:00:00Z',
+      'rule_version': 'fub-control-v1',
+    },
+    'next_action_changed': true,
+    'reminder_eligibility_changed': true,
+    'replan_required': false,
+    'reason_code': controlStatus == 'paused' ? 'paused' : 'eligible',
+    'reminder_eligibility': <String, dynamic>{
+      'decision_id': 'eligibility_decision_sample',
+      'control_id': 'control_id_sample',
+      'user_id': 'user_id_sample',
+      'goal_profile_id': 'goal_profile_id_sample',
+      'plan_item_id': reminderEligible ? 'plan_item_id_sample' : null,
+      'eligible': reminderEligible,
+      'reason_code': reminderReasonCode,
+      'next_allowed_at': null,
+      'explanation_key': reminderEligible
+          ? 'reminder_allowed'
+          : 'reminder_blocked_$reminderReasonCode',
+      'evaluated_at': '2099-06-04T22:00:00Z',
+      'rule_version': 'fub-reminder-v1',
+    },
+    'plan_update_signal': <String, dynamic>{
+      'signal_type': 'none',
+      'reason_code': 'no_replan_needed',
+    },
+  };
 }
 
 Map<String, dynamic> _summaryFixture({

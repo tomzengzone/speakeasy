@@ -60,6 +60,8 @@ class FoundationMigrationTest {
             "goal_backplans",
             "goal_daily_plans",
             "goal_plan_items",
+            "goal_autopilot_controls",
+            "goal_autopilot_control_idempotency",
             "goal_progress_forecasts",
             "goal_outcome_checkpoints");
   }

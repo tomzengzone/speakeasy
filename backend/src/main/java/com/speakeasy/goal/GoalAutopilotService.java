@@ -6,33 +6,49 @@ import com.speakeasy.common.ApiException;
 import com.speakeasy.identity.UserAccountRepository;
 import com.speakeasy.ops.AuditLog;
 import com.speakeasy.ops.AuditLogRepository;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Clock;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class GoalAutopilotService {
+  private static final String CONTROL_RULE_VERSION = "fub-control-v1";
+  private static final String NOTIFICATION_RULE_VERSION = NotificationEligibilityPolicy.RULE_VERSION;
+  private static final String DEFAULT_TIMEZONE = "Asia/Shanghai";
+  private static final String TIME_PATTERN = "^([01][0-9]|2[0-3]):[0-5][0-9]$";
   private static final Collection<String> ACTIVE_GOAL_STATUSES =
       List.of("active", "partial", "unsupported", "needs_more_diagnostic");
   private static final Collection<String> ACTIVE_PLAN_STATUSES = List.of("active", "partial");
   private static final Collection<String> ACTIVE_DAILY_STATUSES = List.of("ready", "partial", "recovery_required");
   private static final Set<String> SUPPORTED_GOALS =
       Set.of("ielts_speaking", "toefl_speaking", "business_meeting", "job_interview", "onboarding_introduction");
+  private static final Set<String> VALID_INTENSITIES = Set.of("gentle", "standard", "intensive");
+  private static final Set<String> VALID_MISSED_DAY_POLICIES = Set.of("balanced", "compress", "defer", "replace");
   private static final TypeReference<List<RubricScoreView>> RUBRIC_LIST = new TypeReference<>() {};
   private static final TypeReference<List<WeaknessTagView>> WEAKNESS_LIST = new TypeReference<>() {};
   private static final TypeReference<ClaimGuardView> CLAIM_GUARD = new TypeReference<>() {};
+  private static final TypeReference<ControlResult> CONTROL_RESULT = new TypeReference<>() {};
 
   private final UserAccountRepository users;
   private final GoalProfileRepository goalProfiles;
+  private final GoalAutopilotControlRepository controls;
+  private final GoalAutopilotControlIdempotencyRepository controlIdempotency;
   private final GoalDiagnosticAssessmentRepository diagnostics;
   private final GoalMasteryInitialStateRepository masteryInitialStates;
   private final GoalBackplanRepository backplans;
@@ -43,10 +59,13 @@ public class GoalAutopilotService {
   private final AuditLogRepository auditLogs;
   private final ObjectMapper objectMapper;
   private final Clock clock;
+  private final NotificationEligibilityPolicy notificationEligibilityPolicy = new NotificationEligibilityPolicy();
 
   public GoalAutopilotService(
       UserAccountRepository users,
       GoalProfileRepository goalProfiles,
+      GoalAutopilotControlRepository controls,
+      GoalAutopilotControlIdempotencyRepository controlIdempotency,
       GoalDiagnosticAssessmentRepository diagnostics,
       GoalMasteryInitialStateRepository masteryInitialStates,
       GoalBackplanRepository backplans,
@@ -59,6 +78,8 @@ public class GoalAutopilotService {
       Clock clock) {
     this.users = users;
     this.goalProfiles = goalProfiles;
+    this.controls = controls;
+    this.controlIdempotency = controlIdempotency;
     this.diagnostics = diagnostics;
     this.masteryInitialStates = masteryInitialStates;
     this.backplans = backplans;
@@ -84,7 +105,7 @@ public class GoalAutopilotService {
       throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "daily_minutes must be between 5 and 240.");
     }
     String intensity = clean(input.intensityPreference());
-    if (!Set.of("gentle", "standard", "intensive").contains(intensity)) {
+    if (!VALID_INTENSITIES.contains(intensity)) {
       throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "intensity_preference is invalid.");
     }
 
@@ -130,6 +151,7 @@ public class GoalAutopilotService {
       markPlansStale(profile.getGoalProfileId(), "goal_revision_changed", now);
     }
     profile = goalProfiles.save(profile);
+    ensureControl(profile, now);
     GoalDiagnosticAssessment diagnostic = diagnostics.save(buildDiagnostic(profile, input.diagnosticSamples(), support, now));
     saveInitialMasteryStates(profile, diagnostic, now);
     GoalProgressForecast forecast = upsertForecast(profile, diagnostic, "goal_intake", null, now);
@@ -152,6 +174,152 @@ public class GoalAutopilotService {
         nextActionOrNull(profile),
         forecast,
         latestCheckpoint(profile));
+  }
+
+  @Transactional
+  public ControlResult control(UUID userId) {
+    GoalProfile profile = requireActiveGoal(userId);
+    Instant now = Instant.now(clock);
+    GoalAutopilotControl control = ensureControl(profile, now);
+    return controlResult(profile, control, controlReason(profile, control), "none");
+  }
+
+  @Transactional
+  public ControlResult updateControl(UUID userId, ControlSettingsInput input, String requestId, String idempotencyKey) {
+    GoalProfile profile = requireActiveGoal(userId);
+    ControlSettingsInput validated = new ControlSettingsInput(
+        input.quietHoursStart() == null ? null : validateClockTime(input.quietHoursStart(), "quiet_hours_start"),
+        input.quietHoursEnd() == null ? null : validateClockTime(input.quietHoursEnd(), "quiet_hours_end"),
+        input.timezone() == null ? null : validateTimezone(input.timezone()),
+        input.notificationConsent(),
+        input.intensityOverride() == null ? null : validateOneOf(input.intensityOverride(), VALID_INTENSITIES, "intensity_override"),
+        input.missedDayPolicy() == null ? null : validateOneOf(input.missedDayPolicy(), VALID_MISSED_DAY_POLICIES, "missed_day_policy"));
+    String requestHash = controlRequestHash(
+        "update",
+        profile,
+        Map.of(
+            "quiet_hours_start", nullableHashValue(validated.quietHoursStart()),
+            "quiet_hours_end", nullableHashValue(validated.quietHoursEnd()),
+            "timezone", nullableHashValue(validated.timezone()),
+            "notification_consent", nullableHashValue(validated.notificationConsent()),
+            "intensity_override", nullableHashValue(validated.intensityOverride()),
+            "missed_day_policy", nullableHashValue(validated.missedDayPolicy())));
+    return withControlIdempotency(profile, "update", idempotencyKey, requestHash, () -> {
+      Instant now = Instant.now(clock);
+      GoalAutopilotControl control = ensureControl(profile, now);
+      String quietStart = validated.quietHoursStart() == null ? control.getQuietHoursStart() : validated.quietHoursStart();
+      String quietEnd = validated.quietHoursEnd() == null ? control.getQuietHoursEnd() : validated.quietHoursEnd();
+      String timezone = validated.timezone() == null ? control.getTimezone() : validated.timezone();
+      boolean consent = validated.notificationConsent() == null ? control.isNotificationConsent() : validated.notificationConsent();
+      String intensity = validated.intensityOverride() == null ? control.getIntensityOverride() : validated.intensityOverride();
+      String missedDayPolicy = validated.missedDayPolicy() == null ? control.getMissedDayPolicy() : validated.missedDayPolicy();
+      String status = "paused".equals(control.getControlStatus()) ? "paused" : policyStatus(profile);
+      control.updateSettings(status, quietStart, quietEnd, timezone, consent, intensity, missedDayPolicy, now);
+      control = controls.save(control);
+      audit(userId, "goal_autopilot_control_updated", "control:" + control.getControlId(), requestId, now);
+      return controlResult(profile, control, "control_updated", "no_replan_needed");
+    });
+  }
+
+  @Transactional
+  public ControlResult pauseControl(UUID userId, String pauseReason, String requestId, String idempotencyKey) {
+    GoalProfile profile = requireActiveGoal(userId);
+    String normalizedReason = cleanOrDefault(pauseReason, "user_requested_break");
+    String requestHash = controlRequestHash("pause", profile, Map.of("pause_reason", normalizedReason));
+    return withControlIdempotency(profile, "pause", idempotencyKey, requestHash, () -> {
+      Instant now = Instant.now(clock);
+      GoalAutopilotControl control = ensureControl(profile, now);
+      boolean changed = control.pause(normalizedReason, now);
+      control = controls.save(control);
+      if (changed) {
+        audit(userId, "goal_autopilot_control_paused", "control:" + control.getControlId(), requestId, now);
+      }
+      return controlResult(profile, control, "paused", "paused_without_plan_change");
+    });
+  }
+
+  @Transactional
+  public ControlResult resumeControl(UUID userId, String sourceEvent, String requestId, String idempotencyKey) {
+    String source = cleanOrDefault(sourceEvent, "manual_resume");
+    if (!Set.of("manual_resume", "pause_gap_recovery").contains(source)) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "source_event is invalid.");
+    }
+    GoalProfile profile = requireActiveGoal(userId);
+    String requestHash = controlRequestHash("resume", profile, Map.of("source_event", source));
+    return withControlIdempotency(profile, "resume", idempotencyKey, requestHash, () -> {
+      Instant now = Instant.now(clock);
+      GoalAutopilotControl control = ensureControl(profile, now);
+      String policyStatus = policyStatus(profile);
+      boolean changed = control.resume(policyStatus, now);
+      control = controls.save(control);
+      if (changed) {
+        audit(userId, "goal_autopilot_control_resumed", "control:" + control.getControlId(), requestId, now);
+      }
+      String reason = controlReason(profile, control);
+      String signalReason = "missing_plan".equals(reason) || "stale_plan".equals(reason)
+          ? "resume_requires_replan"
+          : "no_replan_needed";
+      return controlResult(profile, control, reason, signalReason);
+    });
+  }
+
+  @Transactional(readOnly = true)
+  public ControlDataGovernanceExport exportControlDataGovernance(UUID userId) {
+    requireUser(userId);
+    List<ControlExportRecord> controlRecords = controls.findByUserIdOrderByUpdatedAtDesc(userId).stream()
+        .map(control -> new ControlExportRecord(
+            control.getControlId(),
+            control.getUserId(),
+            control.getGoalProfileId(),
+            control.getControlStatus(),
+            control.getPausedAt(),
+            control.getPauseReason(),
+            control.getResumedAt(),
+            control.getQuietHoursStart(),
+            control.getQuietHoursEnd(),
+            control.getTimezone(),
+            control.isNotificationConsent(),
+            control.getIntensityOverride(),
+            control.getMissedDayPolicy(),
+            control.getRuleVersion(),
+            control.getCreatedAt(),
+            control.getUpdatedAt()))
+        .toList();
+    List<ControlIdempotencyExportRecord> idempotencyRecords = controlIdempotency.findByUserIdOrderByCreatedAtDesc(userId).stream()
+        .map(replay -> new ControlIdempotencyExportRecord(
+            replay.getReplayId(),
+            replay.getGoalProfileId(),
+            replay.getGoalRevision(),
+            replay.getOperation(),
+            replay.getRequestHash(),
+            replay.getCreatedAt(),
+            true,
+            true))
+        .toList();
+    return new ControlDataGovernanceExport(
+        "goal_autopilot_control",
+        CONTROL_RULE_VERSION,
+        controlRecords,
+        idempotencyRecords,
+        List.of(
+            new RetentionRuleView(
+                "goal_autopilot_controls",
+                "hard_delete_on_account_deletion",
+                "account_deletion_or_user_export",
+                "exports control state; deletes user-owned row on account deletion"),
+            new RetentionRuleView(
+                "goal_autopilot_control_idempotency",
+                "hard_delete_on_account_deletion",
+                "account_deletion_or_replay_window_expiry",
+                "exports replay metadata only; idempotency key and response body remain redacted"),
+            new RetentionRuleView(
+                "audit_logs",
+                "retain_redacted_minimal_audit",
+                "ops_audit_policy",
+                "retains redacted proof without raw control payload or idempotency key")),
+        List.of("goal_autopilot_controls", "goal_autopilot_control_idempotency"),
+        true,
+        "not_implemented_in_s001");
   }
 
   @Transactional
@@ -198,6 +366,7 @@ public class GoalAutopilotService {
         "high".equals(risk) ? 1 : 3,
         now));
     createDefaultPlanItems(profile, dailyPlan, risk, partial, now);
+    activateControlAfterPlan(profile, now);
     GoalProgressForecast forecast = upsertForecast(profile, diagnostic, "plan_generated", null, now);
     audit(userId, "goal_autopilot_plan_generated", "goal_profile:" + profile.getGoalProfileId(), requestId, now);
     return new PlanResult(backplanView(backplan), dailyPlanView(dailyPlan), actionView(requireNextItem(dailyPlan), "ready"), forecastView(forecast));
@@ -213,6 +382,7 @@ public class GoalAutopilotService {
   @Transactional(readOnly = true)
   public ActionResult nextAction(UUID userId) {
     GoalProfile profile = requireActiveGoal(userId);
+    requireControlNotPaused(profile);
     GoalDailyPlan dailyPlan = requireDailyPlan(profile);
     GoalProgressForecast forecast = requireForecast(profile);
     return new ActionResult(actionView(requireNextItem(dailyPlan), "ready"), forecastView(forecast), new PlanUpdateSignalView("none", "no_replan_needed"));
@@ -227,6 +397,7 @@ public class GoalAutopilotService {
       throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "outcome is invalid.");
     }
     GoalProfile profile = requireActiveGoal(userId);
+    requireControlNotPaused(profile);
     GoalDailyPlan dailyPlan = requireDailyPlan(profile);
     Instant now = Instant.now(clock);
     item.markOutcome(normalizedOutcome, now);
@@ -286,6 +457,263 @@ public class GoalAutopilotService {
     audit(userId, "goal_autopilot_checkpoint_recorded", "checkpoint:" + checkpoint.getCheckpointId(), requestId, now);
     return new CheckpointResult(
         checkpointView(checkpoint), forecastView(forecast), new PlanUpdateSignalView("checkpoint_replan", "checkpoint_updated_gap"));
+  }
+
+  private GoalAutopilotControl ensureControl(GoalProfile profile, Instant now) {
+    GoalAutopilotControl control = controls.findFirstByGoalProfileIdOrderByUpdatedAtDesc(profile.getGoalProfileId())
+        .orElseGet(() -> new GoalAutopilotControl(
+            UUID.randomUUID(),
+            profile.getUserId(),
+            profile.getGoalProfileId(),
+            policyStatus(profile),
+            profile.getQuietHoursStart(),
+            profile.getQuietHoursEnd(),
+            DEFAULT_TIMEZONE,
+            profile.isNotificationConsent(),
+            profile.getIntensityPreference(),
+            "balanced",
+            CONTROL_RULE_VERSION,
+            now));
+    control.setPolicyStatus(policyStatus(profile), now);
+    return controls.save(control);
+  }
+
+  private void activateControlAfterPlan(GoalProfile profile, Instant now) {
+    GoalAutopilotControl control = ensureControl(profile, now);
+    if (!"paused".equals(control.getControlStatus())) {
+      control.setPolicyStatus(policyStatus(profile), now);
+      controls.save(control);
+    }
+  }
+
+  private void requireControlNotPaused(GoalProfile profile) {
+    GoalAutopilotControl control = ensureControl(profile, Instant.now(clock));
+    if ("paused".equals(control.getControlStatus())) {
+      throw new ApiException(
+          HttpStatus.CONFLICT,
+          "CONFLICT",
+          "Goal autopilot is paused.",
+          Map.of("reason_code", "paused", "control_id", control.getControlId().toString()));
+    }
+  }
+
+  private ControlResult withControlIdempotency(
+      GoalProfile profile,
+      String operation,
+      String idempotencyKey,
+      String requestHash,
+      Supplier<ControlResult> mutation) {
+    requireIdempotencyKey(idempotencyKey);
+    GoalAutopilotControlIdempotency existing = controlIdempotency
+        .findByUserIdAndGoalProfileIdAndGoalRevisionAndOperationAndIdempotencyKey(
+            profile.getUserId(), profile.getGoalProfileId(), profile.getRevision(), operation, idempotencyKey)
+        .orElse(null);
+    if (existing != null) {
+      if (!existing.getRequestHash().equals(requestHash)) {
+        throw new ApiException(HttpStatus.CONFLICT, "IDEMPOTENCY_CONFLICT", "Idempotency key reused with different control payload.");
+      }
+      return fromJson(existing.getResponseJson(), CONTROL_RESULT);
+    }
+
+    ControlResult result = mutation.get();
+    controlIdempotency.save(new GoalAutopilotControlIdempotency(
+        UUID.randomUUID(),
+        profile.getUserId(),
+        profile.getGoalProfileId(),
+        profile.getRevision(),
+        operation,
+        idempotencyKey,
+        requestHash,
+        toJson(result),
+        Instant.now(clock)));
+    return result;
+  }
+
+  private void requireIdempotencyKey(String idempotencyKey) {
+    if (idempotencyKey == null || idempotencyKey.length() < 8 || idempotencyKey.length() > 128) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "Idempotency-Key is required.");
+    }
+  }
+
+  private String controlRequestHash(String operation, GoalProfile profile, Map<String, String> requestValues) {
+    TreeMap<String, String> payload = new TreeMap<>();
+    payload.put("operation", operation);
+    payload.put("goal_profile_id", profile.getGoalProfileId().toString());
+    payload.put("goal_revision", Integer.toString(profile.getRevision()));
+    payload.putAll(requestValues);
+    return sha256(toJson(payload));
+  }
+
+  private String nullableHashValue(Object value) {
+    return value == null ? "<null>" : value.toString();
+  }
+
+  private String sha256(String value) {
+    try {
+      byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
+      return HexFormat.of().formatHex(digest);
+    } catch (Exception e) {
+      throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "CONFLICT", "Could not hash control idempotency payload.");
+    }
+  }
+
+  private ControlResult controlResult(
+      GoalProfile profile, GoalAutopilotControl control, String reasonCode, String planSignalReason) {
+    Instant now = Instant.now(clock);
+    NotificationEligibilityPolicy.Decision eligibility = reminderEligibilityDecision(profile, control, now);
+    boolean replanRequired = "resume_requires_replan".equals(planSignalReason);
+    return new ControlResult(
+        controlView(control, reasonCode),
+        true,
+        true,
+        replanRequired,
+        reasonCode,
+        new NotificationEligibilityDecisionView(
+            UUID.nameUUIDFromBytes((
+                    control.getControlId()
+                        + ":" + profile.getRevision()
+                        + ":" + eligibility.reasonCode()
+                        + ":" + nullableHashValue(eligibility.nextAllowedAt())
+                        + ":" + NOTIFICATION_RULE_VERSION)
+                .getBytes(StandardCharsets.UTF_8)).toString(),
+            control.getControlId(),
+            profile.getUserId(),
+            profile.getGoalProfileId(),
+            eligibility.eligible() ? nextPlanItemIdOrNull(profile) : null,
+            eligibility.eligible(),
+            eligibility.reasonCode(),
+            eligibility.nextAllowedAt(),
+            eligibility.explanationKey(),
+            eligibility.evaluatedAt(),
+            eligibility.ruleVersion()),
+        new PlanUpdateSignalView(replanRequired ? "recovery_replan" : "none", planSignalReason));
+  }
+
+  private ControlView controlView(GoalAutopilotControl control, String reasonCode) {
+    String status = "paused".equals(control.getControlStatus()) ? "paused" : switch (reasonCode) {
+      case "unsupported_goal", "missing_plan", "stale_plan" -> "blocked_by_policy";
+      default -> control.getControlStatus();
+    };
+    return new ControlView(
+        control.getControlId(),
+        control.getUserId(),
+        control.getGoalProfileId(),
+        status,
+        control.getPausedAt(),
+        control.getPauseReason(),
+        control.getResumedAt(),
+        control.getQuietHoursStart(),
+        control.getQuietHoursEnd(),
+        control.getTimezone(),
+        control.isNotificationConsent(),
+        control.getIntensityOverride(),
+        control.getMissedDayPolicy(),
+        control.getUpdatedAt(),
+        control.getRuleVersion());
+  }
+
+  private String policyStatus(GoalProfile profile) {
+    return switch (policyReason(profile)) {
+      case "unsupported_goal", "missing_plan", "stale_plan" -> "blocked_by_policy";
+      default -> "active";
+    };
+  }
+
+  private String controlReason(GoalProfile profile, GoalAutopilotControl control) {
+    if ("paused".equals(control.getControlStatus())) {
+      return "paused";
+    }
+    return policyReason(profile);
+  }
+
+  private String policyReason(GoalProfile profile) {
+    if ("unsupported".equals(profile.getSupportStatus()) || "unsupported".equals(profile.getStatus())) {
+      return "unsupported_goal";
+    }
+    PlanFacts facts = planFacts(profile);
+    if (facts.stalePlan()) {
+      return "stale_plan";
+    }
+    if (facts.missingPlan()) {
+      return "missing_plan";
+    }
+    return "eligible";
+  }
+
+  private NotificationEligibilityPolicy.Decision reminderEligibilityDecision(
+      GoalProfile profile, GoalAutopilotControl control, Instant evaluatedAt) {
+    PlanFacts facts = planFacts(profile);
+    boolean unsupportedGoal = "unsupported".equals(profile.getSupportStatus()) || "unsupported".equals(profile.getStatus());
+    boolean partialGoalLimited = "partial".equals(profile.getSupportStatus());
+    boolean genericPolicyBlocked = "blocked_by_policy".equals(control.getControlStatus())
+        && !unsupportedGoal
+        && !partialGoalLimited
+        && !facts.stalePlan()
+        && !facts.missingPlan();
+    String eligibilityControlStatus = "paused".equals(control.getControlStatus()) ? "paused" : "active";
+    return notificationEligibilityPolicy.evaluate(new NotificationEligibilityPolicy.Input(
+        eligibilityControlStatus,
+        genericPolicyBlocked,
+        unsupportedGoal,
+        partialGoalLimited,
+        facts.stalePlan(),
+        facts.missingPlan(),
+        control.isNotificationConsent(),
+        true,
+        true,
+        true,
+        control.getQuietHoursStart(),
+        control.getQuietHoursEnd(),
+        control.getTimezone(),
+        evaluatedAt));
+  }
+
+  private PlanFacts planFacts(GoalProfile profile) {
+    GoalBackplan activeBackplan = latestBackplan(profile);
+    GoalBackplan staleBackplan = activeBackplan == null
+        ? backplans.findByGoalProfileIdAndStatusIn(profile.getGoalProfileId(), List.of("stale")).stream().findFirst().orElse(null)
+        : null;
+    GoalDailyPlan activeDailyPlan = latestDailyPlanOrNull(profile);
+    GoalDailyPlan staleDailyPlan = activeDailyPlan == null
+        ? dailyPlans.findFirstByGoalProfileIdAndStatusInOrderByPlanDateDesc(profile.getGoalProfileId(), List.of("stale")).orElse(null)
+        : null;
+    boolean missing = activeBackplan == null && staleBackplan == null
+        || activeDailyPlan == null && staleDailyPlan == null;
+    return new PlanFacts(missing, staleBackplan != null || staleDailyPlan != null);
+  }
+
+  private UUID nextPlanItemIdOrNull(GoalProfile profile) {
+    try {
+      return requireNextItem(latestDailyPlan(profile)).getPlanItemId();
+    } catch (ApiException ignored) {
+      return null;
+    }
+  }
+
+  private String validateClockTime(String value, String field) {
+    String cleaned = clean(value);
+    if (cleaned == null || !cleaned.matches(TIME_PATTERN)) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", field + " is invalid.");
+    }
+    return cleaned;
+  }
+
+  private String validateTimezone(String value) {
+    String cleaned = cleanRequired(value, "timezone");
+    try {
+      ZoneId.of(cleaned);
+      return cleaned;
+    } catch (DateTimeException e) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "timezone is invalid.");
+    }
+  }
+
+  private String validateOneOf(String value, Set<String> allowed, String field) {
+    String cleaned = cleanRequired(value, field);
+    if (!allowed.contains(cleaned)) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", field + " is invalid.");
+    }
+    return cleaned;
   }
 
   private GoalDiagnosticAssessment buildDiagnostic(
@@ -795,6 +1223,14 @@ public class GoalAutopilotService {
 
   public record DiagnosticSampleInput(String sampleRef, String transcript, String audioRef, Integer durationSeconds) {}
 
+  public record ControlSettingsInput(
+      String quietHoursStart,
+      String quietHoursEnd,
+      String timezone,
+      Boolean notificationConsent,
+      String intensityOverride,
+      String missedDayPolicy) {}
+
   public record CheckpointInput(String checkpointType, String transcript, String audioRef, Double scoreHint) {}
 
   public record SummaryView(
@@ -815,6 +1251,55 @@ public class GoalAutopilotService {
 
   public record ActionResult(AutopilotActionView action, ForecastView forecast, PlanUpdateSignalView planUpdateSignal) {}
 
+  public record ControlResult(
+      ControlView control,
+      boolean nextActionChanged,
+      boolean reminderEligibilityChanged,
+      boolean replanRequired,
+      String reasonCode,
+      NotificationEligibilityDecisionView reminderEligibility,
+      PlanUpdateSignalView planUpdateSignal) {}
+
+  public record ControlDataGovernanceExport(
+      String exportFamily,
+      String ruleVersion,
+      List<ControlExportRecord> controls,
+      List<ControlIdempotencyExportRecord> idempotencyRecords,
+      List<RetentionRuleView> retentionRules,
+      List<String> deletionTables,
+      boolean redactedAuditOnly,
+      String notificationOutboxStatus) {}
+
+  public record ControlExportRecord(
+      UUID controlId,
+      UUID userId,
+      UUID goalProfileId,
+      String controlStatus,
+      Instant pausedAt,
+      String pauseReason,
+      Instant resumedAt,
+      String quietHoursStart,
+      String quietHoursEnd,
+      String timezone,
+      boolean notificationConsent,
+      String intensityOverride,
+      String missedDayPolicy,
+      String ruleVersion,
+      Instant createdAt,
+      Instant updatedAt) {}
+
+  public record ControlIdempotencyExportRecord(
+      UUID replayId,
+      UUID goalProfileId,
+      int goalRevision,
+      String operation,
+      String requestHash,
+      Instant createdAt,
+      boolean idempotencyKeyRedacted,
+      boolean responseJsonRedacted) {}
+
+  public record RetentionRuleView(String dataClass, String action, String trigger, String minimization) {}
+
   public record CheckpointResult(CheckpointView checkpoint, ForecastView forecast, PlanUpdateSignalView planUpdateSignal) {}
 
   public record GoalProfileView(
@@ -828,6 +1313,36 @@ public class GoalAutopilotService {
       String supportStatus,
       String status,
       int revision) {}
+
+  public record ControlView(
+      UUID controlId,
+      UUID userId,
+      UUID goalProfileId,
+      String controlStatus,
+      Instant pausedAt,
+      String pauseReason,
+      Instant resumedAt,
+      String quietHoursStart,
+      String quietHoursEnd,
+      String timezone,
+      boolean notificationConsent,
+      String intensityOverride,
+      String missedDayPolicy,
+      Instant updatedAt,
+      String ruleVersion) {}
+
+  public record NotificationEligibilityDecisionView(
+      String decisionId,
+      UUID controlId,
+      UUID userId,
+      UUID goalProfileId,
+      UUID planItemId,
+      boolean eligible,
+      String reasonCode,
+      Instant nextAllowedAt,
+      String explanationKey,
+      Instant evaluatedAt,
+      String ruleVersion) {}
 
   public record SupportDecision(
       String decisionId,
@@ -911,4 +1426,6 @@ public class GoalAutopilotService {
       UUID checkpointId, String checkpointType, String cadence, String resultStatus, String confidenceBand, String summary) {}
 
   public record PlanUpdateSignalView(String signalType, String reasonCode) {}
+
+  private record PlanFacts(boolean missingPlan, boolean stalePlan) {}
 }

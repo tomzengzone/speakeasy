@@ -6,6 +6,7 @@ Define how AI runtime prompts are structured and how responses are validated.
 Owning increments:
 - `docs/product/increments/mvp-backend-practice-ai/` for Product Base coach feedback candidate generation.
 - `docs/product/increments/p0-1-expression-automation-training/` for P0.1 structured training feedback, hint, retry, next action candidate, and pressure prompt candidate generation.
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/` for Followup-B candidate-only mastery transition explanations and forbidden persistent-field rejection.
 
 ## Inputs
 - user profile summary
@@ -112,3 +113,88 @@ Traceability: `CR-20260601-001`, `P01-FR-011`, `P01-SPEC-012`, `AC-P01-013`。
 - Product Base `/ai/coach-turn` may map strict JSON into `CoachResult`; P0.1 training feedback must map strict JSON into `TrainingFeedbackCandidate` or deterministic fallback before planner consumption.
 - Provider invalid JSON, markdown-wrapped JSON, missing required fields, off-scope actions, or final mastery/billing fields must produce fallback instead of successful feedback.
 - Prompt examples and eval cases must include provider timeout/unavailable, ASR empty transcript, TTS unavailable and invalid schema cases.
+
+## P0.2 Followup-B AI Runtime Contract
+
+### Purpose
+Followup-B AI runtime may generate candidate-only, learner-visible explanations for deterministic L0-L5 mastery transition decisions. It must not decide or persist autopilot control state, notification eligibility, notification schedule, recovery mode, item due decision, final mastery, review schedule, goal completion, entitlement, quota, official score equivalence or replay result.
+
+### Owning Product Object
+| 字段 | 值 |
+| --- | --- |
+| Increment | `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/` |
+| Acceptance | `AC-P02-FUB-007`, `AC-P02-FUB-008` |
+| Test cases | `TC-P02-FUB-014` primary AI eval / forbidden persistent-field rejection; `TC-P02-FUB-015` supporting replay fixture input only, not an AI pass/fail substitute |
+| Domain input | `MasteryTransitionDecision`, `MemoryItemPolicyState`, `PlannerReplayAudit` in `docs/domain/domain_schema.md` |
+| API input | `GET /goal-autopilot/mastery-transitions`, `GET /goal-autopilot/replay-audits` in `docs/architecture/openapi/speakeasy-api.yaml` |
+
+### Required Inputs
+- `schema_version`
+- `transition_id`
+- `memory_item_state_id`
+- `item_type`
+- `previous_level`
+- `proposed_level`
+- `accepted_level`
+- `transition_direction`
+- `accepted_evidence_summary`: redacted aggregate only, no raw transcript or raw audio
+- `confidence_band`
+- `reason_code`
+- `rule_version`
+- `support_status`
+- `claim_guard`
+
+### Output Requirement
+The model must return valid JSON matching `FollowupBMasteryTransitionExplanationCandidate` in `docs/ai_runtime/llm_output_schema.md`.
+
+### Prompt Rules
+- Return JSON only; do not wrap JSON in markdown.
+- Explain the deterministic transition decision in one concise learner-visible explanation.
+- Echo supplied deterministic fields only when the schema allows it; never invent a new level, reason code, rule version or evidence ref.
+- Use product-internal mastery wording such as L0-L5 or practice readiness; do not imply IELTS/TOEFL certification, official score, guaranteed outcome or goal completion.
+- If evidence is low-confidence, partial, unsupported or fatigue-protected, explain hold/demotion/block conservatively without encouraging forced promotion.
+- Do not include raw transcript, raw audio, provider payload, provider name, provider secret, exact high-risk diagnostic details or unrestricted personal data.
+- If the model output contains forbidden persistent fields, backend validation must reject the candidate and use deterministic fallback.
+
+### Forbidden Persistent Fields
+The prompt must explicitly forbid output fields or prose claims equivalent to:
+
+- `final_mastery_level`
+- `promotion_applied`
+- `demotion_applied`
+- `review_due_at`
+- `notification_schedule`
+- `control_status`
+- `recovery_mode`
+- `goal_completed`
+- `official_score`
+- `certified`
+- `entitlement`
+- `quota_state`
+- `billing_state`
+
+### Developer Prompt Skeleton
+```text
+You are generating a candidate explanation for a deterministic goal-autopilot mastery transition.
+Return JSON only. Use schema_version=1 and output_type=followup_b_mastery_transition_explanation_candidate.
+
+You may:
+- explain the supplied deterministic L0-L5 transition result;
+- summarize accepted evidence using only redacted aggregate facts;
+- produce one short learner-visible explanation and one optional safety note.
+
+You must not:
+- decide the transition;
+- write final mastery, review schedule, notification schedule, recovery mode, control state, goal completion, entitlement, quota or billing fields;
+- claim official IELTS/TOEFL score equivalence or certification;
+- expose raw transcript, raw audio, provider payload or sensitive diagnostic details.
+```
+
+### Validation Requirement
+- JSON parse must pass.
+- `output_type` must be `followup_b_mastery_transition_explanation_candidate`.
+- `previous_level`, `proposed_level` and `accepted_level` must be L0-L5 and match deterministic input values.
+- `transition_direction` must match deterministic input and be `promote`, `demote`, `hold` or `reject`.
+- `guardrails.official_score_equivalence` must be false.
+- `guardrails.persistent_decision_fields_present` must be false and `forbidden_fields_detected` must be empty for successful consumption.
+- Any forbidden persistent field, official-score claim, raw transcript/audio/provider payload or unknown top-level field must trigger deterministic fallback and must not update `MasteryTransitionDecision` or `MemoryItemPolicyState`.

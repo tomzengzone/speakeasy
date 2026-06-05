@@ -7,14 +7,14 @@ Revalidated / P0.2 stage replanned for goal-driven autopilot - TC-P01-013/014 lo
 Product Manager Agent
 
 ## Current Date
-2026-06-04
+2026-06-05
 
 ## 活动目标
 以 Product Base 活需求库承载已接受稳定能力。本轮已按顺序完成 TC-P01-013、TC-P01-014、TC-COM-AI-004 evidence preparation 和 TC-COM-012/015/019/021/022 strict gate revalidation，并完成独立审核；2026-06-03 又在同一 P0.1 stage/increment 内补充商业软件整改设计、需求、验收、测试和追踪口径。后续工作不得把本地通过扩展为 Product Base 合入、生产训练或商业发布批准。
 - MVP 后端线：Product Base 已接受能力仍以本地 Flutter macOS + Spring Boot + 真实 PostgreSQL 系统 E2E 为 baseline；2026-06-02 复测通过 `smoke`、`scene-catalog`、`learning-memory`、`practice-feedback`、`profile-settings`、`membership-boundary` 和 `commercial-boundary`。
 - 商业发布线：P0 商业化订阅和 AI provider 生产化本地实现/测试边界已复测通过；2026-06-03 strict gates 确认真实支付 provider、native social login、store/reviewer/privacy/support、strict release 和外部 AI evidence refs 仍是商业发布阻断项。
 - 价值体验线：P0.1“口语优先、文本兜底的 FSI 式表达自动化训练闭环”保持 next value-experience stage；TC-P01-013 路由级 integration loop 和 TC-P01-014 AI eval validator 已于 2026-06-03 本地关闭。TC-P01-021 through TC-P01-031 已记录本地 passed evidence，覆盖后端 Training API/source-of-truth、证据治理、内容版本、真实 media/AI pipeline、planner audit、backend-only frontend source-of-truth 和 rollout gates；Product Base 合入仍需 PM 设计确认、独立治理复核和不得扩展到商业发布/paid AI voice 的边界确认。
-- P0.2 目标达成线：用户目标驱动审查后，旧单体记忆调度 artifact 已删除并被新的 stage scope 吸收；P0.2 正式 stage scope 扩展为 P02-SI-001..013，并拆成 `p0-2-goal-diagnostic-foundation`、`p0-2-goal-backplan-memory-policy` 和 `p0-2-autopilot-progress-checkpoint`。三个新 increment 已完成 requirements/spec/acceptance/test_cases/traceability 下沉设计；本轮新增 Followup-A through Followup-D 正式 definition 和 WP traceability scaffold，用于关闭完整 GoalProfile UI、pause/resume/notification、Queue/Wiki propagation、commercial/cost/data/release gates。当前不允许直接按 scaffold 进入代码；每个 follow-up 仍必须先补齐 requirements/spec/acceptance/test_cases、契约、性能/覆盖率实现证据和独立 checker 复核。
+- P0.2 目标达成线：用户目标驱动审查后，旧单体记忆调度 artifact 已删除并被新的 stage scope 吸收；P0.2 正式 stage scope 扩展为 P02-SI-001..013，并拆成 `p0-2-goal-diagnostic-foundation`、`p0-2-goal-backplan-memory-policy` 和 `p0-2-autopilot-progress-checkpoint`。三个新 increment 已完成 requirements/spec/acceptance/test_cases/traceability 下沉设计；Followup-A 已完成本地实现审核；Followup-B 已完成 requirements/spec/acceptance/test_cases/traceability、Domain、API/OpenAPI/generated client sync、AI runtime 和 UX 合同门禁，且 backend/frontend UserAutopilotControl control slice 和 S002-A notification eligibility policy 已有本地执行证据；TC-P02-FUB-001/002/003/004/005/006 passed。Followup-B scheduler/outbox、missed-day recovery、item-level memory、L0-L5 transition、replay/performance/coverage、dedicated traceability script、final QA 和 release evidence 仍 open。Followup-C/D 仍为正式 definition 和 WP traceability scaffold。
 
 ## 产品对象状态
 - Product Base requirements：`docs/product/base/requirements.md`
@@ -46,7 +46,7 @@ Product Manager Agent
 - P0.2 autopilot progress checkpoint definition：`docs/product/increments/p0-2-autopilot-progress-checkpoint/definition.md`
 - P0.2 autopilot progress checkpoint requirements/spec/AC/TC/traceability：`docs/product/increments/p0-2-autopilot-progress-checkpoint/requirements.md`, `docs/product/increments/p0-2-autopilot-progress-checkpoint/spec.md`, `docs/product/increments/p0-2-autopilot-progress-checkpoint/acceptance.md`, `docs/product/increments/p0-2-autopilot-progress-checkpoint/test_cases.md`, `docs/product/increments/p0-2-autopilot-progress-checkpoint/traceability.md`
 - P0.2 Followup-A definition/traceability scaffold：`docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening/definition.md`, `docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening/traceability.md`
-- P0.2 Followup-B definition/traceability scaffold：`docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/definition.md`, `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/traceability.md`
+- P0.2 Followup-B definition and pre-implementation docs/contracts：`docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/definition.md`, `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/requirements.md`, `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/spec.md`, `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/acceptance.md`, `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/test_cases.md`, `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/traceability.md`
 - P0.2 Followup-C definition/traceability scaffold：`docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/definition.md`, `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/traceability.md`
 - P0.2 Followup-D definition/traceability scaffold：`docs/product/increments/p0-2-followup-d-release-gate-hardening/definition.md`, `docs/product/increments/p0-2-followup-d-release-gate-hardening/traceability.md`
 - Commercial readiness increment definition：`docs/product/increments/commercial-subscription-readiness/definition.md`
@@ -159,11 +159,11 @@ Product Manager Agent
 32. 2026-06-03 新增 P0.1 商业软件整改批次：不新增 stage，在 `p0-1-expression-automation-training` 内补齐 P01-FR-012 through P01-FR-017、P01-SPEC-013 through P01-SPEC-018、AC-P01-014 through AC-P01-019、TC-P01-021 through TC-P01-028、P01-TR-013 through P01-TR-018 和 `P01-GAP-009` through `P01-GAP-014`。
 33. P0 商业发布外部门禁仍必须补齐 TC-COM-012/015/019/021/022 和 TC-COM-AI-004 的外部/native/store/release evidence refs 并 rerun strict gates；这些不被 P0.1 本地或生产整改文档替代。
 34. 2026-06-04 Product Manager 已接受启动 P0.2 文档设计，不等待代码实现：早期单体记忆调度 artifact 曾形成 P02-SI-001..006 的部分设计输入，但用户目标驱动审查后已被删除并 superseded，不能作为实现入口。
-35. P0.2 当前 implementation readiness 为 gated：三个新 increment 的 requirements/spec/acceptance/test_cases/traceability、domain model、UX/screen spec、AI runtime schema、API/OpenAPI contract、implementation/tests、scope guard 和 executed trace evidence 仍需后续关闭。
+35. P0.2 当前 implementation readiness 为 gated：三个新 increment 已有 requirements/spec/acceptance/test_cases/traceability 和本地 deterministic slice evidence；Followup-A 已完成本地实现审核；Followup-B 已完成 requirements/spec/acceptance/test_cases/traceability、domain model、UX/screen spec、AI runtime schema、API/OpenAPI contract 和 generated client sync 审核。Followup-B backend/frontend control source/update/pause/resume slice 和 S002-A notification eligibility policy 已有本地执行证据；TC-P02-FUB-001/002/003/004/005/006 passed，其中 TC-P02-FUB-002 关闭当前 S001 control、control idempotency、redacted audit、retention policy snapshot 和 account-deletion cleanup 范围，TC-P02-FUB-005/006 关闭 reason precedence、quiet hours、permission/consent/entitlement/quota/stale/missing-plan 和 Flutter no-false-completion 范围。Followup-B scheduler/outbox、recovery、item-level memory、mastery、replay/performance/coverage、dedicated traceability script、final test/quality evidence 仍 open。
 36. 2026-06-04 用户目标驱动审查结论：现有 Product Base、P0.1、P0.2 旧设计、P1/P2 均未完整覆盖 GoalProfile、DiagnosticAssessment、GoalBackplan、AutopilotTraining、MemoryCurvePolicy、ProgressForecast 和 OutcomeCheckpoint；P0.2 stage 已重排为 `goal-driven-learning-autopilot` primary feature。
 37. 2026-06-04 P0.2 新 stage plan：`p0-2-goal-diagnostic-foundation` 先建立目标画像和诊断，`p0-2-goal-backplan-memory-policy` 再生成目标倒排计划和记忆曲线策略，`p0-2-autopilot-progress-checkpoint` 最后承接自动带练、达标预测和周期复测。旧单体记忆调度 artifact 已删除；有效实现入口只剩三个新 planned increment。
 38. 2026-06-04 P0.2 policy gates 下沉完成：P02-PG-001 through P02-PG-005 已进入三个 increment 的 requirements/spec/acceptance/test_cases/traceability；P02-SI-001 through P02-SI-013 均有 planned FR/Spec/AC/TC/Traceability 覆盖。实现仍受 domain/API/AI/UX、实际代码、性能预算、>=80% 代码覆盖率和 executed evidence gates 约束。
-39. 2026-06-04 P0.2 Followup-A through Followup-D definition 和 WP traceability scaffold 已建立：A 关闭 GoalProfile/diagnostic user path，B 关闭 autopilot control/planner/memory，C 关闭 checkpoint/forecast/surfaces，D 关闭 release/commercial/data/ops gates。每个 follow-up 在进入代码前仍必须生成自己的 requirements/spec/acceptance/test_cases 并通过独立追溯审查。
+39. 2026-06-04 P0.2 Followup-A through Followup-D definition 和 WP traceability scaffold 已建立：A 关闭 GoalProfile/diagnostic user path，B 关闭 autopilot control/planner/memory，C 关闭 checkpoint/forecast/surfaces，D 关闭 release/commercial/data/ops gates。Followup-B 已补齐自己的 requirements/spec/acceptance/test_cases/traceability 和 Domain/API/OpenAPI/AI/UX 合同审核；这只解除 pre-implementation 文档/合同缺口，不等同于实现批准、测试通过或 release approval。
 
 ## PM 下一阶段开发计划
 
@@ -177,7 +177,7 @@ Product Manager Agent
 4. 将下一步交给 Development Orchestrator 路由，但要求每一步完成后进入独立 checker 审查。
 
 ### PM 结论
-当前项目不需要重新启动 MVP 后端或继续补本地 P0.1 blocker。下一阶段主计划仍是关闭 P0 商业发布和 paid AI voice 的外部/native/store/release evidence，并做 P0.1 已实现训练闭环的 Product Base 合入复核；P0.2 已按用户指令进入文档设计批次，但代码实现仍不进入当前实现批次，必须先关闭 P02 domain/API/AI/UX 契约和 AC-to-TC 执行门禁。
+当前项目不需要重新启动 MVP 后端或继续补本地 P0.1 blocker。下一阶段主计划仍是关闭 P0 商业发布和 paid AI voice 的外部/native/store/release evidence，并做 P0.1 已实现训练闭环的 Product Base 合入复核；P0.2 已按用户指令进入 follow-up 批次。Followup-B 的 P02 domain/API/AI/UX 契约和 AC-to-TC 设计门禁已关闭，backend/frontend UserAutopilotControl control slice 已部分实现并回写证据；剩余实现必须按 scheduler/outbox、recovery、memory/mastery、replay/performance/coverage 和 final QA 小 slice 继续路由。
 
 ### Completed Local Evidence - P0.1 Training Product Base/Production Hardening
 目标：不新增 stage，在现有 `p0-1-expression-automation-training` increment 内把已通过本地验证的训练 Agent 加固到商业软件可接受的后端事实源、证据治理和运营门禁。该本地证据批次已完成；下一步不是继续执行这些 TC，而是等待 PM/用户确认设计方案后进入 Product Base 合入复核。
@@ -220,8 +220,8 @@ Product Manager Agent
 3. `P01-BASE-001`：若复核通过，只把已验证的 session 内训练能力合入 `docs/product/base/`；不得合入 P0.2 跨天调度、P1 笔记本/评分产品化或商业权益 gating。
 4. `P01-REG-001`：更新 feature registry 中 `expression-automation-training` 的状态，并保留 paid AI voice release residual 指向 `commercial-ai-provider-hardening`。
 
-### Next - P0.2 文档设计已启动，代码实现受门禁约束
-- P0.2 目标驱动自动带练：原始三个 increment 已完成 requirements/spec/acceptance/test_cases/traceability 和本地 deterministic slice evidence；当前合法下一步不是继续扩大粗粒度实现，而是按 `p0-2-followup-a-goal-intake-diagnostic-hardening`、`p0-2-followup-b-autopilot-control-planner-memory`、`p0-2-followup-c-checkpoint-forecast-surfaces` 和 `p0-2-followup-d-release-gate-hardening` 逐个补齐 requirements/spec/acceptance/test_cases、契约、实现、测试、覆盖率、性能和独立审核。
+### Next - P0.2 Followup-B 进入实现路由前最终门禁
+- P0.2 目标驱动自动带练：原始三个 increment 已完成 requirements/spec/acceptance/test_cases/traceability 和本地 deterministic slice evidence；Followup-A 已完成本地实现审核；Followup-B 已完成 requirements/spec/acceptance/test_cases、traceability、Domain、API/OpenAPI/generated client sync、AI runtime 和 UX 合同审核，并已完成 backend/frontend UserAutopilotControl control slice 与 S002-A notification eligibility policy 的本地执行证据回写。当前合法下一步是由 Development Orchestrator 继续路由 Followup-B scheduler/outbox、missed-day recovery、item-level memory、L0-L5 transition、replay/performance/coverage 和 dedicated traceability script 小 slice。Followup-C/D 仍需各自补齐 requirements/spec/acceptance/test_cases、契约、实现、测试、覆盖率、性能和独立审核。
 
 ### Later - 暂不进入当前实现
 - P1 笔记本与评分产品化：只保留 backlog，不进入当前实现。

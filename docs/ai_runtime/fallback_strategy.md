@@ -54,3 +54,23 @@ Owning change request: `CR-20260601-001`。
 | Pronunciation | no selected real scoring provider | `ScoreResult.status=unavailable`, planner continues using completion/task signals |
 
 Fallback logs must omit raw audio, provider keys and complete sensitive transcript. Observability may include provider, model, status, latency, fallback reason and schema version.
+
+## P0.2 Followup-B AI Fallback Mapping
+
+Owning increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`。
+
+Traceability: `AC-P02-FUB-007`, `AC-P02-FUB-008`, `TC-P02-FUB-014`。
+
+Followup-B AI output is never a source of truth for L0-L5 transition, item-level review scheduling, notification scheduling, recovery planning, autopilot control, entitlement, quota or goal completion. It may only provide a candidate explanation after deterministic rules have already produced a `MasteryTransitionDecision`.
+
+| Failure | Required behavior | Prohibited behavior |
+| --- | --- | --- |
+| LLM returns invalid JSON or markdown-wrapped JSON | Attempt one safe repair parse; if schema still fails, return deterministic explanation fallback with `recoverable_error.code=AI_SCHEMA_INVALID` | Persist raw provider output or mark transition explanation as successful |
+| LLM includes `final_mastery_level`, `review_due_at`, `notification_schedule`, `control_status`, `recovery_mode`, `goal_completed`, `official_score`, `entitlement`, `quota_state` or billing fields | Reject or ignore the candidate for persistence; record fallback reason `FORBIDDEN_PERSISTENT_FIELD`; render deterministic explanation from `MasteryTransitionDecision.reason_code` only | Apply AI-proposed mastery, review schedule, notification schedule, recovery mode, control state, entitlement or quota |
+| LLM claims official score equivalence, certification, guaranteed outcome or goal completion | Reject candidate and use safe claim-guard fallback; preserve `official_score_equivalence=false` | Show official-score or guaranteed-outcome wording to the user |
+| Evidence is low-confidence, partial, unsupported or fatigue-protected | Render conservative hold/demotion/block explanation from deterministic reason code | Force promotion or frame low-confidence evidence as mastery proof |
+| LLM exposes raw transcript, raw audio, provider payload, provider name, provider secret or sensitive diagnostic details | Reject candidate and log only redacted fallback metadata | Send sensitive raw content to Flutter or audit projection |
+| Provider timeout or unavailable during explanation generation | Return deterministic explanation fallback; keep `MasteryTransitionDecision` and replay audit unchanged | Block transition audit visibility or retry by creating duplicate transition records |
+| Replay verification detects explanation candidate mismatch | Mark explanation candidate invalid for replay; compare deterministic decision/reason/rule version only | Treat prose mismatch as evidence that the deterministic transition changed |
+
+Deterministic fallback text must be generated from safe fields only: `transition_direction`, `previous_level`, `accepted_level`, `reason_code`, `confidence_band`, `rule_version` and redacted evidence counts. Fallback must not create or modify `PlannerReplayAudit`; replay audit belongs to deterministic planner rules.

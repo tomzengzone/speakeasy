@@ -1,16 +1,16 @@
-# P0.2 Followup-B Traceability Scaffold：自动带练控制与计划记忆引擎加固
+# P0.2 Followup-B Traceability：自动带练控制与计划记忆引擎加固
 
 ## 状态
-WP traceability scaffold only - 本文件只建立 work-package 级追溯骨架；requirements/spec/acceptance/test_cases/code/test evidence 尚未生成。任何行不得被解释为实现完成。
+FR/Spec/AC/TC traceability reconciled with S002-A notification eligibility evidence - 本文件已把 Followup-B requirements、spec、acceptance、test_cases、Domain/API/AI/UX contract、implementation slice routing、deterministic policy tables、fixture corpus 和当前 backend/frontend control slice 执行证据接入 traceability。TR-001/TR-002 有本地 control-slice 证据；TC-P02-FUB-002 已关闭当前 S001 control、control idempotency、redacted audit、retention policy snapshot 和 account-deletion cleanup 范围；TR-003 已关闭 S002-A notification eligibility policy 范围，覆盖 reason precedence、quiet-hours、permission/consent/entitlement/quota/stale/missing-plan 和 Flutter no-false-completion 展示；TR-004..009 仍未完成。任何行不得被解释为 Followup-B 全量完成或 release approval。
 
 ## 版本和状态管理
 | 字段 | 值 |
 | --- | --- |
-| Traceability version | v0.1-p0.2-followup-b-wp-scaffold |
-| Last updated | 2026-06-04 |
+| Traceability version | v0.6-p0.2-followup-b-s002-a-eligibility-policy |
+| Last updated | 2026-06-05 |
 | Owner | Product Manager Agent |
 | Checker | Product Object Governance Check Agent / Documentation Governance / Independent Quality Review |
-| Workflow state | Definition and WP scaffold created；requirements/spec/AC/TC not started；implementation blocked |
+| Workflow state | Definition, requirements, spec, acceptance, test_cases and contracts created；implementation slice routing, deterministic policy tables and FUB-FIX-001..009 fixture routing added；control source/update/pause/resume backend, TC-P02-FUB-002 control data governance, Flutter binding and S002-A notification eligibility policy executed；remaining scheduler/outbox/recovery/memory/mastery/replay/performance/final review gated |
 
 ## 上游链路
 ```text
@@ -19,35 +19,76 @@ docs/product/stages/p0-2-training-memory.md
   -> docs/product/increments/p0-2-autopilot-progress-checkpoint/
   -> docs/reports/quality_report.md local implementation residual blockers
   -> docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/definition.md
+  -> docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/requirements.md
+  -> docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/spec.md
+  -> docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/acceptance.md
+  -> docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/test_cases.md
   -> docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/traceability.md
 ```
 
-## WP Traceability Matrix
-| WP Trace Row ID | WP ID | Stage Scope ID | Policy Gate | Existing upstream row | Required downstream artifacts | Contract impact | Code evidence status | Test evidence status | Review gate | Status |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P02-FUB-TR-000 | P02-FUB-WP-000 | P02-SI-001..005, P02-SI-009..011 | P02-PG-001..005 | P02-PLAN-TR-001..008, P02-AUTO-TR-003 | definition, traceability scaffold | N/A - document scaffold only | N/A - no code change | N/A - no executable test required; `git diff --check` required | Independent docs/path/trace review | In progress |
-| P02-FUB-TR-001 | P02-FUB-WP-001 | P02-SI-010 | P02-PG-003, P02-PG-005 | P02-AUTO-TR-003 | requirements/spec/AC/TC for UserAutopilotControl | Domain/API/UX control state | Not started | Planned - persistence, ownership and deletion tests | Data ownership review required | Planned |
-| P02-FUB-TR-002 | P02-FUB-WP-002 | P02-SI-010 | P02-PG-003 | P02-AUTO-TR-003 | requirements/spec/AC/TC for pause/resume/update-control API | API/OpenAPI, Flutter adapter, UX states | Not started | Planned - pause/resume API and widget tests | API compatibility review required | Planned |
-| P02-FUB-TR-003 | P02-FUB-WP-003 | P02-SI-010 | P02-PG-003, P02-PG-004, P02-PG-005 | P02-AUTO-TR-003, P02-AUTO-TR-007 | requirements/spec/AC/TC for quiet hours and notification eligibility | Domain/API/UX notification eligibility | Not started | Planned - quiet hours, consent, permission and entitlement tests | Privacy and commercial review required | Planned |
-| P02-FUB-TR-004 | P02-FUB-WP-004 | P02-SI-010 | P02-PG-003, P02-PG-005 | P02-AUTO-TR-003 | requirements/spec/AC/TC for scheduler/outbox | Backend scheduler/outbox, Flutter local notification boundary if applicable | Not started | Planned - schedule/cancel/reschedule and audit tests | Ops/reliability review required | Planned |
-| P02-FUB-TR-005 | P02-FUB-WP-005 | P02-SI-001, P02-SI-005, P02-SI-009 | P02-PG-003 | P02-PLAN-TR-003, P02-PLAN-TR-006 | requirements/spec/AC/TC for missed-day recovery planner | Domain/API planner recovery | Not started | Planned - skip/defer/missed day no-stacking tests | Planner feasibility review required | Planned |
-| P02-FUB-TR-006 | P02-FUB-WP-006 | P02-SI-001, P02-SI-002, P02-SI-011 | P02-PG-001, P02-PG-003 | P02-PLAN-TR-004, P02-PLAN-TR-005 | requirements/spec/AC/TC for item-level memory policy | Domain memory item and review policy | Not started | Planned - spacing, forgetting risk, overlearning and interleaving tests | Algorithm/replay review required | Planned |
-| P02-FUB-TR-007 | P02-FUB-WP-007 | P02-SI-003, P02-SI-011 | P02-PG-001, P02-PG-003 | P02-DIAG-TR-006, P02-PLAN-TR-004 | requirements/spec/AC/TC for L0-L5 promotion/demotion | Domain mastery transition, AI forbidden-field schema | Not started | Planned - evidence-based transition and AI rejection tests | Mastery-governance review required | Planned |
-| P02-FUB-TR-008 | P02-FUB-WP-008 | P02-SI-001..005, P02-SI-009..011 | P02-PG-003, P02-PG-004 | P02-PLAN-TR-008, P02-AUTO-TR-008 | test_cases.md, replay fixtures, coverage gate, performance gate | QA scripts and reports | Not started | Planned - planner replay, p95 budgets and coverage >=80% | QA/performance review required | Planned |
-| P02-FUB-TR-009 | P02-FUB-WP-009 | P02-SI-001..005, P02-SI-009..011 | P02-PG-001..005 | All Followup-B rows | quality_report.md, implementation_report.md when code exists | Reporting only | Not started | Planned - review evidence must cite TC IDs and commands after implementation | Independent final review required | Planned |
+## Implementation Slice Traceability
+| Slice ID | FR | Spec | AC | TC | Fixture IDs | Trace rows | Current status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| P02-FUB-SLICE-001 | P02-FUB-FR-001, P02-FUB-FR-002 | P02-FUB-SPEC-001, P02-FUB-SPEC-002 | AC-P02-FUB-001, AC-P02-FUB-002 | TC-P02-FUB-001..004 | FUB-FIX-001, FUB-FIX-002 | P02-FUB-TR-001, P02-FUB-TR-002 | Executed for routed control slice and current control data-governance scope; notification outbox remains S002 |
+| P02-FUB-SLICE-002 | P02-FUB-FR-003, P02-FUB-FR-004 | P02-FUB-SPEC-003, P02-FUB-SPEC-004 | AC-P02-FUB-003, AC-P02-FUB-004 | TC-P02-FUB-005..008 | FUB-FIX-003, FUB-FIX-004 | P02-FUB-TR-003, P02-FUB-TR-004 | S002-A eligibility policy executed for TC-P02-FUB-005/006; scheduler/outbox lifecycle remains TC-P02-FUB-007/008 planned |
+| P02-FUB-SLICE-003 | P02-FUB-FR-005 | P02-FUB-SPEC-005 | AC-P02-FUB-005 | TC-P02-FUB-009..010 | FUB-FIX-005 | P02-FUB-TR-005 | Policy/fixture routing complete; implementation/tests planned |
+| P02-FUB-SLICE-004 | P02-FUB-FR-006 | P02-FUB-SPEC-006 | AC-P02-FUB-006 | TC-P02-FUB-011..012 | FUB-FIX-006 | P02-FUB-TR-006 | Policy/fixture routing complete; implementation/tests planned |
+| P02-FUB-SLICE-005 | P02-FUB-FR-007 | P02-FUB-SPEC-007 | AC-P02-FUB-007 | TC-P02-FUB-013..014 | FUB-FIX-007 | P02-FUB-TR-007 | Policy/fixture routing complete; implementation/tests planned |
+| P02-FUB-SLICE-006 | P02-FUB-FR-008 | P02-FUB-SPEC-008 | AC-P02-FUB-008 | TC-P02-FUB-015..017 | FUB-FIX-008, FUB-FIX-009 | P02-FUB-TR-008, P02-FUB-TR-009 | Policy/fixture routing complete; replay/performance/coverage/final review planned |
+
+## Full Traceability Matrix
+| Trace Row ID | WP ID | Stage Scope ID | Policy Gate | Existing upstream row | FR | Spec | AC | TC | Contract Evidence | Code Evidence | Test Evidence | Review Gate | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| P02-FUB-TR-000 | P02-FUB-WP-000 | P02-SI-001, P02-SI-002, P02-SI-003, P02-SI-004, P02-SI-005, P02-SI-009, P02-SI-010, P02-SI-011 | P02-PG-001, P02-PG-002, P02-PG-003, P02-PG-004, P02-PG-005 | P02-PLAN-TR-001..008, P02-AUTO-TR-003 | N/A - document setup | N/A - document setup | N/A - document setup | N/A - `git diff --check` only | N/A - document scaffold only | N/A - no code target | `git diff --check` required; no executable test | Independent docs/path/trace review | Planned documentation setup |
+| P02-FUB-TR-001 | P02-FUB-WP-001 | P02-SI-010 | P02-PG-002, P02-PG-003, P02-PG-005 | P02-AUTO-TR-003 | P02-FUB-FR-001 | P02-FUB-SPEC-001 | AC-P02-FUB-001 | TC-P02-FUB-001, TC-P02-FUB-002 | Domain/API/OpenAPI/UX contracts updated for UserAutopilotControl, data governance and server-state display; FUB-FIX-001 routes control-source fixtures | `GoalAutopilotControl`, `GoalAutopilotControlRepository#findByUserIdOrderByUpdatedAtDesc`, `GoalAutopilotControlIdempotency`, `GoalAutopilotControlIdempotencyRepository#findByUserIdOrderByCreatedAtDesc`, `GoalAutopilotService#exportControlDataGovernance`, `GoalAutopilotController`, migration `V202606040002__p0_2_followup_b_autopilot_control.sql` | TC-P02-FUB-001 passed; TC-P02-FUB-002 passed through `GoalAutopilotControllerTest#tcP02Fub002ControlDataGovernanceAndValidationAreServerSide`, covering server validation, control governance export snapshot, idempotency request-hash/redaction, redacted audit metadata, retention rule snapshot and account-deletion cleanup for `goal_autopilot_controls` and `goal_autopilot_control_idempotency`; evidence report `docs/reports/test_report.md#2026-06-05-p02-followup-b-tc-002-control-governance-closure` | Data ownership review passed for current S001 control data classes; notification outbox governance remains in TR-004 / TC-P02-FUB-007/008 | Implemented for S001 control data governance / completion gated by later WPs |
+| P02-FUB-TR-002 | P02-FUB-WP-002 | P02-SI-010 | P02-PG-002, P02-PG-003 | P02-AUTO-TR-003 | P02-FUB-FR-002 | P02-FUB-SPEC-002 | AC-P02-FUB-002 | TC-P02-FUB-003, TC-P02-FUB-004 | API/OpenAPI and UX contracts updated for pause/resume/update-control; FUB-FIX-002 routes command fixtures | Backend control endpoints in `GoalAutopilotController`/`GoalAutopilotService`; Flutter models/adapter/panel/API client in `lib/features/goal_autopilot/` and `lib/services/api_client.dart` | TC-P02-FUB-003 passed through `GoalAutopilotControllerTest#tcP02Fub003PauseResumeIsIdempotentAndSuppressesNextAction`; TC-P02-FUB-004 passed through `goal_autopilot_adapter_test.dart` Followup-B widget test | API compatibility review passed for control slice; final review remains required | Implemented for routed control slice / completion blocked |
+| P02-FUB-TR-003 | P02-FUB-WP-003 | P02-SI-010 | P02-PG-003, P02-PG-004, P02-PG-005 | P02-AUTO-TR-003, P02-AUTO-TR-007 | P02-FUB-FR-003 | P02-FUB-SPEC-003 | AC-P02-FUB-003 | TC-P02-FUB-005, TC-P02-FUB-006 | Domain/API/OpenAPI/UX notification eligibility and privacy contracts updated; reason-precedence and quiet-hours fixture routing defined in FUB-FIX-003; `NotificationEligibilityDecision.reason_code` enum includes `blocked_by_policy` | `NotificationEligibilityPolicy`; `GoalAutopilotService#reminderEligibilityDecision` uses policy output for current control response and distinguishes `stale_plan` from `missing_plan`; Flutter renders server reason code without local recomputation | TC-P02-FUB-005 passed through `NotificationEligibilityPolicyTest`; TC-P02-FUB-006 passed through `goal_autopilot_adapter_test.dart` widget test; regression `GoalAutopilotControllerTest` and OpenAPI drift/contract gates passed; evidence report `docs/reports/test_report.md#2026-06-05-p02-followup-b-s002-a-notification-eligibility-policy` | Independent S002-A quality review required before final close; scheduler/outbox review remains TR-004 | Implemented for S002-A eligibility policy / completion gated by outbox and later WPs |
+| P02-FUB-TR-004 | P02-FUB-WP-004 | P02-SI-010 | P02-PG-003, P02-PG-005 | P02-AUTO-TR-003 | P02-FUB-FR-004 | P02-FUB-SPEC-004 | AC-P02-FUB-004 | TC-P02-FUB-007, TC-P02-FUB-008 | Required - backend scheduler/outbox contract and replay audit boundary; FUB-FIX-004 defines lifecycle, dedupe, retry, expiry and redaction assertions | Not started | Planned only - schedule/cancel/reschedule/dedupe/failure replay tests | Ops/reliability review required | Planned / implementation blocked |
+| P02-FUB-TR-005 | P02-FUB-WP-005 | P02-SI-001, P02-SI-004, P02-SI-005, P02-SI-009 | P02-PG-002, P02-PG-003 | P02-PLAN-TR-003, P02-PLAN-TR-006 | P02-FUB-FR-005 | P02-FUB-SPEC-005 | AC-P02-FUB-005 | TC-P02-FUB-009, TC-P02-FUB-010 | Required - Domain/API planner recovery contract; FUB-FIX-005 defines compress/defer/replace precedence, balanced tie-breaker and no-stacking assertions | Not started | Planned only - missed/skip/defer no-stacking and controller recovery tests | Planner feasibility review required | Planned / implementation blocked |
+| P02-FUB-TR-006 | P02-FUB-WP-006 | P02-SI-001, P02-SI-002, P02-SI-011 | P02-PG-001, P02-PG-003 | P02-PLAN-TR-004, P02-PLAN-TR-005 | P02-FUB-FR-006 | P02-FUB-SPEC-006 | AC-P02-FUB-006 | TC-P02-FUB-011, TC-P02-FUB-012 | Required - Domain memory item policy and replay contract; FUB-FIX-006 defines forgetting-risk thresholds, overlearning cap, interleaving cap, budget defer and default interval assertions | Not started | Planned only - forgetting risk, retrieval success, overlearning, interleaving and replay tests | Algorithm/replay review required | Planned / implementation blocked |
+| P02-FUB-TR-007 | P02-FUB-WP-007 | P02-SI-003, P02-SI-011 | P02-PG-001, P02-PG-003 | P02-DIAG-TR-006, P02-PLAN-TR-004 | P02-FUB-FR-007 | P02-FUB-SPEC-007 | AC-P02-FUB-007 | TC-P02-FUB-013, TC-P02-FUB-014 | Required - Domain mastery transition and AI forbidden-field schema contract; FUB-FIX-007 defines one-level promotion cap, confidence thresholds, hold/demotion and forbidden-field assertions | Not started | Planned only - evidence-based transition, demotion/hold and AI persistent-field rejection tests | Mastery-governance review required | Planned / implementation blocked |
+| P02-FUB-TR-008 | P02-FUB-WP-008 | P02-SI-001, P02-SI-002, P02-SI-003, P02-SI-004, P02-SI-005, P02-SI-009, P02-SI-010, P02-SI-011 | P02-PG-001, P02-PG-002, P02-PG-003, P02-PG-004, P02-PG-005 | P02-PLAN-TR-008, P02-AUTO-TR-008 | P02-FUB-FR-008 | P02-FUB-SPEC-008 | AC-P02-FUB-008 | TC-P02-FUB-015, TC-P02-FUB-016, TC-P02-FUB-017 | Required - QA scripts, replay fixture, performance and coverage contract; FUB-FIX-008/FUB-FIX-009 define replay and performance corpus routing | Not started | Planned only - replay fixture, p95 performance, coverage and traceability gate tests | QA/performance review required | Planned / implementation blocked |
+| P02-FUB-TR-009 | P02-FUB-WP-009 | P02-SI-001, P02-SI-002, P02-SI-003, P02-SI-004, P02-SI-005, P02-SI-009, P02-SI-010, P02-SI-011 | P02-PG-001, P02-PG-002, P02-PG-003, P02-PG-004, P02-PG-005 | All Followup-B rows | N/A - final review requirement | N/A - final review requirement | N/A - final review requirement | N/A - review evidence must cite TC IDs after execution | Reporting only after code/test evidence exists | Not started | Planned - review evidence must cite TC IDs, commands, results and reports after implementation | Independent final review required | Planned / completion blocked |
+
+## Bidirectional Coverage Index
+| Direction | Coverage |
+| --- | --- |
+| Stage scope -> WP | P02-SI-001 maps to WP-005, WP-006, WP-008；P02-SI-002 maps to WP-006, WP-008；P02-SI-003 maps to WP-007, WP-008；P02-SI-004 maps to WP-005, WP-008；P02-SI-005 maps to WP-005, WP-008；P02-SI-009 maps to WP-005, WP-008；P02-SI-010 maps to WP-001, WP-002, WP-003, WP-004, WP-008；P02-SI-011 maps to WP-006, WP-007, WP-008 |
+| WP -> FR | P02-FUB-WP-001..008 each map to exactly one primary FR; WP-000 is document setup only; WP-009 is final independent review only |
+| FR -> Spec -> AC -> TC | P02-FUB-FR-001..008 each has one primary P02-FUB-SPEC, AC-P02-FUB and at least one TC-P02-FUB; P02-FUB-SLICE-001..006 route those rows to FUB-FIX-001..009 |
+| TC -> AC | TC-P02-FUB-001..017 all reference at least one AC; AC-P02-FUB-001..008 all have primary TC coverage |
+| Spec policy table -> fixture | Notification reason precedence maps to FUB-FIX-003; outbox lifecycle maps to FUB-FIX-004; recovery precedence maps to FUB-FIX-005; memory thresholds/interleaving/intervals map to FUB-FIX-006; mastery confidence/hold/demotion/forbidden-field rules map to FUB-FIX-007; replay/performance corpus maps to FUB-FIX-008..009 |
+| Contract -> Code | Domain/API/OpenAPI/UX/AI contracts exist; backend/frontend control source/update/pause/resume code exists; scheduler/outbox, recovery, item-level memory, mastery transition and replay code remain open |
+| Code -> Test | TC-P02-FUB-001 through TC-P02-FUB-006 have passed evidence; TC-P02-FUB-007..017 remain planned |
+
+## Gap Register
+| Gap ID | Gap | Trace Row | Current handling |
+| --- | --- | --- | --- |
+| P02-FUB-GAP-001 | UserAutopilotControl source of truth needed durable server-owned fact and governance. | P02-FUB-TR-001 | Closed for S001: durable server-owned control, server validation, internal governance export snapshot, redacted audit metadata, retention policy snapshot and deletion cleanup are implemented and tested. Notification outbox data governance remains separate in P02-FUB-GAP-004. |
+| P02-FUB-GAP-002 | Pause/resume/update-control API and Flutter states were missing. | P02-FUB-TR-002 | Closed for routed control slice: backend endpoints, idempotency and Flutter server-state binding implemented; final Followup-B completion still blocked by other WPs. |
+| P02-FUB-GAP-003 | Quiet-hours and notification eligibility reason codes are not fully implemented. | P02-FUB-TR-003 | Closed for S002-A eligibility policy: reason precedence, `blocked_by_policy`, same-day/cross-midnight/start=end quiet-hours, consent, permission, entitlement, quota, stale/missing-plan and Flutter no-false-completion display are implemented and tested. Scheduler/outbox lifecycle remains separate in P02-FUB-GAP-004. |
+| P02-FUB-GAP-004 | Production scheduler/outbox lifecycle, dedupe and replay audit are not implemented. | P02-FUB-TR-004 | Policy table and FUB-FIX-004 routing now defined; implementation/tests remain planned. |
+| P02-FUB-GAP-005 | Missed-day recovery still lacks deterministic compress/defer/replace implementation. | P02-FUB-TR-005 | Recovery precedence table and FUB-FIX-005 routing now defined; implementation/tests remain planned. |
+| P02-FUB-GAP-006 | MemoryCurvePolicy is not yet item-level with overlearning/interleaving replay. | P02-FUB-TR-006 | Memory thresholds/intervals and FUB-FIX-006 routing now defined; implementation/tests remain planned. |
+| P02-FUB-GAP-007 | L0-L5 promotion/demotion is not yet evidence-driven beyond initial diagnostic state. | P02-FUB-TR-007 | Mastery thresholds/AI forbidden-field fixture routing now defined; implementation/tests remain planned. |
+| P02-FUB-GAP-008 | Replay fixtures are not implemented. | P02-FUB-TR-008 | Fixture IDs FUB-FIX-001..009 are routed; executable replay fixtures remain planned. |
+| P02-FUB-GAP-009 | Performance budgets are planned but not executed. | P02-FUB-TR-008 | FUB-FIX-009 performance corpus routing defined; execution remains planned. |
+| P02-FUB-GAP-010 | Followup-B traceability/coverage script does not exist yet. | P02-FUB-TR-008 | Planned; required before implementation completion. |
 
 ## Required Next Documents
-Before any Followup-B code change, create:
-- `requirements.md`
-- `spec.md`
-- `acceptance.md`
-- `test_cases.md`
-- updated `traceability.md` with FR/Spec/AC/TC rows
+Before remaining Followup-B code slices can be marked complete, keep these documents synchronized and independently reviewed:
+- Test report and quality report evidence for every executed TC-P02-FUB row.
+- Followup-B traceability script or approved equivalent for TC-P02-FUB-017.
+- Domain/API/OpenAPI/UX/AI updates if scheduler/outbox, recovery, item-level memory, mastery transition or replay implementation discovers missing fields.
+- Implementation report, test report and quality report updates for scheduler/outbox, recovery, memory/mastery, replay, performance and coverage slices after code/test evidence exists.
 
 ## Scaffold Review Checklist
 - User control is modeled as a durable backend-owned state.
 - Pause/resume, quiet hours, notification eligibility and recovery are not treated as UI-only behavior.
 - Memory curve and L0-L5 transitions require deterministic rules and replayable tests.
-- Code evidence is explicitly `Not started` rather than blank.
+- Implementation slice routing P02-FUB-SLICE-001..006 maps every Followup-B AC/TC to fixture IDs FUB-FIX-001..009.
+- Code evidence is explicit: TR-001/TR-002 contain control-slice evidence, TC-P02-FUB-002 data-governance evidence is closed for S001 control data classes, TR-003 contains S002-A notification eligibility evidence, and TR-004..009 remain planned/open.
 - Followup-B does not claim release approval or completed implementation.
 
+## Traceability Independent Review
+Policy-table routing review passed for documentation readiness on 2026-06-05. TC-P02-FUB-002 control data-governance closure review passed for the S001 control data classes on 2026-06-05. TC-P02-FUB-005/006 S002-A quality review is recorded in `docs/reports/quality_report.md`. Final implementation independent review remains pending and is still required before Followup-B can be marked complete, release-ready or Product Base-ready.

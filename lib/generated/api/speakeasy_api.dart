@@ -5,7 +5,7 @@ class SpeakeasyApiContract {
   const SpeakeasyApiContract._();
 
   static const String openApiSha256 =
-      '87c9218d93a5be9879e52390a1cd2c92de6fd198938a613bbcfc89ae5e0e4f98';
+      '07c2365f69a71f7da283e6de70b01bfc7c08ec2b967d9bf537b4a99312eabe22';
 
   static const List<String> pathTemplates = <String>[
     '/achievements/status',
@@ -35,10 +35,19 @@ class SpeakeasyApiContract {
     '/goal-autopilot/actions/next',
     '/goal-autopilot/actions/{plan_item_id}/complete',
     '/goal-autopilot/checkpoints',
+    '/goal-autopilot/control',
+    '/goal-autopilot/control/pause',
+    '/goal-autopilot/control/resume',
     '/goal-autopilot/daily-plan',
     '/goal-autopilot/forecast',
     '/goal-autopilot/goals',
+    '/goal-autopilot/item-policy/decisions',
+    '/goal-autopilot/mastery-transitions',
     '/goal-autopilot/plans/generate',
+    '/goal-autopilot/recovery/replan',
+    '/goal-autopilot/reminders/eligibility',
+    '/goal-autopilot/reminders/outbox',
+    '/goal-autopilot/replay-audits',
     '/goal-autopilot/summary',
     '/home/summary',
     '/learning/evidence',
@@ -112,11 +121,28 @@ class SpeakeasyApiPaths {
   static const String favoritesExpressions = '/favorites/expressions';
   static const String goalAutopilotActionsNext = '/goal-autopilot/actions/next';
   static const String goalAutopilotCheckpoints = '/goal-autopilot/checkpoints';
+  static const String goalAutopilotControl = '/goal-autopilot/control';
+  static const String goalAutopilotControlPause =
+      '/goal-autopilot/control/pause';
+  static const String goalAutopilotControlResume =
+      '/goal-autopilot/control/resume';
   static const String goalAutopilotDailyPlan = '/goal-autopilot/daily-plan';
   static const String goalAutopilotForecast = '/goal-autopilot/forecast';
   static const String goalAutopilotGoals = '/goal-autopilot/goals';
+  static const String goalAutopilotItemPolicyDecisions =
+      '/goal-autopilot/item-policy/decisions';
+  static const String goalAutopilotMasteryTransitions =
+      '/goal-autopilot/mastery-transitions';
   static const String goalAutopilotPlansGenerate =
       '/goal-autopilot/plans/generate';
+  static const String goalAutopilotRecoveryReplan =
+      '/goal-autopilot/recovery/replan';
+  static const String goalAutopilotRemindersEligibility =
+      '/goal-autopilot/reminders/eligibility';
+  static const String goalAutopilotRemindersOutbox =
+      '/goal-autopilot/reminders/outbox';
+  static const String goalAutopilotReplayAudits =
+      '/goal-autopilot/replay-audits';
   static const String goalAutopilotSummary = '/goal-autopilot/summary';
   static const String homeSummary = '/home/summary';
   static const String learningEvidence = '/learning/evidence';

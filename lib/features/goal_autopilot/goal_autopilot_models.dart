@@ -172,6 +172,124 @@ class GoalAutopilotSummary {
   }
 }
 
+class GoalAutopilotView {
+  const GoalAutopilotView({required this.summary, required this.controlResult});
+
+  final GoalAutopilotSummary summary;
+  final GoalAutopilotControlResult controlResult;
+
+  GoalAutopilotView copyWith({GoalAutopilotControlResult? controlResult}) {
+    return GoalAutopilotView(
+      summary: summary,
+      controlResult: controlResult ?? this.controlResult,
+    );
+  }
+
+  bool get hasExecutableAction =>
+      summary.hasExecutableAction &&
+      controlResult.control.controlStatus == 'active';
+
+  bool get isPaused => controlResult.control.controlStatus == 'paused';
+
+  bool get isPolicyBlocked =>
+      controlResult.control.controlStatus == 'blocked_by_policy';
+}
+
+class GoalAutopilotControlResult {
+  const GoalAutopilotControlResult({
+    required this.control,
+    required this.reasonCode,
+    required this.reminderEligibility,
+    this.nextActionChanged = false,
+    this.reminderEligibilityChanged = false,
+    this.replanRequired = false,
+  });
+
+  final GoalAutopilotControl control;
+  final String reasonCode;
+  final NotificationEligibilityDecision reminderEligibility;
+  final bool nextActionChanged;
+  final bool reminderEligibilityChanged;
+  final bool replanRequired;
+
+  factory GoalAutopilotControlResult.fromJson(Map<String, dynamic> json) {
+    return GoalAutopilotControlResult(
+      control: GoalAutopilotControl.fromJson(_map(json['control'])),
+      reasonCode: _string(json['reason_code'], fallback: 'eligible'),
+      reminderEligibility: NotificationEligibilityDecision.fromJson(
+        _map(json['reminder_eligibility']),
+      ),
+      nextActionChanged: _bool(json['next_action_changed']),
+      reminderEligibilityChanged: _bool(json['reminder_eligibility_changed']),
+      replanRequired: _bool(json['replan_required']),
+    );
+  }
+}
+
+class GoalAutopilotControl {
+  const GoalAutopilotControl({
+    required this.controlId,
+    required this.controlStatus,
+    required this.quietHoursStart,
+    required this.quietHoursEnd,
+    required this.timezone,
+    required this.notificationConsent,
+    required this.intensityOverride,
+    required this.missedDayPolicy,
+    this.pauseReason = '',
+  });
+
+  final String controlId;
+  final String controlStatus;
+  final String quietHoursStart;
+  final String quietHoursEnd;
+  final String timezone;
+  final bool notificationConsent;
+  final String intensityOverride;
+  final String missedDayPolicy;
+  final String pauseReason;
+
+  factory GoalAutopilotControl.fromJson(Map<String, dynamic> json) {
+    return GoalAutopilotControl(
+      controlId: _string(json['control_id']),
+      controlStatus: _string(json['control_status'], fallback: 'active'),
+      quietHoursStart: _string(json['quiet_hours_start'], fallback: '22:00'),
+      quietHoursEnd: _string(json['quiet_hours_end'], fallback: '08:00'),
+      timezone: _string(json['timezone'], fallback: 'Asia/Shanghai'),
+      notificationConsent: _bool(json['notification_consent']),
+      intensityOverride: _string(
+        json['intensity_override'],
+        fallback: 'standard',
+      ),
+      missedDayPolicy: _string(json['missed_day_policy'], fallback: 'balanced'),
+      pauseReason: _string(json['pause_reason']),
+    );
+  }
+}
+
+class NotificationEligibilityDecision {
+  const NotificationEligibilityDecision({
+    required this.eligible,
+    required this.reasonCode,
+    required this.explanationKey,
+  });
+
+  final bool eligible;
+  final String reasonCode;
+  final String explanationKey;
+
+  factory NotificationEligibilityDecision.fromJson(Map<String, dynamic> json) {
+    return NotificationEligibilityDecision(
+      eligible: _bool(json['eligible']),
+      reasonCode: _string(json['reason_code'], fallback: 'eligible'),
+      explanationKey: _string(
+        json['explanation_key'],
+        fallback: 'reminder_allowed',
+      ),
+    );
+  }
+}
+
 class GoalDailyPlan {
   const GoalDailyPlan({
     required this.dailyPlanId,

@@ -116,6 +116,63 @@ Owning increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory
 - Error state: low confidence and partial support block high-precision ETA; checkpoint failure can be retried without claiming goal completion.
 - Acceptance criteria mapping: P0.2 forecast/checkpoint ACs for P02-AUTO-FR-004 through P02-AUTO-FR-008.
 
+### Followup-B Autopilot Control And Recovery
+
+Owning increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`。
+
+- Purpose: let the learner understand and safely control automatic guidance without Flutter inventing control, reminder, recovery, memory or mastery state locally.
+- Entry points: Daily Autopilot next-action card, goal summary control chip, paused banner, quiet-hours blocked reminder entry, notification-disabled banner, missed-day recovery banner, memory/mastery explanation entry.
+- Primary user action: pause, resume, adjust intensity, set quiet hours, enable/disable reminder consent, choose server-returned recovery action or view memory/mastery explanation.
+- Core components: server control status badge, pause/resume button, intensity segmented control, quiet-hours selector, reminder permission/consent status, next-action impact message, reminder eligibility message, recovery decision card, item-policy reason chip, mastery explanation card, replay-safe audit note.
+- States: `control_loading`, `control_active`, `paused`, `resume_checking`, `blocked_by_policy`, `quiet_hours_blocked`, `notification_disabled`, `intensity_updated`, `recovery_required`, `recovery_planned`, `item_policy_due`, `item_policy_blocked`, `mastery_explanation_ready`, `recoverable_error`.
+- API dependencies: `GET /goal-autopilot/control`, `PATCH /goal-autopilot/control`, `POST /goal-autopilot/control/pause`, `POST /goal-autopilot/control/resume`, `POST /goal-autopilot/reminders/eligibility`, `GET /goal-autopilot/reminders/outbox`, `POST /goal-autopilot/recovery/replan`, `POST /goal-autopilot/item-policy/decisions`, `GET /goal-autopilot/mastery-transitions`, `GET /goal-autopilot/replay-audits`, plus existing summary/daily-plan/next-action APIs.
+- AI dependencies: Followup-B mastery explanation candidate in `docs/ai_runtime/llm_output_schema.md`; UI renders only schema-valid candidate explanation or deterministic fallback. UI must never parse free-form AI text to set state.
+- Empty state: if no active goal or no server control exists, route to Goal Setup or show “set up goal first”; do not create a local control object.
+- Loading state: keep the previous server state visible as stale while refreshing; disable duplicate pause/resume/update actions until the server response returns.
+- Error state: failed pause/resume/update keeps the last known server state; failed reminder eligibility shows reason unknown/retry without treating unsent reminders as missed-day evidence; failed explanation falls back to deterministic reason text.
+- Acceptance criteria mapping: AC-P02-FUB-001, AC-P02-FUB-002, AC-P02-FUB-003, AC-P02-FUB-004, AC-P02-FUB-005, AC-P02-FUB-006, AC-P02-FUB-007, AC-P02-FUB-008.
+
+### Followup-B Control State Contract
+| State | User sees | Primary action | Data source | Next states |
+| --- | --- | --- | --- | --- |
+| `control_loading` | Existing state marked refreshing | wait or leave | cached `GET /goal-autopilot/control` response | `control_active`, `paused`, `blocked_by_policy`, `recoverable_error` |
+| `control_active` | Next action, active reminder state and compact controls | pause, adjust intensity, edit quiet hours, start action | `UserAutopilotControl.control_status=active` | `paused`, `intensity_updated`, `quiet_hours_blocked`, `notification_disabled`, `recovery_required`, `item_policy_due` |
+| `paused` | Paused banner; no new automatic prompts or future reminders | resume or edit settings | `UserAutopilotControl.control_status=paused` | `resume_checking`, `intensity_updated` |
+| `resume_checking` | Resume is checking plan freshness, missed days, quiet hours, fatigue, support and entitlement | wait | `POST /goal-autopilot/control/resume` | `control_active`, `recovery_required`, `blocked_by_policy`, `quiet_hours_blocked` |
+| `blocked_by_policy` | Clear reason for unsupported, partial without safe plan, stale/missing plan, entitlement or data policy block | view required upstream step or refresh | server reason code | `control_active`, `recovery_required`, terminal blocked state |
+| `quiet_hours_blocked` | Reminder not sent now; next allowed time when available | edit quiet hours or wait | `NotificationEligibilityDecision.reason_code=quiet_hours` | `control_active`, `notification_disabled` |
+| `notification_disabled` | Reminder disabled by consent or platform permission | open permission guidance or update consent | `NotificationEligibilityDecision.reason_code=permission_denied` or `consent_missing` | `control_active`, `quiet_hours_blocked` |
+| `intensity_updated` | Server confirms intensity/quiet hours/consent/policy update and impact | continue or replan if required | `PATCH /goal-autopilot/control` response | `control_active`, `recovery_required`, `blocked_by_policy` |
+| `recovery_required` | Missed/skip/defer/pause gap/stale plan needs recovery | request recovery plan | summary/control/recovery reason | `recovery_planned`, `recoverable_error` |
+| `recovery_planned` | One recovery mode: compress, defer or replace; no overdue stacking | start returned action | `RecoveryPlanDecision` | `control_active`, `item_policy_due` |
+| `item_policy_due` | Why this item is due and how it fits interleaving/overlearning | start review/training | `MemoryItemPolicyState.due_decision` | `mastery_explanation_ready`, `control_active` |
+| `item_policy_blocked` | Item skipped/deferred due to overlearning, budget, interleaving or control block | view alternative or continue | `MemoryItemPolicyState.due_decision` | `control_active`, `recovery_required` |
+| `mastery_explanation_ready` | Safe L0-L5 internal explanation and evidence summary | continue or view audit note | `MasteryTransitionDecision` plus schema-valid AI candidate/fallback | `control_active` |
+| `recoverable_error` | What failed and the last known safe state | retry, refresh, leave | typed API/fallback error | previous valid state |
+
+### Followup-B Interaction Rules
+- Pause is idempotent in UI: repeated tap while already paused shows current paused state and does not duplicate cancellation UI.
+- Resume never immediately shows reminders or prompts until the server returns active eligibility; while checking, all execution buttons stay disabled.
+- Quiet hours that cross midnight must display as a single interval in the configured timezone.
+- Notification blocked, failed, expired or unsent states must not be worded as “you missed practice” or “you failed”.
+- Intensity override must show impact returned by the API: next action changed, reminder eligibility changed, replan required and reason code.
+- Recovery card must show exactly one primary mode: `compress`, `defer` or `replace`; it must not list all overdue tasks as today's work.
+- Memory/mastery explanation must say it is an internal practice signal, not official exam certification.
+- Any AI explanation marked invalid, forbidden-field rejected or unavailable must be replaced by deterministic fallback copy from reason code; UI must not render raw provider text.
+- Replay/audit information is developer/support-facing wording only: show safe “decision can be replayed” status or reason code, not input snapshot contents.
+
+### Followup-B Test Checklist Contract
+| Acceptance | Screen state / behavior | Planned test mapping |
+| --- | --- | --- |
+| AC-P02-FUB-001 | Server-owned active/paused/policy-blocked state; no local control derivation | TC-P02-FUB-001, TC-P02-FUB-002 |
+| AC-P02-FUB-002 | Pause/resume/update-control impact messages and disabled duplicate actions | TC-P02-FUB-003, TC-P02-FUB-004 |
+| AC-P02-FUB-003 | Quiet-hours, permission, consent, entitlement, quota, stale/missing plan reason display | TC-P02-FUB-005, TC-P02-FUB-006 |
+| AC-P02-FUB-004 | Outbox lifecycle displayed as pending/scheduled/blocked/sent/cancelled/failed/expired without evidence mutation wording | TC-P02-FUB-007, TC-P02-FUB-008 |
+| AC-P02-FUB-005 | Missed-day recovery shows compress/defer/replace and no overdue stacking | TC-P02-FUB-009, TC-P02-FUB-010 |
+| AC-P02-FUB-006 | Item-level due decision explains overlearning cap, interleaving, budget defer or control block | TC-P02-FUB-011, TC-P02-FUB-012 |
+| AC-P02-FUB-007 | L0-L5 explanation uses accepted evidence, supports hold/demotion and rejects AI persistent fields | TC-P02-FUB-013, TC-P02-FUB-014 |
+| AC-P02-FUB-008 | Replay/performance/coverage gates remain planned evidence; UI does not mark Followup-B complete | TC-P02-FUB-015, TC-P02-FUB-016, TC-P02-FUB-017 |
+
 ### Notebook
 - Purpose: review saved expressions.
 - States: empty, loaded, deleting, error.

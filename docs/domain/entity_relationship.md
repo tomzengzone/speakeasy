@@ -2,9 +2,9 @@
 
 ## 状态
 
-Proposed - Domain Schema Baseline + P0/P0.1 Extension companion document。
+Proposed - Domain Schema Baseline + P0/P0.1/P0.2 Extension companion document。
 
-本文描述 Product Base accepted domain、P0 commercial extension、P0.1 training extension 的实体关系、ownership、cardinality 和跨域约束。本文不定义 API response shape，不写 database migration SQL，不修改 Flutter/backend 代码。
+本文描述 Product Base accepted domain、P0 commercial extension、P0.1 training extension 和 P0.2 goal autopilot extension 的实体关系、ownership、cardinality 和跨域约束。本文不定义 API response shape，不写 database migration SQL，不修改 Flutter/backend 代码。
 
 ## Relationship Principles
 
@@ -14,7 +14,7 @@ Proposed - Domain Schema Baseline + P0/P0.1 Extension companion document。
 - LearningEvidence 是学习沉淀的核心事实；LLM 只能产生 candidate，accepted evidence 必须由 deterministic evidence rules 写入。
 - Subscription / EntitlementSnapshot / UsageLedger 是 P0 商业化可信边界，不能由 Flutter 本地状态最终决定。
 - AccountDeletionJob 负责处理 User 相关数据删除或匿名化；AuditLog 保留最小脱敏审计事实。
-- P0.2/P1/P2 对象不进入当前关系图，只作为 deferred boundary。
+- P0.2 Followup-B control/planner/memory 对象进入当前关系图作为 implementation-gated planned contract；P1/P2 对象仍只作为 deferred boundary。
 
 ## High-Level Ownership Graph
 
@@ -47,6 +47,13 @@ flowchart LR
   Planner --> Expression
   Planner --> EvidenceCandidate["LearningEvidenceCandidate / AIResultRef"]
   EvidenceCandidate --> Evidence
+
+  User --> GoalAutopilot["GoalProfile / UserAutopilotControl"]
+  GoalAutopilot --> GoalPlan["WeeklyBackplan / DailyTrainingPlan / PlanItem"]
+  GoalAutopilot --> GoalNotify["NotificationEligibilityDecision / NotificationOutboxRecord"]
+  GoalPlan --> GoalMemory["RecoveryPlanDecision / MemoryItemPolicyState"]
+  GoalMemory --> GoalMastery["MasteryTransitionDecision / PlannerReplayAudit"]
+  GoalMastery --> Mastery
 ```
 
 ## Product Base Accepted Relationships
@@ -146,6 +153,39 @@ flowchart LR
 | P01-GAP-001 | 学习证据必须从候选到 accepted evidence，LLM 不直接写最终 mastery | `TrainingFeedback -> LearningEvidenceCandidate -> LearningEvidence -> MasteryRecord` |
 | P01-GAP-001 | Recap 必须在 evidence 写回失败时仍可见 | `TrainingSession -> TrainingRecap` independent from `LearningEvidenceCandidate -> LearningEvidence` |
 
+## P0.2 Goal Autopilot Followup-B Relationships
+
+Owning increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`。
+
+本节是 Followup-B 的 planned relationship contract。它定义后续 API/OpenAPI、UX、AI runtime 和 backend 实现输入，但不声明这些关系已在代码或数据库中实现。
+
+| From | Relationship | To | Cardinality | Owner / source of truth | Notes |
+| --- | --- | --- | --- | --- | --- |
+| User | owns | UserAutopilotControl | 1 -> many active per goal context | Autopilot Control backend | 控制状态是服务端事实；Flutter 只能提交 intent 和展示返回状态。 |
+| UserAutopilotControl | controls | GoalProfile / WeeklyBackplan / DailyTrainingPlan / PlanItem | 1 -> many scoped to active goal revision | Autopilot Control + Planner domain | pause、policy block、quiet hours 和 consent 会阻断 autopilot prompt、next-action advancement 或 reminder eligibility。 |
+| UserAutopilotControl | produces | NotificationEligibilityDecision | 1 -> many | Autopilot Notification domain | 每次 schedule/reschedule/send 前必须评估 control、quiet hours、permission、consent、entitlement、quota、plan/support status。 |
+| NotificationEligibilityDecision | gates | NotificationOutboxRecord | 1 -> 0..many | Autopilot Notification domain | blocked decision 不得变成 sent record，也不得写 completion/refusal/missed-day evidence。 |
+| NotificationOutboxRecord | references | PlanItem | many -> 0..1 | Autopilot Notification + Planner domain | dedupe key 覆盖 user、goal revision、plan item、reminder slot 和 rule version。 |
+| DailyTrainingPlan / PlanItem | triggers | RecoveryPlanDecision | many -> many via source event | Planner Recovery domain | missed、skip、defer、resume after pause gap、stale plan 或 expired item 触发 recovery。 |
+| RecoveryPlanDecision | updates or supersedes | DailyTrainingPlan / PlanItem | 1 -> many | Planner domain | recovery 必须选择 compress、defer 或 replace 之一，不得堆积所有 overdue tasks。 |
+| TargetExpression / Scenario / diagnostic weakness tag / PlanItem | has | MemoryItemPolicyState | many -> many via stable item refs | Learning Memory + Planner domain | memory scheduling 进入 item-level；overlearning cap 和 interleaving 必须可测试。 |
+| MemoryItemPolicyState | produces | MasteryTransitionDecision | 1 -> many | Learning Memory domain | transition 只能使用 accepted evidence；AI final mastery/review schedule 字段不得持久化。 |
+| MasteryTransitionDecision | updates | MasteryRecord or goal mastery projection | many -> 1 target aggregate | Learning Memory domain | L0-L5 是产品内部掌握态，不等同官方考试认证。 |
+| UserAutopilotControl / NotificationEligibilityDecision / NotificationOutboxRecord / RecoveryPlanDecision / MemoryItemPolicyState / MasteryTransitionDecision | writes | PlannerReplayAudit | many -> many by decision family | Planner Audit domain | replay audit 保存最小 input/output snapshot hash、reason code、rule version 和 replay hash。 |
+
+### P0.2 Followup-B Relationship Gate Notes
+
+| Gate | Relationship requirement | Covered by |
+| --- | --- | --- |
+| P02-FUB-TR-001 | 自动带练控制必须是服务端事实，且可阻断 unsupported、partial、stale、missing plan 和 policy-blocked 状态 | `User -> UserAutopilotControl -> GoalProfile/PlanItem` |
+| P02-FUB-TR-002 | Pause/resume/update-control 必须影响 prompt、next-action 和 reminder eligibility，但不删除 recoverable goal/plan/memory/evidence facts | `UserAutopilotControl -> GoalProfile/WeeklyBackplan/DailyTrainingPlan/PlanItem` |
+| P02-FUB-TR-003 | Quiet hours、permission、consent、entitlement、quota、support 和 plan status 必须在 reminder 前评估 | `UserAutopilotControl -> NotificationEligibilityDecision` |
+| P02-FUB-TR-004 | Reminder 必须通过 lifecycle outbox，并且支持 dedupe、cancel、reschedule 和 failure recovery | `NotificationEligibilityDecision -> NotificationOutboxRecord -> PlanItem` |
+| P02-FUB-TR-005 | Missed-day recovery 必须由 plan/item/source event 生成 compress/defer/replace 决策，不得堆积 overdue tasks | `DailyTrainingPlan/PlanItem -> RecoveryPlanDecision -> DailyTrainingPlan/PlanItem` |
+| P02-FUB-TR-006 | Memory scheduling 必须按 item-level state 计算 due decision、overlearning cap 和 interleaving | `TargetExpression/Scenario/diagnostic weakness tag/PlanItem -> MemoryItemPolicyState` |
+| P02-FUB-TR-007 | L0-L5 promotion/demotion/hold 必须从 accepted evidence 到 transition decision，再更新 mastery aggregate | `MemoryItemPolicyState -> MasteryTransitionDecision -> MasteryRecord` |
+| P02-FUB-TR-008 | 控制、通知、恢复、memory due 和 mastery transition 必须能用 fixture replay | `*Decision -> PlannerReplayAudit` |
+
 ## MVP Learning/Memory Increment Relationships
 
 Owning increment: `docs/product/increments/mvp-backend-learning-memory/`.
@@ -158,7 +198,7 @@ Owning increment: `docs/product/increments/mvp-backend-learning-memory/`.
 | LearningEvidence -> MasteryRecord / ReviewItem / SavedExpression / LearningHistoryEntry | Accepted evidence updates mastery, schedules review, saves a personal wiki entry, records history, and creates a follow-up queue item. |
 | LearningHistoryEntry deletion | `/learning/history/{history_entry_id}` soft-deletes history visibility without deleting saved wiki evidence. |
 
-These relationships close MVP-BE-GAP-006 for MVP-BE-TR-007 and MVP-BE-TR-010; P0.2 cross-day long-term planning and complete L0-L5 mastery ladder remain deferred.
+These implemented relationships close MVP-BE-GAP-006 for MVP-BE-TR-007 and MVP-BE-TR-010. P0.2 Followup-B planned relationships above do not change MVP implementation evidence status; backend implementation remains gated by contracts, code, tests and independent review.
 
 ## MVP Membership/Boundary Increment Relationships
 
@@ -183,6 +223,7 @@ These relationships close MVP-BE-GAP-008 and MVP-BE-GAP-009 for MVP-BE-TR-011 an
 | Audio refs / Transcript refs | 按 Security/DevOps 后续 retention policy 删除或失效引用。 |
 | FavoriteExpression / SavedExpression / LearningHistoryEntry | 用户自有学习资产，应随账号删除清理。 |
 | LearningEvidence / MasteryRecord / ReviewItem | 删除或匿名化，且不得破坏必要脱敏审计可读性。 |
+| GoalProfile / UserAutopilotControl / NotificationEligibilityDecision / NotificationOutboxRecord / RecoveryPlanDecision / MemoryItemPolicyState / MasteryTransitionDecision / PlannerReplayAudit | 删除或匿名化用户关联；如需保留 replay 或 policy audit，只能保留最小脱敏 hash、rule version、reason code 和时间戳。 |
 | Purchase / Subscription / PaymentProviderEvent | 按财务、商店争议和合规要求保留最小脱敏审计字段。 |
 | AuditLog | 保留最小必要字段；target_ref 可匿名化；不得包含完整凭据、token、raw audio 或敏感对话。 |
 
@@ -227,6 +268,9 @@ Owning increment：`commercial-ai-provider-hardening`。这些关系是 `P0-AI-A
 | Cache metadata is not user text | TtsCacheEntry 只保存 normalized text hash/model/voice/language/media ref，不保存完整敏感文本。 |
 | Cost metrics are sanitized aggregates | ProviderInvocationMetric 可被 PM/Ops 查看，但不得包含 raw audio、raw transcript、完整 signed URL 或 provider payload。 |
 | Deletion orchestrates, not owns business history | AccountDeletionJob 管理删除流程，但被处理数据仍归各 domain 定义处理策略。 |
+| Autopilot control gates actions, not content truth | UserAutopilotControl 可阻断 prompt、next-action 和 reminder eligibility，但不改变 Scenario、TargetExpression 或 accepted evidence 的事实。 |
+| Reminder outbox is delivery state, not learning evidence | NotificationOutboxRecord 的 blocked/failed/expired 不得被解释为用户完成、拒绝、失败或 missed-day evidence。 |
+| Replay audit minimizes sensitive state | PlannerReplayAudit 只能保存最小 hash、reason code、rule version 和 redacted refs，不保存完整诊断文本、transcript、raw audio 或 provider payload。 |
 
 ## API Contract Inputs From Relationships
 
@@ -240,6 +284,7 @@ Owning increment：`commercial-ai-provider-hardening`。这些关系是 `P0-AI-A
 | Usage / AI Gateway | UsageLedger、UsageReservation、ProviderUsageEvent、AIResultRef、ScoreSignal、ProviderInvocationMetric |
 | Media / AI Ops | MediaAsset、TtsCacheEntry、ProviderSandboxRun、RetentionPolicy、AiRetentionJob |
 | Admin / Ops | AuditLog、AccountDeletionJob、PaymentProviderEvent、ProviderSandboxRun、AiRetentionJob |
+| P0.2 Goal Autopilot | GoalProfile、UserAutopilotControl、NotificationEligibilityDecision、NotificationOutboxRecord、RecoveryPlanDecision、MemoryItemPolicyState、MasteryTransitionDecision、PlannerReplayAudit |
 
 API Contract/OpenAPI 阶段必须从这些关系定义 authentication、authorization、idempotency、error codes、schema version 和 generated Dart client policy。本文不定义 request/response shape。
 
@@ -260,6 +305,10 @@ API Contract/OpenAPI 阶段必须从这些关系定义 authentication、authoriz
 | Provider invocation metric -> cost dashboard | 套餐、用户 hash、provider、模型、状态、cache hit、budget 和 margin risk 聚合。 |
 | Training session -> planner -> hint/pressure | micro-action 单步训练、hint ladder、pressure check、ASR fallback。 |
 | Candidate evidence -> accepted evidence -> mastery/review | LLM 不直接写 mastery、rule trace、低置信度拒绝、去重。 |
+| User -> autopilot control -> plan/action | 服务端控制事实、pause/resume/update-control、policy block 和 Flutter 不本地覆盖。 |
+| Autopilot control -> notification eligibility -> outbox | quiet hours、permission、consent、entitlement、quota、stale/missing plan reason code、dedupe、cancel/reschedule/failure recovery。 |
+| Plan item -> recovery decision -> daily plan | missed-day、skip/defer、pause gap、stale plan、compress/defer/replace 和 no overdue stacking。 |
+| Memory item state -> mastery transition -> replay audit | item-level due decision、overlearning cap、interleaving、L0-L5 promotion/demotion/hold、AI forbidden persistent fields 和 deterministic replay。 |
 | Account deletion -> owned data -> audit | 云端删除/匿名化、本地清理、token 撤销、审计脱敏。 |
 | Retention policy -> AI retention job -> media/cache cleanup | 音频、转写、provider payload、TTS cache 删除/匿名化和 redacted evidence。 |
 
@@ -267,8 +316,8 @@ API Contract/OpenAPI 阶段必须从这些关系定义 authentication、authoriz
 
 | Deferred relationship | Reason |
 | --- | --- |
-| DailyPlan -> CrossSessionSchedule -> TrainingSession | P0.2 long-term planner。 |
-| MasteryRecord -> L0/L1/L2/L3/L4/L5 ladder | P0.2 完整掌握阶梯。 |
+| DailyPlan -> CrossSessionSchedule -> TrainingSession | Followup-B 已定义 planned recovery/control relationship；跨 session backend implementation 和训练会话编排仍待 implementation gate。 |
+| MasteryRecord -> L0/L1/L2/L3/L4/L5 ladder | Followup-B 已定义 planned MasteryTransitionDecision；完整持久化实现、迁移和 UI 解释仍待 implementation gate。 |
 | NotebookItem -> VocabularyLookup -> arbitrary phrase notes | P1 notebook-vocabulary。 |
 | ScoreSignal -> ProductizedScoringRubric -> performance card | P1 scoring productization。 |
 | ScenarioPackage -> CMSContentWorkflow -> CEFRMapping | P1/P2 content expansion and CMS。 |

@@ -19,6 +19,8 @@ import com.speakeasy.commerce.SubscriptionRepository;
 import com.speakeasy.commerce.SubscriptionPlanRepository;
 import com.speakeasy.content.UserScenarioStateRepository;
 import com.speakeasy.goal.GoalBackplanRepository;
+import com.speakeasy.goal.GoalAutopilotControlIdempotencyRepository;
+import com.speakeasy.goal.GoalAutopilotControlRepository;
 import com.speakeasy.goal.GoalDailyPlanRepository;
 import com.speakeasy.goal.GoalDiagnosticAssessmentRepository;
 import com.speakeasy.goal.GoalMasteryInitialStateRepository;
@@ -111,6 +113,8 @@ abstract class BackendIntegrationTestSupport {
   @Autowired GoalMasteryInitialStateRepository goalMasteryInitialStates;
   @Autowired GoalDiagnosticAssessmentRepository goalDiagnostics;
   @Autowired GoalProfileRepository goalProfiles;
+  @Autowired GoalAutopilotControlIdempotencyRepository goalAutopilotControlIdempotency;
+  @Autowired GoalAutopilotControlRepository goalAutopilotControls;
 
   @BeforeEach
   void cleanUserData() {
@@ -132,6 +136,8 @@ abstract class BackendIntegrationTestSupport {
     goalPlanItems.deleteAll();
     goalDailyPlans.deleteAll();
     goalBackplans.deleteAll();
+    goalAutopilotControlIdempotency.deleteAll();
+    goalAutopilotControls.deleteAll();
     goalMasteryInitialStates.deleteAll();
     goalDiagnostics.deleteAll();
     goalProfiles.deleteAll();

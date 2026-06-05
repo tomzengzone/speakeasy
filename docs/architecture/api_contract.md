@@ -23,7 +23,7 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | P0 commercial subscription increment | `docs/product/increments/commercial-subscription-readiness/` | 订阅、权益、用量、账号删除、审计和 release gate API |
 | P0 commercial AI provider hardening increment | `docs/product/increments/commercial-ai-provider-hardening/` | media upload/signing、persistent TTS cache、provider evidence、cost dashboard and retention API planning |
 | P0.1 training increment | `docs/product/increments/p0-1-expression-automation-training/` | training session、turn、planner、hint、pressure、evidence API |
-| P0.2 goal autopilot increments | `docs/product/increments/p0-2-goal-diagnostic-foundation/`, `docs/product/increments/p0-2-goal-backplan-memory-policy/`, `docs/product/increments/p0-2-autopilot-progress-checkpoint/` | goal intake、diagnostic、backplan、daily plan、memory policy、autopilot action、forecast、checkpoint API |
+| P0.2 goal autopilot increments | `docs/product/increments/p0-2-goal-diagnostic-foundation/`, `docs/product/increments/p0-2-goal-backplan-memory-policy/`, `docs/product/increments/p0-2-autopilot-progress-checkpoint/`, `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/` | goal intake、diagnostic、backplan、daily plan、memory policy、autopilot action、control、reminder eligibility/outbox、recovery replan、item-policy decision、mastery transition audit、forecast、checkpoint API |
 | Domain schema | `docs/domain/domain_schema.md` | 实体、状态机、事实源、API boundary recommendations |
 | Entity relationship | `docs/domain/entity_relationship.md` | ownership、cardinality、cross-domain references |
 | Foundation contract | `docs/architecture/backend_db_foundation_contract.md` | OpenAPI source-of-truth、generated Dart client、server fact boundary |
@@ -37,7 +37,7 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | P0 commercial subscription readiness | Implementation-level paths allowed | Approved increment artifacts exist |
 | P0 commercial AI provider hardening | Implementation-level paths allowed for media upload/signing, provider evidence, cost metrics and retention operations | Approved increment artifacts exist and `P0-AI-ARCH-001` records the API/security contract gate |
 | P0.1 expression automation training | Implementation-level paths allowed where server-backed behavior is required | Approved increment artifacts exist; local-only behavior must not be over-promoted |
-| P0.2 goal-driven learning autopilot | Implementation-level paths allowed for goal intake, diagnostic summary, backplan, daily plan, next action, progress forecast and checkpoint operations | Three owning increments have requirements/spec/AC/TC/traceability and P02 policy gates |
+| P0.2 goal-driven learning autopilot | Implementation-level paths allowed for goal intake, diagnostic summary, backplan, daily plan, next action, autopilot control, reminder eligibility/outbox, recovery replan, item-policy decision, mastery transition audit, progress forecast and checkpoint operations | Owning P0.2 increments, including Followup-B, have requirements/spec/AC/TC/traceability and P02 policy gates |
 | P1 notebook/scoring/content expansion | Deferred boundary only | Roadmap/future feature boundary only |
 | P2 A1-C2/CMS/content production | Deferred boundary only | Roadmap/future feature boundary only |
 
@@ -62,7 +62,7 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | Scenario / Content | `Scenario`, `Home` | Product Base FR-003, FR-004, FR-005; P0.1 P01-FR-001, P01-FR-002 | In OpenAPI, including official content, user scenario state, and home summary |
 | Product Base practice | `Practice` | Product Base FR-007, FR-008, FR-009; `mvp-backend-practice-ai` MVP-SI-008/MVP-SI-009 | In OpenAPI, including start/resume/get/turn/complete, recoverable provider failure, and summary candidate input |
 | P0.1 training planner | `Training`, `Planner` | P0.1 P01-FR-001..P01-FR-017 | In OpenAPI; Product Base/production readiness blocked until backend Training implementation, tests and rollout gates close `P01-GAP-009` through `P01-GAP-014` or are explicitly marked blocked |
-| P0.2 goal autopilot | `Goal Autopilot` | P0.2 P02-DIAG-FR-001..007, P02-PLAN-FR-001..008, P02-AUTO-FR-001..008 | In OpenAPI for deterministic local implementation; high-cost AI/provider, commercial release and official-score claims remain governed by P02/P0 gates |
+| P0.2 goal autopilot | `Goal Autopilot` | P0.2 P02-DIAG-FR-001..007, P02-PLAN-FR-001..008, P02-AUTO-FR-001..008, P02-FUB-FR-001..008 | In OpenAPI for deterministic local implementation, including Followup-B control/planner/memory hardening; high-cost AI/provider, commercial release and official-score claims remain governed by P02/P0 gates |
 | Learning / Review / Favorites | `Learning`, `Review`, `Favorites` | Product Base FR-005, FR-006, FR-009; P0.1 P01-FR-009 | In OpenAPI |
 | Subscription / Entitlement | `Subscription`, `Entitlement` | P0 FR-COM-001..FR-COM-007, FR-COM-009 | In OpenAPI |
 | Usage / AI Gateway | `Usage`, `AI Gateway` | P0 FR-COM-010; Product Base FR-004, FR-008; P0.1 P01-FR-006, P01-FR-007; `mvp-backend-practice-ai` MVP-SI-006/MVP-SI-009 | In OpenAPI, including server-side ASR/TTS/pronunciation/coach adapters, no client provider secret field, and typed fallback results |
@@ -120,7 +120,7 @@ P0.1 Training hardening gate result: the OpenAPI Training family is the Product 
 ## P0.2 Goal Autopilot Contract Gate
 
 Owning stage: `docs/product/stages/p0-2-training-memory.md`。
-Owning increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy`, `p0-2-autopilot-progress-checkpoint`。
+Owning increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy`, `p0-2-autopilot-progress-checkpoint`, `p0-2-followup-b-autopilot-control-planner-memory`。
 
 | Work package | Contract decision | Traceability |
 | --- | --- | --- |
@@ -130,8 +130,14 @@ Owning increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory
 | P02-API-002 | `GET /goal-autopilot/daily-plan`, `GET /goal-autopilot/actions/next`, and `POST /goal-autopilot/actions/{plan_item_id}/complete` expose no-choice execution, reason codes, plan item completion and defer/skip state without allowing Flutter to create final mastery, entitlement or official score facts. | P02-AUTO-FR-001, P02-AUTO-FR-002, P02-AUTO-FR-003 |
 | P02-API-003 | `GET /goal-autopilot/forecast` returns gap, ETA date or interval, confidence, risk reason and next checkpoint date. Partial or low-confidence inputs must block high-precision ETA and goal-complete claims. | P02-AUTO-FR-004, P02-AUTO-FR-007 |
 | P02-API-003 | `POST /goal-autopilot/checkpoints` records weekly/biweekly checkpoint results, updates forecast and emits a plan update signal. It must not claim official IELTS/TOEFL certification or guaranteed score. | P02-AUTO-FR-005, P02-AUTO-FR-007, P02-AUTO-FR-008 |
+| P02-FUB-API-001 | `GET /goal-autopilot/control`, `PATCH /goal-autopilot/control`, `POST /goal-autopilot/control/pause` and `POST /goal-autopilot/control/resume` are the server-owned UserAutopilotControl boundary. Flutter may submit update intent, pause intent or resume intent, but the response is the only source of truth for active/paused/policy-blocked state, next-action impact, reminder eligibility impact, replan requirement and reason code. | P02-FUB-FR-001, P02-FUB-FR-002, AC-P02-FUB-001, AC-P02-FUB-002, TC-P02-FUB-001..004 |
+| P02-FUB-API-002 | `POST /goal-autopilot/reminders/eligibility` evaluates control status, quiet hours, timezone, notification consent, platform permission, entitlement, quota, support status and plan freshness before any reminder schedule/send action. Blocked reminders return explicit reason code and optional `next_allowed_at`, and must not be recorded as completion, refusal, failure or missed-day evidence. | P02-FUB-FR-003, AC-P02-FUB-003, TC-P02-FUB-005..006 |
+| P02-FUB-API-003 | `GET /goal-autopilot/reminders/outbox` exposes the scheduler/outbox lifecycle projection for replay, troubleshooting and UI state. Outbox records use stable dedupe keys, lifecycle status, input snapshot hash, rule version and failure metadata; raw notification payloads and sensitive diagnostic details are not exposed. | P02-FUB-FR-004, AC-P02-FUB-004, TC-P02-FUB-007..008 |
+| P02-FUB-API-004 | `POST /goal-autopilot/recovery/replan` creates a deterministic RecoveryPlanDecision for missed day, skip, defer, resume-after-pause gap, stale plan or expired item. The response must choose exactly one primary mode: `compress`, `defer` or `replace`; it must not stack all overdue work into the next daily plan. | P02-FUB-FR-005, AC-P02-FUB-005, TC-P02-FUB-009..010 |
+| P02-FUB-API-005 | `POST /goal-autopilot/item-policy/decisions` exposes item-level policy decisions for expressions, scenarios, diagnostic weakness tags or plan items without using a future `/memory` path. It returns deterministic due decisions, overlearning-cap/interleaving reason codes and replay refs; AI output cannot persist final review schedule. | P02-FUB-FR-006, AC-P02-FUB-006, TC-P02-FUB-011..012; supporting replay TC-P02-FUB-015..017 |
+| P02-FUB-API-006 | `GET /goal-autopilot/mastery-transitions` and `GET /goal-autopilot/replay-audits` expose read-only audit projections for accepted-evidence L0-L5 transitions and deterministic replay. They do not let clients write final mastery, official score equivalence, review schedule or goal completion facts. | P02-FUB-FR-007, P02-FUB-FR-008, AC-P02-FUB-007, AC-P02-FUB-008, TC-P02-FUB-013..017 |
 
-P02-API-001 through P02-API-003 gate result: P0.2 implementation-level endpoints are allowed only inside the `Goal Autopilot` family and only for deterministic local source-of-truth behavior. Paid AI depth, external scoring evidence, commercial release, notifications and official-score equivalence remain gated by P02-PG-001 through P02-PG-005 and P0 commercial gates.
+P02-API-001 through P02-FUB-API-006 gate result: P0.2 implementation-level endpoints are allowed only inside the `Goal Autopilot` family and only for deterministic local source-of-truth behavior. Followup-B allows control, reminder eligibility/outbox, recovery, item-policy and audit contracts; paid AI depth, external scoring evidence, commercial release and official-score equivalence remain gated by P02-PG-001 through P02-PG-005 and P0 commercial gates.
 
 ## Error Model
 
@@ -173,6 +179,9 @@ OpenAPI component: `ErrorResponse`.
 | Training/practice turn | `Idempotency-Key` + session id | Replay cannot create duplicate turn/evidence |
 | Media upload create | `Idempotency-Key` + user + client_upload_id/checksum | Replay returns the same pending or validated media asset without creating duplicate provider-accessible refs |
 | AI retention job | `Idempotency-Key` + scope + reason + user_ref/deletion job ref | Replay returns the same retention job status and does not double-delete or double-count evidence |
+| Autopilot control update/pause/resume | `Idempotency-Key` + user + active goal revision + requested control transition | Replay returns the same control result, deduped audit note and notification impact without duplicate cancellation or replan effects |
+| Autopilot recovery replan | `Idempotency-Key` + user + goal revision + source_event + rule_version | Replay returns the same RecoveryPlanDecision and does not create duplicate daily plan replacements |
+| Reminder outbox scheduling | dedupe key from user + goal revision + plan item + reminder slot + rule_version | Duplicate schedule attempts resolve to the existing outbox record or blocked state |
 
 ## MVP Backend Practice/AI Contract Note
 
@@ -243,5 +252,5 @@ Implementation may not start until:
 - OpenAPI paths map to Product Base stable behavior, P0 approved increment, or P0.1 approved increment.
 - Each implementation-level endpoint defines auth, request, response, errors, examples, and traceability metadata.
 - Payment, usage, deletion and turn replay define idempotency behavior.
-- P0.2 Goal Autopilot paths remain limited to the three approved owning increments and P02 policy gates; P1/P2 remain deferred unless a new Product Manager-approved increment is added.
+- P0.2 Goal Autopilot paths remain limited to the approved owning P0.2 increments, including Followup-B, and P02 policy gates; P1/P2 remain deferred unless a new Product Manager-approved increment is added.
 - Product Object Governance Check returns pass after OpenAPI generation.

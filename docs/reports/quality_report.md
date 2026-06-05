@@ -1,7 +1,113 @@
 # Quality Report
 
 ## Current Status
-`P02-FOLLOWUP-A-GOAL-INTAKE-DIAGNOSTIC-HARDENING-20260604` passed local Followup-A Flutter implementation, analyzer, backend regression/performance, coverage and strengthened traceability gates for FR-001..009, including No-goal Explore Mode. Independent review does not approve full P0.2 release because Followup-B pause/resume/notification/memory control, Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open. Followup-B through Followup-D remain at formal definition and WP traceability scaffold level; they are not requirements/spec/AC/TC approval and not implementation approval.
+`P02-FOLLOWUP-B-S002-A-NOTIFICATION-ELIGIBILITY-20260605` closes TC-P02-FUB-005 and TC-P02-FUB-006 for S002-A notification eligibility policy. Backend UserAutopilotControl source/update/pause/resume, current control governance, Flutter server-control binding and notification eligibility policy now have local evidence for TC-P02-FUB-001 through TC-P02-FUB-006. Followup-B requirements/spec/acceptance/test_cases/traceability, Domain, API/OpenAPI/generated client sync, AI runtime and UX contracts are present, but scheduler/outbox, missed-day recovery, item-level memory, L0-L5 transition, replay/performance/coverage, dedicated traceability script, final QA, Product Base merge and release approval remain open. Followup-A remains locally passed. Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
+
+## 2026-06-05 P02 Followup-B S002-A Notification Eligibility Independent Review
+
+Result: pass for TC-P02-FUB-005 and TC-P02-FUB-006. Not full Followup-B completion, not scheduler/outbox approval, not release approval and not Product Base merge approval.
+
+Findings:
+- No blocker found for backend reason precedence. `NotificationEligibilityPolicy` returns the first matching reason in the requested S002-A order: paused, blocked-by-policy, unsupported goal, partial-goal-limited, stale plan, missing plan, consent missing, permission denied, entitlement blocked, quota exhausted, quiet hours, eligible.
+- No blocker found for quiet-hours evaluation. Same-day windows, cross-midnight evening/morning windows and start=end disabled behavior are covered by deterministic unit tests with explicit `next_allowed_at` assertions.
+- No blocker found for current control-response integration. `GoalAutopilotService` routes reminder eligibility through the policy, preserves rule-versioned decision IDs and distinguishes `stale_plan` from `missing_plan`.
+- No blocker found for Flutter display behavior. The adapter widget renders server-supplied `quiet_hours`, `permission_denied`, `entitlement_blocked` and `quota_exhausted` reasons without treating blocked or unsent reminders as completion.
+- No API contract drift blocker. `NotificationEligibilityDecision.reason_code` includes `blocked_by_policy`; OpenAPI contract and generated Dart drift gates passed.
+- Scope boundary is correct. Scheduler/outbox lifecycle remains TC-P02-FUB-007/008 planned and was not implemented or claimed by this review.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=NotificationEligibilityPolicyTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - passed.
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart --name "Followup-B shows quiet-hours and notification blocked reasons without treating them as completion"` - passed.
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter analyze test/features/goal_autopilot/goal_autopilot_adapter_test.dart lib/generated/api/speakeasy_api.dart` - passed.
+- `npm run check:api-contract` - passed.
+- `git diff --check -- <S002-A touched files>` - passed.
+- Independent review agent `019e9539-d6a3-79b3-8117-25a45a0dd7fd` - passed with no findings and no open questions for TC-P02-FUB-005/006.
+
+Residual risk:
+- Runtime platform permission, entitlement and quota signal plumbing is still future integration work. The current control-response path feeds those fields as allowed while `NotificationEligibilityPolicyTest` covers the deterministic decision table and Flutter covers server-supplied blocked reason display.
+- Notification scheduler/outbox lifecycle, outbox replay and notification send records remain TC-P02-FUB-007/008 planned and must be executed in a separate slice.
+
+## 2026-06-05 P02 Followup-B TC-002 Control Governance Independent Review
+
+Result: pass for TC-P02-FUB-002 and P02-FUB-GAP-001 S001 control data-governance closure. Not full Followup-B completion, not release approval and not Product Base merge approval.
+
+Findings:
+- No blocker found for server validation. TC-P02-FUB-002 still rejects invalid quiet hours, timezone, intensity override and missed-day policy before persisting control changes.
+- No blocker found for current control data export governance. `GoalAutopilotService#exportControlDataGovernance` returns a read-only internal snapshot covering control records, user/goal references, status, quiet hours, notification consent, missed-day policy, rule version and timestamps.
+- No sensitive-data blocker found. Idempotency evidence is limited to request hash and metadata; raw idempotency key and stored response JSON are marked redacted, and audit details assert redaction rather than leaking sensitive control payloads.
+- No deletion-retention blocker found for current S001 data classes. Account deletion purges `goal_autopilot_controls` and `goal_autopilot_control_idempotency`; retention rules explicitly record hard deletion for those tables and redacted minimal audit retention.
+- No API contract drift blocker. No external endpoint or generated Dart client changed; this closure uses an internal service boundary and backend integration tests.
+- Residual scope is correctly routed. Notification scheduler/outbox records do not exist in S001 and remain planned under TC-P02-FUB-007/008, so TC-P02-FUB-002 closure does not claim outbox implementation.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fub002ControlDataGovernanceAndValidationAreServerSide test` - red step failed before implementation with missing `exportControlDataGovernance(UUID)`.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fub002ControlDataGovernanceAndValidationAreServerSide test` - passed after implementation.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest,AccountDeletionLearningDataTest,TrainingAccountDeletionRetentionTest test` - passed.
+- `git diff --check -- backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java backend/src/main/java/com/speakeasy/goal/GoalAutopilotControlRepository.java backend/src/main/java/com/speakeasy/goal/GoalAutopilotControlIdempotencyRepository.java backend/src/main/java/com/speakeasy/goal/GoalAutopilotControlIdempotency.java backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java` - passed.
+
+Residual risk:
+- Scheduler/outbox, recovery, memory, mastery, replay, performance, coverage, dedicated traceability script and final Followup-B review remain open.
+- No external user-facing export endpoint was added in this slice; future release data-export UI/API remains Followup-D/commercial data-governance work.
+
+## 2026-06-05 P02 Followup-B Policy Table Routing Independent Review
+
+Result: pass for documentation readiness and implementation-slice routing. Not code implementation approval, not executed runtime test evidence, not release approval and not Product Base merge approval.
+
+Findings:
+- No target-drift blocker. Followup-B remains scoped to control, notification, recovery, item-level memory, L0-L5 transition and replay/performance gates; it still excludes Followup-A/C/D scope.
+- No ID stability blocker. FR-P02-FUB-001..008, P02-FUB-SPEC-001..008, AC-P02-FUB-001..008 and TC-P02-FUB-001..017 were not renumbered or expanded.
+- No content-boundary blocker. `spec.md` now defines behavior-level slice routing and deterministic policy tables without writing code implementation details.
+- No AC/TC blocker. `acceptance.md` and `test_cases.md` now map P02-FUB-SLICE-001..006 to FUB-FIX-001..009 and preserve AC-to-TC coverage.
+- TC format issue found and fixed in that audit. Historical note: `TC-P02-FUB-002` used an unresolved result status while preserving partial validation/deletion cleanup evidence at that time; it is superseded by the 2026-06-05 TC-002 control governance closure above.
+- Traceability now records policy-table-to-fixture routing and keeps TR-004..009 planned/open.
+
+Validation:
+- `git diff --check -- docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/requirements.md docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/spec.md docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/acceptance.md docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/test_cases.md docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/traceability.md docs/reports/test_report.md docs/reports/quality_report.md` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `npm run check:api-contract` - passed.
+- Followup-B TC enum audit - passed for test layer, automation status and result status.
+
+Residual risk:
+- The routing update makes remaining slices more implementation-ready but does not execute TC-P02-FUB-005..017.
+- Dedicated scheduler/outbox, recovery, memory, mastery, replay, performance, coverage and traceability-script implementation still must be completed and independently reviewed.
+
+## 2026-06-04 P02 Followup-B Control Slice Documentation Reconciliation
+
+Result: conditional pass for documentation-chain reconciliation and control-slice evidence sync. Not a full Followup-B completion approval, not release approval and not Product Base merge approval.
+
+Findings:
+- Followup-B scope remains correctly bounded to P02-SI-001/002/003/004/005/009/010/011. P02-SI-007/008 remain Followup-A upstream inputs, and P02-SI-006/012/013 remain Followup-C scope.
+- Requirements, spec and acceptance status text no longer claims downstream artifacts do not exist; they now record contract-ready plus partial control-slice execution.
+- TC-P02-FUB-001, TC-P02-FUB-003 and TC-P02-FUB-004 now point to actual executed files and method/name selectors. Historical note: TC-P02-FUB-002 recorded only the executed validation/deletion-cleanup subset in this earlier reconciliation; it is now closed for current S001 control data governance.
+- Domain/API/AI TC mappings were realigned: item-level memory maps to TC-P02-FUB-011..012 plus replay support, mastery transition maps to TC-P02-FUB-013..014 plus replay support, and replay audit maps to TC-P02-FUB-015..017.
+- Traceability rows P02-FUB-TR-001 and P02-FUB-TR-002 now contain concrete code and test evidence. P02-FUB-TR-003 is marked partial support only; P02-FUB-TR-004..009 remain planned/open.
+
+Residual risk:
+- The control slice does not close notification scheduler/outbox, quiet-hours across midnight, platform permission, entitlement/quota, missed-day recovery, item-level memory, L0-L5 transition, replay fixture, performance budget, coverage or final traceability script gates.
+- Followup-B must not be marked complete until TC-P02-FUB-005..017 are executed or explicitly replaced by approved equivalents, including notification outbox governance through TC-P02-FUB-007/008.
+
+## 2026-06-04 P02 Followup-B Pre-implementation Reporting Gate Note
+
+Result: pass for reporting/status reconciliation scope only. Not code implementation approval, not executed test evidence, not release approval and not Product Base merge approval.
+
+Findings:
+- Followup-B is no longer scaffold-only. Its pre-implementation product docs and required contracts have been created or updated and independently reviewed.
+- PM status now records Followup-B as documentation/contract-ready while keeping code, executable tests, performance, coverage and release evidence gated.
+- TC-P02-FUB-017 now distinguishes the missing `scripts/check_p0_2_followup_b_traceability.py` implementation-completion deliverable from the pre-implementation equivalent routing gate.
+- No blocker remains in this reporting/status step for asking Development Orchestrator to route the smallest implementation slice.
+
+Validation:
+- `git diff --check -- docs/product/development_status.md docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/definition.md` - passed.
+- `git diff --check -- docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/test_cases.md docs/reports/test_report.md` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- Followup-B PM status reconciliation independent checker - passed.
+- Followup-B Test Case Development reconciliation independent checker - passed.
+
+Residual risk:
+- Followup-B executable backend/Flutter/AI tests, the dedicated traceability script or approved implementation equivalent, coverage evidence, performance evidence, implementation report, test evidence and final quality review remain open.
+- Followup-B must not be marked implemented, test-passing, release-ready or Product Base-ready until those execution gates are produced and independently reviewed.
 
 ## 2026-06-04 P02 Followup-A No-goal Explore Mode Implementation Independent Review
 
@@ -136,7 +242,7 @@ Result: conditional pass for the local deterministic implementation slice. Not a
 Findings:
 - No coverage blocker remains for the implemented local slice. `scripts/check_p0_2_goal_autopilot_coverage.py` passed with backend changed-code line 96.3%, backend branch 88.6% and Flutter feature line 82.1%. Dart coverage tooling does not emit branch coverage, so Flutter branch coverage is not separately measurable by the local toolchain.
 - Product-scope blocker. The Flutter surface currently starts a compact default IELTS goal rather than exposing the full editable `GoalProfile` intake fields for goal type, target score/ability, deadline, daily available time and intensity preference. Backend contracts support these fields, but the user-facing setup is incomplete.
-- Product-scope blocker. Autopilot user control is only partially implemented: skip/defer recovery and quiet-hour fields exist, but pause/resume endpoint behavior and production notification scheduling are not implemented.
+- Superseded product-scope note. At the time of this local deterministic slice review, pause/resume endpoints were not implemented. This is now partially superseded by `P02-FOLLOWUP-B-CONTROL-SLICE-20260604`, where pause/resume/update-control backend behavior and Flutter binding passed target tests; production notification scheduling and full Followup-B control completion remain open.
 - Product-scope blocker. Progress evidence is surfaced on the Home learn tab only. The planned “at least two product surfaces” behavior is not yet complete because Queue/Wiki propagation remains future work.
 - No local code blocker found in the implemented deterministic backend/API/Flutter slice after review. The implemented service/controller/adapter tests cover supported-goal routing, diagnostic facts, plan generation, memory policy, next action, checkpoint forecast update, deletion cleanup and OpenAPI path drift.
 

@@ -142,12 +142,15 @@ class ApiClient {
 
   static Future<Map<String, dynamic>> _patch(
     String path,
-    Map<String, dynamic> body,
-  ) async {
+    Map<String, dynamic> body, {
+    Map<String, String> headers = const <String, String>{},
+  }) async {
+    final Map<String, String> requestHeaders = await _headers();
+    requestHeaders.addAll(headers);
     final http.Response response = await http
         .patch(
           Uri.parse('${AppConfig.apiBaseUrl}$path'),
-          headers: await _headers(),
+          headers: requestHeaders,
           body: jsonEncode(body),
         )
         .timeout(const Duration(seconds: 15));
@@ -534,6 +537,60 @@ class ApiClient {
       SpeakeasyApiPaths.goalAutopilotSummary,
     );
     _ensureSuccess(response, fallback: '目标进度加载失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> getGoalAutopilotControl() async {
+    final Map<String, dynamic> response = await _get(
+      SpeakeasyApiPaths.goalAutopilotControl,
+    );
+    _ensureSuccess(response, fallback: '自动带练控制加载失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> updateGoalAutopilotControl(
+    Map<String, dynamic> payload, {
+    required String idempotencyKey,
+  }) async {
+    final Map<String, dynamic> response = await _patch(
+      SpeakeasyApiPaths.goalAutopilotControl,
+      payload,
+      headers: <String, String>{'Idempotency-Key': idempotencyKey.trim()},
+    );
+    _ensureSuccess(response, fallback: '自动带练控制更新失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> pauseGoalAutopilotControl({
+    required String idempotencyKey,
+    String? pauseReason,
+  }) async {
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.goalAutopilotControlPause,
+      <String, dynamic>{
+        'schema_version': 1,
+        if (pauseReason != null && pauseReason.trim().isNotEmpty)
+          'pause_reason': pauseReason.trim(),
+      },
+      headers: <String, String>{'Idempotency-Key': idempotencyKey.trim()},
+    );
+    _ensureSuccess(response, fallback: '自动带练暂停失败');
+    return response;
+  }
+
+  static Future<Map<String, dynamic>> resumeGoalAutopilotControl({
+    required String idempotencyKey,
+    String sourceEvent = 'manual_resume',
+  }) async {
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.goalAutopilotControlResume,
+      <String, dynamic>{
+        'schema_version': 1,
+        'source_event': sourceEvent.trim(),
+      },
+      headers: <String, String>{'Idempotency-Key': idempotencyKey.trim()},
+    );
+    _ensureSuccess(response, fallback: '自动带练恢复失败');
     return response;
   }
 

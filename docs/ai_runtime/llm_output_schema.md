@@ -292,3 +292,71 @@ Validation rules:
 - Candidate may explain checkpoint evidence and forecast risk, but backend owns `eta_date`, `risk_level`, `plan_update_signal`, goal completion and stale-plan decisions.
 - Low confidence or partial support must block high-precision ETA wording.
 - Candidate output must not contain official certification, guaranteed outcome, payment status, raw transcript, raw audio, provider secret or unrestricted personal data fields.
+
+## P0.2 Followup-B Mastery Transition Explanation Candidate
+
+Owning increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`。
+
+This schema is candidate-only. Backend deterministic rules own `MemoryItemPolicyState`, `MasteryTransitionDecision`, `PlannerReplayAudit`, review schedule, notification schedule, control state, recovery mode, entitlement, quota and official-score claim guards.
+
+```json
+{
+  "schema_version": 1,
+  "output_type": "followup_b_mastery_transition_explanation_candidate",
+  "transition_id": "mastery_transition_id_sample",
+  "memory_item_state_id": "memory_item_state_id_sample",
+  "item_type": "expression",
+  "previous_level": "L2",
+  "proposed_level": "L3",
+  "accepted_level": "L3",
+  "transition_direction": "promote",
+  "reason_code": "accepted_evidence_retrieval_success",
+  "confidence_band": "medium",
+  "learner_visible_explanation": "You moved from L2 to L3 for this internal practice item because recent accepted evidence shows more reliable retrieval.",
+  "evidence_summary": {
+    "accepted_evidence_count": 3,
+    "latest_evidence_refs": [
+      "evidence_id_redacted"
+    ],
+    "summary": "Accepted retrieval and checkpoint evidence improved for the same item."
+  },
+  "safety_note": "This is an internal practice signal, not an official exam score.",
+  "guardrails": {
+    "official_score_equivalence": false,
+    "goal_completion_claim_allowed": false,
+    "persistent_decision_fields_present": false,
+    "forbidden_fields_detected": []
+  },
+  "recoverable_error": null
+}
+```
+
+### Allowed `item_type`
+- `expression`
+- `scenario`
+- `diagnostic_weakness`
+- `plan_item`
+
+### Allowed `previous_level`, `proposed_level`, `accepted_level`
+- `L0`
+- `L1`
+- `L2`
+- `L3`
+- `L4`
+- `L5`
+
+### Allowed `transition_direction`
+- `promote`
+- `demote`
+- `hold`
+- `reject`
+
+### Followup-B Validation Rules
+- `schema_version`, `output_type`, `transition_id`, `memory_item_state_id`, `previous_level`, `proposed_level`, `accepted_level`, `transition_direction`, `reason_code`, `learner_visible_explanation`, `evidence_summary` and `guardrails` are required.
+- `output_type` must be `followup_b_mastery_transition_explanation_candidate`.
+- Level and transition fields must echo deterministic input values; the candidate must not invent a new level, reason code or transition direction.
+- `guardrails.official_score_equivalence` and `guardrails.goal_completion_claim_allowed` must be false.
+- `guardrails.persistent_decision_fields_present` must be false and `guardrails.forbidden_fields_detected` must be empty before the candidate can be rendered.
+- `evidence_summary` may include redacted evidence refs and aggregate counts only; raw transcript, raw audio, raw provider payload, exact sensitive diagnostic details and unrestricted personal data are forbidden.
+- Candidate output must not contain persistent decision fields such as `final_mastery_level`, `promotion_applied`, `demotion_applied`, `review_due_at`, `notification_schedule`, `control_status`, `recovery_mode`, `goal_completed`, `official_score`, `certified`, `entitlement`, `quota_state` or `billing_state`.
+- If any forbidden field is present, backend validation must reject or ignore the candidate for persistence and use deterministic fallback. It must not update `MasteryTransitionDecision`, `MemoryItemPolicyState`, `NotificationOutboxRecord`, `UserAutopilotControl` or `RecoveryPlanDecision`.

@@ -5,6 +5,10 @@ import 'package:speakeasy/services/api_client.dart';
 enum GoalAutopilotOperation {
   createGoal,
   summary,
+  control,
+  updateControl,
+  pauseControl,
+  resumeControl,
   generatePlan,
   dailyPlan,
   nextAction,
@@ -18,11 +22,13 @@ class GoalAutopilotRequest {
     required this.operation,
     required this.path,
     this.body = const <String, dynamic>{},
+    this.headers = const <String, String>{},
   });
 
   final GoalAutopilotOperation operation;
   final String path;
   final Map<String, dynamic> body;
+  final Map<String, String> headers;
 }
 
 typedef GoalAutopilotTransport =
@@ -72,6 +78,22 @@ class GoalAutopilotAdapter {
       ),
     );
     return GoalAutopilotSummary.fromJson(response);
+  }
+
+  Future<GoalAutopilotView> loadView() async {
+    final GoalAutopilotSummary summary = await loadSummary();
+    final GoalAutopilotControlResult controlResult = await loadControl();
+    return GoalAutopilotView(summary: summary, controlResult: controlResult);
+  }
+
+  Future<GoalAutopilotControlResult> loadControl() async {
+    final Map<String, dynamic> response = await _transport(
+      const GoalAutopilotRequest(
+        operation: GoalAutopilotOperation.control,
+        path: SpeakeasyApiPaths.goalAutopilotControl,
+      ),
+    );
+    return GoalAutopilotControlResult.fromJson(response);
   }
 
   Future<GoalAutopilotSummary> createGoal({
@@ -154,6 +176,74 @@ class GoalAutopilotAdapter {
     );
   }
 
+  Future<GoalAutopilotControlResult> updateControl({
+    bool? notificationConsent,
+    String? quietHoursStart,
+    String? quietHoursEnd,
+    String? timezone,
+    String? intensityOverride,
+    String? missedDayPolicy,
+  }) async {
+    final Map<String, dynamic> body = <String, dynamic>{
+      'schema_version': 1,
+      'quiet_hours_start': ?quietHoursStart,
+      'quiet_hours_end': ?quietHoursEnd,
+      'timezone': ?timezone,
+      'notification_consent': ?notificationConsent,
+      'intensity_override': ?intensityOverride,
+      'missed_day_policy': ?missedDayPolicy,
+    };
+    final Map<String, dynamic> response = await _transport(
+      GoalAutopilotRequest(
+        operation: GoalAutopilotOperation.updateControl,
+        path: SpeakeasyApiPaths.goalAutopilotControl,
+        body: body,
+        headers: <String, String>{
+          'Idempotency-Key': _idempotencyKey('control-update'),
+        },
+      ),
+    );
+    return GoalAutopilotControlResult.fromJson(response);
+  }
+
+  Future<GoalAutopilotControlResult> pauseControl({
+    String pauseReason = 'user_requested_break',
+  }) async {
+    final Map<String, dynamic> response = await _transport(
+      GoalAutopilotRequest(
+        operation: GoalAutopilotOperation.pauseControl,
+        path: SpeakeasyApiPaths.goalAutopilotControlPause,
+        body: <String, dynamic>{
+          'schema_version': 1,
+          'pause_reason': pauseReason,
+        },
+        headers: <String, String>{
+          'Idempotency-Key': _idempotencyKey('control-pause'),
+        },
+      ),
+    );
+    return GoalAutopilotControlResult.fromJson(response);
+  }
+
+  Future<GoalAutopilotControlResult> resumeControl({
+    String sourceEvent = 'manual_resume',
+  }) async {
+    final Map<String, dynamic> response = await _transport(
+      GoalAutopilotRequest(
+        operation: GoalAutopilotOperation.resumeControl,
+        path: SpeakeasyApiPaths.goalAutopilotControlResume,
+        body: <String, dynamic>{
+          'schema_version': 1,
+          'source_event': sourceEvent,
+        },
+        headers: <String, String>{
+          'Idempotency-Key': _idempotencyKey('control-resume'),
+        },
+      ),
+    );
+    return GoalAutopilotControlResult.fromJson(response);
+  }
+
   Future<GoalDailyPlan> generatePlan({bool forceReplan = false}) async {
     final Map<String, dynamic> response = await _transport(
       GoalAutopilotRequest(
@@ -215,6 +305,22 @@ Future<Map<String, dynamic>> _apiTransport(GoalAutopilotRequest request) {
       request.body,
     ),
     GoalAutopilotOperation.summary => ApiClient.getGoalAutopilotSummary(),
+    GoalAutopilotOperation.control => ApiClient.getGoalAutopilotControl(),
+    GoalAutopilotOperation.updateControl =>
+      ApiClient.updateGoalAutopilotControl(
+        request.body,
+        idempotencyKey: request.headers['Idempotency-Key'] ?? '',
+      ),
+    GoalAutopilotOperation.pauseControl => ApiClient.pauseGoalAutopilotControl(
+      pauseReason: request.body['pause_reason']?.toString(),
+      idempotencyKey: request.headers['Idempotency-Key'] ?? '',
+    ),
+    GoalAutopilotOperation.resumeControl =>
+      ApiClient.resumeGoalAutopilotControl(
+        sourceEvent:
+            request.body['source_event']?.toString() ?? 'manual_resume',
+        idempotencyKey: request.headers['Idempotency-Key'] ?? '',
+      ),
     GoalAutopilotOperation.generatePlan => ApiClient.generateGoalAutopilotPlan(
       forceReplan: request.body['force_replan'] == true,
       reasonCode: request.body['reason_code']?.toString() ?? 'flutter_plan',
@@ -234,6 +340,10 @@ Future<Map<String, dynamic>> _apiTransport(GoalAutopilotRequest request) {
         transcript: request.body['transcript']?.toString(),
       ),
   };
+}
+
+String _idempotencyKey(String prefix) {
+  return '$prefix-${DateTime.now().microsecondsSinceEpoch}';
 }
 
 String _date(DateTime value) {

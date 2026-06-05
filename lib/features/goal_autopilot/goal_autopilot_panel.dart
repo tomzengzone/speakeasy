@@ -18,7 +18,8 @@ class GoalAutopilotPanel extends StatefulWidget {
 }
 
 class _GoalAutopilotPanelState extends State<GoalAutopilotPanel> {
-  Future<GoalAutopilotSummary>? _summaryFuture;
+  Future<GoalAutopilotView>? _viewFuture;
+  GoalAutopilotView? _latestView;
   bool _busy = false;
   bool _creatingGoal = false;
   bool _editing = false;
@@ -27,12 +28,18 @@ class _GoalAutopilotPanelState extends State<GoalAutopilotPanel> {
   @override
   void initState() {
     super.initState();
-    _summaryFuture = widget.adapter.loadSummary();
+    _viewFuture = _loadView();
+  }
+
+  Future<GoalAutopilotView> _loadView() async {
+    final GoalAutopilotView view = await widget.adapter.loadView();
+    _latestView = view;
+    return view;
   }
 
   void _reload() {
     setState(() {
-      _summaryFuture = widget.adapter.loadSummary();
+      _viewFuture = _loadView();
     });
   }
 
@@ -72,6 +79,34 @@ class _GoalAutopilotPanelState extends State<GoalAutopilotPanel> {
     });
   }
 
+  Future<void> _runControl(
+    Future<GoalAutopilotControlResult> Function() action,
+  ) async {
+    if (_busy) {
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final GoalAutopilotControlResult result = await action();
+      final GoalAutopilotView? latest = _latestView;
+      if (mounted && latest != null) {
+        final GoalAutopilotView updated = latest.copyWith(
+          controlResult: result,
+        );
+        _latestView = updated;
+        setState(() {
+          _viewFuture = Future<GoalAutopilotView>.value(updated);
+        });
+      } else {
+        _reload();
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
   void _openGoalIntake() {
     setState(() {
       _creatingGoal = true;
@@ -97,15 +132,15 @@ class _GoalAutopilotPanelState extends State<GoalAutopilotPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<GoalAutopilotSummary>(
-      future: _summaryFuture,
+    return FutureBuilder<GoalAutopilotView>(
+      future: _viewFuture,
       builder:
-          (BuildContext context, AsyncSnapshot<GoalAutopilotSummary> snapshot) {
-            final GoalAutopilotSummary? summary = snapshot.data;
+          (BuildContext context, AsyncSnapshot<GoalAutopilotView> snapshot) {
+            final GoalAutopilotView? view = snapshot.data;
             final Widget content = switch ((
               snapshot.connectionState,
               snapshot.hasError,
-              summary,
+              view,
               _editing,
             )) {
               (ConnectionState.waiting, _, null, _) => const SizedBox(
@@ -126,14 +161,14 @@ class _GoalAutopilotPanelState extends State<GoalAutopilotPanel> {
                 onSetGoal: _openGoalIntake,
                 onExplore: _openExplorePractice,
               ),
-              (_, _, GoalAutopilotSummary value, true) => _GoalSetup(
+              (_, _, GoalAutopilotView value, true) => _GoalSetup(
                 busy: _busy,
-                initial: value,
+                initial: value.summary,
                 onSubmit: _saveGoal,
                 onCancel: () => setState(() => _editing = false),
               ),
-              (_, _, GoalAutopilotSummary value, false) => _GoalSummary(
-                summary: value,
+              (_, _, GoalAutopilotView value, false) => _GoalSummary(
+                view: value,
                 busy: _busy,
                 onEdit: () => setState(() => _editing = true),
                 onGeneratePlan: (bool forceReplan) => _run(
@@ -145,14 +180,26 @@ class _GoalAutopilotPanelState extends State<GoalAutopilotPanel> {
                     ? () => _run(
                         () => widget.adapter
                             .completeAction(
-                              planItemId: value.nextAction!.planItemId,
+                              planItemId: value.summary.nextAction!.planItemId,
                             )
                             .then((_) {}),
                       )
                     : null,
-                onCheckpoint: value.isUnsupported
+                onCheckpoint: value.summary.isUnsupported
                     ? null
                     : () => _run(widget.adapter.submitCheckpoint),
+                onPause: value.isPaused
+                    ? null
+                    : () => _runControl(() => widget.adapter.pauseControl()),
+                onResume: value.isPaused
+                    ? () => _runControl(() => widget.adapter.resumeControl())
+                    : null,
+                onToggleReminder: () => _runControl(
+                  () => widget.adapter.updateControl(
+                    notificationConsent:
+                        !value.controlResult.control.notificationConsent,
+                  ),
+                ),
               ),
               _ => _NoActiveGoal(
                 busy: _busy,
@@ -664,23 +711,34 @@ class _GoalSetupState extends State<_GoalSetup> {
 
 class _GoalSummary extends StatelessWidget {
   const _GoalSummary({
-    required this.summary,
+    required this.view,
     required this.busy,
     required this.onEdit,
     required this.onGeneratePlan,
     required this.onCompleteAction,
     required this.onCheckpoint,
+    required this.onPause,
+    required this.onResume,
+    required this.onToggleReminder,
   });
 
-  final GoalAutopilotSummary summary;
+  final GoalAutopilotView view;
   final bool busy;
   final VoidCallback onEdit;
   final void Function(bool forceReplan) onGeneratePlan;
   final VoidCallback? onCompleteAction;
   final VoidCallback? onCheckpoint;
+  final VoidCallback? onPause;
+  final VoidCallback? onResume;
+  final VoidCallback onToggleReminder;
 
   @override
   Widget build(BuildContext context) {
+    final GoalAutopilotSummary summary = view.summary;
+    final GoalAutopilotControlResult controlResult = view.controlResult;
+    final GoalAutopilotControl control = controlResult.control;
+    final NotificationEligibilityDecision reminder =
+        controlResult.reminderEligibility;
     final GoalAutopilotAction? action = summary.nextAction;
     final GoalDailyPlan? plan = summary.dailyPlan;
     final String limitationMessage = _visibleLimitation(summary);
@@ -729,6 +787,16 @@ class _GoalSummary extends StatelessWidget {
               icon: Icons.rule,
             ),
             _Metric(label: 'Revision ${summary.revision}', icon: Icons.edit),
+            _Metric(
+              label: 'Autopilot: ${control.controlStatus}',
+              icon: Icons.tune_rounded,
+            ),
+            _Metric(
+              label: 'Reminder: ${reminder.reasonCode}',
+              icon: reminder.eligible
+                  ? Icons.notifications_active_outlined
+                  : Icons.notifications_off_outlined,
+            ),
             _Metric(
               label:
                   'Samples ${summary.sampleCount} · ${summary.diagnosticStatus}',
@@ -789,7 +857,50 @@ class _GoalSummary extends StatelessWidget {
                 ),
               ),
             ),
-            if (summary.hasExecutableAction && action != null)
+            SizedBox(
+              height: 40,
+              child: OutlinedButton.icon(
+                onPressed: busy ? null : onToggleReminder,
+                icon: Icon(
+                  control.notificationConsent
+                      ? Icons.notifications_off_outlined
+                      : Icons.notifications_active_outlined,
+                  size: 18,
+                ),
+                label: Text(
+                  control.notificationConsent
+                      ? 'Turn reminders off'
+                      : 'Turn reminders on',
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFE8F5E9),
+                  side: const BorderSide(color: Color(0xFFE8F5E9)),
+                ),
+              ),
+            ),
+            if (onResume != null)
+              SizedBox(
+                height: 40,
+                child: FilledButton.icon(
+                  onPressed: busy ? null : onResume,
+                  icon: const Icon(Icons.play_arrow_rounded, size: 18),
+                  label: const Text('Resume autopilot'),
+                ),
+              )
+            else
+              SizedBox(
+                height: 40,
+                child: OutlinedButton.icon(
+                  onPressed: busy ? null : onPause,
+                  icon: const Icon(Icons.pause_circle_outline, size: 18),
+                  label: const Text('Pause autopilot'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFE8F5E9),
+                    side: const BorderSide(color: Color(0xFFE8F5E9)),
+                  ),
+                ),
+              ),
+            if (view.hasExecutableAction && action != null)
               _ActionRow(
                 action: action,
                 busy: busy,

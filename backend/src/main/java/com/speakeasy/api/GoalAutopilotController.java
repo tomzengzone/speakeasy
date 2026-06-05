@@ -9,11 +9,13 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -57,6 +59,48 @@ public class GoalAutopilotController {
   @GetMapping("/goal-autopilot/summary")
   public GoalAutopilotSummaryResponse summary(@AuthenticationPrincipal CurrentUser currentUser) {
     return GoalAutopilotSummaryResponse.from(service.summary(currentUser.userId()));
+  }
+
+  @GetMapping("/goal-autopilot/control")
+  public AutopilotControlResponse control(@AuthenticationPrincipal CurrentUser currentUser) {
+    return AutopilotControlResponse.from(service.control(currentUser.userId()));
+  }
+
+  @PatchMapping("/goal-autopilot/control")
+  public AutopilotControlResponse updateControl(
+      @AuthenticationPrincipal CurrentUser currentUser,
+      @RequestHeader(name = "X-Request-Id", required = false) String requestId,
+      @RequestHeader(name = "Idempotency-Key") String idempotencyKey,
+      @Valid @RequestBody UpdateAutopilotControlRequest request) {
+    return AutopilotControlResponse.from(service.updateControl(
+        currentUser.userId(),
+        new GoalAutopilotService.ControlSettingsInput(
+            request.quietHoursStart(),
+            request.quietHoursEnd(),
+            request.timezone(),
+            request.notificationConsent(),
+            request.intensityOverride(),
+            request.missedDayPolicy()),
+        requestId,
+        idempotencyKey));
+  }
+
+  @PostMapping("/goal-autopilot/control/pause")
+  public AutopilotControlResponse pauseControl(
+      @AuthenticationPrincipal CurrentUser currentUser,
+      @RequestHeader(name = "X-Request-Id", required = false) String requestId,
+      @RequestHeader(name = "Idempotency-Key") String idempotencyKey,
+      @Valid @RequestBody PauseAutopilotControlRequest request) {
+    return AutopilotControlResponse.from(service.pauseControl(currentUser.userId(), request.pauseReason(), requestId, idempotencyKey));
+  }
+
+  @PostMapping("/goal-autopilot/control/resume")
+  public AutopilotControlResponse resumeControl(
+      @AuthenticationPrincipal CurrentUser currentUser,
+      @RequestHeader(name = "X-Request-Id", required = false) String requestId,
+      @RequestHeader(name = "Idempotency-Key") String idempotencyKey,
+      @Valid @RequestBody ResumeAutopilotControlRequest request) {
+    return AutopilotControlResponse.from(service.resumeControl(currentUser.userId(), request.sourceEvent(), requestId, idempotencyKey));
   }
 
   @PostMapping("/goal-autopilot/plans/generate")
@@ -126,6 +170,19 @@ public class GoalAutopilotController {
       String quietHoursEnd,
       Boolean notificationConsent,
       String intensityOverride) {}
+
+  public record UpdateAutopilotControlRequest(
+      @NotNull @Min(1) @Max(1) Integer schemaVersion,
+      String quietHoursStart,
+      String quietHoursEnd,
+      String timezone,
+      Boolean notificationConsent,
+      String intensityOverride,
+      String missedDayPolicy) {}
+
+  public record PauseAutopilotControlRequest(@NotNull @Min(1) @Max(1) Integer schemaVersion, String pauseReason) {}
+
+  public record ResumeAutopilotControlRequest(@NotNull @Min(1) @Max(1) Integer schemaVersion, String sourceEvent) {}
 
   public record GeneratePlanRequest(@NotNull @Min(1) @Max(1) Integer schemaVersion, Boolean forceReplan, String reasonCode) {}
 
@@ -199,6 +256,94 @@ public class GoalAutopilotController {
   public record GoalForecastResponse(int schemaVersion, ProgressForecastDto forecast) implements SchemaResponse {
     static GoalForecastResponse from(GoalAutopilotService.ForecastView forecast) {
       return new GoalForecastResponse(1, ProgressForecastDto.from(forecast));
+    }
+  }
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record AutopilotControlResponse(
+      int schemaVersion,
+      UserAutopilotControlDto control,
+      boolean nextActionChanged,
+      boolean reminderEligibilityChanged,
+      boolean replanRequired,
+      String reasonCode,
+      NotificationEligibilityDecisionDto reminderEligibility,
+      PlanUpdateSignalDto planUpdateSignal)
+      implements SchemaResponse {
+    static AutopilotControlResponse from(GoalAutopilotService.ControlResult result) {
+      return new AutopilotControlResponse(
+          1,
+          UserAutopilotControlDto.from(result.control()),
+          result.nextActionChanged(),
+          result.reminderEligibilityChanged(),
+          result.replanRequired(),
+          result.reasonCode(),
+          NotificationEligibilityDecisionDto.from(result.reminderEligibility()),
+          PlanUpdateSignalDto.from(result.planUpdateSignal()));
+    }
+  }
+
+  public record UserAutopilotControlDto(
+      UUID controlId,
+      UUID userId,
+      UUID goalProfileId,
+      String controlStatus,
+      Instant pausedAt,
+      String pauseReason,
+      Instant resumedAt,
+      String quietHoursStart,
+      String quietHoursEnd,
+      String timezone,
+      boolean notificationConsent,
+      String intensityOverride,
+      String missedDayPolicy,
+      Instant updatedAt,
+      String ruleVersion) {
+    static UserAutopilotControlDto from(GoalAutopilotService.ControlView view) {
+      return new UserAutopilotControlDto(
+          view.controlId(),
+          view.userId(),
+          view.goalProfileId(),
+          view.controlStatus(),
+          view.pausedAt(),
+          view.pauseReason(),
+          view.resumedAt(),
+          view.quietHoursStart(),
+          view.quietHoursEnd(),
+          view.timezone(),
+          view.notificationConsent(),
+          view.intensityOverride(),
+          view.missedDayPolicy(),
+          view.updatedAt(),
+          view.ruleVersion());
+    }
+  }
+
+  public record NotificationEligibilityDecisionDto(
+      String decisionId,
+      UUID controlId,
+      UUID userId,
+      UUID goalProfileId,
+      UUID planItemId,
+      boolean eligible,
+      String reasonCode,
+      Instant nextAllowedAt,
+      String explanationKey,
+      Instant evaluatedAt,
+      String ruleVersion) {
+    static NotificationEligibilityDecisionDto from(GoalAutopilotService.NotificationEligibilityDecisionView view) {
+      return new NotificationEligibilityDecisionDto(
+          view.decisionId(),
+          view.controlId(),
+          view.userId(),
+          view.goalProfileId(),
+          view.planItemId(),
+          view.eligible(),
+          view.reasonCode(),
+          view.nextAllowedAt(),
+          view.explanationKey(),
+          view.evaluatedAt(),
+          view.ruleVersion());
     }
   }
 

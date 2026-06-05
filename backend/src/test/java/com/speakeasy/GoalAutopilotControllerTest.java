@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.blankOrNullString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -310,6 +311,310 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
   }
 
   @Test
+  void tcP02Fub001ControlIsServerOwnedAndSeparatesPolicyFromGoalProfile() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140220");
+    UUID userId = UUID.fromString(tokens.userId());
+    createSupportedGoal(tokens).andExpect(status().isOk());
+
+    mvc.perform(get("/goal-autopilot/control")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.schema_version").value(1))
+        .andExpect(jsonPath("$.control.user_id").value(userId.toString()))
+        .andExpect(jsonPath("$.control.control_status").value("blocked_by_policy"))
+        .andExpect(jsonPath("$.control.quiet_hours_start").value("22:00"))
+        .andExpect(jsonPath("$.control.timezone").value("Asia/Shanghai"))
+        .andExpect(jsonPath("$.reason_code").value("missing_plan"))
+        .andExpect(jsonPath("$.reminder_eligibility.eligible").value(false))
+        .andExpect(jsonPath("$.reminder_eligibility.reason_code").value("missing_plan"));
+
+    assertThat(count("goal_autopilot_controls", userId)).isEqualTo(1);
+
+    generatePlan(tokens, false, "initial_backplan").andExpect(status().isOk());
+
+    mvc.perform(get("/goal-autopilot/control")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.control.control_status").value("active"))
+        .andExpect(jsonPath("$.reason_code").value("eligible"))
+        .andExpect(jsonPath("$.reminder_eligibility.eligible").value(true))
+        .andExpect(jsonPath("$.reminder_eligibility.reason_code").value("eligible"));
+
+    String updateBody = """
+        {
+          "schema_version": 1,
+          "quiet_hours_start": "21:30",
+          "quiet_hours_end": "07:15",
+          "timezone": "Asia/Shanghai",
+          "notification_consent": false,
+          "intensity_override": "gentle",
+          "missed_day_policy": "defer"
+        }
+        """;
+    MvcResult updateResult = mvc.perform(patch("/goal-autopilot/control")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("Idempotency-Key", "control-update-001")
+            .header("X-Request-Id", "req_fub_control_update")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(updateBody))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.control.control_status").value("active"))
+        .andExpect(jsonPath("$.control.quiet_hours_start").value("21:30"))
+        .andExpect(jsonPath("$.control.missed_day_policy").value("defer"))
+        .andExpect(jsonPath("$.reason_code").value("control_updated"))
+        .andExpect(jsonPath("$.reminder_eligibility.reason_code").value("consent_missing"))
+        .andReturn();
+    String updateResponse = updateResult.getResponse().getContentAsString();
+    String updateControlUpdatedAt = JsonPath.read(updateResponse, "$.control.updated_at");
+    String updateEligibilityEvaluatedAt = JsonPath.read(updateResponse, "$.reminder_eligibility.evaluated_at");
+
+    mvc.perform(patch("/goal-autopilot/control")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("Idempotency-Key", "control-update-001")
+            .header("X-Request-Id", "req_fub_control_update_replay")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(updateBody))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.control.updated_at").value(updateControlUpdatedAt))
+        .andExpect(jsonPath("$.reminder_eligibility.evaluated_at").value(updateEligibilityEvaluatedAt));
+
+    mvc.perform(patch("/goal-autopilot/control")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("Idempotency-Key", "control-update-001")
+            .header("X-Request-Id", "req_fub_control_update_conflict")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "quiet_hours_start": "21:45",
+                  "quiet_hours_end": "07:15",
+                  "timezone": "Asia/Shanghai",
+                  "notification_consent": false,
+                  "intensity_override": "gentle",
+                  "missed_day_policy": "defer"
+                }
+                """))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.error.code").value("IDEMPOTENCY_CONFLICT"));
+
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT quiet_hours_start FROM goal_profiles WHERE user_id = ?", String.class, userId)).isEqualTo("22:00");
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT quiet_hours_start FROM goal_autopilot_controls WHERE user_id = ?", String.class, userId)).isEqualTo("21:30");
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM audit_logs WHERE actor_type = 'user' AND actor_id = ? AND event_type = 'goal_autopilot_control_updated'",
+        Integer.class,
+        userId.toString())).isEqualTo(1);
+    assertThat(count("goal_autopilot_control_idempotency", userId)).isEqualTo(1);
+
+    createSupportedGoal(tokens)
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.goal_profile.revision").value(2));
+
+    mvc.perform(get("/goal-autopilot/control")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.control.control_status").value("blocked_by_policy"))
+        .andExpect(jsonPath("$.control.quiet_hours_start").value("21:30"))
+        .andExpect(jsonPath("$.control.notification_consent").value(false))
+        .andExpect(jsonPath("$.control.intensity_override").value("gentle"))
+        .andExpect(jsonPath("$.control.missed_day_policy").value("defer"))
+        .andExpect(jsonPath("$.reason_code").value("stale_plan"))
+        .andExpect(jsonPath("$.reminder_eligibility.reason_code").value("stale_plan"));
+  }
+
+  @Test
+  void tcP02Fub002ControlDataGovernanceAndValidationAreServerSide() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140221");
+    UUID userId = UUID.fromString(tokens.userId());
+    createSupportedGoal(tokens).andExpect(status().isOk());
+
+    mvc.perform(patch("/goal-autopilot/control")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("Idempotency-Key", "invalid-control-002")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "quiet_hours_start": "25:00",
+                  "timezone": "not/a-zone",
+                  "missed_day_policy": "stack_everything"
+                }
+                """))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"));
+
+    mvc.perform(patch("/goal-autopilot/control")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("Idempotency-Key", "valid-control-002")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "notification_consent": false
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.control.notification_consent").value(false));
+
+    assertThat(count("goal_autopilot_controls", userId)).isEqualTo(1);
+    assertThat(count("goal_autopilot_control_idempotency", userId)).isEqualTo(1);
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT redacted_details FROM audit_logs WHERE actor_id = ? AND event_type = 'goal_autopilot_control_updated'",
+        String.class,
+        userId.toString()))
+        .contains("\"data\":\"redacted\"")
+        .doesNotContain("valid-control-002");
+
+    var governanceExport = goalAutopilotService.exportControlDataGovernance(userId);
+    assertThat(governanceExport.exportFamily()).isEqualTo("goal_autopilot_control");
+    assertThat(governanceExport.ruleVersion()).isEqualTo("fub-control-v1");
+    assertThat(governanceExport.controls()).hasSize(1);
+    assertThat(governanceExport.controls().get(0).userId()).isEqualTo(userId);
+    assertThat(governanceExport.controls().get(0).pauseReason()).isNull();
+    assertThat(governanceExport.controls().get(0).notificationConsent()).isFalse();
+    assertThat(governanceExport.controls().get(0).ruleVersion()).isEqualTo("fub-control-v1");
+    assertThat(governanceExport.controls().get(0).createdAt()).isNotNull();
+    assertThat(governanceExport.controls().get(0).updatedAt()).isNotNull();
+    assertThat(governanceExport.idempotencyRecords()).hasSize(1);
+    assertThat(governanceExport.idempotencyRecords().get(0).operation()).isEqualTo("update");
+    assertThat(governanceExport.idempotencyRecords().get(0).requestHash()).hasSize(64);
+    assertThat(governanceExport.idempotencyRecords().get(0).idempotencyKeyRedacted()).isTrue();
+    assertThat(governanceExport.idempotencyRecords().get(0).responseJsonRedacted()).isTrue();
+    assertThat(governanceExport.retentionRules())
+        .extracting(rule -> rule.dataClass() + ":" + rule.action())
+        .contains(
+            "goal_autopilot_controls:hard_delete_on_account_deletion",
+            "goal_autopilot_control_idempotency:hard_delete_on_account_deletion",
+            "audit_logs:retain_redacted_minimal_audit");
+    assertThat(governanceExport.deletionTables())
+        .contains("goal_autopilot_controls", "goal_autopilot_control_idempotency");
+    assertThat(governanceExport.redactedAuditOnly()).isTrue();
+    assertThat(governanceExport.notificationOutboxStatus()).isEqualTo("not_implemented_in_s001");
+
+    mvc.perform(delete("/user/me")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("Idempotency-Key", "delete-fub-control")
+            .header("X-Request-Id", "req_delete_fub_control"))
+        .andExpect(status().isAccepted());
+
+    assertThat(count("goal_autopilot_controls", userId)).isZero();
+    assertThat(count("goal_autopilot_control_idempotency", userId)).isZero();
+  }
+
+  @Test
+  void tcP02Fub003PauseResumeIsIdempotentAndSuppressesNextAction() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140222");
+    UUID userId = UUID.fromString(tokens.userId());
+    createSupportedGoal(tokens).andExpect(status().isOk());
+    generatePlan(tokens, false, "initial_backplan").andExpect(status().isOk());
+
+    String pauseBody = """
+        {
+          "schema_version": 1,
+          "pause_reason": "user_requested_break"
+        }
+        """;
+    MvcResult pauseResult = mvc.perform(post("/goal-autopilot/control/pause")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("Idempotency-Key", "pause-fub-control")
+            .header("X-Request-Id", "req_fub_pause")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(pauseBody))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.control.control_status").value("paused"))
+        .andExpect(jsonPath("$.control.paused_at", not(blankOrNullString())))
+        .andExpect(jsonPath("$.reason_code").value("paused"))
+        .andExpect(jsonPath("$.reminder_eligibility.eligible").value(false))
+        .andExpect(jsonPath("$.reminder_eligibility.reason_code").value("paused"))
+        .andReturn();
+    String pauseResponse = pauseResult.getResponse().getContentAsString();
+    String pausedAt = JsonPath.read(pauseResponse, "$.control.paused_at");
+    String pauseEligibilityEvaluatedAt = JsonPath.read(pauseResponse, "$.reminder_eligibility.evaluated_at");
+
+    mvc.perform(post("/goal-autopilot/control/pause")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("Idempotency-Key", "pause-fub-control")
+            .header("X-Request-Id", "req_fub_pause_repeat")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(pauseBody))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.control.control_status").value("paused"))
+        .andExpect(jsonPath("$.control.paused_at").value(pausedAt))
+        .andExpect(jsonPath("$.reminder_eligibility.evaluated_at").value(pauseEligibilityEvaluatedAt));
+
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM audit_logs WHERE actor_type = 'user' AND actor_id = ? AND event_type = 'goal_autopilot_control_paused'",
+        Integer.class,
+        userId.toString())).isEqualTo(1);
+
+    mvc.perform(get("/goal-autopilot/actions/next")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.error.code").value("CONFLICT"))
+        .andExpect(jsonPath("$.error.details.reason_code").value("paused"));
+
+    String resumeBody = """
+        {
+          "schema_version": 1,
+          "source_event": "manual_resume"
+        }
+        """;
+    MvcResult resumeResult = mvc.perform(post("/goal-autopilot/control/resume")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("Idempotency-Key", "resume-fub-control")
+            .header("X-Request-Id", "req_fub_resume")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(resumeBody))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.control.control_status").value("active"))
+        .andExpect(jsonPath("$.control.paused_at").doesNotExist())
+        .andExpect(jsonPath("$.plan_update_signal.reason_code").value("no_replan_needed"))
+        .andReturn();
+    String resumeResponse = resumeResult.getResponse().getContentAsString();
+    String resumedAt = JsonPath.read(resumeResponse, "$.control.resumed_at");
+    String resumeEligibilityEvaluatedAt = JsonPath.read(resumeResponse, "$.reminder_eligibility.evaluated_at");
+
+    mvc.perform(post("/goal-autopilot/control/resume")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("Idempotency-Key", "resume-fub-control")
+            .header("X-Request-Id", "req_fub_resume_repeat")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(resumeBody))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.control.control_status").value("active"))
+        .andExpect(jsonPath("$.control.resumed_at").value(resumedAt))
+        .andExpect(jsonPath("$.reminder_eligibility.evaluated_at").value(resumeEligibilityEvaluatedAt));
+
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM audit_logs WHERE actor_type = 'user' AND actor_id = ? AND event_type = 'goal_autopilot_control_resumed'",
+        Integer.class,
+        userId.toString())).isEqualTo(1);
+    assertThat(count("goal_autopilot_control_idempotency", userId)).isEqualTo(2);
+
+    mvc.perform(post("/goal-autopilot/control/resume")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("Idempotency-Key", "resume-fub-control-active")
+            .header("X-Request-Id", "req_fub_resume_active")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(resumeBody))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.control.control_status").value("active"))
+        .andExpect(jsonPath("$.control.resumed_at").value(resumedAt));
+
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM audit_logs WHERE actor_type = 'user' AND actor_id = ? AND event_type = 'goal_autopilot_control_resumed'",
+        Integer.class,
+        userId.toString())).isEqualTo(1);
+    assertThat(count("goal_autopilot_control_idempotency", userId)).isEqualTo(3);
+
+    mvc.perform(get("/goal-autopilot/actions/next")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.action.status").value("ready"));
+  }
+
+  @Test
   void tcP02Plan002PartialGoalForceReplanAndRevisionStaleExistingPlans() throws Exception {
     AuthTokens tokens = loginPhone("+8613800140207");
 
@@ -545,6 +850,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
     generatePlan(tokens, false, "initial_backplan").andExpect(status().isOk());
 
     assertThat(count("goal_profiles", userId)).isEqualTo(1);
+    assertThat(count("goal_autopilot_controls", userId)).isEqualTo(1);
     assertThat(count("goal_plan_items", userId)).isGreaterThan(0);
 
     mvc.perform(delete("/user/me")
@@ -554,6 +860,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
         .andExpect(status().isAccepted());
 
     assertThat(count("goal_profiles", userId)).isZero();
+    assertThat(count("goal_autopilot_controls", userId)).isZero();
     assertThat(count("goal_diagnostic_assessments", userId)).isZero();
     assertThat(count("goal_mastery_initial_states", userId)).isZero();
     assertThat(count("goal_backplans", userId)).isZero();
