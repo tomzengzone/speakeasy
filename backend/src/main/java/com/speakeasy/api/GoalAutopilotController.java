@@ -3,6 +3,7 @@ package com.speakeasy.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.speakeasy.common.SchemaResponse;
 import com.speakeasy.goal.GoalAutopilotService;
+import com.speakeasy.goal.NotificationOutboxService;
 import com.speakeasy.security.CurrentUser;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -101,6 +102,16 @@ public class GoalAutopilotController {
       @RequestHeader(name = "Idempotency-Key") String idempotencyKey,
       @Valid @RequestBody ResumeAutopilotControlRequest request) {
     return AutopilotControlResponse.from(service.resumeControl(currentUser.userId(), request.sourceEvent(), requestId, idempotencyKey));
+  }
+
+  @GetMapping("/goal-autopilot/reminders/outbox")
+  public NotificationOutboxListResponse reminderOutbox(@AuthenticationPrincipal CurrentUser currentUser) {
+    return NotificationOutboxListResponse.from(service.reminderOutbox(currentUser.userId()));
+  }
+
+  @GetMapping("/goal-autopilot/replay-audits")
+  public PlannerReplayAuditListResponse replayAudits(@AuthenticationPrincipal CurrentUser currentUser) {
+    return PlannerReplayAuditListResponse.from(service.replayAudits(currentUser.userId()));
   }
 
   @PostMapping("/goal-autopilot/plans/generate")
@@ -344,6 +355,90 @@ public class GoalAutopilotController {
           view.explanationKey(),
           view.evaluatedAt(),
           view.ruleVersion());
+    }
+  }
+
+  public record NotificationOutboxListResponse(int schemaVersion, List<NotificationOutboxRecordDto> records)
+      implements SchemaResponse {
+    static NotificationOutboxListResponse from(List<NotificationOutboxService.OutboxRecordView> records) {
+      return new NotificationOutboxListResponse(1, records.stream().map(NotificationOutboxRecordDto::from).toList());
+    }
+  }
+
+  public record NotificationOutboxRecordDto(
+      UUID outboxId,
+      UUID userId,
+      UUID goalProfileId,
+      int goalRevision,
+      UUID planItemId,
+      String reminderSlot,
+      String lifecycleStatus,
+      String dedupeKey,
+      String inputSnapshotHash,
+      String payloadHash,
+      String reasonCode,
+      String processingStatus,
+      Instant nextAttemptAt,
+      String failureReason,
+      int retryCount,
+      Instant sentAt,
+      String ruleVersion,
+      Instant createdAt,
+      Instant updatedAt) {
+    static NotificationOutboxRecordDto from(NotificationOutboxService.OutboxRecordView view) {
+      return new NotificationOutboxRecordDto(
+          view.outboxId(),
+          view.userId(),
+          view.goalProfileId(),
+          view.goalRevision(),
+          view.planItemId(),
+          view.reminderSlot(),
+          view.lifecycleStatus(),
+          view.dedupeKey(),
+          view.inputSnapshotHash(),
+          view.payloadHash(),
+          view.reasonCode(),
+          view.processingStatus(),
+          view.nextAttemptAt(),
+          view.failureReason(),
+          view.retryCount(),
+          view.sentAt(),
+          view.ruleVersion(),
+          view.createdAt(),
+          view.updatedAt());
+    }
+  }
+
+  public record PlannerReplayAuditListResponse(int schemaVersion, List<PlannerReplayAuditDto> audits)
+      implements SchemaResponse {
+    static PlannerReplayAuditListResponse from(List<NotificationOutboxService.PlannerReplayAuditView> audits) {
+      return new PlannerReplayAuditListResponse(1, audits.stream().map(PlannerReplayAuditDto::from).toList());
+    }
+  }
+
+  public record PlannerReplayAuditDto(
+      UUID replayAuditId,
+      String decisionFamily,
+      String sourceEntityRef,
+      String inputSnapshotHash,
+      String outputSnapshotHash,
+      String expectedDecision,
+      String reasonCode,
+      String ruleVersion,
+      String replayHash,
+      Instant createdAt) {
+    static PlannerReplayAuditDto from(NotificationOutboxService.PlannerReplayAuditView view) {
+      return new PlannerReplayAuditDto(
+          view.replayAuditId(),
+          view.decisionFamily(),
+          view.sourceEntityRef(),
+          view.inputSnapshotHash(),
+          view.outputSnapshotHash(),
+          view.expectedDecision(),
+          view.reasonCode(),
+          view.ruleVersion(),
+          view.replayHash(),
+          view.createdAt());
     }
   }
 

@@ -1,7 +1,7 @@
 # P0.2 Followup-B Requirements：自动带练控制与计划记忆引擎加固
 
 ## 状态
-Requirements accepted for Followup-B scoped implementation / downstream partially executed - 本文件定义 `p0-2-followup-b-autopilot-control-planner-memory` 的需求边界；对应 spec、acceptance、test_cases、traceability、Domain、API/OpenAPI/generated client、AI runtime 和 UX 合同已生成并进入实现路由。当前仅 backend/frontend UserAutopilotControl control slice 有本地执行证据；notification scheduler/outbox、missed-day recovery、item-level memory、L0-L5 transition、replay/performance/coverage/final review 仍保持 open。
+Requirements accepted for Followup-B scoped implementation / downstream executed through S002-B - 本文件定义 `p0-2-followup-b-autopilot-control-planner-memory` 的需求边界；对应 spec、acceptance、test_cases、traceability、Domain、API/OpenAPI/generated client、AI runtime 和 UX 合同已生成并进入实现路由。当前 backend/frontend UserAutopilotControl control slice、S002-A notification eligibility policy 和 S002-B notification outbox lifecycle/replay 有本地执行证据；missed-day recovery、item-level memory、L0-L5 transition、global replay/performance/coverage/final review 仍保持 open。
 
 ## Product Object
 - 分类：`feature-increment`

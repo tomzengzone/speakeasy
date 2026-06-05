@@ -1,7 +1,7 @@
 # Test Report
 
 ## Current Status
-Latest recorded Followup-B validation: `P02-FOLLOWUP-B-S002-A-NOTIFICATION-ELIGIBILITY-20260605` closes TC-P02-FUB-005 and TC-P02-FUB-006 for S002-A notification eligibility policy: deterministic reason precedence, quiet-hours same-day/cross-midnight/start=end handling, consent/permission/entitlement/quota/stale/missing-plan reasons, OpenAPI enum sync and Flutter blocked-reason/no-false-completion display. TC-P02-FUB-001 through TC-P02-FUB-006 are passed. TC-P02-FUB-007..017 remain planned, including scheduler/outbox, missed-day recovery, item-level memory, L0-L5 transition, replay, performance, coverage and dedicated Followup-B traceability script. Followup-A remains locally passed; Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
+Latest recorded Followup-B validation: `P02-FOLLOWUP-B-S002-B-NOTIFICATION-OUTBOX-20260605` closes TC-P02-FUB-007 and TC-P02-FUB-008 for S002-B notification outbox lifecycle/replay: pending/scheduled/blocked/cancelled/failed/expired/sent lifecycle, stable dedupe key, cancel/reschedule, retry/failure recovery, redacted payload projection, replay audit, OpenAPI/generated client sync and account-deletion cleanup. TC-P02-FUB-001 through TC-P02-FUB-008 are passed. TC-P02-FUB-009..017 remain planned, including missed-day recovery, item-level memory, L0-L5 transition, global replay, performance, coverage and dedicated Followup-B traceability script. Followup-A remains locally passed; Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
 
 ## Required Sections
 - test scope
@@ -11,6 +11,43 @@ Latest recorded Followup-B validation: `P02-FOLLOWUP-B-S002-A-NOTIFICATION-ELIGI
 - skipped tests
 - acceptance criteria coverage
 - residual risk
+
+## 2026-06-05 P02 Followup-B S002-B Notification Outbox Lifecycle And Replay
+
+Test scope:
+- TC-P02-FUB-007 backend integration validation for `NotificationOutboxService` lifecycle, dedupe, cancel/reschedule, retry/failure recovery, expiry and sent-state redaction.
+- TC-P02-FUB-008 backend integration validation for deterministic `notification_outbox` replay audit hashes and projections.
+- Regression scope: outbox/replay list API redacted projection, OpenAPI/generated Dart drift, foundation migration, control governance export, account deletion cleanup and prior notification eligibility policy.
+
+Commands run:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=NotificationOutboxServiceTest,NotificationOutboxReplayTest test` - red step failed before implementation with missing outbox service, repository and replay audit classes.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=NotificationOutboxServiceTest,NotificationOutboxReplayTest,NotificationEligibilityPolicyTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fub007OutboxAndReplayApisExposeRedactedProjection test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - passed after updating stale S002-A governance expectations.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest,AccountDeletionLearningDataTest,TrainingAccountDeletionRetentionTest test` - passed.
+- `npm run check:api-contract` - failed once on OpenAPI/example/hash drift, then passed after schema/example/hash sync.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `flutter analyze lib/generated/api/speakeasy_api.dart` - passed.
+
+Passing tests:
+- TC-P02-FUB-007: outbox records are created with stable dedupe key `user_id + goal_revision + plan_item_id + reminder_slot + rule_version`, duplicate schedule calls do not create another record, and lifecycle transitions cover `pending`, `scheduled`, `blocked`, `cancelled`, `failed`, `expired` and `sent`.
+- TC-P02-FUB-007: cancelled reminders can be rescheduled back to `pending`, failed reminders enter `retry_waiting` and can recover to `scheduled`, and sent records retain only hashed provider/message payload projection.
+- TC-P02-FUB-008: replay audit rows are written for outbox state changes with `notification_outbox` decision family, `outbox:<id>` source reference, deterministic input/output/replay hashes and expected decisions.
+- API regression: `/goal-autopilot/reminders/outbox` and `/goal-autopilot/replay-audits` expose redacted hash projections and do not return raw reminder explanation payload keys.
+- Data governance regression: `goal_notification_outbox_records` and `goal_planner_replay_audits` are listed in retention/deletion policy and are purged during account deletion.
+
+Failing or blocked tests:
+- No TC-P02-FUB-007/008 failure remains.
+- TC-P02-FUB-009..017 remain planned.
+
+Acceptance criteria coverage:
+- AC-P02-FUB-004 is executed for notification outbox lifecycle, redacted projection, replay audit and deletion cleanup.
+- AC-P02-FUB-008 remains planned for the broader Followup-B replay/performance/coverage completion gate.
+
+Residual risk:
+- Followup-B is still not complete, not release-ready and not Product Base-ready.
+- Missed-day recovery, item-level memory, L0-L5 transition, global replay fixtures, performance budgets, coverage evidence and the dedicated Followup-B traceability script remain open.
+- External platform notification delivery/release evidence is not claimed by this local outbox lifecycle slice.
 
 ## 2026-06-05 P02 Followup-B S002-A Notification Eligibility Policy
 

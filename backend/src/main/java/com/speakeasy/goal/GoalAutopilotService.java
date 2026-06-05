@@ -56,6 +56,7 @@ public class GoalAutopilotService {
   private final GoalPlanItemRepository planItems;
   private final GoalProgressForecastRepository forecasts;
   private final GoalOutcomeCheckpointRepository checkpoints;
+  private final NotificationOutboxService notificationOutboxService;
   private final AuditLogRepository auditLogs;
   private final ObjectMapper objectMapper;
   private final Clock clock;
@@ -73,6 +74,7 @@ public class GoalAutopilotService {
       GoalPlanItemRepository planItems,
       GoalProgressForecastRepository forecasts,
       GoalOutcomeCheckpointRepository checkpoints,
+      NotificationOutboxService notificationOutboxService,
       AuditLogRepository auditLogs,
       ObjectMapper objectMapper,
       Clock clock) {
@@ -87,6 +89,7 @@ public class GoalAutopilotService {
     this.planItems = planItems;
     this.forecasts = forecasts;
     this.checkpoints = checkpoints;
+    this.notificationOutboxService = notificationOutboxService;
     this.auditLogs = auditLogs;
     this.objectMapper = objectMapper;
     this.clock = clock;
@@ -313,13 +316,39 @@ public class GoalAutopilotService {
                 "account_deletion_or_replay_window_expiry",
                 "exports replay metadata only; idempotency key and response body remain redacted"),
             new RetentionRuleView(
+                "goal_notification_outbox_records",
+                "hard_delete_on_account_deletion",
+                "account_deletion_or_reminder_expiry",
+                "exports redacted reminder lifecycle only; raw notification payload is represented by hashes"),
+            new RetentionRuleView(
+                "goal_planner_replay_audits",
+                "hard_delete_on_account_deletion",
+                "account_deletion_or_replay_window_expiry",
+                "exports deterministic replay hashes without raw diagnostic or notification payload"),
+            new RetentionRuleView(
                 "audit_logs",
                 "retain_redacted_minimal_audit",
                 "ops_audit_policy",
                 "retains redacted proof without raw control payload or idempotency key")),
-        List.of("goal_autopilot_controls", "goal_autopilot_control_idempotency"),
+        List.of(
+            "goal_autopilot_controls",
+            "goal_autopilot_control_idempotency",
+            "goal_notification_outbox_records",
+            "goal_planner_replay_audits"),
         true,
-        "not_implemented_in_s001");
+        "implemented_in_s002_b");
+  }
+
+  @Transactional(readOnly = true)
+  public List<NotificationOutboxService.OutboxRecordView> reminderOutbox(UUID userId) {
+    requireUser(userId);
+    return notificationOutboxService.outboxRecords(userId);
+  }
+
+  @Transactional(readOnly = true)
+  public List<NotificationOutboxService.PlannerReplayAuditView> replayAudits(UUID userId) {
+    requireUser(userId);
+    return notificationOutboxService.replayAudits(userId);
   }
 
   @Transactional

@@ -28,6 +28,8 @@ import com.speakeasy.goal.GoalOutcomeCheckpointRepository;
 import com.speakeasy.goal.GoalPlanItemRepository;
 import com.speakeasy.goal.GoalProfileRepository;
 import com.speakeasy.goal.GoalProgressForecastRepository;
+import com.speakeasy.goal.NotificationOutboxRecordRepository;
+import com.speakeasy.goal.PlannerReplayAuditRepository;
 import com.speakeasy.identity.AuthIdentityRepository;
 import com.speakeasy.identity.AuthSessionRepository;
 import com.speakeasy.identity.LearningRouteRepository;
@@ -115,6 +117,8 @@ abstract class BackendIntegrationTestSupport {
   @Autowired GoalProfileRepository goalProfiles;
   @Autowired GoalAutopilotControlIdempotencyRepository goalAutopilotControlIdempotency;
   @Autowired GoalAutopilotControlRepository goalAutopilotControls;
+  @Autowired NotificationOutboxRecordRepository goalNotificationOutboxRecords;
+  @Autowired PlannerReplayAuditRepository goalPlannerReplayAudits;
 
   @BeforeEach
   void cleanUserData() {
@@ -133,6 +137,8 @@ abstract class BackendIntegrationTestSupport {
     trainingSessions.deleteAll();
     goalCheckpoints.deleteAll();
     goalForecasts.deleteAll();
+    goalPlannerReplayAudits.deleteAll();
+    goalNotificationOutboxRecords.deleteAll();
     goalPlanItems.deleteAll();
     goalDailyPlans.deleteAll();
     goalBackplans.deleteAll();

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.blankOrNullString;
+import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -15,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jayway.jsonpath.JsonPath;
 import com.speakeasy.common.ApiException;
 import com.speakeasy.goal.GoalAutopilotService;
+import com.speakeasy.goal.NotificationOutboxService;
 import com.speakeasy.identity.UserAccount;
 import com.speakeasy.ops.AccountDeletionService;
 import java.time.Instant;
@@ -37,6 +39,7 @@ import org.springframework.test.web.servlet.MvcResult;
 class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
   @Autowired JdbcTemplate jdbcTemplate;
   @Autowired GoalAutopilotService goalAutopilotService;
+  @Autowired NotificationOutboxService notificationOutboxService;
   @Autowired AccountDeletionService accountDeletionService;
 
   @Test
@@ -486,11 +489,17 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
         .contains(
             "goal_autopilot_controls:hard_delete_on_account_deletion",
             "goal_autopilot_control_idempotency:hard_delete_on_account_deletion",
+            "goal_notification_outbox_records:hard_delete_on_account_deletion",
+            "goal_planner_replay_audits:hard_delete_on_account_deletion",
             "audit_logs:retain_redacted_minimal_audit");
     assertThat(governanceExport.deletionTables())
-        .contains("goal_autopilot_controls", "goal_autopilot_control_idempotency");
+        .contains(
+            "goal_autopilot_controls",
+            "goal_autopilot_control_idempotency",
+            "goal_notification_outbox_records",
+            "goal_planner_replay_audits");
     assertThat(governanceExport.redactedAuditOnly()).isTrue();
-    assertThat(governanceExport.notificationOutboxStatus()).isEqualTo("not_implemented_in_s001");
+    assertThat(governanceExport.notificationOutboxStatus()).isEqualTo("implemented_in_s002_b");
 
     mvc.perform(delete("/user/me")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
@@ -612,6 +621,58 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.action.status").value("ready"));
+  }
+
+  @Test
+  void tcP02Fub007OutboxAndReplayApisExposeRedactedProjection() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140224");
+    UUID userId = UUID.fromString(tokens.userId());
+    MvcResult goalResult = createSupportedGoal(tokens).andExpect(status().isOk()).andReturn();
+    String goalBody = goalResult.getResponse().getContentAsString();
+    UUID goalProfileId = UUID.fromString(JsonPath.read(goalBody, "$.goal_profile.goal_profile_id"));
+    int goalRevision = JsonPath.read(goalBody, "$.goal_profile.revision");
+
+    MvcResult planResult = generatePlan(tokens, false, "initial_backplan").andExpect(status().isOk()).andReturn();
+    UUID planItemId = UUID.fromString(JsonPath.read(
+        planResult.getResponse().getContentAsString(),
+        "$.daily_plan.items[0].plan_item_id"));
+    notificationOutboxService.scheduleOrUpdate(new NotificationOutboxService.ScheduleReminderCommand(
+        userId,
+        goalProfileId,
+        goalRevision,
+        planItemId,
+        "evening_review",
+        true,
+        "eligible",
+        null,
+        "reminder_allowed",
+        Instant.parse("2026-06-05T01:30:00Z"),
+        "fub-reminder-v1"));
+
+    MvcResult outboxResult = mvc.perform(get("/goal-autopilot/reminders/outbox")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.schema_version").value(1))
+        .andExpect(jsonPath("$.records", hasSize(1)))
+        .andExpect(jsonPath("$.records[0].lifecycle_status").value("pending"))
+        .andExpect(jsonPath("$.records[0].dedupe_key").value(
+            userId + ":" + goalRevision + ":" + planItemId + ":evening_review:fub-reminder-v1"))
+        .andExpect(jsonPath("$.records[0].input_snapshot_hash").value(startsWith("sha256:")))
+        .andExpect(jsonPath("$.records[0].payload_hash").value(startsWith("sha256:")))
+        .andExpect(jsonPath("$.records[0].failure_reason").doesNotExist())
+        .andReturn();
+    assertThat(outboxResult.getResponse().getContentAsString()).doesNotContain("reminder_allowed");
+
+    mvc.perform(get("/goal-autopilot/replay-audits")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.schema_version").value(1))
+        .andExpect(jsonPath("$.audits", hasSize(1)))
+        .andExpect(jsonPath("$.audits[0].decision_family").value("notification_outbox"))
+        .andExpect(jsonPath("$.audits[0].expected_decision").value("pending"))
+        .andExpect(jsonPath("$.audits[0].input_snapshot_hash").value(startsWith("sha256:")))
+        .andExpect(jsonPath("$.audits[0].output_snapshot_hash").value(startsWith("sha256:")))
+        .andExpect(jsonPath("$.audits[0].replay_hash").value(startsWith("sha256:")));
   }
 
   @Test
@@ -846,12 +907,32 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
   void tcP02Data001AccountDeletionPurgesGoalAutopilotFacts() throws Exception {
     AuthTokens tokens = loginPhone("+8613800140205");
     UUID userId = UUID.fromString(tokens.userId());
-    createSupportedGoal(tokens).andExpect(status().isOk());
-    generatePlan(tokens, false, "initial_backplan").andExpect(status().isOk());
+    MvcResult goalResult = createSupportedGoal(tokens).andExpect(status().isOk()).andReturn();
+    String goalBody = goalResult.getResponse().getContentAsString();
+    UUID goalProfileId = UUID.fromString(JsonPath.read(goalBody, "$.goal_profile.goal_profile_id"));
+    int goalRevision = JsonPath.read(goalBody, "$.goal_profile.revision");
+    MvcResult planResult = generatePlan(tokens, false, "initial_backplan").andExpect(status().isOk()).andReturn();
+    UUID planItemId = UUID.fromString(JsonPath.read(
+        planResult.getResponse().getContentAsString(),
+        "$.daily_plan.items[0].plan_item_id"));
+    notificationOutboxService.scheduleOrUpdate(new NotificationOutboxService.ScheduleReminderCommand(
+        userId,
+        goalProfileId,
+        goalRevision,
+        planItemId,
+        "deletion_review",
+        true,
+        "eligible",
+        null,
+        "reminder_allowed",
+        Instant.parse("2026-06-05T01:45:00Z"),
+        "fub-reminder-v1"));
 
     assertThat(count("goal_profiles", userId)).isEqualTo(1);
     assertThat(count("goal_autopilot_controls", userId)).isEqualTo(1);
     assertThat(count("goal_plan_items", userId)).isGreaterThan(0);
+    assertThat(count("goal_notification_outbox_records", userId)).isEqualTo(1);
+    assertThat(count("goal_planner_replay_audits", userId)).isEqualTo(1);
 
     mvc.perform(delete("/user/me")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
@@ -866,6 +947,8 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
     assertThat(count("goal_backplans", userId)).isZero();
     assertThat(count("goal_daily_plans", userId)).isZero();
     assertThat(count("goal_plan_items", userId)).isZero();
+    assertThat(count("goal_notification_outbox_records", userId)).isZero();
+    assertThat(count("goal_planner_replay_audits", userId)).isZero();
     assertThat(count("goal_progress_forecasts", userId)).isZero();
   }
 

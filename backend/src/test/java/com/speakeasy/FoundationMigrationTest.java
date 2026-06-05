@@ -62,6 +62,8 @@ class FoundationMigrationTest {
             "goal_plan_items",
             "goal_autopilot_controls",
             "goal_autopilot_control_idempotency",
+            "goal_notification_outbox_records",
+            "goal_planner_replay_audits",
             "goal_progress_forecasts",
             "goal_outcome_checkpoints");
   }

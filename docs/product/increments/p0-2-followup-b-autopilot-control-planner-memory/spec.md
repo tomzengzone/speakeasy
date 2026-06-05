@@ -1,7 +1,7 @@
 # P0.2 Followup-B Spec：自动带练控制与计划记忆引擎加固
 
 ## 状态
-Spec accepted / downstream partially executed - 本文件把 Followup-B requirements 下沉为可验收的行为规格；acceptance、test_cases、traceability、Domain、API/OpenAPI/generated client、AI runtime 和 UX 合同已生成并完成 pre-implementation 审核。当前 UserAutopilotControl read/update/pause/resume、TC-P02-FUB-002 control data governance 与 Flutter control binding slice 已有本地执行证据；scheduler/outbox、recovery、item-level memory、mastery transition、replay/performance/final review 仍保持 planned/open。
+Spec accepted / downstream executed through S002-B - 本文件把 Followup-B requirements 下沉为可验收的行为规格；acceptance、test_cases、traceability、Domain、API/OpenAPI/generated client、AI runtime 和 UX 合同已生成并完成 pre-implementation 审核。当前 UserAutopilotControl read/update/pause/resume、TC-P02-FUB-002 control data governance、Flutter control binding、S002-A notification eligibility policy 与 S002-B notification outbox lifecycle/replay 已有本地执行证据；recovery、item-level memory、mastery transition、global replay/performance/final review 仍保持 planned/open。
 
 ## 上游引用
 - Increment definition：`docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/definition.md`
@@ -45,7 +45,7 @@ Followup-B implementation must proceed by routed slice. A later slice may reuse 
 
 | Slice ID | Scope | Primary state nodes | API boundary | AC/TC routing | Fixture routing | Completion evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| P02-FUB-SLICE-001 | UserAutopilotControl source、pause/resume/update-control | `ControlActive`, `Paused`, `ControlUpdated`, `ResumeRequested` | `GET/PATCH /goal-autopilot/control`, `POST /goal-autopilot/control/pause`, `POST /goal-autopilot/control/resume` | AC-P02-FUB-001..002 / TC-P02-FUB-001..004 | FUB-FIX-001 control source, FUB-FIX-002 pause/resume/update-control | Backend/API/Flutter evidence exists for routed control subset; TC-P02-FUB-002 closes current control/audit/idempotency data governance; notification outbox remains S002 |
+| P02-FUB-SLICE-001 | UserAutopilotControl source、pause/resume/update-control | `ControlActive`, `Paused`, `ControlUpdated`, `ResumeRequested` | `GET/PATCH /goal-autopilot/control`, `POST /goal-autopilot/control/pause`, `POST /goal-autopilot/control/resume` | AC-P02-FUB-001..002 / TC-P02-FUB-001..004 | FUB-FIX-001 control source, FUB-FIX-002 pause/resume/update-control | Backend/API/Flutter evidence exists for routed control subset; TC-P02-FUB-002 closes current control/audit/idempotency data governance; outbox governance closes separately in S002-B |
 | P02-FUB-SLICE-002 | Notification eligibility and scheduler/outbox | `EligibilityCheck`, `ReminderEligible`, `ReminderBlocked`, `OutboxPending`, `OutboxScheduled` | `POST /goal-autopilot/reminders/eligibility`, `GET /goal-autopilot/reminders/outbox` | AC-P02-FUB-003..004 / TC-P02-FUB-005..008 | FUB-FIX-003 notification eligibility, FUB-FIX-004 outbox lifecycle | Eligibility reason precedence, outbox lifecycle, dedupe and failure replay evidence |
 | P02-FUB-SLICE-003 | Missed-day recovery planner | `RecoveryRequired`, `RecoveryPlanned` | `POST /goal-autopilot/recovery/replan` | AC-P02-FUB-005 / TC-P02-FUB-009..010 | FUB-FIX-005 missed-day recovery | compress/defer/replace decision evidence and no-overdue-stacking assertions |
 | P02-FUB-SLICE-004 | Item-level MemoryCurvePolicy | `MemoryDuePlanning` | `POST /goal-autopilot/item-policy/decisions` | AC-P02-FUB-006 / TC-P02-FUB-011..012 | FUB-FIX-006 item-level memory due | overlearning, interleaving, budget and replay-determinism evidence |

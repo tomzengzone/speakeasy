@@ -1,7 +1,7 @@
 # Implementation Report
 
 ## Current Status
-Latest implementation update recorded: `P02-FOLLOWUP-B-S002-A-NOTIFICATION-ELIGIBILITY-20260605` closed TC-P02-FUB-005 and TC-P02-FUB-006 for S002-A notification eligibility policy by adding deterministic backend reason precedence/quiet-hours policy coverage, wiring control response eligibility decisions through that policy, syncing the OpenAPI enum/hash, and adding Flutter blocked-reason/no-false-completion widget coverage. TC-P02-FUB-001..006 now have local evidence. Followup-B remains only partially implemented: notification scheduler/outbox, missed-day recovery, memory/mastery integration, AI runtime scheduling/memory integration, dedicated Followup-B traceability script, coverage evidence, performance evidence, final QA review, Product Base merge and release approval remain open.
+Latest implementation update recorded: `P02-FOLLOWUP-B-S002-B-NOTIFICATION-OUTBOX-20260605` closed TC-P02-FUB-007 and TC-P02-FUB-008 for S002-B notification outbox lifecycle/replay by adding durable outbox and replay audit persistence, lifecycle service transitions, redacted hash projections, outbox/replay list API endpoints, account-deletion cleanup and OpenAPI/generated client sync. TC-P02-FUB-001..008 now have local evidence. Followup-B remains only partially implemented: missed-day recovery, memory/mastery integration, AI runtime scheduling/memory integration, dedicated Followup-B traceability script, coverage evidence, performance evidence, final QA review, Product Base merge and release approval remain open.
 
 ## Report Format
 Each completed change should append:
@@ -14,6 +14,71 @@ Each completed change should append:
 - results
 - risks
 - follow-up
+
+## 2026-06-05 - P02-FOLLOWUP-B-S002-B-NOTIFICATION-OUTBOX-20260605
+
+Change request:
+- Strictly execute S002-B notification outbox lifecycle and replay for TC-P02-FUB-007/008.
+- Explicit non-goal: do not claim external notification platform delivery, release approval, Product Base merge or Followup-B completion.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`.
+- FR/Spec/AC/TC: P02-FUB-FR-004, P02-FUB-SPEC-004, AC-P02-FUB-004, TC-P02-FUB-007 and TC-P02-FUB-008.
+- Traceability row: P02-FUB-TR-004.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/NotificationOutboxRecord.java`
+- `backend/src/main/java/com/speakeasy/goal/NotificationOutboxRecordRepository.java`
+- `backend/src/main/java/com/speakeasy/goal/NotificationOutboxService.java`
+- `backend/src/main/java/com/speakeasy/goal/PlannerReplayAudit.java`
+- `backend/src/main/java/com/speakeasy/goal/PlannerReplayAuditRepository.java`
+- `backend/src/main/resources/db/migration/V202606050001__p0_2_followup_b_notification_outbox.sql`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`
+- `backend/src/main/java/com/speakeasy/ops/AccountDeletionService.java`
+- `backend/src/test/java/com/speakeasy/BackendIntegrationTestSupport.java`
+- `backend/src/test/java/com/speakeasy/FoundationMigrationTest.java`
+- `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`
+- `backend/src/test/java/com/speakeasy/goal/NotificationOutboxServiceTest.java`
+- `backend/src/test/java/com/speakeasy/goal/NotificationOutboxReplayTest.java`
+- `docs/architecture/openapi/speakeasy-api.yaml`
+- `docs/architecture/openapi/dart-client-drift-manifest.json`
+- `lib/generated/api/.openapi-sha256`
+- `lib/generated/api/speakeasy_api.dart`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/acceptance.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/definition.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/test_cases.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/traceability.md`
+- `docs/product/development_status.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added durable `goal_notification_outbox_records` and `goal_planner_replay_audits` tables with JPA entities/repositories and account-deletion cleanup.
+- Added `NotificationOutboxService` with stable dedupe key, hashed input/payload projection, lifecycle transitions for `pending`, `scheduled`, `blocked`, `cancelled`, `failed`, `expired` and `sent`, cancel/reschedule and retry/failure recovery.
+- Added replay audit writes for outbox state changes with deterministic input/output/replay hashes and `notification_outbox` decision family.
+- Added `/goal-autopilot/reminders/outbox` and `/goal-autopilot/replay-audits` list endpoints and synced OpenAPI/example/generated Dart drift hash artifacts.
+- Extended governance export, foundation migration and account-deletion tests to include outbox and replay audit tables.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=NotificationOutboxServiceTest,NotificationOutboxReplayTest test` - red step failed before implementation with missing outbox service, repository and replay audit classes.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=NotificationOutboxServiceTest,NotificationOutboxReplayTest,NotificationEligibilityPolicyTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fub007OutboxAndReplayApisExposeRedactedProjection test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - passed after updating stale S002-A governance expectations.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest,AccountDeletionLearningDataTest,TrainingAccountDeletionRetentionTest test` - passed.
+- `npm run check:api-contract` - passed after OpenAPI/example/hash sync.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `flutter analyze lib/generated/api/speakeasy_api.dart` - passed.
+
+Result:
+- TC-P02-FUB-007 and TC-P02-FUB-008 are passed for S002-B notification outbox lifecycle/replay.
+- P02-FUB-GAP-004 is closed for outbox lifecycle, redacted projection, replay audit and deletion cleanup.
+- Followup-B is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- Missed-day recovery, item-level memory, mastery transition, global replay fixtures, performance, coverage and final independent QA remain open.
+- External platform notification delivery/release evidence is outside this local outbox lifecycle slice and remains unclaimed.
 
 ## 2026-06-05 - P02-FOLLOWUP-B-S002-A-NOTIFICATION-ELIGIBILITY-20260605
 
