@@ -1,7 +1,7 @@
 # Test Report
 
 ## Current Status
-Latest recorded Followup-B validation: `P02-FOLLOWUP-B-S004-ITEM-MEMORY-20260605` closes TC-P02-FUB-011 and TC-P02-FUB-012 for S004 item-level MemoryCurvePolicy: forgetting risk thresholds, retrieval success/failure, paused/control-blocked handling, overlearning cap, interleaving cap, daily memory budget defer, default intervals, deterministic `POST /goal-autopilot/item-policy/decisions` response and `item_policy` replay audit. TC-P02-FUB-001 through TC-P02-FUB-012 are passed. TC-P02-FUB-013..017 remain planned, including L0-L5 transition, global replay, performance and dedicated Followup-B traceability script. Followup-A remains locally passed; Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
+Latest recorded Followup-B validation: `P02-FOLLOWUP-B-S005-MASTERY-TRANSITION-20260605` closes TC-P02-FUB-013 and TC-P02-FUB-014 for S005 L0-L5 mastery transition and AI candidate-only explanation guardrails: accepted-evidence thresholds, one-level promotion cap, hold/demotion outcomes, read-only transition audit, deterministic `mastery_transition` replay audit, account-deletion cleanup and forbidden persistent-field rejection. TC-P02-FUB-001 through TC-P02-FUB-014 are passed. TC-P02-FUB-015..017 remain planned, including global replay, performance and dedicated Followup-B traceability script. Followup-A remains locally passed; Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
 
 ## Required Sections
 - test scope
@@ -11,6 +11,49 @@ Latest recorded Followup-B validation: `P02-FOLLOWUP-B-S004-ITEM-MEMORY-20260605
 - skipped tests
 - acceptance criteria coverage
 - residual risk
+
+## 2026-06-05 P02 Followup-B S005 Mastery Transition
+
+Test scope:
+- TC-P02-FUB-013 backend unit validation for `MasteryTransitionPolicy` promotion threshold, one-level cap, hold conditions, demotion conditions and rule version.
+- TC-P02-FUB-014 backend AI guardrail validation for candidate-only explanation parsing, forbidden persistent-field rejection, official-score/goal-completion claim blocking and safe deterministic fallback.
+- Integration regression: `GET /goal-autopilot/mastery-transitions`, `mastery_transition` replay audit, governance export, migration and account-deletion cleanup.
+
+Commands run:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MasteryTransitionPolicyTest test` - failed first because S005 policy and AI validator classes did not exist; this was the expected red test.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MasteryTransitionPolicyTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - passed after S005 governance expectation sync.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest,AccountDeletionLearningDataTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MasteryTransitionPolicyTest,GoalAutopilotControllerTest test` - passed after independent review fixed non-deterministic replay output hash and added duplicate-input idempotency assertions.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MasteryTransitionPolicyTest,GoalAutopilotControllerTest,FoundationMigrationTest,AccountDeletionLearningDataTest test` - passed.
+- `npm run check:api-contract` - passed.
+- `npm run check:dart-client-drift` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter line 90.9%.
+- `git diff --check` - passed.
+
+Passing tests:
+- TC-P02-FUB-013: promotion advances at most one L0-L5 level even when the candidate target is higher than one step, and records evidence refs plus `fub-mastery-v1`.
+- TC-P02-FUB-013: low confidence, insufficient evidence, partial goal, unsupported goal, fatigue protection and contradictory evidence hold at the previous level.
+- TC-P02-FUB-013: repeated retrieval failure and checkpoint regression produce deterministic one-level demotion when confidence is sufficient.
+- TC-P02-FUB-013 integration: completing accepted plan evidence writes one read-only `goal_mastery_transition_decisions` row and one `mastery_transition` replay audit; repeating the same input does not duplicate transition or replay rows.
+- TC-P02-FUB-014: AI candidate explanations containing final mastery, review due date, notification schedule, goal completion, official score or guardrail violations are rejected and do not mutate persistent state.
+- TC-P02-FUB-014: a safe candidate-only explanation that echoes the deterministic decision is accepted as explanation text only and still does not mutate persistent state.
+- Regression: governance export reports S005 mastery retention/deletion metadata; account deletion purges mastery transition decisions and related replay audits.
+
+Failing or blocked tests:
+- No TC-P02-FUB-013/014 failure remains.
+- TC-P02-FUB-015..017 remain planned.
+
+Acceptance criteria coverage:
+- AC-P02-FUB-007 is executed for evidence-driven L0-L5 transition decisions, one-level promotion cap, hold/demotion behavior, transition audit metadata, AI forbidden persistent-field rejection and no official-score claim.
+- AC-P02-FUB-008 remains planned for broader Followup-B global replay/performance/final traceability gates.
+
+Residual risk:
+- Followup-B is still not complete, not release-ready and not Product Base-ready.
+- Global replay fixture corpus, p95 performance budgets, coverage/final traceability script and final independent QA remain open under TC-P02-FUB-015..017.
+- No Flutter UI changed in this slice; Flutter layer is N/A for TC-P02-FUB-013/014.
 
 ## 2026-06-05 P02 Followup-B S004 Item-Level MemoryCurvePolicy
 

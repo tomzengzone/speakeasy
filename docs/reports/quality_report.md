@@ -1,7 +1,37 @@
 # Quality Report
 
 ## Current Status
-`P02-FOLLOWUP-B-S004-ITEM-MEMORY-20260605` closes TC-P02-FUB-011 and TC-P02-FUB-012 for S004 item-level MemoryCurvePolicy. Backend UserAutopilotControl source/update/pause/resume, current control governance, Flutter server-control binding, notification eligibility policy, notification outbox lifecycle/replay, missed-day recovery planner and item-level memory policy now have local evidence for TC-P02-FUB-001 through TC-P02-FUB-012. Followup-B requirements/spec/acceptance/test_cases/traceability, Domain, API/OpenAPI/generated client sync, AI runtime and UX contracts are present, but L0-L5 transition, global replay/performance, dedicated traceability script, final QA, Product Base merge and release approval remain open. Followup-A remains locally passed. Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
+`P02-FOLLOWUP-B-S005-MASTERY-TRANSITION-20260605` closes TC-P02-FUB-013 and TC-P02-FUB-014 for S005 L0-L5 mastery transition and AI candidate-only explanation guardrails. Backend UserAutopilotControl source/update/pause/resume, current control governance, Flutter server-control binding, notification eligibility policy, notification outbox lifecycle/replay, missed-day recovery planner, item-level memory policy and mastery transition now have local evidence for TC-P02-FUB-001 through TC-P02-FUB-014. Followup-B requirements/spec/acceptance/test_cases/traceability, Domain, API/OpenAPI/generated client sync, AI runtime and UX contracts are present, but global replay/performance, dedicated traceability script, final QA, Product Base merge and release approval remain open. Followup-A remains locally passed. Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
+
+## 2026-06-05 P02 Followup-B S005 Mastery Transition Independent Review
+
+Result: pass for TC-P02-FUB-013 and TC-P02-FUB-014 after replay output-hash determinism fix. Not full Followup-B completion, not global replay/performance closure, not release approval and not Product Base merge approval.
+
+Findings:
+- Fixed before close: `GoalAutopilotService#writeMasteryTransitionReplay` initially included random `transition_id` in the replay output hash. The output hash now uses deterministic transition fields only, and `GoalAutopilotControllerTest#tcP02Fub013MasteryTransitionAuditIsReadOnlyAndReplayable` asserts duplicate same-input completion does not create additional mastery transition or replay audit rows.
+- No blocker found for deterministic mastery policy. `MasteryTransitionPolicyTest` covers one-level promotion cap, L0-L5 confidence threshold behavior, low-confidence hold, insufficient-evidence hold, partial/unsupported hold, fatigue-protected hold, retrieval regression, repeated failure and checkpoint regression.
+- No blocker found for AI persistent-field guardrails. `MasteryTransitionExplanationValidator` rejects forbidden persistent fields, unsafe official-score/goal-completion claims and candidate mismatches, and returns `mutatesPersistentState=false` for both accepted and rejected candidates.
+- No blocker found for persistence and deletion governance. `goal_mastery_transition_decisions` stores user/goal/revision/item, previous/proposed/accepted level, direction, evidence refs, confidence, reason code, rule version and input snapshot hash with a unique idempotency key; account deletion now purges the table.
+- No blocker found for read-only API exposure. `GET /goal-autopilot/mastery-transitions` returns transition metadata without accepting client writes, and the existing replay-audit API exposes `mastery_transition` hash evidence.
+- No API drift blocker. The mastery transition endpoint already existed in OpenAPI; S005 implemented the backend endpoint without OpenAPI or generated Dart drift, and `npm run check:api-contract` plus `npm run check:dart-client-drift` passed.
+- Scope boundary is correct. S005 does not claim global replay corpus, p95 performance budgets, dedicated Followup-B traceability script, Flutter UI changes, official-score certification or release approval.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MasteryTransitionPolicyTest test` - red step failed before implementation with missing policy/validator classes, then passed after implementation.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest,AccountDeletionLearningDataTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MasteryTransitionPolicyTest,GoalAutopilotControllerTest test` - passed after replay output-hash fix.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MasteryTransitionPolicyTest,GoalAutopilotControllerTest,FoundationMigrationTest,AccountDeletionLearningDataTest test` - passed.
+- `npm run check:api-contract` - passed.
+- `npm run check:dart-client-drift` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter line 90.9%.
+- `git diff --check` - passed.
+
+Residual risk:
+- TC-P02-FUB-015 global replay fixture, TC-P02-FUB-016 p95 performance budgets and TC-P02-FUB-017 dedicated Followup-B traceability script remain planned and must close before Followup-B completion.
+- S005 persists transition decision history; it does not update a user-facing mastery UI state or certify official exam readiness.
 
 ## 2026-06-05 P02 Followup-B S004 Item-Level Memory Independent Review
 

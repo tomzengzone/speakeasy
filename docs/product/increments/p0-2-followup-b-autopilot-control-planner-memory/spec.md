@@ -1,7 +1,7 @@
 # P0.2 Followup-B Spec：自动带练控制与计划记忆引擎加固
 
 ## 状态
-Spec accepted / downstream executed through S004 item-level memory - 本文件把 Followup-B requirements 下沉为可验收的行为规格；acceptance、test_cases、traceability、Domain、API/OpenAPI/generated client、AI runtime 和 UX 合同已生成并完成 pre-implementation 审核。当前 UserAutopilotControl read/update/pause/resume、TC-P02-FUB-002 control data governance、Flutter control binding、S002-A notification eligibility policy、S002-B notification outbox lifecycle/replay、S003 missed-day recovery planner 与 S004 item-level MemoryCurvePolicy 已有本地执行证据；mastery transition、global replay/performance/final review 仍保持 planned/open。
+Spec accepted / downstream executed through S005 mastery transition - 本文件把 Followup-B requirements 下沉为可验收的行为规格；acceptance、test_cases、traceability、Domain、API/OpenAPI/generated client、AI runtime 和 UX 合同已生成并完成 pre-implementation 审核。当前 UserAutopilotControl read/update/pause/resume、TC-P02-FUB-002 control data governance、Flutter control binding、S002-A notification eligibility policy、S002-B notification outbox lifecycle/replay、S003 missed-day recovery planner、S004 item-level MemoryCurvePolicy 与 S005 mastery transition 已有本地执行证据；global replay/performance/final review 仍保持 planned/open。
 
 ## 上游引用
 - Increment definition：`docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/definition.md`
@@ -49,10 +49,10 @@ Followup-B implementation must proceed by routed slice. A later slice may reuse 
 | P02-FUB-SLICE-002 | Notification eligibility and scheduler/outbox | `EligibilityCheck`, `ReminderEligible`, `ReminderBlocked`, `OutboxPending`, `OutboxScheduled` | `POST /goal-autopilot/reminders/eligibility`, `GET /goal-autopilot/reminders/outbox` | AC-P02-FUB-003..004 / TC-P02-FUB-005..008 | FUB-FIX-003 notification eligibility, FUB-FIX-004 outbox lifecycle | Eligibility reason precedence, outbox lifecycle, dedupe and failure replay evidence |
 | P02-FUB-SLICE-003 | Missed-day recovery planner | `RecoveryRequired`, `RecoveryPlanned` | `POST /goal-autopilot/recovery/replan` | AC-P02-FUB-005 / TC-P02-FUB-009..010 | FUB-FIX-005 missed-day recovery | Executed for S003 recovery planner; compress/defer/replace decision evidence and no-overdue-stacking assertions passed |
 | P02-FUB-SLICE-004 | Item-level MemoryCurvePolicy | `MemoryDuePlanning` | `POST /goal-autopilot/item-policy/decisions` | AC-P02-FUB-006 / TC-P02-FUB-011..012 | FUB-FIX-006 item-level memory due | Executed for S004 memory; forgetting risk, retrieval success/failure, overlearning, interleaving, budget, paused/control-blocked, default intervals and replay-determinism evidence passed |
-| P02-FUB-SLICE-005 | L0-L5 mastery transition and AI candidate-only explanation | `MasteryTransitionPending`, `MasteryTransitionApplied` | `GET /goal-autopilot/mastery-transitions`, AI explanation validator | AC-P02-FUB-007 / TC-P02-FUB-013..014 | FUB-FIX-007 mastery transition | evidence threshold, hold/demotion and AI forbidden-field rejection evidence |
+| P02-FUB-SLICE-005 | L0-L5 mastery transition and AI candidate-only explanation | `MasteryTransitionPending`, `MasteryTransitionApplied` | `GET /goal-autopilot/mastery-transitions`, AI explanation validator | AC-P02-FUB-007 / TC-P02-FUB-013..014 | FUB-FIX-007 mastery transition | Executed for S005 mastery; one-level promotion, hold/demotion, transition audit and AI forbidden-field rejection evidence passed |
 | P02-FUB-SLICE-006 | Replay, performance, coverage and final review gates | All Followup-B state nodes | `GET /goal-autopilot/replay-audits` and QA scripts | AC-P02-FUB-008 / TC-P02-FUB-015..017 | FUB-FIX-008 replay corpus, FUB-FIX-009 performance corpus | replay match, p95 budgets, >=80% changed-code coverage and independent review evidence |
 
-Slice ordering for remaining implementation after S004 is S005 mastery and S006 replay/performance/final review. S006 may run targeted replay checks after any earlier slice, but final S006 closure must happen last.
+Slice ordering for remaining implementation after S005 is S006 replay/performance/final review. S006 may run targeted replay checks after any earlier slice, but final S006 closure must happen last.
 
 ## Inputs
 - Active learner identity and authenticated session.

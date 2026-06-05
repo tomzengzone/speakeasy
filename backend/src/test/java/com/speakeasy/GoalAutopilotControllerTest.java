@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jayway.jsonpath.JsonPath;
 import com.speakeasy.common.ApiException;
 import com.speakeasy.goal.GoalAutopilotService;
+import com.speakeasy.goal.MasteryTransitionPolicy;
 import com.speakeasy.goal.NotificationOutboxService;
 import com.speakeasy.identity.UserAccount;
 import com.speakeasy.ops.AccountDeletionService;
@@ -492,6 +493,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
             "goal_notification_outbox_records:hard_delete_on_account_deletion",
             "goal_planner_replay_audits:hard_delete_on_account_deletion",
             "goal_recovery_plan_decisions:hard_delete_on_account_deletion",
+            "goal_mastery_transition_decisions:hard_delete_on_account_deletion",
             "audit_logs:retain_redacted_minimal_audit");
     assertThat(governanceExport.deletionTables())
         .contains(
@@ -499,9 +501,10 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
             "goal_autopilot_control_idempotency",
             "goal_notification_outbox_records",
             "goal_planner_replay_audits",
-            "goal_recovery_plan_decisions");
+            "goal_recovery_plan_decisions",
+            "goal_mastery_transition_decisions");
     assertThat(governanceExport.redactedAuditOnly()).isTrue();
-    assertThat(governanceExport.notificationOutboxStatus()).isEqualTo("implemented_through_s003_recovery");
+    assertThat(governanceExport.notificationOutboxStatus()).isEqualTo("implemented_through_s005_mastery");
 
     mvc.perform(delete("/user/me")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
@@ -906,6 +909,50 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
   }
 
   @Test
+  void tcP02Fub013MasteryTransitionAuditIsReadOnlyAndReplayable() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140250");
+    UUID userId = UUID.fromString(tokens.userId());
+    createSupportedGoal(tokens).andExpect(status().isOk());
+    MvcResult planResult = generatePlan(tokens, false, "initial_backplan").andExpect(status().isOk()).andReturn();
+    UUID planItemId = UUID.fromString(JsonPath.read(
+        planResult.getResponse().getContentAsString(),
+        "$.daily_plan.items[0].plan_item_id"));
+
+    completePlanItem(tokens, planItemId, "completed")
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.action.status").value("ready"))
+        .andExpect(jsonPath("$.forecast.claim_guard.official_score_equivalence").value(false));
+
+    mvc.perform(get("/goal-autopilot/mastery-transitions")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.schema_version").value(1))
+        .andExpect(jsonPath("$.transitions", hasSize(1)))
+        .andExpect(jsonPath("$.transitions[0].user_id").value(userId.toString()))
+        .andExpect(jsonPath("$.transitions[0].memory_item_state_id", not(blankOrNullString())))
+        .andExpect(jsonPath("$.transitions[0].direction").value("promote"))
+        .andExpect(jsonPath("$.transitions[0].reason_code").value("evidence_promotion_confident_retrieval"))
+        .andExpect(jsonPath("$.transitions[0].rule_version").value(MasteryTransitionPolicy.RULE_VERSION))
+        .andExpect(jsonPath("$.transitions[0].evidence_refs", hasSize(3)));
+
+    mvc.perform(get("/goal-autopilot/replay-audits")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.audits[0].decision_family").value("mastery_transition"))
+        .andExpect(jsonPath("$.audits[0].expected_decision").value("promote"))
+        .andExpect(jsonPath("$.audits[0].reason_code").value("evidence_promotion_confident_retrieval"))
+        .andExpect(jsonPath("$.audits[0].replay_hash", startsWith("sha256:")));
+
+    assertThat(count("goal_mastery_transition_decisions", userId)).isEqualTo(1);
+    assertThat(countReplayAudits(userId, "mastery_transition")).isEqualTo(1);
+
+    completePlanItem(tokens, planItemId, "completed").andExpect(status().isOk());
+
+    assertThat(count("goal_mastery_transition_decisions", userId)).isEqualTo(1);
+    assertThat(countReplayAudits(userId, "mastery_transition")).isEqualTo(1);
+  }
+
+  @Test
   void tcP02Data001AccountDeletionPurgesGoalAutopilotFacts() throws Exception {
     AuthTokens tokens = loginPhone("+8613800140205");
     UUID userId = UUID.fromString(tokens.userId());
@@ -929,12 +976,14 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
         "reminder_allowed",
         Instant.parse("2026-06-05T01:45:00Z"),
         "fub-reminder-v1"));
+    completePlanItem(tokens, planItemId, "completed").andExpect(status().isOk());
 
     assertThat(count("goal_profiles", userId)).isEqualTo(1);
     assertThat(count("goal_autopilot_controls", userId)).isEqualTo(1);
     assertThat(count("goal_plan_items", userId)).isGreaterThan(0);
     assertThat(count("goal_notification_outbox_records", userId)).isEqualTo(1);
-    assertThat(count("goal_planner_replay_audits", userId)).isEqualTo(1);
+    assertThat(count("goal_mastery_transition_decisions", userId)).isEqualTo(1);
+    assertThat(count("goal_planner_replay_audits", userId)).isEqualTo(2);
 
     mvc.perform(delete("/user/me")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
@@ -950,6 +999,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
     assertThat(count("goal_daily_plans", userId)).isZero();
     assertThat(count("goal_plan_items", userId)).isZero();
     assertThat(count("goal_notification_outbox_records", userId)).isZero();
+    assertThat(count("goal_mastery_transition_decisions", userId)).isZero();
     assertThat(count("goal_planner_replay_audits", userId)).isZero();
     assertThat(count("goal_progress_forecasts", userId)).isZero();
   }
@@ -1077,7 +1127,31 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
             """.formatted(forceReplan, reasonCode)));
   }
 
+  private org.springframework.test.web.servlet.ResultActions completePlanItem(
+      AuthTokens tokens, UUID planItemId, String outcome) throws Exception {
+    return mvc.perform(post("/goal-autopilot/actions/%s/complete".formatted(planItemId))
+        .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+        .header("X-Request-Id", "req_p02_complete_" + outcome)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("""
+            {
+              "schema_version": 1,
+              "outcome": "%s",
+              "evidence_ref": "training-turn-s005",
+              "learner_note": ""
+            }
+            """.formatted(outcome)));
+  }
+
   private int count(String tableName, UUID userId) {
     return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM " + tableName + " WHERE user_id = ?", Integer.class, userId);
+  }
+
+  private int countReplayAudits(UUID userId, String decisionFamily) {
+    return jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM goal_planner_replay_audits WHERE user_id = ? AND decision_family = ?",
+        Integer.class,
+        userId,
+        decisionFamily);
   }
 }

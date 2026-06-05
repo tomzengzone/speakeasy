@@ -87,6 +87,7 @@ public class AccountDeletionService {
     delete("goal_progress_forecasts", userId);
     delete("goal_planner_replay_audits", userId);
     delete("goal_notification_outbox_records", userId);
+    delete("goal_mastery_transition_decisions", userId);
     delete("goal_recovery_plan_decisions", userId);
     delete("goal_plan_items", userId);
     delete("goal_daily_plans", userId);

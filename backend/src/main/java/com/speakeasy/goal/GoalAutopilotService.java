@@ -54,6 +54,7 @@ public class GoalAutopilotService {
   private final GoalAutopilotControlIdempotencyRepository controlIdempotency;
   private final GoalDiagnosticAssessmentRepository diagnostics;
   private final GoalMasteryInitialStateRepository masteryInitialStates;
+  private final GoalMasteryTransitionDecisionRepository masteryTransitions;
   private final GoalBackplanRepository backplans;
   private final GoalDailyPlanRepository dailyPlans;
   private final GoalPlanItemRepository planItems;
@@ -68,6 +69,7 @@ public class GoalAutopilotService {
   private final NotificationEligibilityPolicy notificationEligibilityPolicy = new NotificationEligibilityPolicy();
   private final MissedDayRecoveryPlanner missedDayRecoveryPlanner = new MissedDayRecoveryPlanner();
   private final MemoryCurvePolicy memoryCurvePolicy = new MemoryCurvePolicy();
+  private final MasteryTransitionPolicy masteryTransitionPolicy = new MasteryTransitionPolicy();
 
   public GoalAutopilotService(
       UserAccountRepository users,
@@ -76,6 +78,7 @@ public class GoalAutopilotService {
       GoalAutopilotControlIdempotencyRepository controlIdempotency,
       GoalDiagnosticAssessmentRepository diagnostics,
       GoalMasteryInitialStateRepository masteryInitialStates,
+      GoalMasteryTransitionDecisionRepository masteryTransitions,
       GoalBackplanRepository backplans,
       GoalDailyPlanRepository dailyPlans,
       GoalPlanItemRepository planItems,
@@ -93,6 +96,7 @@ public class GoalAutopilotService {
     this.controlIdempotency = controlIdempotency;
     this.diagnostics = diagnostics;
     this.masteryInitialStates = masteryInitialStates;
+    this.masteryTransitions = masteryTransitions;
     this.backplans = backplans;
     this.dailyPlans = dailyPlans;
     this.planItems = planItems;
@@ -342,6 +346,11 @@ public class GoalAutopilotService {
                 "account_deletion_or_replay_window_expiry",
                 "exports recovery mode, source event and hashed planner input only"),
             new RetentionRuleView(
+                "goal_mastery_transition_decisions",
+                "hard_delete_on_account_deletion",
+                "account_deletion_or_replay_window_expiry",
+                "exports product-internal mastery transition metadata and redacted evidence refs only"),
+            new RetentionRuleView(
                 "audit_logs",
                 "retain_redacted_minimal_audit",
                 "ops_audit_policy",
@@ -351,9 +360,10 @@ public class GoalAutopilotService {
             "goal_autopilot_control_idempotency",
             "goal_notification_outbox_records",
             "goal_recovery_plan_decisions",
+            "goal_mastery_transition_decisions",
             "goal_planner_replay_audits"),
         true,
-        "implemented_through_s003_recovery");
+        "implemented_through_s005_mastery");
   }
 
   @Transactional(readOnly = true)
@@ -366,6 +376,14 @@ public class GoalAutopilotService {
   public List<NotificationOutboxService.PlannerReplayAuditView> replayAudits(UUID userId) {
     requireUser(userId);
     return notificationOutboxService.replayAudits(userId);
+  }
+
+  @Transactional(readOnly = true)
+  public List<MasteryTransitionDecisionView> masteryTransitions(UUID userId) {
+    requireUser(userId);
+    return masteryTransitions.findByUserIdOrderByCreatedAtDesc(userId).stream()
+        .map(this::masteryTransitionView)
+        .toList();
   }
 
   @Transactional
@@ -554,6 +572,7 @@ public class GoalAutopilotService {
     }
     GoalDiagnosticAssessment diagnostic = requireDiagnostic(profile);
     GoalProgressForecast forecast = upsertForecast(profile, diagnostic, normalizedOutcome, signal.reasonCode(), now);
+    applyMasteryTransition(profile, item, diagnostic, normalizedOutcome, now);
     audit(userId, "goal_autopilot_action_" + normalizedOutcome, "plan_item:" + planItemId, requestId, now);
     GoalPlanItem current = planItems.findFirstByDailyPlanIdAndStatusInOrderByOrderIndexAsc(
             dailyPlan.getDailyPlanId(), List.of("active", "pending"))
@@ -592,6 +611,7 @@ public class GoalAutopilotService {
         now));
     markPlansStale(profile.getGoalProfileId(), "checkpoint_updated_gap", now);
     GoalProgressForecast forecast = upsertForecast(profile, diagnostic, "checkpoint", confidence, now);
+    applyCheckpointMasteryTransition(profile, checkpoint, confidence, now);
     audit(userId, "goal_autopilot_checkpoint_recorded", "checkpoint:" + checkpoint.getCheckpointId(), requestId, now);
     return new CheckpointResult(
         checkpointView(checkpoint), forecastView(forecast), new PlanUpdateSignalView("checkpoint_replan", "checkpoint_updated_gap"));
@@ -1308,6 +1328,230 @@ public class GoalAutopilotService {
         new PlanUpdateSignalView("recovery_replan", decision.getReasonCode()));
   }
 
+  private GoalMasteryTransitionDecision applyMasteryTransition(
+      GoalProfile profile, GoalPlanItem item, GoalDiagnosticAssessment diagnostic, String outcome, Instant now) {
+    boolean successfulRetrieval = "completed".equals(outcome);
+    return applyMasteryTransition(
+        profile,
+        "plan_item",
+        item.getPlanItemId().toString(),
+        baselineMasteryLevel(profile),
+        "L5",
+        confidenceScore(diagnostic.getConfidenceBand(), successfulRetrieval),
+        List.of(
+            "diagnostic:" + diagnostic.getDiagnosticAssessmentId(),
+            "plan_item:" + item.getPlanItemId(),
+            "outcome:" + outcome),
+        successfulRetrieval ? 3 : 2,
+        successfulRetrieval ? 0 : 2,
+        !successfulRetrieval,
+        false,
+        false,
+        false,
+        now);
+  }
+
+  private GoalMasteryTransitionDecision applyCheckpointMasteryTransition(
+      GoalProfile profile, GoalOutcomeCheckpoint checkpoint, String confidenceBand, Instant now) {
+    boolean checkpointRegression = "low".equals(confidenceBand);
+    return applyMasteryTransition(
+        profile,
+        "checkpoint",
+        checkpoint.getCheckpointId().toString(),
+        baselineMasteryLevel(profile),
+        "L5",
+        confidenceScore(confidenceBand, !checkpointRegression),
+        List.of(
+            "checkpoint:" + checkpoint.getCheckpointId(),
+            "checkpoint_status:" + checkpoint.getResultStatus(),
+            "confidence:" + confidenceBand),
+        checkpointRegression ? 2 : 3,
+        checkpointRegression ? 2 : 0,
+        false,
+        checkpointRegression,
+        false,
+        false,
+        now);
+  }
+
+  private GoalMasteryTransitionDecision applyMasteryTransition(
+      GoalProfile profile,
+      String itemType,
+      String itemRef,
+      String previousLevel,
+      String targetLevel,
+      double confidence,
+      List<String> evidenceRefs,
+      int acceptedEvidenceCount,
+      int recentFailures,
+      boolean retrievalRegression,
+      boolean checkpointRegression,
+      boolean fatigueProtected,
+      boolean contradictoryEvidence,
+      Instant now) {
+    String memoryItemStateId = masteryMemoryItemStateId(profile, itemType, itemRef, previousLevel);
+    MasteryTransitionPolicy.Decision policyDecision = masteryTransitionPolicy.evaluate(new MasteryTransitionPolicy.Input(
+        previousLevel,
+        targetLevel,
+        confidence,
+        evidenceRefs,
+        acceptedEvidenceCount,
+        recentFailures,
+        retrievalRegression,
+        checkpointRegression,
+        fatigueProtected,
+        contradictoryEvidence,
+        profile.getSupportStatus(),
+        false));
+    String inputHash = masteryTransitionInputSnapshotHash(
+        profile,
+        memoryItemStateId,
+        itemType,
+        itemRef,
+        previousLevel,
+        targetLevel,
+        confidence,
+        evidenceRefs,
+        acceptedEvidenceCount,
+        recentFailures,
+        retrievalRegression,
+        checkpointRegression,
+        fatigueProtected,
+        contradictoryEvidence);
+    GoalMasteryTransitionDecision existing = masteryTransitions
+        .findByUserIdAndGoalProfileIdAndGoalRevisionAndMemoryItemStateIdAndInputSnapshotHashAndRuleVersion(
+            profile.getUserId(),
+            profile.getGoalProfileId(),
+            profile.getRevision(),
+            memoryItemStateId,
+            inputHash,
+            MasteryTransitionPolicy.RULE_VERSION)
+        .orElse(null);
+    if (existing != null) {
+      return existing;
+    }
+    GoalMasteryTransitionDecision transition = masteryTransitions.save(new GoalMasteryTransitionDecision(
+        UUID.randomUUID(),
+        profile.getUserId(),
+        profile.getGoalProfileId(),
+        profile.getRevision(),
+        memoryItemStateId,
+        itemType,
+        itemRef,
+        policyDecision.previousLevel(),
+        policyDecision.proposedLevel(),
+        policyDecision.acceptedLevel(),
+        policyDecision.direction(),
+        toJson(policyDecision.evidenceRefs()),
+        policyDecision.confidence(),
+        policyDecision.reasonCode(),
+        policyDecision.ruleVersion(),
+        inputHash,
+        now));
+    writeMasteryTransitionReplay(transition, now);
+    return transition;
+  }
+
+  private String baselineMasteryLevel(GoalProfile profile) {
+    return masteryInitialStates.findByGoalProfileId(profile.getGoalProfileId()).stream()
+        .findFirst()
+        .map(GoalMasteryInitialState::getInitialLevel)
+        .orElse("L2");
+  }
+
+  private double confidenceScore(String confidenceBand, boolean positiveEvidence) {
+    double base = switch (cleanOrDefault(confidenceBand, "low")) {
+      case "high" -> 0.84;
+      case "medium" -> 0.74;
+      default -> 0.60;
+    };
+    return positiveEvidence ? base : Math.min(base, 0.72);
+  }
+
+  private String masteryMemoryItemStateId(
+      GoalProfile profile, String itemType, String itemRef, String previousLevel) {
+    return UUID.nameUUIDFromBytes((
+            profile.getUserId()
+                + ":"
+                + profile.getGoalProfileId()
+                + ":"
+                + profile.getRevision()
+                + ":"
+                + itemType
+                + ":"
+                + itemRef
+                + ":"
+                + previousLevel
+                + ":"
+                + MasteryTransitionPolicy.RULE_VERSION)
+        .getBytes(StandardCharsets.UTF_8)).toString();
+  }
+
+  private String masteryTransitionInputSnapshotHash(
+      GoalProfile profile,
+      String memoryItemStateId,
+      String itemType,
+      String itemRef,
+      String previousLevel,
+      String targetLevel,
+      double confidence,
+      List<String> evidenceRefs,
+      int acceptedEvidenceCount,
+      int recentFailures,
+      boolean retrievalRegression,
+      boolean checkpointRegression,
+      boolean fatigueProtected,
+      boolean contradictoryEvidence) {
+    TreeMap<String, String> snapshot = new TreeMap<>();
+    snapshot.put("user_id", profile.getUserId().toString());
+    snapshot.put("goal_profile_id", profile.getGoalProfileId().toString());
+    snapshot.put("goal_revision", Integer.toString(profile.getRevision()));
+    snapshot.put("memory_item_state_id", memoryItemStateId);
+    snapshot.put("item_type", itemType);
+    snapshot.put("item_ref", itemRef);
+    snapshot.put("previous_level", previousLevel);
+    snapshot.put("target_level", targetLevel);
+    snapshot.put("confidence", Double.toString(confidence));
+    snapshot.put("evidence_refs", String.join(",", evidenceRefs));
+    snapshot.put("accepted_evidence_count", Integer.toString(acceptedEvidenceCount));
+    snapshot.put("recent_failures", Integer.toString(recentFailures));
+    snapshot.put("retrieval_regression", Boolean.toString(retrievalRegression));
+    snapshot.put("checkpoint_regression", Boolean.toString(checkpointRegression));
+    snapshot.put("fatigue_protected", Boolean.toString(fatigueProtected));
+    snapshot.put("contradictory_evidence", Boolean.toString(contradictoryEvidence));
+    snapshot.put("support_status", profile.getSupportStatus());
+    snapshot.put("rule_version", MasteryTransitionPolicy.RULE_VERSION);
+    return sha256Prefixed(snapshot);
+  }
+
+  private void writeMasteryTransitionReplay(GoalMasteryTransitionDecision transition, Instant now) {
+    String outputHash = sha256Prefixed(Map.of(
+        "previous_level", transition.getPreviousLevel(),
+        "proposed_level", transition.getProposedLevel(),
+        "accepted_level", transition.getAcceptedLevel(),
+        "direction", transition.getDirection(),
+        "reason_code", transition.getReasonCode(),
+        "rule_version", transition.getRuleVersion()));
+    String replayHash = sha256Prefixed(Map.of(
+        "input", transition.getInputSnapshotHash(),
+        "output", outputHash,
+        "expected_decision", transition.getDirection(),
+        "reason_code", transition.getReasonCode(),
+        "rule_version", transition.getRuleVersion()));
+    replayAudits.save(new PlannerReplayAudit(
+        UUID.randomUUID(),
+        transition.getUserId(),
+        "mastery_transition",
+        "mastery_transition:" + transition.getTransitionId(),
+        transition.getInputSnapshotHash(),
+        outputHash,
+        transition.getDirection(),
+        transition.getReasonCode(),
+        transition.getRuleVersion(),
+        replayHash,
+        now));
+  }
+
   private String memoryPolicyControlStatus(GoalProfile profile, GoalAutopilotControl control) {
     if ("paused".equals(control.getControlStatus())) {
       return "paused";
@@ -1518,6 +1762,22 @@ public class GoalAutopilotService {
         audit.getRuleVersion(),
         audit.getReplayHash(),
         audit.getCreatedAt());
+  }
+
+  private MasteryTransitionDecisionView masteryTransitionView(GoalMasteryTransitionDecision transition) {
+    return new MasteryTransitionDecisionView(
+        transition.getTransitionId(),
+        transition.getUserId(),
+        transition.getMemoryItemStateId(),
+        transition.getPreviousLevel(),
+        transition.getProposedLevel(),
+        transition.getAcceptedLevel(),
+        transition.getDirection(),
+        fromJson(transition.getEvidenceRefsJson(), STRING_LIST),
+        transition.getConfidence(),
+        transition.getReasonCode(),
+        transition.getRuleVersion(),
+        transition.getCreatedAt());
   }
 
   private AutopilotActionView nextActionOrNull(GoalProfile profile) {
@@ -1832,6 +2092,20 @@ public class GoalAutopilotService {
   public record ItemPolicyDecisionResult(
       List<MemoryItemPolicyStateView> decisions,
       NotificationOutboxService.PlannerReplayAuditView replayAudit) {}
+
+  public record MasteryTransitionDecisionView(
+      UUID transitionId,
+      UUID userId,
+      String memoryItemStateId,
+      String previousLevel,
+      String proposedLevel,
+      String acceptedLevel,
+      String direction,
+      List<String> evidenceRefs,
+      double confidence,
+      String reasonCode,
+      String ruleVersion,
+      Instant createdAt) {}
 
   public record ControlResult(
       ControlView control,

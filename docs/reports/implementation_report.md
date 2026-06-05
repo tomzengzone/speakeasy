@@ -1,7 +1,7 @@
 # Implementation Report
 
 ## Current Status
-Latest implementation update recorded: `P02-FOLLOWUP-B-S004-ITEM-MEMORY-20260605` closed TC-P02-FUB-011 and TC-P02-FUB-012 for S004 item-level MemoryCurvePolicy by adding deterministic item-level memory policy logic, item-policy API wiring, optional OpenAPI item evidence input schema, local `item_policy` replay audit writes and backend unit/integration tests. TC-P02-FUB-001..012 now have local evidence. Followup-B remains only partially implemented: mastery transition, global replay fixtures, performance evidence, dedicated Followup-B traceability script, final QA review, Product Base merge and release approval remain open.
+Latest implementation update recorded: `P02-FOLLOWUP-B-S005-MASTERY-TRANSITION-20260605` closed TC-P02-FUB-013 and TC-P02-FUB-014 for S005 L0-L5 mastery transition and AI candidate-only explanation guardrails by adding deterministic mastery transition policy logic, durable transition decisions, read-only transition audit API wiring, `mastery_transition` replay audit writes, account-deletion cleanup and backend unit/integration tests. TC-P02-FUB-001..014 now have local evidence. Followup-B remains only partially implemented: global replay fixtures, performance evidence, dedicated Followup-B traceability script, final QA review, Product Base merge and release approval remain open.
 
 ## Report Format
 Each completed change should append:
@@ -14,6 +14,72 @@ Each completed change should append:
 - results
 - risks
 - follow-up
+
+## 2026-06-05 - P02-FOLLOWUP-B-S005-MASTERY-TRANSITION-20260605
+
+Change request:
+- Strictly execute Followup-B S005 L0-L5 mastery transition and AI candidate-only explanation guardrails for AC-P02-FUB-007 / TC-P02-FUB-013/014 / FUB-FIX-007.
+- Explicit non-goal: do not claim global replay fixture closure, p95 performance closure, dedicated Followup-B traceability script closure, Product Base merge, release approval or Followup-B completion.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`.
+- FR/Spec/AC/TC: P02-FUB-FR-007, P02-FUB-SPEC-007, AC-P02-FUB-007, TC-P02-FUB-013 and TC-P02-FUB-014.
+- Traceability row: P02-FUB-TR-007.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/MasteryTransitionPolicy.java`
+- `backend/src/main/java/com/speakeasy/goal/MasteryTransitionExplanationValidator.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalMasteryTransitionDecision.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalMasteryTransitionDecisionRepository.java`
+- `backend/src/main/resources/db/migration/V202606050003__p0_2_followup_b_mastery_transition.sql`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`
+- `backend/src/main/java/com/speakeasy/ops/AccountDeletionService.java`
+- `backend/src/test/java/com/speakeasy/goal/MasteryTransitionPolicyTest.java`
+- `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/definition.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/requirements.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/spec.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/acceptance.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/test_cases.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/traceability.md`
+- `docs/product/development_status.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added `MasteryTransitionPolicy` with rule version `fub-mastery-v1`, one-level promotion cap, L0->L5 confidence thresholds, hold outcomes for low confidence, insufficient evidence, partial/unsupported goal, fatigue protection and contradiction, and demotion outcomes for retrieval/repeated/checkpoint regression.
+- Added `MasteryTransitionExplanationValidator` to accept only candidate explanations that echo deterministic decisions and reject forbidden persistent fields such as final mastery, review schedule, notification schedule, recovery mode, goal completion, entitlement/quota/billing state and official-score claims.
+- Added durable `goal_mastery_transition_decisions` with input snapshot hash, evidence refs, reason code, rule version, unique idempotency key and account-deletion cleanup.
+- Wired action completion and checkpoint submission to produce deterministic mastery transition decisions and `mastery_transition` replay audit rows; `GET /goal-autopilot/mastery-transitions` exposes a read-only projection.
+- Updated control data governance export to report implementation through S005 mastery and include mastery transition retention/deletion metadata.
+- Independent S005 review fixed replay output hashing to exclude random `transition_id`, so the audit output hash is based on deterministic transition state.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MasteryTransitionPolicyTest test` - failed first as the required S005 policy and AI validator classes did not exist; this was the expected red step.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MasteryTransitionPolicyTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - passed after updating S005 governance expectations.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest,AccountDeletionLearningDataTest test` - passed.
+- Independent review found the `mastery_transition` replay output hash included random `transition_id`; fixed by hashing deterministic output fields only and adding idempotent duplicate-transition assertions.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MasteryTransitionPolicyTest,GoalAutopilotControllerTest test` - passed after the replay hash fix.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MasteryTransitionPolicyTest,GoalAutopilotControllerTest,FoundationMigrationTest,AccountDeletionLearningDataTest test` - passed.
+- `npm run check:api-contract` - passed.
+- `npm run check:dart-client-drift` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter line 90.9%.
+- `git diff --check` - passed.
+
+Result:
+- TC-P02-FUB-013 and TC-P02-FUB-014 are passed for S005 mastery transition and AI forbidden persistent-field rejection.
+- P02-FUB-GAP-007 is closed for evidence-driven one-level promotion, hold/demotion behavior, persistent transition audit, account-deletion cleanup and AI candidate-only explanation validation.
+- Followup-B is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- Global Followup-B replay fixtures, p95 performance budgets, dedicated Followup-B traceability script, final independent QA review, Product Base merge and release approval remain open under TC-P02-FUB-015..017.
+- S005 writes transition decision history and audit evidence; it does not introduce a user-facing mastery UI or official-score/certification claim.
+- No Flutter UI changed in this slice; Flutter layer is N/A for S005 changed-code coverage.
 
 ## 2026-06-05 - P02-FOLLOWUP-B-S004-ITEM-MEMORY-20260605
 

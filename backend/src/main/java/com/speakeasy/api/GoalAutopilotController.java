@@ -114,6 +114,11 @@ public class GoalAutopilotController {
     return PlannerReplayAuditListResponse.from(service.replayAudits(currentUser.userId()));
   }
 
+  @GetMapping("/goal-autopilot/mastery-transitions")
+  public MasteryTransitionListResponse masteryTransitions(@AuthenticationPrincipal CurrentUser currentUser) {
+    return MasteryTransitionListResponse.from(service.masteryTransitions(currentUser.userId()));
+  }
+
   @PostMapping("/goal-autopilot/recovery/replan")
   public RecoveryPlanResponse replanRecovery(
       @AuthenticationPrincipal CurrentUser currentUser,
@@ -602,6 +607,44 @@ public class GoalAutopilotController {
           view.reasonCode(),
           view.ruleVersion(),
           view.replayHash(),
+          view.createdAt());
+    }
+  }
+
+  public record MasteryTransitionListResponse(int schemaVersion, List<MasteryTransitionDecisionDto> transitions)
+      implements SchemaResponse {
+    static MasteryTransitionListResponse from(List<GoalAutopilotService.MasteryTransitionDecisionView> transitions) {
+      return new MasteryTransitionListResponse(
+          1, transitions.stream().map(MasteryTransitionDecisionDto::from).toList());
+    }
+  }
+
+  public record MasteryTransitionDecisionDto(
+      UUID transitionId,
+      UUID userId,
+      String memoryItemStateId,
+      String previousLevel,
+      String proposedLevel,
+      String acceptedLevel,
+      String direction,
+      List<String> evidenceRefs,
+      double confidence,
+      String reasonCode,
+      String ruleVersion,
+      Instant createdAt) {
+    static MasteryTransitionDecisionDto from(GoalAutopilotService.MasteryTransitionDecisionView view) {
+      return new MasteryTransitionDecisionDto(
+          view.transitionId(),
+          view.userId(),
+          view.memoryItemStateId(),
+          view.previousLevel(),
+          view.proposedLevel(),
+          view.acceptedLevel(),
+          view.direction(),
+          view.evidenceRefs(),
+          view.confidence(),
+          view.reasonCode(),
+          view.ruleVersion(),
           view.createdAt());
     }
   }
