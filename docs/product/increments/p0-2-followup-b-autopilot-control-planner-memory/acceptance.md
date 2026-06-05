@@ -1,7 +1,7 @@
 # P0.2 Followup-B Acceptance Criteria：自动带练控制与计划记忆引擎加固
 
 ## 状态
-Acceptance accepted / AC-to-TC mapped / executed through S005 mastery transition - 本文件基于 Followup-B requirements 和 spec 定义验收标准；test_cases、contracts、reports 和 traceability FR/Spec/AC/TC rows 已生成。当前 AC-P02-FUB-001/002 的 control source、TC-P02-FUB-002 control data governance、pause/resume/update-control 子集已有 backend/frontend 本地执行证据；AC-P02-FUB-003 的 notification eligibility policy 已通过 TC-P02-FUB-005/006；AC-P02-FUB-004 的 notification outbox lifecycle/replay 已通过 TC-P02-FUB-007/008；AC-P02-FUB-005 的 S003 missed-day recovery planner 已通过 TC-P02-FUB-009/010；AC-P02-FUB-006 的 S004 item-level MemoryCurvePolicy 已通过 TC-P02-FUB-011/012；AC-P02-FUB-007 的 S005 mastery transition / AI candidate-only explanation guardrails 已通过 TC-P02-FUB-013/014。AC-P02-FUB-008 仍保持 planned/open，不能据此声明 Followup-B 完成。
+Acceptance accepted / AC-to-TC mapped / executed through S006 replay-performance-traceability - 本文件基于 Followup-B requirements 和 spec 定义验收标准；test_cases、contracts、reports 和 traceability FR/Spec/AC/TC rows 已生成。当前 AC-P02-FUB-001/002 的 control source、TC-P02-FUB-002 control data governance、pause/resume/update-control 子集已有 backend/frontend 本地执行证据；AC-P02-FUB-003 的 notification eligibility policy 已通过 TC-P02-FUB-005/006；AC-P02-FUB-004 的 notification outbox lifecycle/replay 已通过 TC-P02-FUB-007/008；AC-P02-FUB-005 的 S003 missed-day recovery planner 已通过 TC-P02-FUB-009/010；AC-P02-FUB-006 的 S004 item-level MemoryCurvePolicy 已通过 TC-P02-FUB-011/012；AC-P02-FUB-007 的 S005 mastery transition / AI candidate-only explanation guardrails 已通过 TC-P02-FUB-013/014；AC-P02-FUB-008 的 S006 replay/performance/coverage/traceability gates 已通过 TC-P02-FUB-015/016/017。Followup-B is not release-ready；Product Base merge is not approved。
 
 ## 上游来源
 - `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/requirements.md`
@@ -100,6 +100,8 @@ Acceptance accepted / AC-to-TC mapped / executed through S005 mastery transition
 - Given fixture replay runs, fixture IDs FUB-FIX-001 through FUB-FIX-009 must preserve input snapshot hash, output decision, reason code, output state and rule version where applicable.
 - Given changed backend/domain/API/Flutter code exists, line and branch coverage for changed code must be >=80%; unchanged layers must be explicitly marked `N/A - no code change in this layer`.
 - Given reports or traceability are updated, they must not mark Followup-B complete until requirements, spec, acceptance, test_cases, traceability, contracts, code evidence, test evidence, performance/replay evidence and independent review are all closed.
+
+S006 execution note: TC-P02-FUB-015, TC-P02-FUB-016 and TC-P02-FUB-017 provide local evidence for replay fixtures, p95 performance budgets, coverage and traceability script. This does not approve release readiness or Product Base merge.
 
 ## Negative And Edge Coverage Requirements
 - Unsupported or partial goals must block full autopilot, high-confidence reminder cadence and goal-completion claims.

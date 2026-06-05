@@ -1,7 +1,7 @@
 # Test Report
 
 ## Current Status
-Latest recorded Followup-B validation: `P02-FOLLOWUP-B-S005-MASTERY-TRANSITION-20260605` closes TC-P02-FUB-013 and TC-P02-FUB-014 for S005 L0-L5 mastery transition and AI candidate-only explanation guardrails: accepted-evidence thresholds, one-level promotion cap, hold/demotion outcomes, read-only transition audit, deterministic `mastery_transition` replay audit, account-deletion cleanup and forbidden persistent-field rejection. TC-P02-FUB-001 through TC-P02-FUB-014 are passed. TC-P02-FUB-015..017 remain planned, including global replay, performance and dedicated Followup-B traceability script. Followup-A remains locally passed; Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
+Latest recorded Followup-B validation: `P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-TRACEABILITY-20260605` closes TC-P02-FUB-015, TC-P02-FUB-016 and TC-P02-FUB-017 for S006 replay fixture, p95 performance, coverage and dedicated Followup-B traceability script. TC-P02-FUB-001 through TC-P02-FUB-017 are passed locally. Followup-B is not release-ready and Product Base merge is not approved. Followup-A remains locally passed; Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
 
 ## Required Sections
 - test scope
@@ -11,6 +11,47 @@ Latest recorded Followup-B validation: `P02-FOLLOWUP-B-S005-MASTERY-TRANSITION-2
 - skipped tests
 - acceptance criteria coverage
 - residual risk
+
+## 2026-06-05 P02 Followup-B S006 Replay Performance Traceability
+
+Report ID:
+- `P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-TRACEABILITY-20260605`
+
+Test scope:
+- TC-P02-FUB-015 backend replay fixture validation through `GoalAutopilotReplayFixtureTest`, covering FUB-FIX-001..008 control, pause/resume/update-control, notification eligibility, notification outbox, missed-day recovery, item-level memory and mastery transition replay evidence.
+- TC-P02-FUB-016 backend p95 performance validation through `GoalAutopilotControlPerformanceTest`, covering FUB-FIX-009 budgets for control load, control commands, notification eligibility, outbox lifecycle, recovery, memory, mastery and replay verification.
+- TC-P02-FUB-017 traceability and coverage validation through `python3 scripts/check_p0_2_followup_b_traceability.py` and `python3 scripts/check_p0_2_goal_autopilot_coverage.py`.
+- Coverage support: added backend test-only branch coverage cases for existing `MemoryCurvePolicy`, `MissedDayRecoveryPlanner`, `MasteryTransitionPolicy` and `MasteryTransitionExplanationValidator` branches so the current broad P0.2 coverage gate reflects the current codebase.
+
+Commands run:
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `npm run check:api-contract` - passed.
+- `git diff --check` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotReplayFixtureTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControlPerformanceTest test` - passed.
+- `python3 -m py_compile scripts/check_p0_2_followup_b_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_b_traceability.py` - failed before report synchronization because TC-P02-FUB-015 still lacked `passed` evidence in `test_cases.md`; this was the expected Step 4/6 gap.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MemoryCurvePolicyTest,MissedDayRecoveryPlannerTest,MasteryTransitionPolicyTest test` - passed after test-only coverage additions.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 95.9%, backend branch 81.4%, Flutter line 90.9%.
+
+Passing tests:
+- TC-P02-FUB-015: `GoalAutopilotReplayFixtureTest` verifies Followup-B replay fixture coverage across control source, control commands, notification eligibility, outbox replay, recovery replay, item-policy replay and mastery transition replay. Assertions include expected decision, reason code, output state, rule version and hash evidence where replay audits exist.
+- TC-P02-FUB-016: `GoalAutopilotControlPerformanceTest` keeps local p95 budgets within the planned thresholds: control load <=200 ms, control command <=500 ms, notification eligibility <=200 ms, outbox lifecycle <=300 ms, recovery <=500 ms, 500-item memory due calculation <=300 ms, mastery transition <=300 ms and replay verification <=500 ms.
+- TC-P02-FUB-017: `scripts/check_p0_2_followup_b_traceability.py` exists and validates TC rows, traceability rows, report terms, required files and forbidden release/Product Base claims; coverage gate passes with backend branch >=80%.
+
+Failing or blocked tests:
+- No TC-P02-FUB-015/016/017 failure remains after S006 report synchronization and coverage test additions.
+- Release approval, Product Base merge, Followup-C and Followup-D remain outside S006 and are not claimed.
+
+Acceptance criteria coverage:
+- AC-P02-FUB-008 is executed for replay fixture coverage, p95 performance budgets, changed-code coverage gate and final traceability script.
+- TC-P02-FUB-001 through TC-P02-FUB-017 now have local passed evidence.
+
+Residual risk:
+- Followup-B is not release-ready.
+- Product Base merge is not approved.
+- No production backend or Flutter code changed in the S006 coverage-support follow-up; the added tests cover existing policy branches and local release-check gates only.
 
 ## 2026-06-05 P02 Followup-B S005 Mastery Transition
 
@@ -44,15 +85,15 @@ Passing tests:
 
 Failing or blocked tests:
 - No TC-P02-FUB-013/014 failure remains.
-- TC-P02-FUB-015..017 remain planned.
+- TC-P02-FUB-015..017 were later executed in the S006 section above.
 
 Acceptance criteria coverage:
 - AC-P02-FUB-007 is executed for evidence-driven L0-L5 transition decisions, one-level promotion cap, hold/demotion behavior, transition audit metadata, AI forbidden persistent-field rejection and no official-score claim.
-- AC-P02-FUB-008 remains planned for broader Followup-B global replay/performance/final traceability gates.
+- AC-P02-FUB-008 is covered by the later S006 section above for broader Followup-B global replay/performance/final traceability gates.
 
 Residual risk:
 - Followup-B is still not complete, not release-ready and not Product Base-ready.
-- Global replay fixture corpus, p95 performance budgets, coverage/final traceability script and final independent QA remain open under TC-P02-FUB-015..017.
+- At S005 close, global replay fixture corpus, p95 performance budgets, coverage/final traceability script and final independent QA remained open; S006 evidence above supersedes that local implementation gap while release/Product Base approval remains separate.
 - No Flutter UI changed in this slice; Flutter layer is N/A for TC-P02-FUB-013/014.
 
 ## 2026-06-05 P02 Followup-B S004 Item-Level MemoryCurvePolicy
@@ -309,26 +350,26 @@ Test scope:
 - This is not Followup-B code implementation, test execution, performance evidence or release approval.
 
 Commands run:
-- `ls scripts/check_p0_2_followup_b_traceability.py scripts/check_p0_2_goal_autopilot_coverage.py` - confirmed `scripts/check_p0_2_followup_b_traceability.py` is missing and `scripts/check_p0_2_goal_autopilot_coverage.py` exists.
+- `ls scripts/check_p0_2_followup_b_traceability.py scripts/check_p0_2_goal_autopilot_coverage.py` - at this earlier pre-implementation gate, confirmed `scripts/check_p0_2_followup_b_traceability.py` was missing and `scripts/check_p0_2_goal_autopilot_coverage.py` existed; the dedicated script was later created in S006.
 - Planned pre-implementation equivalent gate for routing: `python3 scripts/project_agent_runner.py validate`, `npm run check:api-contract`, and `git diff --check -- <touched Followup-B docs/contracts/status files>`.
 
 Passing checks:
 - AC-P02-FUB-001 through AC-P02-FUB-008 still map to stable TC-P02-FUB-001 through TC-P02-FUB-017.
-- TC-P02-FUB-017 now explicitly distinguishes the missing implementation-completion script from the pre-implementation equivalent routing gate.
+- TC-P02-FUB-017 explicitly distinguished the then-missing implementation-completion script from the pre-implementation equivalent routing gate; S006 later created and ran the script.
 - No TC-P02-FUB row is marked passed or implemented.
 
 Failing or blocked tests:
-- TC-P02-FUB-017 remains planned. `scripts/check_p0_2_followup_b_traceability.py` must be created or replaced by an approved equivalent before Followup-B can be marked implemented or complete.
+- At this earlier gate, TC-P02-FUB-017 was planned. S006 later created `scripts/check_p0_2_followup_b_traceability.py` and recorded passed evidence.
 
 Skipped or planned tests:
-- All Followup-B backend, Flutter, AI eval, replay, performance, coverage and traceability tests remain planned until implementation starts.
+- At this earlier gate, all Followup-B backend, Flutter, AI eval, replay, performance, coverage and traceability tests were planned until implementation started.
 
 Acceptance criteria coverage:
-- AC-P02-FUB-008 retains planned release-check coverage through TC-P02-FUB-015, TC-P02-FUB-016 and TC-P02-FUB-017.
+- AC-P02-FUB-008 was routed to release-check coverage through TC-P02-FUB-015, TC-P02-FUB-016 and TC-P02-FUB-017; S006 later executed those rows.
 - The pre-implementation equivalent gate is allowed only for routing readiness and must not be reported as executed TC evidence.
 
 Residual risk:
-- A dedicated Followup-B traceability script still needs to be implemented during the Followup-B coding or QA slice.
+- At this earlier gate, a dedicated Followup-B traceability script still needed implementation; S006 later closed that local gap.
 - Followup-B cannot be marked implemented, test-passing, release-ready or Product Base-ready until executable tests, coverage, performance evidence, implementation report and quality review are produced.
 
 ## 2026-06-04 P02 Followup-A No-goal Explore Mode Implementation Validation

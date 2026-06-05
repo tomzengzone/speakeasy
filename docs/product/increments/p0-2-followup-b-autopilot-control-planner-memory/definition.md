@@ -1,7 +1,7 @@
 # Increment Definition：P0.2 Followup-B 自动带练控制与计划记忆引擎加固
 
 ## 状态
-Contract-ready / partially implemented through S005 mastery transition / completion gated。该增量已建立正式 definition、requirements、spec、acceptance、test_cases 和 traceability，并已完成 Domain、API/OpenAPI/generated client sync、AI runtime 和 UX 合同门禁的独立审核。当前 backend UserAutopilotControl read/update/pause/resume、Flutter control binding、S002-A notification eligibility policy、S002-B notification outbox lifecycle/replay、S003 missed-day recovery planner、S004 item-level MemoryCurvePolicy 和 S005 mastery transition 已有本地执行证据；global replay/performance/coverage/final review 和 release evidence 仍未闭环。
+Contract-ready / implemented locally through S006 replay-performance-traceability / release gated。该增量已建立正式 definition、requirements、spec、acceptance、test_cases 和 traceability，并已完成 Domain、API/OpenAPI/generated client sync、AI runtime 和 UX 合同门禁的独立审核。当前 backend UserAutopilotControl read/update/pause/resume、Flutter control binding、S002-A notification eligibility policy、S002-B notification outbox lifecycle/replay、S003 missed-day recovery planner、S004 item-level MemoryCurvePolicy、S005 mastery transition 和 S006 replay/performance/coverage/traceability gates 已有本地执行证据。Followup-B is not release-ready；Product Base merge is not approved。
 
 ## Increment ID
 `p0-2-followup-b-autopilot-control-planner-memory`
@@ -31,7 +31,7 @@ Contract-ready / partially implemented through S005 mastery transition / complet
 - Local implementation review: L0-L5 transition, global replay/performance/coverage, dedicated traceability script and final independent review remain blockers.
 
 ## Problem Statement
-The current local P0.2 follow-up has partial implementation evidence for UserAutopilotControl, pause/resume/update-control, notification eligibility/outbox semantics, missed-day recovery, item-level memory scheduling and evidence-driven L0-L5 transition decisions. It still needs global replay/performance/coverage gates and final independent review before Followup-B can be completed.
+The current local P0.2 follow-up has implementation evidence for UserAutopilotControl, pause/resume/update-control, notification eligibility/outbox semantics, missed-day recovery, item-level memory scheduling, evidence-driven L0-L5 transition decisions, replay fixtures, p95 performance budgets, coverage and traceability gates. It still needs separate release/Product Base approval before any release-ready or merge-ready claim can be made.
 
 ## Scope
 - Durable `UserAutopilotControl` state with pause/resume, quiet hours, intensity override, notification consent and missed-day policy.
@@ -88,13 +88,14 @@ The current local P0.2 follow-up has partial implementation evidence for UserAut
 - Completed for pre-implementation routing: API/OpenAPI updates for pause/resume/update-control, reminder eligibility, scheduler/outbox state, recovery/replan, item-policy decisions, mastery transitions and replay audits; generated Dart client drift has been synced.
 - Completed for pre-implementation routing: AI runtime updates for candidate-only mastery transition explanation schema, forbidden persistent fields and deterministic fallback.
 - Completed for pre-implementation routing: UX screen spec updates for paused, quiet-hours, notification-disabled, missed-day recovery, fatigue/intensity override and memory/mastery explanations.
-- Still required during remaining implementation routing: QA replay fixtures for global Followup-B decision-family replay, executable tests for global replay/performance evidence, >=80% changed-code coverage evidence where new code changes, test report updates and quality report updates.
+- Completed for S006: QA replay fixtures for global Followup-B decision-family replay, executable tests for global replay/performance evidence, >=80% changed-code coverage evidence, dedicated traceability script, test report updates and quality report updates.
 - Completed for the first routed control slice: backend control source/update/pause/resume implementation evidence and Flutter control binding evidence are recorded in `docs/reports/implementation_report.md` and reconciled into `docs/reports/test_report.md` / `docs/reports/quality_report.md`.
 - Completed for S002-A: notification eligibility reason precedence, quiet-hours evaluation and Flutter blocked-reason/no-false-completion evidence are recorded in `docs/reports/implementation_report.md` and reconciled into `docs/reports/test_report.md` / `docs/reports/quality_report.md`.
 - Completed for S002-B: notification outbox lifecycle/replay, stable dedupe key, cancel/reschedule, retry/failure recovery, redacted payload projection and deletion cleanup evidence are recorded in `docs/reports/implementation_report.md` and reconciled into `docs/reports/test_report.md` / `docs/reports/quality_report.md`.
 - Completed for S003: missed-day recovery planner compress/defer/replace decisions, hard safety/feasibility precedence, no-overdue-stacking daily plan replacement, stale/replan markers, decision persistence, idempotent replay and recovery replay audit evidence are recorded in `docs/reports/implementation_report.md` and reconciled into `docs/reports/test_report.md` / `docs/reports/quality_report.md`.
 - Completed for S004: item-level MemoryCurvePolicy forgetting-risk thresholds, retrieval success/failure decisions, overlearning cap, interleaving cap, daily memory budget defer, paused/control-blocked handling, default review intervals, deterministic `POST /goal-autopilot/item-policy/decisions` response and `item_policy` replay audit evidence are recorded in `docs/reports/implementation_report.md` and reconciled into `docs/reports/test_report.md` / `docs/reports/quality_report.md`.
 - Completed for S005: evidence-driven L0-L5 mastery transition, one-level promotion cap, hold/demotion rules, persistent transition audit, deterministic `mastery_transition` replay audit, account-deletion cleanup and AI candidate-only explanation forbidden-field rejection evidence are recorded in `docs/reports/implementation_report.md` and reconciled into `docs/reports/test_report.md` / `docs/reports/quality_report.md`.
+- Completed for S006: `GoalAutopilotReplayFixtureTest`, `GoalAutopilotControlPerformanceTest`, `scripts/check_p0_2_followup_b_traceability.py`, refreshed coverage evidence and S006 independent review are recorded in `docs/reports/implementation_report.md` and reconciled into `docs/reports/test_report.md` / `docs/reports/quality_report.md`.
 
 ## Non-goals
 - Does not implement editable GoalProfile form or diagnostic sample capture.

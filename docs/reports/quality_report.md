@@ -1,7 +1,37 @@
 # Quality Report
 
 ## Current Status
-`P02-FOLLOWUP-B-S005-MASTERY-TRANSITION-20260605` closes TC-P02-FUB-013 and TC-P02-FUB-014 for S005 L0-L5 mastery transition and AI candidate-only explanation guardrails. Backend UserAutopilotControl source/update/pause/resume, current control governance, Flutter server-control binding, notification eligibility policy, notification outbox lifecycle/replay, missed-day recovery planner, item-level memory policy and mastery transition now have local evidence for TC-P02-FUB-001 through TC-P02-FUB-014. Followup-B requirements/spec/acceptance/test_cases/traceability, Domain, API/OpenAPI/generated client sync, AI runtime and UX contracts are present, but global replay/performance, dedicated traceability script, final QA, Product Base merge and release approval remain open. Followup-A remains locally passed. Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
+`P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-TRACEABILITY-20260605` closes TC-P02-FUB-015, TC-P02-FUB-016 and TC-P02-FUB-017 for S006 replay fixture, p95 performance, coverage and dedicated Followup-B traceability script. Backend UserAutopilotControl source/update/pause/resume, current control governance, Flutter server-control binding, notification eligibility policy, notification outbox lifecycle/replay, missed-day recovery planner, item-level memory policy, mastery transition and S006 release-check gates now have local evidence for TC-P02-FUB-001 through TC-P02-FUB-017. Followup-B is not release-ready. Product Base merge is not approved. Followup-A remains locally passed. Followup-C Queue/Wiki propagation and Followup-D commercial/release gates remain open.
+
+## 2026-06-05 P02 Followup-B S006 Replay Performance Traceability Independent Review
+
+Review ID: `P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-TRACEABILITY-20260605`
+
+Result: No blocker for local S006 closure of TC-P02-FUB-015, TC-P02-FUB-016 and TC-P02-FUB-017 after coverage-support tests were added and reports were synchronized. This Independent Review does not approve release readiness or Product Base merge. Followup-B is not release-ready. Product Base merge is not approved.
+
+Findings:
+- No blocker found for TC-P02-FUB-015 replay fixture coverage. `GoalAutopilotReplayFixtureTest` covers FUB-FIX-001..008 decision families and asserts expected decision, reason code, output state, rule version and replay hash evidence where persisted replay audits exist.
+- No blocker found for TC-P02-FUB-016 performance coverage. `GoalAutopilotControlPerformanceTest` measures local p95 budgets for control state load, control commands, notification eligibility, outbox lifecycle, missed-day recovery, 500-item memory due calculation, mastery transition and replay verification.
+- No blocker found for TC-P02-FUB-017 traceability gate. `scripts/check_p0_2_followup_b_traceability.py` validates required files, TC rows, traceability rows, report terms and forbidden release/Product Base claims; `scripts/check_p0_2_goal_autopilot_coverage.py` validates refreshed coverage.
+- Fixed before close: refreshed full JaCoCo initially showed backend branch coverage below the broad P0.2 gate. Additional test-only branch coverage was added for existing memory, recovery and mastery policy/validator branches; final coverage passed at backend line 95.9%, backend branch 81.4% and Flutter line 90.9%.
+- No production backend or Flutter code changed in S006. The added coverage-support tests exercise existing deterministic policy branches and do not alter runtime behavior.
+- Scope boundary is correct. S006 closes local replay/performance/coverage/traceability evidence only; it does not claim external release, store/commercial readiness, Product Base merge, Followup-C or Followup-D completion.
+
+Validation:
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `npm run check:api-contract` - passed.
+- `git diff --check` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotReplayFixtureTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControlPerformanceTest test` - passed.
+- `python3 -m py_compile scripts/check_p0_2_followup_b_traceability.py` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MemoryCurvePolicyTest,MissedDayRecoveryPlannerTest,MasteryTransitionPolicyTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 95.9%, backend branch 81.4%, Flutter line 90.9%.
+
+Residual risk:
+- Followup-B is not release-ready.
+- Product Base merge is not approved.
+- Future production backend, Flutter, API, AI or release changes must rerun the relevant contract, coverage, replay and quality gates before any broader approval can be claimed.
 
 ## 2026-06-05 P02 Followup-B S005 Mastery Transition Independent Review
 
@@ -30,7 +60,7 @@ Validation:
 - `git diff --check` - passed.
 
 Residual risk:
-- TC-P02-FUB-015 global replay fixture, TC-P02-FUB-016 p95 performance budgets and TC-P02-FUB-017 dedicated Followup-B traceability script remain planned and must close before Followup-B completion.
+- At S005 close, TC-P02-FUB-015 global replay fixture, TC-P02-FUB-016 p95 performance budgets and TC-P02-FUB-017 dedicated Followup-B traceability script still needed later closure; S006 above later closed those local gates.
 - S005 persists transition decision history; it does not update a user-facing mastery UI state or certify official exam readiness.
 
 ## 2026-06-05 P02 Followup-B S004 Item-Level Memory Independent Review
@@ -56,8 +86,8 @@ Validation:
 - `git diff --check` - passed.
 
 Residual risk:
-- Item-level memory p95 performance for 500 items is not closed by TC-P02-FUB-011/012 and remains routed to TC-P02-FUB-016.
-- L0-L5 transition, global replay fixtures, dedicated Followup-B traceability script and final Followup-B review remain open.
+- At S004 close, item-level memory p95 performance for 500 items still needed TC-P02-FUB-016; S006 above later closed that local performance gate.
+- At S004 close, L0-L5 transition, global replay fixtures, dedicated Followup-B traceability script and final Followup-B review were still later-slice work; S005 and S006 above later closed those local gates.
 
 ## 2026-06-05 P02 Followup-B S003 Missed-Day Recovery Independent Review
 
@@ -84,8 +114,8 @@ Validation:
 
 Residual risk:
 - `mvn jacoco:report` cannot refresh coverage because the backend project does not configure a resolvable `jacoco` Maven plugin prefix; the accepted coverage evidence for this slice is the existing project coverage script result above.
-- Recovery p95 performance is not closed by TC-P02-FUB-009/010 and remains routed to TC-P02-FUB-016.
-- Item-level memory, mastery transition, global replay fixtures, dedicated Followup-B traceability script and final Followup-B review remain open.
+- At S003 close, recovery p95 performance still needed TC-P02-FUB-016; S006 above later closed that local performance gate.
+- At S003 close, item-level memory, mastery transition, global replay fixtures, dedicated Followup-B traceability script and final Followup-B review were still later-slice work; S004/S005/S006 above later closed those local gates.
 
 ## 2026-06-05 P02 Followup-B S002-B Notification Outbox Independent Review
 
@@ -206,7 +236,7 @@ Result: pass for reporting/status reconciliation scope only. Not code implementa
 Findings:
 - Followup-B is no longer scaffold-only. Its pre-implementation product docs and required contracts have been created or updated and independently reviewed.
 - PM status now records Followup-B as documentation/contract-ready while keeping code, executable tests, performance, coverage and release evidence gated.
-- TC-P02-FUB-017 now distinguishes the missing `scripts/check_p0_2_followup_b_traceability.py` implementation-completion deliverable from the pre-implementation equivalent routing gate.
+- TC-P02-FUB-017 historically distinguished the then-missing `scripts/check_p0_2_followup_b_traceability.py` implementation-completion deliverable from the pre-implementation equivalent routing gate; S006 above later created and ran the script.
 - No blocker remains in this reporting/status step for asking Development Orchestrator to route the smallest implementation slice.
 
 Validation:

@@ -1,7 +1,7 @@
 # P0.2 Followup-B Requirements：自动带练控制与计划记忆引擎加固
 
 ## 状态
-Requirements accepted for Followup-B scoped implementation / downstream executed through S005 mastery transition - 本文件定义 `p0-2-followup-b-autopilot-control-planner-memory` 的需求边界；对应 spec、acceptance、test_cases、traceability、Domain、API/OpenAPI/generated client、AI runtime 和 UX 合同已生成并进入实现路由。当前 backend/frontend UserAutopilotControl control slice、S002-A notification eligibility policy、S002-B notification outbox lifecycle/replay、S003 missed-day recovery planner、S004 item-level MemoryCurvePolicy 和 S005 mastery transition 有本地执行证据；global replay/performance/coverage/final review 仍保持 open。
+Requirements accepted for Followup-B scoped implementation / downstream executed through S006 replay-performance-traceability - 本文件定义 `p0-2-followup-b-autopilot-control-planner-memory` 的需求边界；对应 spec、acceptance、test_cases、traceability、Domain、API/OpenAPI/generated client、AI runtime 和 UX 合同已生成并进入实现路由。当前 backend/frontend UserAutopilotControl control slice、S002-A notification eligibility policy、S002-B notification outbox lifecycle/replay、S003 missed-day recovery planner、S004 item-level MemoryCurvePolicy、S005 mastery transition 和 S006 replay/performance/coverage/traceability gates 有本地执行证据。Followup-B is not release-ready；Product Base merge is not approved。
 
 ## Product Object
 - 分类：`feature-increment`
@@ -30,7 +30,7 @@ Requirements accepted for Followup-B scoped implementation / downstream executed
 - P02-PG-005 DataGovernancePolicy
 
 ## Scope Decision
-Followup-B 是 P0.2 自动带练、计划和记忆引擎的加固增量，不创建新 feature，也不替代原始 GoalBackplan 或 Autopilot increment。它关闭当前本地 deterministic slice 的关键缺口：系统需要持久的 UserAutopilotControl 事实源、pause/resume/update-control 行为、生产可用通知调度语义、missed-day recovery、item-level memory algorithm，以及证据驱动的 L0-L5 promotion/demotion 规则。当前实现证据已覆盖 control、notification eligibility/outbox、missed-day recovery、item-level memory 和 mastery transition；remaining routing 仍聚焦 global replay/performance/coverage 和 final review。
+Followup-B 是 P0.2 自动带练、计划和记忆引擎的加固增量，不创建新 feature，也不替代原始 GoalBackplan 或 Autopilot increment。它关闭当前本地 deterministic slice 的关键缺口：系统需要持久的 UserAutopilotControl 事实源、pause/resume/update-control 行为、生产可用通知调度语义、missed-day recovery、item-level memory algorithm，以及证据驱动的 L0-L5 promotion/demotion 规则。当前实现证据已覆盖 control、notification eligibility/outbox、missed-day recovery、item-level memory、mastery transition、global replay、performance、coverage 和 traceability gates；release/Product Base approval 仍保持外部门禁。
 
 ## Scope
 - 持久化 `UserAutopilotControl` 状态，覆盖 pause/resume、quiet hours、intensity override、notification consent 和 missed-day policy。
