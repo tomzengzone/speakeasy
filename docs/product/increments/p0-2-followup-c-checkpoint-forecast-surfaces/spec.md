@@ -1,7 +1,7 @@
 # P0.2 Followup-C Spec：周期复测、预测与多产品面加固
 
 ## 状态
-S001 forecast hardening、S002 checkpoint task library and S003 checkpoint-to-plan locally implemented and tested / S004-S007 implementation gated - 本文件把 Followup-C requirements 下沉为可验收的行为规格，并建立 S000-S007 slice routing。S000 文档链和实现前契约规划已通过验证；S001 已完成 ProgressForecast domain/API/OpenAPI/AI fallback 合同、后端代码和 TC-P02-FUC-001..003 测试执行；S002 已完成 Checkpoint cadence/task library domain/API/OpenAPI/AI/UX 合同、后端代码和 TC-P02-FUC-004..006 测试执行；S003 已完成 Checkpoint-to-plan domain/API/OpenAPI/AI/UX 合同、后端代码、TC-P02-FUC-007..009 测试执行、coverage evidence 和独立审核；S004-S007 代码、契约更新、测试执行、performance 和 release evidence 均未开始。Followup-C is not release-ready；Product Base merge is not approved。
+S001 forecast hardening、S002 checkpoint task library、S003 checkpoint-to-plan and S004 backend projection locally implemented and tested / S005-S007 implementation gated - 本文件把 Followup-C requirements 下沉为可验收的行为规格，并建立 S000-S007 slice routing。S000 文档链和实现前契约规划已通过验证；S001 已完成 ProgressForecast domain/API/OpenAPI/AI fallback 合同、后端代码和 TC-P02-FUC-001..003 测试执行；S002 已完成 Checkpoint cadence/task library domain/API/OpenAPI/AI/UX 合同、后端代码和 TC-P02-FUC-004..006 测试执行；S003 已完成 Checkpoint-to-plan domain/API/OpenAPI/AI/UX 合同、后端代码、TC-P02-FUC-007..009 测试执行、coverage evidence 和独立审核；S004 已完成 backend goal-progress projection domain/API/OpenAPI/AI/UX 合同、后端代码、TC-P02-FUC-010..012 测试执行和独立审核；S005-S007 代码、契约更新、测试执行、performance 和 release evidence 均未开始。Followup-C is not release-ready；Product Base merge is not approved。
 
 ## 上游引用
 - Increment definition：`docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/definition.md`

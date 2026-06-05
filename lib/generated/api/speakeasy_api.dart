@@ -5,7 +5,7 @@ class SpeakeasyApiContract {
   const SpeakeasyApiContract._();
 
   static const String openApiSha256 =
-      '226c6d86a691489c8c3cfeba8aa0735aae52aef12ce7d5d561cb46a56ce52860';
+      'bed8ebbbe2d9fed907b7411fca512912f1302fbb73427e7783b4f7ae2d0678f8';
 
   static const List<String> pathTemplates = <String>[
     '/achievements/status',
@@ -45,6 +45,7 @@ class SpeakeasyApiContract {
     '/goal-autopilot/item-policy/decisions',
     '/goal-autopilot/mastery-transitions',
     '/goal-autopilot/plans/generate',
+    '/goal-autopilot/progress-projection',
     '/goal-autopilot/recovery/replan',
     '/goal-autopilot/reminders/eligibility',
     '/goal-autopilot/reminders/outbox',
@@ -138,6 +139,8 @@ class SpeakeasyApiPaths {
       '/goal-autopilot/mastery-transitions';
   static const String goalAutopilotPlansGenerate =
       '/goal-autopilot/plans/generate';
+  static const String goalAutopilotProgressProjection =
+      '/goal-autopilot/progress-projection';
   static const String goalAutopilotRecoveryReplan =
       '/goal-autopilot/recovery/replan';
   static const String goalAutopilotRemindersEligibility =

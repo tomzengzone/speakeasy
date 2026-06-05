@@ -1,7 +1,7 @@
 # Test Report
 
 ## Current Status
-Latest recorded Followup-C validation: `P02-FOLLOWUP-C-S003-CHECKPOINT-PLAN-UPDATE-20260605` closes TC-P02-FUC-007, TC-P02-FUC-008 and TC-P02-FUC-009 locally for checkpoint result handling, forecast update, stale/replan signal, replay audit evidence, no-false-completion guard and control/recovery compatibility. S001 forecast hardening and S002 checkpoint task library remain locally passed. Followup-C S004-S007 projection, surface propagation, downgrade, performance, final traceability and release evidence remain planned/not started. Followup-C is not release-ready and Product Base merge is not approved. Prior Followup-B TC-P02-FUB-001 through TC-P02-FUB-017 remain passed locally; Followup-D commercial/release gates remain open.
+Latest recorded Followup-C validation: `P02-FOLLOWUP-C-S004-PROGRESS-PROJECTION-20260606` closes TC-P02-FUC-010, TC-P02-FUC-011 and TC-P02-FUC-012 locally for backend-owned goal-progress projection, safe surface fragments, source refs, unavailable downgrade and OpenAPI/generated Dart drift. S001 forecast hardening, S002 checkpoint task library and S003 checkpoint-to-plan remain locally passed. Followup-C S005-S007 surface propagation, downgrade/data governance, performance, final traceability and release evidence remain planned/not started. Followup-C is not release-ready and Product Base merge is not approved. Prior Followup-B TC-P02-FUB-001 through TC-P02-FUB-017 remain passed locally; Followup-D commercial/release gates remain open.
 
 ## Required Sections
 - test scope
@@ -11,6 +11,47 @@ Latest recorded Followup-C validation: `P02-FOLLOWUP-C-S003-CHECKPOINT-PLAN-UPDA
 - skipped tests
 - acceptance criteria coverage
 - residual risk
+
+## 2026-06-06 P02 Followup-C S004 Progress Projection
+
+Report ID:
+- `P02-FOLLOWUP-C-S004-PROGRESS-PROJECTION-20260606`
+
+Test scope:
+- TC-P02-FUC-010 service/integration validation for backend-owned `GoalProgressProjection`, safe surface fragments, source refs, no-active-goal unavailable downgrade and redaction of raw transcript/audio, sensitive target details and provider payloads.
+- TC-P02-FUC-011 controller validation for `GET /goal-autopilot/progress-projection`, safe JSON response shape, source-owned next action/forecast/checkpoint fields and no local summary/diagnostic leakage.
+- TC-P02-FUC-012 API/OpenAPI/generated Dart drift validation for the S004 projection endpoint, schemas, examples, generated path registry and hash marker.
+
+Commands run:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionServiceTest,GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned test` - failed once because the new assertion expected checkpoint risk code after replan; existing forecast policy correctly returned `forecast_supported`. The assertion was corrected to check checkpoint conclusion through `latest_checkpoint.reason_code`, then rerun passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionServiceTest,GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionServiceTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned test` - passed.
+- `npm run check:api-contract` - passed. Redocly reported six existing nullable `$ref` example warnings; OpenAPI validation, OpenAPI contract and Dart drift gates passed with SHA `bed8ebbbe2d9fed907b7411fca512912f1302fbb73427e7783b4f7ae2d0678f8`.
+- `npm run check:dart-client-drift` - passed with the same OpenAPI SHA.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Passing tests:
+- TC-P02-FUC-010: `GoalProgressProjectionServiceTest` verifies ready projection aggregation across goal, control, next action, forecast and latest checkpoint; verifies no-active-goal returns `unavailable/no_active_goal`; verifies surface fragments and source refs are safe and do not include raw diagnostic/checkpoint text, sensitive target details or provider payloads.
+- TC-P02-FUC-011: `GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned` verifies `GET /goal-autopilot/progress-projection` returns server-owned goal, next action, forecast, checkpoint and surface fragments, with no `target_score`, `target_ability`, diagnostic, transcript, audio ref, weekly backplan or daily plan leakage.
+- TC-P02-FUC-012: OpenAPI includes `/goal-autopilot/progress-projection`, `GoalProgressProjectionResponse` schemas and example; generated Dart path registry includes `goalAutopilotProgressProjection`; manifest and marker hash are synchronized.
+
+Failing or blocked tests:
+- No TC-P02-FUC-010/011/012 failure remains after the assertion correction.
+- TC-P02-FUC-013 through TC-P02-FUC-022 remain planned for S005-S007 and were not executed as completed evidence in this S004 slice.
+
+Skipped tests:
+- No Flutter widget tests were run because S004 changed backend/API contracts and generated path metadata only; Home/Queue/Wiki rendering remains S005.
+- No live AI provider path was executed; S004 projection state, surface eligibility and downgrade reason are deterministic backend policy.
+- No p95 performance or final coverage gate was run; those remain S007.
+
+Acceptance criteria coverage:
+- AC-P02-FUC-004 is executed locally for backend-owned aggregation, source-owned next action/gap/risk/checkpoint fields, safe surface fragments, redaction and unavailable downgrade.
+
+Residual risk:
+- Followup-C is not complete, not release-ready and not Product Base-ready.
+- S005 Home/Queue/Wiki surface propagation, S006 deletion/unavailable downgrade across surfaces and S007 performance/final traceability remain open.
+- S004 establishes the backend projection contract; Flutter surfaces still need to be migrated to consume it before P02-SI-006 is fully landed.
 
 ## 2026-06-05 P02 Followup-C S003 Checkpoint Plan Update
 

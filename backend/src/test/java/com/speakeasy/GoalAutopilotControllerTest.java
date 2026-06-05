@@ -1108,6 +1108,71 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
   }
 
   @Test
+  void tcP02Fuc004ProjectionIsBackendOwned() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140312");
+    createSupportedGoal(tokens).andExpect(status().isOk());
+    generatePlan(tokens, false, "initial_backplan").andExpect(status().isOk());
+
+    mvc.perform(post("/goal-autopilot/checkpoints")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "checkpoint_type": "weekly_mock",
+                  "transcript": "I gave a concrete checkpoint response with a project example, a follow-up answer, fluency reflection, and enough evidence to update the plan without claiming final completion.",
+                  "score_hint": 6.5
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.checkpoint.result_status").value("recorded"))
+        .andExpect(jsonPath("$.plan_update_signal.signal_type").value("checkpoint_replan"));
+    generatePlan(tokens, true, "checkpoint_replan").andExpect(status().isOk());
+
+    MvcResult projectionResult = mvc.perform(get("/goal-autopilot/progress-projection")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.schema_version").value(1))
+        .andExpect(jsonPath("$.projection.projection_state").value("ready"))
+        .andExpect(jsonPath("$.projection.downgrade_reason").doesNotExist())
+        .andExpect(jsonPath("$.projection.goal.goal_type").value("ielts_speaking"))
+        .andExpect(jsonPath("$.projection.goal.target_score").doesNotExist())
+        .andExpect(jsonPath("$.projection.goal.target_ability").doesNotExist())
+        .andExpect(jsonPath("$.projection.next_action.plan_item_id", not(blankOrNullString())))
+        .andExpect(jsonPath("$.projection.progress.forecast_state").value("ready"))
+        .andExpect(jsonPath("$.projection.progress.risk_reason_code").value("forecast_supported"))
+        .andExpect(jsonPath("$.projection.progress.claim_guard.goal_completion_claim_allowed").value(false))
+        .andExpect(jsonPath("$.projection.latest_checkpoint.result_status").value("recorded"))
+        .andExpect(jsonPath("$.projection.latest_checkpoint.reason_code").value("checkpoint_updated_gap"))
+        .andExpect(jsonPath("$.projection.surface_fragments", hasSize(3)))
+        .andExpect(jsonPath("$.projection.surface_fragments[?(@.surface == 'home' && @.eligible == true)]", hasSize(1)))
+        .andExpect(jsonPath("$.projection.surface_fragments[?(@.surface == 'queue' && @.eligible == true)]", hasSize(1)))
+        .andExpect(jsonPath("$.projection.surface_fragments[?(@.surface == 'wiki' && @.eligible == true)]", hasSize(1)))
+        .andReturn();
+
+    String body = projectionResult.getResponse().getContentAsString();
+    assertThat(body).contains(
+        "\"rule_version\":\"fuc-progress-projection-v1\"",
+        "\"goal_revision:",
+        "\"forecast:",
+        "\"checkpoint:",
+        "\"safe_fields\"",
+        "\"claim_guard\"");
+    assertThat(body).doesNotContain(
+        "familiar questions",
+        "concrete checkpoint response",
+        "target_score",
+        "target_ability",
+        "diagnostic",
+        "rubric_scores",
+        "transcript",
+        "audio_ref",
+        "provider_payload",
+        "weekly_backplan",
+        "daily_plan");
+  }
+
+  @Test
   void tcP02Fuc002CheckpointTaskLibrary() throws Exception {
     AuthTokens tokens = loginPhone("+8613800140292");
     UUID userId = UUID.fromString(tokens.userId());

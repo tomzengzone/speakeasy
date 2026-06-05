@@ -1,7 +1,7 @@
 # Implementation Report
 
 ## Current Status
-Latest implementation update recorded: `P02-FOLLOWUP-C-S003-CHECKPOINT-PLAN-UPDATE-20260605` closed TC-P02-FUC-007, TC-P02-FUC-008 and TC-P02-FUC-009 locally for checkpoint result handling, forecast update, replayable stale/replan signal, no-false-completion guard and control/recovery compatibility. S001 forecast hardening and S002 checkpoint task library remain locally passed. Followup-C S004-S007 remain planned/not started. Followup-C is not release-ready; Product Base merge is not approved. Prior Followup-B TC-P02-FUB-001..017 remain locally passed.
+Latest implementation update recorded: `P02-FOLLOWUP-C-S004-PROGRESS-PROJECTION-20260606` closed TC-P02-FUC-010, TC-P02-FUC-011 and TC-P02-FUC-012 locally for backend-owned goal-progress projection, safe surface fragments, source refs, unavailable downgrade and API/generated Dart drift. S001 forecast hardening, S002 checkpoint task library and S003 checkpoint-to-plan remain locally passed. Followup-C S005-S007 remain planned/not started. Followup-C is not release-ready; Product Base merge is not approved. Prior Followup-B TC-P02-FUB-001..017 remain locally passed.
 
 ## Report Format
 Each completed change should append:
@@ -14,6 +14,70 @@ Each completed change should append:
 - results
 - risks
 - follow-up
+
+## 2026-06-06 - P02-FOLLOWUP-C-S004-PROGRESS-PROJECTION-20260606
+
+Change request:
+- Strictly execute Followup-C S004 backend goal-progress projection implementation for P02-FUC-FR-004 / P02-FUC-SPEC-004 / AC-P02-FUC-004 / TC-P02-FUC-010..012.
+- Explicit non-goal: do not claim S005 Home/Queue/Wiki propagation, S006 downgrade/deletion handling, S007 performance/final traceability, Followup-C completion, release approval or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`.
+- FR/Spec/AC/TC: P02-FUC-FR-004, P02-FUC-SPEC-004, AC-P02-FUC-004, TC-P02-FUC-010, TC-P02-FUC-011 and TC-P02-FUC-012.
+- Traceability row: P02-FUC-TR-004; gap closed locally: P02-FUC-GAP-004.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`
+- `backend/src/test/java/com/speakeasy/goal/GoalProgressProjectionServiceTest.java`
+- `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`
+- `docs/domain/domain_schema.md`
+- `docs/architecture/api_contract.md`
+- `docs/architecture/openapi/speakeasy-api.yaml`
+- `docs/architecture/openapi/dart-client-drift-manifest.json`
+- `lib/generated/api/.openapi-sha256`
+- `lib/generated/api/speakeasy_api.dart`
+- `docs/ai_runtime/llm_output_schema.md`
+- `docs/ai_runtime/prompt_contract.md`
+- `docs/ux/screen_spec.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/definition.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/requirements.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/spec.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/acceptance.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/test_cases.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added `GET /goal-autopilot/progress-projection` as the S004 backend-owned safe goal-progress projection endpoint.
+- Added deterministic `GoalProgressProjectionView` assembly from active goal, autopilot control/policy state, next action, forecast and latest checkpoint facts.
+- Added projection states and downgrade reasons for ready, limited, unavailable, deleted, unsupported, low-confidence, stale-plan and control-blocked style outputs.
+- Added safe fragments for goal, next action, forecast progress, latest checkpoint and Home/Queue/Wiki surface eligibility/safe fields.
+- Added source refs for goal revision, control, plan item, forecast and checkpoint without returning raw diagnostic transcript/audio, sensitive target ability/score, raw checkpoint payloads or provider payloads.
+- Added unavailable/no-active-goal projection behavior so missing data returns a safe downgraded projection instead of stale goal progress.
+- Updated domain/API/OpenAPI/generated Dart drift artifacts, AI runtime and UX docs so projection state/surface eligibility/downgrade/source refs remain deterministic backend-owned facts.
+- Updated Followup-C test cases, traceability and reports so S004 evidence is explicit and S005-S007 remain gated.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionServiceTest,GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned test` - failed once because a new assertion expected checkpoint risk code after replan while existing forecast policy returned `forecast_supported`; assertion was corrected to assert checkpoint conclusion through `latest_checkpoint.reason_code`, then rerun passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionServiceTest,GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionServiceTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned test` - passed.
+- `npm run check:api-contract` - passed; OpenAPI/Dart drift SHA is `bed8ebbbe2d9fed907b7411fca512912f1302fbb73427e7783b4f7ae2d0678f8`.
+- `npm run check:dart-client-drift` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Result:
+- TC-P02-FUC-010, TC-P02-FUC-011 and TC-P02-FUC-012 are passed locally for S004 backend goal-progress projection.
+- P02-FUC-GAP-004 is closed locally for backend-owned projection source-of-truth, safe fragments, source refs, unavailable downgrade and redaction.
+- Followup-C is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- S005 Home/Queue/Wiki Flutter surface propagation, S006 deletion/unavailable downgrade across surfaces and S007 p95 performance/final traceability remain open.
+- No Flutter surface behavior changed in S004; UI source-of-truth migration remains deferred to S005.
+- No live AI provider projection path is enabled by this slice; future provider explanations must remain candidate-only and must not set projection facts.
 
 ## 2026-06-05 - P02-FOLLOWUP-C-S003-CHECKPOINT-PLAN-UPDATE-20260605
 

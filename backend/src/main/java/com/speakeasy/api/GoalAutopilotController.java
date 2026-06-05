@@ -62,6 +62,11 @@ public class GoalAutopilotController {
     return GoalAutopilotSummaryResponse.from(service.summary(currentUser.userId()));
   }
 
+  @GetMapping("/goal-autopilot/progress-projection")
+  public GoalProgressProjectionResponse progressProjection(@AuthenticationPrincipal CurrentUser currentUser) {
+    return GoalProgressProjectionResponse.from(service.progressProjection(currentUser.userId()));
+  }
+
   @GetMapping("/goal-autopilot/control")
   public AutopilotControlResponse control(@AuthenticationPrincipal CurrentUser currentUser) {
     return AutopilotControlResponse.from(service.control(currentUser.userId()));
@@ -315,6 +320,145 @@ public class GoalAutopilotController {
           view.nextAction() == null ? null : AutopilotActionDto.from(view.nextAction()),
           ProgressForecastDto.from(view.forecast()),
           view.latestCheckpoint() == null ? null : OutcomeCheckpointDto.from(view.latestCheckpoint()));
+    }
+  }
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record GoalProgressProjectionResponse(int schemaVersion, GoalProgressProjectionDto projection)
+      implements SchemaResponse {
+    static GoalProgressProjectionResponse from(GoalAutopilotService.GoalProgressProjectionView view) {
+      return new GoalProgressProjectionResponse(1, GoalProgressProjectionDto.from(view));
+    }
+  }
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record GoalProgressProjectionDto(
+      String projectionId,
+      String projectionState,
+      String downgradeReason,
+      GoalProgressGoalFragmentDto goal,
+      GoalProgressNextActionFragmentDto nextAction,
+      GoalProgressForecastFragmentDto progress,
+      GoalProgressCheckpointFragmentDto latestCheckpoint,
+      List<GoalProgressSurfaceFragmentDto> surfaceFragments,
+      List<String> sourceRefs,
+      String ruleVersion,
+      Instant updatedAt) {
+    static GoalProgressProjectionDto from(GoalAutopilotService.GoalProgressProjectionView view) {
+      return new GoalProgressProjectionDto(
+          view.projectionId(),
+          view.projectionState(),
+          view.downgradeReason(),
+          view.goal() == null ? null : GoalProgressGoalFragmentDto.from(view.goal()),
+          view.nextAction() == null ? null : GoalProgressNextActionFragmentDto.from(view.nextAction()),
+          view.progress() == null ? null : GoalProgressForecastFragmentDto.from(view.progress()),
+          view.latestCheckpoint() == null ? null : GoalProgressCheckpointFragmentDto.from(view.latestCheckpoint()),
+          view.surfaceFragments().stream().map(GoalProgressSurfaceFragmentDto::from).toList(),
+          view.sourceRefs(),
+          view.ruleVersion(),
+          view.updatedAt());
+    }
+  }
+
+  public record GoalProgressGoalFragmentDto(
+      UUID goalProfileId,
+      String goalType,
+      String supportStatus,
+      String status,
+      int revision) {
+    static GoalProgressGoalFragmentDto from(GoalAutopilotService.GoalProgressGoalFragmentView view) {
+      return new GoalProgressGoalFragmentDto(
+          view.goalProfileId(), view.goalType(), view.supportStatus(), view.status(), view.revision());
+    }
+  }
+
+  public record GoalProgressNextActionFragmentDto(
+      String actionId,
+      UUID planItemId,
+      String actionType,
+      String title,
+      String reasonCode,
+      int expectedDurationMinutes,
+      String status) {
+    static GoalProgressNextActionFragmentDto from(GoalAutopilotService.GoalProgressNextActionFragmentView view) {
+      return new GoalProgressNextActionFragmentDto(
+          view.actionId(),
+          view.planItemId(),
+          view.actionType(),
+          view.title(),
+          view.reasonCode(),
+          view.expectedDurationMinutes(),
+          view.status());
+    }
+  }
+
+  public record GoalProgressForecastFragmentDto(
+      UUID forecastId,
+      String forecastState,
+      String gapSummary,
+      LocalDate etaDate,
+      ProgressForecastEtaRangeDto etaRange,
+      String etaUnavailableReason,
+      String confidenceBand,
+      String riskLevel,
+      String riskReasonCode,
+      LocalDate nextCheckpointDate,
+      GoalClaimGuardDto claimGuard,
+      Instant updatedAt) {
+    static GoalProgressForecastFragmentDto from(GoalAutopilotService.GoalProgressForecastFragmentView view) {
+      return new GoalProgressForecastFragmentDto(
+          view.forecastId(),
+          view.forecastState(),
+          view.gapSummary(),
+          view.etaDate(),
+          view.etaRange() == null ? null : ProgressForecastEtaRangeDto.from(view.etaRange()),
+          view.etaUnavailableReason(),
+          view.confidenceBand(),
+          view.riskLevel(),
+          view.riskReasonCode(),
+          view.nextCheckpointDate(),
+          GoalClaimGuardDto.from(view.claimGuard()),
+          view.updatedAt());
+    }
+  }
+
+  public record GoalProgressCheckpointFragmentDto(
+      UUID checkpointId,
+      String resultStatus,
+      String confidenceBand,
+      String summary,
+      String planUpdateSignal,
+      String reasonCode) {
+    static GoalProgressCheckpointFragmentDto from(GoalAutopilotService.GoalProgressCheckpointFragmentView view) {
+      return new GoalProgressCheckpointFragmentDto(
+          view.checkpointId(),
+          view.resultStatus(),
+          view.confidenceBand(),
+          view.summary(),
+          view.planUpdateSignal(),
+          view.reasonCode());
+    }
+  }
+
+  public record GoalProgressSurfaceFragmentDto(
+      String surface,
+      String displayState,
+      boolean eligible,
+      String downgradeReason,
+      String nextActionRef,
+      String forecastRef,
+      String checkpointRef,
+      List<String> safeFields) {
+    static GoalProgressSurfaceFragmentDto from(GoalAutopilotService.GoalProgressSurfaceFragmentView view) {
+      return new GoalProgressSurfaceFragmentDto(
+          view.surface(),
+          view.displayState(),
+          view.eligible(),
+          view.downgradeReason(),
+          view.nextActionRef(),
+          view.forecastRef(),
+          view.checkpointRef(),
+          view.safeFields());
     }
   }
 

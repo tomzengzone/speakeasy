@@ -292,6 +292,7 @@ Validation rules:
 - Candidate may explain checkpoint evidence and forecast risk, but backend owns `OutcomeCheckpoint.result_status`, `eta_date`, `risk_level`, `plan_update_signal`, source checkpoint id, replay/audit hashes, goal completion and stale-plan decisions.
 - Followup-C S002 checkpoint cadence and task-library selection is deterministic backend policy. AI output may not select `task_type`, `cadence`, `due_status`, `ai_depth`, scoring boundary, entitlement, quota or cost state.
 - Followup-C S003 checkpoint-to-plan update is deterministic backend policy. AI output may not set `recorded`/`low_confidence`/`failed`/`skipped` status, replan requirement, input snapshot hash, replay audit id, control compatibility, next action advancement or goal completion.
+- Followup-C S004 goal-progress projection is deterministic backend policy. AI output may not set `projection_state`, `surface_fragments`, surface eligibility, downgrade reason, source refs, safe fields, final goal state, ETA precision, claim guard or personal Wiki/Home/Queue progress facts.
 - Low confidence or partial support must block high-precision ETA wording.
 - Candidate output must not contain official certification, guaranteed outcome, payment status, raw transcript, raw audio, provider secret or unrestricted personal data fields.
 
@@ -338,7 +339,7 @@ Followup-C validation rules:
 - Candidate text may explain deterministic `ProgressForecast` fields but cannot set `eta_date`, `eta_range`, `goal_completion_claim_allowed`, `official_score_equivalence`, `forecast_state`, entitlement, quota, billing state, checkpoint status or plan state.
 - Candidate output must not contain `goal_completed`, `official_score`, `certified`, `guaranteed_eta`, `eta_date`, `eta_range_start`, `eta_range_end`, `entitlement`, `quota_state`, `billing_state`, raw transcript, raw audio, raw provider payload or sensitive diagnostic details.
 - If provider use is blocked or not configured, backend returns deterministic fallback metadata such as `explanation_source=deterministic_policy` and `ai_explanation_unavailable_reason=deterministic_no_provider_path`.
-- Invalid, forbidden or low-confidence candidate output must not mutate `ProgressForecast`, `GoalProfile`, `OutcomeCheckpoint`, plan state, entitlement or billing facts.
+- Invalid, forbidden or low-confidence candidate output must not mutate `ProgressForecast`, `GoalProfile`, `OutcomeCheckpoint`, `GoalProgressProjection`, surface fragments, plan state, entitlement or billing facts.
 
 ## P0.2 Followup-B Mastery Transition Explanation Candidate
 

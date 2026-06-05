@@ -1,7 +1,36 @@
 # Quality Report
 
 ## Current Status
-`P02-FOLLOWUP-C-S003-CHECKPOINT-PLAN-UPDATE-20260605` passes independent review for local S003 checkpoint-to-plan behavior and closes TC-P02-FUC-007, TC-P02-FUC-008 and TC-P02-FUC-009 after S003 API, replay audit, control/recovery, generated Dart, changed-code coverage and regression gates passed. S001 forecast hardening remains locally passed for TC-P02-FUC-001..003, and S002 checkpoint task library remains locally passed for TC-P02-FUC-004..006. Followup-C S004-S007 backend projection, Home/Queue/Wiki propagation, downgrade/data governance, performance, final traceability and release evidence remain planned/not started. Followup-C is not release-ready. Product Base merge is not approved. `P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-TRACEABILITY-20260605` remains locally passed for TC-P02-FUB-001..017. Followup-D commercial/release gates remain open.
+`P02-FOLLOWUP-C-S004-PROGRESS-PROJECTION-20260606` passes independent review for local S004 backend projection behavior and closes TC-P02-FUC-010, TC-P02-FUC-011 and TC-P02-FUC-012 after service/controller projection tests, OpenAPI/generated Dart drift and project validation passed. S001 forecast hardening remains locally passed for TC-P02-FUC-001..003, S002 checkpoint task library remains locally passed for TC-P02-FUC-004..006, and S003 checkpoint-to-plan remains locally passed for TC-P02-FUC-007..009. Followup-C S005-S007 Home/Queue/Wiki propagation, downgrade/data governance, performance, final traceability and release evidence remain planned/not started. Followup-C is not release-ready. Product Base merge is not approved. `P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-TRACEABILITY-20260605` remains locally passed for TC-P02-FUB-001..017. Followup-D commercial/release gates remain open.
+
+## 2026-06-06 P02 Followup-C S004 Progress Projection Independent Review
+
+Review ID: `P02-FOLLOWUP-C-S004-PROGRESS-PROJECTION-20260606`
+
+Result: pass for local S004 backend projection behavior after backend aggregation, safe-fragment redaction, unavailable downgrade, OpenAPI/generated Dart drift and project validation passed. This review does not approve S005-S007, Followup-C completion, release readiness or Product Base merge.
+
+Findings:
+- No blocker found for backend source-of-truth ownership. `GoalAutopilotService.progressProjection` builds projection state, downgrade reason, next action, forecast, latest checkpoint, surface fragments and source refs server-side; the controller only maps DTOs and does not recompute projection truth.
+- No blocker found for safe field boundaries. The projection omits diagnostic rubric/details, raw transcripts, audio refs, target score/ability, weekly/daily plan payloads and provider payloads while exposing safe goal status, action, forecast, checkpoint conclusion, claim guard and source refs.
+- No blocker found for unavailable behavior. A user with no active goal receives `projection_state=unavailable`, `downgrade_reason=no_active_goal`, empty source refs and ineligible surface fragments instead of stale progress facts.
+- No blocker found for surface contract readiness. Home, Queue and Wiki fragments are present with backend-owned `display_state`, `eligible`, refs, downgrade reason and safe field lists; S005 still must migrate Flutter surfaces to consume them.
+- No API contract drift blocker. OpenAPI includes `/goal-autopilot/progress-projection`, projection schemas/examples and a 401 response; generated Dart path registry includes `goalAutopilotProgressProjection`; manifest and marker hash are synced to `bed8ebbbe2d9fed907b7411fca512912f1302fbb73427e7783b4f7ae2d0678f8`.
+- Fixed before close: the first S004 projection assertion expected `checkpoint_evidence_updated` after checkpoint replan, but the existing forecast policy correctly returns `forecast_supported` after a fresh replan. The test now checks checkpoint evidence through `latest_checkpoint.reason_code=checkpoint_updated_gap`, which better matches source ownership.
+- Fixed before close: Redocly initially warned that the new projection endpoint lacked a 4XX response; the OpenAPI contract now declares `401 Unauthenticated`.
+- Scope boundary is correct. S004 does not claim Home/Queue/Wiki UI propagation, deletion/unavailable downgrade across surfaces, p95 performance, final traceability script, release readiness, Product Base merge, Flutter source changes or live AI provider behavior.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionServiceTest,GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned test` - passed after assertion correction.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionServiceTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned test` - passed.
+- `npm run check:api-contract` - passed; the six remaining Redocly warnings are existing nullable `$ref` warnings and do not block S004 contract drift.
+- `npm run check:dart-client-drift` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Residual risk:
+- Followup-C remains incomplete, not release-ready and not Product Base-ready.
+- S005-S007 remain implementation gated, including Home/Queue/Wiki Flutter surface consumption, deletion/unavailable downgrade tests, p95 performance evidence and final traceability script.
+- S004 uses deterministic backend policy only. Future provider-assisted wording must remain candidate-only and must not set projection state, surface eligibility, downgrade reason, source refs or claim guards.
 
 ## 2026-06-05 P02 Followup-C S003 Checkpoint Plan Update Independent Review
 

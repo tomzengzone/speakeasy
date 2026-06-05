@@ -1,7 +1,7 @@
 # Increment Definition：P0.2 Followup-C 周期复测、预测与多产品面加固
 
 ## 状态
-S001 forecast hardening、S002 checkpoint task library and S003 checkpoint-to-plan locally implemented and tested / implementation still gated for S004-S007。该增量已建立正式 definition、requirements、spec、acceptance、test_cases 和 FR/Spec/AC/TC traceability，并把 S000-S007 implementation slice routing 写入文档链。S000 文档链、实现前 AC-to-TC mapping、验证命令和独立审核已完成；S001 ProgressForecast gap/ETA/confidence/risk/claim guard hardening 已有本地 domain/API/AI fallback 合同、后端代码和 TC-P02-FUC-001..003 测试证据；S002 Checkpoint cadence/task library 已有本地 domain/API/OpenAPI/AI/UX 合同、后端代码和 TC-P02-FUC-004..006 测试证据；S003 Checkpoint-to-plan update 已有本地 domain/API/OpenAPI/AI/UX 合同、后端代码、TC-P02-FUC-007..009 测试证据和独立审核；S004-S007 projection、surface、downgrade、performance、coverage 和 release evidence 仍未进入代码实现。Followup-C is not release-ready；Product Base merge is not approved。
+S001 forecast hardening、S002 checkpoint task library、S003 checkpoint-to-plan and S004 backend projection locally implemented and tested / implementation still gated for S005-S007。该增量已建立正式 definition、requirements、spec、acceptance、test_cases 和 FR/Spec/AC/TC traceability，并把 S000-S007 implementation slice routing 写入文档链。S000 文档链、实现前 AC-to-TC mapping、验证命令和独立审核已完成；S001 ProgressForecast gap/ETA/confidence/risk/claim guard hardening 已有本地 domain/API/AI fallback 合同、后端代码和 TC-P02-FUC-001..003 测试证据；S002 Checkpoint cadence/task library 已有本地 domain/API/OpenAPI/AI/UX 合同、后端代码和 TC-P02-FUC-004..006 测试证据；S003 Checkpoint-to-plan update 已有本地 domain/API/OpenAPI/AI/UX 合同、后端代码、TC-P02-FUC-007..009 测试证据和独立审核；S004 backend-owned goal-progress projection 已有本地 domain/API/OpenAPI/AI/UX 合同、后端代码、TC-P02-FUC-010..012 测试证据和独立审核；S005-S007 surface、downgrade、performance、coverage 和 release evidence 仍未进入代码实现。Followup-C is not release-ready；Product Base merge is not approved。
 
 ## Increment ID
 `p0-2-followup-c-checkpoint-forecast-surfaces`
@@ -62,7 +62,7 @@ The current local P0.2 slice can produce deterministic forecast and checkpoint r
 | P02-FUC-S001 | P02-FUC-WP-001 | P02-FUC-FR-001 | P02-FUC-SPEC-001 | AC-P02-FUC-001 | TC-P02-FUC-001..003 | Forecast gap/ETA/confidence/risk/claim guard hardening | Implemented locally / TC-P02-FUC-001..003 passed |
 | P02-FUC-S002 | P02-FUC-WP-002 | P02-FUC-FR-002 | P02-FUC-SPEC-002 | AC-P02-FUC-002 | TC-P02-FUC-004..006 | Checkpoint cadence and goal-type task library | Implemented locally / TC-P02-FUC-004..006 passed |
 | P02-FUC-S003 | P02-FUC-WP-003 | P02-FUC-FR-003 | P02-FUC-SPEC-003 | AC-P02-FUC-003 | TC-P02-FUC-007..009 | Checkpoint result updates forecast and plan stale/replan signal | Implemented locally / TC-P02-FUC-007..009 passed |
-| P02-FUC-S004 | P02-FUC-WP-004 | P02-FUC-FR-004 | P02-FUC-SPEC-004 | AC-P02-FUC-004 | TC-P02-FUC-010..012 | Backend-owned goal-progress projection | Planned / not started |
+| P02-FUC-S004 | P02-FUC-WP-004 | P02-FUC-FR-004 | P02-FUC-SPEC-004 | AC-P02-FUC-004 | TC-P02-FUC-010..012 | Backend-owned goal-progress projection | Implemented locally / TC-P02-FUC-010..012 passed |
 | P02-FUC-S005 | P02-FUC-WP-005 | P02-FUC-FR-005 | P02-FUC-SPEC-005 | AC-P02-FUC-005 | TC-P02-FUC-013..016 | Home/Queue/Wiki surface propagation | Planned / not started |
 | P02-FUC-S006 | P02-FUC-WP-006 | P02-FUC-FR-006 | P02-FUC-SPEC-006 | AC-P02-FUC-006 | TC-P02-FUC-017..019 | Surface deletion/unavailable downgrade | Planned / not started |
 | P02-FUC-S007 | P02-FUC-WP-007, P02-FUC-WP-008 | P02-FUC-FR-007 | P02-FUC-SPEC-007 | AC-P02-FUC-007 | TC-P02-FUC-020..022 | Performance, coverage, traceability script and independent review | Planned / not started |
@@ -94,7 +94,8 @@ S005 may be routed as S005-A Home, S005-B Expression Queue and S005-C Personal W
 ## Required Downstream Artifacts
 - Completed for S000: `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md` and updated `traceability.md` for this follow-up before code routing.
 - Completed for S001-S003: Domain/API/OpenAPI/generated client, AI runtime and UX contract updates required by forecast hardening, checkpoint task library and checkpoint-to-plan update.
-- Required for S004-S007 before/within routed implementation: Domain/API/OpenAPI/AI runtime/UX updates for goal-progress projection, surface reads, downgrade behavior, performance, coverage and final traceability if existing objects are insufficient.
+- Completed for S004: Domain/API/OpenAPI/generated client, AI runtime and UX contract updates required by backend-owned goal-progress projection.
+- Required for S005-S007 before/within routed implementation: Domain/API/OpenAPI/AI runtime/UX updates for surface reads, downgrade behavior, performance, coverage and final traceability if existing objects are insufficient.
 - Required before implementation completion: Test case evidence mapping every Followup-C AC to stable TC IDs, code evidence, test evidence, performance evidence, coverage evidence and quality review.
 
 ## Non-goals
@@ -106,4 +107,4 @@ S005 may be routed as S005-A Home, S005-B Expression Queue and S005-C Personal W
 ## Completion Gate
 Followup-C cannot be marked complete unless every slice has FR/Spec/AC/TC/Traceability coverage, contract evidence, code evidence, test evidence, >=80% changed-code coverage where implementation occurs, performance evidence, and independent review in `docs/reports/quality_report.md`.
 
-S001 completion only means local forecast hardening evidence for TC-P02-FUC-001..003. S002 completion only means local checkpoint cadence/task-library evidence for TC-P02-FUC-004..006. S003 completion only means local checkpoint-to-plan update evidence for TC-P02-FUC-007..009. These do not approve S004-S007 implementation, Followup-C completion, release readiness or Product Base merge.
+S001 completion only means local forecast hardening evidence for TC-P02-FUC-001..003. S002 completion only means local checkpoint cadence/task-library evidence for TC-P02-FUC-004..006. S003 completion only means local checkpoint-to-plan update evidence for TC-P02-FUC-007..009. S004 completion only means local backend projection evidence for TC-P02-FUC-010..012. These do not approve S005-S007 implementation, Followup-C completion, release readiness or Product Base merge.

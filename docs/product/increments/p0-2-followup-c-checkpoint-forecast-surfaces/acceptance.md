@@ -1,7 +1,7 @@
 # P0.2 Followup-C Acceptance Criteria：周期复测、预测与多产品面加固
 
 ## 状态
-S001、S002 and S003 acceptance locally executed / S004-S007 implementation gated - 本文件基于 Followup-C requirements 和 spec 定义验收标准。S000 文档链验收已通过 TC-P02-FUC-000；S001 ProgressForecast model hardening 已通过 TC-P02-FUC-001..003；S002 Checkpoint cadence and task library 已通过 TC-P02-FUC-004..006；S003 Checkpoint-to-plan update 已通过 TC-P02-FUC-007..009；S004-S007 实现前 AC 规划完成但代码、契约、测试、performance 和 release evidence 均为 planned/not started。Followup-C is not release-ready；Product Base merge is not approved。
+S001、S002、S003 and S004 acceptance locally executed / S005-S007 implementation gated - 本文件基于 Followup-C requirements 和 spec 定义验收标准。S000 文档链验收已通过 TC-P02-FUC-000；S001 ProgressForecast model hardening 已通过 TC-P02-FUC-001..003；S002 Checkpoint cadence and task library 已通过 TC-P02-FUC-004..006；S003 Checkpoint-to-plan update 已通过 TC-P02-FUC-007..009；S004 backend goal-progress projection 已通过 TC-P02-FUC-010..012；S005-S007 实现前 AC 规划完成但代码、契约、测试、performance 和 release evidence 均为 planned/not started。Followup-C is not release-ready；Product Base merge is not approved。
 
 ## 上游来源
 - `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/requirements.md`
@@ -106,4 +106,4 @@ Every AC-P02-FUC-000 through AC-P02-FUC-007 maps to at least one stable TC-P02-F
 ## 下游交接边界
 - `test_cases.md`、`traceability.md`、domain/API/OpenAPI/UX/AI contracts 和 reports may consume this file as the AC source of truth, but they must not renumber or redefine AC-P02-FUC-000 through AC-P02-FUC-007 without a versioned Followup-C change.
 - Test execution status belongs in `test_cases.md`, `docs/reports/test_report.md` and `traceability.md`; this file may summarize current status but must not replace executable Test Evidence.
-- S001 local forecast-hardening pass, S002 local checkpoint task-library pass and S003 local checkpoint-to-plan pass do not approve S004-S007 implementation, Followup-C completion, release readiness or Product Base merge.
+- S001 local forecast-hardening pass, S002 local checkpoint task-library pass, S003 local checkpoint-to-plan pass and S004 local backend projection pass do not approve S005-S007 implementation, Followup-C completion, release readiness or Product Base merge.

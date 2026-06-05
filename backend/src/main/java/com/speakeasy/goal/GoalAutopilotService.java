@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HexFormat;
 import java.util.List;
@@ -33,6 +34,7 @@ public class GoalAutopilotService {
   private static final String RECOVERY_RULE_VERSION = MissedDayRecoveryPlanner.RULE_VERSION;
   private static final String MEMORY_RULE_VERSION = MemoryCurvePolicy.RULE_VERSION;
   private static final String CHECKPOINT_PLAN_RULE_VERSION = "fuc-checkpoint-plan-v1";
+  private static final String PROGRESS_PROJECTION_RULE_VERSION = "fuc-progress-projection-v1";
   private static final String DEFAULT_TIMEZONE = "Asia/Shanghai";
   private static final String TIME_PATTERN = "^([01][0-9]|2[0-3]):[0-5][0-9]$";
   private static final Collection<String> ACTIVE_GOAL_STATUSES =
@@ -195,6 +197,46 @@ public class GoalAutopilotService {
         nextActionOrNull(profile),
         forecast,
         latestCheckpoint(profile));
+  }
+
+  @Transactional(readOnly = true)
+  public GoalProgressProjectionView progressProjection(UUID userId) {
+    requireUser(userId);
+    Instant now = Instant.now(clock);
+    GoalProfile profile = goalProfiles.findFirstByUserIdAndStatusInOrderByUpdatedAtDesc(userId, ACTIVE_GOAL_STATUSES).orElse(null);
+    if (profile == null) {
+      return unavailableProgressProjection(userId, "unavailable", "no_active_goal", now);
+    }
+
+    GoalAutopilotControl control = controls.findFirstByGoalProfileIdOrderByUpdatedAtDesc(profile.getGoalProfileId()).orElse(null);
+    GoalProgressForecast forecast = forecasts.findFirstByGoalProfileIdOrderByUpdatedAtDesc(profile.getGoalProfileId()).orElse(null);
+    GoalOutcomeCheckpoint checkpoint = latestCheckpoint(profile);
+    AutopilotActionView nextAction = nextActionOrNull(profile);
+    PlanFacts facts = planFacts(profile);
+    String controlReason = control == null ? policyReason(profile) : controlReason(profile, control);
+    String controlStatus = control == null ? policyStatus(profile) : controlView(control, controlReason).controlStatus();
+    String state = progressProjectionState(profile, controlStatus, controlReason, forecast, facts);
+    String downgradeReason = progressProjectionDowngradeReason(profile, controlReason, forecast, facts, state);
+    List<String> sourceRefs = progressProjectionSourceRefs(profile, control, nextAction, forecast, checkpoint);
+    Instant updatedAt = progressProjectionUpdatedAt(control, forecast, now);
+
+    return new GoalProgressProjectionView(
+        progressProjectionId(userId, profile, control, nextAction, forecast, checkpoint, state, downgradeReason),
+        state,
+        downgradeReason,
+        new GoalProgressGoalFragmentView(
+            profile.getGoalProfileId(),
+            profile.getGoalType(),
+            profile.getSupportStatus(),
+            profile.getStatus(),
+            profile.getRevision()),
+        nextAction == null ? null : progressNextActionFragment(nextAction),
+        forecast == null ? null : progressForecastFragment(forecast),
+        checkpoint == null ? null : progressCheckpointFragment(checkpoint),
+        progressSurfaceFragments(state, downgradeReason, nextAction, forecast, checkpoint),
+        sourceRefs,
+        PROGRESS_PROJECTION_RULE_VERSION,
+        updatedAt);
   }
 
   @Transactional
@@ -2019,6 +2061,257 @@ public class GoalAutopilotService {
     }
   }
 
+  private GoalProgressProjectionView unavailableProgressProjection(UUID userId, String state, String reason, Instant now) {
+    return new GoalProgressProjectionView(
+        UUID.nameUUIDFromBytes((
+                "goal-progress-projection:" + userId + ":none:" + state + ":" + reason + ":" + PROGRESS_PROJECTION_RULE_VERSION)
+            .getBytes(StandardCharsets.UTF_8)).toString(),
+        state,
+        reason,
+        null,
+        null,
+        null,
+        null,
+        progressSurfaceFragments(state, reason, null, null, null),
+        List.of(),
+        PROGRESS_PROJECTION_RULE_VERSION,
+        now);
+  }
+
+  private String progressProjectionState(
+      GoalProfile profile,
+      String controlStatus,
+      String controlReason,
+      GoalProgressForecast forecast,
+      PlanFacts facts) {
+    if ("unsupported".equals(profile.getSupportStatus()) || "unsupported".equals(profile.getStatus())) {
+      return "unsupported";
+    }
+    if (facts.stalePlan() || (forecast != null && "stale_plan".equals(forecast.getForecastState()))) {
+      return "stale_plan";
+    }
+    if ("paused".equals(controlStatus) || "blocked_by_policy".equals(controlStatus) || !"eligible".equals(controlReason)) {
+      return "control_blocked";
+    }
+    if (forecast == null || "unavailable".equals(forecast.getForecastState())) {
+      return "unavailable";
+    }
+    if ("deleted".equals(forecast.getForecastState())) {
+      return "deleted";
+    }
+    if ("low_confidence".equals(forecast.getForecastState()) || "low".equals(forecast.getConfidenceBand())) {
+      return "low_confidence";
+    }
+    if ("partial".equals(profile.getSupportStatus())
+        || "limited".equals(forecast.getForecastState())
+        || facts.recoveryRequired()) {
+      return "limited";
+    }
+    return "ready";
+  }
+
+  private String progressProjectionDowngradeReason(
+      GoalProfile profile,
+      String controlReason,
+      GoalProgressForecast forecast,
+      PlanFacts facts,
+      String state) {
+    return switch (state) {
+      case "ready" -> null;
+      case "unsupported" -> "unsupported_goal";
+      case "deleted" -> "deleted_goal";
+      case "stale_plan" -> "stale_plan";
+      case "control_blocked" -> "eligible".equals(controlReason) ? "control_blocked" : controlReason;
+      case "unavailable" -> forecast == null ? "forecast_unavailable" : cleanOrDefault(forecast.getEtaUnavailableReason(), "unavailable");
+      case "low_confidence" -> "low_confidence";
+      case "limited" -> {
+        if ("partial".equals(profile.getSupportStatus())) {
+          yield "partial_goal_limited";
+        }
+        if (facts.recoveryRequired()) {
+          yield "recovery_required";
+        }
+        yield forecast == null ? "limited_projection" : cleanOrDefault(forecast.getRiskReasonCode(), "limited_projection");
+      }
+      default -> state;
+    };
+  }
+
+  private String progressProjectionId(
+      UUID userId,
+      GoalProfile profile,
+      GoalAutopilotControl control,
+      AutopilotActionView action,
+      GoalProgressForecast forecast,
+      GoalOutcomeCheckpoint checkpoint,
+      String state,
+      String downgradeReason) {
+    return UUID.nameUUIDFromBytes((
+            "goal-progress-projection:"
+                + userId
+                + ":"
+                + profile.getGoalProfileId()
+                + ":"
+                + profile.getRevision()
+                + ":"
+                + nullableHashValue(control == null ? null : control.getControlId())
+                + ":"
+                + nullableHashValue(action == null ? null : action.planItemId())
+                + ":"
+                + nullableHashValue(forecast == null ? null : forecast.getForecastId())
+                + ":"
+                + nullableHashValue(checkpoint == null ? null : checkpoint.getCheckpointId())
+                + ":"
+                + state
+                + ":"
+                + nullableHashValue(downgradeReason)
+                + ":"
+                + PROGRESS_PROJECTION_RULE_VERSION)
+        .getBytes(StandardCharsets.UTF_8)).toString();
+  }
+
+  private List<String> progressProjectionSourceRefs(
+      GoalProfile profile,
+      GoalAutopilotControl control,
+      AutopilotActionView action,
+      GoalProgressForecast forecast,
+      GoalOutcomeCheckpoint checkpoint) {
+    List<String> refs = new ArrayList<>();
+    refs.add("goal_profile:" + profile.getGoalProfileId());
+    refs.add("goal_revision:" + profile.getRevision());
+    if (control != null) {
+      refs.add("control:" + control.getControlId());
+    }
+    if (action != null) {
+      refs.add("plan_item:" + action.planItemId());
+    }
+    if (forecast != null) {
+      refs.add("forecast:" + forecast.getForecastId());
+    }
+    if (checkpoint != null) {
+      refs.add("checkpoint:" + checkpoint.getCheckpointId());
+    }
+    return refs;
+  }
+
+  private Instant progressProjectionUpdatedAt(GoalAutopilotControl control, GoalProgressForecast forecast, Instant fallback) {
+    Instant updatedAt = fallback;
+    if (forecast != null && forecast.getUpdatedAt() != null && forecast.getUpdatedAt().isAfter(updatedAt)) {
+      updatedAt = forecast.getUpdatedAt();
+    }
+    if (control != null && control.getUpdatedAt() != null && control.getUpdatedAt().isAfter(updatedAt)) {
+      updatedAt = control.getUpdatedAt();
+    }
+    return updatedAt;
+  }
+
+  private GoalProgressNextActionFragmentView progressNextActionFragment(AutopilotActionView action) {
+    return new GoalProgressNextActionFragmentView(
+        action.actionId(),
+        action.planItemId(),
+        action.actionType(),
+        action.title(),
+        action.reasonCode(),
+        action.expectedDurationMinutes(),
+        action.status());
+  }
+
+  private GoalProgressForecastFragmentView progressForecastFragment(GoalProgressForecast forecast) {
+    return new GoalProgressForecastFragmentView(
+        forecast.getForecastId(),
+        forecast.getForecastState(),
+        forecast.getGapSummary(),
+        forecast.getEtaDate(),
+        forecast.getEtaRangeStart() == null || forecast.getEtaRangeEnd() == null
+            ? null
+            : new ForecastEtaRangeView(forecast.getEtaRangeStart(), forecast.getEtaRangeEnd()),
+        forecast.getEtaUnavailableReason(),
+        forecast.getConfidenceBand(),
+        forecast.getRiskLevel(),
+        forecast.getRiskReasonCode(),
+        forecast.getNextCheckpointDate(),
+        fromJson(forecast.getClaimGuardJson(), CLAIM_GUARD),
+        forecast.getUpdatedAt());
+  }
+
+  private GoalProgressCheckpointFragmentView progressCheckpointFragment(GoalOutcomeCheckpoint checkpoint) {
+    return new GoalProgressCheckpointFragmentView(
+        checkpoint.getCheckpointId(),
+        checkpoint.getResultStatus(),
+        checkpoint.getConfidenceBand(),
+        checkpoint.getSummary(),
+        checkpoint.getPlanUpdateSignal(),
+        checkpoint.getReasonCode());
+  }
+
+  private List<GoalProgressSurfaceFragmentView> progressSurfaceFragments(
+      String state,
+      String downgradeReason,
+      AutopilotActionView action,
+      GoalProgressForecast forecast,
+      GoalOutcomeCheckpoint checkpoint) {
+    String actionRef = action == null ? null : "plan_item:" + action.planItemId();
+    String forecastRef = forecast == null ? null : "forecast:" + forecast.getForecastId();
+    String checkpointRef = checkpoint == null ? null : "checkpoint:" + checkpoint.getCheckpointId();
+    boolean eligible = Set.of("ready", "limited", "low_confidence").contains(state);
+    return List.of(
+        new GoalProgressSurfaceFragmentView(
+            "home",
+            state,
+            eligible,
+            downgradeReason,
+            actionRef,
+            forecastRef,
+            checkpointRef,
+            safeProjectionFields(true, true, true, action != null, forecast != null, checkpoint != null)),
+        new GoalProgressSurfaceFragmentView(
+            "queue",
+            state,
+            eligible,
+            downgradeReason,
+            actionRef,
+            forecastRef,
+            checkpointRef,
+            safeProjectionFields(true, false, false, action != null, forecast != null, checkpoint != null)),
+        new GoalProgressSurfaceFragmentView(
+            "wiki",
+            state,
+            eligible,
+            downgradeReason,
+            null,
+            forecastRef,
+            checkpointRef,
+            safeProjectionFields(false, true, true, false, forecast != null, checkpoint != null)));
+  }
+
+  private List<String> safeProjectionFields(
+      boolean includeAction,
+      boolean includeCheckpointDate,
+      boolean includeClaimGuard,
+      boolean actionAvailable,
+      boolean forecastAvailable,
+      boolean checkpointAvailable) {
+    List<String> fields = new ArrayList<>();
+    if (includeAction && actionAvailable) {
+      fields.add("next_action");
+    }
+    if (forecastAvailable) {
+      fields.add("gap_summary");
+      fields.add("risk_level");
+      fields.add("risk_reason_code");
+      if (includeCheckpointDate) {
+        fields.add("next_checkpoint_date");
+      }
+      if (includeClaimGuard) {
+        fields.add("claim_guard");
+      }
+    }
+    if (checkpointAvailable) {
+      fields.add("checkpoint_summary");
+    }
+    return fields;
+  }
+
   private SummaryView summaryView(
       GoalProfile profile,
       SupportDecision support,
@@ -2347,6 +2640,67 @@ public class GoalAutopilotService {
       Integer estimatedMinutes) {}
 
   public record CheckpointInput(String checkpointType, String transcript, String audioRef, Double scoreHint, String resultStatus) {}
+
+  public record GoalProgressProjectionView(
+      String projectionId,
+      String projectionState,
+      String downgradeReason,
+      GoalProgressGoalFragmentView goal,
+      GoalProgressNextActionFragmentView nextAction,
+      GoalProgressForecastFragmentView progress,
+      GoalProgressCheckpointFragmentView latestCheckpoint,
+      List<GoalProgressSurfaceFragmentView> surfaceFragments,
+      List<String> sourceRefs,
+      String ruleVersion,
+      Instant updatedAt) {}
+
+  public record GoalProgressGoalFragmentView(
+      UUID goalProfileId,
+      String goalType,
+      String supportStatus,
+      String status,
+      int revision) {}
+
+  public record GoalProgressNextActionFragmentView(
+      String actionId,
+      UUID planItemId,
+      String actionType,
+      String title,
+      String reasonCode,
+      int expectedDurationMinutes,
+      String status) {}
+
+  public record GoalProgressForecastFragmentView(
+      UUID forecastId,
+      String forecastState,
+      String gapSummary,
+      LocalDate etaDate,
+      ForecastEtaRangeView etaRange,
+      String etaUnavailableReason,
+      String confidenceBand,
+      String riskLevel,
+      String riskReasonCode,
+      LocalDate nextCheckpointDate,
+      ClaimGuardView claimGuard,
+      Instant updatedAt) {}
+
+  public record GoalProgressCheckpointFragmentView(
+      UUID checkpointId,
+      String resultStatus,
+      String confidenceBand,
+      String summary,
+      String planUpdateSignal,
+      String reasonCode) {}
+
+  public record GoalProgressSurfaceFragmentView(
+      String surface,
+      String displayState,
+      boolean eligible,
+      String downgradeReason,
+      String nextActionRef,
+      String forecastRef,
+      String checkpointRef,
+      List<String> safeFields) {}
 
   public record SummaryView(
       GoalProfileView goalProfile,

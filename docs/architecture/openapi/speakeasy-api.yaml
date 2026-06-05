@@ -895,6 +895,32 @@ paths:
           $ref: '#/components/responses/NotFound'
     parameters:
     - $ref: '#/components/parameters/RequestId'
+  /goal-autopilot/progress-projection:
+    get:
+      tags:
+      - Goal Autopilot
+      operationId: getGoalProgressProjection
+      summary: Get the backend-owned safe goal-progress projection for Home, Queue and Wiki surfaces.
+      x-traceability:
+        product_objects:
+        - p0-2-training-memory
+        - p0-2-followup-c-checkpoint-forecast-surfaces
+        requirements:
+        - P02-FUC-FR-004
+      responses:
+        '200':
+          description: Safe backend-owned progress projection for surface rendering.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalProgressProjectionResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/GoalProgressProjectionResponseExample'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
   /goal-autopilot/control:
     get:
       tags:
@@ -4380,6 +4406,213 @@ components:
           $ref: '#/components/schemas/ProgressForecast'
         latest_checkpoint:
           $ref: '#/components/schemas/OutcomeCheckpoint'
+    GoalProgressProjectionResponse:
+      type: object
+      required:
+      - schema_version
+      - projection
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        projection:
+          $ref: '#/components/schemas/GoalProgressProjection'
+    GoalProgressProjection:
+      type: object
+      required:
+      - projection_id
+      - projection_state
+      - surface_fragments
+      - source_refs
+      - rule_version
+      - updated_at
+      properties:
+        projection_id:
+          type: string
+        projection_state:
+          $ref: '#/components/schemas/GoalProgressProjectionState'
+        downgrade_reason:
+          type: string
+          nullable: true
+        goal:
+          $ref: '#/components/schemas/GoalProgressGoalFragment'
+        next_action:
+          $ref: '#/components/schemas/GoalProgressNextActionFragment'
+        progress:
+          $ref: '#/components/schemas/GoalProgressForecastFragment'
+        latest_checkpoint:
+          $ref: '#/components/schemas/GoalProgressCheckpointFragment'
+        surface_fragments:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoalProgressSurfaceFragment'
+        source_refs:
+          type: array
+          items:
+            type: string
+        rule_version:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+    GoalProgressProjectionState:
+      type: string
+      enum:
+      - ready
+      - limited
+      - unavailable
+      - deleted
+      - unsupported
+      - low_confidence
+      - stale_plan
+      - control_blocked
+    GoalProgressGoalFragment:
+      type: object
+      required:
+      - goal_profile_id
+      - goal_type
+      - support_status
+      - status
+      - revision
+      properties:
+        goal_profile_id:
+          type: string
+        goal_type:
+          $ref: '#/components/schemas/GoalType'
+        support_status:
+          $ref: '#/components/schemas/GoalSupportStatus'
+        status:
+          type: string
+        revision:
+          type: integer
+          minimum: 1
+    GoalProgressNextActionFragment:
+      type: object
+      required:
+      - action_id
+      - plan_item_id
+      - action_type
+      - title
+      - reason_code
+      - expected_duration_minutes
+      - status
+      properties:
+        action_id:
+          type: string
+        plan_item_id:
+          type: string
+        action_type:
+          type: string
+        title:
+          type: string
+        reason_code:
+          type: string
+        expected_duration_minutes:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+    GoalProgressForecastFragment:
+      type: object
+      required:
+      - forecast_id
+      - forecast_state
+      - gap_summary
+      - confidence_band
+      - risk_level
+      - risk_reason_code
+      - claim_guard
+      - updated_at
+      properties:
+        forecast_id:
+          type: string
+        forecast_state:
+          type: string
+        gap_summary:
+          type: string
+        eta_date:
+          type: string
+          format: date
+          nullable: true
+        eta_range:
+          $ref: '#/components/schemas/ProgressForecastEtaRange'
+        eta_unavailable_reason:
+          type: string
+          nullable: true
+        confidence_band:
+          $ref: '#/components/schemas/GoalConfidenceBand'
+        risk_level:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+        risk_reason_code:
+          type: string
+        next_checkpoint_date:
+          type: string
+          format: date
+          nullable: true
+        claim_guard:
+          $ref: '#/components/schemas/GoalClaimGuard'
+        updated_at:
+          type: string
+          format: date-time
+    GoalProgressCheckpointFragment:
+      type: object
+      required:
+      - checkpoint_id
+      - result_status
+      - confidence_band
+      - summary
+      - plan_update_signal
+      - reason_code
+      properties:
+        checkpoint_id:
+          type: string
+        result_status:
+          type: string
+        confidence_band:
+          $ref: '#/components/schemas/GoalConfidenceBand'
+        summary:
+          type: string
+        plan_update_signal:
+          type: string
+        reason_code:
+          type: string
+    GoalProgressSurfaceFragment:
+      type: object
+      required:
+      - surface
+      - display_state
+      - eligible
+      - safe_fields
+      properties:
+        surface:
+          type: string
+          enum:
+          - home
+          - queue
+          - wiki
+        display_state:
+          $ref: '#/components/schemas/GoalProgressProjectionState'
+        eligible:
+          type: boolean
+        downgrade_reason:
+          type: string
+          nullable: true
+        next_action_ref:
+          type: string
+          nullable: true
+        forecast_ref:
+          type: string
+          nullable: true
+        checkpoint_ref:
+          type: string
+          nullable: true
+        safe_fields:
+          type: array
+          items:
+            type: string
     GoalProfile:
       type: object
       required:
@@ -7946,6 +8179,98 @@ components:
             source: deterministic_policy
             fallback_reason: deterministic_no_provider_path
             candidate_only: true
+          updated_at: '2026-06-05T09:00:00Z'
+    GoalProgressProjectionResponseExample:
+      summary: getGoalProgressProjection response 200 example
+      value:
+        schema_version: 1
+        projection:
+          projection_id: projection_id_sample
+          projection_state: ready
+          downgrade_reason: null
+          goal:
+            goal_profile_id: goal_profile_id_sample
+            goal_type: ielts_speaking
+            support_status: supported
+            status: active
+            revision: 1
+          next_action:
+            action_id: action_id_sample
+            plan_item_id: plan_item_id_sample
+            action_type: start_training
+            title: Fluency expansion drill
+            reason_code: highest_weakness_and_memory_risk
+            expected_duration_minutes: 12
+            status: ready
+          progress:
+            forecast_id: forecast_id_sample
+            forecast_state: ready
+            gap_summary: About 2 product-rubric bands below target in fluency.
+            eta_date: '2026-08-24'
+            eta_range:
+              start_date: '2026-08-17'
+              end_date: '2026-08-31'
+            eta_unavailable_reason: null
+            confidence_band: medium
+            risk_level: medium
+            risk_reason_code: checkpoint_evidence_missing
+            next_checkpoint_date: '2026-06-11'
+            claim_guard:
+              official_score_equivalence: false
+              goal_completion_claim_allowed: false
+              allowed_claim: product_internal_progress_only
+            updated_at: '2026-06-05T09:00:00Z'
+          latest_checkpoint:
+            checkpoint_id: checkpoint_id_sample
+            result_status: recorded
+            confidence_band: medium
+            summary: Checkpoint recorded with updated fluency gap.
+            plan_update_signal: checkpoint_replan
+            reason_code: checkpoint_recorded
+          surface_fragments:
+          - surface: home
+            display_state: ready
+            eligible: true
+            downgrade_reason: null
+            next_action_ref: plan_item:plan_item_id_sample
+            forecast_ref: forecast:forecast_id_sample
+            checkpoint_ref: checkpoint:checkpoint_id_sample
+            safe_fields:
+            - next_action
+            - gap_summary
+            - risk_reason_code
+            - next_checkpoint_date
+            - checkpoint_summary
+          - surface: queue
+            display_state: ready
+            eligible: true
+            downgrade_reason: null
+            next_action_ref: plan_item:plan_item_id_sample
+            forecast_ref: forecast:forecast_id_sample
+            checkpoint_ref: checkpoint:checkpoint_id_sample
+            safe_fields:
+            - next_action
+            - risk_reason_code
+            - checkpoint_summary
+          - surface: wiki
+            display_state: ready
+            eligible: true
+            downgrade_reason: null
+            next_action_ref: null
+            forecast_ref: forecast:forecast_id_sample
+            checkpoint_ref: checkpoint:checkpoint_id_sample
+            safe_fields:
+            - gap_summary
+            - risk_reason_code
+            - next_checkpoint_date
+            - checkpoint_summary
+          source_refs:
+          - goal_profile:goal_profile_id_sample
+          - goal_revision:1
+          - plan_item:plan_item_id_sample
+          - forecast:forecast_id_sample
+          - checkpoint:checkpoint_id_sample
+          rule_version: fuc-progress-projection-v1
           updated_at: '2026-06-05T09:00:00Z'
     UpdateAutopilotControlRequestExample:
       summary: updateGoalAutopilotControl request example

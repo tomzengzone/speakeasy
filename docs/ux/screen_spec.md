@@ -98,7 +98,8 @@ Owning increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory
 - Primary user action: start the selected training/review/checkpoint item; secondary controls are pause, defer, lower intensity and resume.
 - Core components: goal progress header, next action block, reason code, expected duration, daily plan compact list, pause/defer controls, partial/unsupported limitation state, quiet-hours state.
 - States: `loading`, `ready`, `paused`, `quiet_hours`, `stale_plan`, `unsupported_or_partial`, `executing`, `completed`, `deferred`, `recovery_required`, `recoverable_error`.
-- API dependencies: `GET /goal-autopilot/summary`, `POST /goal-autopilot/plans/generate`, `GET /goal-autopilot/daily-plan`, `GET /goal-autopilot/actions/next`, `POST /goal-autopilot/actions/{plan_item_id}/complete`.
+- API dependencies: `GET /goal-autopilot/progress-projection`, `GET /goal-autopilot/summary`, `POST /goal-autopilot/plans/generate`, `GET /goal-autopilot/daily-plan`, `GET /goal-autopilot/actions/next`, `POST /goal-autopilot/actions/{plan_item_id}/complete`.
+- Followup-C S004 boundary: goal progress header, next action affordance, gap/risk/checkpoint summary, surface eligibility and downgrade reason must render from `GoalProgressProjection`; Flutter must not compute final goal state, ETA precision, goal completion or claim guards locally.
 - Empty state: no active plan; if supported goal exists, offer generate plan; otherwise route to goal setup.
 - Loading state: show current cached summary as stale if available and avoid local plan computation.
 - Error state: stale plan, quota, policy or provider failure shows retry/replan/defer; Flutter must not synthesize next action or final mastery locally.
@@ -110,9 +111,10 @@ Owning increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory
 - Primary user action: review forecast or submit checkpoint result when due.
 - Core components: gap summary, ETA/date or uncertainty state, risk reason, next checkpoint date, latest checkpoint summary, checkpoint submit action, plan update signal.
 - States: `loading`, `current`, `low_confidence`, `partial_supported`, `checkpoint_due`, `submitting_checkpoint`, `checkpoint_recorded`, `plan_update_required`, `recoverable_error`.
-- API dependencies: `GET /goal-autopilot/forecast`, `GET /goal-autopilot/checkpoints/task`, `POST /goal-autopilot/checkpoints`, `GET /goal-autopilot/summary`.
+- API dependencies: `GET /goal-autopilot/progress-projection`, `GET /goal-autopilot/forecast`, `GET /goal-autopilot/checkpoints/task`, `POST /goal-autopilot/checkpoints`, `GET /goal-autopilot/summary`.
 - Followup-C S002 boundary: checkpoint due/not-due/limited/unavailable state, task type, evidence requirements, scoring boundary and limitation reason are rendered from the backend task decision; the UI must not infer cadence or full-task eligibility locally.
 - Followup-C S003 boundary: after checkpoint submit, UI must render `OutcomeCheckpoint.result_status`, `plan_update_signal.signal_type`, `plan_update_signal.reason_code` and optional replay metadata from the backend response; it must not infer goal completion, ETA precision, stale/replan status or next-action advancement locally. Paused/control-blocked/recovery-required/stale responses show the backend reason and route to replan/recovery instead of auto-starting the next action.
+- Followup-C S004 boundary: Home, expression queue and personal Wiki progress fragments must read `surface_fragments` and safe projection fields from `GET /goal-autopilot/progress-projection`; raw diagnostic transcript/audio, sensitive target details, raw checkpoint payloads and provider payloads are not display dependencies.
 - Empty state: no forecast until active goal, diagnostic and plan exist; show required upstream step.
 - Loading state: recompute or submit keeps previous forecast visible as stale.
 - Error state: low confidence and partial support block high-precision ETA; checkpoint failure can be retried without claiming goal completion.

@@ -1,7 +1,7 @@
 # P0.2 Followup-C Requirements：周期复测、预测与多产品面加固
 
 ## 状态
-S001 forecast hardening、S002 checkpoint task library and S003 checkpoint-to-plan locally implemented and tested / S004-S007 implementation gated - 本文件定义 `p0-2-followup-c-checkpoint-forecast-surfaces` 的需求边界，并把 Followup-C 拆分为 S000-S007 小粒度 slice。S000 文档链、AC-to-TC 规划、traceability 入口和独立审核已完成；S001 已完成 ProgressForecast model hardening 的本地代码、contract 和 TC-P02-FUC-001..003 测试证据；S002 已完成 Checkpoint cadence/task library 的本地代码、contract 和 TC-P02-FUC-004..006 测试证据；S003 已完成 Checkpoint-to-plan update 的本地代码、contract、TC-P02-FUC-007..009 测试证据和独立审核；S004-S007 尚未进入代码实现。Followup-C is not release-ready；Product Base merge is not approved。
+S001 forecast hardening、S002 checkpoint task library、S003 checkpoint-to-plan and S004 backend projection locally implemented and tested / S005-S007 implementation gated - 本文件定义 `p0-2-followup-c-checkpoint-forecast-surfaces` 的需求边界，并把 Followup-C 拆分为 S000-S007 小粒度 slice。S000 文档链、AC-to-TC 规划、traceability 入口和独立审核已完成；S001 已完成 ProgressForecast model hardening 的本地代码、contract 和 TC-P02-FUC-001..003 测试证据；S002 已完成 Checkpoint cadence/task library 的本地代码、contract 和 TC-P02-FUC-004..006 测试证据；S003 已完成 Checkpoint-to-plan update 的本地代码、contract、TC-P02-FUC-007..009 测试证据和独立审核；S004 已完成 backend-owned goal-progress projection 的本地代码、contract、TC-P02-FUC-010..012 测试证据和独立审核；S005-S007 尚未进入代码实现。Followup-C is not release-ready；Product Base merge is not approved。
 
 ## Product Object
 - 分类：`feature-increment`
@@ -82,7 +82,7 @@ Followup-C 是 P0.2 自动带练的 forecast、checkpoint 和多产品面 projec
 ### P02-FUC-FR-000 S000 文档链和 slice routing
 - 系统必须在代码实现前补齐 Followup-C 的 `requirements.md`、`spec.md`、`acceptance.md`、`test_cases.md`，并更新 `definition.md` 与 `traceability.md`。
 - 文档链必须包含 S000-S007 slice routing、FR/Spec/AC/TC mapping、gap register、test/report evidence 入口和 release/Product Base 非目标说明。
-- S000 只能声明 documentation-chain ready；S001 只能声明 ProgressForecast hardening local evidence ready；S002 只能声明 checkpoint cadence/task-library local evidence ready；S003 只能声明 checkpoint-to-plan local evidence ready；不得声明 S004-S007 已实现、Followup-C release-ready 或 Product Base-ready。
+- S000 只能声明 documentation-chain ready；S001 只能声明 ProgressForecast hardening local evidence ready；S002 只能声明 checkpoint cadence/task-library local evidence ready；S003 只能声明 checkpoint-to-plan local evidence ready；S004 只能声明 backend projection local evidence ready；不得声明 S005-S007 已实现、Followup-C release-ready 或 Product Base-ready。
 - S000 必须通过独立 traceability/quality review，确认切片粒度、上游 Stage Scope、policy gate、AC-to-TC 和后续证据入口一致。
 
 ### P02-FUC-FR-001 ProgressForecast model hardening
@@ -147,7 +147,7 @@ Followup-C 是 P0.2 自动带练的 forecast、checkpoint 和多产品面 projec
 ## 下游交接边界
 - `spec.md`、`acceptance.md`、`test_cases.md`、`traceability.md`、domain/API/OpenAPI/UX/AI contracts 和 reports may consume this file as the Followup-C requirement source of truth, but they must not renumber or redefine P02-FUC-FR-000 through P02-FUC-FR-007 without a versioned Followup-C change.
 - Implementation and test execution status belongs in `test_cases.md`, `traceability.md`, `docs/reports/test_report.md`, `docs/reports/implementation_report.md` and `docs/reports/quality_report.md`; this file may summarize current workflow status but must not replace executable evidence records.
-- S001 forecast hardening local completion, S002 checkpoint task-library local completion and S003 checkpoint-to-plan local completion do not approve S004-S007 code implementation, release readiness, paid AI/provider evidence, Product Base merge or commercial gates.
+- S001 forecast hardening local completion, S002 checkpoint task-library local completion, S003 checkpoint-to-plan local completion and S004 backend projection local completion do not approve S005-S007 code implementation, release readiness, paid AI/provider evidence, Product Base merge or commercial gates.
 
 ## Excluded Stage Scope Items
 - P02-SI-007 和 P02-SI-008 是 Followup-A 的上游输入，不在 Followup-C 中实现。
