@@ -173,15 +173,24 @@ class GoalAutopilotSummary {
 }
 
 class GoalAutopilotView {
-  const GoalAutopilotView({required this.summary, required this.controlResult});
+  const GoalAutopilotView({
+    required this.summary,
+    required this.controlResult,
+    this.progressProjection,
+  });
 
   final GoalAutopilotSummary summary;
   final GoalAutopilotControlResult controlResult;
+  final GoalProgressProjection? progressProjection;
 
-  GoalAutopilotView copyWith({GoalAutopilotControlResult? controlResult}) {
+  GoalAutopilotView copyWith({
+    GoalAutopilotControlResult? controlResult,
+    GoalProgressProjection? progressProjection,
+  }) {
     return GoalAutopilotView(
       summary: summary,
       controlResult: controlResult ?? this.controlResult,
+      progressProjection: progressProjection ?? this.progressProjection,
     );
   }
 
@@ -193,6 +202,252 @@ class GoalAutopilotView {
 
   bool get isPolicyBlocked =>
       controlResult.control.controlStatus == 'blocked_by_policy';
+}
+
+class GoalProgressProjection {
+  const GoalProgressProjection({
+    required this.projectionId,
+    required this.projectionState,
+    required this.surfaceFragments,
+    required this.sourceRefs,
+    required this.ruleVersion,
+    required this.updatedAt,
+    this.downgradeReason = '',
+    this.goal,
+    this.nextAction,
+    this.progress,
+    this.latestCheckpoint,
+  });
+
+  final String projectionId;
+  final String projectionState;
+  final String downgradeReason;
+  final GoalProgressGoalFragment? goal;
+  final GoalAutopilotAction? nextAction;
+  final GoalProgressForecastFragment? progress;
+  final GoalProgressCheckpointFragment? latestCheckpoint;
+  final List<GoalProgressSurfaceFragment> surfaceFragments;
+  final List<String> sourceRefs;
+  final String ruleVersion;
+  final DateTime? updatedAt;
+
+  bool get isReady =>
+      projectionState == 'ready' || projectionState == 'limited';
+
+  GoalProgressSurfaceFragment? fragmentFor(String surface) {
+    final String normalized = surface.trim();
+    for (final GoalProgressSurfaceFragment fragment in surfaceFragments) {
+      if (fragment.surface == normalized) {
+        return fragment;
+      }
+    }
+    return null;
+  }
+
+  static GoalProgressProjection fromResponseJson(Map<String, dynamic> json) {
+    if (json['projection'] is! Map) {
+      throw const FormatException('Missing goal progress projection payload.');
+    }
+    return GoalProgressProjection.fromJson(_map(json['projection']));
+  }
+
+  factory GoalProgressProjection.fromJson(Map<String, dynamic> json) {
+    return GoalProgressProjection(
+      projectionId: _string(json['projection_id']),
+      projectionState: _string(
+        json['projection_state'],
+        fallback: 'unavailable',
+      ),
+      downgradeReason: _string(json['downgrade_reason']),
+      goal: json['goal'] is Map
+          ? GoalProgressGoalFragment.fromJson(_map(json['goal']))
+          : null,
+      nextAction: json['next_action'] is Map
+          ? GoalAutopilotAction.fromJson(_map(json['next_action']))
+          : null,
+      progress: json['progress'] is Map
+          ? GoalProgressForecastFragment.fromJson(_map(json['progress']))
+          : null,
+      latestCheckpoint: json['latest_checkpoint'] is Map
+          ? GoalProgressCheckpointFragment.fromJson(
+              _map(json['latest_checkpoint']),
+            )
+          : null,
+      surfaceFragments: _list(json['surface_fragments'])
+          .map(
+            (Object? item) => GoalProgressSurfaceFragment.fromJson(_map(item)),
+          )
+          .toList(growable: false),
+      sourceRefs: _list(json['source_refs'])
+          .map((Object? item) => _string(item))
+          .where((String value) => value.isNotEmpty)
+          .toList(growable: false),
+      ruleVersion: _string(json['rule_version']),
+      updatedAt: _dateTimeOrNull(json['updated_at']),
+    );
+  }
+}
+
+class GoalProgressGoalFragment {
+  const GoalProgressGoalFragment({
+    required this.goalProfileId,
+    required this.goalType,
+    required this.supportStatus,
+    required this.status,
+    required this.revision,
+  });
+
+  final String goalProfileId;
+  final String goalType;
+  final String supportStatus;
+  final String status;
+  final int revision;
+
+  factory GoalProgressGoalFragment.fromJson(Map<String, dynamic> json) {
+    return GoalProgressGoalFragment(
+      goalProfileId: _string(json['goal_profile_id']),
+      goalType: _string(json['goal_type'], fallback: 'business_meeting'),
+      supportStatus: _string(json['support_status'], fallback: 'partial'),
+      status: _string(json['status'], fallback: 'active'),
+      revision: _int(json['revision'], fallback: 1),
+    );
+  }
+}
+
+class GoalProgressForecastFragment {
+  const GoalProgressForecastFragment({
+    required this.forecastId,
+    required this.forecastState,
+    required this.gapSummary,
+    required this.confidenceBand,
+    required this.riskLevel,
+    required this.riskReasonCode,
+    required this.claimGuard,
+    this.etaDate,
+    this.etaUnavailableReason = '',
+    this.nextCheckpointDate,
+    this.updatedAt,
+  });
+
+  final String forecastId;
+  final String forecastState;
+  final String gapSummary;
+  final DateTime? etaDate;
+  final String etaUnavailableReason;
+  final String confidenceBand;
+  final String riskLevel;
+  final String riskReasonCode;
+  final DateTime? nextCheckpointDate;
+  final GoalClaimGuard claimGuard;
+  final DateTime? updatedAt;
+
+  factory GoalProgressForecastFragment.fromJson(Map<String, dynamic> json) {
+    return GoalProgressForecastFragment(
+      forecastId: _string(json['forecast_id']),
+      forecastState: _string(json['forecast_state'], fallback: 'unavailable'),
+      gapSummary: _string(json['gap_summary']),
+      etaDate: _dateOrNull(json['eta_date']),
+      etaUnavailableReason: _string(json['eta_unavailable_reason']),
+      confidenceBand: _string(json['confidence_band'], fallback: 'low'),
+      riskLevel: _string(json['risk_level'], fallback: 'medium'),
+      riskReasonCode: _string(json['risk_reason_code']),
+      nextCheckpointDate: _dateOrNull(json['next_checkpoint_date']),
+      claimGuard: GoalClaimGuard.fromJson(_map(json['claim_guard'])),
+      updatedAt: _dateTimeOrNull(json['updated_at']),
+    );
+  }
+}
+
+class GoalClaimGuard {
+  const GoalClaimGuard({
+    required this.officialScoreEquivalence,
+    required this.goalCompletionClaimAllowed,
+    required this.allowedClaim,
+  });
+
+  final bool officialScoreEquivalence;
+  final bool goalCompletionClaimAllowed;
+  final String allowedClaim;
+
+  factory GoalClaimGuard.fromJson(Map<String, dynamic> json) {
+    return GoalClaimGuard(
+      officialScoreEquivalence: _bool(json['official_score_equivalence']),
+      goalCompletionClaimAllowed: _bool(json['goal_completion_claim_allowed']),
+      allowedClaim: _string(
+        json['allowed_claim'],
+        fallback: 'product_internal_progress_only',
+      ),
+    );
+  }
+}
+
+class GoalProgressCheckpointFragment {
+  const GoalProgressCheckpointFragment({
+    required this.checkpointId,
+    required this.resultStatus,
+    required this.confidenceBand,
+    required this.summary,
+    required this.planUpdateSignal,
+    required this.reasonCode,
+  });
+
+  final String checkpointId;
+  final String resultStatus;
+  final String confidenceBand;
+  final String summary;
+  final String planUpdateSignal;
+  final String reasonCode;
+
+  factory GoalProgressCheckpointFragment.fromJson(Map<String, dynamic> json) {
+    return GoalProgressCheckpointFragment(
+      checkpointId: _string(json['checkpoint_id']),
+      resultStatus: _string(json['result_status'], fallback: 'unavailable'),
+      confidenceBand: _string(json['confidence_band'], fallback: 'low'),
+      summary: _string(json['summary']),
+      planUpdateSignal: _string(json['plan_update_signal']),
+      reasonCode: _string(json['reason_code']),
+    );
+  }
+}
+
+class GoalProgressSurfaceFragment {
+  const GoalProgressSurfaceFragment({
+    required this.surface,
+    required this.displayState,
+    required this.eligible,
+    required this.safeFields,
+    this.downgradeReason = '',
+    this.nextActionRef = '',
+    this.forecastRef = '',
+    this.checkpointRef = '',
+  });
+
+  final String surface;
+  final String displayState;
+  final bool eligible;
+  final String downgradeReason;
+  final String nextActionRef;
+  final String forecastRef;
+  final String checkpointRef;
+  final List<String> safeFields;
+
+  bool allows(String field) => safeFields.contains(field);
+
+  factory GoalProgressSurfaceFragment.fromJson(Map<String, dynamic> json) {
+    return GoalProgressSurfaceFragment(
+      surface: _string(json['surface']),
+      displayState: _string(json['display_state'], fallback: 'unavailable'),
+      eligible: _bool(json['eligible']),
+      downgradeReason: _string(json['downgrade_reason']),
+      nextActionRef: _string(json['next_action_ref']),
+      forecastRef: _string(json['forecast_ref']),
+      checkpointRef: _string(json['checkpoint_ref']),
+      safeFields: _list(json['safe_fields'])
+          .map((Object? item) => _string(item))
+          .where((String value) => value.isNotEmpty)
+          .toList(growable: false),
+    );
+  }
 }
 
 class GoalAutopilotControlResult {
@@ -454,6 +709,14 @@ double? _doubleOrNull(Object? value) {
 }
 
 DateTime? _dateOrNull(Object? value) {
+  final String text = value?.toString() ?? '';
+  if (text.isEmpty) {
+    return null;
+  }
+  return DateTime.tryParse(text);
+}
+
+DateTime? _dateTimeOrNull(Object? value) {
   final String text = value?.toString() ?? '';
   if (text.isEmpty) {
     return null;

@@ -2250,10 +2250,10 @@ public class GoalAutopilotService {
       AutopilotActionView action,
       GoalProgressForecast forecast,
       GoalOutcomeCheckpoint checkpoint) {
-    String actionRef = action == null ? null : "plan_item:" + action.planItemId();
-    String forecastRef = forecast == null ? null : "forecast:" + forecast.getForecastId();
-    String checkpointRef = checkpoint == null ? null : "checkpoint:" + checkpoint.getCheckpointId();
     boolean eligible = Set.of("ready", "limited", "low_confidence").contains(state);
+    String actionRef = eligible && action != null ? "plan_item:" + action.planItemId() : null;
+    String forecastRef = eligible && forecast != null ? "forecast:" + forecast.getForecastId() : null;
+    String checkpointRef = eligible && checkpoint != null ? "checkpoint:" + checkpoint.getCheckpointId() : null;
     return List.of(
         new GoalProgressSurfaceFragmentView(
             "home",
@@ -2263,7 +2263,7 @@ public class GoalAutopilotService {
             actionRef,
             forecastRef,
             checkpointRef,
-            safeProjectionFields(true, true, true, action != null, forecast != null, checkpoint != null)),
+            eligible ? safeProjectionFields(true, true, true, action != null, forecast != null, checkpoint != null) : List.of()),
         new GoalProgressSurfaceFragmentView(
             "queue",
             state,
@@ -2272,7 +2272,7 @@ public class GoalAutopilotService {
             actionRef,
             forecastRef,
             checkpointRef,
-            safeProjectionFields(true, false, false, action != null, forecast != null, checkpoint != null)),
+            eligible ? safeProjectionFields(true, false, false, action != null, forecast != null, checkpoint != null) : List.of()),
         new GoalProgressSurfaceFragmentView(
             "wiki",
             state,
@@ -2281,7 +2281,7 @@ public class GoalAutopilotService {
             null,
             forecastRef,
             checkpointRef,
-            safeProjectionFields(false, true, true, false, forecast != null, checkpoint != null)));
+            eligible ? safeProjectionFields(false, true, true, false, forecast != null, checkpoint != null) : List.of()));
   }
 
   private List<String> safeProjectionFields(

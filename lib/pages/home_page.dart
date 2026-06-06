@@ -6,7 +6,10 @@ import 'package:flutter/services.dart';
 
 import 'package:speakeasy/config/app_config.dart';
 import 'package:speakeasy/features/commercial/commercial_scenario_gate.dart';
+import 'package:speakeasy/features/goal_autopilot/goal_autopilot_adapter.dart';
+import 'package:speakeasy/features/goal_autopilot/goal_autopilot_models.dart';
 import 'package:speakeasy/features/goal_autopilot/goal_autopilot_panel.dart';
+import 'package:speakeasy/features/goal_autopilot/goal_progress_surface.dart';
 import 'package:speakeasy/features/interview/expression_daily_queue_coordinator.dart';
 import 'package:speakeasy/features/interview/interview_engine.dart';
 import 'package:speakeasy/features/interview/interview_expression_learning_page.dart';
@@ -50,6 +53,7 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
       const ExpressionDailyQueueCoordinator();
   String _dailyExpressionQueueSignature = '';
   Future<List<ExpressionDailyQueueItem>>? _dailyExpressionQueueFuture;
+  Future<GoalProgressProjection?>? _goalProgressProjectionFuture;
 
   @override
   void initState() {
@@ -1096,31 +1100,40 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
                 ),
               );
             }
-            return InterviewExpressionWarmupDeckView(
-              sceneId: queueItems.first.sceneId,
-              targetLevel: queueItems.first.targetLevel,
-              quickWarmup: false,
-              maxCards: 24,
-              showHeader: false,
-              queueItems: queueItems,
-              onRefreshQueue: () =>
-                  _refreshDailyExpressionQueue(trainingStatuses),
-              onPracticeQueueItem: (ExpressionDailyQueueItem item) {
-                final _InterviewSceneHomeStatus? status = _statusBySceneId(
-                  item.sceneId,
-                );
-                if (status == null) {
-                  return;
-                }
-                unawaited(
-                  _practiceExpressionInSceneById(
-                    status,
-                    item.variantOfNodeId.isNotEmpty
-                        ? item.variantOfNodeId
-                        : item.nodeId,
-                  ),
-                );
-              },
+            return FutureBuilder<GoalProgressProjection?>(
+              future: _goalProjectionFuture(),
+              builder:
+                  (
+                    BuildContext context,
+                    AsyncSnapshot<GoalProgressProjection?> projectionSnapshot,
+                  ) {
+                    return InterviewExpressionWarmupDeckView(
+                      sceneId: queueItems.first.sceneId,
+                      targetLevel: queueItems.first.targetLevel,
+                      quickWarmup: false,
+                      maxCards: 24,
+                      showHeader: false,
+                      queueItems: queueItems,
+                      goalProjection: projectionSnapshot.data,
+                      onRefreshQueue: () =>
+                          _refreshDailyExpressionQueue(trainingStatuses),
+                      onPracticeQueueItem: (ExpressionDailyQueueItem item) {
+                        final _InterviewSceneHomeStatus? status =
+                            _statusBySceneId(item.sceneId);
+                        if (status == null) {
+                          return;
+                        }
+                        unawaited(
+                          _practiceExpressionInSceneById(
+                            status,
+                            item.variantOfNodeId.isNotEmpty
+                                ? item.variantOfNodeId
+                                : item.nodeId,
+                          ),
+                        );
+                      },
+                    );
+                  },
             );
           },
     );
@@ -1178,6 +1191,11 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
       });
     }
     await nextFuture;
+  }
+
+  Future<GoalProgressProjection?> _goalProjectionFuture() {
+    return _goalProgressProjectionFuture ??= const GoalAutopilotAdapter()
+        .loadOptionalProgressProjection();
   }
 
   _InterviewSceneHomeStatus? _statusBySceneId(String sceneId) {
@@ -1287,48 +1305,67 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
             ),
           ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
-              children: [
-                if (_searchController.text.trim().isEmpty)
-                  _SearchPlaceholder(
-                    icon: Icons.search_rounded,
-                    title: '输入关键词搜索场景',
-                  )
-                else if (_searchSceneStatuses.isEmpty)
-                  _SearchPlaceholder(emoji: '🔍', title: l10n.noResultsFound)
-                else ...[
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 12),
-                    child: Text(
-                      l10n.foundResults(_searchSceneStatuses.length),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: textSecondary,
-                      ),
-                    ),
-                  ),
-                  ..._searchSceneStatuses.map(
-                    (_InterviewSceneHomeStatus status) => Padding(
-                      padding: const EdgeInsets.only(bottom: 14),
-                      child: _WikiSceneTile(
-                        status: status,
-                        imageHeight: 150,
-                        onSelectLevel: (String targetLevel) => unawaited(
-                          _selectInterviewSceneLevel(status, targetLevel),
-                        ),
-                        onTap: () {
-                          setState(() {
-                            _searchExpanded = false;
-                            _searchController.clear();
-                          });
-                          unawaited(_openHomeSceneIntro(status));
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ],
+            child: FutureBuilder<GoalProgressProjection?>(
+              future: _goalProjectionFuture(),
+              builder:
+                  (
+                    BuildContext context,
+                    AsyncSnapshot<GoalProgressProjection?> projectionSnapshot,
+                  ) {
+                    final GoalProgressProjection? projection =
+                        projectionSnapshot.data;
+                    return ListView(
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
+                      children: [
+                        if (_searchController.text.trim().isEmpty)
+                          _SearchPlaceholder(
+                            icon: Icons.search_rounded,
+                            title: '输入关键词搜索场景',
+                          )
+                        else if (_searchSceneStatuses.isEmpty)
+                          _SearchPlaceholder(
+                            emoji: '🔍',
+                            title: l10n.noResultsFound,
+                          )
+                        else ...[
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4, bottom: 12),
+                            child: Text(
+                              l10n.foundResults(_searchSceneStatuses.length),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: textSecondary,
+                              ),
+                            ),
+                          ),
+                          ..._searchSceneStatuses.map(
+                            (_InterviewSceneHomeStatus status) => Padding(
+                              padding: const EdgeInsets.only(bottom: 14),
+                              child: _WikiSceneTile(
+                                status: status,
+                                imageHeight: 150,
+                                goalProjection: projection,
+                                onSelectLevel: (String targetLevel) =>
+                                    unawaited(
+                                      _selectInterviewSceneLevel(
+                                        status,
+                                        targetLevel,
+                                      ),
+                                    ),
+                                onTap: () {
+                                  setState(() {
+                                    _searchExpanded = false;
+                                    _searchController.clear();
+                                  });
+                                  unawaited(_openHomeSceneIntro(status));
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
             ),
           ),
         ],
@@ -4265,12 +4302,14 @@ class _WikiSceneTile extends StatelessWidget {
     required this.imageHeight,
     required this.onTap,
     required this.onSelectLevel,
+    this.goalProjection,
   });
 
   final _InterviewSceneHomeStatus status;
   final double imageHeight;
   final VoidCallback onTap;
   final ValueChanged<String> onSelectLevel;
+  final GoalProgressProjection? goalProjection;
 
   @override
   Widget build(BuildContext context) {
@@ -4382,6 +4421,12 @@ class _WikiSceneTile extends StatelessWidget {
                     value:
                         '已掌握 ${status.masteredExpressionCount} · 薄弱 ${status.weakExpressionCount} · 素材 ${status.personalMaterialCount}',
                   ),
+                  if (goalProjection != null &&
+                      goalProjection!.fragmentFor(GoalProgressSurface.wiki) !=
+                          null) ...[
+                    const SizedBox(height: 9),
+                    GoalProgressWikiSurface(projection: goalProjection!),
+                  ],
                   const SizedBox(height: 9),
                   Container(
                     width: double.infinity,

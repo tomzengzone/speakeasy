@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:speakeasy/features/goal_autopilot/goal_autopilot_adapter.dart';
 import 'package:speakeasy/features/goal_autopilot/goal_autopilot_models.dart';
+import 'package:speakeasy/features/goal_autopilot/goal_progress_surface.dart';
 
 class GoalAutopilotPanel extends StatefulWidget {
   const GoalAutopilotPanel({
@@ -212,7 +213,17 @@ class _GoalAutopilotPanelState extends State<GoalAutopilotPanel> {
                 color: const Color(0xFF102820),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Padding(padding: const EdgeInsets.all(16), child: content),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints constraints) {
+                    if (constraints.hasBoundedHeight) {
+                      return SingleChildScrollView(child: content);
+                    }
+                    return content;
+                  },
+                ),
+              ),
             );
           },
     );
@@ -735,6 +746,7 @@ class _GoalSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final GoalAutopilotSummary summary = view.summary;
+    final GoalProgressProjection? projection = view.progressProjection;
     final GoalAutopilotControlResult controlResult = view.controlResult;
     final GoalAutopilotControl control = controlResult.control;
     final NotificationEligibilityDecision reminder =
@@ -755,7 +767,7 @@ class _GoalSummary extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    _goalTitle(summary),
+                    _goalTitle(summary, projection?.goal),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -818,12 +830,15 @@ class _GoalSummary extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 10),
-        Text(
-          summary.gapSummary,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: Color(0xFFF5F7F2), fontSize: 13),
-        ),
+        if (projection != null)
+          GoalProgressHomeSurface(projection: projection, compact: true)
+        else
+          Text(
+            summary.gapSummary,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Color(0xFFF5F7F2), fontSize: 13),
+          ),
         if (!summary.officialScoreEquivalence ||
             !summary.goalCompletionClaimAllowed) ...<Widget>[
           const SizedBox(height: 8),
@@ -832,7 +847,7 @@ class _GoalSummary extends StatelessWidget {
             style: TextStyle(color: Color(0xFFD5E8DD), fontSize: 12),
           ),
         ],
-        if (summary.canShowPreciseEta) ...<Widget>[
+        if (projection == null && summary.canShowPreciseEta) ...<Widget>[
           const SizedBox(height: 8),
           Text(
             'ETA ${_formatDate(summary.etaDate!)}',
@@ -954,7 +969,13 @@ class _GoalSummary extends StatelessWidget {
     );
   }
 
-  String _goalTitle(GoalAutopilotSummary value) {
+  String _goalTitle(
+    GoalAutopilotSummary value,
+    GoalProgressGoalFragment? projectionGoal,
+  ) {
+    if (projectionGoal != null) {
+      return projectionGoal.goalType.replaceAll('_', ' ');
+    }
     final String score = value.targetScore == null
         ? ''
         : ' ${_formatScore(value.targetScore!)}';

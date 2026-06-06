@@ -15,6 +15,7 @@ enum GoalAutopilotOperation {
   completeAction,
   forecast,
   checkpoint,
+  progressProjection,
 }
 
 class GoalAutopilotRequest {
@@ -83,7 +84,13 @@ class GoalAutopilotAdapter {
   Future<GoalAutopilotView> loadView() async {
     final GoalAutopilotSummary summary = await loadSummary();
     final GoalAutopilotControlResult controlResult = await loadControl();
-    return GoalAutopilotView(summary: summary, controlResult: controlResult);
+    final GoalProgressProjection? progressProjection =
+        await loadOptionalProgressProjection();
+    return GoalAutopilotView(
+      summary: summary,
+      controlResult: controlResult,
+      progressProjection: progressProjection,
+    );
   }
 
   Future<GoalAutopilotControlResult> loadControl() async {
@@ -94,6 +101,24 @@ class GoalAutopilotAdapter {
       ),
     );
     return GoalAutopilotControlResult.fromJson(response);
+  }
+
+  Future<GoalProgressProjection> loadProgressProjection() async {
+    final Map<String, dynamic> response = await _transport(
+      const GoalAutopilotRequest(
+        operation: GoalAutopilotOperation.progressProjection,
+        path: SpeakeasyApiPaths.goalAutopilotProgressProjection,
+      ),
+    );
+    return GoalProgressProjection.fromResponseJson(response);
+  }
+
+  Future<GoalProgressProjection?> loadOptionalProgressProjection() async {
+    try {
+      return await loadProgressProjection();
+    } on FormatException {
+      return null;
+    }
   }
 
   Future<GoalAutopilotSummary> createGoal({
@@ -333,6 +358,8 @@ Future<Map<String, dynamic>> _apiTransport(GoalAutopilotRequest request) {
         outcome: request.body['outcome']?.toString() ?? 'completed',
       ),
     GoalAutopilotOperation.forecast => ApiClient.getGoalAutopilotForecast(),
+    GoalAutopilotOperation.progressProjection =>
+      ApiClient.getGoalAutopilotProgressProjection(),
     GoalAutopilotOperation.checkpoint =>
       ApiClient.submitGoalAutopilotCheckpoint(
         checkpointType:

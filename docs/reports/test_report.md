@@ -1,7 +1,7 @@
 # Test Report
 
 ## Current Status
-Latest recorded Followup-C validation: `P02-FOLLOWUP-C-S004-PROGRESS-PROJECTION-20260606` closes TC-P02-FUC-010, TC-P02-FUC-011 and TC-P02-FUC-012 locally for backend-owned goal-progress projection, safe surface fragments, source refs, unavailable downgrade and OpenAPI/generated Dart drift. S001 forecast hardening, S002 checkpoint task library and S003 checkpoint-to-plan remain locally passed. Followup-C S005-S007 surface propagation, downgrade/data governance, performance, final traceability and release evidence remain planned/not started. Followup-C is not release-ready and Product Base merge is not approved. Prior Followup-B TC-P02-FUB-001 through TC-P02-FUB-017 remain passed locally; Followup-D commercial/release gates remain open.
+Latest recorded Followup-C validation: `P02-FOLLOWUP-C-S006-SURFACE-DOWNGRADE-20260606` closes TC-P02-FUC-017, TC-P02-FUC-018 and TC-P02-FUC-019 locally for deletion/unavailable downgrade, account deletion projection purge and Flutter cached stale progress cleanup. S001 forecast hardening, S002 checkpoint task library, S003 checkpoint-to-plan, S004 backend projection and S005 surface propagation remain locally passed. Followup-C S007 performance, final traceability and release evidence remain planned/not started. Followup-C is not release-ready and Product Base merge is not approved. Prior Followup-B TC-P02-FUB-001 through TC-P02-FUB-017 remain passed locally; Followup-D commercial/release gates remain open.
 
 ## Required Sections
 - test scope
@@ -11,6 +11,94 @@ Latest recorded Followup-C validation: `P02-FOLLOWUP-C-S004-PROGRESS-PROJECTION-
 - skipped tests
 - acceptance criteria coverage
 - residual risk
+
+## 2026-06-06 P02 Followup-C S006 Surface Downgrade
+
+Report ID:
+- `P02-FOLLOWUP-C-S006-SURFACE-DOWNGRADE-20260606`
+
+Test scope:
+- TC-P02-FUC-017 backend data-governance validation for no active goal, missing forecast, unsupported goal, stale plan, paused/control-blocked projection and eligible partial/low-confidence downgrade reasons.
+- TC-P02-FUC-018 Flutter widget validation for Home, expression queue and personal Wiki downgrade rendering, cached stale projection replacement and no precise ETA/completion/sensitive target copy.
+- TC-P02-FUC-019 account deletion validation that goal progress projection facts are purged and old tokens cannot continue reading deleted goal progress.
+
+Commands run:
+- `flutter test test/features/goal_autopilot/goal_progress_downgrade_widget_test.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionDataGovernanceTest test` - passed after correcting forecast fixture cleanup to inject `GoalProgressForecastRepository` directly, scope deletion to the current user and run the derived delete inside a transaction.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AccountDeletionLearningDataTest#tcP02Fuc006GoalProgressProjectionPurgedOnDeletion test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionDataGovernanceTest,AccountDeletionLearningDataTest#tcP02Fuc006GoalProgressProjectionPurgedOnDeletion test` - passed.
+- `flutter test test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionServiceTest,GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned,GoalProgressProjectionDataGovernanceTest,AccountDeletionLearningDataTest#tcP02Fuc006GoalProgressProjectionPurgedOnDeletion test` - passed.
+- `flutter analyze` - passed.
+- `npm run check:dart-client-drift` - passed; OpenAPI hash remains `bed8ebbbe2d9fed907b7411fca512912f1302fbb73427e7783b4f7ae2d0678f8`.
+- `npm run check:api-contract` - passed. Redocly still reports six existing nullable `$ref` warnings, unchanged and non-blocking for S006 because API shape did not change.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Passing tests:
+- TC-P02-FUC-017: backend projection returns ineligible fragments with empty refs/safe fields for unavailable, unsupported, stale and control-blocked states, and keeps partial/low-confidence downgrade reasons traceable without precise ETA or completion claims.
+- TC-P02-FUC-018: Home/Queue/Wiki downgrade widgets replace previously rendered ready progress with backend downgrade state, remove old gap/action/checkpoint copy when ineligible and avoid target/ETA/official/guaranteed/goal-achieved copy.
+- TC-P02-FUC-019: account deletion removes goal profile/control/diagnostic/backplan/daily plan/forecast/checkpoint/replay-audit rows for the deleted user and old projection reads fail with `UNAUTHENTICATED`.
+
+Failing or blocked tests:
+- No TC-P02-FUC-017..019 failure remains after the repository access, user-scoped fixture cleanup and transaction corrections.
+- TC-P02-FUC-020 through TC-P02-FUC-022 remain planned for S007 and were not executed as completed evidence in this S006 slice.
+
+Skipped tests:
+- No live AI provider path was executed; S006 downgrade state, surface eligibility and copy are deterministic backend/Flutter behavior.
+- No p95 performance or final coverage gate was run; those remain S007.
+
+Acceptance criteria coverage:
+- AC-P02-FUC-006 is executed locally for deleted/unavailable/unsupported/stale/control-blocked/partial/low-confidence projection downgrade, backend-provided reason traceability, sensitive progress removal and cached stale Flutter surface cleanup.
+
+Residual risk:
+- Followup-C is not complete, not release-ready and not Product Base-ready.
+- S007 p95 performance, changed-code coverage gate, dedicated traceability script and final independent review remain open.
+- S006 did not change OpenAPI shape; future API changes still require OpenAPI/generated client drift gates.
+
+## 2026-06-06 P02 Followup-C S005 Surface Propagation
+
+Report ID:
+- `P02-FOLLOWUP-C-S005-SURFACE-PROPAGATION-20260606`
+
+Test scope:
+- TC-P02-FUC-013 Home surface widget validation: Home goal summary loads `GET /goal-autopilot/progress-projection`, renders backend-owned home safe fields and suppresses legacy/local target-score/ETA style output.
+- TC-P02-FUC-014 Queue surface widget validation: expression queue renders queue fragment safe fields without local queue priority/reordering.
+- TC-P02-FUC-015 Wiki surface widget validation: personal Wiki renders wiki fragment safe fields and omits next action where the fragment does not allow it.
+- TC-P02-FUC-016 source-of-truth validation: adapter path, Home/Queue/Wiki code references, optional projection failure handling and surface widget source scan block local ETA, goal-complete and sensitive target detail rendering.
+
+Commands run:
+- `flutter test test/features/goal_autopilot/goal_progress_home_surface_test.dart test/features/goal_autopilot/goal_progress_queue_surface_test.dart test/features/goal_autopilot/goal_progress_wiki_surface_test.dart test/features/goal_autopilot/goal_progress_surface_source_of_truth_test.dart` - passed after two implementation corrections: projection body text now uses findable `Text.rich`, and the autopilot panel has a bounded scroll fallback for standalone widget tests.
+- `flutter test test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- `flutter test test/services/api_client_contract_test.dart` - passed.
+- `flutter analyze` - passed.
+- `npm run check:dart-client-drift` - passed; OpenAPI hash remains `bed8ebbbe2d9fed907b7411fca512912f1302fbb73427e7783b4f7ae2d0678f8`.
+- `npm run check:api-contract` - passed. Redocly still reports six existing nullable `$ref` warnings, unchanged from S004 and non-blocking for this S005 Flutter-only surface slice.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Passing tests:
+- TC-P02-FUC-013: Home panel requests the projection endpoint, renders Home next action/gap/risk/checkpoint fields from the projection and does not expose target ability, official score, guaranteed outcome or ETA copy.
+- TC-P02-FUC-014: Queue surface renders the queue fragment next action/risk/checkpoint summary and does not render gap, queue priority, target score, target ability, official score, guaranteed outcome or ETA copy.
+- TC-P02-FUC-015: Wiki surface renders wiki gap/risk/next checkpoint/checkpoint summary and does not render next action, target score, target ability, official score, guaranteed outcome or ETA copy.
+- TC-P02-FUC-016: source-of-truth test verifies `GoalAutopilotAdapter.loadProgressProjection()` uses `SpeakeasyApiPaths.goalAutopilotProgressProjection`, Home/Queue/Wiki consume the projection surface widgets, the queue coordinator does not depend on `GoalProgressProjection`, `goal_progress_surface.dart` does not reference target score, target ability, ETA or goal-completion fields, and optional projection fallback only treats legacy missing projection payloads as optional while preserving real API failures.
+
+Failing or blocked tests:
+- No TC-P02-FUC-013..016 failure remains after the widget text and bounded-scroll corrections.
+- TC-P02-FUC-017 through TC-P02-FUC-022 remain planned for S006/S007 and were not executed as completed evidence in this S005 slice.
+
+Skipped tests:
+- No backend service tests were added because S005 consumes the S004 projection endpoint without changing backend/OpenAPI shape.
+- No live AI provider path was executed; S005 surface copy renders deterministic projection facts only.
+- No p95 performance or final coverage gate was run; those remain S007.
+
+Acceptance criteria coverage:
+- AC-P02-FUC-005 is executed locally for all three product surfaces consuming backend projection fragments, no local final-state recomputation, no queue reprioritization from UI projection data and safe product-internal copy.
+
+Residual risk:
+- Followup-C is not complete, not release-ready and not Product Base-ready.
+- S006 deletion/unavailable/unsupported/low-confidence downgrade across surfaces and S007 performance/coverage/final traceability remain open.
+- S005 does not prove cached stale projection cleanup after account deletion; that remains S006.
 
 ## 2026-06-06 P02 Followup-C S004 Progress Projection
 

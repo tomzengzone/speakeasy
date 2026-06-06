@@ -655,6 +655,15 @@ class ApiClient {
     return response;
   }
 
+  static Future<Map<String, dynamic>>
+  getGoalAutopilotProgressProjection() async {
+    final Map<String, dynamic> response = await _get(
+      SpeakeasyApiPaths.goalAutopilotProgressProjection,
+    );
+    _ensureSuccess(response, fallback: '目标进度投影加载失败');
+    return response;
+  }
+
   static Future<Map<String, dynamic>> submitGoalAutopilotCheckpoint({
     required String checkpointType,
     String? transcript,

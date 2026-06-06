@@ -5,6 +5,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:speakeasy/features/goal_autopilot/goal_autopilot_models.dart';
+import 'package:speakeasy/features/goal_autopilot/goal_progress_surface.dart';
 import 'package:speakeasy/features/interview/expression_daily_queue_coordinator.dart';
 import 'package:speakeasy/features/interview/expression_shadow_scoring.dart';
 import 'package:speakeasy/features/interview/interview_engine.dart';
@@ -102,6 +104,7 @@ class InterviewExpressionWarmupDeckView extends StatefulWidget {
     this.initialTaskType = '',
     this.showHeader = false,
     this.queueItems,
+    this.goalProjection,
     this.onPracticeScene,
     this.onPracticeQueueItem,
     this.onRefreshQueue,
@@ -115,6 +118,7 @@ class InterviewExpressionWarmupDeckView extends StatefulWidget {
   final String initialTaskType;
   final bool showHeader;
   final List<ExpressionDailyQueueItem>? queueItems;
+  final GoalProgressProjection? goalProjection;
   final void Function(String nodeId)? onPracticeScene;
   final void Function(ExpressionDailyQueueItem item)? onPracticeQueueItem;
   final Future<void> Function()? onRefreshQueue;
@@ -1238,13 +1242,17 @@ class _InterviewExpressionWarmupDeckViewState
         '${item.progressSceneId(widget.sceneId)}-${item.node.id}-'
         '${item.queueItem?.nodeId ?? ''}',
       );
+      final GoalProgressProjection? projection = widget.goalProjection;
+      final bool hasQueueProjection =
+          projection?.fragmentFor(GoalProgressSurface.queue) != null;
       return Padding(
         padding: const EdgeInsets.fromLTRB(18, 8, 18, 10),
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
+            final double projectionSpace = hasQueueProjection ? 96 : 0;
             final double maxCardHeight = math.max(
               0,
-              constraints.maxHeight - 44,
+              constraints.maxHeight - 44 - projectionSpace,
             );
             final double cardHeight = math.min(
               maxCardHeight,
@@ -1259,6 +1267,10 @@ class _InterviewExpressionWarmupDeckViewState
             return Column(
               children: [
                 SizedBox(height: topSpacer),
+                if (projection != null && hasQueueProjection) ...[
+                  GoalProgressQueueSurface(projection: projection),
+                  const SizedBox(height: 8),
+                ],
                 SizedBox(
                   height: cardHeight,
                   child: GestureDetector(
