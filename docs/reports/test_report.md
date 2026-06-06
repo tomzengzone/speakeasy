@@ -1,7 +1,7 @@
 # Test Report
 
 ## Current Status
-Latest recorded Followup-C validation: `P02-FOLLOWUP-C-S006-SURFACE-DOWNGRADE-20260606` closes TC-P02-FUC-017, TC-P02-FUC-018 and TC-P02-FUC-019 locally for deletion/unavailable downgrade, account deletion projection purge and Flutter cached stale progress cleanup. S001 forecast hardening, S002 checkpoint task library, S003 checkpoint-to-plan, S004 backend projection and S005 surface propagation remain locally passed. Followup-C S007 performance, final traceability and release evidence remain planned/not started. Followup-C is not release-ready and Product Base merge is not approved. Prior Followup-B TC-P02-FUB-001 through TC-P02-FUB-017 remain passed locally; Followup-D commercial/release gates remain open.
+Latest recorded Followup-D validation: `P02-FOLLOWUP-D-S000-DOCUMENT-CHAIN-20260606` passes TC-P02-FUD-000 for documentation-chain readiness, S000-S011 routing, AC-to-TC mapping and dual independent review. No production code changed in S000. Followup-D S001-S011 remain planned/not started; Followup-D is not release-ready and Product Base merge is not approved. Followup-C remains locally complete for S001-S007 after `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
 
 ## Required Sections
 - test scope
@@ -11,6 +11,121 @@ Latest recorded Followup-C validation: `P02-FOLLOWUP-C-S006-SURFACE-DOWNGRADE-20
 - skipped tests
 - acceptance criteria coverage
 - residual risk
+
+## 2026-06-06 P02 Followup-D S000 Document Chain
+
+Report ID:
+- `P02-FOLLOWUP-D-S000-DOCUMENT-CHAIN-20260606`
+
+Test scope:
+- TC-P02-FUD-000 documentation-chain validation for `p0-2-followup-d-release-gate-hardening`.
+- Required docs: definition, requirements, spec, acceptance, test_cases and traceability.
+- S000-S011 slice routing, FR/Spec/AC/TC mapping, Stage Scope P02-SI-001..013 coverage, Policy Gate P02-PG-001..005 coverage and release/Product Base non-claims.
+
+Commands run:
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check -- docs/product/increments/p0-2-followup-d-release-gate-hardening docs/reports/test_report.md docs/reports/implementation_report.md docs/reports/quality_report.md` - passed.
+
+Passing tests:
+- TC-P02-FUD-000 passed for S000 documentation routing.
+- AC-P02-FUD-000 has stable TC coverage and quality-report evidence.
+- S001-S011 remain planned with explicit TC-P02-FUD-001..021 routes and no code/test evidence marked complete.
+
+Failing or blocked tests:
+- No S000 validation failure remains.
+- S001-S011 implementation tests were not executed because S000 is docs-only routing.
+
+Skipped tests:
+- Backend, Flutter, OpenAPI/generated-client and AI/provider runtime tests were not run because no production code, API shape, generated client or AI runtime behavior changed in S000.
+
+Acceptance criteria coverage:
+- AC-P02-FUD-000 is covered by TC-P02-FUD-000 for required docs, slice routing, Stage Scope/Policy Gate traceability, S001-S011 planned state and dual independent review.
+
+Residual risk:
+- Followup-D release/commercial/data/ops implementation remains open for S001-S011.
+- Product Base merge, commercial release approval and paid AI external evidence remain unapproved.
+
+## 2026-06-06 P02 Followup-C S007 OpenAPI Nullable Cleanup
+
+Report ID:
+- `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`
+
+Test scope:
+- Redocly nullable `$ref` warning cleanup for `ProgressForecast.eta_range`.
+- Generated Dart OpenAPI hash sync for `docs/architecture/openapi/dart-client-drift-manifest.json`, `lib/generated/api/.openapi-sha256` and `SpeakeasyApiContract.openApiSha256`.
+- Followup-C S007 traceability checker regression after adding nullable-cleanup assertions.
+
+Commands run:
+- `npm run lint:openapi` - passed with no nullable `$ref` warnings.
+- `npm run check:api-contract` - passed with OpenAPI contract gate counts unchanged at 87 paths, 93 operations, 42 request examples, 88 success examples and 112 error examples.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `d8b492b07c98e948caf0b5912744f05fa6dcd4b76f97f0ece04dc9778df7da0f`.
+- `flutter analyze` - passed.
+- `flutter test test/services/api_client_contract_test.dart` - passed.
+- `python3 scripts/check_p0_2_followup_c_traceability.py` - passed with nullable cleanup and generated hash assertions.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with `P0.2 coverage: backend line=96.0% branch=80.9%; flutter line=90.1%`.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Passing tests:
+- OpenAPI 3.0.3 schema cleanup: `eta_range` now uses `type: object`, `nullable: true` and `allOf` around `ProgressForecastEtaRange`, removing the six repeated Redocly example warnings from goal-autopilot forecast-bearing responses.
+- Dart drift gate: manifest, generated hash marker and generated API registry all pin `d8b492b07c98e948caf0b5912744f05fa6dcd4b76f97f0ece04dc9778df7da0f`.
+
+Failing or blocked tests:
+- No OpenAPI nullable-warning cleanup failure remains.
+
+Skipped tests:
+- No backend or Flutter production runtime code changed; this cleanup changes API contract syntax and generated hash pins only.
+- Followup-D release/commercial/data/ops gates were not executed and remain outside this cleanup.
+
+Acceptance criteria coverage:
+- AC-P02-FUC-007 remains locally covered through TC-P02-FUC-022 report/contract hygiene, with S007 checker regression passed after nullable cleanup.
+
+Residual risk:
+- Followup-C is locally complete for S001-S007. Followup-C is not release-ready and Product Base merge is not approved.
+- Product Base merge and release readiness still require Followup-D and Product Manager approval.
+
+## 2026-06-06 P02 Followup-C S007 Quality Gates
+
+Report ID:
+- `P02-FOLLOWUP-C-S007-QUALITY-GATES-20260606`
+
+Test scope:
+- TC-P02-FUC-020 p95 performance budgets for forecast recompute, checkpoint task lookup, checkpoint submit accepted/queued, backend projection load and surface propagation through Flutter adapter/widget path.
+- TC-P02-FUC-021 dedicated Followup-C traceability checker and changed-code coverage gate.
+- TC-P02-FUC-022 project agent runner validation, diff hygiene, report evidence and final independent review.
+
+Commands run:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionPerformanceTest test` - passed.
+- `flutter test test/features/goal_autopilot/goal_progress_surface_performance_test.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed and refreshed `backend/target/site/jacoco/jacoco.csv`.
+- `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed and refreshed `coverage/lcov.info`.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with `P0.2 coverage: backend line=96.0% branch=80.9%; flutter line=90.1%`.
+- `python3 scripts/check_p0_2_followup_c_traceability.py` - passed after S007 report evidence was synchronized.
+- `flutter analyze` - passed.
+- `npm run check:dart-client-drift` - passed with unchanged OpenAPI hash `bed8ebbbe2d9fed907b7411fca512912f1302fbb73427e7783b4f7ae2d0678f8`.
+- `npm run check:api-contract` - passed. Historical note: Redocly reported six nullable `$ref` warnings at S007 close; this was later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed after final report and traceability edits.
+
+Passing tests:
+- TC-P02-FUC-020: `GoalProgressProjectionPerformanceTest` proves forecast recompute p95 <=1s, checkpoint task lookup p95 <=300ms, checkpoint submit accepted/queued p95 <=2s and backend projection load p95 <=500ms. `goal_progress_surface_performance_test.dart` proves Flutter projection adapter plus Home/Queue/Wiki widget propagation p95 <=1s.
+- TC-P02-FUC-021: `scripts/check_p0_2_followup_c_traceability.py` validates S007 TC rows, traceability closure, report terms and forbidden release/Product Base claims; `scripts/check_p0_2_goal_autopilot_coverage.py` validates changed-code coverage >=80%.
+- TC-P02-FUC-022: project agent runner validation, diff hygiene and quality report review evidence are present.
+
+Failing or blocked tests:
+- No TC-P02-FUC-020..022 failure remains.
+
+Skipped tests:
+- No production backend, Flutter or API code changed in S007; API/OpenAPI drift checks were run as supplemental guards and passed with the unchanged generated-client hash.
+- No live AI provider path was executed; S007 validates deterministic local gates and does not create paid AI/provider evidence.
+- Followup-D release/commercial/data/ops gates were not executed and remain outside S007.
+
+Acceptance criteria coverage:
+- AC-P02-FUC-007 is executed locally for AC-to-TC closure, performance budgets, changed-code coverage, dedicated traceability checker and report/independent review evidence.
+
+Residual risk:
+- Followup-C is locally complete for S001-S007. Followup-C is not release-ready and Product Base merge is not approved.
+- Followup-D commercial/release/data/ops gates and Product Manager approval remain required before any release-readiness or Product Base merge claim.
 
 ## 2026-06-06 P02 Followup-C S006 Surface Downgrade
 
@@ -31,7 +146,7 @@ Commands run:
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionServiceTest,GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned,GoalProgressProjectionDataGovernanceTest,AccountDeletionLearningDataTest#tcP02Fuc006GoalProgressProjectionPurgedOnDeletion test` - passed.
 - `flutter analyze` - passed.
 - `npm run check:dart-client-drift` - passed; OpenAPI hash remains `bed8ebbbe2d9fed907b7411fca512912f1302fbb73427e7783b4f7ae2d0678f8`.
-- `npm run check:api-contract` - passed. Redocly still reports six existing nullable `$ref` warnings, unchanged and non-blocking for S006 because API shape did not change.
+- `npm run check:api-contract` - passed. Historical note: Redocly reported six nullable `$ref` warnings at S006 close; this was later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
 - `python3 scripts/project_agent_runner.py validate` - passed.
 - `git diff --check` - passed.
 
@@ -73,7 +188,7 @@ Commands run:
 - `flutter test test/services/api_client_contract_test.dart` - passed.
 - `flutter analyze` - passed.
 - `npm run check:dart-client-drift` - passed; OpenAPI hash remains `bed8ebbbe2d9fed907b7411fca512912f1302fbb73427e7783b4f7ae2d0678f8`.
-- `npm run check:api-contract` - passed. Redocly still reports six existing nullable `$ref` warnings, unchanged from S004 and non-blocking for this S005 Flutter-only surface slice.
+- `npm run check:api-contract` - passed. Historical note: Redocly reported six nullable `$ref` warnings at S005 close; this was later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
 - `python3 scripts/project_agent_runner.py validate` - passed.
 - `git diff --check` - passed.
 
@@ -115,7 +230,7 @@ Commands run:
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionServiceTest,GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned test` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionServiceTest test` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned test` - passed.
-- `npm run check:api-contract` - passed. Redocly reported six existing nullable `$ref` example warnings; OpenAPI validation, OpenAPI contract and Dart drift gates passed with SHA `bed8ebbbe2d9fed907b7411fca512912f1302fbb73427e7783b4f7ae2d0678f8`.
+- `npm run check:api-contract` - passed. Historical note: Redocly reported six nullable `$ref` example warnings, later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`; OpenAPI validation, OpenAPI contract and Dart drift gates passed with SHA `bed8ebbbe2d9fed907b7411fca512912f1302fbb73427e7783b4f7ae2d0678f8`.
 - `npm run check:dart-client-drift` - passed with the same OpenAPI SHA.
 - `python3 scripts/project_agent_runner.py validate` - passed.
 
@@ -158,7 +273,7 @@ Commands run:
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc003CheckpointRespectsControlAndRecoveryState test` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc003CheckpointFailedSkippedAndBlockedBranches test` - failed once because the no-plan accepted-checkpoint fixture transcript was too short and correctly produced `low_confidence`; fixture was expanded to accepted-confidence evidence, then rerun passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,CheckpointReplayAuditTest test` - passed.
-- `npm run check:api-contract` - passed. Redocly reported six existing nullable `$ref` example warnings; OpenAPI validation, OpenAPI contract and Dart drift gates passed with SHA `226c6d86a691489c8c3cfeba8aa0735aae52aef12ce7d5d561cb46a56ce52860`.
+- `npm run check:api-contract` - passed. Historical note: Redocly reported six nullable `$ref` example warnings, later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`; OpenAPI validation, OpenAPI contract and Dart drift gates passed with SHA `226c6d86a691489c8c3cfeba8aa0735aae52aef12ce7d5d561cb46a56ce52860`.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,CheckpointReplayAuditTest org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
 - Backend changed source coverage from JaCoCo diff check: line 98.4% and branch 92.0% for changed `GoalAutopilotService` and `GoalAutopilotController` source lines.
 - `python3 scripts/project_agent_runner.py validate` - passed.
@@ -200,7 +315,7 @@ Test scope:
 Commands run:
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CheckpointCadencePolicyTest test` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc002CheckpointTaskLibrary test` - passed.
-- `npm run check:api-contract` - passed. Redocly reported six existing nullable `$ref` example warnings; OpenAPI validation, OpenAPI contract and Dart drift gates passed with SHA `3bacdd487b700676793dd2a2c4629d330079cf34dbf2f1e35f9ed46f8f166351`.
+- `npm run check:api-contract` - passed. Historical note: Redocly reported six nullable `$ref` example warnings, later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`; OpenAPI validation, OpenAPI contract and Dart drift gates passed with SHA `3bacdd487b700676793dd2a2c4629d330079cf34dbf2f1e35f9ed46f8f166351`.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CheckpointCadencePolicyTest,ProgressForecastPolicyTest,ForecastExplanationSchemaTest,GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard+tcP02Fuc002CheckpointTaskLibrary+tcP02AutoCheckpoint001CheckpointUpdatesForecastAndStalesPlan test` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
 - `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 95.7%, backend branch 80.8%, Flutter line 90.9%.
@@ -247,7 +362,7 @@ Commands run:
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProgressForecastPolicyTest,ForecastExplanationSchemaTest test` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard test` - failed once because H2 rejected the first multi-column forecast migration syntax; migration was split into one `ALTER TABLE ... ADD COLUMN` statement per column.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard test` - passed after migration fix.
-- `npm run check:api-contract` - passed. Redocly reported existing nullable-example warnings, while OpenAPI validation and downstream drift gates passed with SHA `617ce817ef055efb851641a1664211238229d9ed365e01711244da15a75c621c`.
+- `npm run check:api-contract` - passed. Historical note: Redocly reported nullable-example warnings, later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`; OpenAPI validation and downstream drift gates passed with SHA `617ce817ef055efb851641a1664211238229d9ed365e01711244da15a75c621c`.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProgressForecastPolicyTest,GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard,ForecastExplanationSchemaTest test` - passed as formal S001 TC run after stale-plan fix.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - failed once after stale-plan precedence fix because the older checkpoint regression still expected checkpoint reason copy under stale plan; the assertion was updated.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - passed after the regression assertion update.

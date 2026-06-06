@@ -1,7 +1,7 @@
 # P0.2 Followup-C Test Cases：周期复测、预测与多产品面加固
 
 ## 状态
-S001 forecast hardening、S002 checkpoint task-library、S003 checkpoint-to-plan、S004 backend projection、S005 surface propagation and S006 surface downgrade tests passed / S007 implementation gated - 本文件定义 Followup-C 测试用例库。TC-P02-FUC-000 已通过 S000 文档链和 traceability routing 检查；TC-P02-FUC-001..003 已通过 S001 ProgressForecast hardening 本地测试；TC-P02-FUC-004..006 已通过 S002 Checkpoint cadence/task library 本地测试和 API contract drift；TC-P02-FUC-007..009 已通过 S003 checkpoint-to-plan update 本地集成、replay audit、control/recovery compatibility 和 API contract drift；TC-P02-FUC-010..012 已通过 S004 backend goal-progress projection 本地 service/controller/API contract drift 测试；TC-P02-FUC-013..016 已通过 S005 Home/Queue/Wiki surface propagation 本地 Flutter widget/source-of-truth 测试；TC-P02-FUC-017..019 已通过 S006 deletion/unavailable downgrade 本地 backend integration、account deletion 和 Flutter widget 测试；TC-P02-FUC-020..022 仍为 S007 planned 测试。Followup-C is not release-ready；Product Base merge is not approved。
+S001 forecast hardening、S002 checkpoint task-library、S003 checkpoint-to-plan、S004 backend projection、S005 surface propagation、S006 surface downgrade and S007 quality-gate tests passed - 本文件定义 Followup-C 测试用例库。TC-P02-FUC-000 已通过 S000 文档链和 traceability routing 检查；TC-P02-FUC-001..003 已通过 S001 ProgressForecast hardening 本地测试；TC-P02-FUC-004..006 已通过 S002 Checkpoint cadence/task library 本地测试和 API contract drift；TC-P02-FUC-007..009 已通过 S003 checkpoint-to-plan update 本地集成、replay audit、control/recovery compatibility 和 API contract drift；TC-P02-FUC-010..012 已通过 S004 backend goal-progress projection 本地 service/controller/API contract drift 测试；TC-P02-FUC-013..016 已通过 S005 Home/Queue/Wiki surface propagation 本地 Flutter widget/source-of-truth 测试；TC-P02-FUC-017..019 已通过 S006 deletion/unavailable downgrade 本地 backend integration、account deletion 和 Flutter widget 测试；TC-P02-FUC-020..022 已通过 S007 performance、coverage、traceability script、report evidence 和 independent review gate；`P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606` 已修复 Redocly nullable `$ref` warnings 并同步 OpenAPI hash `d8b492b07c98e948caf0b5912744f05fa6dcd4b76f97f0ece04dc9778df7da0f`。Followup-C is locally complete for S001-S007. Followup-C is not release-ready and Product Base merge is not approved。
 
 ## 上游来源
 - `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/requirements.md`
@@ -13,11 +13,11 @@ S001 forecast hardening、S002 checkpoint task-library、S003 checkpoint-to-plan
 | 字段 | 值 |
 | --- | --- |
 | Gate | P0.2 Followup-C S000 pre-implementation AC-to-TC mapping |
-| Result | Passed for documentation routing; implementation remains blocked until routed slice approval |
+| Result | Passed for S000-S007 local AC-to-TC coverage and S007 quality gates; release/Product Base approval remains gated |
 | Date | 2026-06-06 |
 | Scope | ProgressForecast hardening, checkpoint cadence/task library, checkpoint-to-plan update, backend projection, Home/Queue/Wiki surfaces, downgrade/data governance, performance/coverage/traceability gates |
-| Execution status | S000 documentation validation passed; S001 TC-P02-FUC-001..003 passed locally; S002 TC-P02-FUC-004..006 passed locally; S003 TC-P02-FUC-007..009 passed locally; S004 TC-P02-FUC-010..012 passed locally; S005 TC-P02-FUC-013..016 passed locally; S006 TC-P02-FUC-017..019 passed locally; S007 tests planned/not started |
-| Evidence report | `docs/reports/test_report.md#2026-06-06-p02-followup-c-s006-surface-downgrade`; `docs/reports/quality_report.md#2026-06-06-p02-followup-c-s006-surface-downgrade-independent-review` |
+| Execution status | S000 documentation validation passed; S001 TC-P02-FUC-001..003 passed locally; S002 TC-P02-FUC-004..006 passed locally; S003 TC-P02-FUC-007..009 passed locally; S004 TC-P02-FUC-010..012 passed locally; S005 TC-P02-FUC-013..016 passed locally; S006 TC-P02-FUC-017..019 passed locally; S007 TC-P02-FUC-020..022 passed locally |
+| Evidence report | `docs/reports/test_report.md#2026-06-06-p02-followup-c-s007-quality-gates`; `docs/reports/quality_report.md#2026-06-06-p02-followup-c-s007-final-independent-review` |
 
 ## Implementation Slice Test Routing
 | Slice ID | Scope | AC | TC | Execution state |
@@ -29,7 +29,7 @@ S001 forecast hardening、S002 checkpoint task-library、S003 checkpoint-to-plan
 | P02-FUC-S004 | Backend goal-progress projection | AC-P02-FUC-004 | TC-P02-FUC-010..012 | Passed locally |
 | P02-FUC-S005 | Home/Queue/Wiki surface propagation | AC-P02-FUC-005 | TC-P02-FUC-013..016 | Passed locally |
 | P02-FUC-S006 | Surface deletion/unavailable downgrade | AC-P02-FUC-006 | TC-P02-FUC-017..019 | Passed locally |
-| P02-FUC-S007 | Automated tests, performance, coverage and final review | AC-P02-FUC-007 | TC-P02-FUC-020..022 | Planned |
+| P02-FUC-S007 | Automated tests, performance, coverage and final review | AC-P02-FUC-007 | TC-P02-FUC-020..022 | Passed locally |
 
 ## Test Case Library
 | TC ID | Stage Scope ID | Policy Gate | FR | Spec | AC | Traceability Row | Gap | 测试层级 | 自动化状态 | 测试脚本路径 | 执行命令 | 结果状态 | 证据报告 |
@@ -54,21 +54,21 @@ S001 forecast hardening、S002 checkpoint task-library、S003 checkpoint-to-plan
 | TC-P02-FUC-017 | P02-SI-006 | P02-PG-001, P02-PG-002, P02-PG-005 | P02-FUC-FR-006 | P02-FUC-SPEC-006 | AC-P02-FUC-006 | P02-FUC-TR-006 | P02-FUC-GAP-006 | integration | automated | `backend/src/test/java/com/speakeasy/goal/GoalProgressProjectionDataGovernanceTest.java` | `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionDataGovernanceTest test` | passed | `docs/reports/test_report.md#2026-06-06-p02-followup-c-s006-surface-downgrade` |
 | TC-P02-FUC-018 | P02-SI-006 | P02-PG-001, P02-PG-002, P02-PG-005 | P02-FUC-FR-006 | P02-FUC-SPEC-006 | AC-P02-FUC-006 | P02-FUC-TR-006 | P02-FUC-GAP-006 | widget | automated | `test/features/goal_autopilot/goal_progress_downgrade_widget_test.dart` | `flutter test test/features/goal_autopilot/goal_progress_downgrade_widget_test.dart` | passed | `docs/reports/test_report.md#2026-06-06-p02-followup-c-s006-surface-downgrade` |
 | TC-P02-FUC-019 | P02-SI-006 | P02-PG-001, P02-PG-002, P02-PG-005 | P02-FUC-FR-006 | P02-FUC-SPEC-006 | AC-P02-FUC-006 | P02-FUC-TR-006 | P02-FUC-GAP-006 | integration | automated | `backend/src/test/java/com/speakeasy/AccountDeletionLearningDataTest.java#tcP02Fuc006GoalProgressProjectionPurgedOnDeletion` | `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AccountDeletionLearningDataTest#tcP02Fuc006GoalProgressProjectionPurgedOnDeletion test` | passed | `docs/reports/test_report.md#2026-06-06-p02-followup-c-s006-surface-downgrade` |
-| TC-P02-FUC-020 | P02-SI-006, P02-SI-010, P02-SI-012, P02-SI-013 | P02-PG-001..005 | P02-FUC-FR-007 | P02-FUC-SPEC-007 | AC-P02-FUC-007 | P02-FUC-TR-007 | P02-FUC-GAP-007 | release-check | planned | `backend/src/test/java/com/speakeasy/goal/GoalProgressProjectionPerformanceTest.java` | `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionPerformanceTest test` | planned | `docs/reports/test_report.md#p02-followup-c-s007-quality-gates` |
-| TC-P02-FUC-021 | P02-SI-006, P02-SI-010, P02-SI-012, P02-SI-013 | P02-PG-001..005 | P02-FUC-FR-007 | P02-FUC-SPEC-007 | AC-P02-FUC-007 | P02-FUC-TR-007 | P02-FUC-GAP-008 | release-check | planned | `scripts/check_p0_2_followup_c_traceability.py`; `scripts/check_p0_2_goal_autopilot_coverage.py` | `python3 scripts/check_p0_2_followup_c_traceability.py && python3 scripts/check_p0_2_goal_autopilot_coverage.py` | planned | `docs/reports/test_report.md#p02-followup-c-s007-quality-gates` |
-| TC-P02-FUC-022 | P02-SI-006, P02-SI-010, P02-SI-012, P02-SI-013 | P02-PG-001..005 | P02-FUC-FR-007 | P02-FUC-SPEC-007 | AC-P02-FUC-007 | P02-FUC-TR-007 | P02-FUC-GAP-009 | release-check | planned | `docs/reports/implementation_report.md`; `docs/reports/test_report.md`; `docs/reports/quality_report.md` | `python3 scripts/project_agent_runner.py validate`; `git diff --check` | planned | `docs/reports/quality_report.md#p02-followup-c-s007-final-independent-review` |
+| TC-P02-FUC-020 | P02-SI-006, P02-SI-010, P02-SI-012, P02-SI-013 | P02-PG-001..005 | P02-FUC-FR-007 | P02-FUC-SPEC-007 | AC-P02-FUC-007 | P02-FUC-TR-007 | P02-FUC-GAP-007 | release-check | automated | `backend/src/test/java/com/speakeasy/goal/GoalProgressProjectionPerformanceTest.java`; `test/features/goal_autopilot/goal_progress_surface_performance_test.dart` | `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionPerformanceTest test`; `flutter test test/features/goal_autopilot/goal_progress_surface_performance_test.dart` | passed | `docs/reports/test_report.md#2026-06-06-p02-followup-c-s007-quality-gates` |
+| TC-P02-FUC-021 | P02-SI-006, P02-SI-010, P02-SI-012, P02-SI-013 | P02-PG-001..005 | P02-FUC-FR-007 | P02-FUC-SPEC-007 | AC-P02-FUC-007 | P02-FUC-TR-007 | P02-FUC-GAP-008 | release-check | automated | `scripts/check_p0_2_followup_c_traceability.py`; `scripts/check_p0_2_goal_autopilot_coverage.py` | `python3 scripts/check_p0_2_followup_c_traceability.py && python3 scripts/check_p0_2_goal_autopilot_coverage.py` | passed | `docs/reports/test_report.md#2026-06-06-p02-followup-c-s007-quality-gates` |
+| TC-P02-FUC-022 | P02-SI-006, P02-SI-010, P02-SI-012, P02-SI-013 | P02-PG-001..005 | P02-FUC-FR-007 | P02-FUC-SPEC-007 | AC-P02-FUC-007 | P02-FUC-TR-007 | P02-FUC-GAP-009 | release-check | automated | `docs/reports/implementation_report.md`; `docs/reports/test_report.md`; `docs/reports/quality_report.md`; `docs/architecture/openapi/speakeasy-api.yaml`; `docs/architecture/openapi/dart-client-drift-manifest.json`; `lib/generated/api/speakeasy_api.dart` | `npm run check:api-contract`; `npm run check:dart-client-drift`; `python3 scripts/project_agent_runner.py validate`; `git diff --check` | passed | `docs/reports/quality_report.md#2026-06-06-p02-followup-c-s007-openapi-nullable-cleanup-independent-review`; `docs/reports/quality_report.md#2026-06-06-p02-followup-c-s007-final-independent-review` |
 
 ## Coverage Map
 | Acceptance Criteria | Primary TC | Supporting TC | Coverage status |
 | --- | --- | --- | --- |
 | AC-P02-FUC-000 | TC-P02-FUC-000 | N/A - documentation setup only | Passed for S000 documentation routing |
-| AC-P02-FUC-001 | TC-P02-FUC-001, TC-P02-FUC-002 | TC-P02-FUC-003; TC-P02-FUC-021 remains planned for final traceability gate | Passed locally for S001 forecast hardening |
-| AC-P02-FUC-002 | TC-P02-FUC-004, TC-P02-FUC-005 | TC-P02-FUC-006; TC-P02-FUC-021 remains planned for final traceability gate | Passed locally for S002 checkpoint cadence/task library |
-| AC-P02-FUC-003 | TC-P02-FUC-007, TC-P02-FUC-008 | TC-P02-FUC-009; TC-P02-FUC-021 remains planned for final traceability gate | Passed locally for S003 checkpoint-to-plan update |
-| AC-P02-FUC-004 | TC-P02-FUC-010, TC-P02-FUC-011 | TC-P02-FUC-012; TC-P02-FUC-021 remains planned for final traceability gate | Passed locally for S004 backend projection |
-| AC-P02-FUC-005 | TC-P02-FUC-013, TC-P02-FUC-014, TC-P02-FUC-015 | TC-P02-FUC-016; TC-P02-FUC-021 remains planned for final traceability gate | Passed locally for S005 Home/Queue/Wiki surface propagation; one- or two-surface evidence remains partial only |
-| AC-P02-FUC-006 | TC-P02-FUC-017, TC-P02-FUC-018 | TC-P02-FUC-019; TC-P02-FUC-021 remains planned for final traceability gate | Passed locally for S006 surface downgrade/data governance |
-| AC-P02-FUC-007 | TC-P02-FUC-020, TC-P02-FUC-021, TC-P02-FUC-022 | TC-P02-FUC-001..019 | Covered planned |
+| AC-P02-FUC-001 | TC-P02-FUC-001, TC-P02-FUC-002 | TC-P02-FUC-003; TC-P02-FUC-021 final traceability gate passed | Passed locally for S001 forecast hardening |
+| AC-P02-FUC-002 | TC-P02-FUC-004, TC-P02-FUC-005 | TC-P02-FUC-006; TC-P02-FUC-021 final traceability gate passed | Passed locally for S002 checkpoint cadence/task library |
+| AC-P02-FUC-003 | TC-P02-FUC-007, TC-P02-FUC-008 | TC-P02-FUC-009; TC-P02-FUC-021 final traceability gate passed | Passed locally for S003 checkpoint-to-plan update |
+| AC-P02-FUC-004 | TC-P02-FUC-010, TC-P02-FUC-011 | TC-P02-FUC-012; TC-P02-FUC-021 final traceability gate passed | Passed locally for S004 backend projection |
+| AC-P02-FUC-005 | TC-P02-FUC-013, TC-P02-FUC-014, TC-P02-FUC-015 | TC-P02-FUC-016; TC-P02-FUC-021 final traceability gate passed | Passed locally for S005 Home/Queue/Wiki surface propagation; one- or two-surface evidence remains partial only |
+| AC-P02-FUC-006 | TC-P02-FUC-017, TC-P02-FUC-018 | TC-P02-FUC-019; TC-P02-FUC-021 final traceability gate passed | Passed locally for S006 surface downgrade/data governance |
+| AC-P02-FUC-007 | TC-P02-FUC-020, TC-P02-FUC-021, TC-P02-FUC-022 | TC-P02-FUC-001..019 | Passed locally |
 
 ## Required Fixture And Assertion Coverage
 | Fixture ID | Fixture area | Required assertions | Planned TC |
@@ -92,8 +92,8 @@ S001 forecast hardening、S002 checkpoint task-library、S003 checkpoint-to-plan
 | P02-FUC-S006 | `FUC-FIX-006` downgrade fixtures in backend data-governance tests and Flutter downgrade widgets | deleted, unavailable, unsupported, partial, low-confidence, stale_plan, control_blocked, cached previous projection | sensitive gap/ETA/checkpoint conclusion is removed or downgraded; Flutter stale cache does not reappear; downgrade reason comes from backend projection; no local UI inference of final state | TC-P02-FUC-017..019 |
 | P02-FUC-S007 | `FUC-FIX-007` gate fixtures in traceability/performance/coverage checks | missing TC mapping, missing script path, failed performance budget, missing report evidence, S005 partial-only evidence | checker blocks incomplete evidence; p95 budgets and >=80% changed-code coverage are reported; S005 partial-only evidence cannot close Followup-C; quality report cites residual release/Product Base risk | TC-P02-FUC-020..022 |
 
-## Performance Budgets For Planned Tests
-| Budget ID | Scenario | Planned threshold | Planned TC |
+## Performance Budgets For S007 Tests
+| Budget ID | Scenario | Threshold | TC |
 | --- | --- | --- | --- |
 | P02-FUC-PERF-001 | forecast recompute | p95 <=1 s | TC-P02-FUC-020 |
 | P02-FUC-PERF-002 | checkpoint task lookup | p95 <=300 ms | TC-P02-FUC-020 |
@@ -111,10 +111,10 @@ S001 forecast hardening、S002 checkpoint task-library、S003 checkpoint-to-plan
 - S005 tests must include Home, Queue and Wiki fixture rows; missing one surface keeps S005 partial even if the implemented surfaces pass.
 - Each routed implementation slice must expand its fixture entry point into concrete test data and assertions in the named test script before changing the TC result status from `planned`.
 - Changed backend/domain/API/Flutter code must meet line and branch coverage >=80%; unchanged layers must be explicitly marked `N/A - no code change in this layer`.
-- Performance tests must run before Followup-C can be marked implemented or complete.
-- `scripts/check_p0_2_followup_c_traceability.py` is the planned implementation-completion deliverable for TC-P02-FUC-021; until it exists, S007 remains planned.
+- Performance tests passed before Followup-C local S001-S007 completion was recorded.
+- `scripts/check_p0_2_followup_c_traceability.py` is implemented and passed as the TC-P02-FUC-021 completion deliverable.
 
 ## Implementation Gate
-AC-to-TC mapping exists for AC-P02-FUC-000 through AC-P02-FUC-007. S001 routed implementation has passed TC-P02-FUC-001..003. S002 routed implementation has passed TC-P02-FUC-004..006. S003 routed implementation has passed TC-P02-FUC-007..009. S004 routed implementation has passed TC-P02-FUC-010..012. S005 routed implementation has passed TC-P02-FUC-013..016. S006 routed implementation has passed TC-P02-FUC-017..019. S007 implementation remains blocked until the routed slice is approved, performance/coverage/final traceability contracts are updated or explicitly marked N/A, and the slice fixture/assertion entry point above has been expanded into concrete tests or a documented allowed exception.
+AC-to-TC mapping exists for AC-P02-FUC-000 through AC-P02-FUC-007. S001 routed implementation has passed TC-P02-FUC-001..003. S002 routed implementation has passed TC-P02-FUC-004..006. S003 routed implementation has passed TC-P02-FUC-007..009. S004 routed implementation has passed TC-P02-FUC-010..012. S005 routed implementation has passed TC-P02-FUC-013..016. S006 routed implementation has passed TC-P02-FUC-017..019. S007 routed implementation has passed TC-P02-FUC-020..022 with performance, coverage, traceability script, report and independent review evidence.
 
-Followup-C is not release-ready and Product Base merge is not approved. S000 documentation-chain completion must not be interpreted as forecast/checkpoint/surface implementation completion.
+Followup-C is locally complete for S001-S007. Followup-C is not release-ready and Product Base merge is not approved. S000 documentation-chain completion must not be interpreted as release or Product Base approval.

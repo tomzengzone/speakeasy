@@ -1,7 +1,7 @@
 # Implementation Report
 
 ## Current Status
-Latest implementation update recorded: `P02-FOLLOWUP-C-S006-SURFACE-DOWNGRADE-20260606` closed TC-P02-FUC-017, TC-P02-FUC-018 and TC-P02-FUC-019 locally for surface deletion/unavailable downgrade, account deletion projection purge and Flutter cached stale progress cleanup. S001 forecast hardening, S002 checkpoint task library, S003 checkpoint-to-plan, S004 backend projection and S005 surface propagation remain locally passed. Followup-C S007 remains planned/not started. Followup-C is not release-ready; Product Base merge is not approved. Prior Followup-B TC-P02-FUB-001..017 remain locally passed.
+Latest implementation update recorded: `P02-FOLLOWUP-D-S000-DOCUMENT-CHAIN-20260606` completed Followup-D S000 documentation-chain routing for requirements/spec/acceptance/test_cases/traceability, added explicit S000-S011 implementation slices and recorded dual independent review. No production code changed in S000. Followup-D S001-S011 remain planned/not started; Followup-D is not release-ready and Product Base merge is not approved. Followup-C remains locally complete for S001-S007 after `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
 
 ## Report Format
 Each completed change should append:
@@ -14,6 +14,158 @@ Each completed change should append:
 - results
 - risks
 - follow-up
+
+## 2026-06-06 - P02-FOLLOWUP-D-S000-DOCUMENT-CHAIN-20260606
+
+Change request:
+- Strictly execute Followup-D S000 before any Followup-D code implementation.
+- Identify the release-gate hardening scope and split Followup-D into small implementation slices that can support full software landing.
+- Explicit non-goal: do not implement S001-S011 code, approve release readiness, approve Product Base merge, or claim paid AI external evidence.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`.
+- FR/Spec/AC/TC: P02-FUD-FR-000, P02-FUD-SPEC-000, AC-P02-FUD-000 and TC-P02-FUD-000.
+- Traceability row: P02-FUD-TR-000; S001-S011 routed through P02-FUD-FR-001..011, P02-FUD-SPEC-001..011, AC-P02-FUD-001..011 and TC-P02-FUD-001..021.
+
+Files changed:
+- `docs/product/increments/p0-2-followup-d-release-gate-hardening/definition.md`
+- `docs/product/increments/p0-2-followup-d-release-gate-hardening/requirements.md`
+- `docs/product/increments/p0-2-followup-d-release-gate-hardening/spec.md`
+- `docs/product/increments/p0-2-followup-d-release-gate-hardening/acceptance.md`
+- `docs/product/increments/p0-2-followup-d-release-gate-hardening/test_cases.md`
+- `docs/product/increments/p0-2-followup-d-release-gate-hardening/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Expanded Followup-D from scaffold into a full requirement/spec/acceptance/test/traceability chain.
+- Split Followup-D into S000-S011: docs routing, backend runtime gate, Flutter rollback, entitlement depth, usage reservation, cost telemetry, quota downgrade, data governance, consent UX, telemetry, drift gates and final Product Base/release review.
+- Added explicit Stage Scope P02-SI-001..013 detail coverage so later implementation does not rely on ambiguous range-only routing.
+- Preserved release boundaries: S000 is documentation readiness only; S001-S011 are planned; release approval, paid AI external evidence and Product Base merge remain blocked.
+
+Validation:
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check -- docs/product/increments/p0-2-followup-d-release-gate-hardening docs/reports/test_report.md docs/reports/implementation_report.md docs/reports/quality_report.md` - passed.
+
+Result:
+- TC-P02-FUD-000 is passed for S000 documentation-chain validation.
+- Followup-D is ready to route S001 implementation after user approval.
+- No production backend, Flutter, API, generated-client or AI runtime code changed in S000.
+
+Residual risk:
+- S001-S011 implementation, tests and independent reviews are still open.
+- Followup-D is not release-ready; Product Base merge and commercial release remain unapproved.
+
+Follow-up:
+- Next implementation slice is P02-FUD-S001 backend feature flag, kill switch and fail-closed mutation gate.
+
+## 2026-06-06 - P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606
+
+Change request:
+- Fix the six Redocly nullable `$ref` warnings reported by `npm run check:api-contract` after S007, and update the full OpenAPI/generated-client/report chain.
+- Explicit non-goal: do not change backend runtime behavior, Flutter runtime behavior, response payload semantics, Followup-D release/commercial/data/ops gates, release approval or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`.
+- FR/Spec/AC/TC: P02-FUC-FR-007, P02-FUC-SPEC-007, AC-P02-FUC-007 and TC-P02-FUC-022 report/contract hygiene.
+- Traceability row: P02-FUC-TR-007; supporting S001 forecast contract syntax from P02-FUC-FR-001 remains payload-compatible.
+
+Files changed:
+- `docs/architecture/openapi/speakeasy-api.yaml`
+- `docs/architecture/openapi/dart-client-drift-manifest.json`
+- `lib/generated/api/.openapi-sha256`
+- `lib/generated/api/speakeasy_api.dart`
+- `scripts/check_p0_2_followup_c_traceability.py`
+- `docs/architecture/api_contract.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/test_cases.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/traceability.md`
+- `docs/product/development_status.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Changed `ProgressForecast.eta_range` from `$ref` plus nullable sibling to OpenAPI 3.0.3-compatible `type: object`, `nullable: true`, `allOf` reference form.
+- Synced generated Dart OpenAPI hash pins to `d8b492b07c98e948caf0b5912744f05fa6dcd4b76f97f0ece04dc9778df7da0f`.
+- Extended the Followup-C S007 traceability checker to assert the nullable cleanup shape and generated hash pins.
+- Updated reports and traceability so the prior six Redocly warnings are no longer recorded as current residual risk.
+
+Validation:
+- `npm run lint:openapi` - passed with no nullable `$ref` warnings.
+- `npm run check:api-contract` - passed with 87 paths, 93 operations, 42 request examples, 88 success examples and 112 error examples.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `d8b492b07c98e948caf0b5912744f05fa6dcd4b76f97f0ece04dc9778df7da0f`.
+- `flutter analyze` - passed.
+- `flutter test test/services/api_client_contract_test.dart` - passed.
+- `python3 scripts/check_p0_2_followup_c_traceability.py` - passed with nullable cleanup and generated hash assertions.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.0%, backend branch 80.9% and Flutter line 90.1%.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- The six repeated Redocly nullable `$ref` warnings are fixed.
+- No endpoint, operation count, request/response example count or payload semantic change was introduced.
+- Followup-C is locally complete for S001-S007. Followup-C is not release-ready and Product Base merge is not approved.
+
+Residual risk:
+- Followup-D commercial/release/data/ops gates remain open.
+- Product Base merge still requires Product Manager approval and governance review.
+
+## 2026-06-06 - P02-FOLLOWUP-C-S007-QUALITY-GATES-20260606
+
+Change request:
+- Strictly execute Followup-C S007 automated test, performance, coverage, traceability script and final review gates for P02-FUC-FR-007 / P02-FUC-SPEC-007 / AC-P02-FUC-007 / TC-P02-FUC-020..022.
+- Explicit non-goal: do not claim Followup-D release/commercial/data/ops gates, release approval, paid AI/provider evidence or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`.
+- FR/Spec/AC/TC: P02-FUC-FR-007, P02-FUC-SPEC-007, AC-P02-FUC-007, TC-P02-FUC-020, TC-P02-FUC-021 and TC-P02-FUC-022.
+- Traceability row: P02-FUC-TR-007; gaps closed locally: P02-FUC-GAP-007, P02-FUC-GAP-008 and P02-FUC-GAP-009.
+
+Files changed:
+- `backend/src/test/java/com/speakeasy/goal/GoalProgressProjectionPerformanceTest.java`
+- `test/features/goal_autopilot/goal_progress_surface_performance_test.dart`
+- `scripts/check_p0_2_followup_c_traceability.py`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/definition.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/requirements.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/spec.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/acceptance.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/test_cases.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/traceability.md`
+- `docs/product/development_status.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added backend performance coverage for Followup-C forecast, checkpoint task, checkpoint submit and progress projection paths.
+- Added Flutter adapter/widget performance coverage for Home, expression queue and personal Wiki projection propagation.
+- Added a dedicated Followup-C traceability checker that validates TC-P02-FUC-020..022 rows, traceability closure, report evidence and release/Product Base non-claims.
+- Updated Followup-C docs/reports so S007 local evidence is explicit and Followup-D/release/Product Base boundaries remain gated.
+- No production backend, Flutter or API code changed.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionPerformanceTest test` - passed.
+- `flutter test test/features/goal_autopilot/goal_progress_surface_performance_test.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.0%, backend branch 80.9% and Flutter line 90.1%.
+- `python3 scripts/check_p0_2_followup_c_traceability.py` - passed after S007 evidence synchronization.
+- `flutter analyze` - passed.
+- `npm run check:dart-client-drift` - passed with unchanged OpenAPI hash `bed8ebbbe2d9fed907b7411fca512912f1302fbb73427e7783b4f7ae2d0678f8`.
+- `npm run check:api-contract` - passed. Historical note: Redocly reported six nullable `$ref` warnings at S007 close; this was later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- TC-P02-FUC-020, TC-P02-FUC-021 and TC-P02-FUC-022 are passed locally for S007 quality gates.
+- P02-FUC-GAP-007, P02-FUC-GAP-008 and P02-FUC-GAP-009 are closed locally.
+- Followup-C is locally complete for S001-S007. Followup-C is not release-ready and Product Base merge is not approved.
+
+Residual risk:
+- Followup-D commercial/release/data/ops gates remain open.
+- No live AI provider, paid AI evidence, store/payment evidence or production release evidence was generated by S007.
+- Product Base merge still requires Product Manager approval and governance review.
 
 ## 2026-06-06 - P02-FOLLOWUP-C-S006-SURFACE-DOWNGRADE-20260606
 
@@ -63,7 +215,7 @@ Validation:
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionServiceTest,GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned,GoalProgressProjectionDataGovernanceTest,AccountDeletionLearningDataTest#tcP02Fuc006GoalProgressProjectionPurgedOnDeletion test` - passed.
 - `flutter analyze` - passed.
 - `npm run check:dart-client-drift` - passed.
-- `npm run check:api-contract` - passed with the six existing nullable `$ref` warnings unchanged.
+- `npm run check:api-contract` - passed. Historical note: the six nullable `$ref` warnings were later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
 - `python3 scripts/project_agent_runner.py validate` - passed.
 - `git diff --check` - passed.
 
@@ -128,7 +280,7 @@ Validation:
 - `flutter test test/services/api_client_contract_test.dart` - passed.
 - `flutter analyze` - passed.
 - `npm run check:dart-client-drift` - passed.
-- `npm run check:api-contract` - passed with the six existing nullable `$ref` warnings unchanged.
+- `npm run check:api-contract` - passed. Historical note: the six nullable `$ref` warnings were later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
 - `python3 scripts/project_agent_runner.py validate` - passed.
 - `git diff --check` - passed.
 

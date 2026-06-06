@@ -1,7 +1,7 @@
 # P0.2 Followup-C Acceptance Criteria：周期复测、预测与多产品面加固
 
 ## 状态
-S001、S002、S003、S004、S005 and S006 acceptance locally executed / S007 implementation gated - 本文件基于 Followup-C requirements 和 spec 定义验收标准。S000 文档链验收已通过 TC-P02-FUC-000；S001 ProgressForecast model hardening 已通过 TC-P02-FUC-001..003；S002 Checkpoint cadence and task library 已通过 TC-P02-FUC-004..006；S003 Checkpoint-to-plan update 已通过 TC-P02-FUC-007..009；S004 backend goal-progress projection 已通过 TC-P02-FUC-010..012；S005 Home/Queue/Wiki surface propagation 已通过 TC-P02-FUC-013..016；S006 Surface deletion/unavailable downgrade 已通过 TC-P02-FUC-017..019；S007 performance 和 release evidence 均为 planned/not started。Followup-C is not release-ready；Product Base merge is not approved。
+S001、S002、S003、S004、S005、S006 and S007 acceptance locally executed - 本文件基于 Followup-C requirements 和 spec 定义验收标准。S000 文档链验收已通过 TC-P02-FUC-000；S001 ProgressForecast model hardening 已通过 TC-P02-FUC-001..003；S002 Checkpoint cadence and task library 已通过 TC-P02-FUC-004..006；S003 Checkpoint-to-plan update 已通过 TC-P02-FUC-007..009；S004 backend goal-progress projection 已通过 TC-P02-FUC-010..012；S005 Home/Queue/Wiki surface propagation 已通过 TC-P02-FUC-013..016；S006 Surface deletion/unavailable downgrade 已通过 TC-P02-FUC-017..019；S007 performance、coverage、traceability script、report evidence 和 independent review 已通过 TC-P02-FUC-020..022。Followup-C is locally complete for S001-S007. Followup-C is not release-ready and Product Base merge is not approved。
 
 ## 上游来源
 - `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/requirements.md`
@@ -31,7 +31,7 @@ S001、S002、S003、S004、S005 and S006 acceptance locally executed / S007 imp
 | P02-FUC-S004 | Backend goal-progress projection | AC-P02-FUC-004 | TC-P02-FUC-010..012 | projection source-of-truth tests and contract checks |
 | P02-FUC-S005 | Home/Queue/Wiki surface propagation | AC-P02-FUC-005 | TC-P02-FUC-013..016 | Passed locally: widget/integration tests for Home, Queue and Wiki; partial surface routes still cannot close S005 |
 | P02-FUC-S006 | Surface deletion/unavailable downgrade | AC-P02-FUC-006 | TC-P02-FUC-017..019 | Passed locally: deletion/unavailable/unsupported/stale/control-blocked/partial/low-confidence downgrade tests |
-| P02-FUC-S007 | Automated tests, performance, coverage and final review | AC-P02-FUC-007 | TC-P02-FUC-020..022 | p95 budgets, coverage, traceability script and independent review |
+| P02-FUC-S007 | Automated tests, performance, coverage and final review | AC-P02-FUC-007 | TC-P02-FUC-020..022 | Passed locally: p95 budgets, coverage, traceability script and independent review |
 
 ## AC-P02-FUC-000 S000 Document Chain And Slice Routing
 - Given the S000 pre-implementation documentation gate runs, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `definition.md` and `traceability.md` must exist and reference the same increment id.
@@ -106,4 +106,4 @@ Every AC-P02-FUC-000 through AC-P02-FUC-007 maps to at least one stable TC-P02-F
 ## 下游交接边界
 - `test_cases.md`、`traceability.md`、domain/API/OpenAPI/UX/AI contracts 和 reports may consume this file as the AC source of truth, but they must not renumber or redefine AC-P02-FUC-000 through AC-P02-FUC-007 without a versioned Followup-C change.
 - Test execution status belongs in `test_cases.md`, `docs/reports/test_report.md` and `traceability.md`; this file may summarize current status but must not replace executable Test Evidence.
-- S001 local forecast-hardening pass, S002 local checkpoint task-library pass, S003 local checkpoint-to-plan pass, S004 local backend projection pass, S005 local surface propagation pass and S006 local downgrade/data-governance pass do not approve S007 implementation, Followup-C completion, release readiness or Product Base merge.
+- S001 local forecast-hardening pass, S002 local checkpoint task-library pass, S003 local checkpoint-to-plan pass, S004 local backend projection pass, S005 local surface propagation pass, S006 local downgrade/data-governance pass and S007 local quality-gate pass do not approve release readiness, Followup-D gates or Product Base merge.

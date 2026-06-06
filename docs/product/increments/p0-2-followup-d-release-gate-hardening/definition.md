@@ -1,7 +1,7 @@
 # Increment Definition：P0.2 Followup-D 发布门禁与商业软件加固
 
 ## 状态
-Planned - formal follow-up scaffold only。该增量只建立正式 definition 和 work-package traceability scaffold；尚未生成 requirements/spec/acceptance/test_cases，也未进入代码实现。
+S000 documentation chain validated - formal follow-up scaffold has been expanded into requirements/spec/acceptance/test_cases and S000-S011 implementation slice routing。S000 只关闭文档链和可实施路由；S001-S011 尚未进入代码实现，Followup-D 不具备 release approval 或 Product Base merge approval。
 
 ## Increment ID
 `p0-2-followup-d-release-gate-hardening`
@@ -57,6 +57,24 @@ Even after Followup-A/B/C close user-facing and product-surface gaps, P0.2 canno
 | P02-FUD-WP-008 | Product Base and release checklist gate | Product Base merge and release checklist decisions are explicit and auditable. |
 | P02-FUD-WP-009 | Followup-D independent release review | Traceability, implementation evidence, residual risk and quality report are independently reviewed. |
 
+## Implementation Slice Routing
+| Slice ID | Work package | Requirement | Spec | Acceptance | Test cases | Primary outcome | Current state |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| P02-FUD-S000 | P02-FUD-WP-000 | P02-FUD-FR-000 | P02-FUD-SPEC-000 | AC-P02-FUD-000 | TC-P02-FUD-000 | Followup-D docs and S000-S011 traceability are ready for implementation routing | Validated / no code |
+| P02-FUD-S001 | P02-FUD-WP-001 | P02-FUD-FR-001 | P02-FUD-SPEC-001 | AC-P02-FUD-001 | TC-P02-FUD-001..002 | Backend feature flag, kill switch and fail-closed mutation gate | Planned |
+| P02-FUD-S002 | P02-FUD-WP-001 | P02-FUD-FR-002 | P02-FUD-SPEC-002 | AC-P02-FUD-002 | TC-P02-FUD-003..004 | Flutter entry and Home/Queue/Wiki/Panel rollback gate with no local fallback | Planned |
+| P02-FUD-S003 | P02-FUD-WP-002 | P02-FUD-FR-003 | P02-FUD-SPEC-003 | AC-P02-FUD-003 | TC-P02-FUD-005..006 | Server-owned entitlement/free-paid depth policy | Planned |
+| P02-FUD-S004 | P02-FUD-WP-003 | P02-FUD-FR-004 | P02-FUD-SPEC-004 | AC-P02-FUD-004 | TC-P02-FUD-007..008 | Usage reservation, quota and idempotency for P0.2 costly paths | Planned |
+| P02-FUD-S005 | P02-FUD-WP-003 | P02-FUD-FR-005 | P02-FUD-SPEC-005 | AC-P02-FUD-005 | TC-P02-FUD-009..010 | Cost telemetry and AI candidate-only fallback guard | Planned |
+| P02-FUD-S006 | P02-FUD-WP-004 | P02-FUD-FR-006 | P02-FUD-SPEC-006 | AC-P02-FUD-006 | TC-P02-FUD-011..012 | Quota exhausted / entitlement / cost downgrade propagation | Planned |
+| P02-FUD-S007 | P02-FUD-WP-005 | P02-FUD-FR-007 | P02-FUD-SPEC-007 | AC-P02-FUD-007 | TC-P02-FUD-013..014 | Data export, retention and deletion backend evidence | Planned |
+| P02-FUD-S008 | P02-FUD-WP-005 | P02-FUD-FR-008 | P02-FUD-SPEC-008 | AC-P02-FUD-008 | TC-P02-FUD-015 | Consent and privacy UX alignment | Planned |
+| P02-FUD-S009 | P02-FUD-WP-006 | P02-FUD-FR-009 | P02-FUD-SPEC-009 | AC-P02-FUD-009 | TC-P02-FUD-016..017 | Telemetry health, error and funnel metrics | Planned |
+| P02-FUD-S010 | P02-FUD-WP-007 | P02-FUD-FR-010 | P02-FUD-SPEC-010 | AC-P02-FUD-010 | TC-P02-FUD-018..019 | Contract, traceability and release drift gates | Planned |
+| P02-FUD-S011 | P02-FUD-WP-008, P02-FUD-WP-009 | P02-FUD-FR-011 | P02-FUD-SPEC-011 | AC-P02-FUD-011 | TC-P02-FUD-020..021 | Product Base/release checklist evidence and independent review | Planned |
+
+S001 and S002 may close independently only as backend and Flutter rollout sub-slices. Full release-gate closure requires S001-S011 evidence together, plus explicit Product Manager / release governance decision. S000 completion alone is documentation readiness only.
+
 ## Covered Stage Scope Items
 | Stage Scope ID | Coverage note |
 | --- | --- |
@@ -75,7 +93,7 @@ Even after Followup-A/B/C close user-facing and product-surface gaps, P0.2 canno
 - None at release-gate level. Followup-D does not replace A/B/C functional implementation; it verifies that all P02-SI-001..013 evidence is safe to expose, merge or release.
 
 ## Required Downstream Artifacts
-- `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md` and updated `traceability.md` for this follow-up before code routing.
+- Created for S000 routing: `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md` and updated `traceability.md` for this follow-up before code routing.
 - Domain/API/UX/AI/Ops contract updates for flags, entitlement, usage/cost, telemetry, export/retention and release checklist where applicable.
 - Release checklist and rollback plan impact review.
 - Test case library mapping every Followup-D AC to stable TC IDs before implementation.
@@ -88,4 +106,3 @@ Even after Followup-A/B/C close user-facing and product-surface gaps, P0.2 canno
 
 ## Completion Gate
 Followup-D cannot be marked complete unless every WP has FR/Spec/AC/TC/Traceability coverage, contract evidence, code evidence where needed, test evidence, >=80% changed-code coverage where implementation occurs, release checklist evidence, and independent review in `docs/reports/quality_report.md`.
-

@@ -5072,8 +5072,10 @@ components:
           type: string
           description: Legacy compatibility text. For S001, use eta_range when present or eta_unavailable_reason when ETA is suppressed.
         eta_range:
-          $ref: '#/components/schemas/ProgressForecastEtaRange'
+          type: object
           nullable: true
+          allOf:
+          - $ref: '#/components/schemas/ProgressForecastEtaRange'
         eta_unavailable_reason:
           type: string
           nullable: true
