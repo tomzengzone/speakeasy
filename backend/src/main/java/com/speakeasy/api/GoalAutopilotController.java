@@ -303,6 +303,7 @@ public class GoalAutopilotController {
       GoalProfileDto goalProfile,
       SupportedGoalMatrixDecisionDto supportDecision,
       DiagnosticAssessmentDto diagnostic,
+      GoalEntitlementDepthDto entitlementDepth,
       WeeklyBackplanDto weeklyBackplan,
       DailyTrainingPlanDto dailyPlan,
       AutopilotActionDto nextAction,
@@ -315,6 +316,7 @@ public class GoalAutopilotController {
           GoalProfileDto.from(view.goalProfile()),
           SupportedGoalMatrixDecisionDto.from(view.supportDecision()),
           DiagnosticAssessmentDto.from(view.diagnostic()),
+          GoalEntitlementDepthDto.from(view.entitlementDepth()),
           view.weeklyBackplan() == null ? null : WeeklyBackplanDto.from(view.weeklyBackplan()),
           view.dailyPlan() == null ? null : DailyTrainingPlanDto.from(view.dailyPlan()),
           view.nextAction() == null ? null : AutopilotActionDto.from(view.nextAction()),
@@ -463,14 +465,19 @@ public class GoalAutopilotController {
   }
 
   public record GoalPlanResponse(
-      int schemaVersion, WeeklyBackplanDto weeklyBackplan, DailyTrainingPlanDto dailyPlan, AutopilotActionDto nextAction)
+      int schemaVersion,
+      WeeklyBackplanDto weeklyBackplan,
+      DailyTrainingPlanDto dailyPlan,
+      AutopilotActionDto nextAction,
+      GoalEntitlementDepthDto entitlementDepth)
       implements SchemaResponse {
     static GoalPlanResponse from(GoalAutopilotService.PlanResult result) {
       return new GoalPlanResponse(
           1,
           WeeklyBackplanDto.from(result.weeklyBackplan()),
           DailyTrainingPlanDto.from(result.dailyPlan()),
-          AutopilotActionDto.from(result.nextAction()));
+          AutopilotActionDto.from(result.nextAction()),
+          GoalEntitlementDepthDto.from(result.entitlementDepth()));
     }
   }
 
@@ -493,9 +500,14 @@ public class GoalAutopilotController {
     }
   }
 
-  public record GoalForecastResponse(int schemaVersion, ProgressForecastDto forecast) implements SchemaResponse {
-    static GoalForecastResponse from(GoalAutopilotService.ForecastView forecast) {
-      return new GoalForecastResponse(1, ProgressForecastDto.from(forecast));
+  public record GoalForecastResponse(
+      int schemaVersion, ProgressForecastDto forecast, GoalEntitlementDepthDto entitlementDepth)
+      implements SchemaResponse {
+    static GoalForecastResponse from(GoalAutopilotService.ForecastResult result) {
+      return new GoalForecastResponse(
+          1,
+          ProgressForecastDto.from(result.forecast()),
+          GoalEntitlementDepthDto.from(result.entitlementDepth()));
     }
   }
 
@@ -800,21 +812,28 @@ public class GoalAutopilotController {
   }
 
   public record CheckpointResponse(
-      int schemaVersion, OutcomeCheckpointDto checkpoint, ProgressForecastDto forecast, PlanUpdateSignalDto planUpdateSignal)
+      int schemaVersion,
+      OutcomeCheckpointDto checkpoint,
+      ProgressForecastDto forecast,
+      GoalEntitlementDepthDto entitlementDepth,
+      PlanUpdateSignalDto planUpdateSignal)
       implements SchemaResponse {
     static CheckpointResponse from(GoalAutopilotService.CheckpointResult result) {
       return new CheckpointResponse(
           1,
           OutcomeCheckpointDto.from(result.checkpoint()),
           ProgressForecastDto.from(result.forecast()),
+          GoalEntitlementDepthDto.from(result.entitlementDepth()),
           PlanUpdateSignalDto.from(result.planUpdateSignal()));
     }
   }
 
-  public record CheckpointTaskResponse(int schemaVersion, CheckpointTaskDecisionDto checkpointTask)
+  public record CheckpointTaskResponse(
+      int schemaVersion, CheckpointTaskDecisionDto checkpointTask, GoalEntitlementDepthDto entitlementDepth)
       implements SchemaResponse {
     static CheckpointTaskResponse from(GoalAutopilotService.CheckpointTaskDecisionView view) {
-      return new CheckpointTaskResponse(1, CheckpointTaskDecisionDto.from(view));
+      return new CheckpointTaskResponse(
+          1, CheckpointTaskDecisionDto.from(view), GoalEntitlementDepthDto.from(view.entitlementDepth()));
     }
   }
 
@@ -899,6 +918,42 @@ public class GoalAutopilotController {
   public record GoalClaimGuardDto(boolean officialScoreEquivalence, boolean goalCompletionClaimAllowed, String allowedClaim) {
     static GoalClaimGuardDto from(GoalAutopilotService.ClaimGuardView view) {
       return new GoalClaimGuardDto(view.officialScoreEquivalence(), view.goalCompletionClaimAllowed(), view.allowedClaim());
+    }
+  }
+
+  public record GoalEntitlementDepthDto(
+      String depthState,
+      String allowedDepth,
+      String diagnosticDepth,
+      int diagnosticSampleLimit,
+      String plannerDepth,
+      int plannerHorizonDays,
+      int plannerSessionLimit,
+      String checkpointDepth,
+      String checkpointCadence,
+      String explanationDepth,
+      boolean providerCandidateAllowed,
+      boolean preciseEtaAllowed,
+      String limitationReason,
+      String sourceEntitlementRef,
+      String ruleVersion) {
+    static GoalEntitlementDepthDto from(GoalAutopilotService.EntitlementDepthView view) {
+      return new GoalEntitlementDepthDto(
+          view.depthState(),
+          view.allowedDepth(),
+          view.diagnosticDepth(),
+          view.diagnosticSampleLimit(),
+          view.plannerDepth(),
+          view.plannerHorizonDays(),
+          view.plannerSessionLimit(),
+          view.checkpointDepth(),
+          view.checkpointCadence(),
+          view.explanationDepth(),
+          view.providerCandidateAllowed(),
+          view.preciseEtaAllowed(),
+          view.limitationReason(),
+          view.sourceEntitlementRef(),
+          view.ruleVersion());
     }
   }
 

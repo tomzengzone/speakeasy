@@ -862,6 +862,8 @@ paths:
               examples:
                 default:
                   $ref: '#/components/examples/GoalAutopilotSummaryResponseExample'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
         '422':
           $ref: '#/components/responses/ValidationFailed'
     parameters:
@@ -893,6 +895,8 @@ paths:
                   $ref: '#/components/examples/GoalAutopilotSummaryResponseExample'
         '404':
           $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /goal-autopilot/progress-projection:
@@ -909,7 +913,7 @@ paths:
         - P02-FUC-FR-004
       responses:
         '200':
-          description: Safe backend-owned progress projection for surface rendering.
+          description: Safe backend-owned progress projection for surface rendering, including disabled or kill-switch unavailable states.
           content:
             application/json:
               schema:
@@ -982,6 +986,8 @@ paths:
                   $ref: '#/components/examples/AutopilotControlResponseExample'
         '409':
           $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
         '422':
           $ref: '#/components/responses/ValidationFailed'
     parameters:
@@ -1022,6 +1028,8 @@ paths:
                   $ref: '#/components/examples/AutopilotControlPausedResponseExample'
         '409':
           $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
         '422':
           $ref: '#/components/responses/ValidationFailed'
     parameters:
@@ -1063,6 +1071,8 @@ paths:
                   $ref: '#/components/examples/AutopilotControlResponseExample'
         '409':
           $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
         '422':
           $ref: '#/components/responses/ValidationFailed'
     parameters:
@@ -1101,6 +1111,8 @@ paths:
                   $ref: '#/components/examples/NotificationEligibilityResponseExample'
         '409':
           $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
         '422':
           $ref: '#/components/responses/ValidationFailed'
     parameters:
@@ -1129,6 +1141,8 @@ paths:
                   $ref: '#/components/examples/NotificationOutboxListResponseExample'
         '404':
           $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /goal-autopilot/recovery/replan:
@@ -1166,6 +1180,8 @@ paths:
                   $ref: '#/components/examples/RecoveryPlanResponseExample'
         '409':
           $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
         '422':
           $ref: '#/components/responses/ValidationFailed'
     parameters:
@@ -1204,6 +1220,8 @@ paths:
                   $ref: '#/components/examples/ItemPolicyDecisionResponseExample'
         '409':
           $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
         '422':
           $ref: '#/components/responses/ValidationFailed'
     parameters:
@@ -1232,6 +1250,8 @@ paths:
                   $ref: '#/components/examples/MasteryTransitionListResponseExample'
         '404':
           $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /goal-autopilot/replay-audits:
@@ -1258,6 +1278,8 @@ paths:
                   $ref: '#/components/examples/PlannerReplayAuditListResponseExample'
         '404':
           $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /goal-autopilot/plans/generate:
@@ -1300,6 +1322,8 @@ paths:
                   $ref: '#/components/examples/GoalPlanResponseExample'
         '409':
           $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
         '422':
           $ref: '#/components/responses/ValidationFailed'
     parameters:
@@ -1331,6 +1355,8 @@ paths:
                   $ref: '#/components/examples/DailyPlanResponseExample'
         '404':
           $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /goal-autopilot/actions/next:
@@ -1361,6 +1387,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /goal-autopilot/actions/{plan_item_id}/complete:
@@ -1402,6 +1430,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /goal-autopilot/forecast:
@@ -1431,6 +1461,8 @@ paths:
                   $ref: '#/components/examples/GoalForecastResponseExample'
         '404':
           $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /goal-autopilot/checkpoints/task:
@@ -1459,6 +1491,8 @@ paths:
                   $ref: '#/components/examples/CheckpointTaskResponseExample'
         '404':
           $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /goal-autopilot/checkpoints:
@@ -1499,6 +1533,8 @@ paths:
                   $ref: '#/components/examples/CheckpointResponseExample'
         '422':
           $ref: '#/components/responses/ValidationFailed'
+        '503':
+          $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /training/sessions/{session_id}:
@@ -2665,6 +2701,8 @@ paths:
               examples:
                 default:
                   $ref: '#/components/examples/UsageReservationResponseExample'
+        '409':
+          $ref: '#/components/responses/IdempotencyConflict'
         '429':
           $ref: '#/components/responses/UsageLimitExceeded'
     parameters:
@@ -3459,6 +3497,15 @@ components:
               $ref: '#/components/examples/ErrorResponseExample'
     ProviderUnavailable:
       description: External provider unavailable.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              $ref: '#/components/examples/ErrorResponseExample'
+    GoalAutopilotRuntimeDisabled:
+      description: P0.2 goal autopilot runtime disabled by feature flag or kill switch.
       content:
         application/json:
           schema:
@@ -4384,6 +4431,7 @@ components:
       - goal_profile
       - support_decision
       - diagnostic
+      - entitlement_depth
       - forecast
       properties:
         schema_version:
@@ -4396,6 +4444,8 @@ components:
           $ref: '#/components/schemas/SupportedGoalMatrixDecision'
         diagnostic:
           $ref: '#/components/schemas/DiagnosticAssessment'
+        entitlement_depth:
+          $ref: '#/components/schemas/GoalEntitlementDepth'
         weekly_backplan:
           $ref: '#/components/schemas/WeeklyBackplan'
         daily_plan:
@@ -4709,6 +4759,105 @@ components:
             $ref: '#/components/schemas/WeaknessTag'
         claim_guard:
           $ref: '#/components/schemas/GoalClaimGuard'
+    GoalEntitlementDepth:
+      type: object
+      required:
+      - depth_state
+      - allowed_depth
+      - diagnostic_depth
+      - diagnostic_sample_limit
+      - planner_depth
+      - planner_horizon_days
+      - planner_session_limit
+      - checkpoint_depth
+      - checkpoint_cadence
+      - explanation_depth
+      - provider_candidate_allowed
+      - precise_eta_allowed
+      - limitation_reason
+      - source_entitlement_ref
+      - rule_version
+      properties:
+        depth_state:
+          type: string
+          enum:
+          - full
+          - limited
+          - blocked
+        allowed_depth:
+          type: string
+          enum:
+          - full
+          - limited
+          - blocked
+        diagnostic_depth:
+          type: string
+          enum:
+          - full_sample
+          - minimum_sample
+          - blocked
+        diagnostic_sample_limit:
+          type: integer
+          minimum: 0
+        planner_depth:
+          type: string
+          enum:
+          - full_horizon
+          - limited_horizon
+          - blocked
+        planner_horizon_days:
+          type: integer
+          minimum: 0
+        planner_session_limit:
+          type: integer
+          minimum: 0
+        checkpoint_depth:
+          type: string
+          enum:
+          - full_checkpoint
+          - low_cost_checkpoint
+          - blocked
+        checkpoint_cadence:
+          type: string
+          enum:
+          - weekly
+          - biweekly
+          - none
+          - none
+        explanation_depth:
+          type: string
+          enum:
+          - provider_candidate_allowed
+          - deterministic_low_cost
+          - blocked
+        provider_candidate_allowed:
+          type: boolean
+        precise_eta_allowed:
+          type: boolean
+        limitation_reason:
+          type: string
+          enum:
+          - paid_full_depth
+          - missing_entitlement_free_fallback
+          - free_depth_limited
+          - expired_entitlement_limited
+          - grace_entitlement_limited
+          - entitlement_blocked_revoked
+          - entitlement_blocked_refunded
+          - entitlement_blocked_canceled
+          - entitlement_blocked_cancelled
+          - unknown_entitlement_blocked
+          - unsupported_goal
+          - partial_goal_limited
+          - low_confidence_limited
+          - quota_or_cost_limited
+          - quota_exhausted
+          - cost_budget_limited
+          - entitlement_required
+        source_entitlement_ref:
+          type: string
+        rule_version:
+          type: string
     RubricScore:
       type: object
       required:
@@ -4779,6 +4928,7 @@ components:
       - weekly_backplan
       - daily_plan
       - next_action
+      - entitlement_depth
       properties:
         schema_version:
           $ref: '#/components/schemas/SchemaVersion'
@@ -4788,6 +4938,8 @@ components:
           $ref: '#/components/schemas/DailyTrainingPlan'
         next_action:
           $ref: '#/components/schemas/AutopilotAction'
+        entitlement_depth:
+          $ref: '#/components/schemas/GoalEntitlementDepth'
     DailyPlanResponse:
       type: object
       required:
@@ -4818,27 +4970,34 @@ components:
       required:
       - schema_version
       - forecast
+      - entitlement_depth
       properties:
         schema_version:
           $ref: '#/components/schemas/SchemaVersion'
         forecast:
           $ref: '#/components/schemas/ProgressForecast'
+        entitlement_depth:
+          $ref: '#/components/schemas/GoalEntitlementDepth'
     CheckpointTaskResponse:
       type: object
       required:
       - schema_version
       - checkpoint_task
+      - entitlement_depth
       properties:
         schema_version:
           $ref: '#/components/schemas/SchemaVersion'
         checkpoint_task:
           $ref: '#/components/schemas/CheckpointTaskDecision'
+        entitlement_depth:
+          $ref: '#/components/schemas/GoalEntitlementDepth'
     CheckpointResponse:
       type: object
       required:
       - schema_version
       - checkpoint
       - forecast
+      - entitlement_depth
       - plan_update_signal
       properties:
         schema_version:
@@ -4847,6 +5006,8 @@ components:
           $ref: '#/components/schemas/OutcomeCheckpoint'
         forecast:
           $ref: '#/components/schemas/ProgressForecast'
+        entitlement_depth:
+          $ref: '#/components/schemas/GoalEntitlementDepth'
         plan_update_signal:
           $ref: '#/components/schemas/PlanUpdateSignal'
     WeeklyBackplan:
@@ -5090,6 +5251,9 @@ components:
           - unavailable
           - ai_explanation_unavailable
           - cost_quota_limited
+          - quota_exhausted
+          - cost_budget_limited
+          - entitlement_required
         confidence_band:
           $ref: '#/components/schemas/GoalConfidenceBand'
         risk_level:
@@ -5114,6 +5278,9 @@ components:
           - stale_plan
           - deleted
           - unavailable
+          - quota_exhausted
+          - cost_budget_limited
+          - entitlement_required
         next_checkpoint_date:
           type: string
           format: date
@@ -5157,6 +5324,9 @@ components:
           - deterministic_no_provider_path
           - ai_explanation_unavailable
           - cost_quota_limited
+          - quota_exhausted
+          - cost_budget_limited
+          - entitlement_required
           - policy_blocked
           - invalid_candidate
         candidate_only:
@@ -5205,7 +5375,19 @@ components:
           - partial_goal_limited
           - unsupported_goal
           - entitlement_limited
+          - entitlement_blocked_revoked
+          - entitlement_blocked_refunded
+          - entitlement_blocked_canceled
+          - entitlement_blocked_cancelled
+          - unknown_entitlement_blocked
+          - expired_entitlement_limited
+          - grace_entitlement_limited
+          - free_depth_limited
+          - missing_entitlement_free_fallback
           - cost_quota_limited
+          - quota_exhausted
+          - cost_budget_limited
+          - entitlement_required
         support_status:
           type: string
           enum:
@@ -5273,6 +5455,9 @@ components:
           - unsupported_goal
           - entitlement_limited
           - cost_quota_limited
+          - quota_exhausted
+          - cost_budget_limited
+          - entitlement_required
         ai_depth:
           type: string
           enum:
@@ -7167,6 +7352,8 @@ components:
       - usage_family
       - amount
       - status
+      - source_ref
+      - idempotency_key_ref
       properties:
         reservation_id:
           type: string
@@ -7182,6 +7369,15 @@ components:
           - released
           - expired
           - failed
+        source_ref:
+          type: string
+          description: Redacted source reference for the operation that created the reservation.
+        idempotency_key_ref:
+          type: string
+          description: Redacted idempotency-key reference; raw keys are never returned.
+        provider_usage_event_ref:
+          type: string
+          description: Redacted provider or fallback event reference recorded on commit/release.
         expires_at:
           type: string
           format: date-time
@@ -7469,6 +7665,7 @@ components:
       - cache_hit
       - call_count
       - estimated_cost
+      - fallback_reason
       - margin_risk
       properties:
         period:
@@ -7499,6 +7696,7 @@ components:
           - rejected
           - provider_unavailable
           - fallback
+          - deterministic_no_provider
         cache_hit:
           type: boolean
         call_count:
@@ -7509,6 +7707,8 @@ components:
           type: integer
         estimated_cost:
           type: number
+        fallback_reason:
+          type: string
         budget_bucket:
           type: string
         margin_risk:
@@ -8114,6 +8314,22 @@ components:
             official_score_equivalence: false
             goal_completion_claim_allowed: false
             allowed_claim: product_internal_progress_only
+        entitlement_depth:
+          depth_state: full
+          allowed_depth: full
+          diagnostic_depth: full_sample
+          diagnostic_sample_limit: 3
+          planner_depth: full_horizon
+          planner_horizon_days: 28
+          planner_session_limit: 6
+          checkpoint_depth: full_checkpoint
+          checkpoint_cadence: weekly
+          explanation_depth: provider_candidate_allowed
+          provider_candidate_allowed: true
+          precise_eta_allowed: true
+          limitation_reason: paid_full_depth
+          source_entitlement_ref: entitlement:paid_snapshot_sample
+          rule_version: fud-entitlement-depth-v1
         weekly_backplan:
           weekly_backplan_id: weekly_backplan_id_sample
           plan_version: goal-plan-v1
@@ -8623,6 +8839,22 @@ components:
           expected_duration_minutes: 12
           status: ready
           explanation: Start with the highest-risk fluency item first.
+        entitlement_depth:
+          depth_state: full
+          allowed_depth: full
+          diagnostic_depth: full_sample
+          diagnostic_sample_limit: 3
+          planner_depth: full_horizon
+          planner_horizon_days: 28
+          planner_session_limit: 6
+          checkpoint_depth: full_checkpoint
+          checkpoint_cadence: weekly
+          explanation_depth: provider_candidate_allowed
+          provider_candidate_allowed: true
+          precise_eta_allowed: true
+          limitation_reason: paid_full_depth
+          source_entitlement_ref: entitlement:paid_snapshot_sample
+          rule_version: fud-entitlement-depth-v1
     DailyPlanResponseExample:
       summary: getGoalAutopilotDailyPlan response 200 example
       value:
@@ -8725,6 +8957,22 @@ components:
             fallback_reason: deterministic_no_provider_path
             candidate_only: true
           updated_at: '2026-06-05T09:00:00Z'
+        entitlement_depth:
+          depth_state: full
+          allowed_depth: full
+          diagnostic_depth: full_sample
+          diagnostic_sample_limit: 3
+          planner_depth: full_horizon
+          planner_horizon_days: 28
+          planner_session_limit: 6
+          checkpoint_depth: full_checkpoint
+          checkpoint_cadence: weekly
+          explanation_depth: provider_candidate_allowed
+          provider_candidate_allowed: true
+          precise_eta_allowed: true
+          limitation_reason: paid_full_depth
+          source_entitlement_ref: entitlement:paid_snapshot_sample
+          rule_version: fud-entitlement-depth-v1
     CheckpointTaskResponseExample:
       summary: getGoalAutopilotCheckpointTask response 200 example
       value:
@@ -8752,6 +9000,22 @@ components:
             ai_depth: deterministic_candidate_allowed
             scoring_boundary: product_internal_rubric_only_no_official_score_certification
           rule_version: fuc-checkpoint-task-v1
+        entitlement_depth:
+          depth_state: full
+          allowed_depth: full
+          diagnostic_depth: full_sample
+          diagnostic_sample_limit: 3
+          planner_depth: full_horizon
+          planner_horizon_days: 28
+          planner_session_limit: 6
+          checkpoint_depth: full_checkpoint
+          checkpoint_cadence: weekly
+          explanation_depth: provider_candidate_allowed
+          provider_candidate_allowed: true
+          precise_eta_allowed: true
+          limitation_reason: paid_full_depth
+          source_entitlement_ref: entitlement:paid_snapshot_sample
+          rule_version: fud-entitlement-depth-v1
     SubmitCheckpointRequestExample:
       summary: submitGoalAutopilotCheckpoint request example
       value:
@@ -8797,6 +9061,22 @@ components:
             fallback_reason: deterministic_no_provider_path
             candidate_only: true
           updated_at: '2026-06-05T09:00:00Z'
+        entitlement_depth:
+          depth_state: full
+          allowed_depth: full
+          diagnostic_depth: full_sample
+          diagnostic_sample_limit: 3
+          planner_depth: full_horizon
+          planner_horizon_days: 28
+          planner_session_limit: 6
+          checkpoint_depth: full_checkpoint
+          checkpoint_cadence: weekly
+          explanation_depth: provider_candidate_allowed
+          provider_candidate_allowed: true
+          precise_eta_allowed: true
+          limitation_reason: paid_full_depth
+          source_entitlement_ref: entitlement:paid_snapshot_sample
+          rule_version: fud-entitlement-depth-v1
         plan_update_signal:
           signal_type: checkpoint_replan
           reason_code: checkpoint_updated_gap
@@ -9209,9 +9489,11 @@ components:
         schema_version: 1
         reservation:
           reservation_id: reservation_id_sample
-          usage_family: sample
+          usage_family: ai
           amount: 1
           status: reserved
+          source_ref: goal_autopilot:plan_generate:source_ref_sample
+          idempotency_key_ref: idempotency_sha256:0123456789abcdef
           expires_at: '2026-05-26T12:00:00Z'
     UsageTransitionRequestExample:
       summary: commitUsage request example
@@ -9316,6 +9598,7 @@ components:
           audio_duration_seconds: 0
           token_estimate: 4200
           estimated_cost: 0.84
+          fallback_reason: ''
           budget_bucket: daily_user
           margin_risk: watch
     AiRetentionJobCreateRequestExample:

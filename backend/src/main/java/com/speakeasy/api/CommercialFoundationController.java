@@ -17,7 +17,10 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -235,14 +238,34 @@ public class CommercialFoundationController {
     }
   }
 
-  public record UsageReservationDto(UUID reservationId, String usageFamily, int amount, String status, Instant expiresAt) {
+  public record UsageReservationDto(
+      UUID reservationId,
+      String usageFamily,
+      int amount,
+      String status,
+      String sourceRef,
+      String idempotencyKeyRef,
+      String providerUsageEventRef,
+      Instant expiresAt) {
     static UsageReservationDto from(UsageReservation reservation) {
       return new UsageReservationDto(
           reservation.getReservationId(),
           reservation.getUsageFamily(),
           reservation.getAmount(),
           reservation.getStatus(),
+          reservation.getSourceRef(),
+          idempotencyKeyRef(reservation.getIdempotencyKey()),
+          reservation.getProviderUsageEventRef(),
           reservation.getExpiresAt());
+    }
+
+    private static String idempotencyKeyRef(String idempotencyKey) {
+      try {
+        byte[] digest = MessageDigest.getInstance("SHA-256").digest(idempotencyKey.getBytes(StandardCharsets.UTF_8));
+        return "idempotency_sha256:" + HexFormat.of().formatHex(digest).substring(0, 16);
+      } catch (Exception e) {
+        return "idempotency_sha256:unavailable";
+      }
     }
   }
 

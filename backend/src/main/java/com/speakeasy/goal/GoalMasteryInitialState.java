@@ -55,6 +55,10 @@ public class GoalMasteryInitialState {
     this.createdAt = createdAt;
   }
 
+  public UUID getInitialStateId() {
+    return stateId;
+  }
+
   public String getDimensionKey() {
     return dimensionKey;
   }

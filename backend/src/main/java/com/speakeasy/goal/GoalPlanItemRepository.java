@@ -12,4 +12,6 @@ public interface GoalPlanItemRepository extends JpaRepository<GoalPlanItem, UUID
   Optional<GoalPlanItem> findByPlanItemIdAndUserId(UUID planItemId, UUID userId);
 
   Optional<GoalPlanItem> findFirstByDailyPlanIdAndStatusInOrderByOrderIndexAsc(UUID dailyPlanId, Collection<String> statuses);
+
+  List<GoalPlanItem> findByUserIdOrderByCreatedAtDesc(UUID userId);
 }

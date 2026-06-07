@@ -32,6 +32,12 @@ public class UsageReservation {
   @Column(name = "idempotency_key", nullable = false)
   private String idempotencyKey;
 
+  @Column(name = "source_ref", nullable = false)
+  private String sourceRef;
+
+  @Column(name = "provider_usage_event_ref")
+  private String providerUsageEventRef;
+
   @Column(name = "reserved_at", nullable = false)
   private Instant reservedAt;
 
@@ -41,6 +47,19 @@ public class UsageReservation {
   protected UsageReservation() {}
 
   public UsageReservation(UUID reservationId, UUID ledgerId, UUID userId, String usageFamily, int amount, String idempotencyKey, Instant reservedAt, Instant expiresAt) {
+    this(reservationId, ledgerId, userId, usageFamily, amount, idempotencyKey, "legacy", reservedAt, expiresAt);
+  }
+
+  public UsageReservation(
+      UUID reservationId,
+      UUID ledgerId,
+      UUID userId,
+      String usageFamily,
+      int amount,
+      String idempotencyKey,
+      String sourceRef,
+      Instant reservedAt,
+      Instant expiresAt) {
     this.reservationId = reservationId;
     this.ledgerId = ledgerId;
     this.userId = userId;
@@ -48,6 +67,7 @@ public class UsageReservation {
     this.amount = amount;
     this.status = "reserved";
     this.idempotencyKey = idempotencyKey;
+    this.sourceRef = sourceRef;
     this.reservedAt = reservedAt;
     this.expiresAt = expiresAt;
   }
@@ -80,23 +100,33 @@ public class UsageReservation {
     return idempotencyKey;
   }
 
+  public String getSourceRef() {
+    return sourceRef;
+  }
+
+  public String getProviderUsageEventRef() {
+    return providerUsageEventRef;
+  }
+
   public Instant getExpiresAt() {
     return expiresAt;
   }
 
-  public boolean sameReservePayload(String usageFamily, int amount) {
-    return this.usageFamily.equals(usageFamily) && this.amount == amount;
+  public boolean sameReservePayload(String usageFamily, int amount, String sourceRef) {
+    return this.usageFamily.equals(usageFamily) && this.amount == amount && this.sourceRef.equals(sourceRef);
   }
 
-  public void commit() {
+  public void commit(String providerUsageEventRef) {
     if ("reserved".equals(status)) {
       this.status = "committed";
+      this.providerUsageEventRef = providerUsageEventRef;
     }
   }
 
-  public void release() {
+  public void release(String providerUsageEventRef) {
     if ("reserved".equals(status)) {
       this.status = "released";
+      this.providerUsageEventRef = providerUsageEventRef;
     }
   }
 }

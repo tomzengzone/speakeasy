@@ -128,7 +128,7 @@ REQUIRED_TERMS = {
         "P02-GOAL-AUTOPILOT-LOCAL-IMPLEMENTATION-20260604",
         "No-goal Explore Mode",
         "TC-P02-FUA-014",
-        "backend changed-code line 96.3%",
+        "backend changed-code line 96.0%",
         "Flutter feature line 82.1%",
     ],
     "docs/reports/implementation_report.md": [

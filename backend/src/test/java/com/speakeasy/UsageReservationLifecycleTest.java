@@ -37,7 +37,10 @@ class UsageReservationLifecycleTest extends BackendIntegrationTestSupport {
                 }
                 """.formatted(committedReservationId)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.reservation.status").value("committed"));
+        .andExpect(jsonPath("$.reservation.status").value("committed"))
+        .andExpect(jsonPath("$.reservation.source_ref").value("test"))
+        .andExpect(jsonPath("$.reservation.idempotency_key_ref", not(blankOrNullString())))
+        .andExpect(jsonPath("$.reservation.provider_usage_event_ref").value("provider-ai-017-a"));
 
     String releasedReservationId = reserve(auth, "usage-reserve-017-b", "ai", 1);
     mvc.perform(post("/usage/release")
@@ -51,7 +54,8 @@ class UsageReservationLifecycleTest extends BackendIntegrationTestSupport {
                 }
                 """.formatted(releasedReservationId)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.reservation.status").value("released"));
+        .andExpect(jsonPath("$.reservation.status").value("released"))
+        .andExpect(jsonPath("$.reservation.provider_usage_event_ref").value("provider-ai-017-b"));
 
     mvc.perform(get("/usage/summary").header(HttpHeaders.AUTHORIZATION, auth))
         .andExpect(status().isOk())
@@ -60,7 +64,34 @@ class UsageReservationLifecycleTest extends BackendIntegrationTestSupport {
         .andExpect(jsonPath("$.usage[0].reserved_amount").value(0));
   }
 
+  @Test
+  void usageIdempotencyConflictIncludesSourceRefPayload() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800138431");
+    String auth = bearer(tokens.accessToken());
+
+    reserve(auth, "usage-reserve-017-c", "ai", 1, "goal_autopilot:plan:a");
+
+    mvc.perform(post("/usage/reserve")
+            .header(HttpHeaders.AUTHORIZATION, auth)
+            .header("Idempotency-Key", "usage-reserve-017-c")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "usage_family": "ai",
+                  "amount": 1,
+                  "source_ref": "goal_autopilot:plan:b"
+                }
+                """))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.error.code").value("IDEMPOTENCY_CONFLICT"));
+  }
+
   private String reserve(String auth, String idempotencyKey, String usageFamily, int amount) throws Exception {
+    return reserve(auth, idempotencyKey, usageFamily, amount, "test");
+  }
+
+  private String reserve(String auth, String idempotencyKey, String usageFamily, int amount, String sourceRef) throws Exception {
     MvcResult result = mvc.perform(post("/usage/reserve")
             .header(HttpHeaders.AUTHORIZATION, auth)
             .header("Idempotency-Key", idempotencyKey)
@@ -70,12 +101,15 @@ class UsageReservationLifecycleTest extends BackendIntegrationTestSupport {
                   "schema_version": 1,
                   "usage_family": "%s",
                   "amount": %d,
-                  "source_ref": "test"
+                  "source_ref": "%s"
                 }
-                """.formatted(usageFamily, amount)))
+                """.formatted(usageFamily, amount, sourceRef)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.reservation.reservation_id", not(blankOrNullString())))
         .andExpect(jsonPath("$.reservation.status").value("reserved"))
+        .andExpect(jsonPath("$.reservation.source_ref").value(sourceRef))
+        .andExpect(jsonPath("$.reservation.idempotency_key_ref", not(blankOrNullString())))
+        .andExpect(jsonPath("$.reservation.expires_at", not(blankOrNullString())))
         .andReturn();
     return JsonPath.read(result.getResponse().getContentAsString(), "$.reservation.reservation_id");
   }

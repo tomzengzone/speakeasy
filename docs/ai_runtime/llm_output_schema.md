@@ -337,7 +337,7 @@ Allowed `forecast_state` values:
 Followup-C validation rules:
 - `output_type` must be `followup_c_forecast_explanation_candidate`.
 - Candidate text may explain deterministic `ProgressForecast` fields but cannot set `eta_date`, `eta_range`, `goal_completion_claim_allowed`, `official_score_equivalence`, `forecast_state`, entitlement, quota, billing state, checkpoint status or plan state.
-- Candidate output must not contain `goal_completed`, `official_score`, `certified`, `guaranteed_eta`, `eta_date`, `eta_range_start`, `eta_range_end`, `entitlement`, `quota_state`, `billing_state`, raw transcript, raw audio, raw provider payload or sensitive diagnostic details.
+- Candidate output must not contain `goal_completed`, `official_score`, `certified`, `guaranteed_eta`, `eta_date`, `eta_range_start`, `eta_range_end`, `entitlement`, `quota_state`, `billing_state`, `final_mastery_level`, `release_approval`, `release_ready`, `product_base_merge_approved`, raw transcript, raw audio, raw provider payload or sensitive diagnostic details.
 - If provider use is blocked or not configured, backend returns deterministic fallback metadata such as `explanation_source=deterministic_policy` and `ai_explanation_unavailable_reason=deterministic_no_provider_path`.
 - Invalid, forbidden or low-confidence candidate output must not mutate `ProgressForecast`, `GoalProfile`, `OutcomeCheckpoint`, `GoalProgressProjection`, surface fragments, plan state, entitlement or billing facts.
 
@@ -406,5 +406,5 @@ This schema is candidate-only. Backend deterministic rules own `MemoryItemPolicy
 - `guardrails.official_score_equivalence` and `guardrails.goal_completion_claim_allowed` must be false.
 - `guardrails.persistent_decision_fields_present` must be false and `guardrails.forbidden_fields_detected` must be empty before the candidate can be rendered.
 - `evidence_summary` may include redacted evidence refs and aggregate counts only; raw transcript, raw audio, raw provider payload, exact sensitive diagnostic details and unrestricted personal data are forbidden.
-- Candidate output must not contain persistent decision fields such as `final_mastery_level`, `promotion_applied`, `demotion_applied`, `review_due_at`, `notification_schedule`, `control_status`, `recovery_mode`, `goal_completed`, `official_score`, `certified`, `entitlement`, `quota_state` or `billing_state`.
+- Candidate output must not contain persistent decision fields such as `final_mastery_level`, `promotion_applied`, `demotion_applied`, `review_due_at`, `notification_schedule`, `control_status`, `recovery_mode`, `goal_completed`, `official_score`, `certified`, `entitlement`, `quota_state`, `billing_state`, `release_approval`, `release_ready` or `product_base_merge_approved`.
 - If any forbidden field is present, backend validation must reject or ignore the candidate for persistence and use deterministic fallback. It must not update `MasteryTransitionDecision`, `MemoryItemPolicyState`, `NotificationOutboxRecord`, `UserAutopilotControl` or `RecoveryPlanDecision`.

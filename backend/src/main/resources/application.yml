@@ -22,6 +22,12 @@ server:
     context-path: /v1
 
 speakeasy:
+  goal-autopilot:
+    runtime:
+      enabled: ${SPEAKEASY_GOAL_AUTOPILOT_RUNTIME_ENABLED:true}
+      kill-switch:
+        enabled: ${SPEAKEASY_GOAL_AUTOPILOT_KILL_SWITCH_ENABLED:false}
+        reason: ${SPEAKEASY_GOAL_AUTOPILOT_KILL_SWITCH_REASON:operator_disabled}
   ai:
     provider: ${SPEAKEASY_AI_PROVIDER:deterministic}
     media:

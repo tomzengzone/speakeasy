@@ -20,6 +20,7 @@ class GoalAutopilotSummary {
     required this.limitationMessage,
     required this.rubricAvailable,
     required this.contentCoverage,
+    required this.entitlementDepth,
     this.targetScore,
     this.targetAbility = '',
     this.deadline,
@@ -50,6 +51,7 @@ class GoalAutopilotSummary {
   final String limitationMessage;
   final bool rubricAvailable;
   final String contentCoverage;
+  final GoalEntitlementDepth entitlementDepth;
   final double? targetScore;
   final String targetAbility;
   final DateTime? deadline;
@@ -80,7 +82,8 @@ class GoalAutopilotSummary {
       nextAction?.status == 'stale' ||
       nextAction?.status == 'blocked';
 
-  bool get canGeneratePlan => !isUnsupported && !hasExecutableAction;
+  bool get canGeneratePlan =>
+      !isUnsupported && !hasExecutableAction && !entitlementDepth.isBlocked;
 
   bool get shouldForceReplan => isPlanStale || (revision > 1 && !hasPlan);
 
@@ -90,10 +93,40 @@ class GoalAutopilotSummary {
       goalCompletionClaimAllowed &&
       etaDate != null;
 
+  factory GoalAutopilotSummary.runtimeUnavailable(String reasonCode) {
+    final String reason = _runtimeUnavailableReasonCode(reasonCode);
+    return GoalAutopilotSummary(
+      goalProfileId: '',
+      goalType: 'goal_autopilot',
+      supportStatus: 'unavailable',
+      goalStatus: 'runtime_disabled',
+      confidenceBand: 'unavailable',
+      diagnosticStatus: 'unavailable',
+      sampleCount: 0,
+      gapSummary: '',
+      riskLevel: 'blocked',
+      riskReason: reason,
+      officialScoreEquivalence: false,
+      goalCompletionClaimAllowed: false,
+      allowedClaim: 'product_internal_progress_only',
+      revision: 0,
+      dailyMinutes: 0,
+      intensityPreference: 'blocked',
+      supportReasonCode: reason,
+      limitationMessage: 'Goal autopilot is currently unavailable.',
+      rubricAvailable: false,
+      contentCoverage: 'unavailable',
+      entitlementDepth: GoalEntitlementDepth.runtimeUnavailable(reason),
+    );
+  }
+
   factory GoalAutopilotSummary.fromJson(Map<String, dynamic> json) {
     final Map<String, dynamic> goal = _map(json['goal_profile']);
     final Map<String, dynamic> support = _map(json['support_decision']);
     final Map<String, dynamic> diagnostic = _map(json['diagnostic']);
+    final GoalEntitlementDepth entitlementDepth = GoalEntitlementDepth.fromJson(
+      _map(json['entitlement_depth']),
+    );
     final Map<String, dynamic> diagnosticClaimGuard = _map(
       diagnostic['claim_guard'],
     );
@@ -143,6 +176,7 @@ class GoalAutopilotSummary {
       limitationMessage: _string(support['limitation_message']),
       rubricAvailable: _bool(support['rubric_available']),
       contentCoverage: _string(support['content_coverage']),
+      entitlementDepth: entitlementDepth,
       diagnosticStatus: _string(diagnostic['status'], fallback: 'complete'),
       confidenceBand: _string(diagnostic['confidence_band'], fallback: 'low'),
       sampleCount: _int(diagnostic['sample_count']),
@@ -172,16 +206,137 @@ class GoalAutopilotSummary {
   }
 }
 
+class GoalEntitlementDepth {
+  const GoalEntitlementDepth({
+    required this.depthState,
+    required this.allowedDepth,
+    required this.diagnosticDepth,
+    required this.diagnosticSampleLimit,
+    required this.plannerDepth,
+    required this.plannerHorizonDays,
+    required this.plannerSessionLimit,
+    required this.checkpointDepth,
+    required this.checkpointCadence,
+    required this.explanationDepth,
+    required this.providerCandidateAllowed,
+    required this.preciseEtaAllowed,
+    required this.limitationReason,
+    required this.sourceEntitlementRef,
+    required this.ruleVersion,
+  });
+
+  final String depthState;
+  final String allowedDepth;
+  final String diagnosticDepth;
+  final int diagnosticSampleLimit;
+  final String plannerDepth;
+  final int plannerHorizonDays;
+  final int plannerSessionLimit;
+  final String checkpointDepth;
+  final String checkpointCadence;
+  final String explanationDepth;
+  final bool providerCandidateAllowed;
+  final bool preciseEtaAllowed;
+  final String limitationReason;
+  final String sourceEntitlementRef;
+  final String ruleVersion;
+
+  bool get isBlocked => depthState == 'blocked' || allowedDepth == 'blocked';
+
+  bool get isLimited => depthState == 'limited' || allowedDepth == 'limited';
+
+  bool get hasServerLimitation =>
+      limitationReason.trim().isNotEmpty && (isLimited || isBlocked);
+
+  factory GoalEntitlementDepth.runtimeUnavailable(String reasonCode) {
+    final String reason = _runtimeUnavailableReasonCode(reasonCode);
+    return GoalEntitlementDepth(
+      depthState: 'blocked',
+      allowedDepth: 'blocked',
+      diagnosticDepth: 'blocked',
+      diagnosticSampleLimit: 0,
+      plannerDepth: 'blocked',
+      plannerHorizonDays: 0,
+      plannerSessionLimit: 0,
+      checkpointDepth: 'blocked',
+      checkpointCadence: 'none',
+      explanationDepth: 'blocked',
+      providerCandidateAllowed: false,
+      preciseEtaAllowed: false,
+      limitationReason: reason,
+      sourceEntitlementRef: 'runtime_gate',
+      ruleVersion: 'flutter-runtime-gate-v1',
+    );
+  }
+
+  factory GoalEntitlementDepth.fromJson(Map<String, dynamic> json) {
+    if (json.isEmpty) {
+      return const GoalEntitlementDepth(
+        depthState: 'unknown',
+        allowedDepth: 'unknown',
+        diagnosticDepth: 'unknown',
+        diagnosticSampleLimit: 0,
+        plannerDepth: 'unknown',
+        plannerHorizonDays: 0,
+        plannerSessionLimit: 0,
+        checkpointDepth: 'unknown',
+        checkpointCadence: '',
+        explanationDepth: 'unknown',
+        providerCandidateAllowed: false,
+        preciseEtaAllowed: false,
+        limitationReason: '',
+        sourceEntitlementRef: '',
+        ruleVersion: '',
+      );
+    }
+    return GoalEntitlementDepth(
+      depthState: _string(json['depth_state'], fallback: 'unknown'),
+      allowedDepth: _string(json['allowed_depth'], fallback: 'unknown'),
+      diagnosticDepth: _string(json['diagnostic_depth'], fallback: 'unknown'),
+      diagnosticSampleLimit: _int(json['diagnostic_sample_limit']),
+      plannerDepth: _string(json['planner_depth'], fallback: 'unknown'),
+      plannerHorizonDays: _int(json['planner_horizon_days']),
+      plannerSessionLimit: _int(json['planner_session_limit']),
+      checkpointDepth: _string(json['checkpoint_depth'], fallback: 'unknown'),
+      checkpointCadence: _string(json['checkpoint_cadence']),
+      explanationDepth: _string(json['explanation_depth'], fallback: 'unknown'),
+      providerCandidateAllowed: _bool(json['provider_candidate_allowed']),
+      preciseEtaAllowed: _bool(json['precise_eta_allowed']),
+      limitationReason: _string(json['limitation_reason']),
+      sourceEntitlementRef: _string(json['source_entitlement_ref']),
+      ruleVersion: _string(json['rule_version']),
+    );
+  }
+}
+
 class GoalAutopilotView {
   const GoalAutopilotView({
     required this.summary,
     required this.controlResult,
     this.progressProjection,
+    this.runtimeUnavailableReason = '',
   });
+
+  factory GoalAutopilotView.runtimeUnavailable({
+    required String reasonCode,
+    GoalProgressProjection? progressProjection,
+    GoalAutopilotControlResult? controlResult,
+  }) {
+    final String reason = _runtimeUnavailableReasonCode(reasonCode);
+    return GoalAutopilotView(
+      summary: GoalAutopilotSummary.runtimeUnavailable(reason),
+      controlResult:
+          controlResult ?? GoalAutopilotControlResult.runtimeBlocked(reason),
+      progressProjection:
+          progressProjection ?? GoalProgressProjection.unavailable(reason),
+      runtimeUnavailableReason: reason,
+    );
+  }
 
   final GoalAutopilotSummary summary;
   final GoalAutopilotControlResult controlResult;
   final GoalProgressProjection? progressProjection;
+  final String runtimeUnavailableReason;
 
   GoalAutopilotView copyWith({
     GoalAutopilotControlResult? controlResult,
@@ -191,17 +346,32 @@ class GoalAutopilotView {
       summary: summary,
       controlResult: controlResult ?? this.controlResult,
       progressProjection: progressProjection ?? this.progressProjection,
+      runtimeUnavailableReason: runtimeUnavailableReason,
     );
   }
 
   bool get hasExecutableAction =>
+      !isRuntimeUnavailable &&
       summary.hasExecutableAction &&
       controlResult.control.controlStatus == 'active';
 
   bool get isPaused => controlResult.control.controlStatus == 'paused';
 
   bool get isPolicyBlocked =>
+      isRuntimeUnavailable ||
       controlResult.control.controlStatus == 'blocked_by_policy';
+
+  bool get isRuntimeUnavailable =>
+      runtimeUnavailableReason.trim().isNotEmpty ||
+      (progressProjection?.isRuntimeUnavailable ?? false);
+
+  String get runtimeReason {
+    final String direct = runtimeUnavailableReason.trim();
+    if (direct.isNotEmpty) {
+      return direct;
+    }
+    return progressProjection?.runtimeUnavailableReason ?? '';
+  }
 }
 
 class GoalProgressProjection {
@@ -234,6 +404,25 @@ class GoalProgressProjection {
   bool get isReady =>
       projectionState == 'ready' || projectionState == 'limited';
 
+  bool get isRuntimeUnavailable =>
+      _isRuntimeUnavailableReason(downgradeReason) ||
+      surfaceFragments.any(
+        (GoalProgressSurfaceFragment fragment) =>
+            _isRuntimeUnavailableReason(fragment.downgradeReason),
+      );
+
+  String get runtimeUnavailableReason {
+    if (_isRuntimeUnavailableReason(downgradeReason)) {
+      return downgradeReason.trim();
+    }
+    for (final GoalProgressSurfaceFragment fragment in surfaceFragments) {
+      if (_isRuntimeUnavailableReason(fragment.downgradeReason)) {
+        return fragment.downgradeReason.trim();
+      }
+    }
+    return '';
+  }
+
   GoalProgressSurfaceFragment? fragmentFor(String surface) {
     final String normalized = surface.trim();
     for (final GoalProgressSurfaceFragment fragment in surfaceFragments) {
@@ -249,6 +438,36 @@ class GoalProgressProjection {
       throw const FormatException('Missing goal progress projection payload.');
     }
     return GoalProgressProjection.fromJson(_map(json['projection']));
+  }
+
+  factory GoalProgressProjection.unavailable(String reasonCode) {
+    final String reason = _runtimeUnavailableReasonCode(reasonCode);
+    return GoalProgressProjection(
+      projectionId: 'runtime_gate_unavailable_$reason',
+      projectionState: 'unavailable',
+      downgradeReason: reason,
+      goal: null,
+      nextAction: null,
+      progress: null,
+      latestCheckpoint: null,
+      surfaceFragments: <GoalProgressSurfaceFragment>[
+        GoalProgressSurfaceFragment.runtimeUnavailable(
+          surface: 'home',
+          reasonCode: reason,
+        ),
+        GoalProgressSurfaceFragment.runtimeUnavailable(
+          surface: 'queue',
+          reasonCode: reason,
+        ),
+        GoalProgressSurfaceFragment.runtimeUnavailable(
+          surface: 'wiki',
+          reasonCode: reason,
+        ),
+      ],
+      sourceRefs: const <String>[],
+      ruleVersion: 'flutter-runtime-gate-v1',
+      updatedAt: null,
+    );
   }
 
   factory GoalProgressProjection.fromJson(Map<String, dynamic> json) {
@@ -433,6 +652,22 @@ class GoalProgressSurfaceFragment {
 
   bool allows(String field) => safeFields.contains(field);
 
+  factory GoalProgressSurfaceFragment.runtimeUnavailable({
+    required String surface,
+    required String reasonCode,
+  }) {
+    return GoalProgressSurfaceFragment(
+      surface: surface,
+      displayState: 'unavailable',
+      eligible: false,
+      downgradeReason: _runtimeUnavailableReasonCode(reasonCode),
+      nextActionRef: '',
+      forecastRef: '',
+      checkpointRef: '',
+      safeFields: const <String>[],
+    );
+  }
+
   factory GoalProgressSurfaceFragment.fromJson(Map<String, dynamic> json) {
     return GoalProgressSurfaceFragment(
       surface: _string(json['surface']),
@@ -466,6 +701,18 @@ class GoalAutopilotControlResult {
   final bool nextActionChanged;
   final bool reminderEligibilityChanged;
   final bool replanRequired;
+
+  factory GoalAutopilotControlResult.runtimeBlocked(String reasonCode) {
+    final String reason = _runtimeUnavailableReasonCode(reasonCode);
+    return GoalAutopilotControlResult(
+      control: GoalAutopilotControl.runtimeBlocked(reason),
+      reasonCode: reason,
+      reminderEligibility: NotificationEligibilityDecision.blocked(reason),
+      nextActionChanged: false,
+      reminderEligibilityChanged: false,
+      replanRequired: false,
+    );
+  }
 
   factory GoalAutopilotControlResult.fromJson(Map<String, dynamic> json) {
     return GoalAutopilotControlResult(
@@ -504,6 +751,21 @@ class GoalAutopilotControl {
   final String missedDayPolicy;
   final String pauseReason;
 
+  factory GoalAutopilotControl.runtimeBlocked(String reasonCode) {
+    final String reason = _runtimeUnavailableReasonCode(reasonCode);
+    return GoalAutopilotControl(
+      controlId: 'runtime_gate_blocked',
+      controlStatus: 'blocked_by_policy',
+      quietHoursStart: '',
+      quietHoursEnd: '',
+      timezone: '',
+      notificationConsent: false,
+      intensityOverride: 'blocked',
+      missedDayPolicy: 'blocked',
+      pauseReason: reason,
+    );
+  }
+
   factory GoalAutopilotControl.fromJson(Map<String, dynamic> json) {
     return GoalAutopilotControl(
       controlId: _string(json['control_id']),
@@ -532,6 +794,15 @@ class NotificationEligibilityDecision {
   final bool eligible;
   final String reasonCode;
   final String explanationKey;
+
+  factory NotificationEligibilityDecision.blocked(String reasonCode) {
+    final String reason = _runtimeUnavailableReasonCode(reasonCode);
+    return NotificationEligibilityDecision(
+      eligible: false,
+      reasonCode: reason,
+      explanationKey: 'runtime_gate_blocked',
+    );
+  }
 
   factory NotificationEligibilityDecision.fromJson(Map<String, dynamic> json) {
     return NotificationEligibilityDecision(
@@ -733,4 +1004,23 @@ String _restrictiveSupport(String first, String second) {
   final int firstRank = rank[first] ?? 1;
   final int secondRank = rank[second] ?? 1;
   return firstRank >= secondRank ? first : second;
+}
+
+const Set<String> _runtimeUnavailableReasons = <String>{
+  'feature_disabled',
+  'kill_switch_active',
+  'service_disabled',
+  'backend_unavailable',
+};
+
+bool _isRuntimeUnavailableReason(String value) {
+  return _runtimeUnavailableReasons.contains(value.trim());
+}
+
+String _runtimeUnavailableReasonCode(String reasonCode) {
+  final String reason = reasonCode.trim();
+  if (reason.isEmpty) {
+    return 'backend_unavailable';
+  }
+  return reason;
 }

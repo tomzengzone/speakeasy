@@ -43,9 +43,10 @@ public class UsageService {
   @Transactional
   public UsageReservation reserve(UUID userId, String usageFamily, int amount, String idempotencyKey, String sourceRef) {
     validateReserveRequest(usageFamily, amount, idempotencyKey);
+    String safeSourceRef = safe(sourceRef);
     UsageReservation existing = reservations.findByUserIdAndIdempotencyKey(userId, idempotencyKey).orElse(null);
     if (existing != null) {
-      if (!existing.sameReservePayload(usageFamily, amount)) {
+      if (!existing.sameReservePayload(usageFamily, amount, safeSourceRef)) {
         throw new ApiException(HttpStatus.CONFLICT, "IDEMPOTENCY_CONFLICT", "Idempotency key reused with different usage payload.");
       }
       return existing;
@@ -73,9 +74,10 @@ public class UsageService {
         usageFamily,
         amount,
         idempotencyKey,
+        safeSourceRef,
         now,
         now.plusSeconds(RESERVATION_TTL_SECONDS)));
-    audit(userId, "usage_reserved", usageFamily, Map.of("amount", amount, "source_ref", safe(sourceRef)));
+    audit(userId, "usage_reserved", usageFamily, Map.of("amount", amount, "source_ref", safeSourceRef));
     return reservation;
   }
 
@@ -83,14 +85,15 @@ public class UsageService {
   public UsageReservation commit(UUID userId, UUID reservationId, String providerUsageEventRef) {
     UsageReservation reservation = requireReservation(userId, reservationId);
     if ("reserved".equals(reservation.getStatus())) {
+      String safeEventRef = safe(providerUsageEventRef);
       UsageLedger ledger = ledgers.findById(reservation.getLedgerId())
           .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "Usage ledger is missing."));
       ledger.commit(reservation.getAmount());
-      reservation.commit();
+      reservation.commit(safeEventRef);
       ledgers.save(ledger);
       reservations.save(reservation);
       audit(userId, "usage_committed", reservation.getUsageFamily(),
-          Map.of("amount", reservation.getAmount(), "provider_usage_event_ref", safe(providerUsageEventRef)));
+          Map.of("amount", reservation.getAmount(), "provider_usage_event_ref", safeEventRef));
     }
     return reservation;
   }
@@ -99,14 +102,15 @@ public class UsageService {
   public UsageReservation release(UUID userId, UUID reservationId, String providerUsageEventRef) {
     UsageReservation reservation = requireReservation(userId, reservationId);
     if ("reserved".equals(reservation.getStatus())) {
+      String safeEventRef = safe(providerUsageEventRef);
       UsageLedger ledger = ledgers.findById(reservation.getLedgerId())
           .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "Usage ledger is missing."));
       ledger.release(reservation.getAmount());
-      reservation.release();
+      reservation.release(safeEventRef);
       ledgers.save(ledger);
       reservations.save(reservation);
       audit(userId, "usage_released", reservation.getUsageFamily(),
-          Map.of("amount", reservation.getAmount(), "provider_usage_event_ref", safe(providerUsageEventRef)));
+          Map.of("amount", reservation.getAmount(), "provider_usage_event_ref", safeEventRef));
     }
     return reservation;
   }

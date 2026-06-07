@@ -10,9 +10,11 @@ class GoalAutopilotPanel extends StatefulWidget {
   const GoalAutopilotPanel({
     super.key,
     this.adapter = const GoalAutopilotAdapter(),
+    this.onRuntimeUnavailableProjection,
   });
 
   final GoalAutopilotAdapter adapter;
+  final ValueChanged<GoalProgressProjection?>? onRuntimeUnavailableProjection;
 
   @override
   State<GoalAutopilotPanel> createState() => _GoalAutopilotPanelState();
@@ -35,6 +37,12 @@ class _GoalAutopilotPanelState extends State<GoalAutopilotPanel> {
   Future<GoalAutopilotView> _loadView() async {
     final GoalAutopilotView view = await widget.adapter.loadView();
     _latestView = view;
+    if (view.isRuntimeUnavailable) {
+      _creatingGoal = false;
+      _editing = false;
+      _exploring = false;
+      widget.onRuntimeUnavailableProjection?.call(view.progressProjection);
+    }
     return view;
   }
 
@@ -162,6 +170,9 @@ class _GoalAutopilotPanelState extends State<GoalAutopilotPanel> {
                 onSetGoal: _openGoalIntake,
                 onExplore: _openExplorePractice,
               ),
+              (_, _, GoalAutopilotView value, _)
+                  when value.isRuntimeUnavailable =>
+                _GoalRuntimeUnavailable(view: value),
               (_, _, GoalAutopilotView value, true) => _GoalSetup(
                 busy: _busy,
                 initial: value.summary,
@@ -226,6 +237,55 @@ class _GoalAutopilotPanelState extends State<GoalAutopilotPanel> {
               ),
             );
           },
+    );
+  }
+}
+
+class _GoalRuntimeUnavailable extends StatelessWidget {
+  const _GoalRuntimeUnavailable({required this.view});
+
+  final GoalAutopilotView view;
+
+  @override
+  Widget build(BuildContext context) {
+    final GoalProgressProjection? projection = view.progressProjection;
+    final String reason = view.runtimeReason.isEmpty
+        ? 'backend_unavailable'
+        : view.runtimeReason;
+    return Column(
+      key: const ValueKey<String>('goal-autopilot-runtime-unavailable'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const Row(
+          children: <Widget>[
+            Icon(Icons.block_rounded, color: Color(0xFFE8F5E9), size: 20),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Goal autopilot unavailable',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'State: $reason',
+          style: const TextStyle(color: Color(0xFFF5F7F2), fontSize: 13),
+        ),
+        const SizedBox(height: 10),
+        if (projection != null)
+          GoalProgressHomeSurface(projection: projection, compact: true),
+        const SizedBox(height: 8),
+        const Text(
+          'Product-internal progress only',
+          style: TextStyle(color: Color(0xFFD5E8DD), fontSize: 12),
+        ),
+      ],
     );
   }
 }
@@ -747,12 +807,15 @@ class _GoalSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final GoalAutopilotSummary summary = view.summary;
     final GoalProgressProjection? projection = view.progressProjection;
+    final bool fullDepthBlocked = _projectionBlocksFullDepth(projection);
     final GoalAutopilotControlResult controlResult = view.controlResult;
     final GoalAutopilotControl control = controlResult.control;
     final NotificationEligibilityDecision reminder =
         controlResult.reminderEligibility;
-    final GoalAutopilotAction? action = summary.nextAction;
-    final GoalDailyPlan? plan = summary.dailyPlan;
+    final GoalAutopilotAction? action = fullDepthBlocked
+        ? null
+        : summary.nextAction;
+    final GoalDailyPlan? plan = fullDepthBlocked ? null : summary.dailyPlan;
     final String limitationMessage = _visibleLimitation(summary);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -814,6 +877,13 @@ class _GoalSummary extends StatelessWidget {
                   'Samples ${summary.sampleCount} · ${summary.diagnosticStatus}',
               icon: Icons.graphic_eq,
             ),
+            if (summary.entitlementDepth.allowedDepth != 'unknown')
+              _Metric(
+                label: 'Depth: ${summary.entitlementDepth.allowedDepth}',
+                icon: summary.entitlementDepth.isBlocked
+                    ? Icons.lock_outline
+                    : Icons.layers_outlined,
+              ),
           ],
         ),
         const SizedBox(height: 10),
@@ -915,13 +985,13 @@ class _GoalSummary extends StatelessWidget {
                   ),
                 ),
               ),
-            if (view.hasExecutableAction && action != null)
+            if (!fullDepthBlocked && view.hasExecutableAction && action != null)
               _ActionRow(
                 action: action,
                 busy: busy,
                 onComplete: onCompleteAction,
               )
-            else if (summary.canGeneratePlan)
+            else if (!fullDepthBlocked && summary.canGeneratePlan)
               SizedBox(
                 height: 40,
                 child: FilledButton.icon(
@@ -954,7 +1024,7 @@ class _GoalSummary extends StatelessWidget {
             ],
           ),
         ],
-        if (onCheckpoint != null) ...<Widget>[
+        if (!fullDepthBlocked && onCheckpoint != null) ...<Widget>[
           const SizedBox(height: 12),
           TextButton.icon(
             onPressed: busy ? null : onCheckpoint,
@@ -984,16 +1054,52 @@ class _GoalSummary extends StatelessWidget {
 
   String _visibleLimitation(GoalAutopilotSummary value) {
     final String text = value.limitationMessage.trim();
-    if (text.isEmpty) {
-      return '';
-    }
+    final String entitlementReason = value.entitlementDepth.limitationReason
+        .trim();
+    final bool showEntitlementReason =
+        value.entitlementDepth.hasServerLimitation &&
+        entitlementReason.isNotEmpty;
     final String lowered = text.toLowerCase();
     if (!value.officialScoreEquivalence &&
         (lowered.contains('official score') ||
             lowered.contains('score certification'))) {
-      return 'Product-internal progress only; no external certification claim.';
+      final String claimMessage =
+          'Product-internal progress only; no external certification claim.';
+      if (showEntitlementReason) {
+        return '$claimMessage Entitlement depth: $entitlementReason.';
+      }
+      return claimMessage;
+    }
+    if (text.isEmpty) {
+      return showEntitlementReason
+          ? 'Entitlement depth: $entitlementReason.'
+          : '';
+    }
+    if (showEntitlementReason) {
+      return '$text Entitlement depth: $entitlementReason.';
     }
     return text;
+  }
+
+  bool _projectionBlocksFullDepth(GoalProgressProjection? projection) {
+    if (projection == null) {
+      return false;
+    }
+    const Set<String> blockingReasons = <String>{
+      'quota_exhausted',
+      'entitlement_required',
+      'cost_budget_limited',
+    };
+    if (blockingReasons.contains(projection.downgradeReason.trim())) {
+      return projection.surfaceFragments.any(
+        (GoalProgressSurfaceFragment fragment) => !fragment.eligible,
+      );
+    }
+    return projection.surfaceFragments.any(
+      (GoalProgressSurfaceFragment fragment) =>
+          !fragment.eligible &&
+          blockingReasons.contains(fragment.downgradeReason.trim()),
+    );
   }
 }
 

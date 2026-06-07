@@ -11,4 +11,6 @@ public interface GoalBackplanRepository extends JpaRepository<GoalBackplan, UUID
       UUID goalProfileId, Collection<String> statuses);
 
   List<GoalBackplan> findByGoalProfileIdAndStatusIn(UUID goalProfileId, Collection<String> statuses);
+
+  List<GoalBackplan> findByUserIdOrderByCreatedAtDesc(UUID userId);
 }

@@ -27,6 +27,10 @@ public class ForecastExplanationCandidateValidator {
       "entitlement",
       "quota_state",
       "billing_state",
+      "final_mastery_level",
+      "release_approval",
+      "release_ready",
+      "product_base_merge_approved",
       "checkpoint_status",
       "plan_state");
 

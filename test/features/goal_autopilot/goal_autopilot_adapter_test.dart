@@ -600,6 +600,32 @@ void main() {
   );
 
   testWidgets(
+    'Followup-D displays server entitlement depth and blocks local plan generation',
+    (WidgetTester tester) async {
+      final GoalAutopilotAdapter adapter = GoalAutopilotAdapter(
+        transport: (GoalAutopilotRequest request) async => _summaryFixture(
+          includePlan: false,
+          includeAction: false,
+          includeEntitlementDepth: true,
+          entitlementDepthState: 'blocked',
+          entitlementAllowedDepth: 'blocked',
+          entitlementLimitationReason: 'entitlement_blocked_revoked',
+          entitlementProviderCandidateAllowed: false,
+        ),
+      );
+
+      await _pumpPanel(tester, adapter);
+
+      expect(find.text('Depth: blocked'), findsOneWidget);
+      expect(
+        find.textContaining('Entitlement depth: entitlement_blocked_revoked'),
+        findsOneWidget,
+      );
+      expect(find.text('Generate plan'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'Followup-A parses claim guards and blocks official or guaranteed outcome copy',
     (WidgetTester tester) async {
       final GoalAutopilotAdapter adapter = GoalAutopilotAdapter(
@@ -748,6 +774,11 @@ Map<String, dynamic> _summaryFixture({
   bool goalCompletionClaimAllowed = false,
   String allowedClaim = 'product_internal_progress_only',
   String? etaDate = '2099-08-24',
+  bool includeEntitlementDepth = false,
+  String entitlementDepthState = 'limited',
+  String entitlementAllowedDepth = 'limited',
+  String entitlementLimitationReason = 'missing_entitlement_free_fallback',
+  bool entitlementProviderCandidateAllowed = false,
 }) {
   final Map<String, dynamic> summary = <String, dynamic>{
     'schema_version': 1,
@@ -786,6 +817,34 @@ Map<String, dynamic> _summaryFixture({
         'allowed_claim': allowedClaim,
       },
     },
+    if (includeEntitlementDepth)
+      'entitlement_depth': <String, dynamic>{
+        'depth_state': entitlementDepthState,
+        'allowed_depth': entitlementAllowedDepth,
+        'diagnostic_depth': entitlementAllowedDepth == 'blocked'
+            ? 'blocked'
+            : 'minimum_sample',
+        'diagnostic_sample_limit': entitlementAllowedDepth == 'blocked' ? 0 : 2,
+        'planner_depth': entitlementAllowedDepth == 'blocked'
+            ? 'blocked'
+            : 'limited_horizon',
+        'planner_horizon_days': entitlementAllowedDepth == 'blocked' ? 0 : 7,
+        'planner_session_limit': entitlementAllowedDepth == 'blocked' ? 0 : 3,
+        'checkpoint_depth': entitlementAllowedDepth == 'blocked'
+            ? 'blocked'
+            : 'low_cost_checkpoint',
+        'checkpoint_cadence': entitlementAllowedDepth == 'blocked'
+            ? 'none'
+            : 'biweekly',
+        'explanation_depth': entitlementAllowedDepth == 'blocked'
+            ? 'blocked'
+            : 'deterministic_low_cost',
+        'provider_candidate_allowed': entitlementProviderCandidateAllowed,
+        'precise_eta_allowed': entitlementProviderCandidateAllowed,
+        'limitation_reason': entitlementLimitationReason,
+        'source_entitlement_ref': 'entitlement:flutter_fixture',
+        'rule_version': 'fud-entitlement-depth-v1',
+      },
     'forecast': <String, dynamic>{
       'forecast_id': 'forecast_id_sample',
       'gap_summary': 'About 2 product-rubric bands below target in fluency.',

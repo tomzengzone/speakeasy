@@ -35,6 +35,19 @@ class GoalAutopilotRequest {
 typedef GoalAutopilotTransport =
     Future<Map<String, dynamic>> Function(GoalAutopilotRequest request);
 
+class GoalAutopilotRuntimeDisabledException implements Exception {
+  const GoalAutopilotRuntimeDisabledException(
+    this.reasonCode, {
+    this.message = 'Goal autopilot runtime is unavailable.',
+  });
+
+  final String reasonCode;
+  final String message;
+
+  @override
+  String toString() => '$message reason_code=$reasonCode';
+}
+
 class GoalDiagnosticSampleInput {
   const GoalDiagnosticSampleInput({
     required this.sampleRef,
@@ -82,15 +95,36 @@ class GoalAutopilotAdapter {
   }
 
   Future<GoalAutopilotView> loadView() async {
-    final GoalAutopilotSummary summary = await loadSummary();
-    final GoalAutopilotControlResult controlResult = await loadControl();
-    final GoalProgressProjection? progressProjection =
-        await loadOptionalProgressProjection();
-    return GoalAutopilotView(
-      summary: summary,
-      controlResult: controlResult,
-      progressProjection: progressProjection,
-    );
+    try {
+      final GoalAutopilotSummary summary = await loadSummary();
+      final GoalAutopilotControlResult controlResult = await loadControl();
+      final GoalProgressProjection? progressProjection =
+          await loadRuntimeGateProjection();
+      if (progressProjection?.isRuntimeUnavailable ?? false) {
+        return GoalAutopilotView.runtimeUnavailable(
+          reasonCode: progressProjection!.runtimeUnavailableReason,
+          progressProjection: progressProjection,
+        );
+      }
+      return GoalAutopilotView(
+        summary: summary,
+        controlResult: controlResult,
+        progressProjection: progressProjection,
+      );
+    } on Object catch (error) {
+      if (!_isRuntimeUnavailableError(error)) {
+        rethrow;
+      }
+      final String reason = _runtimeReasonFromError(error);
+      final GoalProgressProjection progressProjection =
+          await _runtimeUnavailableProjectionAfterError(reason);
+      return GoalAutopilotView.runtimeUnavailable(
+        reasonCode: progressProjection.runtimeUnavailableReason.isEmpty
+            ? reason
+            : progressProjection.runtimeUnavailableReason,
+        progressProjection: progressProjection,
+      );
+    }
   }
 
   Future<GoalAutopilotControlResult> loadControl() async {
@@ -119,6 +153,36 @@ class GoalAutopilotAdapter {
     } on FormatException {
       return null;
     }
+  }
+
+  Future<GoalProgressProjection?> loadRuntimeGateProjection() async {
+    try {
+      return await loadProgressProjection();
+    } on FormatException {
+      return null;
+    } on Object catch (error) {
+      if (_isRuntimeUnavailableError(error)) {
+        return GoalProgressProjection.unavailable(
+          _runtimeReasonFromError(error),
+        );
+      }
+      rethrow;
+    }
+  }
+
+  Future<GoalProgressProjection> _runtimeUnavailableProjectionAfterError(
+    String reasonCode,
+  ) async {
+    try {
+      final GoalProgressProjection? projection =
+          await loadRuntimeGateProjection();
+      if (projection?.isRuntimeUnavailable ?? false) {
+        return projection!;
+      }
+    } on Object {
+      // Summary/control already proved the runtime gate is closed.
+    }
+    return GoalProgressProjection.unavailable(reasonCode);
   }
 
   Future<GoalAutopilotSummary> createGoal({
@@ -388,6 +452,56 @@ String _planItemIdFromPath(String path) {
   }
   return '';
 }
+
+bool _isRuntimeUnavailableError(Object error) {
+  if (error is GoalAutopilotRuntimeDisabledException) {
+    return true;
+  }
+  final String text = error.toString().toLowerCase();
+  return text.contains('goal_autopilot_runtime_disabled') ||
+      text.contains('runtime_disabled') ||
+      text.contains('feature_disabled') ||
+      text.contains('kill_switch_active') ||
+      text.contains('service_disabled') ||
+      text.contains('backend_unavailable') ||
+      text.contains('请求失败（502') ||
+      text.contains('请求失败（503') ||
+      text.contains('请求失败（504') ||
+      text.contains(' 502') ||
+      text.contains(' 503') ||
+      text.contains(' 504') ||
+      text.contains('(502') ||
+      text.contains('(503') ||
+      text.contains('(504');
+}
+
+String _runtimeReasonFromError(Object error) {
+  if (error is GoalAutopilotRuntimeDisabledException) {
+    return _fallbackRuntimeReason(error.reasonCode);
+  }
+  final String text = error.toString().toLowerCase();
+  for (final String reason in _runtimeUnavailableReasons) {
+    if (text.contains(reason)) {
+      return reason;
+    }
+  }
+  return 'backend_unavailable';
+}
+
+String _fallbackRuntimeReason(String value) {
+  final String reason = value.trim();
+  if (reason.isEmpty) {
+    return 'backend_unavailable';
+  }
+  return reason;
+}
+
+const Set<String> _runtimeUnavailableReasons = <String>{
+  'feature_disabled',
+  'kill_switch_active',
+  'service_disabled',
+  'backend_unavailable',
+};
 
 Map<String, dynamic> _map(Object? value) {
   if (value is Map<String, dynamic>) {

@@ -1025,7 +1025,10 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
                     unawaited(_setActiveLearningScene(status)),
               ),
               const SizedBox(height: 16),
-              const GoalAutopilotPanel(),
+              GoalAutopilotPanel(
+                onRuntimeUnavailableProjection:
+                    _replaceGoalProjectionWithRuntimeGate,
+              ),
               const SizedBox(height: 16),
               _HomeSceneCategoryModule(
                 loading: _interviewScenesLoading,
@@ -1195,7 +1198,20 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
 
   Future<GoalProgressProjection?> _goalProjectionFuture() {
     return _goalProgressProjectionFuture ??= const GoalAutopilotAdapter()
-        .loadOptionalProgressProjection();
+        .loadRuntimeGateProjection();
+  }
+
+  void _replaceGoalProjectionWithRuntimeGate(
+    GoalProgressProjection? projection,
+  ) {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _goalProgressProjectionFuture = Future<GoalProgressProjection?>.value(
+        projection,
+      );
+    });
   }
 
   _InterviewSceneHomeStatus? _statusBySceneId(String sceneId) {

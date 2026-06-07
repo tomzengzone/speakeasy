@@ -1,7 +1,260 @@
 # Quality Report
 
 ## Current Status
-`P02-FOLLOWUP-D-S000-DOCUMENT-CHAIN-20260606` passes dual independent review for documentation-chain routing after requirements/spec/acceptance/test_cases/traceability were created or synchronized, S000-S011 were mapped to FR/Spec/AC/TC IDs, and Stage Scope P02-SI-001..013 plus Policy Gate P02-PG-001..005 coverage were made explicit. No production code changed in S000. Followup-D S001-S011 remain planned/not started; Followup-D is not release-ready and Product Base merge is not approved. Followup-C remains locally complete for S001-S007 after `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
+`P02-FOLLOWUP-D-S007-DATA-GOVERNANCE-20260607` passes independent review for data governance after redacted export shape, retention coverage, account deletion cleanup, redacted audit proof, backend/Flutter regression, coverage and report evidence were inspected. Followup-D S001/S002/S003/S004/S005/S006/S007 are locally complete for backend/API runtime gate, Flutter rollback, entitlement depth, usage/quota, cost telemetry/AI fallback, quota downgrade and data governance backend evidence only; S008-S011 remain planned/not started. Followup-D is not release-ready and Product Base merge is not approved. Followup-C remains locally complete for S001-S007 after `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
+
+## 2026-06-07 P02 Followup-D S007 Data Governance Independent Review
+
+Review ID: `P02-FOLLOWUP-D-S007-DATA-GOVERNANCE-20260607`
+
+Result: pass for local S007 data governance after redacted export metadata, retention rules, account deletion cleanup, redacted audit proof, backend/Flutter regression, changed-code coverage and report synchronization passed. This review does not approve S008-S011 consent UX, telemetry, release drift, release readiness, paid AI external evidence or Product Base merge.
+
+Findings:
+- No blocker found for export minimization. `GoalAutopilotService.exportGoalAutopilotDataGovernance` returns data-family metadata, source refs, safe/redacted/omitted field names, retention rules and user hash evidence; it does not export raw diagnostic/checkpoint transcript, audio refs, provider payloads, notification payloads or raw idempotency keys.
+- No blocker found for data-family coverage. S007 export evidence covers goal profiles, diagnostics, mastery initial state, backplans, daily plans, plan items, progress forecasts, checkpoints, controls, control idempotency, notification outbox, replay audits, recovery/mastery decisions, usage ledgers/reservations and AI provider metrics.
+- No blocker found for account deletion cleanup. `AccountDeletionService` explicitly removes goal-autopilot control/idempotency rows, existing cleanup purges related P0.2 goal/autopilot/progress/usage rows, AI retention removes metrics by redacted user hash and audit details record `p0_2_goal_autopilot_data=deleted_or_anonymized`.
+- No blocker found for contract boundaries. S007 added service/repository behavior only and did not change public OpenAPI shape; API contract and generated Dart drift remain synced to hash `fa2f5c368a83abbc6e24b182046af875b25856ce3af9756a861ff66794b464eb`.
+- No blocker found for regression coverage. S007-specific tests, account deletion regression, prior S001-S006 backend regressions, Flutter goal-autopilot coverage, analyze, frontend source-of-truth and P0.2 coverage gates all passed.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotDataExportRetentionTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotDataExportRetentionTest,AccountDeletionLearningDataTest,GoalAutopilotUsageReservationTest,UsageReservationLifecycleTest,GoalAutopilotCostTelemetryTest,GoalAutopilotQuotaDowngradeTest,GoalAutopilotControllerTest,GoalAutopilotReplayFixtureTest test` - passed.
+- Backend JaCoCo goal-autopilot suite with S007 tests and prior S001-S006 regressions - passed.
+- `npm run check:api-contract` - passed with generated Dart hash `fa2f5c368a83abbc6e24b182046af875b25856ce3af9756a861ff66794b464eb`.
+- `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- `flutter analyze` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_frontend_source_of_truth.py` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.0%, backend branch 81.2% and Flutter line 90.5%.
+
+Required corrections:
+- Fixed before close: the S007 export test initially used a checkpoint before completing/recovery actions, which made the daily plan stale; the fixture now creates plan/action/recovery/checkpoint evidence in a valid order.
+- Fixed before close: `GoalAutopilotControllerTest#tcP02Fuc002CheckpointTaskLibrary` had a date-source drift between JVM default `LocalDate.now()` and Spring `Clock`; the fixture now uses the Spring `Clock` and the regression suite passed.
+- None remain for local S007 data governance after regression validation and report synchronization.
+
+Residual risk:
+- S008-S011 consent/privacy UX, telemetry, release drift and final Product Base/release review remain open.
+- S007 records local backend data-governance evidence only. It does not prove live paid AI provider behavior, external payment/store/native evidence, commercial release readiness or Product Base merge approval.
+- Followup-D remains not release-ready and Product Base merge is not approved.
+
+## 2026-06-06 P02 Followup-D S006 Quota Downgrade Independent Review
+
+Review ID: `P02-FOLLOWUP-D-S006-QUOTA-DOWNGRADE-20260606`
+
+Result: pass for local S006 quota downgrade after stable quota/entitlement/cost reasons, full-depth plan/checkpoint/ETA/projection block behavior, Flutter stale full-depth cleanup, OpenAPI/generated Dart contract drift, backend/Flutter regression, changed-code coverage and report synchronization passed. This review does not approve S007-S011 data governance, consent UX, telemetry, release readiness, paid AI external evidence or Product Base merge.
+
+Findings:
+- No blocker found for stable backend downgrade mapping. Quota exhaustion now returns `quota_exhausted`, cost budget limits return `cost_budget_limited`, and blocked entitlement surfaces normalize user-facing downgrade behavior to `entitlement_required` while preserving raw entitlement source reasons in server-owned entitlement depth or error details.
+- No blocker found for quota-before-write behavior. S006 quota retry evidence proves rejected full-depth plan requests surface typed `USAGE_LIMIT_EXCEEDED` downgrade details before additional backplan writes, and read/projection paths are downgraded without copying full-depth source refs or premium fragments.
+- No blocker found for full-depth unavailable projection semantics. Forecast/projection/checkpoint task responses remove precise ETA, goal/action/progress/checkpoint source refs, high-depth fragments and full-depth checkpoint controls when quota, entitlement or cost reasons block full-depth behavior.
+- No blocker found for Flutter source-of-truth boundaries. Home, Queue, Wiki and Panel widgets render backend downgrade reasons and clear stale action, ETA, checkpoint and plan controls without locally inferring quota, entitlement or release state.
+- No blocker found for API/generated contract alignment. OpenAPI stable reason enums and generated Dart client drift are synced to hash `fa2f5c368a83abbc6e24b182046af875b25856ce3af9756a861ff66794b464eb`.
+- No blocker found for regression scope. S006-specific tests, prior S001-S005 backend regressions, OpenAPI/generated drift, Flutter goal-autopilot suite, analyze, frontend source-of-truth and P0.2 coverage gates all passed.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotQuotaDowngradeTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotQuotaDowngradeTest,GoalAutopilotEntitlementPolicyTest,CheckpointCadencePolicyTest,GoalAutopilotControllerTest,GoalAutopilotUsageReservationTest,GoalAutopilotCostTelemetryTest test` - passed after quiet-hours fixture stabilization.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotReplayFixtureTest test` - passed after replay fixture quiet-hours stabilization.
+- Backend JaCoCo goal-autopilot suite with S006 tests and prior S001-S005 regressions - passed.
+- `flutter test test/features/goal_autopilot/goal_autopilot_quota_downgrade_widget_test.dart` - passed.
+- `flutter test test/features/goal_autopilot` - passed.
+- `flutter analyze` - passed.
+- `npm run check:api-contract` - passed with 87 paths, 93 operations, 42 request examples, 88 success examples, 113 error examples and generated Dart hash `fa2f5c368a83abbc6e24b182046af875b25856ce3af9756a861ff66794b464eb`.
+- `npm run check:dart-client-drift` - passed with the same hash.
+- `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 95.9%, backend branch 81.2% and Flutter line 90.5%.
+- `python3 scripts/check_p0_2_goal_autopilot_frontend_source_of_truth.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Required corrections:
+- Fixed before close: `GoalAutopilotControllerTest#tcP02Fub001...` and `GoalAutopilotReplayFixtureTest#tcP02Fub015...` had time-dependent quiet-hours fixture expectations at the current Asia/Shanghai run time; the fixtures now disable quiet hours only for eligible-reminder branches and reruns passed.
+- Fixed before close: legacy S003 revoked-entitlement assertions now expect stable `entitlement_required` on forecast/error/checkpoint surfaces while preserving raw `entitlement_blocked_revoked` under `entitlement_depth`.
+- Fixed during independent review: `GoalAutopilotService` entitlement source-ref indentation was normalized without changing behavior.
+- None remain for local S006 quota downgrade after contract sync, regression validation and report synchronization.
+
+Residual risk:
+- S007-S011 data governance, consent UX, telemetry, release drift and final Product Base/release review remain open.
+- S006 records deterministic local quota/entitlement/cost downgrade behavior only. It does not prove live paid AI provider behavior, external payment/store/native evidence, commercial release readiness or Product Base merge approval.
+- Followup-D remains not release-ready and Product Base merge is not approved.
+
+## 2026-06-06 P02 Followup-D S005 Cost Telemetry And AI Fallback Independent Review
+
+Review ID: `P02-FOLLOWUP-D-S005-COST-TELEMETRY-AI-FALLBACK-20260606`
+
+Result: pass for local S005 cost telemetry/AI fallback after cost metric persistence, deterministic no-provider and policy rejection evidence, AI forbidden-field guardrails, OpenAPI/generated Dart contract drift, backend/Flutter regression, changed-code coverage and report synchronization passed. This review does not approve S006-S011 quota downgrade, data governance, consent UX, telemetry, release readiness, paid AI external evidence or Product Base merge.
+
+Findings:
+- No blocker found for deterministic no-provider evidence. Full-depth deterministic plan and checkpoint flows record `deterministic_no_provider` cost metrics with zero estimated cost and explicit operation fallback reasons instead of claiming live provider success.
+- No blocker found for policy rejection persistence. `AiCostMetricsService.recordPolicyRejection` uses `REQUIRES_NEW`, so entitlement/provider-candidate and quota rejection metrics persist even when the goal-autopilot API transaction returns an error.
+- No blocker found for redaction and entitlement boundaries. Cost metrics store user hashes and safe fallback reasons; tests verify free fallback does not create entitlement snapshots and transcript content is not copied into cost fallback evidence.
+- No blocker found for cost dashboard contract alignment. `AiCostMetric` exposes `fallback_reason` and the `deterministic_no_provider` status; `AiCostDashboardTest#tcP02Fud009CostDashboardExposesFallbackReasonForDeterministicNoProvider` verifies the ops API mapping, and OpenAPI, generated Dart manifest and generated API hash are synced to `3196a97f38da3d2f01044cbeab242fa3a78c449ff4bb92fa4ccce549fc96686c`.
+- No blocker found for AI candidate-only guardrails. Forecast and mastery validators reject entitlement, quota, billing, final mastery, release approval and Product Base merge fields with `ai_forbidden_persistent_field`, and AI runtime docs record the S005 eval cases.
+- No blocker found for regression coverage. S005-specific tests, prior S003/S004 backend regressions, cost dashboard tests, API contract drift, Flutter API contract tests, analyze and P0.2 coverage gates all passed.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotCostTelemetryTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotAiGuardrailTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ForecastExplanationSchemaTest,MasteryTransitionPolicyTest,GoalAutopilotAiGuardrailTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiCostDashboardTest,GoalAutopilotCostTelemetryTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiCostDashboardTest,GoalAutopilotCostTelemetryTest,GoalAutopilotAiGuardrailTest test` - passed after adding the dashboard `fallback_reason` API assertion.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotCostTelemetryTest,GoalAutopilotAiGuardrailTest,GoalAutopilotUsageReservationTest,UsageQuotaGateTest,UsageReservationLifecycleTest,GoalAutopilotEntitlementPolicyTest,CheckpointCadencePolicyTest,GoalAutopilotControllerTest test` - passed.
+- Backend JaCoCo goal-autopilot suite with S005 tests and prior S001-S004 regressions - passed.
+- `npm run check:api-contract` - passed with OpenAPI hash `3196a97f38da3d2f01044cbeab242fa3a78c449ff4bb92fa4ccce549fc96686c`.
+- `flutter analyze` - passed.
+- `flutter test test/services/api_client_contract_test.dart` - passed.
+- `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.1%, backend branch 81.3% and Flutter line 90.5%.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Required corrections:
+- Fixed before close: API contract drift initially failed because S005 OpenAPI changes changed the generated hash. The OpenAPI manifest, `.openapi-sha256` and generated Dart client were synced to `3196a97f38da3d2f01044cbeab242fa3a78c449ff4bb92fa4ccce549fc96686c`, then `npm run check:api-contract` passed.
+- Fixed before close: AI runtime docs now include S005 eval cases and release/Product Base forbidden persistent fields so TC-P02-FUD-010 has document-level contract evidence, not only Java test evidence.
+- Fixed during independent review: added a direct ops dashboard API assertion for deterministic no-provider `fallback_reason` so the DTO/OpenAPI mapping is executable evidence, not only schema evidence.
+- None remain for local S005 cost telemetry/AI fallback after contract sync and regression validation.
+
+Residual risk:
+- S006-S011 quota exhausted downgrade surfaces, data governance, consent UX, telemetry, release drift and final Product Base/release review remain open.
+- S005 records deterministic/no-provider and policy-rejection evidence only. It does not prove live paid AI provider behavior, commercial release readiness, store/native evidence or Product Base merge approval.
+- Followup-D remains not release-ready and Product Base merge is not approved.
+
+## 2026-06-06 P02 Followup-D S004 Usage Reservation And Quota Independent Review
+
+Review ID: `P02-FOLLOWUP-D-S004-USAGE-RESERVATION-QUOTA-20260606`
+
+Result: pass for local S004 usage reservation/quota/idempotency after backend reservation lifecycle, OpenAPI/generated Dart contract drift, backend/Flutter regression, changed-code coverage and report synchronization passed. This review does not approve S005-S011 cost telemetry, AI fallback, quota downgrade surfaces, data governance, consent UX, telemetry, release readiness, paid AI external evidence or Product Base merge.
+
+Findings:
+- No blocker found for reserve-before-write behavior in the scoped deterministic paths. `GoalAutopilotService.generatePlan` validates runtime/support/blocked entitlement first, then reserves `ai` usage before backplan/daily-plan writes; quota exhaustion returns `USAGE_LIMIT_EXCEEDED` before new backplan writes.
+- No blocker found for commit/release accounting. Plan generation commits exactly once on success; checkpoint submission commits recorded evidence and releases failed/skipped/low-confidence fallback so committed usage does not increase on failed checkpoint evidence.
+- No blocker found for idempotency. `UsageService.reserve` compares usage family, amount and sanitized `source_ref`; the same retry does not double charge, while the same idempotency key with a different source payload returns typed `IDEMPOTENCY_CONFLICT` before new goal-autopilot writes.
+- No blocker found for API/data minimization. `UsageReservation` now carries `source_ref`, redacted `idempotency_key_ref`, optional `provider_usage_event_ref` and `expires_at`; raw idempotency keys are not returned by `CommercialFoundationController`.
+- No blocker found for migration compatibility. `V202606060001__p0_2_followup_d_usage_reservation_trace.sql` adds `source_ref` with a non-null default and optional provider event ref; H2 Flyway test startup applied the migration successfully.
+- No blocker found for contract and generated-client alignment. OpenAPI adds `/usage/reserve` 409 `IdempotencyConflict`, updates `UsageReservation`, examples and generated Dart hash to `38dd8133c0551dc019eaf56fe8ccde3016db5f3180f9f578e85714ba5aae61b2`.
+- No blocker found for regression coverage. S004-specific tests, prior S001/S003 backend regressions, API contract drift, Flutter API contract tests, analyze and P0.2 coverage gates all passed.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotUsageReservationTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=UsageQuotaGateTest,UsageReservationLifecycleTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotUsageReservationTest,UsageQuotaGateTest,UsageReservationLifecycleTest,GoalAutopilotEntitlementPolicyTest,CheckpointCadencePolicyTest,GoalAutopilotControllerTest test` - passed.
+- `npm run check:api-contract` - passed.
+- Backend JaCoCo goal-autopilot suite with `GoalAutopilotUsageReservationTest`, `UsageQuotaGateTest` and `UsageReservationLifecycleTest` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.0%, backend branch 81.1% and Flutter line 90.5%.
+- `flutter analyze` - passed.
+- `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Required corrections:
+- Fixed before close: API contract drift initially failed because S004 OpenAPI changes changed the generated hash. The OpenAPI manifest, `.openapi-sha256` and generated Dart client were synced to `38dd8133c0551dc019eaf56fe8ccde3016db5f3180f9f578e85714ba5aae61b2`, then `npm run check:api-contract` passed.
+- None remain for local S004 usage reservation/quota after contract sync and regression validation.
+
+Residual risk:
+- S005-S011 cost telemetry, AI fallback, quota exhausted downgrade surfaces, data governance, consent UX, telemetry, release drift and final Product Base/release review remain open.
+- S004 uses deterministic plan/checkpoint paths and existing usage ledgers. Live provider unavailable/cost evidence must be proven in S005; S004 must not be read as paid AI external evidence.
+- Followup-D remains not release-ready and Product Base merge is not approved.
+
+## 2026-06-06 P02 Followup-D S003 Entitlement Depth Independent Review
+
+Review ID: `P02-FOLLOWUP-D-S003-ENTITLEMENT-DEPTH-20260606`
+
+Result: pass for local S003 entitlement depth after backend policy, API contract, Flutter service-owned display, regression/coverage evidence and report synchronization passed. This review does not approve S004-S011 commercial/data/ops gates, release readiness, paid AI external evidence or Product Base merge.
+
+Findings:
+- No blocker found for server-owned entitlement decisions. `GoalAutopilotEntitlementPolicy` explicitly maps paid active/full, free/default limited, expired/grace limited, revoked/refunded/unknown blocked, support override and quota/cost-limited states without relying on Flutter-provided entitlement facts.
+- No blocker found for full-depth blocking. `GoalAutopilotService.generatePlan` rejects blocked entitlement depth before creating a plan, checkpoint task selection returns unavailable for blocked entitlement states, and forecast views suppress precise ETA when entitlement depth is blocked; free users receive limited checkpoint depth instead of full checkpoint depth.
+- No blocker found for API contract alignment. OpenAPI declares `GoalEntitlementDepth`, wires `entitlement_depth` into summary, plan, forecast, checkpoint task and checkpoint responses, updates examples, and generated Dart drift pins are synced to `9269bc0c15413f57377629ee3c142fb41d4180518c5f93e81cbfadfcc59a7bd3`.
+- No blocker found for Flutter source-of-truth boundary. Flutter parses and displays backend `entitlement_depth` limitation reason and uses backend `depth_state=blocked` to suppress generate-plan UI; it does not infer pro/free/expired entitlement state locally.
+- No blocker found for regression coverage. Existing goal-autopilot controller/checkpoint tests, Flutter goal-autopilot tests, API contract drift, analyze and coverage gates passed after S003 changes.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotEntitlementPolicyTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fud003EntitlementDepthIsServerOwned test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotEntitlementPolicyTest,CheckpointCadencePolicyTest,GoalAutopilotControllerTest test` - passed.
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter test test/features/goal_autopilot` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_frontend_source_of_truth.py` - passed.
+- `npm run check:api-contract` - passed.
+- `flutter analyze` - passed.
+- `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- Backend JaCoCo goal-autopilot suite with `GoalAutopilotEntitlementPolicyTest` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.1%, backend branch 81.0% and Flutter line 90.5%.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Required corrections:
+- Fixed during independent review: blocked entitlement summary/forecast views now return unavailable forecast state without `eta_date`, so revoked/refunded/unknown users cannot receive a precise ETA while full depth is blocked.
+- Fixed during independent review: revoked/refunded/unknown entitlement statuses now take precedence over an already-past `valid_until`, preventing blocked snapshots from being downgraded to limited expired entitlement.
+- None remain for S003 entitlement depth after API examples/hash pins, Flutter display tests and blocked-forecast ETA suppression were synchronized.
+
+Residual risk:
+- S004-S011 entitlement usage reservation, quota lifecycle, cost telemetry, quota exhausted downgrade, data governance, consent UX, telemetry, drift gates and final release/Product Base review remain open.
+- S003 uses existing entitlement snapshot quota limits only to determine whether paid full depth is eligible; full usage reservation/commit/release evidence remains S004/S006 scope.
+- S003 does not prove commercial release, paid AI external evidence, store/native evidence or Product Base merge approval.
+
+## 2026-06-06 P02 Followup-D S002 Flutter Runtime Rollback Independent Review
+
+Review ID: `P02-FOLLOWUP-D-S002-FLUTTER-RUNTIME-ROLLBACK-20260606`
+
+Result: pass for local S002 Flutter rollback after the cached projection replacement gap was corrected and widget/source-of-truth/regression/coverage evidence passed. This review does not approve S003-S011 commercial/data/ops gates, release readiness, paid AI external evidence or Product Base merge.
+
+Findings:
+- No blocker remains for disabled entry behavior. `GoalAutopilotPanel` now renders `_GoalRuntimeUnavailable` before edit/create/explore branches, so disabled/kill-switch/unavailable states do not expose Set a goal, Explore practice, Start autopilot, Generate plan, Done, Checkpoint or reminder controls.
+- No blocker remains for backend-owned projection facts. `GoalAutopilotAdapter.loadRuntimeGateProjection` and `GoalProgressProjection.unavailable` produce an unavailable shell with no goal, action, forecast, checkpoint, source refs or safe progress fields when backend runtime is closed or unavailable.
+- No blocker remains for cached projection replacement. Independent review first found that Home could keep an old ready `_goalProgressProjectionFuture`; this was corrected by passing the unavailable projection from `GoalAutopilotPanel` to Home and replacing the cached future.
+- No blocker remains for source-of-truth guard coverage. `scripts/check_p0_2_goal_autopilot_frontend_source_of_truth.py` checks adapter/panel/Home runtime gate wiring, unavailable projection safety, cache replacement and forbidden local target/ETA/quota/release inference in surfaces.
+- No blocker remains for regression coverage. Existing Followup-A/B/C goal-autopilot widget/source-of-truth/performance tests still pass after the S002 gate.
+
+Validation:
+- `flutter test test/features/goal_autopilot/goal_autopilot_runtime_gate_widget_test.dart` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_frontend_source_of_truth.py` - passed.
+- `flutter test test/features/goal_autopilot` - passed.
+- `flutter analyze` - passed.
+- `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- `npm run check:api-contract` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.1%, backend branch 80.9% and Flutter line 90.3%.
+
+Required corrections:
+- Fixed during review: added `GoalAutopilotPanel.onRuntimeUnavailableProjection` and Home `_replaceGoalProjectionWithRuntimeGate` so disabled projection state replaces cached ready projection.
+
+Residual risk:
+- S003-S011 entitlement, usage/quota, cost telemetry, quota downgrade, data governance, consent UX, telemetry, drift gates and final release/Product Base review remain open.
+- S002 does not prove commercial release, paid AI external evidence, store/native evidence or Product Base merge approval.
+
+## 2026-06-06 P02 Followup-D S001 Backend Runtime Gate Independent Review
+
+Review ID: `P02-FOLLOWUP-D-S001-RUNTIME-GATE-20260606`
+
+Result: pass for local S001 backend/API runtime gate after blocked mutation audit persistence, read/projection downgrade, OpenAPI/generated Dart drift, coverage and report synchronization passed. At S001 close, this review did not approve S002 Flutter rollback, S003-S011 commercial/data/ops gates, release readiness, paid AI external evidence or Product Base merge.
+
+Findings:
+- No blocker found for mutation fail-closed behavior. `GoalAutopilotRuntimeGate` is evaluated before goal create/update, plan generate, control update/pause/resume, recovery replan, item-policy decisions, action completion and checkpoint submission write goal/autopilot/progress state.
+- No blocker found for audit persistence. Blocked mutation audit rows are written through a new transaction, so the `GOAL_AUTOPILOT_RUNTIME_DISABLED` exception does not roll back the redacted `goal_autopilot_runtime_blocked` evidence.
+- No blocker found for read and projection safety after review correction. Summary, daily plan, next action, forecast, checkpoint task, reminder outbox, replay audit and mastery-transition reads now fail closed while disabled/kill-switch active; progress projection returns unavailable without goal/action/progress/checkpoint refs, and control returns a synthetic blocked state without writing DB rows.
+- No blocker found for API contract alignment after review correction. OpenAPI declares runtime-disabled 503 responses for gated mutation/read endpoints, keeps progress projection as 200 unavailable and keeps control GET as 200 blocked; generated Dart hash is synced to `0918bcf90cbc08198be7273e07fd18aa0471e06ba32f9cee21185105814780b2`.
+- No blocker found for data minimization. Runtime-blocked audit details include operation, access mode, runtime state, reason and rule version, and tests assert raw diagnostic samples and sensitive target-score payloads are absent.
+- No blocker found for regression coverage. Runtime gate tests cover flag disabled and kill switch active paths; controller regression and broader goal-autopilot policy/replay/performance tests pass; P0.2 coverage remains above the 80% line and branch thresholds.
+- Fixed before close: the first runtime gate implementation wrote blocked audit rows inside the rolled-back mutation transaction. `GoalAutopilotRuntimeGate` now uses `PROPAGATION_REQUIRES_NEW`, and the regression test verifies persisted audit rows.
+- Fixed before close: independent review found read endpoints for reminder outbox, replay audits and mastery transitions were not gated, and OpenAPI missed runtime-disabled responses for plan generate, daily plan, reminder outbox and replay audits. The read gates and OpenAPI responses were added, and unrelated misplaced 503 responses on non-goal-autopilot paths were removed before rerunning contract checks.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotRuntimeGateTest test` - passed after audit and read-gate corrections.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,GoalAutopilotRuntimeGateTest test` - passed.
+- `npm run check:api-contract` - passed with OpenAPI hash `0918bcf90cbc08198be7273e07fd18aa0471e06ba32f9cee21185105814780b2`.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,GoalAutopilotRuntimeGateTest,GoalProgressProjectionDataGovernanceTest,GoalProgressProjectionServiceTest,ProgressForecastPolicyTest,CheckpointCadencePolicyTest,GoalAutopilotControlPerformanceTest,NotificationOutboxReplayTest,MissedDayRecoveryPlannerTest,GoalAutopilotReplayFixtureTest,NotificationEligibilityPolicyTest,MemoryCurveReplayTest,MasteryTransitionPolicyTest,GoalProgressProjectionPerformanceTest,ForecastExplanationSchemaTest,CheckpointReplayAuditTest,GoalAutopilotRecoveryControllerTest,MemoryCurvePolicyTest,NotificationOutboxServiceTest org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.1%, backend branch 80.9% and Flutter line 90.1%.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Required corrections:
+- None remain for S001 backend/API runtime gate after the audit transaction, read gate and OpenAPI contract corrections.
+
+Residual risk:
+- At S001 close, S002 Flutter entry/surface rollback was still required before disabled/kill-switch state was fully proven on user-visible surfaces; current S002 evidence is recorded above.
+- S003-S011 entitlement, usage/quota, cost telemetry, data governance, consent, telemetry, drift, release checklist and final Product Base/release review remain open.
+- This review covers local deterministic backend/API behavior only and does not create paid AI external evidence, commercial release approval or Product Base merge approval.
 
 ## 2026-06-06 P02 Followup-D S000 Document Chain Dual Review
 

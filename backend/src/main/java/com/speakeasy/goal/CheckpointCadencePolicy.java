@@ -135,11 +135,14 @@ public class CheckpointCadencePolicy {
     if ("partial".equals(supportStatus)) {
       return "partial_goal_limited";
     }
-    if (!input.entitlementAllowed()) {
-      return "entitlement_limited";
+    if (!input.quotaAvailable()) {
+      return "quota_exhausted";
     }
-    if (!input.quotaAvailable() || !input.costBudgetAvailable()) {
-      return "cost_quota_limited";
+    if (!input.costBudgetAvailable()) {
+      return "cost_budget_limited";
+    }
+    if (!input.entitlementAllowed()) {
+      return "entitlement_required";
     }
     return null;
   }

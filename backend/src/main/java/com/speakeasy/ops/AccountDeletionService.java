@@ -67,7 +67,7 @@ public class AccountDeletionService {
         userId.toString(),
         "account_deletion_completed",
         "user:" + userId,
-        "{\"learning_data\":\"deleted_or_anonymized\",\"sessions\":\"revoked\",\"ai_retention_ref\":\""
+        "{\"learning_data\":\"deleted_or_anonymized\",\"p0_2_goal_autopilot_data\":\"deleted_or_anonymized\",\"sessions\":\"revoked\",\"ai_retention_ref\":\""
             + aiRetentionJob.getRedactedEvidenceRef()
             + "\"}",
         requestId,
@@ -89,6 +89,8 @@ public class AccountDeletionService {
     delete("goal_notification_outbox_records", userId);
     delete("goal_mastery_transition_decisions", userId);
     delete("goal_recovery_plan_decisions", userId);
+    delete("goal_autopilot_control_idempotency", userId);
+    delete("goal_autopilot_controls", userId);
     delete("goal_plan_items", userId);
     delete("goal_daily_plans", userId);
     delete("goal_backplans", userId);

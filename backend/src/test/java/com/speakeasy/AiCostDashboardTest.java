@@ -95,6 +95,32 @@ class AiCostDashboardTest extends BackendIntegrationTestSupport {
   }
 
   @Test
+  void tcP02Fud009CostDashboardExposesFallbackReasonForDeterministicNoProvider() throws Exception {
+    metrics.deleteAll();
+    Instant now = Instant.now();
+    metrics.save(metric(
+        "user_sha256:fud0090000001",
+        "pro",
+        "deterministic",
+        "deterministic-llm",
+        "llm",
+        "deterministic_no_provider",
+        false,
+        320,
+        null,
+        "0.000000",
+        "low",
+        "deterministic_no_provider_call:plan_generate",
+        now));
+
+    mvc.perform(get("/admin/ai/cost-metrics").header(HttpHeaders.AUTHORIZATION, OPS_BEARER))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.metrics[0].status").value("deterministic_no_provider"))
+        .andExpect(jsonPath("$.metrics[0].fallback_reason").value("deterministic_no_provider_call:plan_generate"))
+        .andExpect(jsonPath("$.metrics[0].estimated_cost").value(0.0));
+  }
+
+  @Test
   void tcComAi005CostDashboardRequiresOpsToken() throws Exception {
     AuthTokens tokens = loginPhone("+15550001002");
 
@@ -120,6 +146,36 @@ class AiCostDashboardTest extends BackendIntegrationTestSupport {
       String estimatedCost,
       String marginRisk,
       Instant createdAt) {
+    return metric(
+        userHash,
+        plan,
+        providerFamily,
+        model,
+        capability,
+        status,
+        cacheHit,
+        tokenEstimate,
+        audioDurationSeconds,
+        estimatedCost,
+        marginRisk,
+        "",
+        createdAt);
+  }
+
+  private AiProviderInvocationMetric metric(
+      String userHash,
+      String plan,
+      String providerFamily,
+      String model,
+      String capability,
+      String status,
+      boolean cacheHit,
+      Integer tokenEstimate,
+      Integer audioDurationSeconds,
+      String estimatedCost,
+      String marginRisk,
+      String fallbackReason,
+      Instant createdAt) {
     return new AiProviderInvocationMetric(
         UUID.randomUUID(),
         userHash,
@@ -134,7 +190,7 @@ class AiCostDashboardTest extends BackendIntegrationTestSupport {
         new BigDecimal(estimatedCost),
         "daily_user",
         marginRisk,
-        "",
+        fallbackReason,
         createdAt);
   }
 }

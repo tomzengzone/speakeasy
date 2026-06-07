@@ -2,26 +2,39 @@ package com.speakeasy.goal;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.speakeasy.ai.AiCostMetricsService;
+import com.speakeasy.ai.AiProviderInvocationMetric;
+import com.speakeasy.commerce.CommercialFoundationService;
+import com.speakeasy.commerce.EntitlementSnapshot;
 import com.speakeasy.common.ApiException;
 import com.speakeasy.identity.UserAccountRepository;
 import com.speakeasy.ops.AuditLog;
 import com.speakeasy.ops.AuditLogRepository;
+import com.speakeasy.usage.UsageLedger;
+import com.speakeasy.usage.UsageReservation;
+import com.speakeasy.usage.UsageLedgerRepository;
+import com.speakeasy.usage.UsageReservationRepository;
+import com.speakeasy.usage.UsageService;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Clock;
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -48,6 +61,7 @@ public class GoalAutopilotService {
   private static final TypeReference<List<RubricScoreView>> RUBRIC_LIST = new TypeReference<>() {};
   private static final TypeReference<List<WeaknessTagView>> WEAKNESS_LIST = new TypeReference<>() {};
   private static final TypeReference<List<String>> STRING_LIST = new TypeReference<>() {};
+  private static final TypeReference<Map<String, Object>> OBJECT_MAP = new TypeReference<>() {};
   private static final TypeReference<ClaimGuardView> CLAIM_GUARD = new TypeReference<>() {};
   private static final TypeReference<ControlResult> CONTROL_RESULT = new TypeReference<>() {};
 
@@ -67,6 +81,12 @@ public class GoalAutopilotService {
   private final NotificationOutboxService notificationOutboxService;
   private final PlannerReplayAuditRepository replayAudits;
   private final AuditLogRepository auditLogs;
+  private final GoalAutopilotRuntimeGate runtimeGate;
+  private final CommercialFoundationService commercialFoundationService;
+  private final UsageLedgerRepository usageLedgers;
+  private final UsageReservationRepository usageReservations;
+  private final UsageService usageService;
+  private final AiCostMetricsService aiCostMetricsService;
   private final ObjectMapper objectMapper;
   private final Clock clock;
   private final NotificationEligibilityPolicy notificationEligibilityPolicy = new NotificationEligibilityPolicy();
@@ -75,6 +95,7 @@ public class GoalAutopilotService {
   private final MasteryTransitionPolicy masteryTransitionPolicy = new MasteryTransitionPolicy();
   private final ProgressForecastPolicy progressForecastPolicy = new ProgressForecastPolicy();
   private final CheckpointCadencePolicy checkpointCadencePolicy = new CheckpointCadencePolicy();
+  private final GoalAutopilotEntitlementPolicy entitlementPolicy = new GoalAutopilotEntitlementPolicy();
 
   public GoalAutopilotService(
       UserAccountRepository users,
@@ -93,6 +114,12 @@ public class GoalAutopilotService {
       NotificationOutboxService notificationOutboxService,
       PlannerReplayAuditRepository replayAudits,
       AuditLogRepository auditLogs,
+      GoalAutopilotRuntimeGate runtimeGate,
+      CommercialFoundationService commercialFoundationService,
+      UsageLedgerRepository usageLedgers,
+      UsageReservationRepository usageReservations,
+      UsageService usageService,
+      AiCostMetricsService aiCostMetricsService,
       ObjectMapper objectMapper,
       Clock clock) {
     this.users = users;
@@ -111,12 +138,19 @@ public class GoalAutopilotService {
     this.notificationOutboxService = notificationOutboxService;
     this.replayAudits = replayAudits;
     this.auditLogs = auditLogs;
+    this.runtimeGate = runtimeGate;
+    this.commercialFoundationService = commercialFoundationService;
+    this.usageLedgers = usageLedgers;
+    this.usageReservations = usageReservations;
+    this.usageService = usageService;
+    this.aiCostMetricsService = aiCostMetricsService;
     this.objectMapper = objectMapper;
     this.clock = clock;
   }
 
   @Transactional
   public SummaryView createGoal(UUID userId, GoalInput input, String requestId) {
+    runtimeGate.requireMutationAllowed(userId, "goal_create_or_update", requestId);
     requireUser(userId);
     LocalDate today = LocalDate.now(clock);
     String goalType = cleanRequired(input.goalType(), "goal_type");
@@ -185,6 +219,7 @@ public class GoalAutopilotService {
 
   @Transactional(readOnly = true)
   public SummaryView summary(UUID userId) {
+    runtimeGate.requireReadAllowed(userId, "summary");
     GoalProfile profile = requireActiveGoal(userId);
     GoalDiagnosticAssessment diagnostic = requireDiagnostic(profile);
     GoalProgressForecast forecast = requireForecast(profile);
@@ -203,9 +238,19 @@ public class GoalAutopilotService {
   public GoalProgressProjectionView progressProjection(UUID userId) {
     requireUser(userId);
     Instant now = Instant.now(clock);
+    GoalAutopilotRuntimeGate.RuntimeGateDecision runtimeDecision = runtimeGate.currentDecision();
+    if (!runtimeDecision.allowed()) {
+      return unavailableProgressProjection(userId, "unavailable", runtimeDecision.reasonCode(), now);
+    }
     GoalProfile profile = goalProfiles.findFirstByUserIdAndStatusInOrderByUpdatedAtDesc(userId, ACTIVE_GOAL_STATUSES).orElse(null);
     if (profile == null) {
       return unavailableProgressProjection(userId, "unavailable", "no_active_goal", now);
+    }
+    GoalDiagnosticAssessment diagnostic = requireDiagnostic(profile);
+    EntitlementDepthView entitlementDepth = entitlementDepthView(profile, diagnostic);
+    String depthDowngradeReason = fullDepthDowngradeReason(profile.getUserId(), entitlementDepth);
+    if (depthDowngradeReason != null) {
+      return unavailableProgressProjection(userId, "unavailable", depthDowngradeReason, now);
     }
 
     GoalAutopilotControl control = controls.findFirstByGoalProfileIdOrderByUpdatedAtDesc(profile.getGoalProfileId()).orElse(null);
@@ -241,6 +286,11 @@ public class GoalAutopilotService {
 
   @Transactional
   public ControlResult control(UUID userId) {
+    GoalAutopilotRuntimeGate.RuntimeGateDecision runtimeDecision = runtimeGate.currentDecision();
+    if (!runtimeDecision.allowed()) {
+      GoalProfile profile = requireActiveGoal(userId);
+      return disabledControlResult(profile, runtimeDecision);
+    }
     GoalProfile profile = requireActiveGoal(userId);
     Instant now = Instant.now(clock);
     GoalAutopilotControl control = ensureControl(profile, now);
@@ -249,6 +299,7 @@ public class GoalAutopilotService {
 
   @Transactional
   public ControlResult updateControl(UUID userId, ControlSettingsInput input, String requestId, String idempotencyKey) {
+    runtimeGate.requireMutationAllowed(userId, "control_update", requestId);
     GoalProfile profile = requireActiveGoal(userId);
     ControlSettingsInput validated = new ControlSettingsInput(
         input.quietHoursStart() == null ? null : validateClockTime(input.quietHoursStart(), "quiet_hours_start"),
@@ -286,6 +337,7 @@ public class GoalAutopilotService {
 
   @Transactional
   public ControlResult pauseControl(UUID userId, String pauseReason, String requestId, String idempotencyKey) {
+    runtimeGate.requireMutationAllowed(userId, "control_pause", requestId);
     GoalProfile profile = requireActiveGoal(userId);
     String normalizedReason = cleanOrDefault(pauseReason, "user_requested_break");
     String requestHash = controlRequestHash("pause", profile, Map.of("pause_reason", normalizedReason));
@@ -303,6 +355,7 @@ public class GoalAutopilotService {
 
   @Transactional
   public ControlResult resumeControl(UUID userId, String sourceEvent, String requestId, String idempotencyKey) {
+    runtimeGate.requireMutationAllowed(userId, "control_resume", requestId);
     String source = cleanOrDefault(sourceEvent, "manual_resume");
     if (!Set.of("manual_resume", "pause_gap_recovery").contains(source)) {
       throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "source_event is invalid.");
@@ -412,19 +465,278 @@ public class GoalAutopilotService {
   }
 
   @Transactional(readOnly = true)
+  public GoalAutopilotDataGovernanceExport exportGoalAutopilotDataGovernance(UUID userId) {
+    requireUser(userId);
+    List<GoalProfile> profileRows = goalProfiles.findByUserIdOrderByUpdatedAtDesc(userId);
+    List<GoalDiagnosticAssessment> diagnosticRows = diagnostics.findByUserIdOrderByCreatedAtDesc(userId);
+    List<GoalMasteryInitialState> masteryInitialRows = profileRows.stream()
+        .flatMap(profile -> masteryInitialStates.findByGoalProfileId(profile.getGoalProfileId()).stream())
+        .toList();
+    List<GoalBackplan> backplanRows = backplans.findByUserIdOrderByCreatedAtDesc(userId);
+    List<GoalDailyPlan> dailyPlanRows = dailyPlans.findByUserIdOrderByPlanDateDesc(userId);
+    List<GoalPlanItem> planItemRows = planItems.findByUserIdOrderByCreatedAtDesc(userId);
+    List<GoalProgressForecast> forecastRows = forecasts.findByUserIdOrderByUpdatedAtDesc(userId);
+    List<GoalOutcomeCheckpoint> checkpointRows = checkpoints.findByUserIdOrderByCreatedAtDesc(userId);
+    List<GoalAutopilotControl> controlRows = controls.findByUserIdOrderByUpdatedAtDesc(userId);
+    List<GoalAutopilotControlIdempotency> controlReplayRows = controlIdempotency.findByUserIdOrderByCreatedAtDesc(userId);
+    List<NotificationOutboxService.OutboxRecordView> outboxRows = notificationOutboxService.outboxRecords(userId);
+    List<PlannerReplayAudit> replayRows = replayAudits.findByUserIdOrderByCreatedAtDesc(userId);
+    List<GoalRecoveryPlanDecision> recoveryRows = recoveryDecisions.findByUserIdOrderByCreatedAtDesc(userId);
+    List<GoalMasteryTransitionDecision> transitionRows = masteryTransitions.findByUserIdOrderByCreatedAtDesc(userId);
+    List<UsageLedger> usageLedgerRows = usageLedgers.findByUserId(userId);
+    List<UsageReservation> usageReservationRows = usageReservations.findByUserIdOrderByReservedAtDesc(userId);
+    List<AiProviderInvocationMetric> metricRows = aiCostMetricsService.userMetrics(userId);
+
+    List<DataFamilyExportRecord> families = List.of(
+        dataFamily(
+            "goal_profiles",
+            profileRows.size(),
+            sourceRefs(profileRows, "goal_profile", GoalProfile::getGoalProfileId),
+            List.of("goal_type", "deadline", "daily_minutes", "intensity_preference", "support_status", "status", "revision"),
+            List.of("target_score", "target_ability", "limitation_message"),
+            List.of("raw_goal_statement"),
+            "redacted_goal_metadata"),
+        dataFamily(
+            "goal_diagnostic_assessments",
+            diagnosticRows.size(),
+            sourceRefs(diagnosticRows, "diagnostic", GoalDiagnosticAssessment::getDiagnosticAssessmentId),
+            List.of("status", "confidence_band", "sample_count", "reason_code", "rubric_scores_summary", "weakness_tags_summary"),
+            List.of("claim_guard_json"),
+            List.of("raw_diagnostic_transcript", "raw_diagnostic_audio_ref", "provider_payload"),
+            "redacted_diagnostic_summary"),
+        dataFamily(
+            "goal_mastery_initial_states",
+            masteryInitialRows.size(),
+            sourceRefs(masteryInitialRows, "mastery_initial_state", GoalMasteryInitialState::getInitialStateId),
+            List.of("skill_code", "mastery_level", "evidence_ref", "rule_version"),
+            List.of(),
+            List.of("raw_diagnostic_transcript", "raw_diagnostic_audio_ref"),
+            "initial_mastery_metadata"),
+        dataFamily(
+            "goal_backplans",
+            backplanRows.size(),
+            sourceRefs(backplanRows, "backplan", GoalBackplan::getWeeklyBackplanId),
+            List.of("plan_version", "start_date", "end_date", "session_count", "checkpoint_due_date", "status"),
+            List.of("milestone", "review_windows"),
+            List.of("provider_payload"),
+            "redacted_backplan_metadata"),
+        dataFamily(
+            "goal_daily_plans",
+            dailyPlanRows.size(),
+            sourceRefs(dailyPlanRows, "daily_plan", GoalDailyPlan::getDailyPlanId),
+            List.of("plan_date", "total_minutes", "status", "memory_policy_version", "forgetting_risk"),
+            List.of("limitation_message", "interleaving_rule"),
+            List.of("provider_payload"),
+            "redacted_daily_plan_metadata"),
+        dataFamily(
+            "goal_plan_items",
+            planItemRows.size(),
+            sourceRefs(planItemRows, "plan_item", GoalPlanItem::getPlanItemId),
+            List.of("item_type", "reason_code", "duration_minutes", "status", "memory_risk", "pressure_level", "order_index"),
+            List.of("title"),
+            List.of("learner_note", "raw_training_turn"),
+            "redacted_action_metadata"),
+        dataFamily(
+            "goal_progress_forecasts",
+            forecastRows.size(),
+            sourceRefs(forecastRows, "forecast", GoalProgressForecast::getForecastId),
+            List.of("forecast_state", "risk_level", "risk_reason_code", "eta_unavailable_reason", "rule_version"),
+            List.of("gap_summary", "eta_date", "eta_range_start", "eta_range_end", "claim_guard_json"),
+            List.of("provider_payload", "official_score_claim"),
+            "redacted_forecast_metadata"),
+        dataFamily(
+            "goal_outcome_checkpoints",
+            checkpointRows.size(),
+            sourceRefs(checkpointRows, "checkpoint", GoalOutcomeCheckpoint::getCheckpointId),
+            List.of("checkpoint_type", "cadence", "result_status", "confidence_band", "plan_update_signal", "reason_code"),
+            List.of("summary"),
+            List.of("raw_checkpoint_transcript", "raw_checkpoint_audio_ref", "provider_payload"),
+            "redacted_checkpoint_metadata"),
+        dataFamily(
+            "goal_autopilot_controls",
+            controlRows.size(),
+            sourceRefs(controlRows, "control", GoalAutopilotControl::getControlId),
+            List.of("control_status", "quiet_hours_start", "quiet_hours_end", "timezone", "notification_consent", "rule_version"),
+            List.of("pause_reason", "intensity_override", "missed_day_policy"),
+            List.of("raw_control_payload"),
+            "control_state_export"),
+        dataFamily(
+            "goal_autopilot_control_idempotency",
+            controlReplayRows.size(),
+            sourceRefs(controlReplayRows, "control_replay", GoalAutopilotControlIdempotency::getReplayId),
+            List.of("operation", "request_hash", "created_at"),
+            List.of("idempotency_key_hash", "response_json_redacted"),
+            List.of("raw_idempotency_key", "response_json"),
+            "redacted_idempotency_replay"),
+        dataFamily(
+            "goal_notification_outbox_records",
+            outboxRows.size(),
+            sourceRefs(outboxRows, "outbox", NotificationOutboxService.OutboxRecordView::outboxId),
+            List.of("lifecycle_status", "processing_status", "payload_hash", "input_snapshot_hash", "reason_code", "retry_count", "rule_version"),
+            List.of("dedupe_key_hash", "failure_reason"),
+            List.of("raw_notification_payload", "provider_message_id"),
+            "redacted_notification_lifecycle"),
+        dataFamily(
+            "goal_planner_replay_audits",
+            replayRows.size(),
+            sourceRefs(replayRows, "planner_replay", PlannerReplayAudit::getReplayAuditId),
+            List.of("decision_family", "input_snapshot_hash", "output_snapshot_hash", "expected_decision", "reason_code", "replay_hash"),
+            List.of("source_entity_ref"),
+            List.of("raw_planner_input", "raw_notification_payload", "raw_diagnostic_transcript"),
+            "deterministic_replay_hash_export"),
+        dataFamily(
+            "goal_recovery_plan_decisions",
+            recoveryRows.size(),
+            sourceRefs(recoveryRows, "recovery_decision", GoalRecoveryPlanDecision::getDecisionId),
+            List.of("source_event", "recovery_mode", "input_snapshot_hash", "reason_code", "rule_version"),
+            List.of("affected_plan_item_refs", "idempotency_key_hash"),
+            List.of("raw_idempotency_key", "raw_recovery_payload"),
+            "redacted_recovery_decision"),
+        dataFamily(
+            "goal_mastery_transition_decisions",
+            transitionRows.size(),
+            sourceRefs(transitionRows, "mastery_transition", GoalMasteryTransitionDecision::getTransitionId),
+            List.of("item_type", "previous_level", "proposed_level", "accepted_level", "direction", "confidence", "reason_code", "rule_version"),
+            List.of("memory_item_state_id", "item_ref", "evidence_refs_json", "input_snapshot_hash"),
+            List.of("raw_training_turn", "raw_checkpoint_transcript", "provider_payload"),
+            "redacted_mastery_transition"),
+        dataFamily(
+            "usage_ledgers",
+            usageLedgerRows.size(),
+            sourceRefs(usageLedgerRows, "usage_ledger", UsageLedger::getLedgerId),
+            List.of("usage_family", "period", "reserved_amount", "committed_amount", "limit_amount", "status"),
+            List.of(),
+            List.of("provider_payload"),
+            "usage_ledger_summary"),
+        dataFamily(
+            "usage_reservations",
+            usageReservationRows.size(),
+            sourceRefs(usageReservationRows, "usage_reservation", UsageReservation::getReservationId),
+            List.of("usage_family", "amount", "status", "source_ref", "provider_usage_event_ref", "expires_at"),
+            List.of("idempotency_key_ref"),
+            List.of("raw_idempotency_key", "raw_provider_payload"),
+            "redacted_usage_reservation"),
+        dataFamily(
+            "ai_provider_invocation_metrics",
+            metricRows.size(),
+            sourceRefs(metricRows, "ai_metric", AiProviderInvocationMetric::getMetricId),
+            List.of("user_hash", "plan", "provider_family", "model", "capability", "status", "estimated_cost", "fallback_reason"),
+            List.of("token_estimate", "audio_duration_seconds"),
+            List.of("raw_provider_payload", "raw_prompt", "raw_transcript", "raw_audio_ref"),
+            "redacted_cost_metric"));
+
+    return new GoalAutopilotDataGovernanceExport(
+        "goal_autopilot_p0_2",
+        "fud-data-governance-v1",
+        Instant.now(clock),
+        families,
+        goalAutopilotRetentionRules(),
+        goalAutopilotDeletionTables(),
+        List.of("audit_logs", "account_deletion_jobs"),
+        s007OmittedSensitiveFields(),
+        aiCostMetricsService.redactedUserHash(userId),
+        true,
+        "account_deletion_service_and_ai_retention_service");
+  }
+
+  private DataFamilyExportRecord dataFamily(
+      String dataClass,
+      long recordCount,
+      List<String> sourceRefs,
+      List<String> safeFields,
+      List<String> redactedFields,
+      List<String> omittedFields,
+      String exportBehavior) {
+    return new DataFamilyExportRecord(
+        dataClass,
+        recordCount,
+        sourceRefs,
+        safeFields,
+        redactedFields,
+        omittedFields,
+        exportBehavior);
+  }
+
+  private <T> List<String> sourceRefs(List<T> rows, String prefix, Function<T, UUID> idExtractor) {
+    return rows.stream()
+        .map(row -> prefix + ":" + idExtractor.apply(row))
+        .toList();
+  }
+
+  private List<RetentionRuleView> goalAutopilotRetentionRules() {
+    return List.of(
+        new RetentionRuleView("goal_profiles", "hard_delete_on_account_deletion", "account_deletion_or_user_export", "exports redacted goal metadata and source refs"),
+        new RetentionRuleView("goal_diagnostic_assessments", "hard_delete_on_account_deletion", "account_deletion_or_user_export", "exports rubric/confidence summary; raw transcripts and audio refs are omitted"),
+        new RetentionRuleView("goal_mastery_initial_states", "hard_delete_on_account_deletion", "account_deletion_or_user_export", "exports initial mastery metadata without raw diagnostic samples"),
+        new RetentionRuleView("goal_backplans", "hard_delete_on_account_deletion", "account_deletion_or_plan_expiry", "exports plan metadata with milestone/review text redacted"),
+        new RetentionRuleView("goal_daily_plans", "hard_delete_on_account_deletion", "account_deletion_or_plan_expiry", "exports daily plan metadata with limitation copy redacted"),
+        new RetentionRuleView("goal_plan_items", "hard_delete_on_account_deletion", "account_deletion_or_plan_expiry", "exports action metadata with learner notes omitted"),
+        new RetentionRuleView("goal_progress_forecasts", "hard_delete_on_account_deletion", "account_deletion_or_forecast_stale", "exports forecast state and reason codes with ETA/gap details redacted"),
+        new RetentionRuleView("goal_outcome_checkpoints", "hard_delete_on_account_deletion", "account_deletion_or_checkpoint_expiry", "exports checkpoint status metadata; raw transcript/audio/provider payload omitted"),
+        new RetentionRuleView("goal_autopilot_controls", "hard_delete_on_account_deletion", "account_deletion_or_user_export", "exports control state; raw control payload omitted"),
+        new RetentionRuleView("goal_autopilot_control_idempotency", "hard_delete_on_account_deletion", "account_deletion_or_replay_window_expiry", "exports request hash only; raw idempotency key and response body omitted"),
+        new RetentionRuleView("goal_notification_outbox_records", "hard_delete_on_account_deletion", "account_deletion_or_reminder_expiry", "exports lifecycle and hashes only; raw notification payload omitted"),
+        new RetentionRuleView("goal_planner_replay_audits", "hard_delete_on_account_deletion", "account_deletion_or_replay_window_expiry", "exports deterministic replay hashes only"),
+        new RetentionRuleView("goal_recovery_plan_decisions", "hard_delete_on_account_deletion", "account_deletion_or_replay_window_expiry", "exports recovery metadata and hashed planner input only"),
+        new RetentionRuleView("goal_mastery_transition_decisions", "hard_delete_on_account_deletion", "account_deletion_or_replay_window_expiry", "exports mastery transition metadata and hashed evidence refs only"),
+        new RetentionRuleView("usage_ledgers", "hard_delete_on_account_deletion", "account_deletion_or_period_rolloff", "exports usage counters by family and period"),
+        new RetentionRuleView("usage_reservations", "hard_delete_on_account_deletion", "account_deletion_or_reservation_expiry", "exports source refs and idempotency hash refs only"),
+        new RetentionRuleView("ai_provider_invocation_metrics", "hard_delete_by_user_hash_on_account_deletion", "account_deletion_or_ops_rollup", "exports redacted cost metric rows without prompts, transcripts, audio refs or provider payloads"),
+        new RetentionRuleView("audit_logs", "retain_redacted_minimal_audit", "ops_audit_policy", "retains redacted proof without raw payloads or idempotency keys"));
+  }
+
+  private List<String> goalAutopilotDeletionTables() {
+    return List.of(
+        "goal_profiles",
+        "goal_diagnostic_assessments",
+        "goal_mastery_initial_states",
+        "goal_backplans",
+        "goal_daily_plans",
+        "goal_plan_items",
+        "goal_progress_forecasts",
+        "goal_outcome_checkpoints",
+        "goal_autopilot_controls",
+        "goal_autopilot_control_idempotency",
+        "goal_notification_outbox_records",
+        "goal_planner_replay_audits",
+        "goal_recovery_plan_decisions",
+        "goal_mastery_transition_decisions",
+        "usage_ledgers",
+        "usage_reservations",
+        "ai_provider_invocation_metrics");
+  }
+
+  private List<String> s007OmittedSensitiveFields() {
+    return List.of(
+        "raw_diagnostic_transcript",
+        "raw_diagnostic_audio_ref",
+        "raw_checkpoint_transcript",
+        "raw_checkpoint_audio_ref",
+        "raw_notification_payload",
+        "raw_provider_payload",
+        "raw_prompt",
+        "raw_idempotency_key",
+        "control_response_json",
+        "learner_note");
+  }
+
+  @Transactional(readOnly = true)
   public List<NotificationOutboxService.OutboxRecordView> reminderOutbox(UUID userId) {
+    runtimeGate.requireReadAllowed(userId, "reminder_outbox");
     requireUser(userId);
     return notificationOutboxService.outboxRecords(userId);
   }
 
   @Transactional(readOnly = true)
   public List<NotificationOutboxService.PlannerReplayAuditView> replayAudits(UUID userId) {
+    runtimeGate.requireReadAllowed(userId, "replay_audits");
     requireUser(userId);
     return notificationOutboxService.replayAudits(userId);
   }
 
   @Transactional(readOnly = true)
   public List<MasteryTransitionDecisionView> masteryTransitions(UUID userId) {
+    runtimeGate.requireReadAllowed(userId, "mastery_transitions");
     requireUser(userId);
     return masteryTransitions.findByUserIdOrderByCreatedAtDesc(userId).stream()
         .map(this::masteryTransitionView)
@@ -433,6 +745,7 @@ public class GoalAutopilotService {
 
   @Transactional
   public PlanResult generatePlan(UUID userId, boolean forceReplan, String reasonCode, String requestId) {
+    runtimeGate.requireMutationAllowed(userId, "plan_generate", requestId);
     GoalProfile profile = requireActiveGoal(userId);
     GoalDiagnosticAssessment diagnostic = requireDiagnostic(profile);
     if ("unsupported".equals(profile.getSupportStatus())) {
@@ -442,47 +755,94 @@ public class GoalAutopilotService {
           "Unsupported goals cannot generate a full goal autopilot plan.",
           Map.of("support_status", profile.getSupportStatus(), "reason_code", "unsupported_goal"));
     }
-    Instant now = Instant.now(clock);
-    if (forceReplan || latestBackplan(profile) != null) {
-      markPlansStale(profile.getGoalProfileId(), cleanOrDefault(reasonCode, "manual_replan"), now);
+    EntitlementDepthView entitlementDepth = entitlementDepthView(profile, diagnostic);
+    int costTokenEstimate = goalAutopilotTokenEstimate(profile, diagnostic, "plan_generate");
+    if ("blocked".equals(entitlementDepth.depthState())) {
+      String downgradeReason = stableDowngradeReason(entitlementDepth);
+      recordGoalCostPolicyRejection(
+          profile,
+          "ai",
+          "entitlement_depth_blocked:" + entitlementDepth.limitationReason(),
+          costTokenEstimate);
+      throw new ApiException(
+          HttpStatus.FORBIDDEN,
+          "ENTITLEMENT_DEPTH_BLOCKED",
+          "Current entitlement blocks goal autopilot plan generation.",
+          Map.of(
+              "depth_state", entitlementDepth.depthState(),
+              "allowed_depth", entitlementDepth.allowedDepth(),
+              "reason_code", downgradeReason,
+              "source_reason", entitlementDepth.limitationReason(),
+              "downgrade_state", "EntitlementBlocked",
+              "downgrade_reason", downgradeReason,
+              "blocked_full_depth", true));
     }
-    LocalDate today = LocalDate.now(clock);
-    boolean partial = "partial".equals(profile.getSupportStatus()) || "low".equals(diagnostic.getConfidenceBand());
-    String risk = riskFor(diagnostic, partial);
-    GoalBackplan backplan = backplans.save(new GoalBackplan(
-        UUID.randomUUID(),
-        profile.getGoalProfileId(),
-        userId,
-        "goal-plan-v1",
-        today,
-        today.plusDays(6),
-        milestoneFor(diagnostic, profile),
-        sessionCount(profile, partial),
-        "D1,D3,D7",
-        today.plusDays(partial ? 14 : 7),
-        partial ? "partial" : "active",
-        now));
-    GoalDailyPlan dailyPlan = dailyPlans.save(new GoalDailyPlan(
-        UUID.randomUUID(),
-        backplan.getWeeklyBackplanId(),
-        profile.getGoalProfileId(),
-        userId,
-        today,
-        Math.max(5, profile.getDailyMinutes()),
-        partial ? "partial" : "ready",
-        partial ? "Conservative plan because goal support or diagnostic confidence is limited." : "",
-        risk,
-        "high".equals(risk) ? 1 : 3,
-        now));
-    createDefaultPlanItems(profile, dailyPlan, risk, partial, now);
-    activateControlAfterPlan(profile, now);
-    GoalProgressForecast forecast = upsertForecast(profile, diagnostic, "plan_generated", null, now);
-    audit(userId, "goal_autopilot_plan_generated", "goal_profile:" + profile.getGoalProfileId(), requestId, now);
-    return new PlanResult(backplanView(backplan), dailyPlanView(dailyPlan), actionView(requireNextItem(dailyPlan), "ready"), forecastView(forecast));
+    String usagePayloadHash = usagePayloadHash("plan_generate", profile, Map.of(
+        "force_replan", Boolean.toString(forceReplan),
+        "reason_code", cleanOrDefault(reasonCode, "manual_replan")));
+    if (!entitlementDepth.providerCandidateAllowed()) {
+      recordGoalCostPolicyRejection(profile, "ai", entitlementDepth.limitationReason(), costTokenEstimate);
+    }
+    UsageReservation usageReservation = reserveGoalUsageWithCostTelemetry(
+        profile, entitlementDepth, "plan_generate", "ai", requestId, usagePayloadHash, costTokenEstimate);
+    Instant now = Instant.now(clock);
+    try {
+      if (forceReplan || latestBackplan(profile) != null) {
+        markPlansStale(profile.getGoalProfileId(), cleanOrDefault(reasonCode, "manual_replan"), now);
+      }
+      LocalDate today = LocalDate.now(clock);
+      boolean partial = "partial".equals(profile.getSupportStatus()) || "low".equals(diagnostic.getConfidenceBand());
+      String risk = riskFor(diagnostic, partial);
+      GoalBackplan backplan = backplans.save(new GoalBackplan(
+          UUID.randomUUID(),
+          profile.getGoalProfileId(),
+          userId,
+          "goal-plan-v1",
+          today,
+          today.plusDays(6),
+          milestoneFor(diagnostic, profile),
+          sessionCount(profile, partial),
+          "D1,D3,D7",
+          today.plusDays(partial ? 14 : 7),
+          partial ? "partial" : "active",
+          now));
+      GoalDailyPlan dailyPlan = dailyPlans.save(new GoalDailyPlan(
+          UUID.randomUUID(),
+          backplan.getWeeklyBackplanId(),
+          profile.getGoalProfileId(),
+          userId,
+          today,
+          Math.max(5, profile.getDailyMinutes()),
+          partial ? "partial" : "ready",
+          partial
+              ? "Conservative plan because goal support or diagnostic confidence is limited."
+              : "full".equals(entitlementDepth.allowedDepth()) ? "" : "Entitlement depth limits AI explanation and checkpoint depth.",
+          risk,
+          "high".equals(risk) ? 1 : 3,
+          now));
+      createDefaultPlanItems(profile, dailyPlan, risk, partial, now);
+      activateControlAfterPlan(profile, now);
+      GoalProgressForecast forecast = upsertForecast(profile, diagnostic, "plan_generated", null, now);
+      audit(userId, "goal_autopilot_plan_generated", "goal_profile:" + profile.getGoalProfileId(), requestId, now);
+      if (entitlementDepth.providerCandidateAllowed()) {
+        recordGoalCostDeterministicNoProvider(profile, "ai", "deterministic_no_provider_call:plan_generate", costTokenEstimate);
+      }
+      closeGoalUsageReservation(profile, usageReservation, "plan_generate", usagePayloadHash, true);
+      return new PlanResult(
+          backplanView(backplan),
+          dailyPlanView(dailyPlan),
+          actionView(requireNextItem(dailyPlan), "ready"),
+          forecastView(forecast),
+          entitlementDepth);
+    } catch (RuntimeException e) {
+      closeGoalUsageReservation(profile, usageReservation, "plan_generate", usagePayloadHash, false);
+      throw e;
+    }
   }
 
   @Transactional(readOnly = true)
   public DailyPlanView dailyPlan(UUID userId) {
+    runtimeGate.requireReadAllowed(userId, "daily_plan");
     GoalProfile profile = requireActiveGoal(userId);
     GoalDailyPlan dailyPlan = requireDailyPlan(profile);
     return dailyPlanView(dailyPlan);
@@ -491,6 +851,7 @@ public class GoalAutopilotService {
   @Transactional
   public RecoveryPlanResult replanRecovery(
       UUID userId, RecoveryReplanInput input, String requestId, String idempotencyKey) {
+    runtimeGate.requireMutationAllowed(userId, "recovery_replan", requestId);
     requireIdempotencyKey(idempotencyKey);
     String sourceEvent = validateOneOf(
         input.sourceEvent(),
@@ -549,6 +910,7 @@ public class GoalAutopilotService {
 
   @Transactional
   public ItemPolicyDecisionResult itemPolicyDecisions(UUID userId, ItemPolicyDecisionInput input, String requestId) {
+    runtimeGate.requireMutationAllowed(userId, "item_policy_decisions", requestId);
     if (input == null) {
       throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "item policy request is required.");
     }
@@ -582,6 +944,7 @@ public class GoalAutopilotService {
 
   @Transactional(readOnly = true)
   public ActionResult nextAction(UUID userId) {
+    runtimeGate.requireReadAllowed(userId, "next_action");
     GoalProfile profile = requireActiveGoal(userId);
     requireControlNotPaused(profile);
     GoalDailyPlan dailyPlan = requireDailyPlan(profile);
@@ -591,6 +954,7 @@ public class GoalAutopilotService {
 
   @Transactional
   public ActionResult completeAction(UUID userId, UUID planItemId, String outcome, String requestId) {
+    runtimeGate.requireMutationAllowed(userId, "action_complete", requestId);
     GoalPlanItem item = planItems.findByPlanItemIdAndUserId(planItemId, userId)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Plan item was not found."));
     String normalizedOutcome = clean(outcome);
@@ -626,21 +990,28 @@ public class GoalAutopilotService {
   }
 
   @Transactional(readOnly = true)
-  public ForecastView forecast(UUID userId) {
+  public ForecastResult forecast(UUID userId) {
+    runtimeGate.requireReadAllowed(userId, "forecast");
     GoalProfile profile = requireActiveGoal(userId);
-    return forecastView(requireForecast(profile));
+    GoalDiagnosticAssessment diagnostic = requireDiagnostic(profile);
+    EntitlementDepthView entitlementDepth = entitlementDepthView(profile, diagnostic);
+    return new ForecastResult(forecastView(requireForecast(profile), entitlementDepth, userId), entitlementDepth);
   }
 
   @Transactional(readOnly = true)
   public CheckpointTaskDecisionView checkpointTask(UUID userId) {
+    runtimeGate.requireReadAllowed(userId, "checkpoint_task");
     GoalProfile profile = requireActiveGoal(userId);
-    return checkpointTaskView(checkpointTaskDecision(profile));
+    GoalDiagnosticAssessment diagnostic = requireDiagnostic(profile);
+    return checkpointTaskView(checkpointTaskDecision(profile), entitlementDepthView(profile, diagnostic));
   }
 
   @Transactional
   public CheckpointResult submitCheckpoint(UUID userId, CheckpointInput input, String requestId) {
+    runtimeGate.requireMutationAllowed(userId, "checkpoint_submit", requestId);
     GoalProfile profile = requireActiveGoal(userId);
     GoalDiagnosticAssessment diagnostic = requireDiagnostic(profile);
+    EntitlementDepthView entitlementDepth = entitlementDepthView(profile, diagnostic);
     Instant now = Instant.now(clock);
     GoalAutopilotControl control = ensureControl(profile, now);
     if ("paused".equals(control.getControlStatus())) {
@@ -655,54 +1026,93 @@ public class GoalAutopilotService {
     if (!Set.of("recorded", "failed", "skipped").contains(requestedStatus)) {
       throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "result_status is invalid.");
     }
-    CheckpointCadencePolicy.Decision taskDecision = checkpointTaskDecision(profile);
+    CheckpointCadencePolicy.Decision taskDecision = checkpointTaskDecision(profile, entitlementDepth);
     if ("CheckpointUnavailable".equals(taskDecision.checkpointState())) {
+      String downgradeReason = stableDowngradeReason(taskDecision.limitationReason());
       throw new ApiException(
           HttpStatus.CONFLICT,
           "CONFLICT",
           "Checkpoint task is unavailable for the active goal.",
-          Map.of("reason_code", taskDecision.limitationReason()));
+          Map.of(
+              "reason_code", downgradeReason,
+              "source_reason", taskDecision.limitationReason(),
+              "downgrade_state", "CheckpointUnavailable",
+              "downgrade_reason", downgradeReason,
+              "blocked_full_depth", true));
     }
     if (!allowedCheckpointTypes(profile).contains(checkpointType)) {
       throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "checkpoint_type is invalid.");
     }
-    String confidence = "recorded".equals(requestedStatus) ? confidenceAfterCheckpoint(input, diagnostic) : "low";
-    String resultStatus = checkpointResultStatus(requestedStatus, confidence);
-    String reasonCode = checkpointReasonCode(resultStatus);
-    String summary = checkpointSummary(input, diagnostic);
-    PlanFacts planFactsBefore = planFacts(profile);
-    PlanUpdateSignalView baseSignal = checkpointPlanSignal(resultStatus, planFactsBefore, control);
-    GoalOutcomeCheckpoint checkpoint = checkpoints.save(new GoalOutcomeCheckpoint(
-        UUID.randomUUID(),
-        profile.getGoalProfileId(),
-        userId,
-        checkpointType,
-        "biweekly_mock".equals(checkpointType) ? "biweekly" : taskDecision.cadence(),
-        resultStatus,
-        confidence,
-        summary,
-        baseSignal.signalType(),
-        baseSignal.reasonCode(),
-        now));
-    if ("checkpoint_replan".equals(baseSignal.signalType())) {
-      markPlansStale(profile.getGoalProfileId(), baseSignal.reasonCode(), now);
-      ensureControl(profile, now);
+    String usagePayloadHash = usagePayloadHash("checkpoint_submit", profile, Map.of(
+        "checkpoint_type", checkpointType,
+        "result_status", requestedStatus,
+        "transcript_hash", clean(input.transcript()) == null ? "<none>" : sha256(clean(input.transcript())),
+        "audio_ref_hash", clean(input.audioRef()) == null ? "<none>" : sha256(clean(input.audioRef()))));
+    int costTokenEstimate = goalAutopilotTokenEstimate(profile, diagnostic, "checkpoint_submit", clean(input.transcript()));
+    if (!entitlementDepth.providerCandidateAllowed()) {
+      recordGoalCostPolicyRejection(profile, "scoring", entitlementDepth.limitationReason(), costTokenEstimate);
     }
-    GoalProgressForecast forecast = upsertForecast(profile, diagnostic, checkpointForecastSource(resultStatus), confidence, now);
-    applyCheckpointMasteryTransition(profile, checkpoint, confidence, now);
-    PlannerReplayAudit replayAudit = writeCheckpointPlanReplay(
-        profile, checkpoint, input, taskDecision, control, planFactsBefore, forecast, baseSignal, now);
-    audit(userId, "goal_autopilot_checkpoint_recorded", "checkpoint:" + checkpoint.getCheckpointId(), requestId, now);
-    return new CheckpointResult(
-        checkpointView(checkpoint),
-        forecastView(forecast),
-        new PlanUpdateSignalView(
-            baseSignal.signalType(),
-            baseSignal.reasonCode(),
-            checkpoint.getCheckpointId(),
-            CHECKPOINT_PLAN_RULE_VERSION,
-            replayAudit.getInputSnapshotHash(),
-            replayAudit.getReplayAuditId()));
+    UsageReservation usageReservation = reserveGoalUsageWithCostTelemetry(
+        profile, entitlementDepth, "checkpoint_submit", "scoring", requestId, usagePayloadHash, costTokenEstimate);
+    try {
+      String confidence = "recorded".equals(requestedStatus) ? confidenceAfterCheckpoint(input, diagnostic) : "low";
+      String resultStatus = checkpointResultStatus(requestedStatus, confidence);
+      String reasonCode = checkpointReasonCode(resultStatus);
+      String summary = checkpointSummary(input, diagnostic);
+      PlanFacts planFactsBefore = planFacts(profile);
+      PlanUpdateSignalView baseSignal = checkpointPlanSignal(resultStatus, planFactsBefore, control);
+      GoalOutcomeCheckpoint checkpoint = checkpoints.save(new GoalOutcomeCheckpoint(
+          UUID.randomUUID(),
+          profile.getGoalProfileId(),
+          userId,
+          checkpointType,
+          "biweekly_mock".equals(checkpointType) ? "biweekly" : taskDecision.cadence(),
+          resultStatus,
+          confidence,
+          summary,
+          baseSignal.signalType(),
+          baseSignal.reasonCode(),
+          now));
+      if ("checkpoint_replan".equals(baseSignal.signalType())) {
+        markPlansStale(profile.getGoalProfileId(), baseSignal.reasonCode(), now);
+        ensureControl(profile, now);
+      }
+      GoalProgressForecast forecast = upsertForecast(profile, diagnostic, checkpointForecastSource(resultStatus), confidence, now);
+      applyCheckpointMasteryTransition(profile, checkpoint, confidence, now);
+      PlannerReplayAudit replayAudit = writeCheckpointPlanReplay(
+          profile, checkpoint, input, taskDecision, control, planFactsBefore, forecast, baseSignal, now);
+      audit(userId, "goal_autopilot_checkpoint_recorded", "checkpoint:" + checkpoint.getCheckpointId(), requestId, now);
+      if (entitlementDepth.providerCandidateAllowed()) {
+        if ("recorded".equals(resultStatus)) {
+          recordGoalCostDeterministicNoProvider(
+              profile,
+              "scoring",
+              "deterministic_no_provider_call:checkpoint_submit",
+              costTokenEstimate);
+        } else {
+          recordGoalCostPolicyRejection(
+              profile,
+              "scoring",
+              "checkpoint_no_charge:" + resultStatus,
+              costTokenEstimate);
+        }
+      }
+      closeGoalUsageReservation(profile, usageReservation, "checkpoint_submit", usagePayloadHash, "recorded".equals(resultStatus));
+      return new CheckpointResult(
+          checkpointView(checkpoint),
+          forecastView(forecast, entitlementDepth, userId),
+          entitlementDepth,
+          new PlanUpdateSignalView(
+              baseSignal.signalType(),
+              baseSignal.reasonCode(),
+              checkpoint.getCheckpointId(),
+              CHECKPOINT_PLAN_RULE_VERSION,
+              replayAudit.getInputSnapshotHash(),
+              replayAudit.getReplayAuditId()));
+    } catch (RuntimeException e) {
+      closeGoalUsageReservation(profile, usageReservation, "checkpoint_submit", usagePayloadHash, false);
+      throw e;
+    }
   }
 
   private String checkpointResultStatus(String requestedStatus, String confidence) {
@@ -832,6 +1242,145 @@ public class GoalAutopilotService {
     return sha256(toJson(payload));
   }
 
+  private UsageReservation reserveGoalUsageIfRequired(
+      GoalProfile profile,
+      EntitlementDepthView entitlementDepth,
+      String operation,
+      String usageFamily,
+      String requestId,
+      String payloadHash) {
+    if (!entitlementDepth.providerCandidateAllowed()) {
+      return null;
+    }
+    String requestRef = clean(requestId);
+    String idempotencySeed = requestRef == null ? "payload:" + payloadHash : "request:" + requestRef;
+    String idempotencyKey = "goal-autopilot-" + operation.replace('_', '-') + "-" + sha256(idempotencySeed).substring(0, 32);
+    String sourceRef = "goal_autopilot:" + operation + ":" + payloadHash.substring(0, 24);
+    return usageService.reserve(profile.getUserId(), usageFamily, 1, idempotencyKey, sourceRef);
+  }
+
+  private UsageReservation reserveGoalUsageWithCostTelemetry(
+      GoalProfile profile,
+      EntitlementDepthView entitlementDepth,
+      String operation,
+      String usageFamily,
+      String requestId,
+      String payloadHash,
+      int tokenEstimate) {
+    try {
+      return reserveGoalUsageIfRequired(profile, entitlementDepth, operation, usageFamily, requestId, payloadHash);
+    } catch (ApiException e) {
+      if ("USAGE_LIMIT_EXCEEDED".equals(e.getCode())) {
+        recordGoalCostPolicyRejection(profile, usageFamily, "quota_exhausted:" + operation, tokenEstimate);
+        throw quotaDowngradeException(e, operation, usageFamily);
+      }
+      throw e;
+    }
+  }
+
+  private ApiException quotaDowngradeException(ApiException exception, String operation, String usageFamily) {
+    Map<String, Object> details = new LinkedHashMap<>(exception.getDetails());
+    details.put("usage_family", usageFamily);
+    details.put("operation", operation);
+    details.put("downgrade_state", "QuotaDowngraded");
+    details.put("downgrade_reason", "quota_exhausted");
+    details.put("blocked_full_depth", true);
+    return new ApiException(
+        exception.getStatus(),
+        exception.getCode(),
+        exception.getMessage(),
+        Map.copyOf(details));
+  }
+
+  private void recordGoalCostDeterministicNoProvider(
+      GoalProfile profile,
+      String usageFamily,
+      String fallbackReason,
+      int tokenEstimate) {
+    aiCostMetricsService.recordDeterministicNoProvider(
+        profile.getUserId(),
+        usageFamily,
+        costMetricPlan(profile.getUserId()),
+        tokenEstimate,
+        fallbackReason);
+  }
+
+  private void recordGoalCostPolicyRejection(
+      GoalProfile profile,
+      String usageFamily,
+      String fallbackReason,
+      int tokenEstimate) {
+    aiCostMetricsService.recordPolicyRejection(
+        profile.getUserId(),
+        usageFamily,
+        costMetricPlan(profile.getUserId()),
+        tokenEstimate,
+        null,
+        fallbackReason);
+  }
+
+  private String costMetricPlan(UUID userId) {
+    return commercialFoundationService.latestEntitlement(userId)
+        .orElseGet(() -> commercialFoundationService.defaultFreeEntitlement(userId))
+        .getPlan();
+  }
+
+  private int goalAutopilotTokenEstimate(
+      GoalProfile profile,
+      GoalDiagnosticAssessment diagnostic,
+      String operation,
+      String extraText) {
+    int chars = 0;
+    chars += nullableLength(operation);
+    chars += nullableLength(profile.getGoalType());
+    chars += nullableLength(profile.getTargetAbility());
+    chars += nullableLength(profile.getSupportStatus());
+    chars += nullableLength(profile.getIntensityPreference());
+    chars += nullableLength(profile.getLimitationMessage());
+    chars += nullableLength(diagnostic.getRubricScoresJson());
+    chars += nullableLength(diagnostic.getWeaknessTagsJson());
+    chars += nullableLength(diagnostic.getReasonCode());
+    chars += nullableLength(extraText);
+    return Math.max(1, Math.min(4000, chars / 4));
+  }
+
+  private int goalAutopilotTokenEstimate(
+      GoalProfile profile,
+      GoalDiagnosticAssessment diagnostic,
+      String operation) {
+    return goalAutopilotTokenEstimate(profile, diagnostic, operation, null);
+  }
+
+  private int nullableLength(String value) {
+    return value == null ? 0 : value.length();
+  }
+
+  private void closeGoalUsageReservation(
+      GoalProfile profile,
+      UsageReservation reservation,
+      String operation,
+      String payloadHash,
+      boolean success) {
+    if (reservation == null) {
+      return;
+    }
+    String eventRef = "goal_autopilot:" + operation + ":" + (success ? "committed:" : "released:") + payloadHash.substring(0, 16);
+    if (success) {
+      usageService.commit(profile.getUserId(), reservation.getReservationId(), eventRef);
+    } else {
+      usageService.release(profile.getUserId(), reservation.getReservationId(), eventRef);
+    }
+  }
+
+  private String usagePayloadHash(String operation, GoalProfile profile, Map<String, String> requestValues) {
+    TreeMap<String, String> payload = new TreeMap<>();
+    payload.put("operation", operation);
+    payload.put("goal_profile_id", profile.getGoalProfileId().toString());
+    payload.put("goal_revision", Integer.toString(profile.getRevision()));
+    payload.putAll(requestValues);
+    return sha256(toJson(payload));
+  }
+
   private String nullableHashValue(Object value) {
     return value == null ? "<null>" : value.toString();
   }
@@ -885,6 +1434,62 @@ public class GoalAutopilotService {
             eligibility.evaluatedAt(),
             eligibility.ruleVersion()),
         new PlanUpdateSignalView(replanRequired ? "recovery_replan" : "none", planSignalReason));
+  }
+
+  private ControlResult disabledControlResult(
+      GoalProfile profile, GoalAutopilotRuntimeGate.RuntimeGateDecision runtimeDecision) {
+    Instant now = Instant.now(clock);
+    UUID controlId = UUID.nameUUIDFromBytes((
+            "goal-autopilot-disabled-control:"
+                + profile.getGoalProfileId()
+                + ":"
+                + profile.getRevision()
+                + ":"
+                + runtimeDecision.reasonCode()
+                + ":"
+                + runtimeDecision.ruleVersion())
+        .getBytes(StandardCharsets.UTF_8));
+    String decisionId = UUID.nameUUIDFromBytes((
+            controlId
+                + ":"
+                + runtimeDecision.reasonCode()
+                + ":"
+                + runtimeDecision.ruleVersion())
+        .getBytes(StandardCharsets.UTF_8)).toString();
+    return new ControlResult(
+        new ControlView(
+            controlId,
+            profile.getUserId(),
+            profile.getGoalProfileId(),
+            "blocked_by_policy",
+            null,
+            runtimeDecision.reasonCode(),
+            null,
+            profile.getQuietHoursStart(),
+            profile.getQuietHoursEnd(),
+            DEFAULT_TIMEZONE,
+            false,
+            profile.getIntensityPreference(),
+            "balanced",
+            now,
+            runtimeDecision.ruleVersion()),
+        true,
+        true,
+        false,
+        runtimeDecision.reasonCode(),
+        new NotificationEligibilityDecisionView(
+            decisionId,
+            controlId,
+            profile.getUserId(),
+            profile.getGoalProfileId(),
+            null,
+            false,
+            runtimeDecision.reasonCode(),
+            null,
+            runtimeDecision.reasonCode(),
+            now,
+            runtimeDecision.ruleVersion()),
+        new PlanUpdateSignalView("none", runtimeDecision.reasonCode()));
   }
 
   private ControlView controlView(GoalAutopilotControl control, String reasonCode) {
@@ -1290,11 +1895,32 @@ public class GoalAutopilotService {
   }
 
   private CheckpointCadencePolicy.Decision checkpointTaskDecision(GoalProfile profile) {
+    GoalDiagnosticAssessment diagnostic = requireDiagnostic(profile);
+    EntitlementDepthView entitlementDepth = entitlementDepthView(profile, diagnostic);
+    return checkpointTaskDecision(profile, entitlementDepth);
+  }
+
+  private CheckpointCadencePolicy.Decision checkpointTaskDecision(
+      GoalProfile profile, EntitlementDepthView entitlementDepth) {
     GoalBackplan backplan = latestBackplan(profile);
     GoalOutcomeCheckpoint checkpoint = latestCheckpoint(profile);
     LocalDate latestCheckpointDate = checkpoint == null
         ? null
         : LocalDate.ofInstant(checkpoint.getCreatedAt(), clock.getZone());
+    if ("blocked".equals(entitlementDepth.depthState())) {
+      LocalDate dueDate = backplan == null ? LocalDate.now(clock) : backplan.getCheckpointDueDate();
+      return new CheckpointCadencePolicy.Decision(
+          "CheckpointUnavailable",
+          "unavailable",
+          dueDate,
+          null,
+          entitlementDepth.checkpointCadence(),
+          stableDowngradeReason(entitlementDepth),
+          profile.getSupportStatus(),
+          contentCoverageFor(profile),
+          null,
+          CheckpointCadencePolicy.RULE_VERSION);
+    }
     return checkpointCadencePolicy.evaluate(new CheckpointCadencePolicy.Input(
         CheckpointCadencePolicy.RULE_VERSION,
         profile.getGoalType(),
@@ -1303,9 +1929,9 @@ public class GoalAutopilotService {
         LocalDate.now(clock),
         backplan == null ? null : backplan.getCheckpointDueDate(),
         latestCheckpointDate,
-        true,
-        true,
-        true));
+        entitlementDepth.providerCandidateAllowed(),
+        !"quota_exhausted".equals(entitlementDepth.limitationReason()),
+        !"cost_budget_limited".equals(entitlementDepth.limitationReason())));
   }
 
   private Set<String> allowedCheckpointTypes(GoalProfile profile) {
@@ -2321,14 +2947,16 @@ public class GoalAutopilotService {
       AutopilotActionView action,
       GoalProgressForecast forecast,
       GoalOutcomeCheckpoint checkpoint) {
+    EntitlementDepthView entitlementDepth = entitlementDepthView(profile, diagnostic);
     return new SummaryView(
         goalProfileView(profile),
         support,
         diagnosticView(diagnostic),
+        entitlementDepth,
         backplan == null ? null : backplanView(backplan),
         dailyPlan == null ? null : dailyPlanView(dailyPlan),
         action,
-        forecastView(forecast),
+        forecastView(forecast, entitlementDepth, profile.getUserId()),
         checkpoint == null ? null : checkpointView(checkpoint));
   }
 
@@ -2442,6 +3070,38 @@ public class GoalAutopilotService {
         forecast.getUpdatedAt());
   }
 
+  private ForecastView forecastView(GoalProgressForecast forecast, EntitlementDepthView entitlementDepth) {
+    return forecastView(forecast, entitlementDepth, null);
+  }
+
+  private ForecastView forecastView(GoalProgressForecast forecast, EntitlementDepthView entitlementDepth, UUID userId) {
+    String downgradeReason = fullDepthDowngradeReason(userId, entitlementDepth);
+    if (downgradeReason == null) {
+      return forecastView(forecast);
+    }
+    return new ForecastView(
+        forecast.getForecastId(),
+        forecast.getSourceGoalRevision(),
+        "unavailable",
+        "Goal progress is unavailable because full-depth goal autopilot is downgraded.",
+        null,
+        null,
+        "not_available:unavailable",
+        downgradeReason,
+        forecast.getConfidenceBand(),
+        "high",
+        "full-depth goal autopilot is downgraded",
+        downgradeReason,
+        forecast.getNextCheckpointDate(),
+        fromJson(forecast.getClaimGuardJson(), CLAIM_GUARD),
+        new ForecastExplanationView(
+            forecast.getExplanationKey(),
+            "deterministic_policy",
+            downgradeReason,
+            true),
+        forecast.getUpdatedAt());
+  }
+
   private CheckpointView checkpointView(GoalOutcomeCheckpoint checkpoint) {
     return new CheckpointView(
         checkpoint.getCheckpointId(),
@@ -2454,7 +3114,8 @@ public class GoalAutopilotService {
         checkpoint.getReasonCode());
   }
 
-  private CheckpointTaskDecisionView checkpointTaskView(CheckpointCadencePolicy.Decision decision) {
+  private CheckpointTaskDecisionView checkpointTaskView(
+      CheckpointCadencePolicy.Decision decision, EntitlementDepthView entitlementDepth) {
     return new CheckpointTaskDecisionView(
         decision.checkpointState(),
         decision.dueStatus(),
@@ -2465,6 +3126,7 @@ public class GoalAutopilotService {
         decision.supportStatus(),
         decision.contentCoverage(),
         decision.task() == null ? null : checkpointTaskDefinitionView(decision.task()),
+        entitlementDepth,
         decision.ruleVersion());
   }
 
@@ -2482,6 +3144,130 @@ public class GoalAutopilotService {
         task.limitationReason(),
         task.aiDepth(),
         task.scoringBoundary());
+  }
+
+  private EntitlementDepthView entitlementDepthView(GoalProfile profile, GoalDiagnosticAssessment diagnostic) {
+    GoalAutopilotEntitlementPolicy.Decision decision = entitlementDepthDecision(profile, diagnostic);
+    return new EntitlementDepthView(
+        decision.depthState(),
+        decision.allowedDepth(),
+        decision.diagnosticDepth(),
+        decision.diagnosticSampleLimit(),
+        decision.plannerDepth(),
+        decision.plannerHorizonDays(),
+        decision.plannerSessionLimit(),
+        decision.checkpointDepth(),
+        decision.checkpointCadence(),
+        decision.explanationDepth(),
+        decision.providerCandidateAllowed(),
+        decision.preciseEtaAllowed(),
+        decision.limitationReason(),
+        decision.sourceEntitlementRef(),
+        decision.ruleVersion());
+  }
+
+  private GoalAutopilotEntitlementPolicy.Decision entitlementDepthDecision(
+      GoalProfile profile, GoalDiagnosticAssessment diagnostic) {
+    var latestEntitlement = commercialFoundationService.latestEntitlement(profile.getUserId());
+    EntitlementSnapshot entitlement = latestEntitlement
+        .orElseGet(() -> commercialFoundationService.defaultFreeEntitlement(profile.getUserId()));
+    String sourceRef = latestEntitlement
+        .map(snapshot -> "entitlement:" + snapshot.getEntitlementSnapshotId())
+        .orElse("entitlement:default_free");
+    return entitlementPolicy.decide(new GoalAutopilotEntitlementPolicy.Input(
+        entitlement.getPlan(),
+        entitlement.getStatus(),
+        entitlement.getValidUntil(),
+        sourceRef,
+        profile.getSupportStatus(),
+        diagnostic.getConfidenceBand(),
+        depthQuotaAvailable(entitlement),
+        costBudgetAvailable(entitlement),
+        Instant.now(clock)));
+  }
+
+  private String fullDepthDowngradeReason(UUID userId, EntitlementDepthView entitlementDepth) {
+    String reason = stableDowngradeReason(entitlementDepth);
+    if ("quota_exhausted".equals(reason)
+        || "cost_budget_limited".equals(reason)
+        || "entitlement_required".equals(reason)) {
+      return reason;
+    }
+    if (userId != null
+        && "full".equals(entitlementDepth.allowedDepth())
+        && (usageLedgerExhausted(userId, "ai") || usageLedgerExhausted(userId, "scoring"))) {
+      return "quota_exhausted";
+    }
+    return null;
+  }
+
+  private String stableDowngradeReason(EntitlementDepthView entitlementDepth) {
+    return stableDowngradeReason(entitlementDepth.limitationReason(), "blocked".equals(entitlementDepth.depthState()));
+  }
+
+  private String stableDowngradeReason(String reason) {
+    return stableDowngradeReason(reason, false);
+  }
+
+  private String stableDowngradeReason(String reason, boolean entitlementBlocked) {
+    String cleaned = clean(reason);
+    if ("quota_exhausted".equals(cleaned) || "cost_budget_limited".equals(cleaned)) {
+      return cleaned;
+    }
+    if (entitlementBlocked && isEntitlementBlockedReason(cleaned)) {
+      return "entitlement_required";
+    }
+    return cleaned == null ? "unavailable" : cleaned;
+  }
+
+  private boolean isEntitlementBlockedReason(String reason) {
+    return reason != null
+        && (reason.startsWith("entitlement_blocked_") || "unknown_entitlement_blocked".equals(reason));
+  }
+
+  private boolean usageLedgerExhausted(UUID userId, String usageFamily) {
+    String period = YearMonth.now(clock.withZone(ZoneOffset.UTC)).toString();
+    return usageLedgers.findByUserIdAndUsageFamilyAndPeriod(userId, usageFamily, period)
+        .map(ledger -> !ledger.canReserve(1))
+        .orElse(false);
+  }
+
+  private boolean depthQuotaAvailable(EntitlementSnapshot entitlement) {
+    try {
+      Map<String, Object> quotas = quotaLimits(entitlement);
+      return quotaLimit(quotas, "ai") > 0
+          && quotaLimit(quotas, "scoring") > 0
+          && quotaLimit(quotas, "training") > 0;
+    } catch (Exception ignored) {
+      return false;
+    }
+  }
+
+  private boolean costBudgetAvailable(EntitlementSnapshot entitlement) {
+    try {
+      Map<String, Object> quotas = quotaLimits(entitlement);
+      if (quotas.containsKey("cost_budget")) {
+        return quotaLimit(quotas, "cost_budget") > 0;
+      }
+      if (quotas.containsKey("cost")) {
+        return quotaLimit(quotas, "cost") > 0;
+      }
+      return true;
+    } catch (Exception ignored) {
+      return false;
+    }
+  }
+
+  private Map<String, Object> quotaLimits(EntitlementSnapshot entitlement) throws Exception {
+    return objectMapper.readValue(entitlement.getQuotaLimits(), OBJECT_MAP);
+  }
+
+  private int quotaLimit(Map<String, Object> quotas, String family) {
+    Object value = quotas.get(family);
+    if (value instanceof Number number) {
+      return number.intValue();
+    }
+    return 0;
   }
 
   private SupportDecision supportDecisionFrom(GoalProfile profile) {
@@ -2706,6 +3492,7 @@ public class GoalAutopilotService {
       GoalProfileView goalProfile,
       SupportDecision supportDecision,
       DiagnosticView diagnostic,
+      EntitlementDepthView entitlementDepth,
       WeeklyBackplanView weeklyBackplan,
       DailyPlanView dailyPlan,
       AutopilotActionView nextAction,
@@ -2716,9 +3503,12 @@ public class GoalAutopilotService {
       WeeklyBackplanView weeklyBackplan,
       DailyPlanView dailyPlan,
       AutopilotActionView nextAction,
-      ForecastView forecast) {}
+      ForecastView forecast,
+      EntitlementDepthView entitlementDepth) {}
 
   public record ActionResult(AutopilotActionView action, ForecastView forecast, PlanUpdateSignalView planUpdateSignal) {}
+
+  public record ForecastResult(ForecastView forecast, EntitlementDepthView entitlementDepth) {}
 
   public record RecoveryPlanResult(
       RecoveryPlanDecisionView recoveryDecision,
@@ -2751,6 +3541,28 @@ public class GoalAutopilotService {
       String reasonCode,
       NotificationEligibilityDecisionView reminderEligibility,
       PlanUpdateSignalView planUpdateSignal) {}
+
+  public record GoalAutopilotDataGovernanceExport(
+      String exportFamily,
+      String ruleVersion,
+      Instant generatedAt,
+      List<DataFamilyExportRecord> dataFamilies,
+      List<RetentionRuleView> retentionRules,
+      List<String> deletionTables,
+      List<String> retainedRedactedTables,
+      List<String> omittedSensitiveFields,
+      String userHash,
+      boolean redactedExportOnly,
+      String deletionProcessor) {}
+
+  public record DataFamilyExportRecord(
+      String dataClass,
+      long recordCount,
+      List<String> sourceRefs,
+      List<String> safeFields,
+      List<String> redactedFields,
+      List<String> omittedFields,
+      String exportBehavior) {}
 
   public record ControlDataGovernanceExport(
       String exportFamily,
@@ -2792,7 +3604,11 @@ public class GoalAutopilotService {
 
   public record RetentionRuleView(String dataClass, String action, String trigger, String minimization) {}
 
-  public record CheckpointResult(CheckpointView checkpoint, ForecastView forecast, PlanUpdateSignalView planUpdateSignal) {}
+  public record CheckpointResult(
+      CheckpointView checkpoint,
+      ForecastView forecast,
+      EntitlementDepthView entitlementDepth,
+      PlanUpdateSignalView planUpdateSignal) {}
 
   public record CheckpointTaskDecisionView(
       String checkpointState,
@@ -2804,6 +3620,7 @@ public class GoalAutopilotService {
       String supportStatus,
       String contentCoverage,
       CheckpointTaskDefinitionView task,
+      EntitlementDepthView entitlementDepth,
       String ruleVersion) {}
 
   public record CheckpointTaskDefinitionView(
@@ -2819,6 +3636,23 @@ public class GoalAutopilotService {
       String limitationReason,
       String aiDepth,
       String scoringBoundary) {}
+
+  public record EntitlementDepthView(
+      String depthState,
+      String allowedDepth,
+      String diagnosticDepth,
+      int diagnosticSampleLimit,
+      String plannerDepth,
+      int plannerHorizonDays,
+      int plannerSessionLimit,
+      String checkpointDepth,
+      String checkpointCadence,
+      String explanationDepth,
+      boolean providerCandidateAllowed,
+      boolean preciseEtaAllowed,
+      String limitationReason,
+      String sourceEntitlementRef,
+      String ruleVersion) {}
 
   public record GoalProfileView(
       UUID goalProfileId,

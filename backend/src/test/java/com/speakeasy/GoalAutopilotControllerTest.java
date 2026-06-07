@@ -15,11 +15,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import com.speakeasy.common.ApiException;
+import com.speakeasy.commerce.EntitlementSnapshot;
 import com.speakeasy.goal.GoalAutopilotService;
 import com.speakeasy.goal.MasteryTransitionPolicy;
 import com.speakeasy.goal.NotificationOutboxService;
 import com.speakeasy.identity.UserAccount;
 import com.speakeasy.ops.AccountDeletionService;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -42,6 +44,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
   @Autowired GoalAutopilotService goalAutopilotService;
   @Autowired NotificationOutboxService notificationOutboxService;
   @Autowired AccountDeletionService accountDeletionService;
+  @Autowired Clock clock;
 
   @Test
   void tcP02Diag001CreatesGoalDiagnosticAndClaimGuardSourceOfTruth() throws Exception {
@@ -345,7 +348,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
   void tcP02Fub001ControlIsServerOwnedAndSeparatesPolicyFromGoalProfile() throws Exception {
     AuthTokens tokens = loginPhone("+8613800140220");
     UUID userId = UUID.fromString(tokens.userId());
-    createSupportedGoal(tokens).andExpect(status().isOk());
+    createSupportedGoalWithQuietHours(tokens, "00:00", "00:00").andExpect(status().isOk());
 
     mvc.perform(get("/goal-autopilot/control")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
@@ -353,7 +356,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
         .andExpect(jsonPath("$.schema_version").value(1))
         .andExpect(jsonPath("$.control.user_id").value(userId.toString()))
         .andExpect(jsonPath("$.control.control_status").value("blocked_by_policy"))
-        .andExpect(jsonPath("$.control.quiet_hours_start").value("22:00"))
+        .andExpect(jsonPath("$.control.quiet_hours_start").value("00:00"))
         .andExpect(jsonPath("$.control.timezone").value("Asia/Shanghai"))
         .andExpect(jsonPath("$.reason_code").value("missing_plan"))
         .andExpect(jsonPath("$.reminder_eligibility.eligible").value(false))
@@ -429,7 +432,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
         .andExpect(jsonPath("$.error.code").value("IDEMPOTENCY_CONFLICT"));
 
     assertThat(jdbcTemplate.queryForObject(
-        "SELECT quiet_hours_start FROM goal_profiles WHERE user_id = ?", String.class, userId)).isEqualTo("22:00");
+        "SELECT quiet_hours_start FROM goal_profiles WHERE user_id = ?", String.class, userId)).isEqualTo("00:00");
     assertThat(jdbcTemplate.queryForObject(
         "SELECT quiet_hours_start FROM goal_autopilot_controls WHERE user_id = ?", String.class, userId)).isEqualTo("21:30");
     assertThat(jdbcTemplate.queryForObject(
@@ -1191,19 +1194,21 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
         .andReturn();
     assertThat(notDueTask.getResponse().getContentAsString()).doesNotContain("\"task\":");
 
-    jdbcTemplate.update(
-        "UPDATE goal_backplans SET checkpoint_due_date = ? WHERE user_id = ?",
-        java.sql.Date.valueOf(LocalDate.now().minusDays(1)),
-        userId);
+	    jdbcTemplate.update(
+	        "UPDATE goal_backplans SET checkpoint_due_date = ? WHERE user_id = ?",
+	        java.sql.Date.valueOf(LocalDate.now(clock).minusDays(1)),
+	        userId);
 
     mvc.perform(get("/goal-autopilot/checkpoints/task")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.checkpoint_task.checkpoint_state").value("CheckpointDue"))
+        .andExpect(jsonPath("$.checkpoint_task.checkpoint_state").value("CheckpointLimited"))
         .andExpect(jsonPath("$.checkpoint_task.due_status").value("overdue"))
+        .andExpect(jsonPath("$.checkpoint_task.limitation_reason").value("entitlement_required"))
         .andExpect(jsonPath("$.checkpoint_task.task.task_type").value("weekly_mock"))
         .andExpect(jsonPath("$.checkpoint_task.task.prompt_ref").value("checkpoint/ielts_speaking/weekly_mock"))
         .andExpect(jsonPath("$.checkpoint_task.task.required_evidence", hasSize(2)))
+        .andExpect(jsonPath("$.checkpoint_task.task.ai_depth").value("deterministic_low_cost"))
         .andExpect(jsonPath("$.checkpoint_task.task.scoring_boundary")
             .value("product_internal_rubric_only_no_official_score_certification"));
 
@@ -1253,6 +1258,78 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
         .andExpect(jsonPath("$.checkpoint_task.task").doesNotExist())
         .andReturn();
     assertThat(unsupportedTask.getResponse().getContentAsString()).doesNotContain("\"task\":");
+  }
+
+  @Test
+  void tcP02Fud003EntitlementDepthIsServerOwned() throws Exception {
+    AuthTokens freeTokens = loginPhone("+8613800140310");
+    createSupportedGoal(freeTokens)
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.entitlement_depth.depth_state").value("limited"))
+        .andExpect(jsonPath("$.entitlement_depth.allowed_depth").value("limited"))
+        .andExpect(jsonPath("$.entitlement_depth.limitation_reason").value("missing_entitlement_free_fallback"))
+        .andExpect(jsonPath("$.entitlement_depth.source_entitlement_ref").value("entitlement:default_free"))
+        .andExpect(jsonPath("$.entitlement_depth.provider_candidate_allowed").value(false));
+
+    generatePlan(freeTokens, false, "free_depth_plan")
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.entitlement_depth.depth_state").value("limited"))
+        .andExpect(jsonPath("$.entitlement_depth.planner_session_limit").value(3))
+        .andExpect(jsonPath("$.daily_plan.limitation_message")
+            .value("Entitlement depth limits AI explanation and checkpoint depth."));
+
+    AuthTokens paidTokens = loginPhone("+8613800140311");
+    saveEntitlement(paidTokens, "pro", "active", null);
+    createSupportedGoal(paidTokens)
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.entitlement_depth.depth_state").value("full"))
+        .andExpect(jsonPath("$.entitlement_depth.allowed_depth").value("full"))
+        .andExpect(jsonPath("$.entitlement_depth.provider_candidate_allowed").value(true));
+    generatePlan(paidTokens, false, "paid_depth_plan")
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.entitlement_depth.depth_state").value("full"))
+        .andExpect(jsonPath("$.entitlement_depth.limitation_reason").value("paid_full_depth"));
+
+    AuthTokens partialPaidTokens = loginPhone("+8613800140312");
+    saveEntitlement(partialPaidTokens, "pro", "active", null);
+    createGoal(partialPaidTokens, """
+        {
+          "schema_version": 1,
+          "goal_type": "ielts_speaking",
+          "target_score": 8,
+          "deadline": "%s",
+          "daily_minutes": 10,
+          "intensity_preference": "standard"
+        }
+        """.formatted(LocalDate.now().plusDays(75)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.goal_profile.support_status").value("partial"))
+        .andExpect(jsonPath("$.entitlement_depth.depth_state").value("limited"))
+        .andExpect(jsonPath("$.entitlement_depth.limitation_reason").value("partial_goal_limited"))
+        .andExpect(jsonPath("$.entitlement_depth.provider_candidate_allowed").value(false));
+
+    AuthTokens revokedTokens = loginPhone("+8613800140313");
+    saveEntitlement(revokedTokens, "pro", "revoked", null);
+    createSupportedGoal(revokedTokens)
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.entitlement_depth.depth_state").value("blocked"))
+        .andExpect(jsonPath("$.entitlement_depth.allowed_depth").value("blocked"))
+        .andExpect(jsonPath("$.entitlement_depth.limitation_reason").value("entitlement_blocked_revoked"))
+        .andExpect(jsonPath("$.forecast.forecast_state").value("unavailable"))
+        .andExpect(jsonPath("$.forecast.eta_date").doesNotExist())
+        .andExpect(jsonPath("$.forecast.eta_unavailable_reason").value("entitlement_required"))
+        .andExpect(jsonPath("$.forecast.explanation.fallback_reason").value("entitlement_required"));
+    generatePlan(revokedTokens, false, "revoked_depth_plan")
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.error.code").value("ENTITLEMENT_DEPTH_BLOCKED"))
+        .andExpect(jsonPath("$.error.details.depth_state").value("blocked"));
+    mvc.perform(get("/goal-autopilot/checkpoints/task")
+            .header(HttpHeaders.AUTHORIZATION, bearer(revokedTokens.accessToken())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.entitlement_depth.depth_state").value("blocked"))
+        .andExpect(jsonPath("$.checkpoint_task.checkpoint_state").value("CheckpointUnavailable"))
+        .andExpect(jsonPath("$.checkpoint_task.limitation_reason").value("entitlement_required"))
+        .andExpect(jsonPath("$.checkpoint_task.task").doesNotExist());
   }
 
   @Test
@@ -1414,6 +1491,11 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
   }
 
   private org.springframework.test.web.servlet.ResultActions createSupportedGoal(AuthTokens tokens) throws Exception {
+    return createSupportedGoalWithQuietHours(tokens, "22:00", "08:00");
+  }
+
+  private org.springframework.test.web.servlet.ResultActions createSupportedGoalWithQuietHours(
+      AuthTokens tokens, String quietHoursStart, String quietHoursEnd) throws Exception {
     return createGoal(tokens, """
         {
           "schema_version": 1,
@@ -1442,13 +1524,13 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
           ],
           "autopilot_control": {
             "paused": false,
-            "quiet_hours_start": "22:00",
-            "quiet_hours_end": "08:00",
+            "quiet_hours_start": "%s",
+            "quiet_hours_end": "%s",
             "notification_consent": true,
             "intensity_override": "standard"
           }
         }
-        """.formatted(LocalDate.now().plusDays(75)));
+        """.formatted(LocalDate.now().plusDays(75), quietHoursStart, quietHoursEnd));
   }
 
   private org.springframework.test.web.servlet.ResultActions createGoal(AuthTokens tokens, String body) throws Exception {
@@ -1488,6 +1570,19 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
               "learner_note": ""
             }
             """.formatted(outcome)));
+  }
+
+  private void saveEntitlement(AuthTokens tokens, String plan, String status, Instant validUntil) {
+    entitlements.save(new EntitlementSnapshot(
+        UUID.randomUUID(),
+        UUID.fromString(tokens.userId()),
+        null,
+        plan,
+        "{\"basic_scenarios\":true,\"advanced_scenarios\":true,\"ai_feedback\":true}",
+        "{\"ai\":100,\"asr\":100,\"tts\":100,\"scoring\":100,\"training\":50}",
+        status,
+        validUntil,
+        Instant.now()));
   }
 
   private int count(String tableName, UUID userId) {

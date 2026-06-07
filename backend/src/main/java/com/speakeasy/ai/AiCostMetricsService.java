@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -51,7 +52,7 @@ public class AiCostMetricsService {
     this.exceededThreshold = decimal(exceededThreshold, "0.10");
   }
 
-  @Transactional
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public AiProviderInvocationMetric recordInvocation(
       UUID userId,
       String usageFamily,
@@ -81,7 +82,7 @@ public class AiCostMetricsService {
         Instant.now(clock)));
   }
 
-  @Transactional
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public AiProviderInvocationMetric recordPolicyRejection(
       UUID userId,
       String usageFamily,
@@ -108,6 +109,31 @@ public class AiCostMetricsService {
         Instant.now(clock)));
   }
 
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public AiProviderInvocationMetric recordDeterministicNoProvider(
+      UUID userId,
+      String usageFamily,
+      String plan,
+      Integer tokenEstimate,
+      String fallbackReason) {
+    return metrics.save(new AiProviderInvocationMetric(
+        UUID.randomUUID(),
+        userHash(userId),
+        normalizePlan(plan == null || plan.isBlank() ? planFor(userId) : plan),
+        providerFamily(),
+        modelFor(usageFamily),
+        capabilityFor(usageFamily),
+        "deterministic_no_provider",
+        false,
+        tokenEstimate,
+        null,
+        BigDecimal.ZERO.setScale(6, RoundingMode.HALF_UP),
+        "daily_user",
+        "low",
+        safeReason(fallbackReason == null || fallbackReason.isBlank() ? "deterministic_no_provider_call" : fallbackReason),
+        Instant.now(clock)));
+  }
+
   @Transactional(readOnly = true)
   public CostMetrics dashboard() {
     LocalDate today = LocalDate.now(clock.withZone(ZoneOffset.UTC));
@@ -125,6 +151,7 @@ public class AiCostMetricsService {
           row.getCapability(),
           row.getStatus(),
           row.isCacheHit(),
+          row.getFallbackReason() == null ? "" : row.getFallbackReason(),
           row.getBudgetBucket(),
           row.getMarginRisk());
       groups.computeIfAbsent(key, ignored -> new MutableAggregate()).add(row);
@@ -147,11 +174,21 @@ public class AiCostMetricsService {
           aggregate.audioDurationSeconds == 0 ? null : aggregate.audioDurationSeconds,
           aggregate.tokenEstimate == 0 ? null : aggregate.tokenEstimate,
           aggregate.estimatedCost.setScale(6, RoundingMode.HALF_UP),
+          key.fallbackReason(),
           key.budgetBucket(),
           key.marginRisk()));
     }
     aggregated.sort(Comparator.comparing(CostMetric::estimatedCost).reversed().thenComparing(CostMetric::capability));
     return new CostMetrics(1, dashboardStatus(rows), aggregated);
+  }
+
+  @Transactional(readOnly = true)
+  public List<AiProviderInvocationMetric> userMetrics(UUID userId) {
+    return metrics.findByUserHashOrderByCreatedAtDesc(userHash(userId));
+  }
+
+  public String redactedUserHash(UUID userId) {
+    return userHash(userId);
   }
 
   private String dashboardStatus(List<AiProviderInvocationMetric> rows) {
@@ -289,6 +326,7 @@ public class AiCostMetricsService {
       String capability,
       String status,
       boolean cacheHit,
+      String fallbackReason,
       String budgetBucket,
       String marginRisk) {}
 
@@ -321,6 +359,7 @@ public class AiCostMetricsService {
       Integer audioDurationSeconds,
       Integer tokenEstimate,
       BigDecimal estimatedCost,
+      String fallbackReason,
       String budgetBucket,
       String marginRisk) {}
 }

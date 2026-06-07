@@ -79,7 +79,7 @@ class GoalAutopilotReplayFixtureTest extends BackendIntegrationTestSupport {
 
   private FixtureDecision controlSourceAndCommandFixture() throws Exception {
     AuthTokens tokens = loginPhone("+8613800140260");
-    createSupportedGoal(tokens, "req_fub015_control_goal").andExpect(status().isOk());
+    createSupportedGoal(tokens, "req_fub015_control_goal", "00:00", "00:00").andExpect(status().isOk());
 
     mvc.perform(get("/goal-autopilot/control")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
@@ -416,6 +416,11 @@ class GoalAutopilotReplayFixtureTest extends BackendIntegrationTestSupport {
 
   private org.springframework.test.web.servlet.ResultActions createSupportedGoal(AuthTokens tokens, String requestId)
       throws Exception {
+    return createSupportedGoal(tokens, requestId, "22:00", "08:00");
+  }
+
+  private org.springframework.test.web.servlet.ResultActions createSupportedGoal(
+      AuthTokens tokens, String requestId, String quietHoursStart, String quietHoursEnd) throws Exception {
     return mvc.perform(post("/goal-autopilot/goals")
         .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
         .header("X-Request-Id", requestId)
@@ -448,13 +453,13 @@ class GoalAutopilotReplayFixtureTest extends BackendIntegrationTestSupport {
               ],
               "autopilot_control": {
                 "paused": false,
-                "quiet_hours_start": "22:00",
-                "quiet_hours_end": "08:00",
+                "quiet_hours_start": "%s",
+                "quiet_hours_end": "%s",
                 "notification_consent": true,
                 "intensity_override": "standard"
               }
             }
-            """.formatted(LocalDate.now().plusDays(75))));
+            """.formatted(LocalDate.now().plusDays(75), quietHoursStart, quietHoursEnd)));
   }
 
   private org.springframework.test.web.servlet.ResultActions generatePlan(AuthTokens tokens, String requestId, String reasonCode)

@@ -8,5 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface AiProviderInvocationMetricRepository extends JpaRepository<AiProviderInvocationMetric, UUID> {
   List<AiProviderInvocationMetric> findByCreatedAtGreaterThanEqual(Instant createdAt);
 
+  List<AiProviderInvocationMetric> findByUserHashOrderByCreatedAtDesc(String userHash);
+
   long deleteByUserHash(String userHash);
 }

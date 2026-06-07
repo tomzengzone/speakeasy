@@ -70,6 +70,7 @@ public class AiOpsController {
       Integer audioDurationSeconds,
       Integer tokenEstimate,
       BigDecimal estimatedCost,
+      String fallbackReason,
       String budgetBucket,
       String marginRisk) {
     static AiCostMetricDto from(AiCostMetricsService.CostMetric metric) {
@@ -86,6 +87,7 @@ public class AiOpsController {
           metric.audioDurationSeconds(),
           metric.tokenEstimate(),
           metric.estimatedCost(),
+          metric.fallbackReason(),
           metric.budgetBucket(),
           metric.marginRisk());
     }

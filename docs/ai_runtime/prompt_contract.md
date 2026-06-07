@@ -172,6 +172,9 @@ The prompt must explicitly forbid output fields or prose claims equivalent to:
 - `entitlement`
 - `quota_state`
 - `billing_state`
+- `release_approval`
+- `release_ready`
+- `product_base_merge_approved`
 
 ### Developer Prompt Skeleton
 ```text
@@ -235,7 +238,7 @@ If a model is used, it must return valid JSON matching `FollowupCForecastExplana
 - Explain only the supplied deterministic forecast decision.
 - Use product-internal progress language; do not imply official IELTS/TOEFL certification, official score equivalence, guaranteed outcome or guaranteed ETA.
 - Do not include raw transcript, raw audio, provider payload, provider name, provider secret, exact sensitive diagnostic details or unrestricted personal data.
-- Do not output or imply entitlement, quota, billing, goal completion, plan state, checkpoint status or persistent forecast fields.
+- Do not output or imply entitlement, quota, billing, goal completion, plan state, checkpoint status, release approval, Product Base merge approval or persistent forecast fields.
 
 ### Validation Requirement
 - JSON parse must pass if a provider candidate is present.
@@ -243,7 +246,7 @@ If a model is used, it must return valid JSON matching `FollowupCForecastExplana
 - `forecast_state` and `risk_reason_code` must echo deterministic input values.
 - `guardrails.official_score_equivalence`, `guardrails.goal_completion_claim_allowed` and `guardrails.guaranteed_eta_claim_allowed` must be false.
 - `guardrails.persistent_decision_fields_present` must be false and `forbidden_fields_detected` must be empty for successful consumption.
-- Any forbidden persistent field, official-score claim, guaranteed ETA claim, raw transcript/audio/provider payload or unknown top-level field must trigger deterministic fallback and must not update `ProgressForecast`, `GoalProfile`, `OutcomeCheckpoint`, plan state, entitlement or billing facts.
+- Any forbidden persistent field, official-score claim, guaranteed ETA claim, raw transcript/audio/provider payload or unknown top-level field must trigger deterministic fallback and must not update `ProgressForecast`, `GoalProfile`, `OutcomeCheckpoint`, plan state, entitlement, billing, release or Product Base facts.
 
 ## P0.2 Followup-C Checkpoint Task Boundary
 

@@ -1,7 +1,7 @@
 # P0.2 Followup-D Acceptance Criteria：发布门禁与商业软件加固
 
 ## 状态
-S000 acceptance passed for documentation-chain validation - 本文件基于 Followup-D requirements 和 spec 定义验收标准。AC-P02-FUD-000 用于 S000 文档链验收；AC-P02-FUD-001..011 是后续实现 slices 的 planned acceptance，不代表代码、测试、release 或 Product Base approval 已完成。
+S007 data governance acceptance passed locally - 本文件基于 Followup-D requirements 和 spec 定义验收标准。AC-P02-FUD-000 已用于 S000 文档链验收；AC-P02-FUD-001 已由 TC-P02-FUD-001..002 本地覆盖 backend/API runtime gate；AC-P02-FUD-002 已由 TC-P02-FUD-003..004 本地覆盖 Flutter entry/surface rollback gate；AC-P02-FUD-003 已由 TC-P02-FUD-005..006 本地覆盖 entitlement/free-paid depth gate；AC-P02-FUD-004 已由 TC-P02-FUD-007..008 本地覆盖 usage reserve/commit/release、quota blocked、idempotent retry 和 idempotency conflict；AC-P02-FUD-005 已由 TC-P02-FUD-009..010 本地覆盖 cost telemetry、deterministic no-provider evidence、policy rejection metric 和 AI forbidden-field guard；AC-P02-FUD-006 已由 TC-P02-FUD-011..012 本地覆盖 quota/entitlement/cost downgrade、stable backend reason 和 Flutter stale full-depth cleanup；AC-P02-FUD-007 已由 TC-P02-FUD-013..014 本地覆盖 redacted export、retention rule coverage、account deletion cleanup 和 redacted audit proof。AC-P02-FUD-008..011 仍为 planned acceptance，不代表 release 或 Product Base approval 已完成。
 
 ## 上游来源
 - `docs/product/increments/p0-2-followup-d-release-gate-hardening/requirements.md`
@@ -29,13 +29,13 @@ S000 acceptance passed for documentation-chain validation - 本文件基于 Foll
 | Slice ID | Scope | Acceptance | Test cases | Required evidence |
 | --- | --- | --- | --- | --- |
 | P02-FUD-S000 | Followup-D document chain and routing | AC-P02-FUD-000 | TC-P02-FUD-000 | required docs exist, S000-S011 routing, traceability review and dual independent review |
-| P02-FUD-S001 | Backend feature flag and kill switch | AC-P02-FUD-001 | TC-P02-FUD-001..002 | backend mutation/read/audit tests |
-| P02-FUD-S002 | Flutter entry and surface rollback | AC-P02-FUD-002 | TC-P02-FUD-003..004 | widget/source-of-truth tests |
-| P02-FUD-S003 | Entitlement/free-paid depth policy | AC-P02-FUD-003 | TC-P02-FUD-005..006 | entitlement policy and API tests |
-| P02-FUD-S004 | Usage reservation and quota | AC-P02-FUD-004 | TC-P02-FUD-007..008 | reserve/commit/release and idempotency tests |
-| P02-FUD-S005 | Cost telemetry and AI fallback | AC-P02-FUD-005 | TC-P02-FUD-009..010 | cost metric and AI forbidden-field tests |
-| P02-FUD-S006 | Quota exhausted downgrade | AC-P02-FUD-006 | TC-P02-FUD-011..012 | backend downgrade and Flutter stale-cache tests |
-| P02-FUD-S007 | Export, retention and deletion backend evidence | AC-P02-FUD-007 | TC-P02-FUD-013..014 | export/redaction/deletion tests |
+| P02-FUD-S001 | Backend feature flag and kill switch | AC-P02-FUD-001 | TC-P02-FUD-001..002 | backend mutation/read/audit/API contract tests passed locally |
+| P02-FUD-S002 | Flutter entry and surface rollback | AC-P02-FUD-002 | TC-P02-FUD-003..004 | widget/source-of-truth tests passed locally |
+| P02-FUD-S003 | Entitlement/free-paid depth policy | AC-P02-FUD-003 | TC-P02-FUD-005..006 | entitlement policy/API/Flutter display tests passed locally |
+| P02-FUD-S004 | Usage reservation and quota | AC-P02-FUD-004 | TC-P02-FUD-007..008 | reserve/commit/release, quota and idempotency tests passed locally |
+| P02-FUD-S005 | Cost telemetry and AI fallback | AC-P02-FUD-005 | TC-P02-FUD-009..010 | cost metric and AI forbidden-field tests passed locally |
+| P02-FUD-S006 | Quota exhausted downgrade | AC-P02-FUD-006 | TC-P02-FUD-011..012 | backend downgrade and Flutter stale-cache tests passed locally |
+| P02-FUD-S007 | Export, retention and deletion backend evidence | AC-P02-FUD-007 | TC-P02-FUD-013..014 | export/redaction/deletion tests passed locally |
 | P02-FUD-S008 | Consent and privacy UX | AC-P02-FUD-008 | TC-P02-FUD-015 | UX/copy/widget tests |
 | P02-FUD-S009 | Telemetry health/error/funnel metrics | AC-P02-FUD-009 | TC-P02-FUD-016..017 | metric/redaction tests |
 | P02-FUD-S010 | Contract, traceability and release drift gates | AC-P02-FUD-010 | TC-P02-FUD-018..019 | checker, API drift and release checklist tests |
@@ -132,4 +132,4 @@ Every AC-P02-FUD-000 through AC-P02-FUD-011 maps to at least one stable TC-P02-F
 ## 下游交接边界
 - `test_cases.md`、`traceability.md`、domain/API/OpenAPI/UX/AI/Ops contracts 和 reports may consume this file as the AC source of truth, but they must not renumber or redefine AC-P02-FUD-000 through AC-P02-FUD-011 without a versioned Followup-D change.
 - Test execution status belongs in `test_cases.md`, `docs/reports/test_report.md` and `traceability.md`; this file may summarize current status but must not replace executable Test Evidence.
-- S000 local documentation-chain pass does not approve S001-S011 implementation, release readiness, paid AI external evidence or Product Base merge.
+- S000 local documentation-chain pass, S001 backend/API runtime gate pass, S002 Flutter rollback pass, S003 entitlement depth pass, S004 usage/quota pass, S005 cost telemetry/AI fallback pass, S006 quota downgrade pass and S007 data governance pass do not approve S008-S011 implementation, release readiness, paid AI external evidence or Product Base merge.

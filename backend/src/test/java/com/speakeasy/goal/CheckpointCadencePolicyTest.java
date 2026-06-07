@@ -84,9 +84,28 @@ class CheckpointCadencePolicyTest {
         .build());
 
     assertThat(decision.checkpointState()).isEqualTo("CheckpointLimited");
-    assertThat(decision.limitationReason()).isEqualTo("cost_quota_limited");
+    assertThat(decision.limitationReason()).isEqualTo("cost_budget_limited");
     assertThat(decision.task().aiDepth()).isEqualTo("deterministic_low_cost");
     assertThat(decision.task().scoringBoundary()).isEqualTo("product_internal_rubric_only_no_official_score_certification");
+  }
+
+  @Test
+  void tcP02Fud011QuotaAndEntitlementFallbacksExposeStableDowngradeReasons() {
+    CheckpointCadencePolicy.Decision quota = policy.evaluate(input()
+        .activeBackplanCheckpointDueDate(TODAY)
+        .quotaAvailable(false)
+        .build());
+    CheckpointCadencePolicy.Decision entitlement = policy.evaluate(input()
+        .activeBackplanCheckpointDueDate(TODAY)
+        .entitlementAllowed(false)
+        .build());
+
+    assertThat(quota.checkpointState()).isEqualTo("CheckpointLimited");
+    assertThat(quota.limitationReason()).isEqualTo("quota_exhausted");
+    assertThat(quota.task().aiDepth()).isEqualTo("deterministic_low_cost");
+    assertThat(entitlement.checkpointState()).isEqualTo("CheckpointLimited");
+    assertThat(entitlement.limitationReason()).isEqualTo("entitlement_required");
+    assertThat(entitlement.task().aiDepth()).isEqualTo("deterministic_low_cost");
   }
 
   @Test
@@ -161,6 +180,16 @@ class CheckpointCadencePolicyTest {
 
     InputBuilder costBudgetAvailable(boolean value) {
       costBudgetAvailable = value;
+      return this;
+    }
+
+    InputBuilder quotaAvailable(boolean value) {
+      quotaAvailable = value;
+      return this;
+    }
+
+    InputBuilder entitlementAllowed(boolean value) {
+      entitlementAllowed = value;
       return this;
     }
 

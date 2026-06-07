@@ -34,7 +34,10 @@ public class MasteryTransitionExplanationValidator {
       "certified",
       "entitlement",
       "quota_state",
-      "billing_state");
+      "billing_state",
+      "release_approval",
+      "release_ready",
+      "product_base_merge_approved");
 
   public ValidationResult validate(MasteryTransitionPolicy.Decision deterministicDecision, String candidateJson) {
     JsonNode root = parseCandidate(candidateJson);

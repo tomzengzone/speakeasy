@@ -15,4 +15,6 @@ public interface GoalDailyPlanRepository extends JpaRepository<GoalDailyPlan, UU
       UUID goalProfileId, Collection<String> statuses);
 
   List<GoalDailyPlan> findByGoalProfileIdAndStatusIn(UUID goalProfileId, Collection<String> statuses);
+
+  List<GoalDailyPlan> findByUserIdOrderByPlanDateDesc(UUID userId);
 }

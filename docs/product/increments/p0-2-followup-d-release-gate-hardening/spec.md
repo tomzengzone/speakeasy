@@ -1,7 +1,7 @@
 # P0.2 Followup-D Spec：发布门禁与商业软件加固
 
 ## 状态
-S000 documentation chain validated - 本文件把 Followup-D requirements 下沉为可验收的行为规格，并建立 S000-S011 slice routing。S000 只表示文档链可用于后续实现路由；S001-S011 仍为 planned，尚未实现、测试或批准 release/Product Base。
+S007 data governance locally passed - 本文件把 Followup-D requirements 下沉为可验收的行为规格，并建立 S000-S011 slice routing。S000 文档链已通过；S001 backend feature flag、kill switch、fail-closed mutation gate、read/projection downgrade 和 API contract evidence 已本地实现/测试；S002 Flutter entry/surface rollback、cached projection replacement 和 frontend source-of-truth guard 已本地实现/测试；S003 entitlement/free-paid depth policy、API contract 和 Flutter server-owned limitation display 已本地实现/测试；S004 usage reserve/commit/release、quota blocked、idempotent retry 和 idempotency conflict 已本地实现/测试；S005 cost telemetry、deterministic no-provider evidence、policy rejection metric 和 AI forbidden-field guard 已本地实现/测试；S006 quota/entitlement/cost downgrade propagation、OpenAPI stable reason contract 和 Flutter stale full-depth cleanup 已本地实现/测试；S007 redacted export、retention rule coverage、account deletion cleanup 和 redacted audit proof 已本地实现/测试；S008-S011 仍为 planned，尚未实现、测试或批准 release/Product Base。
 
 ## 上游引用
 - Increment definition：`docs/product/increments/p0-2-followup-d-release-gate-hardening/definition.md`
@@ -40,7 +40,7 @@ Followup-D requires downstream contract updates, but S000 only records the requi
 Required downstream contract work:
 - Domain model：`GoalAutopilotRuntimeGate`, `GoalAutopilotEntitlementDecision`, `GoalAutopilotUsageReservation`, `GoalAutopilotQuotaDowngrade`, `GoalAutopilotDataExport`, `GoalAutopilotMetricEvent` and release evidence refs if existing objects are insufficient.
 - API/OpenAPI：runtime gate/status, export/data-governance endpoint if not covered by existing user export, telemetry/ops read endpoint if exposed, error schemas for disabled/quota/downgrade and any new entitlement-depth fields.
-- AI runtime：candidate-only explanation guard for forecast/checkpoint/mastery/release-copy assistants; forbidden persistent fields include entitlement, quota, final mastery, goal-complete, official-score equivalence and release approval.
+- AI runtime：candidate-only explanation guard for forecast/checkpoint/mastery/release-copy assistants; forbidden persistent fields include entitlement, quota, final mastery, goal-complete, official-score equivalence, release approval and Product Base merge approval.
 - UX screen spec：disabled/kill-switch state, entitlement depth limitations, quota exhausted, export/deletion/retention, consent copy, telemetry-unavailable and release-gated wording.
 - Ops/release：release checklist, rollback plan, external evidence refs and dedicated Followup-D traceability checker.
 
@@ -48,13 +48,13 @@ Required downstream contract work:
 | Slice ID | Scope | Primary state nodes | API/domain boundary | AC/TC routing | Completion evidence |
 | --- | --- | --- | --- | --- | --- |
 | P02-FUD-S000 | Documentation chain and implementation routing | `DocumentReady`, `ImplementationBlocked` | docs only | AC-P02-FUD-000 / TC-P02-FUD-000 | requirements/spec/acceptance/test_cases/traceability/definition updated; independent review recorded |
-| P02-FUD-S001 | Backend feature flag and kill switch | `RuntimeEnabled`, `RuntimeDisabled`, `KillSwitchActive` | backend config/runtime policy/API/read downgrade | AC-P02-FUD-001 / TC-P02-FUD-001..002 | backend tests for mutation fail-closed, read downgrade, audit and rollback reason |
-| P02-FUD-S002 | Flutter entry and surface rollback | `EntryEnabled`, `EntryDisabled`, `SurfaceDowngraded`, `CacheCleared` | Flutter adapter/widgets/source-of-truth guard | AC-P02-FUD-002 / TC-P02-FUD-003..004 | widget/source-of-truth tests prove no local fallback |
-| P02-FUD-S003 | Entitlement/free-paid depth policy | `DepthFull`, `DepthLimited`, `DepthBlocked` | commerce/domain/API/UX entitlement decision | AC-P02-FUD-003 / TC-P02-FUD-005..006 | entitlement downgrade and server-owned depth tests |
-| P02-FUD-S004 | Usage reservation and quota | `UsageReserved`, `UsageCommitted`, `UsageReleased`, `QuotaBlocked` | usage ledger/reservation/idempotency | AC-P02-FUD-004 / TC-P02-FUD-007..008 | reserve/commit/release/idempotency tests |
-| P02-FUD-S005 | Cost telemetry and AI fallback | `CostRecorded`, `PolicyRejected`, `DeterministicNoProvider` | AI/cost metric/candidate-only guard | AC-P02-FUD-005 / TC-P02-FUD-009..010 | cost dashboard/policy rejection and AI forbidden-field tests |
-| P02-FUD-S006 | Quota exhausted downgrade | `QuotaDowngraded`, `EntitlementBlocked`, `CostLimited` | API/UX downgrade state | AC-P02-FUD-006 / TC-P02-FUD-011..012 | backend downgrade and Flutter stale-content cleanup tests |
-| P02-FUD-S007 | Export, retention and deletion backend evidence | `ExportReady`, `RetentionPolicyReady`, `DeletionProofReady` | data governance/API/security | AC-P02-FUD-007 / TC-P02-FUD-013..014 | redacted export, retention table and deletion proof tests |
+| P02-FUD-S001 | Backend feature flag and kill switch | `RuntimeEnabled`, `RuntimeDisabled`, `KillSwitchActive` | backend config/runtime policy/API/read downgrade | AC-P02-FUD-001 / TC-P02-FUD-001..002 | backend/API tests passed for mutation fail-closed, read downgrade, audit and rollback reason |
+| P02-FUD-S002 | Flutter entry and surface rollback | `EntryEnabled`, `EntryDisabled`, `SurfaceDowngraded`, `CacheCleared` | Flutter adapter/widgets/source-of-truth guard | AC-P02-FUD-002 / TC-P02-FUD-003..004 | widget/source-of-truth tests passed locally for no local fallback |
+| P02-FUD-S003 | Entitlement/free-paid depth policy | `DepthFull`, `DepthLimited`, `DepthBlocked` | commerce/domain/API/UX entitlement decision | AC-P02-FUD-003 / TC-P02-FUD-005..006 | entitlement downgrade and server-owned depth tests passed locally |
+| P02-FUD-S004 | Usage reservation and quota | `UsageReserved`, `UsageCommitted`, `UsageReleased`, `QuotaBlocked` | usage ledger/reservation/idempotency | AC-P02-FUD-004 / TC-P02-FUD-007..008 | usage reservation/quota/idempotency tests passed locally |
+| P02-FUD-S005 | Cost telemetry and AI fallback | `CostRecorded`, `PolicyRejected`, `DeterministicNoProvider` | AI/cost metric/candidate-only guard | AC-P02-FUD-005 / TC-P02-FUD-009..010 | cost dashboard/policy rejection and AI forbidden-field tests passed locally |
+| P02-FUD-S006 | Quota exhausted downgrade | `QuotaDowngraded`, `EntitlementBlocked`, `CostLimited` | API/UX downgrade state | AC-P02-FUD-006 / TC-P02-FUD-011..012 | backend downgrade and Flutter stale-content cleanup tests passed locally |
+| P02-FUD-S007 | Export, retention and deletion backend evidence | `ExportReady`, `RetentionPolicyReady`, `DeletionProofReady` | data governance/API/security | AC-P02-FUD-007 / TC-P02-FUD-013..014 | redacted export, retention table and deletion proof tests passed locally |
 | P02-FUD-S008 | Consent and privacy UX | `ConsentVisible`, `ConsentWithdrawn`, `PrivacyCopyAligned` | UX/backend consent state | AC-P02-FUD-008 / TC-P02-FUD-015 | widget/copy contract tests |
 | P02-FUD-S009 | Telemetry health/error/funnel metrics | `MetricRecorded`, `MetricRedacted`, `TelemetryUnavailable` | ops telemetry/reporting | AC-P02-FUD-009 / TC-P02-FUD-016..017 | metrics tests and redaction/source coverage |
 | P02-FUD-S010 | Contract, traceability and release drift gates | `DriftChecked`, `ReleaseChecklistSynced` | scripts/OpenAPI/generated client/release docs | AC-P02-FUD-010 / TC-P02-FUD-018..019 | checker, API drift and release docs gate |

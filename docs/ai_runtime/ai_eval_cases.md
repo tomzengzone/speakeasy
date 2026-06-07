@@ -100,3 +100,22 @@ Validator target: backend deterministic `ProgressForecastPolicy` plus forecast e
 | AI-EVAL-P02-FUC-002 | `p0-2-followup-c-checkpoint-forecast-surfaces` | Partial, unsupported, low-confidence, stale or recovery-required forecast | Forecast suppresses precise ETA and completion copy, exposes deterministic limitation reason and keeps AI explanation candidate-only. |
 | AI-EVAL-P02-FUC-003 | `p0-2-followup-c-checkpoint-forecast-surfaces` | Candidate output attempts `goal_completed`, official score/certification, guaranteed ETA, entitlement, quota or billing fields | Validator rejects/ignores candidate; deterministic fallback from `risk_reason_code` remains the rendered explanation and no forecast, checkpoint, plan, entitlement or billing state is mutated. |
 | AI-EVAL-P02-FUC-004 | `p0-2-followup-c-checkpoint-forecast-surfaces` | Candidate output includes raw transcript, raw audio ref, provider payload or sensitive diagnostic details | Candidate is rejected; fallback metadata is redacted and safe for Flutter/report surfaces. |
+
+## P0.2 Followup-D S005 Cost Telemetry And AI Fallback Eval Cases
+
+Status: local S005 backend guardrail validation.
+
+Owning increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`。
+
+Traceability:
+- `AC-P02-FUD-005`
+- `TC-P02-FUD-010`
+
+Validator target: backend forecast and mastery explanation candidate validators. S005 does not require a live provider call; deterministic no-provider and policy-rejection paths are valid only when the evidence explicitly records no live provider success.
+
+| Case ID | Owning increment | Input | Expected |
+| --- | --- | --- | --- |
+| AI-EVAL-P02-FUD-001 | `p0-2-followup-d-release-gate-hardening` | Forecast explanation candidate includes `entitlement`, `quota_state`, `billing_state`, `final_mastery_level`, `release_approval` or `product_base_merge_approved` | Candidate validation rejects with `ai_forbidden_persistent_field`; deterministic fallback remains rendered; no forecast, goal, entitlement, quota, release or Product Base state is mutated. |
+| AI-EVAL-P02-FUD-002 | `p0-2-followup-d-release-gate-hardening` | Mastery transition candidate includes `release_approval`, `release_ready` or `product_base_merge_approved` | Candidate validation rejects with `ai_forbidden_persistent_field`; deterministic mastery transition explanation fallback is used; no release or Product Base approval fact is created. |
+| AI-EVAL-P02-FUD-003 | `p0-2-followup-d-release-gate-hardening` | Provider candidate is unavailable or policy blocks provider use | Cost telemetry records sanitized rejected/fallback evidence with safe fallback reason and no raw transcript, raw audio, provider payload, entitlement fact or live-provider success claim. |
+| AI-EVAL-P02-FUD-004 | `p0-2-followup-d-release-gate-hardening` | Deterministic no-provider path completes plan or checkpoint flow | Cost telemetry records `deterministic_no_provider` with zero estimated cost and fallback reason identifying the deterministic no-provider operation, not paid AI external evidence. |
