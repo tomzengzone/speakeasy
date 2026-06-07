@@ -33,3 +33,10 @@
 - Preserve `purchases`, `subscriptions`, `payment_provider_events`, `entitlement_snapshots`, `account_deletion_jobs`, and `audit_logs` for investigation; do not hard-delete compliance/audit records during rollback.
 - Downgrade affected users only through audited entitlement snapshots or provider event replay, not ad hoc database edits.
 - Re-run `scripts/check_release_readiness.sh`, backend commercial tests, Flutter commercial tests, and provider sandbox/internal smoke before resuming rollout.
+
+## P0.2 Followup-D Goal Autopilot Release Gate Change
+- Stop rollout by disabling the P0.2 feature flag and, if needed, activating the goal autopilot kill switch before reverting app or backend changes.
+- Revert S010 release/traceability documentation and checker changes as one unit if release checklist, rollback plan, report evidence or traceability state drifts.
+- If backend telemetry persistence is involved in the rollback scope, preserve `goal_autopilot_metric_events` until account deletion, retention or ops evidence review confirms the safe deletion path.
+- Preserve audit logs, telemetry fallback audit evidence and account deletion proof during investigation.
+- Re-run `python3 scripts/check_p0_2_followup_d_traceability.py`, `python3 scripts/check_p0_2_followup_d_final_review.py`, `npm run check:api-contract`, `npm run check:dart-client-drift`, `bash -n scripts/check_release_readiness.sh`, `scripts/check_release_readiness.sh --env-only` with fixture evidence refs, `python3 scripts/project_agent_runner.py validate` and `git diff --check` before resuming Followup-D rollout.

@@ -179,6 +179,22 @@ Owning increment: `docs/product/increments/p0-2-followup-b-autopilot-control-pla
 | AC-P02-FUB-007 | L0-L5 explanation uses accepted evidence, supports hold/demotion and rejects AI persistent fields | TC-P02-FUB-013, TC-P02-FUB-014 |
 | AC-P02-FUB-008 | Replay/performance/coverage gates remain planned evidence; UI does not mark Followup-B complete | TC-P02-FUB-015, TC-P02-FUB-016, TC-P02-FUB-017 |
 
+### Followup-D Consent And Privacy UX
+
+Owning increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`。
+
+- Purpose: show P0.2 data-use, notification consent, export/delete/retention and downgrade privacy boundaries without implying release approval or commercial outcome guarantees.
+- Entry points: Goal Autopilot panel when summary/control/projection data loads, including runtime unavailable and downgraded states.
+- Primary user action: review current privacy state and enable or withdraw reminder consent through the existing server-owned control update.
+- Core components: privacy/control heading, product-internal data-use copy, backend data-governance export/delete/retention copy, sensitive-payload omission copy, notification consent state, reminder prompt eligibility/block reason, projection data state.
+- States: `privacy_visible`, `consent_on`, `consent_withdrawn`, `reminder_blocked`, `backend_state_pending`, `projection_ready`, `projection_downgraded`, `runtime_unavailable`.
+- API dependencies: existing `GET /goal-autopilot/control`, `PATCH /goal-autopilot/control`, `GET /goal-autopilot/progress-projection`, `GET /goal-autopilot/summary`. S008 does not add OpenAPI fields; Flutter renders existing `notification_consent`, `reminder_eligibility`, `projection_state` and `downgrade_reason`.
+- Empty state: if projection is unavailable during load, show `backend_state_pending` rather than local export/delete state.
+- Loading state: keep previously loaded server state only as part of the same view refresh; do not invent consent, reminder, export, deletion or retention facts.
+- Error state: runtime unavailable uses the backend/runtime reason and blocked control result; no local fallback goal, reminder, export or release state is created.
+- Copy boundary: copy must mention product-internal training surfaces, backend data-governance export/delete/retention rules and sensitive payload omission. It must not claim guaranteed achievement, official-score equivalence, unlimited AI, unlimited checkpoint access, release approval or Product Base merge approval.
+- Acceptance criteria mapping: AC-P02-FUD-008 / TC-P02-FUD-015.
+
 ### Notebook
 - Purpose: review saved expressions.
 - States: empty, loaded, deleting, error.

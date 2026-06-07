@@ -25,13 +25,19 @@ public class GoalAutopilotRuntimeGate {
 
   private final Environment environment;
   private final AuditLogRepository auditLogs;
+  private final GoalAutopilotTelemetryService telemetryService;
   private final Clock clock;
   private final TransactionTemplate auditTransaction;
 
   public GoalAutopilotRuntimeGate(
-      Environment environment, AuditLogRepository auditLogs, Clock clock, PlatformTransactionManager transactionManager) {
+      Environment environment,
+      AuditLogRepository auditLogs,
+      GoalAutopilotTelemetryService telemetryService,
+      Clock clock,
+      PlatformTransactionManager transactionManager) {
     this.environment = environment;
     this.auditLogs = auditLogs;
+    this.telemetryService = telemetryService;
     this.clock = clock;
     this.auditTransaction = new TransactionTemplate(transactionManager);
     this.auditTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -60,6 +66,14 @@ public class GoalAutopilotRuntimeGate {
       return;
     }
     UUID auditLogId = writeBlockedAudit(userId, operation, "mutation", decision, requestId);
+    telemetryService.record(
+        userId,
+        "kill_switch_event",
+        "blocked",
+        decision.reasonCode(),
+        "goal_autopilot." + cleanOrDefault(operation, "unknown_operation"),
+        "runtime_gate:" + cleanOrDefault(operation, "unknown_operation"),
+        requestId);
     throw disabledException(decision, auditLogId);
   }
 
@@ -68,6 +82,14 @@ public class GoalAutopilotRuntimeGate {
     if (decision.allowed()) {
       return;
     }
+    telemetryService.record(
+        userId,
+        "kill_switch_event",
+        "blocked",
+        decision.reasonCode(),
+        "goal_autopilot." + cleanOrDefault(operation, "unknown_operation"),
+        "runtime_gate:" + cleanOrDefault(operation, "unknown_operation"),
+        null);
     throw disabledException(decision, null);
   }
 

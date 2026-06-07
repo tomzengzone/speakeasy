@@ -2,6 +2,7 @@ package com.speakeasy.ops;
 
 import com.speakeasy.common.ApiException;
 import com.speakeasy.ai.AiRetentionService;
+import com.speakeasy.goal.GoalAutopilotTelemetryService;
 import com.speakeasy.identity.AuthService;
 import com.speakeasy.identity.UserAccount;
 import com.speakeasy.identity.UserAccountRepository;
@@ -20,6 +21,7 @@ public class AccountDeletionService {
   private final AuditLogRepository auditLogs;
   private final AuthService authService;
   private final AiRetentionService aiRetentionService;
+  private final GoalAutopilotTelemetryService goalAutopilotTelemetryService;
   private final JdbcTemplate jdbcTemplate;
   private final Clock clock;
 
@@ -29,6 +31,7 @@ public class AccountDeletionService {
       AuditLogRepository auditLogs,
       AuthService authService,
       AiRetentionService aiRetentionService,
+      GoalAutopilotTelemetryService goalAutopilotTelemetryService,
       JdbcTemplate jdbcTemplate,
       Clock clock) {
     this.users = users;
@@ -36,6 +39,7 @@ public class AccountDeletionService {
     this.auditLogs = auditLogs;
     this.authService = authService;
     this.aiRetentionService = aiRetentionService;
+    this.goalAutopilotTelemetryService = goalAutopilotTelemetryService;
     this.jdbcTemplate = jdbcTemplate;
     this.clock = clock;
   }
@@ -85,6 +89,7 @@ public class AccountDeletionService {
     delete("expression_practice_attempts", userId);
     delete("goal_outcome_checkpoints", userId);
     delete("goal_progress_forecasts", userId);
+    goalAutopilotTelemetryService.deleteByUserHash(userId);
     delete("goal_planner_replay_audits", userId);
     delete("goal_notification_outbox_records", userId);
     delete("goal_mastery_transition_decisions", userId);

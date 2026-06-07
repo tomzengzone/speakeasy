@@ -1,7 +1,7 @@
 # Implementation Report
 
 ## Current Status
-Latest implementation update recorded: `P02-FOLLOWUP-D-S007-DATA-GOVERNANCE-20260607` completed Followup-D S007 redacted export, retention rule coverage, account deletion cleanup, regression coverage and local independent review. Followup-D S001/S002/S003/S004/S005/S006/S007 are locally complete for backend/API runtime gate, Flutter rollback, entitlement depth, usage/quota, cost telemetry/AI fallback, quota downgrade and data governance backend evidence only; S008-S011 remain planned/not started. Followup-D is not release-ready and Product Base merge is not approved. Followup-C remains locally complete for S001-S007 after `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
+Latest implementation update recorded: `P02-FOLLOWUP-D-S011-FINAL-REVIEW-20260607` completed Followup-D S011 final Product Base/release review execution, including final report synchronization, release checklist state separation, strict release expected-blocker preservation and independent review evidence. Followup-D S001/S002/S003/S004/S005/S006/S007/S008/S009/S010/S011 local evidence is reviewed for backend/API runtime gate, Flutter rollback, entitlement depth, usage/quota, cost telemetry/AI fallback, quota downgrade, data governance backend evidence, consent/privacy UX, telemetry, drift gates and final review only. Followup-D is not release-ready and Product Base merge is not approved. Followup-C remains locally complete for S001-S007 after `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
 
 ## Report Format
 Each completed change should append:
@@ -14,6 +14,198 @@ Each completed change should append:
 - results
 - risks
 - follow-up
+
+## 2026-06-07 - P02-FOLLOWUP-D-S011-FINAL-REVIEW-20260607
+
+Change request:
+- Strictly execute Followup-D S011 final Product Base/release review for P02-FUD-FR-011 / P02-FUD-SPEC-011 / AC-P02-FUD-011 / TC-P02-FUD-020..021.
+- Explicit non-goal: do not approve commercial release, paid AI external evidence, native/store/payment release evidence or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`.
+- FR/Spec/AC/TC: P02-FUD-FR-011, P02-FUD-SPEC-011, AC-P02-FUD-011, TC-P02-FUD-020 and TC-P02-FUD-021.
+- Traceability row: P02-FUD-TR-011; gap closed locally for S011 final review: P02-FUD-GAP-011.
+
+Files changed:
+- S011 checker: `scripts/check_p0_2_followup_d_final_review.py`.
+- S010 checker compatibility update: `scripts/check_p0_2_followup_d_traceability.py`.
+- Release evidence docs: `docs/release/release_checklist.md` and `docs/release/rollback_plan.md`.
+- Followup-D evidence chain: `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md` and `traceability.md`.
+- Reports and status: `docs/reports/test_report.md`, `docs/reports/implementation_report.md`, `docs/reports/quality_report.md` and `docs/product/development_status.md`.
+- No production backend, Flutter or API shape changed in S011.
+
+Implementation summary:
+- Added a deterministic S011 final-review checker that validates TC-P02-FUD-020/021 rows, P02-FUD-TR-011 closure terms, report IDs, release checklist blockers, rollback final-review command coverage and forbidden release/Product Base claims.
+- Updated Followup-D docs so S011 final report sync, Product Base/release/paid AI state separation, strict release expected-blocker preservation and dual independent review are recorded as local evidence.
+- Updated release checklist so local S001-S011 final review is visible while Product Base merge approval, commercial external evidence, paid AI external evidence and strict release readiness remain blocked.
+- Preserved release safety: strict `scripts/check_release_readiness.sh` still fails on missing native social login release evidence, so local S011 final review cannot be mistaken for commercial release approval.
+
+Validation:
+- `python3 -m py_compile scripts/check_p0_2_followup_d_final_review.py scripts/check_p0_2_followup_d_traceability.py` - passed.
+- `npm run check:api-contract` - passed.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `fa2f5c368a83abbc6e24b182046af875b25856ce3af9756a861ff66794b464eb`.
+- `bash -n scripts/check_release_readiness.sh` - passed.
+- `scripts/check_release_readiness.sh --env-only` with fixture production/evidence variables - passed.
+- Strict `scripts/check_release_readiness.sh` with the same fixture variables - strict release readiness failed as expected on iOS WeChat placeholder URL scheme and missing Sign in with Apple entitlement.
+- `python3 scripts/check_p0_2_followup_d_traceability.py` - passed after report synchronization.
+- `python3 scripts/check_p0_2_followup_d_final_review.py` - passed after report synchronization.
+- `python3 scripts/project_agent_runner.py validate` - passed after report synchronization.
+- `git diff --check` - passed after report synchronization.
+
+Result:
+- TC-P02-FUD-020/021 passed locally for S011 final Product Base/release review execution with blockers preserved.
+- P02-FUD-GAP-011 is closed locally for final review evidence.
+- Followup-D is not release-ready; S011 does not approve paid AI external evidence, commercial release, native/store/payment evidence or Product Base merge.
+
+Residual risk:
+- Strict release readiness remains blocked until native social login evidence, external release evidence and Product Manager release governance are closed.
+- Product Base merge approval remains pending and must be handled by an explicit PM/release governance decision outside S011.
+
+Follow-up:
+- Continue with external/native/store/payment/paid AI evidence closure or Product Base merge governance only through a new owning request/gate.
+
+## 2026-06-07 - P02-FOLLOWUP-D-S010-DRIFT-GATES-20260607
+
+Change request:
+- Strictly execute Followup-D S010 contract, traceability and release drift gates for P02-FUD-FR-010 / P02-FUD-SPEC-010 / AC-P02-FUD-010 / TC-P02-FUD-018..019.
+- Explicit S010 non-goal at S010 close: do not implement the then-open S011 final Product Base/release approval, close paid AI external evidence, close native/store/payment release evidence or approve Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`.
+- FR/Spec/AC/TC: P02-FUD-FR-010, P02-FUD-SPEC-010, AC-P02-FUD-010, TC-P02-FUD-018 and TC-P02-FUD-019.
+- Traceability row: P02-FUD-TR-010; gap closed locally for S010 drift gates: P02-FUD-GAP-010.
+
+Files changed:
+- S010 checker: `scripts/check_p0_2_followup_d_traceability.py`.
+- Release evidence docs: `docs/release/release_checklist.md` and `docs/release/rollback_plan.md`.
+- Followup-D evidence chain: `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md` and `traceability.md`.
+- Reports and status: `docs/reports/test_report.md`, `docs/reports/implementation_report.md`, `docs/reports/quality_report.md` and `docs/product/development_status.md`.
+- No production backend, Flutter or API shape changed in S010.
+
+Implementation summary:
+- Added a deterministic S010 checker that validates required Followup-D files, TC-P02-FUD-018/019 rows, traceability closure terms, report IDs, release checklist/rollback terms, OpenAPI/generated Dart hash representation and forbidden release/completion claims.
+- Updated release checklist and rollback plan so S001-S010 local evidence is visible while S011, external/native/store/payment evidence and strict release readiness remain blocked.
+- Updated Followup-D requirement/spec/AC/TC/traceability documents so P02-FUD-FR-010, P02-FUD-SPEC-010, AC-P02-FUD-010 and P02-FUD-TR-010 point to the S010 checker, API drift gates and release readiness fixture evidence.
+- Preserved release safety: strict `scripts/check_release_readiness.sh` still fails on missing native social login release evidence, so local S010 drift closure cannot be mistaken for commercial release approval.
+
+Validation:
+- `python3 -m py_compile scripts/check_p0_2_followup_d_traceability.py` - passed.
+- `npm run check:api-contract` - passed.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `fa2f5c368a83abbc6e24b182046af875b25856ce3af9756a861ff66794b464eb`.
+- `bash -n scripts/check_release_readiness.sh` - passed.
+- `scripts/check_release_readiness.sh --env-only` with fixture production/evidence variables - passed.
+- Strict `scripts/check_release_readiness.sh` with the same fixture variables - strict release readiness failed as expected on iOS WeChat placeholder URL scheme and missing Sign in with Apple entitlement.
+- `python3 scripts/check_p0_2_followup_d_traceability.py` - passed after report synchronization.
+- `python3 scripts/project_agent_runner.py validate` - passed after report synchronization.
+- `git diff --check` - passed after report synchronization.
+
+Result:
+- TC-P02-FUD-018/019 passed locally for S010 contract, traceability and release drift gates.
+- P02-FUD-GAP-010 is closed locally for drift gates.
+- Followup-D is not release-ready; S010 did not approve the then-open S011 final review, paid AI external evidence, commercial release, native/store/payment evidence or Product Base merge.
+
+Residual risk:
+- At S010 close, S011 final Product Base/release review remained open; current S011 evidence is recorded above.
+- Strict release readiness remains blocked until native social login evidence, external release evidence and Product Manager release governance are closed.
+
+Follow-up:
+- Next implementation slice is P02-FUD-S011 final Product Base/release review, if explicitly requested.
+
+## 2026-06-07 - P02-FOLLOWUP-D-S009-TELEMETRY-20260607
+
+Change request:
+- Strictly execute Followup-D S009 telemetry health/error/funnel metrics for P02-FUD-FR-009 / P02-FUD-SPEC-009 / AC-P02-FUD-009 / TC-P02-FUD-016..017.
+- Explicit S009 non-goal at S009 close: do not implement the then-open S010/S011 drift/release gates, final Product Base/release approval, paid AI external evidence or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`.
+- FR/Spec/AC/TC: P02-FUD-FR-009, P02-FUD-SPEC-009, AC-P02-FUD-009, TC-P02-FUD-016 and TC-P02-FUD-017.
+- Traceability row: P02-FUD-TR-009; gap closed locally for S009 telemetry: P02-FUD-GAP-009.
+
+Files changed:
+- Backend telemetry persistence: `GoalAutopilotMetricEvent`, `GoalAutopilotMetricEventRepository`, `GoalAutopilotTelemetryService` and migration `V202606070001__p0_2_followup_d_goal_autopilot_telemetry.sql`.
+- Backend wiring: `GoalAutopilotService`, `GoalAutopilotRuntimeGate`, `AccountDeletionService` and `BackendIntegrationTestSupport`.
+- Tests and checks: `GoalAutopilotTelemetryTest`, `GoalAutopilotDataExportRetentionTest` and `scripts/check_p0_2_followup_d_telemetry_redaction.py`.
+- Domain and evidence docs: `docs/domain/domain_schema.md`, Followup-D `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`, plus `docs/reports/test_report.md`, `docs/reports/implementation_report.md`, `docs/reports/quality_report.md` and `docs/product/development_status.md`.
+
+Implementation summary:
+- Added service-owned `goal_autopilot_metric_events` persistence with redacted user hash, event type, status, stable reason code, source path and safe refs only.
+- Wired S009 metric recording into goal intake, diagnostic assessment, plan generation, control update, next action, action completion, checkpoint, projection read, quota errors, provider fallback and runtime kill-switch/feature-disabled paths.
+- Kept telemetry non-blocking: telemetry write failure is swallowed after a redacted fallback audit attempt, so user-facing P0.2 paths continue.
+- Extended data governance so export metadata includes `goal_autopilot_metric_events` as a redacted family and account deletion removes metric rows by redacted user hash.
+- Added a dedicated redaction/source coverage checker for migration/entity/service/test tokens.
+
+Validation:
+- `python3 -m py_compile scripts/check_p0_2_followup_d_telemetry_redaction.py` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotTelemetryTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotDataExportRetentionTest test` - passed.
+- `python3 scripts/check_p0_2_followup_d_telemetry_redaction.py` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotTelemetryTest,GoalAutopilotDataExportRetentionTest,GoalAutopilotCostTelemetryTest,GoalAutopilotQuotaDowngradeTest,GoalAutopilotRuntimeGateTest test` - passed.
+- Backend JaCoCo goal-autopilot suite including S009 tests and prior S001-S008 regressions - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 95.7%, backend branch 81.1% and Flutter line 90.9%.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest test` - passed.
+
+Result:
+- TC-P02-FUD-016/017 passed locally for redacted telemetry health/error/funnel metrics, blocked reason codes, non-blocking fallback audit and redaction/source coverage.
+- P02-FUD-GAP-009 is closed locally for telemetry.
+- Followup-D remains incomplete; S009 does not approve release drift gates, paid AI external evidence, commercial release or Product Base merge.
+
+Residual risk:
+- At S009 close, S010/S011 contract/release drift gates and final Product Base/release review remained open; current S010 evidence is recorded above.
+- S009 metrics are local deterministic backend evidence only; live external provider/payment/store/native evidence remains outside this slice.
+
+Follow-up:
+- Next implementation slice is P02-FUD-S010 contract, traceability and release drift gates.
+
+## 2026-06-07 - P02-FOLLOWUP-D-S008-CONSENT-PRIVACY-UX-20260607
+
+Change request:
+- Strictly execute Followup-D S008 consent/privacy UX for P02-FUD-FR-008 / P02-FUD-SPEC-008 / AC-P02-FUD-008 / TC-P02-FUD-015.
+- Explicit non-goal: do not implement S009-S011 telemetry, drift/release gates, final Product Base/release approval, paid AI external evidence or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`.
+- FR/Spec/AC/TC: P02-FUD-FR-008, P02-FUD-SPEC-008, AC-P02-FUD-008 and TC-P02-FUD-015.
+- Traceability row: P02-FUD-TR-008; gap closed locally for S008 consent/privacy UX: P02-FUD-GAP-008.
+
+Files changed:
+- Flutter UI: `lib/features/goal_autopilot/goal_autopilot_panel.dart`.
+- Flutter tests: `test/features/goal_autopilot/goal_autopilot_consent_privacy_widget_test.dart`.
+- Copy contract: `scripts/check_commercial_copy_contract.py`.
+- UX and evidence docs: `docs/ux/screen_spec.md`, Followup-D `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`, plus `docs/reports/test_report.md`, `docs/reports/implementation_report.md`, `docs/reports/quality_report.md` and `docs/product/development_status.md`.
+
+Implementation summary:
+- Added a Goal Autopilot privacy/consent surface that renders existing backend facts: notification consent, reminder eligibility, projection state and downgrade reason.
+- Added release-safe copy for P0.2 data-use, export/delete/retention boundaries and sensitive payload omission; the copy does not claim guaranteed achievement, official-score equivalence, unlimited AI/checkpoints, release approval or Product Base merge.
+- Preserved existing action ergonomics by placing the privacy section after primary controls, then regression-tested the full `test/features/goal_autopilot` suite.
+- Extended `check_commercial_copy_contract.py` so S008 privacy copy and prohibited promise checks are automated.
+- Updated `docs/ux/screen_spec.md` with the S008 screen contract and source-of-truth boundary.
+
+Validation:
+- `flutter test test/features/goal_autopilot/goal_autopilot_consent_privacy_widget_test.dart` - passed.
+- `flutter test test/features/goal_autopilot` - passed.
+- `flutter test --coverage test/features/goal_autopilot` - passed.
+- `flutter analyze lib/features/goal_autopilot/goal_autopilot_panel.dart test/features/goal_autopilot/goal_autopilot_consent_privacy_widget_test.dart` - passed.
+- `python3 scripts/check_commercial_copy_contract.py` - passed; release blockers for missing external store/privacy/support evidence remain reported by the script.
+- `python3 scripts/check_p0_2_goal_autopilot_frontend_source_of_truth.py` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.0%, backend branch 81.2% and Flutter line 90.9%.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check -- <S008 changed files and reports>` - passed.
+
+Result:
+- TC-P02-FUD-015 passed locally for privacy copy visibility, backend consent/reminder/projection state rendering, notification consent withdrawal blocking reminder prompts and stale privacy state cleanup.
+- P02-FUD-GAP-008 is closed locally for consent/privacy UX.
+- Followup-D remains incomplete; S008 does not approve telemetry readiness, release drift gates, paid AI external evidence, commercial release or Product Base merge.
+
+Residual risk:
+- S009-S011 telemetry, drift/release gates and final Product Base/release review remain open.
+- External store/privacy/support evidence refs are still missing and remain release blockers.
+
+Follow-up:
+- Next implementation slice is P02-FUD-S009 telemetry health/error/funnel metrics.
 
 ## 2026-06-07 - P02-FOLLOWUP-D-S007-DATA-GOVERNANCE-20260607
 

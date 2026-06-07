@@ -106,3 +106,34 @@ Current blocker register:
 
 Reference:
 - `docs/release/commercial_release_runbook.md`
+
+## 2026-06-07 P0.2 Followup-D Release Gate Hardening
+
+Status: local S001-S011 final review passed / blocked until Product Base merge approval and external release evidence.
+
+Local Followup-D gates:
+- [x] S001 backend/API runtime gate evidence passed locally.
+- [x] S002 Flutter rollback evidence passed locally.
+- [x] S003 entitlement depth evidence passed locally.
+- [x] S004 usage reservation/quota evidence passed locally.
+- [x] S005 cost telemetry/AI fallback evidence passed locally.
+- [x] S006 quota downgrade evidence passed locally.
+- [x] S007 data governance backend evidence passed locally.
+- [x] S008 consent/privacy UX evidence passed locally.
+- [x] S009 telemetry health/error/funnel metrics evidence passed locally.
+- [x] TC-P02-FUD-018 dedicated Followup-D traceability checker passed locally.
+- [x] TC-P02-FUD-019 OpenAPI/generated drift and release-doc gate passed locally with release readiness fixture wiring.
+- [x] TC-P02-FUD-020 S011 final report/release checklist sync passed locally.
+- [x] TC-P02-FUD-021 S011 final Product Base/release review executed and independently reviewed.
+
+Required before P0.2 Followup-D can be marked release-ready or merged into Product Base:
+- [ ] Product Base merge decision is explicitly approved by PM/release governance.
+- [ ] Commercial release external evidence remains blocked until the P0 Commercial Subscription Release Gate is satisfied.
+- [ ] Paid AI external evidence remains blocked until the P0 Commercial AI Provider Hardening Gate is satisfied.
+- [ ] Strict `scripts/check_release_readiness.sh` remains blocked until it passes in the target release environment with real provider/store/native/symbol/rollback evidence refs.
+
+Latest local evidence:
+- `P02-FOLLOWUP-D-S010-DRIFT-GATES-20260607` records TC-P02-FUD-018/019 passed for traceability/report/release-doc drift and API/generated drift gates.
+- `P02-FOLLOWUP-D-S011-FINAL-REVIEW-20260607` records TC-P02-FUD-020/021 passed for final report sync, release checklist state separation, Product Base blocker preservation and independent review.
+- Followup-D is not release-ready.
+- Product Base merge is not approved.

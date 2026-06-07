@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 MEMBERSHIP_PAGE = ROOT / "lib/pages/membership_page.dart"
 PROFILE_PAGE = ROOT / "lib/pages/profile_page.dart"
+GOAL_AUTOPILOT_PANEL = ROOT / "lib/features/goal_autopilot/goal_autopilot_panel.dart"
 PAYMENT_CONFIG = ROOT / "lib/config/payment_config.dart"
 RELEASE_CHECKLIST = ROOT / "docs/release/release_checklist.md"
 RELEASE_RUNBOOK = ROOT / "docs/release/commercial_release_runbook.md"
@@ -31,6 +32,22 @@ PROHIBITED_MEMBERSHIP_PROMISES = (
     "专属学习报告",
     "无限场景练习",
     "终身会员",
+)
+
+REQUIRED_GOAL_AUTOPILOT_PRIVACY_COPY = (
+    "Privacy and controls",
+    "Goal, diagnostic, plan, reminder, forecast, checkpoint and progress facts are used for product-internal training surfaces.",
+    "Export, account deletion and retention follow backend data-governance rules.",
+    "Raw audio, raw transcripts, provider payloads, idempotency keys and notification payloads stay out of this surface.",
+    "Reminder prompts are blocked until backend consent is on.",
+)
+
+PROHIBITED_GOAL_AUTOPILOT_PROMISES = (
+    "guaranteed achievement",
+    "official-score equivalence",
+    "unlimited AI",
+    "unlimited checkpoint",
+    "release approved",
 )
 
 REQUIRED_PLAN_IDS = ("weekly", "monthly", "yearly")
@@ -78,6 +95,7 @@ def main(argv: list[str]) -> int:
 
     membership = read(MEMBERSHIP_PAGE)
     profile = read(PROFILE_PAGE)
+    goal_autopilot_panel = read(GOAL_AUTOPILOT_PANEL)
     payment_config = read(PAYMENT_CONFIG)
     release_checklist = read(RELEASE_CHECKLIST)
     release_runbook = read(RELEASE_RUNBOOK)
@@ -90,6 +108,12 @@ def main(argv: list[str]) -> int:
 
     require_absent(profile, "解锁无限场景练习", "Profile membership upsell")
     require_contains(profile, "解锁 L3 高级场景、完整句型库和更高 AI 练习额度", "Profile membership upsell")
+
+    for copy in REQUIRED_GOAL_AUTOPILOT_PRIVACY_COPY:
+        require_contains(goal_autopilot_panel, copy, "Goal autopilot privacy copy")
+
+    for phrase in PROHIBITED_GOAL_AUTOPILOT_PROMISES:
+        require_absent(goal_autopilot_panel, phrase, "Goal autopilot privacy copy")
 
     for plan_id in REQUIRED_PLAN_IDS:
         require_contains(payment_config, f"{plan_id}PlanId", "PaymentConfig")

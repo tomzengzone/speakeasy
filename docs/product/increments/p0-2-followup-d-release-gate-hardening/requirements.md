@@ -1,7 +1,7 @@
 # P0.2 Followup-D Requirements：发布门禁与商业软件加固
 
 ## 状态
-S007 data governance locally passed - 本文件定义 `p0-2-followup-d-release-gate-hardening` 的需求边界，并把 Followup-D 拆分为 S000-S011 小粒度 implementation slices。S000 已关闭 requirements/spec/acceptance/test_cases/traceability routing；S001 已本地关闭 backend feature flag、kill switch、fail-closed mutation gate 和 API contract evidence；S002 已本地关闭 Flutter entry/surface rollback gate 和 frontend source-of-truth guard；S003 已本地关闭 entitlement/free-paid depth policy、API contract 和 Flutter server-owned limitation display；S004 已本地关闭 P0.2 plan/checkpoint usage reserve/commit/release、quota blocked、idempotent retry 和 idempotency conflict；S005 已本地关闭 cost telemetry、deterministic no-provider evidence、policy rejection metric 和 AI forbidden-field guard；S006 已本地关闭 quota/entitlement/cost stable downgrade reason、full-depth block/downgrade 和 Flutter stale full-depth cleanup；S007 已本地关闭 redacted export、retention rule coverage、account deletion cleanup 和 redacted audit proof；S008-S011 仍为 planned，不得解释为商业发布、paid AI external evidence 或 Product Base merge approval。
+S011 final Product Base/release review locally passed with blockers preserved - 本文件定义 `p0-2-followup-d-release-gate-hardening` 的需求边界，并把 Followup-D 拆分为 S000-S011 小粒度 implementation slices。S000 已关闭 requirements/spec/acceptance/test_cases/traceability routing；S001 已本地关闭 backend feature flag、kill switch、fail-closed mutation gate 和 API contract evidence；S002 已本地关闭 Flutter entry/surface rollback gate 和 frontend source-of-truth guard；S003 已本地关闭 entitlement/free-paid depth policy、API contract 和 Flutter server-owned limitation display；S004 已本地关闭 P0.2 plan/checkpoint usage reserve/commit/release、quota blocked、idempotent retry 和 idempotency conflict；S005 已本地关闭 cost telemetry、deterministic no-provider evidence、policy rejection metric 和 AI forbidden-field guard；S006 已本地关闭 quota/entitlement/cost stable downgrade reason、full-depth block/downgrade 和 Flutter stale full-depth cleanup；S007 已本地关闭 redacted export、retention rule coverage、account deletion cleanup 和 redacted audit proof；S008 已本地关闭 consent/privacy UX、notification consent withdrawn blocking、copy contract 和 stale privacy state cleanup；S009 已本地关闭 redacted telemetry health/error/funnel metrics、blocked reason coverage 和 non-blocking fallback audit；S010 已本地关闭 dedicated traceability checker、OpenAPI/generated drift、release checklist/rollback sync 和 strict release blocker preservation；S011 已本地关闭 final report sync、release checklist status separation、Product Base merge blocker、strict release expected-blocker preservation 和 independent review execution。S011 不得解释为商业发布、paid AI external evidence 或 Product Base merge approval。
 
 ## Product Object
 - 分类：`feature-increment`
@@ -62,10 +62,10 @@ Followup-D 是 P0.2 目标驱动自动带练的 release-gate hardening 增量。
 | P02-SI-008, P02-SI-012, P02-SI-013 | P02-FUD-S005 | P02-FUD-FR-005 | P02-PG-001, P02-PG-004 | Implemented/tested locally for cost telemetry and AI fallback |
 | P02-SI-007..013 | P02-FUD-S006 | P02-FUD-FR-006 | P02-PG-002, P02-PG-004 | Implemented/tested locally for quota downgrade |
 | P02-SI-001..013 | P02-FUD-S007 | P02-FUD-FR-007 | P02-PG-005 | Implemented/tested locally for data governance backend evidence |
-| P02-SI-007..013 | P02-FUD-S008 | P02-FUD-FR-008 | P02-PG-005 | Planned |
-| P02-SI-001..013 | P02-FUD-S009 | P02-FUD-FR-009 | P02-PG-003, P02-PG-004, P02-PG-005 | Planned |
-| P02-SI-001..013 | P02-FUD-S010 | P02-FUD-FR-010 | P02-PG-001..005 | Planned |
-| P02-SI-001..013 | P02-FUD-S011 | P02-FUD-FR-011 | P02-PG-001..005 | Planned |
+| P02-SI-007..013 | P02-FUD-S008 | P02-FUD-FR-008 | P02-PG-005 | Implemented/tested locally for consent/privacy UX |
+| P02-SI-001..013 | P02-FUD-S009 | P02-FUD-FR-009 | P02-PG-003, P02-PG-004, P02-PG-005 | Implemented/tested locally for telemetry health/error/funnel metrics |
+| P02-SI-001..013 | P02-FUD-S010 | P02-FUD-FR-010 | P02-PG-001..005 | Implemented/tested locally for contract/traceability/release drift gates |
+| P02-SI-001..013 | P02-FUD-S011 | P02-FUD-FR-011 | P02-PG-001..005 | Final review passed locally with release/Product Base blockers preserved |
 
 ## Stage Scope Detail Coverage
 | Stage Scope ID | Stage obligation | Prior functional evidence boundary | Followup-D release-gate routing |
@@ -111,7 +111,7 @@ Followup-D 是 P0.2 目标驱动自动带练的 release-gate hardening 增量。
 ### P02-FUD-FR-000 S000 文档链和 slice routing
 - 系统必须在任何 Followup-D 代码或 release-gate 变更前补齐 `requirements.md`、`spec.md`、`acceptance.md`、`test_cases.md`，并更新 `definition.md` 与 `traceability.md`。
 - 文档链必须包含 S000-S011 routing、FR/Spec/AC/TC mapping、Stage Scope ID、Policy Gate、gap register、test/report evidence 入口和 non-goal/release boundary。
-- S000 只能声明 documentation-chain ready；S001-S011 只能声明 planned，直到对应代码、测试和独立 review 实际完成。
+- S000 只能声明 documentation-chain ready；S001-S011 只能声明本地子切片执行证据，且不得替代 release approval、paid AI external evidence 或 Product Base merge approval。
 - S000 必须通过产品工程师和软件工程师双视角独立审核，确认需求清晰、无歧义、上游覆盖完整、足够支撑后续开发。
 
 ### P02-FUD-FR-001 后端 feature flag 和 kill switch
@@ -199,7 +199,7 @@ Followup-D 是 P0.2 目标驱动自动带练的 release-gate hardening 增量。
 ## 下游交接边界
 - `spec.md`、`acceptance.md`、`test_cases.md`、`traceability.md`、domain/API/OpenAPI/UX/AI/Ops contracts 和 reports may consume this file as the Followup-D requirement source of truth, but they must not renumber or redefine P02-FUD-FR-000 through P02-FUD-FR-011 without a versioned Followup-D change.
 - Implementation and test execution status belongs in `test_cases.md`, `traceability.md`, `docs/reports/test_report.md`, `docs/reports/implementation_report.md` and `docs/reports/quality_report.md`; this file may summarize workflow status but must not replace executable evidence.
-- S000 documentation-chain completion, S001 backend/API runtime gate completion, S002 Flutter rollback completion, S003 entitlement depth completion, S004 usage/quota completion, S005 cost telemetry/AI fallback completion, S006 quota downgrade completion and S007 data governance completion do not approve S008-S011 implementation, commercial release, paid AI external evidence, store release, Product Base merge or official-score claims.
+- S000 documentation-chain completion, S001 backend/API runtime gate completion, S002 Flutter rollback completion, S003 entitlement depth completion, S004 usage/quota completion, S005 cost telemetry/AI fallback completion, S006 quota downgrade completion, S007 data governance completion, S008 consent/privacy UX completion, S009 telemetry completion, S010 drift-gate completion and S011 final-review execution do not approve commercial release, paid AI external evidence, store/native release, Product Base merge or official-score claims.
 
 ## Excluded Stage Scope Items
 - None at release-gate level. Followup-D release hardening applies across P02-SI-001..013.

@@ -1,7 +1,151 @@
 # Quality Report
 
 ## Current Status
-`P02-FOLLOWUP-D-S007-DATA-GOVERNANCE-20260607` passes independent review for data governance after redacted export shape, retention coverage, account deletion cleanup, redacted audit proof, backend/Flutter regression, coverage and report evidence were inspected. Followup-D S001/S002/S003/S004/S005/S006/S007 are locally complete for backend/API runtime gate, Flutter rollback, entitlement depth, usage/quota, cost telemetry/AI fallback, quota downgrade and data governance backend evidence only; S008-S011 remain planned/not started. Followup-D is not release-ready and Product Base merge is not approved. Followup-C remains locally complete for S001-S007 after `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
+`P02-FOLLOWUP-D-S011-FINAL-REVIEW-20260607` passes independent review for final Product Base/release review execution after final report synchronization, release checklist state separation, strict release blocker preservation, Product Base blocker preservation and dual review evidence were inspected. Followup-D S001/S002/S003/S004/S005/S006/S007/S008/S009/S010/S011 local evidence is reviewed for backend/API runtime gate, Flutter rollback, entitlement depth, usage/quota, cost telemetry/AI fallback, quota downgrade, data governance backend evidence, consent/privacy UX, telemetry, drift gates and final review only. Followup-D is not release-ready and Product Base merge is not approved. Followup-C remains locally complete for S001-S007 after `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
+
+## 2026-06-07 P02 Followup-D S011 Final Review Independent Review
+
+Review ID: `P02-FOLLOWUP-D-S011-FINAL-REVIEW-20260607`
+
+Result: pass for local S011 final review execution after TC-P02-FUD-020 and TC-P02-FUD-021 evidence, final-review checker validation, report synchronization, release checklist blocker preservation and Product engineer/software engineer review passed. No local S011 blocker remains. This Independent Review does not approve release readiness, paid AI external evidence, native/store/payment evidence or Product Base merge.
+
+Findings:
+- Product engineer review: no blocker found for product scope. S011 reviews Followup-D release-gate evidence only and does not expand A/B/C functional scope, Product Base scope or commercial claims.
+- Product engineer review: no blocker found for state separation. Product Base merge state, commercial release state and paid AI external evidence state are separately recorded, and Followup-D is not release-ready plus Product Base merge is not approved remain explicit.
+- Product engineer review: blocking finding for release/Product Base approval remains outside local S011: commercial release external evidence, paid AI external evidence, native social login evidence and PM/release governance approval are still required.
+- Software engineer review: no blocker found for final-review checker coverage. `scripts/check_p0_2_followup_d_final_review.py` validates TC-P02-FUD-020/021 rows, P02-FUD-TR-011, report IDs, release checklist blockers, rollback command coverage and forbidden release/Product Base claims.
+- Software engineer review: no blocker found for contract/runtime risk. S011 changes docs and deterministic checkers only; no production backend, Flutter or API shape changed, while API contract and generated Dart drift checks passed.
+- Software engineer review: no blocker found for strict blocker preservation. `scripts/check_release_readiness.sh --env-only` passed with fixture evidence variables, while strict release readiness failed as expected on iOS WeChat placeholder URL scheme and missing Sign in with Apple entitlement.
+- No local S011 blocker found for test/report synchronization. Test, implementation, quality, traceability, development status and release reports all reference `P02-FOLLOWUP-D-S011-FINAL-REVIEW-20260607`.
+
+Validation:
+- `python3 -m py_compile scripts/check_p0_2_followup_d_final_review.py scripts/check_p0_2_followup_d_traceability.py` - passed.
+- `npm run check:api-contract` - passed.
+- `npm run check:dart-client-drift` - passed.
+- `bash -n scripts/check_release_readiness.sh` - passed.
+- `scripts/check_release_readiness.sh --env-only` with fixture production/evidence variables - passed.
+- Strict `scripts/check_release_readiness.sh` with the same fixture variables - strict release readiness failed as expected with status 1.
+- `python3 scripts/check_p0_2_followup_d_traceability.py` - passed after report synchronization.
+- `python3 scripts/check_p0_2_followup_d_final_review.py` - passed after report synchronization.
+- `python3 scripts/project_agent_runner.py validate` - passed after report synchronization.
+- `git diff --check` - passed after report synchronization.
+
+Required corrections:
+- Fixed before close: P02-FUD-S011 traceability routing row briefly had a column mismatch during update; the row now has the correct S011 WP/FR/Spec/AC/TC/trace columns and final review status.
+- None remain for local S011 final review after validation and report synchronization.
+
+Residual risk:
+- Commercial release external evidence remains blocked.
+- Paid AI external evidence remains blocked.
+- Native social login evidence remains blocked until the placeholder WeChat URL scheme and Apple Sign In entitlement are corrected.
+- Followup-D is not release-ready and Product Base merge is not approved.
+
+## 2026-06-07 P02 Followup-D S010 Drift Gates Independent Review
+
+Review ID: `P02-FOLLOWUP-D-S010-DRIFT-GATES-20260607`
+
+Result: pass for local S010 drift gates after TC-P02-FUD-018 and TC-P02-FUD-019 evidence, dedicated checker validation, OpenAPI/generated Dart drift gates, release checklist/rollback synchronization and report synchronization passed. At S010 close, this Independent Review did not approve the then-open S011 final Product Base/release review, release readiness, paid AI external evidence, native/store/payment evidence or Product Base merge.
+
+Findings:
+- No blocker found for traceability closure. `scripts/check_p0_2_followup_d_traceability.py` validates required Followup-D docs, TC-P02-FUD-018/019 rows, P02-FUD-TR-010 closure terms, report IDs, release docs and development status evidence.
+- No blocker found for contract drift. `npm run check:api-contract` and `npm run check:dart-client-drift` passed with generated Dart hash `fa2f5c368a83abbc6e24b182046af875b25856ce3af9756a861ff66794b464eb`; no production backend, Flutter or API shape changed.
+- No blocker found for release-doc synchronization. `release_checklist.md` and `rollback_plan.md` now preserve local S001-S010 passed state, S011 blocker state, rollout rollback controls, `goal_autopilot_metric_events` audit/data preservation and no-release-approval boundaries.
+- No blocker found for strict blocker preservation. `scripts/check_release_readiness.sh --env-only` passed with fixture evidence variables, while strict release readiness failed as expected on iOS WeChat placeholder URL scheme and missing Sign in with Apple entitlement.
+- No blocker found for claim safety. The S010 checker blocks forbidden Followup-D release/completion claims and the reports keep `Followup-D is not release-ready` plus `Product Base merge is not approved`.
+- No blocker found for test/report synchronization. Test, implementation, quality, traceability and development status reports all reference `P02-FOLLOWUP-D-S010-DRIFT-GATES-20260607` and keep S011 open.
+
+Validation:
+- `python3 -m py_compile scripts/check_p0_2_followup_d_traceability.py` - passed.
+- `npm run check:api-contract` - passed.
+- `npm run check:dart-client-drift` - passed.
+- `bash -n scripts/check_release_readiness.sh` - passed.
+- `scripts/check_release_readiness.sh --env-only` with fixture production/evidence variables - passed.
+- Strict `scripts/check_release_readiness.sh` with the same fixture variables - strict release readiness failed as expected with status 1.
+- `python3 scripts/check_p0_2_followup_d_traceability.py` - passed after report synchronization.
+- `python3 scripts/project_agent_runner.py validate` - passed after report synchronization.
+- `git diff --check` - passed after report synchronization.
+
+Required corrections:
+- Fixed before close: the strict release readiness assertion wrapper initially used zsh's read-only `status` variable and did not validate the release script. The wrapper was rerun with `release_status`, and the expected native social-login blocker was confirmed.
+- None remain for local S010 drift gates after validation and report synchronization.
+
+Residual risk:
+- At S010 close, S011 final Product Base/release review remained open; current S011 evidence is recorded above.
+- Live paid AI provider, payment provider, store submission and native social login evidence remain outside S010.
+- Followup-D is not release-ready and Product Base merge is not approved.
+
+## 2026-06-07 P02 Followup-D S009 Telemetry Independent Review
+
+Review ID: `P02-FOLLOWUP-D-S009-TELEMETRY-20260607`
+
+Result: pass for local S009 telemetry after redacted metric persistence, required funnel/error/blocked event coverage, telemetry write-failure fallback, data-governance export/deletion cleanup, migration validation, backend regression, changed-code coverage and report synchronization passed. At S009 close, this review did not approve the then-open S010/S011 drift/release gates, release readiness, paid AI external evidence or Product Base merge.
+
+Findings:
+- No blocker found for telemetry minimization. `goal_autopilot_metric_events` stores redacted user hash, event/status/reason/source and safe refs only; migration/entity/service checks block raw transcript, audio ref, provider payload, prompt, raw user id, idempotency key and notification payload persistence.
+- No blocker found for event coverage. `GoalAutopilotService` and `GoalAutopilotRuntimeGate` record intake, diagnostic, plan, control, next action, action completion, checkpoint, projection, quota error, provider fallback and kill-switch events with stable blocked/downgraded reason codes.
+- No blocker found for user-path resilience. Forced telemetry failure in `GoalAutopilotTelemetryTest` leaves goal creation successful and records redacted fallback audit evidence instead of surfacing telemetry failure to the user.
+- No blocker found for data governance. Export metadata now lists `goal_autopilot_metric_events` as a redacted family with safe/redacted/omitted fields, and account deletion removes metric rows by redacted user hash.
+- No blocker found for contract scope. S009 adds internal persistence and service wiring only; no OpenAPI/generated Dart shape changed, and backend migration/compile/regression gates passed.
+- No blocker found for regression coverage. S009-specific tests, S007 export/deletion regression, S005 cost telemetry, S006 quota downgrade, S001 runtime gate, Foundation migration and P0.2 coverage gates all passed.
+
+Validation:
+- `python3 -m py_compile scripts/check_p0_2_followup_d_telemetry_redaction.py` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotTelemetryTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotDataExportRetentionTest test` - passed.
+- `python3 scripts/check_p0_2_followup_d_telemetry_redaction.py` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotTelemetryTest,GoalAutopilotDataExportRetentionTest,GoalAutopilotCostTelemetryTest,GoalAutopilotQuotaDowngradeTest,GoalAutopilotRuntimeGateTest test` - passed.
+- Backend JaCoCo goal-autopilot suite including S009 tests and prior S001-S008 regressions - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 95.7%, backend branch 81.1% and Flutter line 90.9%.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest test` - passed.
+
+Required corrections:
+- Fixed before close: S009 telemetry test initially asserted `$.goal.status`, but the existing create-goal contract returns `$.goal_profile.status`; the assertion now matches the existing API contract and reruns passed.
+- Fixed before close: checkpoint/projection assertions initially expected optimistic `recorded`/`ready` states, but the existing low-confidence policy returns safe low-confidence states for the fixture; assertions now verify the established policy contract and reruns passed.
+- None remain for local S009 telemetry after regression validation and report synchronization.
+
+Residual risk:
+- At S009 close, S010/S011 contract/release drift and final Product Base/release review remained open; current S010 evidence is recorded above.
+- S009 records local backend telemetry evidence only. It does not prove live paid AI provider behavior, external payment/store/native evidence, commercial release readiness or Product Base merge approval.
+- Followup-D remains not release-ready and Product Base merge is not approved.
+
+## 2026-06-07 P02 Followup-D S008 Consent Privacy UX Independent Review
+
+Review ID: `P02-FOLLOWUP-D-S008-CONSENT-PRIVACY-UX-20260607`
+
+Result: pass for local S008 consent/privacy UX after backend consent/reminder/projection facts, copy contract, stale privacy state cleanup, screen spec, Flutter regression, changed-code coverage and report synchronization passed. This review does not approve S009-S011 telemetry, release drift, release readiness, paid AI external evidence or Product Base merge.
+
+Findings:
+- No blocker found for source-of-truth boundaries. `GoalAutopilotPanel` renders existing backend-owned `notification_consent`, `reminder_eligibility`, `projection_state` and `downgrade_reason`; it does not create local entitlement, quota, export, deletion, release or Product Base state.
+- No blocker found for notification consent withdrawal. TC-P02-FUD-015 verifies the update request sends `notification_consent=false`, the UI moves to `Notifications: consent withdrawn`, reminder prompts are blocked with the backend `consent_missing` reason, and stale consent-on copy is removed.
+- No blocker found for privacy/data-governance copy. The new surface states product-internal data use, backend export/delete/retention rules and sensitive-payload omission without raw transcript/audio/provider/idempotency/notification payload display.
+- No blocker found for claim boundaries. The copy contract blocks guaranteed achievement, official-score equivalence, unlimited AI, unlimited checkpoint and release-approved wording, and widget tests assert those strings are not rendered.
+- No blocker found for existing interaction ergonomics after correction. The privacy section sits after primary controls, preserving existing pause/resume/reminder/generate/edit tap targets in the full goal_autopilot widget regression.
+- No blocker found for contract scope. S008 uses existing API fields and does not change OpenAPI/generated Dart shape; source-of-truth and coverage gates remain green.
+
+Validation:
+- `flutter test test/features/goal_autopilot/goal_autopilot_consent_privacy_widget_test.dart` - passed.
+- `flutter test test/features/goal_autopilot` - passed.
+- `flutter test --coverage test/features/goal_autopilot` - passed.
+- `flutter analyze lib/features/goal_autopilot/goal_autopilot_panel.dart test/features/goal_autopilot/goal_autopilot_consent_privacy_widget_test.dart` - passed.
+- `python3 scripts/check_commercial_copy_contract.py` - passed, while still reporting missing external store/privacy/support evidence refs as release blockers.
+- `python3 scripts/check_p0_2_goal_autopilot_frontend_source_of_truth.py` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.0%, backend branch 81.2% and Flutter line 90.9%.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check -- <S008 changed files and reports>` - passed.
+
+Required corrections:
+- Fixed before close: the first placement of the privacy section came before primary controls and pushed existing widget-test tap targets outside the default viewport. The section now renders after primary controls, and full `test/features/goal_autopilot` regression passed.
+- Fixed before close: single-test coverage initially overwrote `coverage/lcov.info` with narrow S008-only coverage and dropped the project coverage gate below 80%. Full `flutter test --coverage test/features/goal_autopilot` regenerated coverage, and the P0.2 coverage gate passed at Flutter line 90.9%.
+- None remain for local S008 consent/privacy UX after regression validation and report synchronization.
+
+Residual risk:
+- S009-S011 telemetry, contract/release drift and final Product Base/release review remain open.
+- External `STORE_METADATA_EVIDENCE_REF`, `PRIVACY_URL` and `SUPPORT_URL` are still missing and remain release blockers.
+- S008 records local deterministic Flutter UX/copy evidence only. It does not prove live paid AI provider behavior, external payment/store/native evidence, commercial release readiness or Product Base merge approval.
+- Followup-D remains not release-ready and Product Base merge is not approved.
 
 ## 2026-06-07 P02 Followup-D S007 Data Governance Independent Review
 
@@ -269,7 +413,7 @@ Findings:
 - Product engineer review: no blocker found for commercial/Product Base separation. S000 does not claim commercial release, paid AI external evidence or Product Base merge approval, and S011 keeps those decisions auditable and separate.
 - Software engineer review: no blocker found for implementability. S001-S011 are small enough to route to backend runtime gate, Flutter rollback, entitlement policy, usage/cost services, data governance, telemetry, drift checker and final report ownership without mixing concerns.
 - Software engineer review: no blocker found for contract handoff. The spec identifies domain, API/OpenAPI, AI runtime, UX and Ops/release contract outputs required before implementation where current contracts are insufficient.
-- Software engineer review: no blocker found for AC-to-TC closure. AC-P02-FUD-000..011 each map to stable TC-P02-FUD IDs, and S001-S011 remain planned until command output and report evidence exist.
+- Software engineer review: no blocker found for AC-to-TC closure at S000 close. AC-P02-FUD-000..011 each mapped to stable TC-P02-FUD IDs, and S001-S011 were intentionally left planned until command output and report evidence existed.
 - Software engineer review: no blocker found for source-of-truth boundary. Followup-D requires backend-owned entitlement, quota, runtime, ETA/completion and release state, and blocks Flutter/local fallback for those facts.
 - Fixed before close: stage scope coverage was tightened from range-only coverage to an explicit P02-SI-001..013 detail routing table in `requirements.md`.
 

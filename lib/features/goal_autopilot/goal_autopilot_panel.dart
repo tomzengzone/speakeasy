@@ -285,6 +285,11 @@ class _GoalRuntimeUnavailable extends StatelessWidget {
           'Product-internal progress only',
           style: TextStyle(color: Color(0xFFD5E8DD), fontSize: 12),
         ),
+        const SizedBox(height: 12),
+        _GoalPrivacyConsentPanel(
+          controlResult: view.controlResult,
+          projection: projection,
+        ),
       ],
     );
   }
@@ -1035,6 +1040,11 @@ class _GoalSummary extends StatelessWidget {
             ),
           ),
         ],
+        const SizedBox(height: 12),
+        _GoalPrivacyConsentPanel(
+          controlResult: controlResult,
+          projection: projection,
+        ),
       ],
     );
   }
@@ -1100,6 +1110,119 @@ class _GoalSummary extends StatelessWidget {
           !fragment.eligible &&
           blockingReasons.contains(fragment.downgradeReason.trim()),
     );
+  }
+}
+
+class _GoalPrivacyConsentPanel extends StatelessWidget {
+  const _GoalPrivacyConsentPanel({
+    required this.controlResult,
+    required this.projection,
+  });
+
+  final GoalAutopilotControlResult controlResult;
+  final GoalProgressProjection? projection;
+
+  @override
+  Widget build(BuildContext context) {
+    final GoalAutopilotControl control = controlResult.control;
+    final NotificationEligibilityDecision reminder =
+        controlResult.reminderEligibility;
+    final String dataState = _dataGovernanceState(projection);
+    final bool consentOn = control.notificationConsent;
+    final String notificationState = consentOn
+        ? 'Notifications: consent on'
+        : 'Notifications: consent withdrawn';
+    final String reminderState = consentOn && reminder.eligible
+        ? 'Reminder prompts: ${reminder.reasonCode}'
+        : 'Reminder prompts blocked: ${reminder.reasonCode}';
+
+    return Column(
+      key: const ValueKey<String>('goal-autopilot-consent-privacy'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const Divider(color: Color(0x33556F61), height: 1),
+        const SizedBox(height: 12),
+        const Row(
+          children: <Widget>[
+            Icon(
+              Icons.privacy_tip_outlined,
+              color: Color(0xFFE8F5E9),
+              size: 18,
+            ),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Privacy and controls',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Goal, diagnostic, plan, reminder, forecast, checkpoint and progress facts are used for product-internal training surfaces.',
+          style: TextStyle(color: Color(0xFFF5F7F2), fontSize: 12),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Export, account deletion and retention follow backend data-governance rules.',
+          style: TextStyle(color: Color(0xFFD5E8DD), fontSize: 12),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Raw audio, raw transcripts, provider payloads, idempotency keys and notification payloads stay out of this surface.',
+          style: TextStyle(color: Color(0xFFD5E8DD), fontSize: 12),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: <Widget>[
+            _Metric(
+              label: notificationState,
+              icon: consentOn
+                  ? Icons.notifications_active_outlined
+                  : Icons.notifications_off_outlined,
+            ),
+            _Metric(
+              label: reminderState,
+              icon: reminder.eligible
+                  ? Icons.task_alt_rounded
+                  : Icons.block_rounded,
+            ),
+            _Metric(
+              label: 'Data state: $dataState',
+              icon: dataState == 'ready'
+                  ? Icons.verified_user_outlined
+                  : Icons.info_outline_rounded,
+            ),
+          ],
+        ),
+        if (!consentOn) ...<Widget>[
+          const SizedBox(height: 8),
+          const Text(
+            'Reminder prompts are blocked until backend consent is on.',
+            style: TextStyle(color: Color(0xFFF5F7F2), fontSize: 12),
+          ),
+        ],
+      ],
+    );
+  }
+
+  String _dataGovernanceState(GoalProgressProjection? projection) {
+    if (projection == null) {
+      return 'backend_state_pending';
+    }
+    final String reason = projection.downgradeReason.trim();
+    if (reason.isNotEmpty) {
+      return reason;
+    }
+    final String state = projection.projectionState.trim();
+    return state.isEmpty ? 'backend_state_pending' : state;
   }
 }
 

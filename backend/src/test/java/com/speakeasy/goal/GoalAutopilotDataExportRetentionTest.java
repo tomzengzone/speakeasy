@@ -90,6 +90,10 @@ class GoalAutopilotDataExportRetentionTest extends BackendIntegrationTestSupport
         .contains("idempotency_key_ref");
     assertThat(assertFamily(export, "ai_provider_invocation_metrics", 2).omittedFields())
         .contains("raw_provider_payload", "raw_prompt", "raw_transcript", "raw_audio_ref");
+    assertThat(assertFamily(export, "goal_autopilot_metric_events", 3).safeFields())
+        .contains("user_hash", "event_type", "status", "reason_code", "source_path", "target_ref");
+    assertThat(assertFamily(export, "goal_autopilot_metric_events", 3).omittedFields())
+        .contains("raw_transcript", "raw_audio_ref", "raw_provider_payload", "raw_prompt", "raw_idempotency_key");
 
     String rendered = export.toString();
     assertThat(rendered)
@@ -113,6 +117,7 @@ class GoalAutopilotDataExportRetentionTest extends BackendIntegrationTestSupport
     assertThat(count("usage_reservations", dataset.userId())).isGreaterThanOrEqualTo(2);
     assertThat(count("usage_ledgers", dataset.userId())).isGreaterThanOrEqualTo(2);
     assertThat(countAiMetrics(dataset.userId())).isGreaterThanOrEqualTo(2);
+    assertThat(countGoalMetrics(dataset.userId())).isGreaterThanOrEqualTo(3);
 
     mvc.perform(delete("/user/me")
             .header(HttpHeaders.AUTHORIZATION, bearer(dataset.tokens().accessToken()))
@@ -124,6 +129,8 @@ class GoalAutopilotDataExportRetentionTest extends BackendIntegrationTestSupport
     for (String table : expectedS007DeletionTables()) {
       if ("ai_provider_invocation_metrics".equals(table)) {
         assertThat(countAiMetrics(dataset.userId())).isZero();
+      } else if ("goal_autopilot_metric_events".equals(table)) {
+        assertThat(countGoalMetrics(dataset.userId())).isZero();
       } else {
         assertThat(count(table, dataset.userId())).as(table).isZero();
       }
@@ -308,7 +315,8 @@ class GoalAutopilotDataExportRetentionTest extends BackendIntegrationTestSupport
         "goal_mastery_transition_decisions",
         "usage_ledgers",
         "usage_reservations",
-        "ai_provider_invocation_metrics");
+        "ai_provider_invocation_metrics",
+        "goal_autopilot_metric_events");
   }
 
   private Set<String> expectedS007DeletionTables() {
@@ -325,6 +333,13 @@ class GoalAutopilotDataExportRetentionTest extends BackendIntegrationTestSupport
   private long countAiMetrics(UUID userId) {
     return jdbcTemplate.queryForObject(
         "SELECT COUNT(*) FROM ai_provider_invocation_metrics WHERE user_hash = ?",
+        Long.class,
+        aiCostMetricsService.redactedUserHash(userId));
+  }
+
+  private long countGoalMetrics(UUID userId) {
+    return jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM goal_autopilot_metric_events WHERE user_hash = ?",
         Long.class,
         aiCostMetricsService.redactedUserHash(userId));
   }

@@ -234,7 +234,7 @@ P0.1-DOM-001 结论：`docs/domain/training_model.md`、本文和 `docs/domain/e
 ## P0.2 Goal Autopilot Domain Extension
 
 Owning stage: `docs/product/stages/p0-2-training-memory.md`。
-Owning increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy`, `p0-2-autopilot-progress-checkpoint`, `p0-2-followup-b-autopilot-control-planner-memory`, `p0-2-followup-c-checkpoint-forecast-surfaces`。
+Owning increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy`, `p0-2-autopilot-progress-checkpoint`, `p0-2-followup-b-autopilot-control-planner-memory`, `p0-2-followup-c-checkpoint-forecast-surfaces`, `p0-2-followup-d-release-gate-hardening`。
 
 | Entity | Owner | 关键字段 | 生命周期 / 不变量 | Persistence / migration implication | API boundary recommendation | Test impact | Traceability note |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -261,6 +261,7 @@ Owning increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory
 | MemoryItemPolicyState | Learning Memory domain | memory_item_state_id, user_id, item_type, item_ref, interleaving_group, current_mastery_level, evidence_refs, last_reviewed_at, exposure_count, overlearning_count, forgetting_risk, due_decision, next_due_at, rule_version | memory scheduling 必须按 item-level state 裁决；overlearning cap 和 interleaving 必须由 deterministic policy 控制；相同 input snapshot + rule_version 必须得到相同 due decision | 可扩展 `learning_*`/`goal_*` projection；必须与 LearningEvidence、PlanItem 或 weakness/source refs 可追溯 | memory due decision and planner replay family | TC-P02-FUB-011..012; supporting replay TC-P02-FUB-015..017 | P02-FUB-TR-006, P02-FUB-TR-008 |
 | MasteryTransitionDecision | Learning Memory domain | transition_id, user_id, memory_item_state_id, previous_level, proposed_level, accepted_level, direction, evidence_refs, confidence, reason_code, rule_version, created_at | L0-L5 promotion/demotion/hold 只能使用 accepted evidence；低置信度、partial/unsupported、fatigue policy 或 insufficient evidence 必须阻止 forced promotion；不得声明官方考试认证 | 可写入 mastery transition log 并更新 MasteryRecord 或 goal mastery projection；保留 evidence refs 和 reason code | mastery transition audit/explanation family | TC-P02-FUB-013..014; supporting replay TC-P02-FUB-015..017 | P02-FUB-TR-007, P02-FUB-TR-008 |
 | PlannerReplayAudit | Planner Audit domain | replay_audit_id, decision_family, source_entity_ref, input_snapshot_hash, output_snapshot_hash, expected_decision, reason_code, rule_version, replay_hash, created_at | control、eligibility、outbox、recovery、memory due 和 mastery transition 都必须能用 fixture replay；mismatch 是 contract/test failure，不得静默通过 | 可扩展 `goal_planner_audits` 或独立 replay audit；snapshot 最小化敏感 transcript 和诊断内容 | deterministic replay fixture and audit family | TC-P02-FUB-015..017 | P02-FUB-TR-008 |
+| GoalAutopilotMetricEvent | Goal Autopilot Ops domain | metric_event_id, user_hash, event_type, status, reason_code, source_path, target_ref, audit_ref, schema_version, created_at | S009 telemetry 只记录 redacted rollout health/error/funnel facts；不得保存 raw user id、diagnostic transcript、audio ref、provider payload、prompt、idempotency key 或 notification payload；telemetry 写失败不得阻断用户主流程，必须尝试 fallback audit | 需要 `goal_autopilot_metric_events`；按 event/status/reason/created_at 和 user_hash/created_at 查询；账号删除按 redacted user_hash 清理；export 只返回 safe/redacted/omitted field metadata | No public API shape change; internal telemetry service and data-governance export family | TC-P02-FUD-016..017 telemetry event/redaction/fallback tests | P02-FUD-TR-009; P02-FUD-FR-009 |
 
 ### P0.2 Lifecycle Notes
 
@@ -283,6 +284,7 @@ Owning increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory
 | MemoryItemPolicyState | `tracking -> due_evaluated`; due decision may enter `review_due`, `review_not_due`, `skip_overlearning_cap`, `defer_budget`, `interleave_alternative` or `blocked_by_control` |
 | MasteryTransitionDecision | `proposed -> accepted`; `proposed -> held`; `proposed -> demoted`; invalid or forbidden AI final state enters `rejected_for_persistence` |
 | PlannerReplayAudit | `captured -> replayed -> matched`; mismatch enters `mismatched` and blocks completion evidence |
+| GoalAutopilotMetricEvent | `captured -> persisted`; write failure enters `telemetry_write_failed` fallback audit without blocking the source user path |
 
 ### P0.2-DOM-001 Gate Coverage
 
@@ -297,8 +299,9 @@ Owning increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory
 | P02-SI-013 | Checkpoint cadence and outcome | `CheckpointCadenceDecision`, `CheckpointTaskDefinition`, `OutcomeCheckpoint`, `CheckpointPlanUpdateSignal` | TC-P02-FUC-004..006 checkpoint cadence/task library; TC-P02-FUC-007..009 checkpoint evidence update, replay audit and control/recovery compatibility tests |
 | P02-PG-001..005 | Policy gates | Support status, claim guard, cost/data/control fields across all P0.2 entities | full partial/unsupported, entitlement, data minimization and policy downgrade tests |
 | P02-FUB-TR-001..008 | Followup-B control/planner/memory hardening | `UserAutopilotControl`, `NotificationEligibilityDecision`, `NotificationOutboxRecord`, `RecoveryPlanDecision`, `MemoryItemPolicyState`, `MasteryTransitionDecision`, `PlannerReplayAudit` | TC-P02-FUB-001..017 |
+| P02-FUD-TR-009 | Followup-D telemetry hardening | `GoalAutopilotMetricEvent` | TC-P02-FUD-016..017 |
 
-P0.2-DOM-001 结论：Domain Schema 现在覆盖 P0.2 planned increments（含 Followup-B）的实现前置领域对象、状态机、持久化方向、API boundary recommendation 和测试影响。代码实现仍需先通过 API/OpenAPI、AI runtime、UX screen spec 和 traceability gate。
+P0.2-DOM-001 结论：Domain Schema 现在覆盖 P0.2 planned increments（含 Followup-B/C/D）的实现前置领域对象、状态机、持久化方向、API boundary recommendation 和测试影响。代码实现仍需先通过 API/OpenAPI、AI runtime、UX screen spec 和 traceability gate。
 
 ## Cross-Domain Invariants
 
@@ -322,7 +325,7 @@ P0.2-DOM-001 结论：Domain Schema 现在覆盖 P0.2 planned increments（含 F
 | `content_*` | Scenario、ScenarioVersion、ScenarioLevel、TargetExpression、DialogueAsset、ActionChainStep |
 | `training_*` | PracticeSession、DialogueTurn、ListeningWarmup、ShadowingAttempt、TrainingSession、TrainingTurn、PlannerDecision、HintState、PressureCheck、TrainingRecap |
 | `learning_*` | FavoriteExpression、SavedExpression、LearningEvidence、LearningEvidenceCandidate、EvidenceRuleTrace、MasteryRecord、ReviewItem、SessionSummary、LearningHistoryEntry |
-| `goal_*` | GoalProfile、SupportedGoalMatrixDecision、DiagnosticAssessment、WeeklyBackplan、DailyTrainingPlan、PlanItem、PlannerDecisionAudit、ProgressForecast、OutcomeCheckpoint、UserAutopilotControl、NotificationEligibilityDecision、NotificationOutboxRecord、RecoveryPlanDecision、MemoryItemPolicyState、MasteryTransitionDecision、PlannerReplayAudit |
+| `goal_*` | GoalProfile、SupportedGoalMatrixDecision、DiagnosticAssessment、WeeklyBackplan、DailyTrainingPlan、PlanItem、PlannerDecisionAudit、ProgressForecast、OutcomeCheckpoint、UserAutopilotControl、NotificationEligibilityDecision、NotificationOutboxRecord、RecoveryPlanDecision、MemoryItemPolicyState、MasteryTransitionDecision、PlannerReplayAudit、GoalAutopilotMetricEvent |
 | `commerce_*` | SubscriptionPlan、Purchase、Subscription、EntitlementSnapshot、EntitlementRule、PaymentProviderEvent |
 | `usage_*` | UsageLedger、UsageReservation、ProviderUsageEvent、ScoreSignal provider linkage |
 | `media_*` / `ai_media_*` | MediaAsset、TtsCacheEntry、provider-accessible signed media refs、object lifecycle metadata |

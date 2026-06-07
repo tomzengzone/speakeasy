@@ -23,6 +23,7 @@ import com.speakeasy.goal.GoalAutopilotControlIdempotencyRepository;
 import com.speakeasy.goal.GoalAutopilotControlRepository;
 import com.speakeasy.goal.GoalDailyPlanRepository;
 import com.speakeasy.goal.GoalDiagnosticAssessmentRepository;
+import com.speakeasy.goal.GoalAutopilotMetricEventRepository;
 import com.speakeasy.goal.GoalMasteryInitialStateRepository;
 import com.speakeasy.goal.GoalOutcomeCheckpointRepository;
 import com.speakeasy.goal.GoalPlanItemRepository;
@@ -115,6 +116,7 @@ public abstract class BackendIntegrationTestSupport {
   @Autowired GoalBackplanRepository goalBackplans;
   @Autowired GoalMasteryInitialStateRepository goalMasteryInitialStates;
   @Autowired GoalDiagnosticAssessmentRepository goalDiagnostics;
+  @Autowired GoalAutopilotMetricEventRepository goalAutopilotMetrics;
   @Autowired GoalProfileRepository goalProfiles;
   @Autowired GoalAutopilotControlIdempotencyRepository goalAutopilotControlIdempotency;
   @Autowired GoalAutopilotControlRepository goalAutopilotControls;
@@ -139,6 +141,7 @@ public abstract class BackendIntegrationTestSupport {
     trainingSessions.deleteAll();
     goalCheckpoints.deleteAll();
     goalForecasts.deleteAll();
+    goalAutopilotMetrics.deleteAll();
     goalPlannerReplayAudits.deleteAll();
     goalNotificationOutboxRecords.deleteAll();
     goalRecoveryPlanDecisions.deleteAll();
