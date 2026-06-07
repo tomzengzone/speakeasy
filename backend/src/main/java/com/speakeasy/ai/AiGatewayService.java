@@ -37,7 +37,28 @@ public class AiGatewayService {
     this.retentionService = retentionService;
   }
 
-  public AiProviderGateway.TranscribeResult transcribe(UUID userId, String audioRef, String languageHint) {
+  public record TranscribeResult(String transcript, double confidence, String status) {}
+
+  public record TtsResult(String audioRef, String status, String mediaId, String cacheStatus, java.time.Instant cacheExpiresAt) {}
+
+  public record ScoreResult(String scoreKind, Double value, Double confidence, String status) {}
+
+  public record CoachResult(
+      String feedbackType,
+      String summary,
+      String mainIssueType,
+      String suggestedExpression,
+      String nextPrompt,
+      ScoreResult scoreSignal,
+      String validationStatus,
+      String providerStatus,
+      String recoverableErrorCode) {
+    public boolean recoverable() {
+      return recoverableErrorCode != null && !recoverableErrorCode.isBlank();
+    }
+  }
+
+  public TranscribeResult transcribe(UUID userId, String audioRef, String languageHint) {
     policyService.validateAudioRef(userId, "asr", audioRef);
     UsageReservation reservation = usageService.reserveProviderCall(userId, "asr", mediaReferenceService.auditRef(audioRef));
     try {
@@ -45,14 +66,14 @@ public class AiGatewayService {
       costMetricsService.recordInvocation(
           userId, "asr", result.status(), false, null, audioDuration(audioRef), "");
       closeProviderReservation(userId, reservation, "available".equals(result.status()));
-      return result;
+      return new TranscribeResult(result.transcript(), result.confidence(), result.status());
     } catch (RuntimeException e) {
       usageService.release(userId, reservation.getReservationId(), "provider_exception:asr");
       throw e;
     }
   }
 
-  public AiProviderGateway.TtsResult synthesize(UUID userId, String text, String voice) {
+  public TtsResult synthesize(UUID userId, String text, String voice) {
     policyService.validateText(userId, "tts", text);
     UsageReservation reservation = usageService.reserveProviderCall(userId, "tts", "tts");
     try {
@@ -67,14 +88,14 @@ public class AiGatewayService {
           null,
           "provider_unavailable".equals(result.status()) ? result.status() : "");
       closeProviderReservation(userId, reservation, "available".equals(result.status()));
-      return result;
+      return new TtsResult(result.audioRef(), result.status(), result.mediaId(), result.cacheStatus(), result.cacheExpiresAt());
     } catch (RuntimeException e) {
       usageService.release(userId, reservation.getReservationId(), "provider_exception:tts");
       throw e;
     }
   }
 
-  public AiProviderGateway.ScoreResult scorePronunciation(UUID userId, String audioRef, String referenceText) {
+  public ScoreResult scorePronunciation(UUID userId, String audioRef, String referenceText) {
     policyService.validateAudioRef(userId, "scoring", audioRef);
     UsageReservation reservation = usageService.reserveProviderCall(userId, "scoring", mediaReferenceService.auditRef(audioRef));
     try {
@@ -82,7 +103,7 @@ public class AiGatewayService {
       costMetricsService.recordInvocation(
           userId, "scoring", result.status(), false, tokenEstimate(referenceText), audioDuration(audioRef), "");
       closeProviderReservation(userId, reservation, "available".equals(result.status()));
-      return result;
+      return toGatewayScore(result);
     } catch (RuntimeException e) {
       usageService.release(userId, reservation.getReservationId(), "provider_exception:scoring");
       throw e;
@@ -90,19 +111,19 @@ public class AiGatewayService {
   }
 
   @Transactional
-  public AiProviderGateway.CoachResult coach(UUID userId, UUID sessionId, String transcript, List<String> targetExpressionIds) {
+  public CoachResult coach(UUID userId, UUID sessionId, String transcript, List<String> targetExpressionIds) {
     sessions.findByPracticeSessionIdAndUserId(sessionId, userId)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Practice session was not found."));
     return coachProvider(userId, sessionId, transcript, targetExpressionIds);
   }
 
   @Transactional
-  public AiProviderGateway.CoachResult coachTraining(
+  public CoachResult coachTraining(
       UUID userId, UUID trainingSessionId, String transcript, List<String> targetExpressionIds) {
     return coachProvider(userId, trainingSessionId, transcript, targetExpressionIds);
   }
 
-  private AiProviderGateway.CoachResult coachProvider(
+  private CoachResult coachProvider(
       UUID userId, UUID sessionId, String transcript, List<String> targetExpressionIds) {
     policyService.validateText(userId, "ai", transcript);
     UsageReservation reservation = usageService.reserveProviderCall(userId, "ai", sessionId.toString());
@@ -117,11 +138,24 @@ public class AiGatewayService {
           null,
           result.recoverableErrorCode());
       closeProviderReservation(userId, reservation, !result.recoverable());
-      return result;
+      return new CoachResult(
+          result.feedbackType(),
+          result.summary(),
+          result.mainIssueType(),
+          result.suggestedExpression(),
+          result.nextPrompt(),
+          toGatewayScore(result.scoreSignal()),
+          result.validationStatus(),
+          result.providerStatus(),
+          result.recoverableErrorCode());
     } catch (RuntimeException e) {
       usageService.release(userId, reservation.getReservationId(), "provider_exception:ai");
       throw e;
     }
+  }
+
+  private ScoreResult toGatewayScore(AiProviderGateway.ScoreResult score) {
+    return new ScoreResult(score.scoreKind(), score.value(), score.confidence(), score.status());
   }
 
   private void closeProviderReservation(UUID userId, UsageReservation reservation, boolean success) {

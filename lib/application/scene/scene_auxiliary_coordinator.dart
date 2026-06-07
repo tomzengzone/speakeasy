@@ -5,7 +5,7 @@ import 'package:speakeasy/services/api_client.dart';
 abstract class SceneAuxiliaryRemoteApi {
   Future<String> translateTextToChinese(String text);
 
-  Future<String> transcribeAudio(
+  Future<String> legacyTranscribeLocalAudioForScene(
     File audioFile, {
     String? hintText,
     Map<String, dynamic>? sceneDraft,
@@ -35,12 +35,12 @@ class ApiClientSceneAuxiliaryRemoteApi implements SceneAuxiliaryRemoteApi {
   }
 
   @override
-  Future<String> transcribeAudio(
+  Future<String> legacyTranscribeLocalAudioForScene(
     File audioFile, {
     String? hintText,
     Map<String, dynamic>? sceneDraft,
   }) {
-    return ApiClient.transcribeAudio(
+    return ApiClient.legacyTranscribeLocalAudioForScene(
       audioFile,
       hintText: hintText,
       sceneDraft: sceneDraft,
@@ -65,12 +65,12 @@ class SceneAuxiliaryCoordinator {
     return _remoteApi.translateTextToChinese(text);
   }
 
-  Future<String> transcribeAudio(
+  Future<String> legacyTranscribeLocalAudioForScene(
     File audioFile, {
     String? hintText,
     Map<String, dynamic>? sceneDraft,
   }) {
-    return _remoteApi.transcribeAudio(
+    return _remoteApi.legacyTranscribeLocalAudioForScene(
       audioFile,
       hintText: hintText,
       sceneDraft: sceneDraft,

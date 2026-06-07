@@ -490,11 +490,12 @@ class _InterviewSceneListeningPageState
       if (path == null || path.trim().isEmpty) {
         throw Exception('没有录到有效语音');
       }
-      final String transcript = await ApiClient.transcribeAudio(
-        File(path),
-        hintText: turn.text,
-        repairMode: 'background',
-      );
+      final String transcript =
+          await ApiClient.legacyTranscribeLocalAudioForScene(
+            File(path),
+            hintText: turn.text,
+            repairMode: 'background',
+          );
       if (!mounted || ticket != _shadowTicket) {
         return;
       }

@@ -1170,7 +1170,25 @@ class ApiClient {
   }
 
   /// 语音转文字（Paraformer）——上传音频文件，返回识别文本
-  static Future<String> transcribeAudio(
+  // XCB-001 legacy exception only. New audio flows must use backend media
+  // upload and submit the returned audio_ref to the owning business API.
+  static Future<String> legacyTranscribeLocalAudioForScene(
+    File audioFile, {
+    String? hintText,
+    Map<String, dynamic>? sceneDraft,
+    String repairMode = 'background',
+    bool preferRawText = false,
+  }) {
+    return _legacyTranscribeLocalAudioByPath(
+      audioFile,
+      hintText: hintText,
+      sceneDraft: sceneDraft,
+      repairMode: repairMode,
+      preferRawText: preferRawText,
+    );
+  }
+
+  static Future<String> _legacyTranscribeLocalAudioByPath(
     File audioFile, {
     String? hintText,
     Map<String, dynamic>? sceneDraft,
@@ -1227,7 +1245,17 @@ class ApiClient {
     });
   }
 
-  static Future<Map<String, dynamic>> scoreAudio(
+  // XCB-001 legacy exception only. New pronunciation flows must use backend
+  // media upload and submit the returned audio_ref to the owning business API.
+  static Future<Map<String, dynamic>> legacyScoreLocalAudioForPronunciation(
+    File audioFile,
+    String refText, {
+    String? cardId,
+  }) {
+    return _legacyScoreLocalAudioByPath(audioFile, refText, cardId: cardId);
+  }
+
+  static Future<Map<String, dynamic>> _legacyScoreLocalAudioByPath(
     File audioFile,
     String refText, {
     String? cardId,

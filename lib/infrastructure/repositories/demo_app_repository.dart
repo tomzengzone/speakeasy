@@ -133,10 +133,11 @@ class DemoAppRepository implements AppRepository {
     required String expectedText,
   }) async {
     try {
-      final Map<String, dynamic> score = await ApiClient.scoreAudio(
-        File(audioPath),
-        expectedText,
-      );
+      final Map<String, dynamic> score =
+          await ApiClient.legacyScoreLocalAudioForPronunciation(
+            File(audioPath),
+            expectedText,
+          );
       return PronunciationScore(
         overall: (score['overall'] as num?)?.toInt() ?? 0,
         accuracy: (score['accuracy'] as num?)?.toInt(),

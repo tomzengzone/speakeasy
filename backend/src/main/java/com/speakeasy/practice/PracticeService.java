@@ -1,6 +1,6 @@
 package com.speakeasy.practice;
 
-import com.speakeasy.ai.AiProviderGateway;
+import com.speakeasy.ai.AiGatewayService;
 import com.speakeasy.commerce.EntitlementGateService;
 import com.speakeasy.common.ApiException;
 import com.speakeasy.content.ScenarioLevelRepository;
@@ -28,7 +28,7 @@ public class PracticeService {
   private final PracticeTurnRepository turns;
   private final CoachFeedbackRepository feedbacks;
   private final SessionSummaryRepository summaries;
-  private final AiProviderGateway provider;
+  private final AiGatewayService aiGateway;
   private final EntitlementGateService entitlementGateService;
   private final Clock clock;
 
@@ -40,7 +40,7 @@ public class PracticeService {
       PracticeTurnRepository turns,
       CoachFeedbackRepository feedbacks,
       SessionSummaryRepository summaries,
-      AiProviderGateway provider,
+      AiGatewayService aiGateway,
       EntitlementGateService entitlementGateService,
       Clock clock) {
     this.users = users;
@@ -50,7 +50,7 @@ public class PracticeService {
     this.turns = turns;
     this.feedbacks = feedbacks;
     this.summaries = summaries;
-    this.provider = provider;
+    this.aiGateway = aiGateway;
     this.entitlementGateService = entitlementGateService;
     this.clock = clock;
   }
@@ -106,9 +106,9 @@ public class PracticeService {
     }
 
     Instant now = Instant.now(clock);
-    AiProviderGateway.TranscribeResult transcribeResult = null;
+    AiGatewayService.TranscribeResult transcribeResult = null;
     if (normalizedTranscript == null) {
-      transcribeResult = provider.transcribe(normalizedAudioRef, "en-US");
+      transcribeResult = aiGateway.transcribe(userId, normalizedAudioRef, "en-US");
       if (!"available".equals(transcribeResult.status())) {
         return saveRecoverableTurn(
             session,
@@ -124,7 +124,7 @@ public class PracticeService {
       normalizedTranscript = transcribeResult.transcript();
     }
 
-    AiProviderGateway.CoachResult coachResult = provider.coach(sessionId, normalizedTranscript, List.of());
+    AiGatewayService.CoachResult coachResult = aiGateway.coach(userId, sessionId, normalizedTranscript, List.of());
     int turnIndex = session.getCurrentTurnIndex() + 1;
     PracticeTurn turn = turns.save(new PracticeTurn(
         UUID.randomUUID(),
@@ -214,13 +214,13 @@ public class PracticeService {
         idempotencyKey,
         providerStatus,
         now));
-    AiProviderGateway.CoachResult fallback = new AiProviderGateway.CoachResult(
+    AiGatewayService.CoachResult fallback = new AiGatewayService.CoachResult(
         "recoverable_error",
         summary,
         "none",
         null,
         "Please retry this turn.",
-        new AiProviderGateway.ScoreResult("pronunciation", null, null, "unavailable"),
+        new AiGatewayService.ScoreResult("pronunciation", null, null, "unavailable"),
         "fallback",
         providerStatus,
         recoverableErrorCode);
@@ -230,7 +230,7 @@ public class PracticeService {
     return turnResult(session, turn, feedback);
   }
 
-  private CoachFeedback saveFeedback(UUID sessionId, UUID sourceTurnId, AiProviderGateway.CoachResult result, Instant now) {
+  private CoachFeedback saveFeedback(UUID sessionId, UUID sourceTurnId, AiGatewayService.CoachResult result, Instant now) {
     return feedbacks.save(new CoachFeedback(
         UUID.randomUUID(),
         sessionId,

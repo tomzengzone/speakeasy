@@ -247,7 +247,9 @@ class _ScenePageState extends State<ScenePage> {
     await _syncVirtualFriendsToServer();
   }
 
-  Future<void> _syncVirtualFriendsToServer([List<_VirtualFriend>? friends]) async {
+  Future<void> _syncVirtualFriendsToServer([
+    List<_VirtualFriend>? friends,
+  ]) async {
     final AppSession session = AppSessionScope.of(context);
     if (!session.isLoggedIn) {
       return;
@@ -1435,7 +1437,10 @@ class _ScenePageState extends State<ScenePage> {
     _persistConversationHistory();
   }
 
-  Future<void> _generateDraft([String? prompt, bool openChatDirectly = false]) async {
+  Future<void> _generateDraft([
+    String? prompt,
+    bool openChatDirectly = false,
+  ]) async {
     final _VirtualFriend? friend = _activeFriend;
     final String rawInput = (prompt ?? _controller.text).trim();
     final String input = friend != null && prompt == null
@@ -3703,11 +3708,12 @@ class _ScenePageState extends State<ScenePage> {
     String transcript = '';
     String? transcriptErrorMessage;
     try {
-      transcript = (await _sceneAuxiliaryCoordinator.transcribeAudio(
-        File(resolvedAudioPath),
-        hintText: localPreviewTranscript,
-        sceneDraft: _draft.toJson(),
-      )).trim();
+      transcript =
+          (await _sceneAuxiliaryCoordinator.legacyTranscribeLocalAudioForScene(
+            File(resolvedAudioPath),
+            hintText: localPreviewTranscript,
+            sceneDraft: _draft.toJson(),
+          )).trim();
       transcript = _resolveBestVoiceTranscript(
         serverTranscript: transcript,
         localPreviewTranscript: localPreviewTranscript,
@@ -3827,7 +3833,8 @@ class _ScenePageState extends State<ScenePage> {
     return <String, dynamic>{
       'draft': <String, dynamic>{
         'title': _draft.title,
-        if (_draft.roleId?.trim().isNotEmpty ?? false) 'roleId': _draft.roleId!.trim(),
+        if (_draft.roleId?.trim().isNotEmpty ?? false)
+          'roleId': _draft.roleId!.trim(),
         if (_draft.characterProfile != null)
           'characterProfile': _draft.characterProfile!.toJson(),
         if (_draft.discussionTopic?.trim().isNotEmpty ?? false)

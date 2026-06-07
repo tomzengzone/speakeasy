@@ -36,6 +36,14 @@ The old flat `codex/skills/*.md` layout is deprecated for active project skills 
 - Feature acceptance criteria: `docs/product/features/<feature-slug>-acceptance.md`
 - Requirement traceability matrix: `docs/product/traceability_matrix.md`
 
+## Process Governance Document Paths
+
+- Workflow: `docs/process/workflow.md`
+- Definition of Done: `docs/process/definition_of_done.md`
+- Skill quality standard: `docs/process/skill_quality_standard.md`
+- Cross-cutting boundary registry: `docs/process/cross_cutting_boundary_registry.md`
+- Change request log: `docs/process/change_request.md`
+
 ## Architecture And API Document Paths
 
 - API contract overview: `docs/architecture/api_contract.md`

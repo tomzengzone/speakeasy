@@ -1,7 +1,6 @@
 package com.speakeasy.training;
 
 import com.speakeasy.ai.AiGatewayService;
-import com.speakeasy.ai.AiProviderGateway;
 import com.speakeasy.commerce.EntitlementGateService;
 import com.speakeasy.common.ApiException;
 import com.speakeasy.content.ScenarioLevelRepository;
@@ -168,9 +167,9 @@ public class TrainingService {
 
     Instant now = Instant.now(clock);
     String providerStatus = "success";
-    AiProviderGateway.ScoreResult score = null;
+    AiGatewayService.ScoreResult score = null;
     if (normalizedTranscript == null && normalizedAudioRef != null) {
-      AiProviderGateway.TranscribeResult transcribe = aiGateway.transcribe(userId, normalizedAudioRef, "en-US");
+      AiGatewayService.TranscribeResult transcribe = aiGateway.transcribe(userId, normalizedAudioRef, "en-US");
       providerStatus = transcribe.status();
       if (!"available".equals(transcribe.status())) {
         return saveRecoverableTurn(
@@ -193,7 +192,7 @@ public class TrainingService {
       score = aiGateway.scorePronunciation(userId, normalizedAudioRef, currentMapping.getPromptText());
     }
 
-    AiProviderGateway.CoachResult coach =
+    AiGatewayService.CoachResult coach =
         aiGateway.coachTraining(userId, sessionId, normalizedTranscript, targetExpressionIds(session));
     providerStatus = coach.providerStatus();
     if (coach.recoverable()) {
@@ -379,7 +378,7 @@ public class TrainingService {
       TrainingTurn turn,
       TrainingContentMapping mapping,
       boolean success,
-      AiProviderGateway.ScoreResult score,
+      AiGatewayService.ScoreResult score,
       String reasonCode,
       String transcript,
       Instant now) {
@@ -619,9 +618,9 @@ public class TrainingService {
 
   private FeedbackView feedbackView(
       TrainingSession session,
-      AiProviderGateway.CoachResult coach,
+      AiGatewayService.CoachResult coach,
       boolean success,
-      AiProviderGateway.ScoreResult score,
+      AiGatewayService.ScoreResult score,
       TrainingPlannerService.PlannerDraft draft) {
     return new FeedbackView(
         coach.summary(),

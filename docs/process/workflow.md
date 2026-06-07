@@ -5,6 +5,7 @@
 user request
 -> Product Manager intake
 -> product classification
+-> optional issue-management tracking when repository issue tracking is needed
 -> feature registry / stage scope check
 -> increment definition
 -> roadmap / development status update
@@ -71,6 +72,13 @@ Requirement Development owns requirement quality for a scoped feature or change.
 10. No increment may merge into Product Base until acceptance, traceability, implementation, test, and report evidence are complete or explicitly excepted.
 11. No multi-step product or documentation governance task may proceed to the next step until an independent checker agent returns a pass finding for the completed step.
 
+## Cross-Cutting Boundary Registry
+`docs/process/cross_cutting_boundary_registry.md` is the governance registry for reusable cross-cutting boundaries such as media/audio refs, AI provider usage, OpenAPI/generated clients, entitlement, Goal Autopilot facts, data governance, and issue tracking.
+
+Before cross-layer implementation starts, the Development Orchestrator and specialist agents must check whether the work touches any registered Boundary ID. If it does, the implementation plan must cite the authorized entry, reused module/API/service, forbidden bypasses, legacy exceptions or migration needs, and evidence gate. A new cross-cutting capability must be registered before implementation uses it as a stable boundary.
+
+`python scripts/check_cross_cutting_boundaries.py --scope changed --base-ref <base-ref>` is the repository automation guard for newly changed files. CI runs it in changed-only mode so new or modified code cannot add registered forbidden bypasses while separately tracked legacy paths are remediated in their own slices. Full-scope scans may be run locally for governance audits and legacy exception planning.
+
 ## Product Classification Gate
 Every incoming request must be classified before requirements or specs are created:
 - `product-base-consolidation`: consolidates accepted stable product behavior into the living Product Base under `docs/product/base/`.
@@ -83,6 +91,13 @@ Every incoming request must be classified before requirements or specs are creat
 - `scope-change`: changes accepted scope and requires `docs/process/change_request.md`.
 
 The classification must identify the primary feature when one exists, affected features when multiple capabilities are touched, active stage, expected increment, and whether a change request is required.
+
+## Issue Tracking Boundary
+Issue tracking is optional and must happen after Product Manager classification when it would help coordinate bugs, follow-ups, release blockers, workflow changes, implementation slices, pull requests, or evidence links.
+
+Use `.agents/skills/issue-management/` for issue title/body drafting, triage fields, label/status suggestions, branch or pull request link text, and source-of-truth links. Issues are tracking containers only. They must not replace Product Manager classification, roadmap priority, Product Base, increment requirements/specs/acceptance/test cases/traceability, implementation reports, test reports, quality reports, or release evidence.
+
+If an issue conflicts with local product or workflow artifacts, the local artifacts win and the issue must be corrected or marked blocked. Use `Refs #<id>` for planning, partial slices, investigations, and blocked evidence. Use `Closes #<id>` only after Definition of Done evidence is complete.
 
 ## Increment Definition Gate
 Before requirement development starts, the active increment must state:

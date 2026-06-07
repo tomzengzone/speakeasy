@@ -744,11 +744,12 @@ class _InterviewExpressionWarmupDeckViewState
       if (path == null || path.trim().isEmpty) {
         throw Exception('没有录到有效语音');
       }
-      final String transcript = await ApiClient.transcribeAudio(
-        File(path),
-        repairMode: 'background',
-        preferRawText: true,
-      );
+      final String transcript =
+          await ApiClient.legacyTranscribeLocalAudioForScene(
+            File(path),
+            repairMode: 'background',
+            preferRawText: true,
+          );
       if (!mounted) {
         return;
       }

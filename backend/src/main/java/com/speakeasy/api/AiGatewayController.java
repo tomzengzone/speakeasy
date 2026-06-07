@@ -1,7 +1,6 @@
 package com.speakeasy.api;
 
 import com.speakeasy.ai.AiGatewayService;
-import com.speakeasy.ai.AiProviderGateway;
 import com.speakeasy.common.SchemaResponse;
 import com.speakeasy.security.CurrentUser;
 import jakarta.validation.Valid;
@@ -28,14 +27,15 @@ public class AiGatewayController {
   @PostMapping("/ai/transcribe")
   public TranscribeResponse transcribe(
       @AuthenticationPrincipal CurrentUser currentUser, @Valid @RequestBody TranscribeRequest request) {
-    AiProviderGateway.TranscribeResult result = service.transcribe(currentUser.userId(), request.audioRef(), request.languageHint());
+    AiGatewayService.TranscribeResult result =
+        service.transcribe(currentUser.userId(), request.audioRef(), request.languageHint());
     return new TranscribeResponse(1, result.transcript(), result.confidence(), result.status());
   }
 
   @PostMapping("/ai/tts")
   public TtsResponse synthesize(
       @AuthenticationPrincipal CurrentUser currentUser, @Valid @RequestBody TtsRequest request) {
-    AiProviderGateway.TtsResult result = service.synthesize(currentUser.userId(), request.text(), request.voice());
+    AiGatewayService.TtsResult result = service.synthesize(currentUser.userId(), request.text(), request.voice());
     return new TtsResponse(1, result.audioRef(), result.status(), result.mediaId(), result.cacheStatus(), result.cacheExpiresAt());
   }
 
@@ -50,7 +50,7 @@ public class AiGatewayController {
   @PostMapping({"/ai/coach-turn", "/ai/feedback"})
   public CoachTurnResponse coach(
       @AuthenticationPrincipal CurrentUser currentUser, @Valid @RequestBody CoachTurnRequest request) {
-    AiProviderGateway.CoachResult result =
+    AiGatewayService.CoachResult result =
         service.coach(currentUser.userId(), request.sessionId(), request.transcript(), request.targetExpressionIds());
     return new CoachTurnResponse(
         1,
@@ -100,7 +100,7 @@ public class AiGatewayController {
       ScoreSignalDto scoreSignal,
       String validationStatus,
       String providerStatus) {
-    static CoachFeedbackDto from(AiProviderGateway.CoachResult feedback) {
+    static CoachFeedbackDto from(AiGatewayService.CoachResult feedback) {
       return new CoachFeedbackDto(
           feedback.summary(),
           feedback.feedbackType(),
@@ -114,7 +114,7 @@ public class AiGatewayController {
   }
 
   public record ScoreSignalDto(String scoreKind, Double value, Double confidence, String status, String source) {
-    static ScoreSignalDto from(AiProviderGateway.ScoreResult score) {
+    static ScoreSignalDto from(AiGatewayService.ScoreResult score) {
       return new ScoreSignalDto(score.scoreKind(), score.value(), score.confidence(), score.status(), "server_side_adapter");
     }
   }

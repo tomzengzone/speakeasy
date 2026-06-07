@@ -3169,7 +3169,10 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
       if (transcript.isEmpty) {
         _logVoiceLatency('transcribe:file_start', pipelineWatch);
         transcript = normalizeInterviewText(
-          await ApiClient.transcribeAudio(File(path), repairMode: 'background'),
+          await ApiClient.legacyTranscribeLocalAudioForScene(
+            File(path),
+            repairMode: 'background',
+          ),
         );
       }
       _logVoiceLatency('transcribe:ready', pipelineWatch);

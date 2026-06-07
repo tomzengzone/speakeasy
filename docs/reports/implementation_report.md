@@ -3780,3 +3780,38 @@ Result:
 Residual risk:
 - Real store console metadata, reviewer account, public privacy/support URLs, signing/symbol/rollback evidence, iOS WeChat URL scheme, and Apple Sign In entitlement still require external/native configuration.
 - Remaining blockers are TC-COM-015 external copy/store evidence, TC-COM-019 external provider evidence, TC-COM-021 external store evidence, and strict TC-COM-012/022 native/release evidence.
+
+## 2026-06-07 - Issue Management Skill Workflow Integration
+
+Change request:
+- Add a project-local issue management skill without external tracker branding in the skill name.
+- Link issue tracking into the local workflow as an optional Product Manager post-classification step.
+
+Requirement mapping:
+- Process governance asset: `docs/process/workflow.md`.
+- Skill governance asset: `.agents/skills/issue-management/SKILL.md` and `.agents/skills/issue-management/SPEC.md`.
+- No product increment, application feature, or release scope was changed.
+
+Files changed:
+- `.agents/skills/issue-management/SKILL.md`
+- `.agents/skills/issue-management/SPEC.md`
+- `docs/process/workflow.md`
+- `docs/reports/implementation_report.md`
+
+Implementation summary:
+- Added `issue-management` as a project-local skill for issue title/body drafting, triage fields, label/status suggestions, branch or pull request link text, and source-of-truth links.
+- Defined strict boundaries so issues remain tracking containers and do not replace Product Manager classification, Product Base, increment artifacts, AC-to-TC mapping, reports, or release evidence.
+- Updated the workflow to make issue tracking optional after Product Manager classification when repository issue tracking is useful.
+
+Validation:
+- `python scripts/validate_agent_skills.py` - passed.
+- `$env:PYTHONUTF8='1'; python C:\Users\Administrator\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents/skills/issue-management` - passed.
+- `python scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed, with Windows line-ending warnings for `docs/process/workflow.md` and `docs/reports/implementation_report.md`.
+
+Result:
+- `issue-management` is available as a local skill and is connected to the workflow as an optional tracking step.
+- No independent Issue Manager agent was created.
+
+Residual risk:
+- Issue templates, automation, and a dedicated issue manager agent remain intentionally deferred until issue volume or team coordination needs justify them.

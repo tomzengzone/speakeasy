@@ -27,31 +27,35 @@ void main() {
     verify(() => remoteApi.translateTextToChinese('hello')).called(1);
   });
 
-  test('transcribeAudio 会透传 hintText 和 sceneDraft', () async {
-    final File audioFile = File('/tmp/audio.wav');
-    when(
-      () => remoteApi.transcribeAudio(
-        audioFile,
-        hintText: 'preview',
-        sceneDraft: <String, dynamic>{'title': '场景'},
-      ),
-    ).thenAnswer((_) async => 'transcript');
+  test(
+    'legacyTranscribeLocalAudioForScene 会透传 hintText 和 sceneDraft',
+    () async {
+      final File audioFile = File('/tmp/audio.wav');
+      when(
+        () => remoteApi.legacyTranscribeLocalAudioForScene(
+          audioFile,
+          hintText: 'preview',
+          sceneDraft: <String, dynamic>{'title': '场景'},
+        ),
+      ).thenAnswer((_) async => 'transcript');
 
-    final String transcript = await coordinator.transcribeAudio(
-      audioFile,
-      hintText: 'preview',
-      sceneDraft: <String, dynamic>{'title': '场景'},
-    );
+      final String transcript = await coordinator
+          .legacyTranscribeLocalAudioForScene(
+            audioFile,
+            hintText: 'preview',
+            sceneDraft: <String, dynamic>{'title': '场景'},
+          );
 
-    expect(transcript, 'transcript');
-    verify(
-      () => remoteApi.transcribeAudio(
-        audioFile,
-        hintText: 'preview',
-        sceneDraft: <String, dynamic>{'title': '场景'},
-      ),
-    ).called(1);
-  });
+      expect(transcript, 'transcript');
+      verify(
+        () => remoteApi.legacyTranscribeLocalAudioForScene(
+          audioFile,
+          hintText: 'preview',
+          sceneDraft: <String, dynamic>{'title': '场景'},
+        ),
+      ).called(1);
+    },
+  );
 
   test('generateConversationSummary 会透传 history 和 existingSummary', () async {
     when(

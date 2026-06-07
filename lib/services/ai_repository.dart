@@ -243,10 +243,11 @@ class OpenAiAppRepository implements AppRepository {
     }
 
     try {
-      final Map<String, dynamic> score = await ApiClient.scoreAudio(
-        File(audioPath),
-        expectedText,
-      );
+      final Map<String, dynamic> score =
+          await ApiClient.legacyScoreLocalAudioForPronunciation(
+            File(audioPath),
+            expectedText,
+          );
       return _scoreFromJson(score);
     } catch (error, stackTrace) {
       ErrorHandler.handleError(
