@@ -408,3 +408,85 @@ This schema is candidate-only. Backend deterministic rules own `MemoryItemPolicy
 - `evidence_summary` may include redacted evidence refs and aggregate counts only; raw transcript, raw audio, raw provider payload, exact sensitive diagnostic details and unrestricted personal data are forbidden.
 - Candidate output must not contain persistent decision fields such as `final_mastery_level`, `promotion_applied`, `demotion_applied`, `review_due_at`, `notification_schedule`, `control_status`, `recovery_mode`, `goal_completed`, `official_score`, `certified`, `entitlement`, `quota_state`, `billing_state`, `release_approval`, `release_ready` or `product_base_merge_approved`.
 - If any forbidden field is present, backend validation must reject or ignore the candidate for persistence and use deterministic fallback. It must not update `MasteryTransitionDecision`, `MemoryItemPolicyState`, `NotificationOutboxRecord`, `UserAutopilotControl` or `RecoveryPlanDecision`.
+
+## P0.2 Followup-E Speaking Diagnostic Candidate
+
+Owning increment: `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/`。
+
+This schema is candidate-only. Backend deterministic validation owns accepted `DiagnosticAssessment`, `DiagnosticAudioSample`, `DiagnosticQualityGate`, `audio_ref`, diagnostic mode, confidence band, GoalProfile, GoalBackplan, forecast/checkpoint effects, entitlement, quota, billing, release and Product Base state.
+
+```json
+{
+  "schema_version": 1,
+  "output_type": "followup_e_speaking_diagnostic_candidate",
+  "diagnostic_id": "diagnostic_id_sample",
+  "goal_profile_id": "goal_profile_id_sample",
+  "goal_revision": 2,
+  "diagnostic_mode": "audio_partial",
+  "confidence_band": "medium",
+  "accepted_audio_sample_count": 2,
+  "text_sample_count": 1,
+  "quality_summary": {
+    "accepted_sample_count": 2,
+    "quality_flags": [
+      "third_sample_skipped"
+    ],
+    "limitation_summary": "One sample was skipped, so the result is a medium-confidence speaking baseline."
+  },
+  "top_weaknesses": [
+    {
+      "weakness_type": "pause_control",
+      "summary": "Answers slowed down during longer goal-context speech.",
+      "evidence_source": "accepted_audio"
+    },
+    {
+      "weakness_type": "answer_structure",
+      "summary": "The free answer needs a clearer opening point and example.",
+      "evidence_source": "accepted_audio"
+    }
+  ],
+  "next_training_focus": {
+    "category": "short_answer_structure",
+    "reason": "Start with concise answer framing before longer scenario practice."
+  },
+  "learner_visible_explanation": "This is a medium-confidence product-internal speaking baseline from two accepted audio samples and one skipped sample.",
+  "recalibration_prompt": "You can complete the skipped audio sample later to improve diagnostic confidence.",
+  "guardrails": {
+    "official_score_equivalence": false,
+    "goal_completion_claim_allowed": false,
+    "guaranteed_eta_claim_allowed": false,
+    "text_only_acoustic_claim_present": false,
+    "persistent_decision_fields_present": false,
+    "forbidden_fields_detected": []
+  },
+  "recoverable_error": null
+}
+```
+
+### Allowed `diagnostic_mode`
+- `audio_full`
+- `audio_partial`
+- `text_only`
+
+### Allowed `confidence_band`
+- `high`
+- `medium`
+- `low`
+
+### Allowed `evidence_source`
+- `accepted_audio`
+- `audio_asr`
+- `user_text`
+- `deterministic_fallback`
+
+### Followup-E Validation Rules
+- `schema_version`, `output_type`, `diagnostic_id`, `goal_profile_id`, `goal_revision`, `diagnostic_mode`, `confidence_band`, sample counts, `quality_summary`, `top_weaknesses`, `next_training_focus`, `learner_visible_explanation` and `guardrails` are required.
+- `output_type` must be `followup_e_speaking_diagnostic_candidate`.
+- `diagnostic_id`, `goal_profile_id`, `goal_revision`, `diagnostic_mode`, `confidence_band`, `accepted_audio_sample_count` and `text_sample_count` must echo deterministic backend input values.
+- `top_weaknesses` must contain 1-3 items. Each item must use an allowed `weakness_type` from backend policy and a compatible `evidence_source`.
+- When `diagnostic_mode=text_only`, `top_weaknesses`, `learner_visible_explanation` and `next_training_focus.reason` must not claim measured pronunciation, intonation, speech rate, pause timing, clipping, noise, accent or acoustic fluency.
+- `next_training_focus.category` must be one of the backend-supplied allowed categories, such as `short_answer_structure`, `sentence_completeness`, `pause_reduction`, `pronunciation_clarity`, `vocabulary_range` or `text_fallback_recalibration`.
+- `guardrails.official_score_equivalence`, `guardrails.goal_completion_claim_allowed`, `guardrails.guaranteed_eta_claim_allowed`, `guardrails.text_only_acoustic_claim_present` and `guardrails.persistent_decision_fields_present` must be false.
+- `guardrails.forbidden_fields_detected` must be empty before the candidate can be rendered.
+- Candidate output must not contain `audio_ref`, local file paths, signed URLs, raw audio, raw provider payload, provider secrets, full sensitive transcript, `goal_profile_update`, `goal_backplan_update`, `forecast_state`, `checkpoint_result`, final mastery, official-score fields, entitlement, quota, billing, release approval, release readiness or Product Base merge approval.
+- If validation fails, backend returns deterministic fallback and must not update `DiagnosticAssessment`, `DiagnosticAudioSample`, `DiagnosticPrivacyState`, `GoalProfile`, `GoalBackplan`, `ProgressForecast`, `OutcomeCheckpoint`, entitlement, billing, release or Product Base facts.

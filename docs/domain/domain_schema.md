@@ -412,3 +412,51 @@ Owning increment: `docs/product/increments/mvp-backend-membership-boundary/`.
 - P0/P0.1 traceability 中列出的 contract gaps。
 
 API Contract/OpenAPI 通过复核后，才进入 AI Runtime、UX、QA、DevOps 和代码实现。
+
+## P0.2 Followup-E Speaking Diagnostic Production Domain Contract
+
+Owning increment: `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/`。Phase 2 contract status: drafted / implementation blocked until acceptance, test cases, traceability and OpenAPI/generated client work are complete.
+
+### Domain Purpose
+Followup-E extends `DiagnosticAssessment` from text-fallback-only intake into an audio-first speaking baseline. The domain must distinguish trusted audio evidence from user-entered text, provider candidates from accepted diagnostic facts, and raw audio/transcript data from minimized training facts.
+
+### Entities And Facts
+| Entity / fact | Owner | Key fields | Invariants |
+| --- | --- | --- | --- |
+| `DiagnosticUploadSession` | backend | `upload_session_id`, `goal_profile_id`, `goal_revision`, `sample_ref`, `client_upload_id`, `checksum`, `status`, `expires_at`, `idempotency_key` | Created only for the authenticated owner; replay with same idempotency input returns the same pending/completed session. |
+| `DiagnosticAudioSample` | backend | `sample_id`, `sample_ref`, `task_type`, `audio_ref`, `duration_seconds`, `quality_status`, `retention_state`, `source_goal_revision` | `audio_ref` is generated only by backend after upload validation; Flutter/local paths are never domain facts. |
+| `DiagnosticQualityGate` | backend deterministic policy | `quality_status`, `speech_detected`, `noise_bucket`, `clip_detected`, `duration_bucket`, `reason_code`, `rule_version` | Blocks high-confidence diagnosis when quality is too low; provider candidates cannot override quality failure. |
+| `SpeakingDiagnosticAssessment` | backend | `diagnostic_id`, `diagnostic_mode`, `confidence_band`, `sample_count`, `accepted_audio_sample_count`, `transcript_source_summary`, `claim_guard`, `rule_version` | Extends existing `DiagnosticAssessment`; mode and confidence constrain planner/forecast/checkpoint claims. |
+| `SpeakingDiagnosticResult` | backend accepted facts | `top_weaknesses`, `next_training_focus`, `quality_flags`, `recalibration_available`, `safe_source_refs` | Contains only accepted, safe, learner-actionable facts; raw transcript/audio/provider payload is excluded. |
+| `DiagnosticPrivacyState` | backend data governance | `raw_audio_retention_state`, `transcript_retention_state`, `delete_requested_at`, `deleted_at`, `export_visibility`, `provider_processing_ref` | Deletion/export behavior is explicit and auditable; raw audio and provider payload are not long-lived learning facts. |
+
+### Lifecycle
+| Flow | Allowed transitions |
+| --- | --- |
+| Upload session | `created -> uploading -> completed -> validated -> expired` or `created/uploading -> cancelled` |
+| Audio sample | `pending_upload -> uploaded -> quality_checking -> accepted` or `quality_rejected` / `deleted` |
+| Diagnostic assessment | `not_started -> audio_partial/text_only/audio_full -> accepted_low|accepted_medium|accepted_high -> recalibration_available` |
+| Privacy state | `active -> delete_requested -> deleted_or_redacted`; export reads only current safe/minimized state |
+
+### Diagnostic Mode Rules
+- `audio_full`: all three required diagnostic sample types are accepted and quality gates pass. Any lower threshold requires a future approved scope change.
+- `audio_partial`: at least one trusted audio sample exists, but task coverage or quality is incomplete.
+- `text_only`: no trusted audio sample exists; only user-entered text can be used.
+- `text_only` cannot populate acoustic dimensions such as pronunciation, intonation, speech-rate, pause timing or acoustic fluency.
+
+### Persistence Boundary
+- Persist upload sessions, accepted sample metadata, safe `audio_ref`, quality gate result, diagnostic mode, confidence band, safe source refs and accepted diagnostic facts.
+- Do not persist raw provider payload, provider secret, full signed URL, unrestricted raw transcript, local file path or UI-only copy as diagnostic facts.
+- Raw audio retention is short-lived and governed by `DiagnosticPrivacyState`; long-term training facts are minimized and redacted.
+
+### Relationships
+- `GoalProfile 1 -> many SpeakingDiagnosticAssessment` by goal revision.
+- `SpeakingDiagnosticAssessment 1 -> many DiagnosticAudioSample` for audio-backed samples.
+- `DiagnosticAudioSample 1 -> 1 DiagnosticQualityGate`.
+- `SpeakingDiagnosticAssessment -> GoalBackplan/ProgressForecast/OutcomeCheckpoint` only through accepted facts and confidence/mode constraints.
+
+### API Boundary Recommendation
+API contract must expose upload create/complete, diagnostic submission/status/result and delete actions. OpenAPI source-of-truth must be updated before implementation, but this domain section does not define machine-readable request/response schema.
+
+### Test Impact
+Tests must prove backend-owned `audio_ref`, quality downgrade, text-only acoustic field omission, deletion/export minimization, provider candidate rejection and downstream low-confidence constraints.

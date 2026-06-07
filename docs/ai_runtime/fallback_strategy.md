@@ -91,3 +91,25 @@ S001 forecast explanation is deterministic by default. Provider/LLM output may o
 | Low-confidence, partial, unsupported, stale, deleted or unavailable forecast | Return limited/unavailable forecast state, suppress precise ETA and goal-complete copy, and show deterministic limitation reason | Rephrase limitation as high-confidence progress or guaranteed achievement |
 
 Deterministic fallback text must be generated from safe fields only: `forecast_state`, `gap_summary`, `risk_reason_code`, `eta_unavailable_reason`, `confidence_band`, `next_checkpoint_date`, `rule_version` and `source_goal_revision`.
+
+## P0.2 Followup-E Speaking Diagnostic Fallback Mapping
+
+Owning increment: `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/`。
+Traceability: planned `AC-P02-FUE-004` through `AC-P02-FUE-010`, `TC-P02-FUE-007` through `TC-P02-FUE-026`。
+
+Followup-E provider output is never a source of truth for trusted `audio_ref`, accepted diagnostic facts, downstream plan/forecast/checkpoint state, entitlement, quota, billing, release readiness or Product Base merge approval. Backend deterministic validation must preserve a usable learner path when real audio capture or provider analysis fails.
+
+| Failure or blocked condition | Required behavior | Prohibited behavior |
+| --- | --- | --- |
+| Microphone denied, device unavailable or learner chooses privacy skip | Offer text fallback and later Speaking Check recalibration; mark `diagnostic_mode=text_only`, `confidence_band=low` when no accepted audio exists | Block GoalProfile creation or imply full audio diagnostic completion |
+| Local recording failed before upload complete | Keep retry, re-record, skip and text fallback options; discard local temporary sample on cancel | Persist a diagnostic sample or generate an `audio_ref` from client state |
+| Upload create/complete fails, checksum mismatch, unsupported format, expired ref, cross-user ref or duplicate conflict | Return typed upload/validation error; allow retry or re-record; preserve idempotency outcome | Accept local file paths, unsigned URLs, stale refs or Flutter-generated `audio_ref` |
+| Quality gate returns `too_short`, `silent`, `noisy`, `clipped`, `unsupported_format`, `provider_unavailable` or `policy_blocked` | Ask for re-record when useful, downgrade to `audio_partial` or `text_only`, record quality flags and suppress high confidence | Treat failed quality gate as accepted speech evidence or hide the quality limitation |
+| ASR returns empty transcript, low confidence, invalid media result or provider unavailable | Keep accepted audio quality fact if available, mark transcript unavailable/low confidence, use deterministic fallback or text prompt as needed | Convert ASR failure into user failure, final mastery or official score claim |
+| Pronunciation/scoring provider unavailable or quota/cost blocked | Return lower-depth diagnostic result, omit unavailable acoustic dimensions and expose safe downgrade reason | Fabricate pronunciation, intonation, speech-rate or pause timing from text |
+| LLM returns invalid JSON, unknown top-level fields or markdown-wrapped JSON | Attempt one safe repair parse; otherwise return deterministic diagnostic explanation fallback | Render raw provider text or persist invalid candidate as successful diagnosis |
+| Candidate includes `audio_ref`, official score/certification, guaranteed ETA, goal completion, entitlement, quota, billing, release approval, Product Base merge approval or persistent plan/checkpoint/mastery fields | Reject candidate, keep backend deterministic diagnostic facts, render safe fallback from accepted facts and claim guard | Mutate `DiagnosticAssessment`, `GoalProfile`, `GoalBackplan`, forecast, checkpoint, entitlement, billing, release or Product Base facts |
+| Candidate exposes raw audio, local file path, signed URL, raw provider payload, provider secret or unrestricted transcript | Reject candidate and log only redacted fallback metadata | Send sensitive raw payload to Flutter, reports, exports or audit projections |
+| Diagnostic deletion or retention job removes audio/transcript refs | Return deleted/unavailable state and clear audio-backed high-confidence UI facts | Continue showing deleted audio as current accepted evidence |
+
+Deterministic fallback text must be generated from safe fields only: `diagnostic_mode`, `confidence_band`, accepted sample counts, quality flags, transcript source summary, claim guard, allowed weakness categories, allowed next training focus categories, retention/deletion state and rule version. Text-only fallback must explicitly state that pronunciation, intonation, speech-rate, pause timing and acoustic fluency were not measured.

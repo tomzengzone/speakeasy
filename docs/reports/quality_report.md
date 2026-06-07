@@ -1,7 +1,67 @@
 # Quality Report
 
 ## Current Status
-`P02-FOLLOWUP-D-S011-FINAL-REVIEW-20260607` passes independent review for final Product Base/release review execution after final report synchronization, release checklist state separation, strict release blocker preservation, Product Base blocker preservation and dual review evidence were inspected. Followup-D S001/S002/S003/S004/S005/S006/S007/S008/S009/S010/S011 local evidence is reviewed for backend/API runtime gate, Flutter rollback, entitlement depth, usage/quota, cost telemetry/AI fallback, quota downgrade, data governance backend evidence, consent/privacy UX, telemetry, drift gates and final review only. Followup-D is not release-ready and Product Base merge is not approved. Followup-C remains locally complete for S001-S007 after `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
+Latest Followup-E quality state: docs-only planning/contract evidence. Followup-E Phase 0-3 planning and contract review gates are recorded, but no Followup-E backend, Flutter, OpenAPI/generated client, AI runtime, native mic/audio bytes upload, test execution, release or Product Base independent implementation review is accepted in this state.
+
+## 2026-06-07 P02 Followup-E Docs-Only Planning Reclassification Review
+
+Review ID: N/A - implementation review not accepted
+
+Report ID: N/A - implementation evidence reclassified to planned
+
+Result: planning/contract status only. This review boundary does not approve backend implementation, Flutter implementation, OpenAPI/generated client sync, AI runtime, native mic/audio bytes upload, retention/export/account deletion, entitlement/provider downgrade, release readiness, paid AI external evidence or Product Base merge.
+
+Findings:
+- Followup-E Phase 0-3 documents can remain as planning/contract evidence.
+- All TC-P02-FUE-000..026 must remain planned until an implementation slice is intentionally executed.
+- Previous backend/Flutter slice review IDs are not accepted as current Followup-E implementation evidence in this docs-only state.
+- MVP/P0.1 mic/recording functionality remains existing baseline capability; Followup-E should reuse that boundary and add Speaking Check orchestration plus trusted upload bridging rather than duplicate mic development.
+- Release, paid AI external evidence and Product Base merge blockers remain open.
+
+Validation:
+- No backend, Flutter, OpenAPI, generated-client, AI runtime or release validation is claimed here.
+- Independent implementation review remains required after any future executable Followup-E slice.
+
+Required corrections:
+- Reclassify docs that claimed Followup-E backend/Flutter implementation evidence as planning/contract evidence.
+
+Residual risk:
+- Local uncommitted Followup-E code may still exist in the working tree, but it is not accepted quality evidence here.
+- Any future implementation evidence must be re-reviewed from the planned TC/traceability baseline.
+
+## 2026-06-07 P02 Followup-C S007 Checker Hash Sync Independent Review
+
+Review ID: `P02-FOLLOWUP-C-S007-CHECKER-HASH-SYNC-20260607`
+
+Result: pass for local checker-regression fix after the Followup-C S007 traceability checker was changed to validate the current OpenAPI/generated Dart hash from active artifacts while preserving historical S007 nullable-cleanup report evidence. No local blocker remains. This Independent Review does not approve release readiness, external production evidence or Product Base merge.
+
+Findings:
+- No blocker found for source-of-truth alignment. `scripts/check_p0_2_followup_c_traceability.py` now reads `openapi_sha256` from `docs/architecture/openapi/dart-client-drift-manifest.json`, compares it with `lib/generated/api/.openapi-sha256`, and verifies the same hash is present in `lib/generated/api/speakeasy_api.dart`.
+- No blocker found for historical evidence preservation. The original S007 nullable-cleanup hash remains required in report/status evidence as `S007_HISTORICAL_OPENAPI_SHA`, so the checker still proves the historical cleanup record exists without pinning current generated artifacts to an obsolete hash.
+- No blocker found for runtime/API safety. The fix changed only the checker and report/status evidence; no production backend, Flutter, OpenAPI or generated Dart API shape changed.
+- No blocker found for deterministic validation. Python compile, Followup-C checker, P0.2 coverage, API contract, Dart client drift, A/B/D upstream-downstream traceability, project agent runner and diff checks passed.
+- No release/Product Base blocker was closed. Followup-C and Followup-D release readiness plus Product Base merge approval remain outside this local checker fix.
+
+Validation:
+- `python3 -m py_compile scripts/check_p0_2_followup_c_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_c_traceability.py` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 95.7%, backend branch 81.1% and Flutter line 90.9%.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `fa2f5c368a83abbc6e24b182046af875b25856ce3af9756a861ff66794b464eb`.
+- `npm run check:api-contract` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_b_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_d_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_d_final_review.py` - passed with release/Product Base blockers preserved.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Required corrections:
+- Fixed before close: the checker previously required the historical S007 hash in current generated artifacts, which failed after later valid Followup-D OpenAPI/generated-client updates. Current generated artifacts are now validated dynamically.
+- None remain for the scoped checker-regression fix after validation and report synchronization.
+
+Residual risk:
+- No local blocker remains for the scoped checker-regression fix after report synchronization and final validation.
+- This change does not execute live provider, store, payment, native social login, release-readiness or Product Base merge evidence.
 
 ## 2026-06-07 P02 Followup-D S011 Final Review Independent Review
 

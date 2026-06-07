@@ -175,6 +175,45 @@ Release-hardening rules:
 - Provider evidence must include DashScope LLM、Paraformer ASR、TTS latency、error、cost、format compatibility and fallback results.
 - Audit and metrics may store media hash/ref, user hash, plan, model, status, cache hit and cost bucket, but not full signed URLs, raw audio, full transcript, raw provider payload or provider secrets.
 
+## P0.2 Followup-E Speaking Diagnostic Audio Flow
+```text
+Flutter Goal Autopilot
+  -> GoalProfile is accepted by backend
+  -> Speaking Check intro shows purpose, privacy, no-official-score boundary and text fallback
+  -> learner records and reviews each required diagnostic sample type after explicit record action
+  -> POST /goal-autopilot/diagnostic-audio/uploads creates backend-owned upload session
+  -> Flutter uploads bytes through approved backend/object-storage transport
+  -> POST /goal-autopilot/diagnostic-audio/uploads/{upload_session_id}/complete validates ownership, checksum, MIME, size, duration and safety
+  -> backend creates opaque trusted audio_ref only after validation
+  -> backend quality gate checks speech, silence, noise, clipping, duplicate and policy/provider availability
+  -> POST /goal-autopilot/diagnostic-assessments submits accepted audio refs and/or text fallback samples with Idempotency-Key
+  -> backend ASR/scoring/LLM adapters produce candidate transcript, acoustic signal and explanation
+  -> backend schema/claim/privacy validators accept, downgrade or reject candidates
+  -> SpeakingDiagnosticAssessment stores diagnostic_mode, confidence, sample counts, quality flags, safe weaknesses and next training focus
+  -> GoalBackplan/forecast/checkpoint receive conservative accepted diagnostic facts, not raw provider output
+  -> Flutter renders result, recalibration and deletion/export-safe states
+```
+
+Flow boundaries:
+- `audio_ref` is backend-generated, opaque and resolved to provider-readable media only server-side.
+- Flutter can upload local bytes/stream and metadata hints, but cannot persist local file paths, signed URLs or generated refs as accepted diagnostic facts.
+- ASR transcript source must distinguish `audio_asr` from `user_text`; text fallback never creates acoustic dimensions.
+- Provider payloads, full signed URLs, raw audio and provider secrets are not sent to Flutter, reports or exports.
+- Idempotency covers upload create/complete and diagnostic assessment submission so retries do not duplicate media assets, provider calls, usage charges or diagnostic facts.
+- Usage reservation, quota, entitlement and cost policy wrap high-cost ASR/scoring/LLM operations. Provider/cost failure downgrades safely and must not block GoalProfile creation.
+
+Retention and deletion:
+- Raw audio is short-lived by default and tied to `DiagnosticPrivacyState`.
+- Accepted diagnostic facts may persist as product-internal learning evidence only with redacted source refs and rule/version metadata.
+- Full sensitive transcript and raw provider payload are not long-term product facts; if retained for debugging, they require a separate redacted/limited retention policy and cannot appear in user export by default.
+- Delete requests must remove or mark unavailable raw audio, transcript refs and provider payload refs according to data governance policy, then cause UI/downstream surfaces to stop presenting deleted audio as current high-confidence evidence.
+- Export may include diagnostic mode, confidence band, sample counts, quality flags, safe weakness summaries, next training focus, retention state and redacted source refs. Export must omit raw audio, signed URLs, provider secrets, raw provider payload and unrestricted sensitive transcript.
+
+Release-hardening rules:
+- Followup-E does not satisfy paid AI external evidence, native/store privacy evidence, commercial release approval or Product Base merge approval.
+- OpenAPI, backend media storage, provider credentials, retention jobs, deletion jobs, usage telemetry and cost telemetry must be implemented and tested before any production audio diagnostic claim.
+- Deterministic no-provider or text-only fallback evidence may support local development, but cannot be represented as full production spoken-diagnostic evidence.
+
 ## Account Deletion And Data Retention Flow
 ```text
 Flutter account deletion confirmation

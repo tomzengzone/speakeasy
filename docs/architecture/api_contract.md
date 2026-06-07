@@ -258,3 +258,130 @@ Implementation may not start until:
 - Payment, usage, deletion and turn replay define idempotency behavior.
 - P0.2 Goal Autopilot paths remain limited to the approved owning P0.2 increments, including Followup-B, and P02 policy gates; P1/P2 remain deferred unless a new Product Manager-approved increment is added.
 - Product Object Governance Check returns pass after OpenAPI generation.
+
+## P0.2 Followup-E Speaking Diagnostic Production API Contract
+
+Owning increment: `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/`。Phase 2 contract status: API family drafted in markdown for planning/contract evidence only. Machine-readable OpenAPI, generated Dart drift artifacts, backend implementation and diagnostic assessment submit/read paths remain planned until an approved implementation slice accepts executable evidence.
+
+### Contract Purpose
+Provide a backend-owned diagnostic audio boundary for Goal Autopilot. Flutter can request upload sessions, upload local audio through the approved media path, submit trusted `audio_ref` samples for diagnostic assessment, read the diagnostic result, and request deletion. Flutter cannot create final diagnostic facts or synthesize `audio_ref`.
+
+### Endpoint Family
+| Contract ID | Method / path | Purpose | Auth | Idempotency |
+| --- | --- | --- | --- | --- |
+| P02-FUE-API-001 | `POST /goal-autopilot/diagnostic-audio/uploads` | Create a diagnostic upload session for one sample. | authenticated user | `Idempotency-Key` + `goal_profile_id` + `goal_revision` + `sample_ref` + `client_upload_id` |
+| P02-FUE-API-002 | `POST /goal-autopilot/diagnostic-audio/uploads/{upload_session_id}/complete` | Mark upload complete and request backend validation/quality gate. | owner only | `Idempotency-Key` + upload session |
+| P02-FUE-API-003 | `POST /goal-autopilot/diagnostic-assessments` | Submit accepted audio refs and/or text fallback samples for assessment. | owner only | `Idempotency-Key` + goal revision + sample refs |
+| P02-FUE-API-004 | `GET /goal-autopilot/diagnostic-assessments/{diagnostic_id}` | Read accepted diagnostic state/result. | owner only | read-only |
+| P02-FUE-API-005 | `DELETE /goal-autopilot/diagnostic-audio/{audio_ref}` | Delete or redact one diagnostic audio sample and update privacy state. | owner only | `Idempotency-Key` + `audio_ref` |
+
+### Upload Create Request
+Required fields:
+- `goal_profile_id`
+- `goal_revision`
+- `sample_ref`
+- `task_type`: `read_aloud`, `listen_repeat_or_retell`, `goal_context_free_answer`
+- `client_upload_id`
+- `content_type`
+- `byte_size`
+- `checksum_sha256`
+- `estimated_duration_seconds`
+
+Response fields:
+- `upload_session_id`
+- `sample_ref`
+- `upload_status`: `created`, `replayed`, `blocked`
+- `upload_target`: implementation-defined backend upload target; must not expose provider secret
+- `expires_at`
+- `max_bytes`
+- `accepted_content_types`
+- `schema_version`
+
+### Upload Complete Response
+Response fields:
+- `upload_session_id`
+- `sample_ref`
+- `sample_id`
+- `audio_ref` when validation succeeds
+- `quality_status`: `accepted`, `too_short`, `silent`, `noisy`, `clipped`, `unsupported_format`, `provider_unavailable`, `policy_blocked`
+- `quality_reason_code`
+- `duration_seconds`
+- `retention_state`
+- `next_action`: `submit_diagnostic`, `retry_recording`, `use_text_fallback`
+
+### Diagnostic Assessment Request
+Required fields:
+- `goal_profile_id`
+- `goal_revision`
+- `samples[]`
+
+Each sample may include:
+- `sample_ref`
+- `task_type`
+- `audio_ref` for backend-accepted audio sample
+- `transcript` for text fallback or user-confirmed text only
+- `transcript_source=user_text` when the client submits text fallback
+- `duration_seconds` as backend-confirmed value when audio-backed
+
+Validation rules:
+- A sample with `audio_ref` must belong to the authenticated user and current goal revision or accepted recalibration path.
+- A sample with `transcript_source=user_text` cannot create acoustic dimensions.
+- `transcript_source=audio_asr` is backend-generated or backend-confirmed only; a client-supplied `audio_asr` transcript must fail validation or be ignored before accepted diagnostic facts are created.
+- Request must fail or downgrade if a client sends local file path, unsigned URL, stale/expired ref, cross-user ref, unsupported task type or forbidden dimensions.
+
+### Diagnostic Assessment Response
+Response fields:
+- `diagnostic_id`
+- `goal_profile_id`
+- `goal_revision`
+- `diagnostic_mode`: `audio_full`, `audio_partial`, `text_only`
+- `status`: `accepted`, `low_confidence`, `degraded`, `recoverable_error`, `blocked`
+- `confidence_band`: `high`, `medium`, `low`
+- `sample_count`
+- `accepted_audio_sample_count`
+- `quality_flags[]`
+- `top_weaknesses[]`
+- `next_training_focus`
+- `claim_guard`
+- `recalibration_available`
+- `safe_source_refs[]`
+- `schema_version`
+
+Forbidden response fields:
+- raw audio bytes
+- full signed URLs
+- provider secret
+- raw provider payload
+- unrestricted full transcript
+- official IELTS/TOEFL equivalent score
+- guaranteed outcome or goal completion flag
+- entitlement, billing or release approval state
+
+### Delete Response
+Response fields:
+- `audio_ref`
+- `delete_status`: `deleted`, `redacted`, `already_deleted`, `not_found`
+- `diagnostic_impact`: `diagnostic_degraded`, `diagnostic_unavailable`, `no_active_result_change`
+- `retention_state`
+- `safe_source_refs[]`
+
+### Errors
+| Code | Status | Recovery |
+| --- | --- | --- |
+| `UNAUTHENTICATED` | 401 | Sign in again. |
+| `FORBIDDEN` | 403 | Do not expose existence of another user's audio. |
+| `RESOURCE_NOT_FOUND` | 404 | Show deleted/unavailable state. |
+| `INVALID_DIAGNOSTIC_AUDIO_REF` | 400 | Retry upload or use text fallback. |
+| `DIAGNOSTIC_AUDIO_QUALITY_LOW` | 422 | Re-record or continue low-confidence. |
+| `DIAGNOSTIC_TEXT_ONLY_LIMITED` | 200/202 | Continue with limited diagnosis and recalibration prompt. |
+| `USAGE_LIMIT_EXCEEDED` | 429 | Downgrade to text/low-depth path. |
+| `ENTITLEMENT_REQUIRED` | 402/403 | Show server-owned limit and available fallback. |
+| `PROVIDER_UNAVAILABLE` | 503 | Use deterministic fallback or retry later. |
+| `IDEMPOTENCY_CONFLICT` | 409 | Retry with a new idempotency key or original payload. |
+
+### Compatibility And OpenAPI Gate
+- This markdown contract is sufficient for Phase 2 planning and Phase 3 AC/TC mapping.
+- Trusted diagnostic-audio create/complete/delete implementation can rely on `docs/architecture/openapi/speakeasy-api.yaml` and `lib/generated/api/` after `npm run check:api-contract` and `npm run check:dart-client-drift` pass.
+- Diagnostic assessment submit/read implementation cannot start until those paths and result schemas are added to OpenAPI and generated Dart.
+- Existing `POST /goal-autopilot/goals` remains compatible; it may accept existing text fallback samples until the new diagnostic assessment flow is implemented.
+- No client may depend on these paths before OpenAPI/generated client drift gates pass.

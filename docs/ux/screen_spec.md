@@ -195,6 +195,61 @@ Owning increment: `docs/product/increments/p0-2-followup-d-release-gate-hardenin
 - Copy boundary: copy must mention product-internal training surfaces, backend data-governance export/delete/retention rules and sensitive payload omission. It must not claim guaranteed achievement, official-score equivalence, unlimited AI, unlimited checkpoint access, release approval or Product Base merge approval.
 - Acceptance criteria mapping: AC-P02-FUD-008 / TC-P02-FUD-015.
 
+### Followup-E Speaking Check
+
+Owning increment: `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/`。
+
+- Purpose: collect a short real-speaking baseline after GoalProfile setup, while preserving text fallback and learner control.
+- Entry points: Goal Autopilot after successful goal setup, explicit diagnostic recalibration action, and low-confidence diagnostic recovery prompt.
+- Primary user action: record, review and submit three short diagnostic samples; or choose text fallback / later recalibration.
+- Core components: intro purpose/privacy copy, no-official-score claim guard, sample progress indicator, reviewed prompt text, record/stop control, timer, optional level/noise indicator, playback, re-record, accept, skip, text fallback, upload/quality state, result summary, recalibration action, delete diagnostic/audio action.
+- Sample types: `read_aloud`, `listen_repeat_or_retell`, `goal_context_free_answer`.
+- API dependencies: diagnostic-audio create/complete/delete, diagnostic assessment submit/read, ASR/scoring/result and native Flutter audio bytes upload are planning/contract dependencies only in the current docs-only state; machine-readable OpenAPI/generated Dart and backend/API evidence must be accepted in a later implementation slice.
+- Data dependencies: `DiagnosticUploadSession`, `DiagnosticAudioSample`, `DiagnosticQualityGate`, `SpeakingDiagnosticAssessment`, `SpeakingDiagnosticResult`, `DiagnosticPrivacyState`.
+
+#### Followup-E Screen States
+| State | User sees | Primary action | Source of truth | Next states |
+| --- | --- | --- | --- | --- |
+| `speaking_check_intro` | Purpose, product-internal diagnostic boundary, privacy/retention summary and skip/text options | start sample or choose fallback | GoalProfile exists; no audio fact yet | `recording_ready`, `text_fallback_entry`, `diagnostic_cancelled` |
+| `recording_ready` | One sample prompt, duration target and record control | start recording | reviewed task prompt from backend/content contract | `recording_active`, `permission_blocked`, `text_fallback_entry` |
+| `permission_blocked` | Permission issue and non-blocking fallback | retry permission or enter text fallback | platform permission plus backend fallback policy | `recording_ready`, `text_fallback_entry` |
+| `recording_active` | Timer, stop control and optional level/noise indicator | stop recording | local temporary capture only | `recording_review`, `recording_failed` |
+| `recording_review` | Playback, re-record, accept and skip | accept sample | local temporary capture only until upload succeeds | `upload_pending`, `recording_ready`, `sample_skipped` |
+| `upload_pending` | Upload and validation progress | wait or cancel if safe | backend upload session | `quality_checking`, `upload_failed` |
+| `quality_checking` | Backend is validating audio format, ownership and quality | wait | backend quality gate | `sample_accepted`, `quality_rejected`, `diagnostic_degraded` |
+| `sample_accepted` | Sample accepted and next sample unlocked | continue | backend-generated `audio_ref` and sample state | `recording_ready`, `diagnostic_submitting` |
+| `sample_skipped` | Skipped sample and confidence impact | continue or return | user action plus backend diagnostic policy | `recording_ready`, `diagnostic_degraded` |
+| `quality_rejected` | Clear issue such as too short, silent, noisy or clipped | re-record or use fallback | `DiagnosticQualityGate` | `recording_ready`, `text_fallback_entry`, `diagnostic_degraded` |
+| `text_fallback_entry` | Text prompts and low-confidence notice | submit text samples | user text only, no acoustic fact | `diagnostic_submitting`, `diagnostic_cancelled` |
+| `diagnostic_submitting` | Safe progress state for analysis | wait | backend assessment policy | `diagnostic_result_ready`, `diagnostic_degraded`, `diagnostic_failed_recoverable` |
+| `diagnostic_result_ready` | Diagnostic mode, confidence, sample counts, quality flags, top weaknesses and first training focus | start first focus or view details | accepted backend diagnostic result | downstream GoalBackplan / training entry |
+| `diagnostic_degraded` | Lower confidence and why, with continue/recalibrate options | continue conservatively or complete audio later | backend downgrade reason | downstream conservative plan, `recording_ready`, `text_fallback_entry` |
+| `diagnostic_failed_recoverable` | Typed recoverable reason and safe next options | retry, fallback or skip for now | backend fallback result | `recording_ready`, `text_fallback_entry`, `diagnostic_cancelled` |
+| `diagnostic_deleted_or_unavailable` | Audio-backed facts were deleted or unavailable | recalibrate or continue low confidence | backend privacy/retention state | `recording_ready`, downstream conservative plan |
+
+#### Followup-E Interaction Rules
+- Microphone permission is requested only after the learner taps record for a sample.
+- Flutter must never create, edit, concatenate or infer `audio_ref`; it can only display backend-returned opaque refs as safe source labels when needed.
+- Cancelled local recordings are discarded and do not create diagnostic samples.
+- Re-record replaces the local temporary capture before upload. After backend acceptance, replacement must go through a new upload/assessment path with idempotency.
+- Text fallback is a supported path, but UI must label it low confidence and must not show measured acoustic dimensions.
+- `audio_partial` and low-quality results must show the limitation and the later recalibration path.
+- Result copy must focus on next training focus, not a single score.
+- Delete/unavailable states must clear current high-confidence audio-backed claims and show recalibration or conservative continuation.
+- UI copy must not claim official exam score equivalence, certification, guaranteed achievement, precise ETA, unlimited AI, release approval or Product Base merge approval.
+
+#### Followup-E Planned Test Checklist Contract
+| Acceptance | Screen state / behavior | Planned test mapping |
+| --- | --- | --- |
+| AC-P02-FUE-001 | Speaking Check entry after valid GoalProfile, skip/text option and no official-score copy | TC-P02-FUE-001, TC-P02-FUE-002 |
+| AC-P02-FUE-002 | Three sample types, progress, task metadata and skip impact | TC-P02-FUE-003, TC-P02-FUE-004 |
+| AC-P02-FUE-003 | Record, stop, playback, re-record, cancel, permission fallback and no local fact on cancel | TC-P02-FUE-005, TC-P02-FUE-006 |
+| AC-P02-FUE-004 | Backend-owned upload/audio_ref and visible retry states | TC-P02-FUE-007, TC-P02-FUE-008, TC-P02-FUE-009 |
+| AC-P02-FUE-005 | Quality rejection and diagnostic mode/confidence downgrade | TC-P02-FUE-010, TC-P02-FUE-011, TC-P02-FUE-012 |
+| AC-P02-FUE-007 | Result summary shows mode, confidence, sample count, weaknesses and next focus | TC-P02-FUE-016 |
+| AC-P02-FUE-008 | Privacy, retention, export/delete and deleted/unavailable state handling | TC-P02-FUE-017, TC-P02-FUE-018, TC-P02-FUE-019 |
+| AC-P02-FUE-009 | Quota/cost/provider downgrade does not fabricate success | TC-P02-FUE-020, TC-P02-FUE-021, TC-P02-FUE-022 |
+
 ### Notebook
 - Purpose: review saved expressions.
 - States: empty, loaded, deleting, error.

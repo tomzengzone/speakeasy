@@ -257,3 +257,99 @@ AI output may explain checkpoint feedback only after a submitted checkpoint, but
 Followup-C S003 checkpoint-to-plan update is deterministic by default. If a future provider candidate explains checkpoint feedback, it may only propose learner-visible wording from already accepted checkpoint facts. It must not set `OutcomeCheckpoint.result_status`, `plan_update_signal`, `source_checkpoint_id`, replay/audit hashes, stale/replan status, control compatibility, next action, ETA precision or goal completion. Backend deterministic rules remain the only source of truth for checkpoint result status, forecast recompute, stale/replan signal and no-false-completion guard.
 
 Followup-C S004 goal-progress projection has no live provider prompt path. `GoalProgressProjection` and `GoalProgressSurfaceFragment` are selected by deterministic backend policy from accepted goal, control, next-action, forecast and checkpoint facts. AI output must not set projection state, surface eligibility, downgrade reason, source refs, safe fields, final goal state, claim guard, ETA precision, Home/Queue/Wiki progress facts or deletion/unavailable behavior.
+
+## P0.2 Followup-E Speaking Diagnostic Candidate Boundary
+
+### Purpose
+Followup-E may use ASR, pronunciation/scoring and LLM providers to generate candidate transcript, acoustic signal and learner-visible diagnostic explanation for a short Speaking Check. Providers are not the source of truth for `DiagnosticAssessment`, `audio_ref`, diagnostic mode, confidence band, GoalProfile, GoalBackplan, forecast, checkpoint, entitlement, quota, billing, release or Product Base state.
+
+### Owning Product Object
+| 字段 | 值 |
+| --- | --- |
+| Increment | `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/` |
+| Requirements | `P02-FUE-FR-004`, `P02-FUE-FR-005`, `P02-FUE-FR-006`, `P02-FUE-FR-007`, `P02-FUE-FR-009` |
+| Spec | `P02-FUE-SPEC-004`, `P02-FUE-SPEC-005`, `P02-FUE-SPEC-006`, `P02-FUE-SPEC-007`, `P02-FUE-SPEC-009` |
+| Domain input | `DiagnosticAudioSample`, `DiagnosticQualityGate`, `SpeakingDiagnosticAssessment` in `docs/domain/domain_schema.md` |
+| API input | Planned diagnostic upload and assessment API family in `docs/architecture/api_contract.md` |
+
+### Required Inputs
+- `schema_version`
+- `diagnostic_id`
+- `goal_profile_id`
+- `goal_revision`
+- `diagnostic_mode`
+- `confidence_band`
+- `sample_set_summary`
+- `accepted_audio_sample_count`
+- `text_sample_count`
+- `quality_gate_summary`
+- `transcript_source_summary`
+- `supported_goal_context`
+- `claim_guard`
+- `rule_version`
+- redacted `source_refs` only, never raw audio, signed URLs or full provider payloads
+
+### Output Requirement
+If a model is used for learner-visible diagnosis, it must return valid JSON matching `FollowupESpeakingDiagnosticCandidate` in `docs/ai_runtime/llm_output_schema.md`. Backend deterministic validation must decide whether the candidate can be rendered. A provider candidate must never create or update the accepted diagnostic fact by itself.
+
+### Prompt Rules
+- Return JSON only; do not wrap JSON in markdown.
+- Explain only the supplied accepted or candidate diagnostic facts.
+- Use product-internal speaking practice wording; do not imply official IELTS/TOEFL/CEFR score, certification, guaranteed outcome or guaranteed ETA.
+- Do not include raw audio, local file path, full signed URL, raw transcript beyond redacted excerpts allowed by policy, provider payload, provider name, provider secret or unrestricted sensitive diagnostic detail.
+- For `text_only`, do not mention pronunciation, intonation, speech rate, pause timing, clipping, noise or acoustic fluency as measured facts.
+- For `audio_partial`, name the evidence limitation and keep confidence conservative.
+- Do not output or imply GoalBackplan approval, forecast precision, checkpoint result, mastery level, entitlement, quota, billing, release approval or Product Base merge approval.
+
+### Forbidden Persistent Fields
+The prompt must explicitly forbid output fields or prose claims equivalent to:
+
+- `audio_ref`
+- `trusted_upload_state`
+- `diagnostic_mode_override`
+- `confidence_band_override`
+- `goal_profile_update`
+- `goal_backplan_update`
+- `forecast_state`
+- `checkpoint_result`
+- `final_mastery_level`
+- `official_score`
+- `cefr_level_certified`
+- `ielts_band`
+- `toefl_score`
+- `goal_completed`
+- `guaranteed_eta`
+- `entitlement`
+- `quota_state`
+- `billing_state`
+- `release_approval`
+- `release_ready`
+- `product_base_merge_approved`
+
+### Developer Prompt Skeleton
+```text
+You are generating a candidate explanation for a product-internal speaking diagnostic.
+Return JSON only. Use schema_version=1 and output_type=followup_e_speaking_diagnostic_candidate.
+
+You may:
+- summarize supplied accepted diagnostic facts;
+- name one to three learner-actionable weaknesses;
+- propose one next training focus from the supplied allowed categories;
+- explain why confidence is limited when diagnostic_mode is audio_partial or text_only.
+
+You must not:
+- create or alter audio_ref, diagnostic_mode, confidence_band, accepted samples, GoalProfile, GoalBackplan, forecast, checkpoint, entitlement, quota, billing, release or Product Base state;
+- claim official score equivalence, certification, goal completion, guaranteed outcome or precise ETA;
+- infer acoustic pronunciation, intonation, speech-rate or pause timing from text_only input;
+- expose raw audio, signed URLs, raw provider payload, provider secrets or unrestricted sensitive transcript.
+```
+
+### Validation Requirement
+- JSON parse must pass.
+- `output_type` must be `followup_e_speaking_diagnostic_candidate`.
+- `diagnostic_id`, `goal_profile_id`, `goal_revision`, `diagnostic_mode`, `confidence_band` and sample counts must echo backend input values.
+- `diagnostic_mode` must be `audio_full`, `audio_partial` or `text_only`; `confidence_band` must be `high`, `medium` or `low`.
+- `top_weaknesses` must contain 1-3 learner-actionable items and must be compatible with the diagnostic mode.
+- `next_training_focus.category` must be one of the backend-supplied allowed categories.
+- `guardrails.official_score_equivalence`, `guardrails.goal_completion_claim_allowed`, `guardrails.guaranteed_eta_claim_allowed` and `guardrails.persistent_decision_fields_present` must be false.
+- Any forbidden persistent field, official-score claim, guaranteed ETA claim, text-only acoustic claim, raw audio, local file path, signed URL, raw transcript beyond policy, provider payload or unknown top-level field must trigger deterministic fallback and must not update `DiagnosticAssessment`, `DiagnosticAudioSample`, `GoalProfile`, `GoalBackplan`, `ProgressForecast`, `OutcomeCheckpoint`, entitlement, billing, release or Product Base facts.

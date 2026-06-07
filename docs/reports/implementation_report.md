@@ -1,7 +1,7 @@
 # Implementation Report
 
 ## Current Status
-Latest implementation update recorded: `P02-FOLLOWUP-D-S011-FINAL-REVIEW-20260607` completed Followup-D S011 final Product Base/release review execution, including final report synchronization, release checklist state separation, strict release expected-blocker preservation and independent review evidence. Followup-D S001/S002/S003/S004/S005/S006/S007/S008/S009/S010/S011 local evidence is reviewed for backend/API runtime gate, Flutter rollback, entitlement depth, usage/quota, cost telemetry/AI fallback, quota downgrade, data governance backend evidence, consent/privacy UX, telemetry, drift gates and final review only. Followup-D is not release-ready and Product Base merge is not approved. Followup-C remains locally complete for S001-S007 after `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
+Latest Followup-E implementation state: docs-only planning/contract evidence. Followup-E Phase 0-3 documents are present and reviewed for planning, but no Followup-E backend, Flutter, OpenAPI/generated client, AI runtime, native mic/audio bytes upload, test execution, release or Product Base implementation evidence is accepted in this state.
 
 ## Report Format
 Each completed change should append:
@@ -14,6 +14,84 @@ Each completed change should append:
 - results
 - risks
 - follow-up
+
+## 2026-06-07 - P02-FOLLOWUP-E-DOCS-ONLY-PLANNING-RECLASSIFICATION
+
+Change request:
+- Reclassify Followup-E documentation from implementation evidence back to planning/contract evidence.
+- Scope: documents and reports only; no backend, Flutter, generated client or script implementation evidence is accepted by this report.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/`.
+- AC/TC: AC-P02-FUE-000..010 and TC-P02-FUE-000..026 remain planned.
+
+Files changed:
+- Followup-E increment documents and cross-report status documents only.
+
+Implementation summary:
+- Replaced backend/Flutter slice completion claims with planning/contract wording.
+- Preserved the requirement that Followup-E reuse existing MVP/P0.1 recording capability where practical instead of duplicating mic functionality.
+- Preserved release, paid AI external evidence and Product Base merge blockers.
+
+Validation:
+- Followup-E executable implementation validation is not claimed in this report.
+- Text and diff hygiene checks must be recorded separately for this docs-only reclassification.
+
+Result:
+- Followup-E is planning/contract evidence only.
+- No Followup-E implementation slice is locally complete in this docs-only state.
+
+Residual risk:
+- Local uncommitted Followup-E code may still exist in the working tree, but it is not accepted evidence here.
+- Any future implementation claim must be reintroduced only after intentional execution, tests, reports and independent review.
+
+Follow-up:
+- Decide whether to rollback local Followup-E code changes or restart a narrower implementation slice from this planning baseline.
+
+## 2026-06-07 - P02-FOLLOWUP-C-S007-CHECKER-HASH-SYNC-20260607
+
+Change request:
+- Repair the Followup-C S007 traceability checker regression found during A/B/C/D upstream-downstream review.
+- Replace the stale generated-artifact assertion against the historical S007 OpenAPI hash with current manifest/marker/registry consistency validation.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`.
+- Existing FR/Spec/AC/TC: P02-FUC-FR-007, P02-FUC-SPEC-007, AC-P02-FUC-007, TC-P02-FUC-021 and TC-P02-FUC-022.
+- Traceability row: P02-FUC-TR-007; this change keeps the S007 dedicated checker repeatable after later valid OpenAPI changes.
+
+Files changed:
+- Checker: `scripts/check_p0_2_followup_c_traceability.py`.
+- Reports/status: `docs/reports/implementation_report.md`, `docs/reports/test_report.md`, `docs/reports/quality_report.md` and `docs/product/development_status.md`.
+- No production backend, Flutter, OpenAPI or generated Dart API shape changed.
+
+Implementation summary:
+- Renamed the S007 hash constant to `S007_HISTORICAL_OPENAPI_SHA` for historical report-evidence checks only.
+- Added JSON parsing and SHA-256 format validation for `docs/architecture/openapi/dart-client-drift-manifest.json`.
+- The checker now verifies the current `openapi_sha256` from the manifest matches `lib/generated/api/.openapi-sha256` and is present in `lib/generated/api/speakeasy_api.dart`.
+- The nullable cleanup contract remains enforced for `ProgressForecast.eta_range`.
+
+Validation:
+- `python3 -m py_compile scripts/check_p0_2_followup_c_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_c_traceability.py` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 95.7%, backend branch 81.1% and Flutter line 90.9%.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `fa2f5c368a83abbc6e24b182046af875b25856ce3af9756a861ff66794b464eb`.
+- `npm run check:api-contract` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_b_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_d_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_d_final_review.py` - passed with release/Product Base blockers preserved.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- TC-P02-FUC-021/022 are repeatable again for the current OpenAPI/generated Dart artifact state.
+- Followup-C S007 keeps historical nullable-cleanup evidence while accepting later valid OpenAPI hash updates.
+
+Residual risk:
+- This fixes the local checker regression only; it does not approve release readiness, Product Base merge or external production evidence.
+
+Follow-up:
+- None for the checker regression after validation and independent review gates passed.
 
 ## 2026-06-07 - P02-FOLLOWUP-D-S011-FINAL-REVIEW-20260607
 

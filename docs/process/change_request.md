@@ -30,6 +30,61 @@
 ## 规则
 被接受的变更请求必须先更新相关源文档，之后才能开始实现。
 
+## CR-20260607-001 P0.2 生产级音频优先口语诊断
+
+### id
+CR-20260607-001
+
+### date
+2026-06-07
+
+### requester
+当前规划线程中的产品请求。
+
+### affected feature
+`goal-driven-learning-autopilot`、`scoring-feedback`、`ai-provider-operations`、`learning-memory-review`、`access-onboarding`。
+
+### change summary
+在 P0.2 Followup-A 已关闭的文本诊断兜底基础上，新增 Followup-E `speaking diagnostic production` 增量，把目标录入后的初始诊断升级为音频优先的 2-3 分钟 Speaking Check。用户完成目标输入后，优先提供朗读校准句、跟读/复述短句和目标场景自由回答三类录音样本；文本样本保留为麦克风拒绝、嘈杂环境、无障碍、网络/provider 失败或用户不方便开口时的低置信兜底。真实 `audio_ref` 必须由后端在可信上传、格式/大小/安全和质量门禁通过后生成；Flutter 不得伪造 `audio_ref`，文本-only 诊断不得生成 pronunciation、intonation、speech-rate 等音频维度结论。
+
+### reason
+Followup-A 当前满足本地验收，但从学习者视角，口语学习产品如果没有真实听到用户说话，诊断可信度和后续个性化训练计划说服力不足。商业口语学习和测评产品通常以录音、实时语音或 spoken-response assessment 作为口语诊断主路径，文本只作为 fallback 或辅助输入。本变更用于让 P0.2 Goal Autopilot 的初始诊断更接近生产级口语学习软件，同时保持隐私、成本、claim guard 和 release blocker 边界。
+
+### scope impact
+扩展 P0.2 `goal-driven-learning-autopilot` 的诊断体验和可信证据边界。该变更不重开或否定 Followup-A FR-001..009 的本地完成状态，而是在后续增量中补齐生产级音频诊断能力。范围限制为目标录入后的初始 Speaking Check、音频样本上传/质量门禁/诊断结果、文本低置信兜底、隐私删除/保留说明和后续 GoalBackplan 输入。不新增官方场景库，不实现人工评分服务，不承诺官方 IELTS/TOEFL 等价分或保证达标。
+
+### architecture impact
+需要复用后端可信媒体引用边界、AI Provider Gateway、usage/cost/entitlement/data governance 规则。新增或确认 goal-autopilot diagnostic audio family：上传创建、上传完成、诊断提交、诊断状态/结果和音频删除。后端是 `audio_ref`、质量门禁、ASR/评分 provider 调用、低置信降级和诊断事实的唯一事实源；Flutter 只负责录音交互、临时文件、上传请求和展示后端返回的 accepted facts。
+
+### domain impact
+需要扩展 P0.2 领域模型，定义 `DiagnosticAudioSample`、`DiagnosticUploadSession`、`DiagnosticQualityGate`、`SpeakingDiagnosticAssessment`、`SpeakingDiagnosticResult`、`DiagnosticPrivacyState` 或等价事实边界。`DiagnosticAssessment` 需区分 `diagnostic_mode=audio_full|audio_partial|text_only`、`confidence_band`、`transcript_source=audio_asr|user_text`、质量问题和禁止音频维度的文本-only 降级。
+
+### API impact
+需要在 API contract 中定义 goal-autopilot diagnostic audio endpoints、DTO、错误码和幂等规则；实现前再更新 OpenAPI source of truth 并同步 generated Dart client。阶段 0-3 只建立文档和契约，未实现前不得把这些 endpoints 标记为 passed 或 release-ready。
+
+### AI runtime impact
+需要定义 speaking diagnostic scoring candidate schema、prompt/fallback/eval。ASR transcript 是音频派生事实；AI/LLM/评分 provider 只能输出候选解释或评分候选，最终诊断状态、置信度、claim guard、训练重点和可见弱项必须经后端 deterministic validation 接受。无效 JSON、provider timeout、quota/cost block、低质量音频或文本-only 均必须降级。
+
+### UX impact
+Goal setup 后新增 2-3 分钟 Speaking Check 状态：用途说明、麦克风权限前置说明、录音/播放/重录/跳过、环境质量提示、文本兜底、低置信提醒、诊断结果和第一天训练重点。拒绝录音不能阻断学习；结果页必须服务于下一步训练而不是展示高压考试报告。
+
+### test impact
+需要新增 AC/TC 覆盖权限拒绝、录音失败、嘈杂/过短/静音/截断、成功上传生成 `audio_ref`、Flutter 不伪造 `audio_ref`、文本-only 禁止音频维度、provider failure 降级、quota/cost 降级、claim guard、删除/导出/保留、GoalBackplan 低置信输入和回归门禁。实现前必须完成 AC-to-TC mapping。
+
+### release impact
+音频诊断涉及麦克风权限、语音/音频个人数据、第三方 ASR/评分 provider、数据保留/删除和成本配额。商业发布前必须更新隐私政策、Google Play Data safety/App Store privacy 说明、provider 数据处理证据、release checklist、外部 provider evidence 和回滚策略。阶段 0-3 不关闭 release-ready、paid AI external evidence 或 Product Base merge approval。
+
+### decision
+accepted
+
+### follow-up
+- 新增 increment：`docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/definition.md`。
+- 阶段 0：完成 change request、increment definition、development status，并由独立 checker agent 审核。
+- 阶段 1：生成 requirements 和 spec，并由独立 checker agent 审核。
+- 阶段 2：生成 domain/API/AI runtime/UX/data governance 契约，并由独立 checker agent 审核。
+- 阶段 3：生成 acceptance、test_cases 和 traceability，完成 AC-to-TC implementation gate，并由独立 checker agent 审核。
+- 后续代码实现必须在阶段 0-3 全部通过后另行启动，不得跳过合同和测试门禁。
+
 ## CR-20260523-001 表达自动化训练 Agent
 
 ### id

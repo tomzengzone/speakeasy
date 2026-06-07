@@ -1,16 +1,79 @@
 # Test Report
 
 ## Current Status
-Latest recorded Followup-D validation: `P02-FOLLOWUP-D-S011-FINAL-REVIEW-20260607` passes TC-P02-FUD-020/021 for final Product Base/release review execution with release and Product Base blockers preserved. Followup-D S001/S002/S003/S004/S005/S006/S007/S008/S009/S010/S011 local evidence is reviewed for backend/API runtime gate, Flutter rollback, entitlement depth, usage/quota, cost telemetry/AI fallback, quota downgrade, data governance backend evidence, consent/privacy UX, telemetry, drift gates and final review only. Followup-D is not release-ready and Product Base merge is not approved. Followup-C remains locally complete for S001-S007 after `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
+Latest recorded Followup-E state: docs-only planning/contract evidence. Followup-E Phase 0 planning, Phase 1 requirements/spec, Phase 2 domain/API/AI/UX/data contracts after correction, and Phase 3 acceptance/test_cases/traceability have planning-gate evidence. No Followup-E backend, Flutter, OpenAPI/generated client, native mic/audio bytes upload, AI runtime, retention/export/account deletion, entitlement/provider downgrade, release or Product Base test evidence is accepted in this docs-only state.
 
-## Required Sections
-- test scope
-- commands run
-- passing tests
-- failing tests
-- skipped tests
-- acceptance criteria coverage
-- residual risk
+## 2026-06-07 P02 Followup-E Docs-Only Planning Reclassification
+
+Report ID:
+- N/A - implementation evidence reclassified to planned
+
+Test scope:
+- TC-P02-FUE-000..026 remain planned.
+- This report records that previous Followup-E backend/Flutter implementation evidence claims are not accepted as current project evidence.
+- MVP/P0.1 local mic/recording capability remains existing baseline capability; Followup-E should reuse that boundary and add Speaking Check orchestration plus trusted upload bridging rather than duplicate mic development.
+
+Commands run:
+- No backend, Flutter, OpenAPI, generated-client, AI runtime or release commands are accepted as Followup-E evidence in this docs-only state.
+
+Passing tests:
+- None for Followup-E implementation.
+
+Failing tests:
+- N/A - implementation tests have not been accepted.
+
+Skipped or external tests:
+- All TC-P02-FUE-000..026 executable checks remain planned until an approved implementation slice runs.
+- Native mic/audio bytes upload, ASR/scoring/result, retention/export/account deletion, entitlement/provider downgrade, paid AI external evidence, release readiness and Product Base merge remain open.
+
+Acceptance criteria coverage:
+- AC-P02-FUE-000..010 have planned TC coverage in `test_cases.md` and traceability rows in `traceability.md`.
+- No AC is closed by executable Followup-E evidence in this docs-only state.
+
+Residual risk:
+- Local uncommitted Followup-E code may exist in the working tree, but it is not accepted report evidence here.
+- Any future implementation claim must cite TC ID, script path, command, result status, report evidence and independent review after the slice is intentionally executed.
+
+## 2026-06-07 P02 Followup-C S007 Checker Hash Sync
+
+Report ID:
+- `P02-FOLLOWUP-C-S007-CHECKER-HASH-SYNC-20260607`
+
+Test scope:
+- TC-P02-FUC-021 dedicated Followup-C traceability checker remains executable after later valid OpenAPI/generated Dart hash updates.
+- TC-P02-FUC-022 report and generated-artifact drift evidence remains consistent without changing production backend, Flutter, OpenAPI or generated Dart API shape.
+
+Commands run:
+- `python3 -m py_compile scripts/check_p0_2_followup_c_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_c_traceability.py` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 95.7%, backend branch 81.1% and Flutter line 90.9%.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `fa2f5c368a83abbc6e24b182046af875b25856ce3af9756a861ff66794b464eb`, 93 operations and 196 schemas.
+- `npm run check:api-contract` - passed: OpenAPI lint passed, contract gate reported 87 paths, 93 operations, 42 request examples, 88 success examples and 113 error examples, and Dart drift passed with OpenAPI hash `fa2f5c368a83abbc6e24b182046af875b25856ce3af9756a861ff66794b464eb`.
+- `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_b_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_d_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_d_final_review.py` - passed with release/Product Base blockers preserved.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Passing tests:
+- TC-P02-FUC-021: `scripts/check_p0_2_followup_c_traceability.py` now validates the current manifest `openapi_sha256`, `lib/generated/api/.openapi-sha256` and `SpeakeasyApiContract.openApiSha256` agree.
+- TC-P02-FUC-021: historical S007 nullable-cleanup report evidence still requires `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606` and the original cleanup hash in reports only.
+- TC-P02-FUC-022: generated Dart drift remains green at the current hash; no API regeneration or OpenAPI shape change occurred in this fix.
+- Cross-followup guard: A goal-autopilot traceability, Followup-B traceability and Followup-D traceability/final review gates still pass after the checker/report sync.
+
+Failing tests:
+- None remain in the scoped checker-regression command set.
+
+Skipped or external tests:
+- No backend or Flutter runtime regression was required because this change updates a deterministic checker and reports only.
+- No live provider, store, payment, native social login, release-readiness or Product Base merge evidence was executed.
+
+Acceptance criteria coverage:
+- AC-P02-FUC-007 remains covered locally by TC-P02-FUC-021/022 for repeatable traceability/report/checker evidence after valid downstream OpenAPI hash changes.
+
+Residual risk:
+- This change does not approve Followup-C release readiness, Followup-D release readiness or Product Base merge.
 
 ## 2026-06-07 P02 Followup-D S011 Final Review
 

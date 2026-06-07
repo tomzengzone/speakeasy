@@ -1,7 +1,7 @@
 # P0.2 阶段范围：目标驱动自动带练与跨 session 记忆引擎
 
 ## 状态
-Downstream documentation design-ready / implementation gated with follow-up hardening scaffold - 用户目标驱动审查后，P0.2 不再只是跨 session 记忆调度；本阶段升级为 GoalProfile、DiagnosticAssessment、GoalBackplan、AutopilotTraining、MemoryCurvePolicy、ProgressForecast 和 OutcomeCheckpoint 的组合。三个目标驱动 increments 已完成 requirements/spec/acceptance/test_cases/traceability 下沉设计；本轮新增 Followup-A through Followup-D 正式 definition 和 WP traceability scaffold，用于把本地 deterministic 垂直切片剩余缺口拆成可实施、可审核、可追溯的小增量。旧单体记忆调度 artifact 已删除并被新的目标驱动 stage scope 吸收，不再作为 active source of truth、实现入口或可链接需求链。
+Downstream documentation design-ready / implementation gated with follow-up hardening scaffold - 用户目标驱动审查后，P0.2 不再只是跨 session 记忆调度；本阶段升级为 GoalProfile、DiagnosticAssessment、GoalBackplan、AutopilotTraining、MemoryCurvePolicy、ProgressForecast 和 OutcomeCheckpoint 的组合。三个目标驱动 increments 已完成 requirements/spec/acceptance/test_cases/traceability 下沉设计；本轮新增 Followup-A through Followup-E 正式 definition 和 WP traceability scaffold，用于把本地 deterministic 垂直切片剩余缺口拆成可实施、可审核、可追溯的小增量。Followup-E 当前已完成 phase-0 planning、phase-1 requirements/spec 独立审核、phase-2 domain/API/AI/UX/data contract 修正后独立复核和 phase-3 acceptance/test_cases/traceability 独立审核。旧单体记忆调度 artifact 已删除并被新的目标驱动 stage scope 吸收，不再作为 active source of truth、实现入口或可链接需求链。
 
 ## 阶段目标
 在 P0.1 session 内训练闭环稳定后，把 APP 升级为目标驱动自动学习教练：用户输入目标类型、目标分数或能力、截止日期、每日可投入时间和强度偏好；系统诊断当前真实水平，倒排周计划/日计划/每次训练内容，并自动带用户完成训练、复习和周期复测，直到持续接近或达到目标。
@@ -91,6 +91,7 @@ Downstream documentation design-ready / implementation gated with follow-up hard
 - `p0-2-followup-b-autopilot-control-planner-memory`：UserAutopilotControl、pause/resume/update-control、通知调度语义、missed-day recovery、item-level MemoryCurvePolicy 和 L0-L5 转移。
 - `p0-2-followup-c-checkpoint-forecast-surfaces`：ProgressForecast、OutcomeCheckpoint、checkpoint cadence/task library 和 Home/Queue/Wiki 多产品面 projection。
 - `p0-2-followup-d-release-gate-hardening`：P0.2 feature flag/kill switch、entitlement/cost/usage、quota downgrade、consent/export/retention、telemetry、contract drift 和 release/Product Base gates。
+- `p0-2-followup-e-speaking-diagnostic-production`：音频优先 Speaking Check、可信后端 `audio_ref`、文本低置信兜底、音频质量/隐私/成本/claim guard 边界。当前 phase-2 contracts passed after correction，phase-3 acceptance/test_cases/traceability passed independent review；后续只能进入实现计划，不能直接宣称实现、测试、release 或 Product Base 通过。
 
 ## 当前文档链路
 - `docs/product/increments/p0-2-goal-diagnostic-foundation/definition.md`
@@ -119,6 +120,14 @@ Downstream documentation design-ready / implementation gated with follow-up hard
 - `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/traceability.md`
 - `docs/product/increments/p0-2-followup-d-release-gate-hardening/definition.md`
 - `docs/product/increments/p0-2-followup-d-release-gate-hardening/traceability.md`
+- `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/definition.md`
+- `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/requirements.md`
+- `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/spec.md`
+- `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/acceptance.md`
+- `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/test_cases.md`
+- `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/traceability.md`
+- Followup-E phase 2 contract artifacts passed after correction: `docs/domain/domain_schema.md`, `docs/architecture/api_contract.md`, `docs/architecture/data_flow.md`, `docs/ai_runtime/prompt_contract.md`, `docs/ai_runtime/llm_output_schema.md`, `docs/ai_runtime/fallback_strategy.md`, `docs/ai_runtime/ai_eval_cases.md`, `docs/ux/screen_spec.md`.
+- Followup-E phase 3 artifacts passed independent review: `acceptance.md`, `test_cases.md` and `traceability.md`; executable tests remain planned and implementation remains gated.
 
 ## 历史 artifact 处理
 旧单体记忆调度 artifact 已删除并 superseded。其 P02-SI-001..006 设计意图只通过本 stage scope 保留，后续必须在上述三个新 increment 的 requirements、spec、acceptance、test_cases 和 traceability 中重新生成、吸收或明确排除，不能直接进入实现。
@@ -133,3 +142,4 @@ Downstream documentation design-ready / implementation gated with follow-up hard
 - 长期记忆调度不由 LLM 直接写入最终持久化状态。
 - P02-PG-001 through P02-PG-005 均在对应 increment requirements/spec/acceptance/test_cases/traceability、domain/API/AI/UX 契约和质量报告中闭环；若只能 partial 支持，必须有用户可见降级和商业/数据治理说明。
 - Followup-A through Followup-D 均完成 requirements、spec、acceptance、test_cases、traceability、独立审查和实现证据；不得用原本地 deterministic 垂直切片替代完整 GoalProfile UI、pause/resume/notification、Queue/Wiki propagation、commercial/cost/data/release gates。
+- Followup-E 作为新增 accepted follow-up，必须先完成 phase 0-3 文档链、合同链、AC-to-TC mapping 和独立审核，之后才能进入代码实现；不得把 Followup-A 文本 fallback 或本阶段 planning 当作真实生产音频诊断完成证据。
