@@ -18,6 +18,8 @@ DEVELOPMENT_STATUS = Path("docs/product/development_status.md")
 
 S006_ANCHOR = "2026-06-05-p02-followup-b-s006-replay-performance-traceability"
 S006_REPORT_ID = "P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-TRACEABILITY-20260605"
+XCB003_ANCHOR = "2026-06-09-p02-followup-b-xcb-003-reminder-eligibility-endpoint-closure"
+XCB003_REPORT_ID = "P02-FOLLOWUP-B-XCB-003-REMINDER-ELIGIBILITY-ENDPOINT-20260609"
 
 REQUIRED_FILES = [
     TEST_CASES,
@@ -30,6 +32,12 @@ REQUIRED_FILES = [
     Path("backend/src/test/java/com/speakeasy/goal/GoalAutopilotControlPerformanceTest.java"),
     Path("scripts/check_p0_2_followup_b_traceability.py"),
     Path("scripts/check_p0_2_goal_autopilot_coverage.py"),
+    Path("backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java"),
+    Path("backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java"),
+    Path("backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java"),
+    Path("backend/src/test/java/com/speakeasy/goal/GoalAutopilotRuntimeGateTest.java"),
+    Path("docs/architecture/openapi/speakeasy-api.yaml"),
+    Path("lib/generated/api/speakeasy_api.dart"),
 ]
 
 TC_EXPECTATIONS = {
@@ -51,6 +59,15 @@ TC_EXPECTATIONS = {
         "passed",
         S006_ANCHOR,
     ],
+    "TC-P02-FUB-018": [
+        "GoalAutopilotControllerTest.java#tcP02Fub018ReminderEligibilityEndpointEvaluatesRequestBoundary",
+        "GoalAutopilotControllerTest.java#tcP02Fub018ReminderEligibilityRecoveryRequiredDoesNotReturnEligible",
+        "GoalAutopilotRuntimeGateTest.java#tcP02Fud002KillSwitchHidesExistingProjectionAndFailsClosed",
+        "docs/architecture/openapi/speakeasy-api.yaml",
+        "scripts/check_p0_2_followup_b_traceability.py",
+        "passed",
+        XCB003_ANCHOR,
+    ],
 }
 
 TRACEABILITY_TERMS = [
@@ -65,6 +82,13 @@ TRACEABILITY_TERMS = [
     "FUB-FIX-008",
     "FUB-FIX-009",
     S006_ANCHOR,
+    "P02-FUB-TR-003",
+    "P02-FUB-TR-004",
+    "TC-P02-FUB-018 passed",
+    "GoalAutopilotController#evaluateReminderEligibility",
+    "GoalAutopilotService#evaluateReminderEligibility",
+    "XCB-003",
+    XCB003_ANCHOR,
 ]
 
 REPORT_TERMS = {
@@ -79,6 +103,14 @@ REPORT_TERMS = {
         "python3 scripts/check_p0_2_goal_autopilot_coverage.py",
         "Followup-B is not release-ready",
         "Product Base merge is not approved",
+        XCB003_REPORT_ID,
+        "TC-P02-FUB-018",
+        "POST /goal-autopilot/reminders/eligibility",
+        "GoalAutopilotControllerTest",
+        "GoalAutopilotRuntimeGateTest",
+        "malformed `current_time` 422",
+        "recovery-required stale-plan blocking",
+        "XCB-003",
     ],
     IMPLEMENTATION_REPORT: [
         S006_REPORT_ID,
@@ -92,6 +124,16 @@ REPORT_TERMS = {
         "check_p0_2_followup_b_traceability.py",
         "No production backend or Flutter code changed",
         "Followup-B is not release-ready",
+        XCB003_REPORT_ID,
+        "P02-FUB-FR-003",
+        "AC-P02-FUB-003",
+        "TC-P02-FUB-018",
+        "GoalAutopilotController.java",
+        "GoalAutopilotService.java",
+        "speakeasy-api.yaml",
+        "malformed `current_time` 422",
+        "recovery-required stale-plan blocking",
+        "XCB-003",
     ],
     QUALITY_REPORT: [
         S006_REPORT_ID,
@@ -103,6 +145,13 @@ REPORT_TERMS = {
         "No blocker",
         "Followup-B is not release-ready",
         "Product Base merge is not approved",
+        XCB003_REPORT_ID,
+        "TC-P02-FUB-018",
+        "Independent Review",
+        "POST /goal-autopilot/reminders/eligibility",
+        "recovery-required eligibility",
+        "malformed `current_time`",
+        "XCB-003",
     ],
 }
 
@@ -154,7 +203,7 @@ def validate_traceability() -> None:
         if term not in text:
             raise SystemExit(f"Missing traceability closure term {term!r} in {TRACEABILITY}")
 
-    for trace_id in ["P02-FUB-TR-008", "P02-FUB-TR-009"]:
+    for trace_id in ["P02-FUB-TR-003", "P02-FUB-TR-004", "P02-FUB-TR-008", "P02-FUB-TR-009"]:
         row = next((line for line in text.splitlines() if line.startswith(f"| {trace_id} |")), None)
         if row is None:
             raise SystemExit(f"Missing {trace_id} row in {TRACEABILITY}")

@@ -64,13 +64,17 @@ public class AiGatewayService {
     try {
       AiProviderGateway.TranscribeResult result = provider.transcribe(audioRef, languageHint);
       costMetricsService.recordInvocation(
-          userId, "asr", result.status(), false, null, audioDuration(audioRef), "");
+          userId, "asr", result.status(), false, null, audioDuration(userId, audioRef), "");
       closeProviderReservation(userId, reservation, "available".equals(result.status()));
       return new TranscribeResult(result.transcript(), result.confidence(), result.status());
     } catch (RuntimeException e) {
       usageService.release(userId, reservation.getReservationId(), "provider_exception:asr");
       throw e;
     }
+  }
+
+  public void validateTrustedAudioRef(UUID userId, String usageFamily, String audioRef) {
+    policyService.validateTrustedAudioRef(userId, usageFamily, audioRef);
   }
 
   public TtsResult synthesize(UUID userId, String text, String voice) {
@@ -101,7 +105,7 @@ public class AiGatewayService {
     try {
       AiProviderGateway.ScoreResult result = provider.scorePronunciation(audioRef, referenceText);
       costMetricsService.recordInvocation(
-          userId, "scoring", result.status(), false, tokenEstimate(referenceText), audioDuration(audioRef), "");
+          userId, "scoring", result.status(), false, tokenEstimate(referenceText), audioDuration(userId, audioRef), "");
       closeProviderReservation(userId, reservation, "available".equals(result.status()));
       return toGatewayScore(result);
     } catch (RuntimeException e) {
@@ -174,8 +178,8 @@ public class AiGatewayService {
     provider.resetInvocationCount();
   }
 
-  private Integer audioDuration(String audioRef) {
-    AiMediaReferenceService.TrustedAudioRef media = mediaReferenceService.inspectAudioRef(audioRef, false);
+  private Integer audioDuration(UUID userId, String audioRef) {
+    AiMediaReferenceService.TrustedAudioRef media = mediaReferenceService.inspectAudioRef(userId, audioRef, false);
     return media.durationSeconds();
   }
 

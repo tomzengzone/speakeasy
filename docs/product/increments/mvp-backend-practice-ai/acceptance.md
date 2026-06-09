@@ -28,6 +28,7 @@ Acceptance Criteria Generate Skill
 - 给定用户从官方场景和等级开始练习，后端必须创建或恢复 active session。
 - 给定同一用户同一场景同一等级有未完成 session，再次进入必须返回可恢复 session。
 - 给定用户提交有效 turn，后端必须持久化 turn 并推进 session 状态。
+- 给定用户提交 turn 且请求包含 `audio_ref`，无论是否同时包含 transcript，后端必须在持久化 turn、生成 coach feedback 或调用 provider 前拒绝本地路径、`file://`、裸 URL、client-created ref、wrong-owner ref、未完成上传 ref 或未验证 ref。
 - 给定用户完成 session，后端必须返回 summary payload 或可供 learning-memory increment 写入的 evidence candidate。
 - 给定 session 已完成，后端不得继续把它作为 active recovery session。
 

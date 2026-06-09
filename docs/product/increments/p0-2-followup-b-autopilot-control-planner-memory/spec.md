@@ -1,7 +1,7 @@
 # P0.2 Followup-B Spec：自动带练控制与计划记忆引擎加固
 
 ## 状态
-Spec accepted / downstream executed through S006 replay-performance-traceability - 本文件把 Followup-B requirements 下沉为可验收的行为规格；acceptance、test_cases、traceability、Domain、API/OpenAPI/generated client、AI runtime 和 UX 合同已生成并完成 pre-implementation 审核。当前 UserAutopilotControl read/update/pause/resume、TC-P02-FUB-002 control data governance、Flutter control binding、S002-A notification eligibility policy、S002-B notification outbox lifecycle/replay、S003 missed-day recovery planner、S004 item-level MemoryCurvePolicy、S005 mastery transition 与 S006 replay/performance/coverage/traceability gates 已有本地执行证据。Followup-B is not release-ready；Product Base merge is not approved。
+Spec accepted / downstream executed through S006 replay-performance-traceability and XCB-003 endpoint closure - 本文件把 Followup-B requirements 下沉为可验收的行为规格；acceptance、test_cases、traceability、Domain、API/OpenAPI/generated client、AI runtime 和 UX 合同已生成并完成 pre-implementation 审核。当前 UserAutopilotControl read/update/pause/resume、TC-P02-FUB-002 control data governance、Flutter control binding、S002-A notification eligibility policy、S002-B notification outbox lifecycle/replay、XCB-003 reminder eligibility endpoint contract closure、S003 missed-day recovery planner、S004 item-level MemoryCurvePolicy、S005 mastery transition 与 S006 replay/performance/coverage/traceability gates 已有本地执行证据。Followup-B is not release-ready；Product Base merge is not approved。
 
 ## 上游引用
 - Increment definition：`docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/definition.md`
@@ -46,7 +46,7 @@ Followup-B implementation must proceed by routed slice. A later slice may reuse 
 | Slice ID | Scope | Primary state nodes | API boundary | AC/TC routing | Fixture routing | Completion evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | P02-FUB-SLICE-001 | UserAutopilotControl source、pause/resume/update-control | `ControlActive`, `Paused`, `ControlUpdated`, `ResumeRequested` | `GET/PATCH /goal-autopilot/control`, `POST /goal-autopilot/control/pause`, `POST /goal-autopilot/control/resume` | AC-P02-FUB-001..002 / TC-P02-FUB-001..004 | FUB-FIX-001 control source, FUB-FIX-002 pause/resume/update-control | Backend/API/Flutter evidence exists for routed control subset; TC-P02-FUB-002 closes current control/audit/idempotency data governance; outbox governance closes separately in S002-B |
-| P02-FUB-SLICE-002 | Notification eligibility and scheduler/outbox | `EligibilityCheck`, `ReminderEligible`, `ReminderBlocked`, `OutboxPending`, `OutboxScheduled` | `POST /goal-autopilot/reminders/eligibility`, `GET /goal-autopilot/reminders/outbox` | AC-P02-FUB-003..004 / TC-P02-FUB-005..008 | FUB-FIX-003 notification eligibility, FUB-FIX-004 outbox lifecycle | Eligibility reason precedence, outbox lifecycle, dedupe and failure replay evidence |
+| P02-FUB-SLICE-002 | Notification eligibility and scheduler/outbox | `EligibilityCheck`, `ReminderEligible`, `ReminderBlocked`, `OutboxPending`, `OutboxScheduled` | `POST /goal-autopilot/reminders/eligibility`, `GET /goal-autopilot/reminders/outbox` | AC-P02-FUB-003..004 / TC-P02-FUB-005..008, TC-P02-FUB-018 | FUB-FIX-003 notification eligibility, FUB-FIX-004 outbox lifecycle | Eligibility reason precedence, endpoint controller/service contract closure, outbox lifecycle, dedupe and failure replay evidence |
 | P02-FUB-SLICE-003 | Missed-day recovery planner | `RecoveryRequired`, `RecoveryPlanned` | `POST /goal-autopilot/recovery/replan` | AC-P02-FUB-005 / TC-P02-FUB-009..010 | FUB-FIX-005 missed-day recovery | Executed for S003 recovery planner; compress/defer/replace decision evidence and no-overdue-stacking assertions passed |
 | P02-FUB-SLICE-004 | Item-level MemoryCurvePolicy | `MemoryDuePlanning` | `POST /goal-autopilot/item-policy/decisions` | AC-P02-FUB-006 / TC-P02-FUB-011..012 | FUB-FIX-006 item-level memory due | Executed for S004 memory; forgetting risk, retrieval success/failure, overlearning, interleaving, budget, paused/control-blocked, default intervals and replay-determinism evidence passed |
 | P02-FUB-SLICE-005 | L0-L5 mastery transition and AI candidate-only explanation | `MasteryTransitionPending`, `MasteryTransitionApplied` | `GET /goal-autopilot/mastery-transitions`, AI explanation validator | AC-P02-FUB-007 / TC-P02-FUB-013..014 | FUB-FIX-007 mastery transition | Executed for S005 mastery; one-level promotion, hold/demotion, transition audit and AI forbidden-field rejection evidence passed |
@@ -200,10 +200,15 @@ Initial confidence thresholds for acceptance fixtures are L0->L1 `>=0.65`, L1->L
 ## P02-FUB-SPEC-003 Quiet Hours And Notification Eligibility
 - Notification eligibility runs before schedule, reschedule or send.
 - Eligibility inputs include control status, quiet-hours window, timezone, notification consent, platform permission, entitlement, quota/cost decision, active plan status and support status.
+- `POST /goal-autopilot/reminders/eligibility` is the endpoint-level eligibility entry for scheduler, reschedule and send prechecks. It accepts `schema_version`, optional `plan_item_id`, `reminder_slot`, optional `current_time` and `platform_permission`.
+- `plan_item_id` must be a UUID owned by the current user and tied to the current active goal plan. Malformed IDs return `422`, wrong-owner/nonexistent IDs return `404`, and inactive or stale-plan candidates return `409`.
+- Missing or `unknown` `platform_permission` must fail closed with `permission_denied`; the endpoint must not introduce a new reason enum for unknown permission.
+- Runtime gate must fail the endpoint closed before eligibility evaluation when Goal Autopilot mutation runtime is disabled.
 - Quiet hours may cross midnight and must be evaluated in the user's configured timezone.
 - Eligibility output must include `eligible=true|false`, `reason_code`, `next_allowed_at` when blocked by time, and safe user-visible explanation text or explanation key.
 - Required blocked reason codes include at least `paused`, `blocked_by_policy`, `quiet_hours`, `permission_denied`, `consent_missing`, `entitlement_blocked`, `quota_exhausted`, `unsupported_goal`, `partial_goal_limited`, `stale_plan` and `missing_plan`.
 - A blocked or unsent notification must not be interpreted as completion, refusal, failure or missed-day evidence.
+- Eligibility endpoint evaluation must not create or mutate notification outbox records; it may write only low-sensitivity eligibility metric/audit evidence required by runtime governance.
 - Notification content must avoid sensitive diagnostic transcripts, exact target-risk details and unsupported official-score claims.
 
 ## P02-FUB-SPEC-004 Notification Scheduler Or Outbox

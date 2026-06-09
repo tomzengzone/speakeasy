@@ -3,6 +3,103 @@
 ## Current Status
 Latest recorded Followup-E state: docs-only planning/contract evidence. Followup-E Phase 0 planning, Phase 1 requirements/spec, Phase 2 domain/API/AI/UX/data contracts after correction, and Phase 3 acceptance/test_cases/traceability have planning-gate evidence. No Followup-E backend, Flutter, OpenAPI/generated client, native mic/audio bytes upload, AI runtime, retention/export/account deletion, entitlement/provider downgrade, release or Product Base test evidence is accepted in this docs-only state.
 
+## 2026-06-09 P02 Followup-B XCB-003 Reminder Eligibility Endpoint Closure
+
+Report ID:
+- `P02-FOLLOWUP-B-XCB-003-REMINDER-ELIGIBILITY-ENDPOINT-20260609`
+
+Test scope:
+- TC-P02-FUB-018 covers endpoint-level closure for `POST /goal-autopilot/reminders/eligibility`.
+- Requirement chain: P02-SI-010 -> P02-FUB-WP-003/004 -> P02-FUB-FR-003/004 -> P02-FUB-SPEC-003/004 -> AC-P02-FUB-003/004 -> P02-FUB-TR-003/004 -> TC-P02-FUB-018.
+- Architecture boundary: XCB-003 OpenAPI/generated client source of truth; P02-FUB-API-002 reminder eligibility precheck boundary.
+
+Commands run:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fub018ReminderEligibilityEndpointEvaluatesRequestBoundary+tcP02Fub018ReminderEligibilityCommercialAndPlanOwnershipGates+tcP02Fub018ReminderEligibilityMissingPlanDoesNotReturnEligibleWithoutItem+tcP02Fub018ReminderEligibilityRecoveryRequiredDoesNotReturnEligible,GoalAutopilotRuntimeGateTest#tcP02Fud002KillSwitchHidesExistingProjectionAndFailsClosed test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,GoalAutopilotRuntimeGateTest,NotificationEligibilityPolicyTest,GoalAutopilotQuotaDowngradeTest test` - passed.
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `npm run check:api-contract` - passed without OpenAPI warnings.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `ae03bd46812ddd684bb70fbcb3f927b759c1e70529d1bdd68c0ada18a1aff587`.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 95.7%, backend branch 81.1% and Flutter line 89.2%.
+- `python3 -m py_compile scripts/check_p0_2_followup_b_traceability.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `python3 scripts/check_p0_2_followup_b_traceability.py` - passed after report synchronization.
+
+Passing tests:
+- TC-P02-FUB-018: `GoalAutopilotControllerTest.tcP02Fub018ReminderEligibilityEndpointEvaluatesRequestBoundary` verifies quiet-hours blocking, `permission_denied` for `unknown`, eligible daytime response, malformed `plan_item_id` 422, invalid `reminder_slot` 422, malformed `current_time` 422, three low-sensitivity `notification_eligibility` metric events and zero outbox rows.
+- TC-P02-FUB-018: `GoalAutopilotControllerTest.tcP02Fub018ReminderEligibilityCommercialAndPlanOwnershipGates` verifies `quota_exhausted`, `entitlement_blocked`, inactive/current-plan conflict 409 and wrong-owner/nonexistent plan item 404.
+- TC-P02-FUB-018: `GoalAutopilotControllerTest.tcP02Fub018ReminderEligibilityMissingPlanDoesNotReturnEligibleWithoutItem` verifies missing plan does not return `eligible=true` with a null item.
+- TC-P02-FUB-018: `GoalAutopilotControllerTest.tcP02Fub018ReminderEligibilityRecoveryRequiredDoesNotReturnEligible` verifies recovery-required stale-plan blocking: recovery-required daily plans return `eligible=false` with `stale_plan` before replan.
+- TC-P02-FUB-018 runtime regression: `GoalAutopilotRuntimeGateTest.tcP02Fud002KillSwitchHidesExistingProjectionAndFailsClosed` verifies kill switch blocks the endpoint with 503, request id, reason code and audit log id.
+- OpenAPI lint/contract and Dart drift pass after endpoint `404`, UUID schema/examples and generated hash pins are synchronized.
+- Followup-B traceability checker now validates TC-P02-FUB-018, XCB-003 report terms and traceability rows P02-FUB-TR-003/004.
+
+Failing tests:
+- None remain in the executed scope.
+- Independent review initially found recovery-required eligibility and malformed `current_time` contract gaps. Both gaps were fixed and covered by the rerun TC-P02-FUB-018 target command.
+
+Skipped or external tests:
+- Full all-suite backend/Flutter regression, live notification provider, external production scheduler/send evidence, release readiness and Product Base merge gates were not run.
+
+Acceptance criteria coverage:
+- AC-P02-FUB-003 is covered for endpoint request validation, reason-code decisions, quiet-hours, permission, entitlement, quota, stale/missing-plan and runtime-gate behavior.
+- AC-P02-FUB-004 is supported for the precheck no-outbox-write boundary; outbox lifecycle remains covered by TC-P02-FUB-007/008.
+
+Residual risk:
+- This does not prove live notification provider delivery or commercial release readiness.
+- Followup-B is not release-ready and Product Base merge is not approved.
+
+## 2026-06-09 MVP Practice Audio Ref Boundary Regression
+
+Report ID:
+- `MVP-PRACTICE-AUDIO-REF-BOUNDARY-20260609`
+
+Test scope:
+- TC-MVP-BE-047 covers Practice turn requests that include both transcript and an invalid `audio_ref`.
+- TC-MVP-BE-048 covers wrong-owner validated `media://audio/...` refs across Practice turn input and `/ai/transcribe`.
+- Requirement chain: MVP-SI-008 -> MVP-BE-FR-008 -> MVP-BE-SPEC-008 -> AC-MVP-BE-008 -> MVP-BE-TR-008 -> TC-MVP-BE-047/048.
+- Architecture boundary: XCB-001 trusted audio upload and business consumption boundary; Practice may accept transcript-only input, but any `audio_ref` must be authenticated-user-owned trusted media before persistence.
+
+Commands run:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=PracticeTurnControllerTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProductionAsrMediaRefTest,MediaUploadReferenceServiceTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=TrainingMediaAiPipelineTest test` - passed.
+- `flutter test test/features/training/training_backend_pipeline_test.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProviderGatewaySecurityContractTest,ProviderGatewayControllerTest,ProviderGatewayFailureTest,ProviderGatewayAuthorizationTest,UsageQuotaGateTest test` - passed after updating the stale ASR-unavailable fixture to use a validated trusted media ref.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope full` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
+- `python3 -m py_compile scripts/check_cross_cutting_boundaries.py` - passed.
+- `npm run check:api-contract` - passed with OpenAPI hash `7e603dd0bec9879ee2d21516e86fb84e2e652102f677506a59255544befa76f5`.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `7e603dd0bec9879ee2d21516e86fb84e2e652102f677506a59255544befa76f5`.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Passing tests:
+- TC-MVP-BE-047: `PracticeTurnControllerTest.tcMvpBe047RejectsTranscriptTurnWithUntrustedAudioRefBeforePersistenceOrProviderCall` rejects `/tmp/local-answer.wav` when submitted alongside transcript.
+- The same test verifies no PracticeTurn is persisted, no CoachFeedback is generated, and `AiGatewayService.invocationCount()` remains zero for the rejected request.
+- TC-MVP-BE-048: `PracticeTurnControllerTest.tcMvpBe048RejectsCrossUserValidatedAudioRefBeforePersistenceOrProviderCall` rejects another user's validated `media://audio/...` with `media_not_found`, without turn/feedback persistence or provider invocation.
+- Existing Practice turn persistence and idempotency tests in `PracticeTurnControllerTest` still pass.
+- Production ASR/media tests reject local paths, unsigned URLs, unvalidated media refs and wrong-owner validated media refs before provider calls, and accept same-owner validated backend media refs.
+- Training backend and Flutter adapter tests prove trusted upload/create-complete, `media://audio/...` turn submission, ASR/scoring/coach routing and evidence mapping.
+- Provider gateway security/failure/authorization/usage tests pass after the stale `audio://provider_unavailable` fixture was replaced with a validated media-ref based ASR-unavailable fixture.
+- OpenAPI lint/contract and Dart drift pass after `SubmitTurnRequest.audio_ref`, `TranscribeRequest.audio_ref` and `PronunciationRequest.audio_ref` were narrowed to trusted `media://audio/{uuid}` and examples were corrected.
+- Cross-cutting boundary full scan passes after the Practice fix.
+
+Failing tests:
+- None remain in the executed scope.
+- Historical note from this validation round: `ProviderGatewayFailureTest.unavailableTranscriptionReturnsRecoverableSessionError` failed once because it still used `audio://provider_unavailable`, which is now correctly rejected by XCB-001. The test fixture was updated to use validated backend media plus a test provider fallback, then the provider/security/fallback/authorization/usage group passed.
+- Historical note from independent review: two independent agents found an owner-check gap where `media://audio/{id}` validation checked asset status but not `AiMediaAsset.userId`. The gap was fixed with owner-aware media inspection and TC-MVP-BE-048, then the scoped tests and gates above passed.
+
+Skipped or external tests:
+- Full all-suite backend/Flutter regression, live provider, external object-storage and release readiness suites were not run; this validation targets XCB-001/XCB-002 boundary, contract and traceability regressions.
+
+Acceptance criteria coverage:
+- AC-MVP-BE-008 now includes negative `audio_ref` acceptance paths: any Practice turn carrying `audio_ref` must validate ref shape, owner and validated status before persistence, feedback or provider calls.
+
+Residual risk:
+- This does not implement new audio upload UI or object-storage behavior; it only enforces that Practice cannot consume untrusted refs.
+
 ## 2026-06-07 P02 Followup-E Docs-Only Planning Reclassification
 
 Report ID:
@@ -1298,7 +1395,7 @@ Acceptance criteria coverage:
 
 Residual risk:
 - At this earlier gate, a dedicated Followup-B traceability script still needed implementation; S006 later closed that local gap.
-- Followup-B cannot be marked implemented, test-passing, release-ready or Product Base-ready until executable tests, coverage, performance evidence, implementation report and quality review are produced.
+- Followup-B remains not release-ready and must not be marked implemented, test-passing, release-ready or Product Base-ready until executable tests, coverage, performance evidence, implementation report and quality review are produced.
 
 ## 2026-06-04 P02 Followup-A No-goal Explore Mode Implementation Validation
 
@@ -2323,6 +2420,7 @@ Test scope:
 - Stage Scope Items MVP-SI-006, MVP-SI-008, and MVP-SI-009.
 - Acceptance criteria AC-MVP-BE-006, AC-MVP-BE-008, and AC-MVP-BE-009.
 - Test cases TC-MVP-BE-016 through TC-MVP-BE-025.
+- Current supplement: TC-MVP-BE-047 and TC-MVP-BE-048 were added on 2026-06-09 for the AC-MVP-BE-008 Practice trusted `audio_ref` negative paths; see `MVP-PRACTICE-AUDIO-REF-BOUNDARY-20260609`.
 - Provider gateway secret boundary, ASR/TTS/pronunciation/coach success and fallback behavior, session lifecycle, turn idempotency, completion summary, recoverable errors, score signal source/availability, OpenAPI contract gate, Dart pre-client drift gate, and full backend regression.
 
 Commands run:
@@ -2351,7 +2449,7 @@ Skipped or unavailable tests:
 
 Acceptance criteria coverage:
 - AC-MVP-BE-006 is fully covered by TC-MVP-BE-016, TC-MVP-BE-017, TC-MVP-BE-018, and TC-MVP-BE-019.
-- AC-MVP-BE-008 is fully covered by TC-MVP-BE-020, TC-MVP-BE-021, TC-MVP-BE-022, and TC-MVP-BE-023.
+- AC-MVP-BE-008 is fully covered by TC-MVP-BE-020, TC-MVP-BE-021, TC-MVP-BE-022, TC-MVP-BE-023, and the 2026-06-09 TC-MVP-BE-047/048 trusted `audio_ref` negative regressions.
 - AC-MVP-BE-009 is fully covered by TC-MVP-BE-024 and TC-MVP-BE-025.
 - `docs/product/increments/mvp-backend-practice-ai/traceability.md` cites the same TC IDs, script paths, execution commands, result status, and this report.
 
@@ -2627,7 +2725,7 @@ Acceptance criteria coverage:
 Residual risk:
 - This QA pass is not commercial release approval.
 - The traceability chain is complete from FR/AC to TC IDs, but several TC IDs intentionally remain blocked/manual/external.
-- Real provider, store console, privacy/support URL, reviewer-account, native social-login, symbol-upload, rollback rehearsal, and commercial E2E evidence must be supplied before PM can mark the stage release-ready.
+- The stage remains not release-ready and blocked until real provider, store console, privacy/support URL, reviewer-account, native social-login, symbol-upload, rollback rehearsal, and commercial E2E evidence is supplied before any PM release-ready marking.
 
 ## 2026-05-29 - P0-COM-SCENARIO-GATE-001 Scenario Gate Blocker Closure
 
@@ -2910,3 +3008,39 @@ Result:
 
 Residual:
 - This is not paid AI release approval. Strict release still requires DashScope, media storage, cost dashboard and retention evidence refs.
+
+## 2026-06-09 P0-AI Provider Evidence Endpoint Tests
+
+Scope:
+- `commercial-ai-provider-hardening`
+- Work package：local backend endpoint evidence for `P0-AI-QA-001`
+- Coverage：`COM-SI-015` / `FR-COM-AI-003` / `AC-COM-AI-003`
+- Test case：`TC-COM-AI-004`
+
+Commands:
+```bash
+cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiProviderEvidenceControllerTest,AiCostDashboardTest,AiRetentionPolicyTest test
+python3 scripts/check_ai_provider_sandbox_evidence.py
+python3 scripts/check_ai_external_release_evidence.py
+python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external
+npm run check:api-contract
+git diff --check
+```
+
+Result:
+- Backend endpoint and regression tests passed.
+- Non-strict AI provider sandbox evidence check passed and reported the expected `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` release blocker.
+- Non-strict paid AI external evidence check passed and reported the expected DashScope、media storage、cost dashboard and retention evidence blockers.
+- Strict AI provider sandbox evidence check failed as expected because `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` is not supplied.
+- OpenAPI/API/generated Dart drift contract check passed.
+- `git diff --check` passed.
+
+Evidence:
+- `AiProviderEvidenceControllerTest` verifies `GET /admin/ai/provider-evidence` returns `schema_version=1` and an empty evidence list without fabricating provider approval when no evidence rows exist.
+- `AiProviderEvidenceControllerTest` verifies the endpoint requires OPS bearer authentication: missing bearer returns `UNAUTHENTICATED`, normal user bearer returns `FORBIDDEN`, and OPS bearer returns 200.
+- `AiProviderEvidenceControllerTest` verifies approved, pending and blocked `ProviderSandboxRun` rows are returned with OpenAPI-aligned fields, stable ordering by `executed_at DESC, created_at DESC, evidence_id ASC`, and separate `status` / `reviewed_status` semantics.
+- `AiProviderEvidenceControllerTest` verifies risky evidence fixtures containing API-key markers, raw payload, full transcript markers and a signed URL query are redacted and that internal `model`, `fixture_ref` and `error_code` fields are not exposed in the response.
+- Regression coverage with `AiCostDashboardTest` and `AiRetentionPolicyTest` passed after adding the provider evidence repository to backend integration test cleanup.
+
+Residual:
+- This is local backend endpoint evidence only. Strict paid AI voice release remains blocked until `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` points to externally reviewed full DashScope LLM/ASR/TTS evidence and strict external gates pass.

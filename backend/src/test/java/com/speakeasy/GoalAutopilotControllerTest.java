@@ -458,6 +458,253 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
   }
 
   @Test
+  void tcP02Fub018ReminderEligibilityEndpointEvaluatesRequestBoundary() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140228");
+    UUID userId = UUID.fromString(tokens.userId());
+    createSupportedGoalWithQuietHours(tokens, "21:30", "07:15").andExpect(status().isOk());
+    MvcResult planResult = generatePlan(tokens, false, "initial_backplan").andExpect(status().isOk()).andReturn();
+    UUID planItemId = UUID.fromString(JsonPath.read(
+        planResult.getResponse().getContentAsString(),
+        "$.daily_plan.items[0].plan_item_id"));
+
+    mvc.perform(post("/goal-autopilot/reminders/eligibility")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("X-Request-Id", "req_fub_018_quiet")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "plan_item_id": "%s",
+                  "reminder_slot": "evening_review",
+                  "current_time": "2026-06-04T21:45:00+08:00",
+                  "platform_permission": "granted"
+                }
+                """.formatted(planItemId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.schema_version").value(1))
+        .andExpect(jsonPath("$.decision.plan_item_id").value(planItemId.toString()))
+        .andExpect(jsonPath("$.decision.eligible").value(false))
+        .andExpect(jsonPath("$.decision.reason_code").value("quiet_hours"))
+        .andExpect(jsonPath("$.decision.next_allowed_at").value("2026-06-04T23:15:00Z"))
+        .andExpect(jsonPath("$.decision.rule_version").value("fub-reminder-v1"));
+
+    mvc.perform(post("/goal-autopilot/reminders/eligibility")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("X-Request-Id", "req_fub_018_unknown_permission")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "plan_item_id": "%s",
+                  "reminder_slot": "evening_review",
+                  "current_time": "2026-06-04T10:00:00+08:00",
+                  "platform_permission": "unknown"
+                }
+                """.formatted(planItemId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.decision.plan_item_id").value(planItemId.toString()))
+        .andExpect(jsonPath("$.decision.eligible").value(false))
+        .andExpect(jsonPath("$.decision.reason_code").value("permission_denied"));
+
+    mvc.perform(post("/goal-autopilot/reminders/eligibility")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("X-Request-Id", "req_fub_018_allowed")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "plan_item_id": "%s",
+                  "reminder_slot": "evening_review",
+                  "current_time": "2026-06-04T10:00:00+08:00",
+                  "platform_permission": "granted"
+                }
+                """.formatted(planItemId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.decision.plan_item_id").value(planItemId.toString()))
+        .andExpect(jsonPath("$.decision.eligible").value(true))
+        .andExpect(jsonPath("$.decision.reason_code").value("eligible"));
+
+    mvc.perform(post("/goal-autopilot/reminders/eligibility")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "plan_item_id": "not-a-uuid",
+                  "reminder_slot": "evening_review",
+                  "platform_permission": "granted"
+                }
+                """))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"));
+
+    mvc.perform(post("/goal-autopilot/reminders/eligibility")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "reminder_slot": "bad slot",
+                  "platform_permission": "granted"
+                }
+                """))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"));
+
+    mvc.perform(post("/goal-autopilot/reminders/eligibility")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "reminder_slot": "evening_review",
+                  "current_time": "not-a-date-time",
+                  "platform_permission": "granted"
+                }
+                """))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"));
+
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM goal_autopilot_metric_events WHERE event_type = 'notification_eligibility'",
+        Integer.class)).isEqualTo(3);
+    assertThat(count("goal_notification_outbox_records", userId)).isZero();
+  }
+
+  @Test
+  void tcP02Fub018ReminderEligibilityCommercialAndPlanOwnershipGates() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140229");
+    UUID userId = UUID.fromString(tokens.userId());
+    saveEntitlement(tokens, "pro", "active", "{\"ai\":1,\"asr\":100,\"tts\":100,\"scoring\":100,\"training\":50}", null, Instant.now());
+    createSupportedGoalWithQuietHours(tokens, "00:00", "00:00").andExpect(status().isOk());
+    MvcResult planResult = generatePlan(tokens, false, "initial_backplan").andExpect(status().isOk()).andReturn();
+    UUID planItemId = UUID.fromString(JsonPath.read(
+        planResult.getResponse().getContentAsString(),
+        "$.daily_plan.items[0].plan_item_id"));
+
+    mvc.perform(post("/goal-autopilot/reminders/eligibility")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "plan_item_id": "%s",
+                  "reminder_slot": "morning_review",
+                  "current_time": "2026-06-04T10:00:00+08:00",
+                  "platform_permission": "granted"
+                }
+                """.formatted(planItemId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.decision.eligible").value(false))
+        .andExpect(jsonPath("$.decision.reason_code").value("quota_exhausted"));
+
+    saveEntitlement(tokens, "pro", "revoked", "{\"ai\":100,\"asr\":100,\"tts\":100,\"scoring\":100,\"training\":50}", null, Instant.now().plusSeconds(1));
+
+    mvc.perform(post("/goal-autopilot/reminders/eligibility")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "plan_item_id": "%s",
+                  "reminder_slot": "morning_review",
+                  "current_time": "2026-06-04T10:00:00+08:00",
+                  "platform_permission": "granted"
+                }
+                """.formatted(planItemId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.decision.eligible").value(false))
+        .andExpect(jsonPath("$.decision.reason_code").value("entitlement_blocked"));
+
+    createSupportedGoal(tokens)
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.goal_profile.revision").value(2));
+
+    mvc.perform(post("/goal-autopilot/reminders/eligibility")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "plan_item_id": "%s",
+                  "reminder_slot": "morning_review",
+                  "platform_permission": "granted"
+                }
+                """.formatted(planItemId)))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+
+    mvc.perform(post("/goal-autopilot/reminders/eligibility")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "plan_item_id": "%s",
+                  "reminder_slot": "morning_review",
+                  "platform_permission": "granted"
+                }
+                """.formatted(UUID.randomUUID())))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.error.code").value("RESOURCE_NOT_FOUND"));
+  }
+
+  @Test
+  void tcP02Fub018ReminderEligibilityMissingPlanDoesNotReturnEligibleWithoutItem() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140230");
+    createSupportedGoal(tokens).andExpect(status().isOk());
+
+    mvc.perform(post("/goal-autopilot/reminders/eligibility")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "reminder_slot": "morning_review",
+                  "platform_permission": "granted"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.decision.plan_item_id").doesNotExist())
+        .andExpect(jsonPath("$.decision.eligible").value(false))
+        .andExpect(jsonPath("$.decision.reason_code").value("missing_plan"));
+  }
+
+  @Test
+  void tcP02Fub018ReminderEligibilityRecoveryRequiredDoesNotReturnEligible() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140231");
+    createSupportedGoalWithQuietHours(tokens, "00:00", "00:00").andExpect(status().isOk());
+    MvcResult planResult = generatePlan(tokens, false, "initial_backplan").andExpect(status().isOk()).andReturn();
+    UUID activePlanItemId = UUID.fromString(JsonPath.read(
+        planResult.getResponse().getContentAsString(),
+        "$.daily_plan.items[0].plan_item_id"));
+    UUID nextPendingItemId = UUID.fromString(JsonPath.read(
+        planResult.getResponse().getContentAsString(),
+        "$.daily_plan.items[1].plan_item_id"));
+
+    completePlanItem(tokens, activePlanItemId, "skipped")
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.plan_update_signal.signal_type").value("recovery_replan"))
+        .andExpect(jsonPath("$.plan_update_signal.reason_code").value("learner_skipped"));
+
+    mvc.perform(post("/goal-autopilot/reminders/eligibility")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "reminder_slot": "morning_review",
+                  "current_time": "2026-06-04T10:00:00+08:00",
+                  "platform_permission": "granted"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.decision.plan_item_id").value(nextPendingItemId.toString()))
+        .andExpect(jsonPath("$.decision.eligible").value(false))
+        .andExpect(jsonPath("$.decision.reason_code").value("stale_plan"));
+  }
+
+  @Test
   void tcP02Fub002ControlDataGovernanceAndValidationAreServerSide() throws Exception {
     AuthTokens tokens = loginPhone("+8613800140221");
     UUID userId = UUID.fromString(tokens.userId());
@@ -1573,16 +1820,21 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
   }
 
   private void saveEntitlement(AuthTokens tokens, String plan, String status, Instant validUntil) {
+    saveEntitlement(tokens, plan, status, "{\"ai\":100,\"asr\":100,\"tts\":100,\"scoring\":100,\"training\":50}", validUntil, Instant.now());
+  }
+
+  private void saveEntitlement(
+      AuthTokens tokens, String plan, String status, String quotaLimits, Instant validUntil, Instant generatedAt) {
     entitlements.save(new EntitlementSnapshot(
         UUID.randomUUID(),
         UUID.fromString(tokens.userId()),
         null,
         plan,
         "{\"basic_scenarios\":true,\"advanced_scenarios\":true,\"ai_feedback\":true}",
-        "{\"ai\":100,\"asr\":100,\"tts\":100,\"scoring\":100,\"training\":50}",
+        quotaLimits,
         status,
         validUntil,
-        Instant.now()));
+        generatedAt));
   }
 
   private int count(String tableName, UUID userId) {

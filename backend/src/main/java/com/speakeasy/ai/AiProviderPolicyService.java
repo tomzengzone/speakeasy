@@ -54,11 +54,20 @@ public class AiProviderPolicyService {
   }
 
   public String validateAudioRef(UUID userId, String usageFamily, String audioRef) {
+    return validateAudioRef(userId, usageFamily, audioRef, false);
+  }
+
+  public String validateTrustedAudioRef(UUID userId, String usageFamily, String audioRef) {
+    return validateAudioRef(userId, usageFamily, audioRef, true);
+  }
+
+  private String validateAudioRef(UUID userId, String usageFamily, String audioRef, boolean forceTrustedMedia) {
     Instant started = Instant.now();
     TierPolicy policy = policyFor(userId);
-    boolean requiresTrustedMedia = "dashscope".equalsIgnoreCase(providerName);
-    AiMediaReferenceService.TrustedAudioRef media =
-        mediaReferenceService.inspectAudioRef(audioRef, requiresTrustedMedia);
+    boolean requiresTrustedMedia = forceTrustedMedia || "dashscope".equalsIgnoreCase(providerName);
+    AiMediaReferenceService.TrustedAudioRef media = forceTrustedMedia
+        ? mediaReferenceService.inspectBackendAudioRef(userId, audioRef)
+        : mediaReferenceService.inspectAudioRef(userId, audioRef, requiresTrustedMedia);
     if (requiresTrustedMedia && !media.valid()) {
       record(policy, usageFamily, "rejected", started, media.invalidReason(), null, null);
       costMetricsService.recordPolicyRejection(userId, usageFamily, policy.tier(), null, null, media.invalidReason());

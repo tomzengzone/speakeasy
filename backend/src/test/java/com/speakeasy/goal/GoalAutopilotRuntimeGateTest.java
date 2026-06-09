@@ -140,6 +140,23 @@ class GoalAutopilotRuntimeGateTest extends BackendIntegrationTestSupport {
     expectRuntimeDisabledGet(tokens, "/goal-autopilot/reminders/outbox", "kill_switch_active");
     expectRuntimeDisabledGet(tokens, "/goal-autopilot/replay-audits", "kill_switch_active");
 
+    mvc.perform(post("/goal-autopilot/reminders/eligibility")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("X-Request-Id", "req_fud_kill_reminder_eligibility")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "plan_item_id": "%s",
+                  "reminder_slot": "evening_review",
+                  "platform_permission": "granted"
+                }
+                """.formatted(planItemId)))
+        .andExpect(status().isServiceUnavailable())
+        .andExpect(jsonPath("$.error.request_id").value("req_fud_kill_reminder_eligibility"))
+        .andExpect(jsonPath("$.error.details.reason_code").value("kill_switch_active"))
+        .andExpect(jsonPath("$.error.details.audit_log_id", not(blankOrNullString())));
+
     mvc.perform(post("/goal-autopilot/actions/%s/complete".formatted(planItemId))
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
             .header("X-Request-Id", "req_fud_kill_complete")
@@ -159,7 +176,7 @@ class GoalAutopilotRuntimeGateTest extends BackendIntegrationTestSupport {
         "SELECT status FROM goal_plan_items WHERE plan_item_id = ?",
         String.class,
         UUID.fromString(planItemId))).isEqualTo("active");
-    assertThat(blockedAuditCount(userId)).isEqualTo(1);
+    assertThat(blockedAuditCount(userId)).isEqualTo(2);
   }
 
   private void setRuntimeGate(boolean enabled, boolean killSwitchEnabled, String reason) {

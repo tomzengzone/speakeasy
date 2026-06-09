@@ -986,6 +986,8 @@ paths:
                   $ref: '#/components/examples/AutopilotControlResponseExample'
         '409':
           $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '503':
           $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
         '422':
@@ -1028,6 +1030,8 @@ paths:
                   $ref: '#/components/examples/AutopilotControlPausedResponseExample'
         '409':
           $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '503':
           $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
         '422':
@@ -1071,6 +1075,8 @@ paths:
                   $ref: '#/components/examples/AutopilotControlResponseExample'
         '409':
           $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '503':
           $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
         '422':
@@ -1111,6 +1117,8 @@ paths:
                   $ref: '#/components/examples/NotificationEligibilityResponseExample'
         '409':
           $ref: '#/components/responses/Conflict'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '503':
           $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
         '422':
@@ -3536,6 +3544,11 @@ components:
       type: integer
       enum:
       - 1
+    TrustedAudioRef:
+      type: string
+      pattern: '^media://audio/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+      description: Authenticated-user-owned trusted audio reference returned by the Media upload create/complete flow. Clients must not submit local file paths, file URLs, unsigned URLs, wrong-owner refs or client-created refs.
+      example: media://audio/123e4567-e89b-12d3-a456-426614174000
     ErrorResponse:
       type: object
       required:
@@ -4185,7 +4198,7 @@ components:
         transcript:
           type: string
         audio_ref:
-          type: string
+          $ref: '#/components/schemas/TrustedAudioRef'
         client_state_version:
           type: integer
     PracticeTurnResponse:
@@ -4236,6 +4249,8 @@ components:
           type: string
         audio_ref:
           type: string
+          pattern: '^media://audio/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+          description: Authenticated-user-owned trusted audio reference returned by the Media upload create/complete flow.
           nullable: true
         created_at:
           type: string
@@ -4550,6 +4565,7 @@ components:
           type: string
         plan_item_id:
           type: string
+          format: uuid
         action_type:
           type: string
         title:
@@ -5763,13 +5779,19 @@ components:
           $ref: '#/components/schemas/SchemaVersion'
         plan_item_id:
           type: string
+          format: uuid
+          description: Optional candidate PlanItem for the reminder. When provided, it must belong to the current user and active goal plan.
         reminder_slot:
           type: string
+          pattern: ^[a-z0-9][a-z0-9_-]{1,63}$
+          description: Stable scheduler slot key such as morning_review or evening_review.
         current_time:
           type: string
           format: date-time
+          description: Evaluation snapshot time for deterministic eligibility checks; scheduler/send paths must re-evaluate before delivery.
         platform_permission:
           type: string
+          description: Platform notification permission as reported by the client. unknown is treated as not granted and fails closed with permission_denied.
           enum:
           - granted
           - denied
@@ -5804,6 +5826,7 @@ components:
           type: string
         plan_item_id:
           type: string
+          format: uuid
         eligible:
           type: boolean
         reason_code:
@@ -7391,7 +7414,7 @@ components:
         schema_version:
           $ref: '#/components/schemas/SchemaVersion'
         audio_ref:
-          type: string
+          $ref: '#/components/schemas/TrustedAudioRef'
         language_hint:
           type: string
     TranscribeResponse:
@@ -7840,7 +7863,7 @@ components:
         schema_version:
           $ref: '#/components/schemas/SchemaVersion'
         audio_ref:
-          type: string
+          $ref: '#/components/schemas/TrustedAudioRef'
         reference_text:
           type: string
     PronunciationResponse:
@@ -8058,7 +8081,7 @@ components:
         - dialogue_asset_id: dialogue_asset_id_sample
           role: system
           text: Sample text.
-          audio_ref: sample
+          audio_ref: media://audio/123e4567-e89b-12d3-a456-426614174000
           order_index: 1
         target_expressions:
         - target_expression_id: target_expression_id_sample
@@ -8182,14 +8205,14 @@ components:
           - message_id: message_id_sample
             role: learner
             text: Sample text.
-            audio_ref: sample
+            audio_ref: media://audio/123e4567-e89b-12d3-a456-426614174000
             created_at: '2026-05-26T12:00:00Z'
     SubmitTurnRequestExample:
       summary: submitPracticeTurn request example
       value:
         schema_version: 1
         transcript: Sample text.
-        audio_ref: sample
+        audio_ref: media://audio/123e4567-e89b-12d3-a456-426614174000
         client_state_version: 1
     PracticeTurnResponseExample:
       summary: submitPracticeTurn response 200 example
@@ -8201,7 +8224,7 @@ components:
           message_id: message_id_sample
           role: learner
           text: Sample text.
-          audio_ref: sample
+          audio_ref: media://audio/123e4567-e89b-12d3-a456-426614174000
           created_at: '2026-05-26T12:00:00Z'
         coach_feedback:
           summary: sample
@@ -8350,7 +8373,7 @@ components:
           status: ready
           limitation_message: ''
           items:
-          - plan_item_id: plan_item_id_sample
+          - plan_item_id: 11111111-1111-4111-8111-111111111111
             item_type: training
             title: Fluency expansion drill
             reason_code: highest_weakness_and_memory_risk
@@ -8366,7 +8389,7 @@ components:
             interleaving_rule: rotate_fluency_pronunciation_scenario_fit
         next_action:
           action_id: action_id_sample
-          plan_item_id: plan_item_id_sample
+          plan_item_id: 11111111-1111-4111-8111-111111111111
           action_type: start_training
           title: Fluency expansion drill
           reason_code: highest_weakness_and_memory_risk
@@ -8414,7 +8437,7 @@ components:
             revision: 1
           next_action:
             action_id: action_id_sample
-            plan_item_id: plan_item_id_sample
+            plan_item_id: 11111111-1111-4111-8111-111111111111
             action_type: start_training
             title: Fluency expansion drill
             reason_code: highest_weakness_and_memory_risk
@@ -8450,7 +8473,7 @@ components:
             display_state: ready
             eligible: true
             downgrade_reason: null
-            next_action_ref: plan_item:plan_item_id_sample
+            next_action_ref: plan_item:11111111-1111-4111-8111-111111111111
             forecast_ref: forecast:forecast_id_sample
             checkpoint_ref: checkpoint:checkpoint_id_sample
             safe_fields:
@@ -8463,7 +8486,7 @@ components:
             display_state: ready
             eligible: true
             downgrade_reason: null
-            next_action_ref: plan_item:plan_item_id_sample
+            next_action_ref: plan_item:11111111-1111-4111-8111-111111111111
             forecast_ref: forecast:forecast_id_sample
             checkpoint_ref: checkpoint:checkpoint_id_sample
             safe_fields:
@@ -8485,7 +8508,7 @@ components:
           source_refs:
           - goal_profile:goal_profile_id_sample
           - goal_revision:1
-          - plan_item:plan_item_id_sample
+          - plan_item:11111111-1111-4111-8111-111111111111
           - forecast:forecast_id_sample
           - checkpoint:checkpoint_id_sample
           rule_version: fuc-progress-projection-v1
@@ -8539,7 +8562,7 @@ components:
           control_id: control_id_sample
           user_id: user_id_sample
           goal_profile_id: goal_profile_id_sample
-          plan_item_id: plan_item_id_sample
+          plan_item_id: 11111111-1111-4111-8111-111111111111
           eligible: true
           reason_code: eligible
           next_allowed_at: null
@@ -8578,7 +8601,7 @@ components:
           control_id: control_id_sample
           user_id: user_id_sample
           goal_profile_id: goal_profile_id_sample
-          plan_item_id: plan_item_id_sample
+          plan_item_id: 11111111-1111-4111-8111-111111111111
           eligible: false
           reason_code: paused
           next_allowed_at: null
@@ -8592,7 +8615,7 @@ components:
       summary: evaluateGoalReminderEligibility request example
       value:
         schema_version: 1
-        plan_item_id: plan_item_id_sample
+        plan_item_id: 11111111-1111-4111-8111-111111111111
         reminder_slot: evening_review
         current_time: '2026-06-04T21:30:00+08:00'
         platform_permission: granted
@@ -8605,7 +8628,7 @@ components:
           control_id: control_id_sample
           user_id: user_id_sample
           goal_profile_id: goal_profile_id_sample
-          plan_item_id: plan_item_id_sample
+          plan_item_id: 11111111-1111-4111-8111-111111111111
           eligible: false
           reason_code: quiet_hours
           next_allowed_at: '2026-06-05T07:30:00+08:00'
@@ -8621,7 +8644,7 @@ components:
           user_id: user_id_sample
           goal_profile_id: goal_profile_id_sample
           goal_revision: 1
-          plan_item_id: plan_item_id_sample
+          plan_item_id: 11111111-1111-4111-8111-111111111111
           reminder_slot: evening_review
           lifecycle_status: blocked
           dedupe_key: user_goal1_item1_evening_fub-reminder-v1
@@ -8641,7 +8664,7 @@ components:
       value:
         schema_version: 1
         source_event: missed_day
-        plan_item_id: plan_item_id_sample
+        plan_item_id: 11111111-1111-4111-8111-111111111111
         preferred_policy: defer
     RecoveryPlanResponseExample:
       summary: replanGoalAutopilotRecovery response 200 example
@@ -8654,7 +8677,7 @@ components:
           source_event: missed_day
           recovery_mode: defer
           affected_plan_item_refs:
-          - plan_item_id_sample
+          - 11111111-1111-4111-8111-111111111111
           input_snapshot_hash: sha256:recovery-input
           reason_code: preserve_risk_item_without_overload
           rule_version: fub-recovery-v1
@@ -8666,7 +8689,7 @@ components:
           status: ready
           limitation_message: Missed work was deferred without stacking all overdue tasks.
           items:
-          - plan_item_id: plan_item_id_sample
+          - plan_item_id: 11111111-1111-4111-8111-111111111111
             item_type: review
             title: Short fluency risk review
             reason_code: recovery_defer_high_risk_review
@@ -8816,7 +8839,7 @@ components:
           status: ready
           limitation_message: ''
           items:
-          - plan_item_id: plan_item_id_sample
+          - plan_item_id: 11111111-1111-4111-8111-111111111111
             item_type: training
             title: Fluency expansion drill
             reason_code: highest_weakness_and_memory_risk
@@ -8832,7 +8855,7 @@ components:
             interleaving_rule: rotate_fluency_pronunciation_scenario_fit
         next_action:
           action_id: action_id_sample
-          plan_item_id: plan_item_id_sample
+          plan_item_id: 11111111-1111-4111-8111-111111111111
           action_type: start_training
           title: Fluency expansion drill
           reason_code: highest_weakness_and_memory_risk
@@ -8866,7 +8889,7 @@ components:
           status: ready
           limitation_message: ''
           items:
-          - plan_item_id: plan_item_id_sample
+          - plan_item_id: 11111111-1111-4111-8111-111111111111
             item_type: training
             title: Fluency expansion drill
             reason_code: highest_weakness_and_memory_risk
@@ -8886,7 +8909,7 @@ components:
         schema_version: 1
         action:
           action_id: action_id_sample
-          plan_item_id: plan_item_id_sample
+          plan_item_id: 11111111-1111-4111-8111-111111111111
           action_type: start_training
           title: Fluency expansion drill
           reason_code: highest_weakness_and_memory_risk
@@ -9105,7 +9128,7 @@ components:
         schema_version: 1
         micro_action: ListenOne
         transcript: Sample text.
-        audio_ref: sample
+        audio_ref: media://audio/123e4567-e89b-12d3-a456-426614174000
         selected_option_id: selected_option_id_sample
         client_state_version: 1
     TrainingTurnResponseExample:
@@ -9505,7 +9528,7 @@ components:
       summary: transcribeAudio request example
       value:
         schema_version: 1
-        audio_ref: sample
+        audio_ref: media://audio/123e4567-e89b-12d3-a456-426614174000
         language_hint: en-US
     TranscribeResponseExample:
       summary: transcribeAudio response 200 example
@@ -9550,8 +9573,8 @@ components:
       value:
         schema_version: 1
         media:
-          media_id: media_123
-          audio_ref: media://audio/media_123?sig=redacted
+          media_id: 123e4567-e89b-12d3-a456-426614174000
+          audio_ref: media://audio/123e4567-e89b-12d3-a456-426614174000
           owner_ref: user_hash_7f3a
           purpose: asr_input
           status: validated
@@ -9662,7 +9685,7 @@ components:
       summary: scorePronunciation request example
       value:
         schema_version: 1
-        audio_ref: sample
+        audio_ref: media://audio/123e4567-e89b-12d3-a456-426614174000
         reference_text: Sample text.
     PronunciationResponseExample:
       summary: scorePronunciation response 200 example

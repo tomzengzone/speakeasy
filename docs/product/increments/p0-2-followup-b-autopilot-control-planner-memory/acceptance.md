@@ -1,7 +1,7 @@
 # P0.2 Followup-B Acceptance Criteria：自动带练控制与计划记忆引擎加固
 
 ## 状态
-Acceptance accepted / AC-to-TC mapped / executed through S006 replay-performance-traceability - 本文件基于 Followup-B requirements 和 spec 定义验收标准；test_cases、contracts、reports 和 traceability FR/Spec/AC/TC rows 已生成。当前 AC-P02-FUB-001/002 的 control source、TC-P02-FUB-002 control data governance、pause/resume/update-control 子集已有 backend/frontend 本地执行证据；AC-P02-FUB-003 的 notification eligibility policy 已通过 TC-P02-FUB-005/006；AC-P02-FUB-004 的 notification outbox lifecycle/replay 已通过 TC-P02-FUB-007/008；AC-P02-FUB-005 的 S003 missed-day recovery planner 已通过 TC-P02-FUB-009/010；AC-P02-FUB-006 的 S004 item-level MemoryCurvePolicy 已通过 TC-P02-FUB-011/012；AC-P02-FUB-007 的 S005 mastery transition / AI candidate-only explanation guardrails 已通过 TC-P02-FUB-013/014；AC-P02-FUB-008 的 S006 replay/performance/coverage/traceability gates 已通过 TC-P02-FUB-015/016/017。Followup-B is not release-ready；Product Base merge is not approved。
+Acceptance accepted / AC-to-TC mapped / executed through S006 replay-performance-traceability and XCB-003 endpoint closure - 本文件基于 Followup-B requirements 和 spec 定义验收标准；test_cases、contracts、reports 和 traceability FR/Spec/AC/TC rows 已生成。当前 AC-P02-FUB-001/002 的 control source、TC-P02-FUB-002 control data governance、pause/resume/update-control 子集已有 backend/frontend 本地执行证据；AC-P02-FUB-003 的 notification eligibility policy 已通过 TC-P02-FUB-005/006，endpoint controller/service/OpenAPI closure 通过 TC-P02-FUB-018；AC-P02-FUB-004 的 notification outbox lifecycle/replay 已通过 TC-P02-FUB-007/008，eligibility endpoint no-outbox-write boundary 由 TC-P02-FUB-018 支撑；AC-P02-FUB-005 的 S003 missed-day recovery planner 已通过 TC-P02-FUB-009/010；AC-P02-FUB-006 的 S004 item-level MemoryCurvePolicy 已通过 TC-P02-FUB-011/012；AC-P02-FUB-007 的 S005 mastery transition / AI candidate-only explanation guardrails 已通过 TC-P02-FUB-013/014；AC-P02-FUB-008 的 S006 replay/performance/coverage/traceability gates 已通过 TC-P02-FUB-015/016/017。Followup-B is not release-ready；Product Base merge is not approved。
 
 ## 上游来源
 - `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/requirements.md`
@@ -25,7 +25,7 @@ Acceptance accepted / AC-to-TC mapped / executed through S006 replay-performance
 | Slice ID | Scope | Acceptance | Test cases | Required fixture evidence |
 | --- | --- | --- | --- | --- |
 | P02-FUB-SLICE-001 | UserAutopilotControl source、pause/resume/update-control | AC-P02-FUB-001, AC-P02-FUB-002 | TC-P02-FUB-001..004 | FUB-FIX-001, FUB-FIX-002 |
-| P02-FUB-SLICE-002 | Notification eligibility and scheduler/outbox | AC-P02-FUB-003, AC-P02-FUB-004 | TC-P02-FUB-005..008 | FUB-FIX-003, FUB-FIX-004 |
+| P02-FUB-SLICE-002 | Notification eligibility and scheduler/outbox | AC-P02-FUB-003, AC-P02-FUB-004 | TC-P02-FUB-005..008, TC-P02-FUB-018 | FUB-FIX-003, FUB-FIX-004 |
 | P02-FUB-SLICE-003 | Missed-day recovery planner | AC-P02-FUB-005 | TC-P02-FUB-009..010 | FUB-FIX-005 |
 | P02-FUB-SLICE-004 | Item-level MemoryCurvePolicy | AC-P02-FUB-006 | TC-P02-FUB-011..012 | FUB-FIX-006 |
 | P02-FUB-SLICE-005 | L0-L5 mastery transition and AI candidate-only explanation | AC-P02-FUB-007 | TC-P02-FUB-013..014 | FUB-FIX-007 |
@@ -46,11 +46,14 @@ Acceptance accepted / AC-to-TC mapped / executed through S006 replay-performance
 
 ## AC-P02-FUB-003 Quiet Hours And Notification Eligibility
 - Given a notification is about to be scheduled, rescheduled or sent, the system must check control status, quiet hours, timezone, notification consent, platform permission, entitlement, quota/cost decision, plan status and support status first.
+- Given `POST /goal-autopilot/reminders/eligibility` receives a precheck request, the backend must validate request schema, plan-item UUID ownership/current active plan, reminder slot shape and platform permission before returning an eligibility decision.
 - Given multiple reminder blocks apply, the system must return the first matching reason from the spec reason-precedence table and must produce the same result for the same input snapshot and rule version.
 - Given quiet hours block a reminder, the system must not send the reminder and must return `quiet_hours` reason code plus a next allowed time when calculable.
 - Given quiet hours cross midnight, the system must evaluate the blocked window in the configured timezone; given start and end are equal, quiet hours must be treated as disabled unless a later all-day contract exists.
 - Given permission, consent, entitlement, quota, unsupported goal, partial limitation, stale plan or missing plan blocks a reminder, the system must return a matching reason code and safe user-visible explanation.
+- Given `platform_permission` is missing or `unknown`, the eligibility endpoint must fail closed with `permission_denied`.
 - Given a reminder is blocked or unsent, the system must not record that outcome as user completion, refusal, failure or missed-day evidence.
+- Given the eligibility endpoint evaluates a request, it must not create or mutate notification outbox records.
 - Given notification content is generated, it must not expose sensitive diagnostic transcript, exact high-risk goal details, official-score equivalence or guaranteed outcome claims.
 
 ## AC-P02-FUB-004 Notification Scheduler Or Outbox

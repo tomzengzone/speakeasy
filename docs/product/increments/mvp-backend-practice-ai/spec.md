@@ -28,10 +28,11 @@ Feature Spec Generate Skill
 ## Flow-MVP-BE-008 Practice Session Lifecycle
 1. Client starts or resumes practice for scenario and level.
 2. Backend returns active session or creates a new one.
-3. Client submits user turn with transcript/audio reference/text.
-4. Backend stores turn, obtains feedback, updates session state, and returns next state.
-5. Client fetches session after interruption and receives recoverable active state.
-6. Client completes session and receives summary payload or summary input.
+3. Client submits user turn with transcript and optional authenticated-user-owned trusted `audio_ref`.
+4. If `audio_ref` is present, backend validates Media ownership and validated status through the Media/AI Gateway trusted-ref boundary before persistence, even when transcript is also present.
+5. Backend stores only validated turn input, obtains feedback, updates session state, and returns next state.
+6. Client fetches session after interruption and receives recoverable active state.
+7. Client completes session and receives summary payload or summary input.
 
 ## Flow-MVP-BE-009 Feedback And Recoverable Failure
 1. Backend associates coach feedback with session and turn.

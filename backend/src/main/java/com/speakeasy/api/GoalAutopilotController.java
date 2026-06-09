@@ -109,6 +109,21 @@ public class GoalAutopilotController {
     return AutopilotControlResponse.from(service.resumeControl(currentUser.userId(), request.sourceEvent(), requestId, idempotencyKey));
   }
 
+  @PostMapping("/goal-autopilot/reminders/eligibility")
+  public NotificationEligibilityResponse evaluateReminderEligibility(
+      @AuthenticationPrincipal CurrentUser currentUser,
+      @RequestHeader(name = "X-Request-Id", required = false) String requestId,
+      @Valid @RequestBody NotificationEligibilityRequest request) {
+    return NotificationEligibilityResponse.from(service.evaluateReminderEligibility(
+        currentUser.userId(),
+        new GoalAutopilotService.ReminderEligibilityInput(
+            request.planItemId(),
+            request.reminderSlot(),
+            request.currentTime(),
+            request.platformPermission()),
+        requestId));
+  }
+
   @GetMapping("/goal-autopilot/reminders/outbox")
   public NotificationOutboxListResponse reminderOutbox(@AuthenticationPrincipal CurrentUser currentUser) {
     return NotificationOutboxListResponse.from(service.reminderOutbox(currentUser.userId()));
@@ -255,6 +270,13 @@ public class GoalAutopilotController {
   public record PauseAutopilotControlRequest(@NotNull @Min(1) @Max(1) Integer schemaVersion, String pauseReason) {}
 
   public record ResumeAutopilotControlRequest(@NotNull @Min(1) @Max(1) Integer schemaVersion, String sourceEvent) {}
+
+  public record NotificationEligibilityRequest(
+      @NotNull @Min(1) @Max(1) Integer schemaVersion,
+      String planItemId,
+      @NotBlank String reminderSlot,
+      String currentTime,
+      String platformPermission) {}
 
   public record GeneratePlanRequest(@NotNull @Min(1) @Max(1) Integer schemaVersion, Boolean forceReplan, String reasonCode) {}
 
@@ -596,6 +618,13 @@ public class GoalAutopilotController {
           view.explanationKey(),
           view.evaluatedAt(),
           view.ruleVersion());
+    }
+  }
+
+  public record NotificationEligibilityResponse(int schemaVersion, NotificationEligibilityDecisionDto decision)
+      implements SchemaResponse {
+    static NotificationEligibilityResponse from(GoalAutopilotService.NotificationEligibilityDecisionView decision) {
+      return new NotificationEligibilityResponse(1, NotificationEligibilityDecisionDto.from(decision));
     }
   }
 

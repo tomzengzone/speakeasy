@@ -50,14 +50,17 @@ public class GoalAutopilotService {
   private static final String PROGRESS_PROJECTION_RULE_VERSION = "fuc-progress-projection-v1";
   private static final String DEFAULT_TIMEZONE = "Asia/Shanghai";
   private static final String TIME_PATTERN = "^([01][0-9]|2[0-3]):[0-5][0-9]$";
+  private static final String REMINDER_SLOT_PATTERN = "^[a-z0-9][a-z0-9_-]{1,63}$";
   private static final Collection<String> ACTIVE_GOAL_STATUSES =
       List.of("active", "partial", "unsupported", "needs_more_diagnostic");
   private static final Collection<String> ACTIVE_PLAN_STATUSES = List.of("active", "partial");
   private static final Collection<String> ACTIVE_DAILY_STATUSES = List.of("ready", "partial", "recovery_required");
+  private static final Collection<String> REMINDER_ITEM_STATUSES = List.of("active", "pending");
   private static final Set<String> SUPPORTED_GOALS =
       Set.of("ielts_speaking", "toefl_speaking", "business_meeting", "job_interview", "onboarding_introduction");
   private static final Set<String> VALID_INTENSITIES = Set.of("gentle", "standard", "intensive");
   private static final Set<String> VALID_MISSED_DAY_POLICIES = Set.of("balanced", "compress", "defer", "replace");
+  private static final Set<String> VALID_PLATFORM_PERMISSIONS = Set.of("granted", "denied", "unknown");
   private static final TypeReference<List<RubricScoreView>> RUBRIC_LIST = new TypeReference<>() {};
   private static final TypeReference<List<WeaknessTagView>> WEAKNESS_LIST = new TypeReference<>() {};
   private static final TypeReference<List<String>> STRING_LIST = new TypeReference<>() {};
@@ -452,6 +455,36 @@ public class GoalAutopilotService {
           requestId);
       return controlResult(profile, control, reason, signalReason);
     });
+  }
+
+  @Transactional
+  public NotificationEligibilityDecisionView evaluateReminderEligibility(
+      UUID userId, ReminderEligibilityInput input, String requestId) {
+    runtimeGate.requireMutationAllowed(userId, "reminder_eligibility", requestId);
+    if (input == null) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "notification eligibility request is required.");
+    }
+    GoalProfile profile = requireActiveGoal(userId);
+    Instant serverNow = Instant.now(clock);
+    GoalAutopilotControl control = ensureControl(profile, serverNow);
+    Instant evaluatedAt = parseOptionalInstant(input.currentTime(), "current_time");
+    if (evaluatedAt == null) {
+      evaluatedAt = serverNow;
+    }
+    UUID requestedPlanItemId = parseOptionalUuid(input.planItemId(), "plan_item_id");
+    String reminderSlot = validateReminderSlot(input.reminderSlot());
+    String platformPermission = validatePlatformPermission(input.platformPermission());
+    NotificationEligibilityDecisionView decision = reminderEligibilityDecision(
+        profile, control, requestedPlanItemId, reminderSlot, platformPermission, evaluatedAt);
+    recordGoalMetric(
+        profile,
+        "notification_eligibility",
+        decision.eligible() ? "allowed" : "blocked",
+        decision.reasonCode(),
+        "goal_autopilot.reminders.eligibility",
+        decision.planItemId() == null ? "plan_item:none" : "plan_item:" + decision.planItemId(),
+        requestId);
+    return decision;
   }
 
   @Transactional(readOnly = true)
@@ -1598,7 +1631,7 @@ public class GoalAutopilotService {
   private ControlResult controlResult(
       GoalProfile profile, GoalAutopilotControl control, String reasonCode, String planSignalReason) {
     Instant now = Instant.now(clock);
-    NotificationEligibilityPolicy.Decision eligibility = reminderEligibilityDecision(profile, control, now);
+    NotificationEligibilityDecisionView eligibility = reminderEligibilityDecision(profile, control, null, "control_response", "granted", now);
     boolean replanRequired = "resume_requires_replan".equals(planSignalReason);
     return new ControlResult(
         controlView(control, reasonCode),
@@ -1606,24 +1639,7 @@ public class GoalAutopilotService {
         true,
         replanRequired,
         reasonCode,
-        new NotificationEligibilityDecisionView(
-            UUID.nameUUIDFromBytes((
-                    control.getControlId()
-                        + ":" + profile.getRevision()
-                        + ":" + eligibility.reasonCode()
-                        + ":" + nullableHashValue(eligibility.nextAllowedAt())
-                        + ":" + NOTIFICATION_RULE_VERSION)
-                .getBytes(StandardCharsets.UTF_8)).toString(),
-            control.getControlId(),
-            profile.getUserId(),
-            profile.getGoalProfileId(),
-            eligibility.eligible() ? nextPlanItemIdOrNull(profile) : null,
-            eligibility.eligible(),
-            eligibility.reasonCode(),
-            eligibility.nextAllowedAt(),
-            eligibility.explanationKey(),
-            eligibility.evaluatedAt(),
-            eligibility.ruleVersion()),
+        eligibility,
         new PlanUpdateSignalView(replanRequired ? "recovery_replan" : "none", planSignalReason));
   }
 
@@ -1734,9 +1750,17 @@ public class GoalAutopilotService {
     return "eligible";
   }
 
-  private NotificationEligibilityPolicy.Decision reminderEligibilityDecision(
-      GoalProfile profile, GoalAutopilotControl control, Instant evaluatedAt) {
+  private NotificationEligibilityDecisionView reminderEligibilityDecision(
+      GoalProfile profile,
+      GoalAutopilotControl control,
+      UUID requestedPlanItemId,
+      String reminderSlot,
+      String platformPermission,
+      Instant evaluatedAt) {
     PlanFacts facts = planFacts(profile);
+    GoalPlanItem targetItem = reminderPlanItem(profile, requestedPlanItemId);
+    boolean missingReminderTarget = targetItem == null;
+    ReminderCommercialGate commercialGate = reminderCommercialGate(profile);
     boolean unsupportedGoal = "unsupported".equals(profile.getSupportStatus()) || "unsupported".equals(profile.getStatus());
     boolean partialGoalLimited = "partial".equals(profile.getSupportStatus());
     boolean genericPolicyBlocked = "blocked_by_policy".equals(control.getControlStatus())
@@ -1745,21 +1769,93 @@ public class GoalAutopilotService {
         && !facts.stalePlan()
         && !facts.missingPlan();
     String eligibilityControlStatus = "paused".equals(control.getControlStatus()) ? "paused" : "active";
-    return notificationEligibilityPolicy.evaluate(new NotificationEligibilityPolicy.Input(
+    NotificationEligibilityPolicy.Decision decision = notificationEligibilityPolicy.evaluate(new NotificationEligibilityPolicy.Input(
         eligibilityControlStatus,
         genericPolicyBlocked,
         unsupportedGoal,
         partialGoalLimited,
-        facts.stalePlan(),
-        facts.missingPlan(),
+        facts.stalePlan() || facts.recoveryRequired(),
+        facts.missingPlan() || missingReminderTarget,
         control.isNotificationConsent(),
-        true,
-        true,
-        true,
+        "granted".equals(platformPermission),
+        commercialGate.entitlementAllowed(),
+        commercialGate.quotaAvailable(),
         control.getQuietHoursStart(),
         control.getQuietHoursEnd(),
         control.getTimezone(),
         evaluatedAt));
+    UUID planItemId = targetItem == null ? null : targetItem.getPlanItemId();
+    return new NotificationEligibilityDecisionView(
+        notificationEligibilityDecisionId(
+            profile, control, planItemId, reminderSlot, platformPermission, decision),
+        control.getControlId(),
+        profile.getUserId(),
+        profile.getGoalProfileId(),
+        planItemId,
+        decision.eligible(),
+        decision.reasonCode(),
+        decision.nextAllowedAt(),
+        decision.explanationKey(),
+        decision.evaluatedAt(),
+        decision.ruleVersion());
+  }
+
+  private GoalPlanItem reminderPlanItem(GoalProfile profile, UUID requestedPlanItemId) {
+    if (requestedPlanItemId == null) {
+      try {
+        return requireNextItem(latestDailyPlan(profile));
+      } catch (ApiException ignored) {
+        return null;
+      }
+    }
+    GoalPlanItem item = planItems.findByPlanItemIdAndUserId(requestedPlanItemId, profile.getUserId())
+        .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Plan item was not found."));
+    if (!item.getGoalProfileId().equals(profile.getGoalProfileId())) {
+      throw new ApiException(HttpStatus.CONFLICT, "CONFLICT", "Plan item does not belong to the active goal.");
+    }
+    GoalDailyPlan dailyPlan = dailyPlans.findById(item.getDailyPlanId())
+        .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Daily plan was not found."));
+    if (!dailyPlan.getGoalProfileId().equals(profile.getGoalProfileId()) || !ACTIVE_DAILY_STATUSES.contains(dailyPlan.getStatus())) {
+      throw new ApiException(HttpStatus.CONFLICT, "CONFLICT", "Plan item is not part of the current active plan.");
+    }
+    if (!REMINDER_ITEM_STATUSES.contains(item.getStatus())) {
+      throw new ApiException(HttpStatus.CONFLICT, "CONFLICT", "Plan item is not eligible for reminders.");
+    }
+    return item;
+  }
+
+  private ReminderCommercialGate reminderCommercialGate(GoalProfile profile) {
+    EntitlementDepthView entitlementDepth = entitlementDepthView(profile, requireDiagnostic(profile));
+    String downgradeReason = fullDepthDowngradeReason(profile.getUserId(), entitlementDepth);
+    if ("quota_exhausted".equals(downgradeReason) || "cost_budget_limited".equals(downgradeReason)) {
+      return new ReminderCommercialGate(true, false);
+    }
+    if ("entitlement_required".equals(downgradeReason) || "blocked".equals(entitlementDepth.depthState())) {
+      return new ReminderCommercialGate(false, true);
+    }
+    return new ReminderCommercialGate(true, true);
+  }
+
+  private String notificationEligibilityDecisionId(
+      GoalProfile profile,
+      GoalAutopilotControl control,
+      UUID planItemId,
+      String reminderSlot,
+      String platformPermission,
+      NotificationEligibilityPolicy.Decision decision) {
+    return UUID.nameUUIDFromBytes((
+            profile.getUserId()
+                + ":" + profile.getGoalProfileId()
+                + ":" + profile.getRevision()
+                + ":" + control.getControlId()
+                + ":" + nullableHashValue(planItemId)
+                + ":" + nullableHashValue(reminderSlot)
+                + ":" + nullableHashValue(platformPermission)
+                + ":" + decision.reasonCode()
+                + ":" + nullableHashValue(decision.nextAllowedAt())
+                + ":" + decision.evaluatedAt()
+                + ":" + decision.ruleVersion())
+        .getBytes(StandardCharsets.UTF_8)).toString();
   }
 
   private PlanFacts planFacts(GoalProfile profile) {
@@ -1809,6 +1905,46 @@ public class GoalAutopilotService {
       throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", field + " is invalid.");
     }
     return cleaned;
+  }
+
+  private String validateReminderSlot(String value) {
+    String cleaned = cleanRequired(value, "reminder_slot");
+    if (!cleaned.matches(REMINDER_SLOT_PATTERN)) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "reminder_slot is invalid.");
+    }
+    return cleaned;
+  }
+
+  private String validatePlatformPermission(String value) {
+    String cleaned = cleanOrDefault(value, "unknown");
+    if (!VALID_PLATFORM_PERMISSIONS.contains(cleaned)) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "platform_permission is invalid.");
+    }
+    return cleaned;
+  }
+
+  private UUID parseOptionalUuid(String value, String field) {
+    String cleaned = clean(value);
+    if (cleaned == null) {
+      return null;
+    }
+    try {
+      return UUID.fromString(cleaned);
+    } catch (IllegalArgumentException e) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", field + " is invalid.");
+    }
+  }
+
+  private Instant parseOptionalInstant(String value, String field) {
+    String cleaned = clean(value);
+    if (cleaned == null) {
+      return null;
+    }
+    try {
+      return Instant.parse(cleaned);
+    } catch (DateTimeException e) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", field + " is invalid.");
+    }
   }
 
   private GoalDiagnosticAssessment buildDiagnostic(
@@ -3626,6 +3762,12 @@ public class GoalAutopilotService {
       String intensityOverride,
       String missedDayPolicy) {}
 
+  public record ReminderEligibilityInput(
+      String planItemId,
+      String reminderSlot,
+      String currentTime,
+      String platformPermission) {}
+
   public record RecoveryReplanInput(String sourceEvent, UUID planItemId, String preferredPolicy) {}
 
   public record ItemPolicyDecisionInput(
@@ -3877,6 +4019,8 @@ public class GoalAutopilotService {
       String limitationReason,
       String sourceEntitlementRef,
       String ruleVersion) {}
+
+  private record ReminderCommercialGate(boolean entitlementAllowed, boolean quotaAvailable) {}
 
   public record GoalProfileView(
       UUID goalProfileId,

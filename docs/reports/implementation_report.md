@@ -15,6 +15,107 @@ Each completed change should append:
 - risks
 - follow-up
 
+## 2026-06-09 - P02-FOLLOWUP-B-XCB-003-REMINDER-ELIGIBILITY-ENDPOINT-20260609
+
+Change request:
+- Close XCB-003 for Followup-B `POST /goal-autopilot/reminders/eligibility` by adding the missing backend controller/service entry, request validation, runtime gate, commercial gates, OpenAPI/generated client sync and endpoint-level TC evidence.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`.
+- Chain: P02-SI-010 -> P02-FUB-WP-003/004 -> P02-FUB-FR-003/004 -> P02-FUB-SPEC-003/004 -> AC-P02-FUB-003/004 -> P02-FUB-TR-003/004 -> TC-P02-FUB-018.
+- Architecture/process boundary: `docs/process/cross_cutting_boundary_registry.md` XCB-003; `docs/architecture/api_contract.md` P02-FUB-API-002.
+
+Files changed:
+- Backend: `GoalAutopilotController`, `GoalAutopilotService`.
+- Tests: `GoalAutopilotControllerTest`, `GoalAutopilotRuntimeGateTest`.
+- API/generated boundary: `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/openapi/dart-client-drift-manifest.json`, `lib/generated/api/.openapi-sha256`, `lib/generated/api/speakeasy_api.dart`.
+- Traceability and gate docs: Followup-B `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`, `docs/architecture/api_contract.md`, `scripts/check_p0_2_followup_b_traceability.py`, `docs/reports/test_report.md`, `docs/reports/quality_report.md`.
+
+Implementation summary:
+- Added `GoalAutopilotController#evaluateReminderEligibility` for `POST /goal-autopilot/reminders/eligibility`.
+- Added `GoalAutopilotService#evaluateReminderEligibility`, reusing `NotificationEligibilityPolicy` and enforcing `requireMutationAllowed(userId, "reminder_eligibility", requestId)` before evaluation.
+- Validated `plan_item_id`, `reminder_slot` and `platform_permission`; malformed UUIDs return `422`, wrong-owner/nonexistent plan items return `404`, inactive/stale plan candidates return `409`, and missing or `unknown` platform permission fails closed as `permission_denied`.
+- Parsed `current_time` inside the service so malformed date-time input returns endpoint-contract `422` instead of JSON binding `400`.
+- Replaced hardcoded eligibility commercial facts with entitlement/quota/cost-derived gates mapped to `entitlement_blocked` or `quota_exhausted`.
+- Blocks `recovery_required` daily plans as `stale_plan` before reminder eligibility, so reminders cannot become eligible while recovery replan is pending.
+- Kept endpoint evaluation as a precheck boundary: successful evaluations write only low-sensitivity `notification_eligibility` metrics and do not create outbox, completion, failure, refusal or missed-day evidence.
+- Updated OpenAPI request/response schema, examples, endpoint `404`, generated Dart hash pin and Followup-B traceability to route the closure through TC-P02-FUB-018.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fub018ReminderEligibilityEndpointEvaluatesRequestBoundary+tcP02Fub018ReminderEligibilityCommercialAndPlanOwnershipGates+tcP02Fub018ReminderEligibilityMissingPlanDoesNotReturnEligibleWithoutItem+tcP02Fub018ReminderEligibilityRecoveryRequiredDoesNotReturnEligible,GoalAutopilotRuntimeGateTest#tcP02Fud002KillSwitchHidesExistingProjectionAndFailsClosed test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,GoalAutopilotRuntimeGateTest,NotificationEligibilityPolicyTest,GoalAutopilotQuotaDowngradeTest test` - passed.
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `npm run check:api-contract` - passed without OpenAPI warnings; OpenAPI hash `ae03bd46812ddd684bb70fbcb3f927b759c1e70529d1bdd68c0ada18a1aff587`.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `ae03bd46812ddd684bb70fbcb3f927b759c1e70529d1bdd68c0ada18a1aff587`.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 95.7%, backend branch 81.1% and Flutter line 89.2%.
+- `python3 -m py_compile scripts/check_p0_2_followup_b_traceability.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `python3 scripts/check_p0_2_followup_b_traceability.py` - passed after report synchronization.
+
+Result:
+- TC-P02-FUB-018 passed and now proves endpoint request validation, malformed `current_time` 422, quiet-hours decision, permission fail-closed behavior, entitlement/quota mapping, plan-item ownership/current-plan errors, recovery-required stale-plan blocking, runtime kill-switch blocking, metric write and no outbox writes.
+- XCB-003 is closed for this endpoint: backend implementation, OpenAPI source, generated Dart hash pin, API contract and Followup-B traceability are synchronized.
+- Independent review initially found recovery-required eligibility and malformed `current_time` contract gaps; both were fixed and the targeted plus broad regression commands above passed.
+
+Residual risk:
+- Full all-suite backend/Flutter regression, live notification provider, external production scheduler/send evidence, commercial release and Product Base merge gates were not run. This change closes the local endpoint boundary only.
+- Followup-B remains not release-ready and Product Base merge is not approved.
+
+Follow-up:
+- Keep TC-P02-FUB-018 in the required suite for future Followup-B notification eligibility endpoint, OpenAPI or generated-client changes.
+
+## 2026-06-09 - MVP-PRACTICE-AUDIO-REF-BOUNDARY-20260609
+
+Change request:
+- Enforce XCB-001 for Product Base Practice turns: any submitted `audio_ref` must be an authenticated-user-owned trusted media reference before Practice persists a turn, generates coach feedback or calls provider code.
+
+Requirement mapping:
+- Increment: `docs/product/increments/mvp-backend-practice-ai/`.
+- Chain: MVP-SI-008 -> MVP-BE-FR-008 -> MVP-BE-SPEC-008 -> AC-MVP-BE-008 -> MVP-BE-TR-008 -> TC-MVP-BE-047/048.
+- Architecture/process boundary: `docs/process/cross_cutting_boundary_registry.md` XCB-001 and XCB-002; `docs/architecture/api_contract.md` MVP Backend Practice/AI contract note.
+
+Files changed:
+- Backend: `AiMediaReferenceService`, `AiProviderPolicyService`, `AiGatewayService`, `PracticeService`.
+- Tests: `PracticeTurnControllerTest`, `ProductionAsrMediaRefTest`, `ProviderGatewayFailureTest`.
+- API/generated boundary: `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/openapi/dart-client-drift-manifest.json`, `lib/generated/api/.openapi-sha256`, `lib/generated/api/speakeasy_api.dart`.
+- Traceability docs: Practice requirements/spec/acceptance/test_cases/traceability, `docs/architecture/api_contract.md`, `docs/reports/test_report.md`, `docs/reports/quality_report.md`.
+
+Implementation summary:
+- Added owner-aware media inspection in `AiMediaReferenceService`, returning `media_not_found` for wrong-owner `media://audio/{id}` refs.
+- Added a forced backend-media trusted audio-ref validation path in `AiProviderPolicyService` and exposed it through `AiGatewayService.validateTrustedAudioRef`.
+- Updated `PracticeService.submitTurn` so any non-empty `audio_ref` is validated before idempotency replay, turn persistence, coach feedback or provider calls.
+- Narrowed OpenAPI client-facing audio-ref request schemas and examples to authenticated-user-owned trusted `media://audio/{uuid}` refs.
+- Added TC-MVP-BE-047 and TC-MVP-BE-048 to the Practice test case library and traceability matrix.
+- Updated the provider-unavailable Practice failure test to use a validated trusted media ref instead of the retired `audio://provider_unavailable` fixture.
+- Independent review initially found the owner-check gap; this increment now includes the owner-aware code/test closure.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=PracticeTurnControllerTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProductionAsrMediaRefTest,MediaUploadReferenceServiceTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=TrainingMediaAiPipelineTest test` - passed.
+- `flutter test test/features/training/training_backend_pipeline_test.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProviderGatewaySecurityContractTest,ProviderGatewayControllerTest,ProviderGatewayFailureTest,ProviderGatewayAuthorizationTest,UsageQuotaGateTest test` - passed after stale fixture correction.
+- `npm run check:api-contract` - passed with OpenAPI hash `7e603dd0bec9879ee2d21516e86fb84e2e652102f677506a59255544befa76f5`.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `7e603dd0bec9879ee2d21516e86fb84e2e652102f677506a59255544befa76f5`.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope full` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
+- `python3 -m py_compile scripts/check_cross_cutting_boundaries.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- TC-MVP-BE-047 passed and now proves transcript + invalid local-path `audio_ref` fails closed without persistence, feedback or provider invocation.
+- TC-MVP-BE-048 passed and now proves wrong-owner validated `media://audio/...` refs fail closed for Practice and `/ai/transcribe` before provider invocation.
+- MVP-BE-TR-008 now carries API, architecture, code and TC evidence for the Practice `audio_ref` invalid-ref and owner-boundary negative paths.
+
+Residual risk:
+- Full all-suite backend/Flutter regression, live provider, external object-storage and release-readiness tests were not run because this validation targets XCB-001/XCB-002 boundary, contract and traceability regressions.
+
+Follow-up:
+- Keep TC-MVP-BE-047 and TC-MVP-BE-048 in the required suite for future XCB-001/XCB-002 changes touching Practice turn input.
+
 ## 2026-06-07 - P02-FOLLOWUP-E-DOCS-ONLY-PLANNING-RECLASSIFICATION
 
 Change request:
@@ -3121,11 +3222,11 @@ Files changed:
 - Updated backend Jackson config to reject unknown JSON request fields so provider secrets cannot be smuggled into gateway DTOs.
 - Updated home summary unfinished-session state to read backend practice sessions.
 - Updated OpenAPI/API/domain/AI runtime contracts: `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/api_contract.md`, `docs/domain/domain_schema.md`, `docs/domain/entity_relationship.md`, and `docs/ai_runtime/*`.
-- Added tests TC-MVP-BE-016 through TC-MVP-BE-025 under `backend/src/test/java/com/speakeasy/`.
+- Added tests TC-MVP-BE-016 through TC-MVP-BE-025 under `backend/src/test/java/com/speakeasy/`. Current supplement: TC-MVP-BE-047 and TC-MVP-BE-048 were added on 2026-06-09 for the Practice trusted `audio_ref` negative paths.
 
 Requirement mapping:
 - MVP-SI-006 / MVP-BE-FR-006 / AC-MVP-BE-006 is covered by TC-MVP-BE-016 through TC-MVP-BE-019 for provider secret rejection, mock provider success, provider failure fallback, and auth/session mismatch blocking.
-- MVP-SI-008 / MVP-BE-FR-008 / AC-MVP-BE-008 is covered by TC-MVP-BE-020 through TC-MVP-BE-023 for start/resume/get/turn/complete/recovery and idempotent turn replay.
+- MVP-SI-008 / MVP-BE-FR-008 / AC-MVP-BE-008 is covered by TC-MVP-BE-020 through TC-MVP-BE-023 for start/resume/get/turn/complete/recovery and idempotent turn replay, plus TC-MVP-BE-047/048 for Practice transcript + invalid or wrong-owner `audio_ref` fail-closed behavior.
 - MVP-SI-009 / MVP-BE-FR-009 / AC-MVP-BE-009 is covered by TC-MVP-BE-024 and TC-MVP-BE-025 for structured coach feedback, score signal source/availability, playback failure, invalid provider output fallback, and candidate-only evidence.
 
 Commands run:
@@ -3815,3 +3916,54 @@ Result:
 
 Residual risk:
 - Issue templates, automation, and a dedicated issue manager agent remain intentionally deferred until issue volume or team coordination needs justify them.
+
+## 2026-06-09 - P0-AI Provider Evidence Endpoint Implementation
+
+Change request:
+- Close the implementation-level OpenAPI gap for `GET /admin/ai/provider-evidence`.
+- Preserve commercial AI external evidence blockers and avoid claiming paid AI voice release readiness.
+
+Requirement mapping:
+- Stage Scope: COM-SI-015.
+- Requirement: FR-COM-AI-003.
+- Spec: COM-AI-SPEC-003.
+- Acceptance: AC-COM-AI-003.
+- Test case: TC-COM-AI-004.
+- Traceability row: COM-AI-TR-003.
+- Gap: COM-AI-GAP-003.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/ai/AiProviderSandboxRun.java`
+- `backend/src/main/java/com/speakeasy/ai/AiProviderSandboxRunRepository.java`
+- `backend/src/main/java/com/speakeasy/ai/AiProviderEvidenceService.java`
+- `backend/src/main/java/com/speakeasy/api/AiOpsController.java`
+- `backend/src/main/resources/db/migration/V202606080001__commercial_ai_provider_sandbox_runs.sql`
+- `backend/src/test/java/com/speakeasy/BackendIntegrationTestSupport.java`
+- `backend/src/test/java/com/speakeasy/AiProviderEvidenceControllerTest.java`
+- `docs/product/increments/commercial-ai-provider-hardening/test_cases.md`
+- `docs/product/increments/commercial-ai-provider-hardening/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+
+Implementation summary:
+- Added `AiProviderSandboxRun` as the local backend fact source for reviewed or pending DashScope sandbox / controlled-live provider evidence metadata.
+- Added `AiProviderEvidenceService` to read evidence rows, preserve contract-safe `status` and `reviewed_status`, sort results deterministically and redact sensitive evidence references before API output.
+- Added `GET /admin/ai/provider-evidence` to the existing `AiOpsController`, reusing the existing `/admin/**` OPS bearer security boundary.
+- Added Flyway migration `V202606080001__commercial_ai_provider_sandbox_runs.sql` for `ai_provider_sandbox_runs`.
+- Added endpoint-level integration tests for empty evidence, OPS-only authorization, approved/pending/blocked rows, stable sorting and sensitive data non-disclosure.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiProviderEvidenceControllerTest,AiCostDashboardTest,AiRetentionPolicyTest test` - passed.
+- `python3 scripts/check_ai_provider_sandbox_evidence.py` - passed with the expected `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` release blocker reported.
+- `python3 scripts/check_ai_external_release_evidence.py` - passed with expected DashScope、media storage、cost dashboard and retention evidence blockers reported.
+- `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external` - failed as expected because `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` is not supplied.
+- `npm run check:api-contract` - passed.
+- `git diff --check` - passed.
+
+Result:
+- `GET /admin/ai/provider-evidence` now has backend Controller/service/entity/migration/test evidence aligned with the existing implementation-level OpenAPI contract.
+- `TC-COM-AI-004` now includes local backend endpoint evidence in addition to the existing structural gate and controlled-live evidence-prep evidence.
+
+Residual risk:
+- This does not close `COM-AI-GAP-003`.
+- Strict paid AI voice release still requires `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, externally reviewed full DashScope LLM/ASR/TTS matrix evidence, `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external`, and aggregate paid AI external evidence gates.

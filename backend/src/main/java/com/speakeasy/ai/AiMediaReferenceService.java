@@ -63,13 +63,17 @@ public class AiMediaReferenceService {
   }
 
   public TrustedAudioRef inspectAudioRef(String audioRef, boolean requireTrustedMetadata) {
+    return inspectAudioRef(null, audioRef, requireTrustedMetadata);
+  }
+
+  public TrustedAudioRef inspectAudioRef(UUID ownerUserId, String audioRef, boolean requireTrustedMetadata) {
     String value = audioRef == null ? "" : audioRef.trim();
     if (value.isBlank()) {
       return TrustedAudioRef.invalid(value, "blank_audio_ref");
     }
     URI uri = parseUri(value);
     if (uri != null && "media".equalsIgnoreCase(uri.getScheme())) {
-      return inspectStoredMediaRef(value, uri, requireTrustedMetadata);
+      return inspectStoredMediaRef(ownerUserId, value, uri, requireTrustedMetadata);
     }
     if (uri == null || !isHttp(uri)) {
       return TrustedAudioRef.invalid(value, "unsupported_media_ref");
@@ -93,7 +97,19 @@ public class AiMediaReferenceService {
     return TrustedAudioRef.untrusted(value, auditRef(value));
   }
 
-  private TrustedAudioRef inspectStoredMediaRef(String value, URI uri, boolean requireTrustedMetadata) {
+  public TrustedAudioRef inspectBackendAudioRef(UUID ownerUserId, String audioRef) {
+    String value = audioRef == null ? "" : audioRef.trim();
+    if (value.isBlank()) {
+      return TrustedAudioRef.invalid(value, "blank_audio_ref");
+    }
+    URI uri = parseUri(value);
+    if (uri == null || !"media".equalsIgnoreCase(uri.getScheme())) {
+      return TrustedAudioRef.invalid(value, "unsupported_media_ref");
+    }
+    return inspectStoredMediaRef(ownerUserId, value, uri, true);
+  }
+
+  private TrustedAudioRef inspectStoredMediaRef(UUID ownerUserId, String value, URI uri, boolean requireTrustedMetadata) {
     if (mediaAssets == null) {
       return TrustedAudioRef.invalid(value, "media_repository_unavailable");
     }
@@ -102,12 +118,15 @@ public class AiMediaReferenceService {
       return TrustedAudioRef.invalid(value, "invalid_media_ref");
     }
     return mediaAssets.findById(mediaId.get())
-        .map(asset -> trustedRefForAsset(value, asset))
+        .map(asset -> trustedRefForAsset(ownerUserId, value, asset))
         .orElseGet(() -> TrustedAudioRef.invalid(value, "media_not_found"));
   }
 
-  private TrustedAudioRef trustedRefForAsset(String value, AiMediaAsset asset) {
+  private TrustedAudioRef trustedRefForAsset(UUID ownerUserId, String value, AiMediaAsset asset) {
     Instant now = Instant.now();
+    if (ownerUserId != null && !ownerUserId.equals(asset.getUserId())) {
+      return TrustedAudioRef.invalid(value, "media_not_found");
+    }
     if (!asset.isValidatedAt(now)) {
       return TrustedAudioRef.invalid(value, "media_not_validated");
     }

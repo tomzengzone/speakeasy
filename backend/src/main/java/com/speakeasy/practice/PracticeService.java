@@ -95,6 +95,9 @@ public class PracticeService {
           "SCHEMA_VALIDATION_FAILED",
           "Either transcript or audio_ref is required.");
     }
+    if (normalizedAudioRef != null) {
+      aiGateway.validateTrustedAudioRef(userId, "practice", normalizedAudioRef);
+    }
 
     var existing = turns.findBySessionIdAndIdempotencyKey(sessionId, idempotencyKey);
     if (existing.isPresent()) {

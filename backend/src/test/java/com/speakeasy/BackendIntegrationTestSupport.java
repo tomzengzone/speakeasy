@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jayway.jsonpath.JsonPath;
 import com.speakeasy.ai.AiMediaAssetRepository;
 import com.speakeasy.ai.AiProviderInvocationMetricRepository;
+import com.speakeasy.ai.AiProviderSandboxRunRepository;
 import com.speakeasy.ai.AiRetentionJobRepository;
 import com.speakeasy.ai.AiTtsCacheEntryRepository;
 import com.speakeasy.ai.AiTtsCacheOwnerRepository;
@@ -101,6 +102,7 @@ public abstract class BackendIntegrationTestSupport {
   @Autowired AiTtsCacheEntryRepository ttsCacheEntries;
   @Autowired AiTtsCacheOwnerRepository ttsCacheOwners;
   @Autowired AiProviderInvocationMetricRepository aiProviderMetrics;
+  @Autowired AiProviderSandboxRunRepository aiProviderSandboxRuns;
   @Autowired AiRetentionJobRepository aiRetentionJobs;
   @Autowired TrainingContentMappingRepository trainingContentMappings;
   @Autowired TrainingMetricEventRepository trainingMetrics;
@@ -128,6 +130,7 @@ public abstract class BackendIntegrationTestSupport {
   void cleanUserData() {
     deletionJobs.deleteAll();
     aiRetentionJobs.deleteAll();
+    aiProviderSandboxRuns.deleteAll();
     aiProviderMetrics.deleteAll();
     ttsCacheOwners.deleteAll();
     ttsCacheEntries.deleteAll();

@@ -1,6 +1,7 @@
 package com.speakeasy.api;
 
 import com.speakeasy.ai.AiCostMetricsService;
+import com.speakeasy.ai.AiProviderEvidenceService;
 import com.speakeasy.ai.AiRetentionJob;
 import com.speakeasy.ai.AiRetentionService;
 import com.speakeasy.common.SchemaResponse;
@@ -24,11 +25,23 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class AiOpsController {
   private final AiCostMetricsService costMetricsService;
+  private final AiProviderEvidenceService providerEvidenceService;
   private final AiRetentionService retentionService;
 
-  public AiOpsController(AiCostMetricsService costMetricsService, AiRetentionService retentionService) {
+  public AiOpsController(
+      AiCostMetricsService costMetricsService,
+      AiProviderEvidenceService providerEvidenceService,
+      AiRetentionService retentionService) {
     this.costMetricsService = costMetricsService;
+    this.providerEvidenceService = providerEvidenceService;
     this.retentionService = retentionService;
+  }
+
+  @GetMapping("/admin/ai/provider-evidence")
+  public AiProviderEvidenceListResponse listAiProviderEvidence() {
+    AiProviderEvidenceService.EvidenceList evidence = providerEvidenceService.listEvidence();
+    return new AiProviderEvidenceListResponse(
+        evidence.schemaVersion(), evidence.evidence().stream().map(AiProviderEvidenceDto::from).toList());
   }
 
   @GetMapping("/admin/ai/cost-metrics")
@@ -38,6 +51,35 @@ public class AiOpsController {
         dashboard.schemaVersion(),
         dashboard.status(),
         dashboard.metrics().stream().map(AiCostMetricDto::from).toList());
+  }
+
+  public record AiProviderEvidenceListResponse(int schemaVersion, List<AiProviderEvidenceDto> evidence)
+      implements SchemaResponse {}
+
+  public record AiProviderEvidenceDto(
+      String evidenceId,
+      String providerFamily,
+      String capability,
+      String status,
+      String reviewedStatus,
+      String evidenceRef,
+      Integer latencyP50Ms,
+      Integer latencyP95Ms,
+      BigDecimal estimatedCost,
+      Instant executedAt) {
+    static AiProviderEvidenceDto from(AiProviderEvidenceService.Evidence evidence) {
+      return new AiProviderEvidenceDto(
+          evidence.evidenceId(),
+          evidence.providerFamily(),
+          evidence.capability(),
+          evidence.status(),
+          evidence.reviewedStatus(),
+          evidence.evidenceRef(),
+          evidence.latencyP50Ms(),
+          evidence.latencyP95Ms(),
+          evidence.estimatedCost(),
+          evidence.executedAt());
+    }
   }
 
   @PostMapping("/admin/ai/retention-jobs")

@@ -70,16 +70,7 @@ class ProductionAsrMediaRefTest extends BackendIntegrationTestSupport {
     String mediaId = JsonPath.read(createResult.getResponse().getContentAsString(), "$.media.media_id");
     String mediaRef = JsonPath.read(createResult.getResponse().getContentAsString(), "$.media.audio_ref");
 
-    mvc.perform(post("/media/audio/uploads/%s/complete".formatted(mediaId))
-            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("""
-                {
-                  "schema_version": 1,
-                  "checksum_sha256": "checksum-2"
-                }
-                """))
-        .andExpect(status().isOk())
+    completeUpload(tokens, mediaId, "checksum-2")
         .andExpect(jsonPath("$.media.status").value("validated"));
 
     transcribe(tokens, mediaRef)
@@ -89,6 +80,23 @@ class ProductionAsrMediaRefTest extends BackendIntegrationTestSupport {
         .andExpect(jsonPath("$.transcript").value("I worked on a project that improved our workflow."));
 
     org.assertj.core.api.Assertions.assertThat(dashScopeTransport.asrCalls).isEqualTo(1);
+  }
+
+  @Test
+  void rejectsCrossUserValidatedMediaRefBeforeProductionAsrProviderCall() throws Exception {
+    AuthTokens owner = loginPhone("+8613800138412");
+    MvcResult createResult = createUploadResult(owner);
+    String mediaId = JsonPath.read(createResult.getResponse().getContentAsString(), "$.media.media_id");
+    String mediaRef = JsonPath.read(createResult.getResponse().getContentAsString(), "$.media.audio_ref");
+    completeUpload(owner, mediaId, "checksum-2");
+    AuthTokens otherUser = loginPhone("+8613800138413");
+
+    transcribe(otherUser, mediaRef)
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"))
+        .andExpect(jsonPath("$.error.details.media_error").value("media_not_found"));
+
+    org.assertj.core.api.Assertions.assertThat(dashScopeTransport.asrCalls).isZero();
   }
 
   private String createUpload(AuthTokens tokens) throws Exception {
@@ -113,6 +121,20 @@ class ProductionAsrMediaRefTest extends BackendIntegrationTestSupport {
                 """))
         .andExpect(status().isCreated())
         .andReturn();
+  }
+
+  private org.springframework.test.web.servlet.ResultActions completeUpload(
+      AuthTokens tokens, String mediaId, String checksum) throws Exception {
+    return mvc.perform(post("/media/audio/uploads/%s/complete".formatted(mediaId))
+        .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("""
+            {
+              "schema_version": 1,
+              "checksum_sha256": "%s"
+            }
+            """.formatted(checksum)))
+        .andExpect(status().isOk());
   }
 
   private org.springframework.test.web.servlet.ResultActions transcribe(AuthTokens tokens, String audioRef) throws Exception {
