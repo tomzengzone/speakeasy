@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -13,8 +12,6 @@ import 'package:speakeasy/features/interview/interview_engine.dart';
 import 'package:speakeasy/features/interview/interview_models.dart';
 import 'package:speakeasy/features/interview/interview_wiki_store.dart';
 import 'package:speakeasy/models/storage_models.dart';
-import 'package:speakeasy/services/api_client.dart';
-import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/services/audio_service.dart';
 import 'package:speakeasy/services/storage_service.dart';
 
@@ -744,116 +741,13 @@ class _InterviewExpressionWarmupDeckViewState
       if (path == null || path.trim().isEmpty) {
         throw Exception('没有录到有效语音');
       }
-      final String transcript =
-          await ApiClient.legacyTranscribeLocalAudioForScene(
-            File(path),
-            repairMode: 'background',
-            preferRawText: true,
-          );
       if (!mounted) {
         return;
       }
-      PronunciationScore? pronunciation;
-      try {
-        pronunciation = await AppSessionScope.of(context).scorePronunciation(
-          audioPath: path,
-          expectedText: item.material.targetExpression,
-        );
-      } catch (_) {
-        pronunciation = null;
-      }
-      final _DailyExpressionExercise? dailyExercise = _usesExternalQueue
-          ? _DailyExpressionExercise.fromItem(item)
-          : null;
-      final String practiceMode =
-          dailyExercise?.practiceMode ??
-          (taskType == 'slot_replace'
-              ? ExpressionDailyQueueItem.practiceModeSlotPersonalize
-              : ExpressionDailyQueueItem.practiceModeShadow);
-      final List<String> scoringTargets =
-          dailyExercise?.scoringTargets ??
-          <String>{
-            item.material.targetExpression,
-            ...item.node.reproducibleTexts,
-          }.toList(growable: false);
-      final double? pronunciationValue = _pronunciationValue(pronunciation);
-      final ExpressionShadowScoreResult scoreResult =
-          scoreExpressionShadowAttempt(
-            transcript: transcript,
-            targets: scoringTargets,
-            pronunciationScore: pronunciationValue,
-            isSlotReplace: taskType == 'slot_replace',
-            practiceMode: practiceMode,
-            elapsed: _recordingElapsed,
-          );
-      final double totalScore = scoreResult.totalScore;
-      final bool contentTooLow =
-          scoreResult.textMatch <
-          expressionPracticeModeTextThreshold(practiceMode);
-      if (practiceMode == ExpressionDailyQueueItem.practiceModeShadow &&
-          contentTooLow &&
-          pronunciation != null) {
-        debugPrint(
-          '[ExpressionShadow] rejected high pronunciation without text match: '
-          'text=${scoreResult.textMatch.toStringAsFixed(2)}, '
-          'pron=${pronunciationValue?.toStringAsFixed(1) ?? '-'}, '
-          'score=${totalScore.toStringAsFixed(1)}',
-        );
-      }
-      final bool passed = scoreResult.passed;
-      if (mounted) {
-        setState(() {
-          _lastAttemptScoreKey = _scoreKeyForItem(item);
-          _lastAttemptScore = totalScore.clamp(0, 100).toDouble();
-        });
-      }
-      if (!passed) {
-        await _saveProgressForCurrent(
-          status: InterviewExpressionLearningStatus.learning,
-          currentStep: _currentStepForAttempt(taskType),
-          attemptsDelta: 1,
-          bestScore: math.max(item.progress?.bestScore ?? 0, totalScore),
-          lastTranscript: transcript,
-          scoreResult: scoreResult,
-        );
-        if (mounted) {
-          setState(() {
-            _errorText = _practiceFailureMessage(
-              practiceMode: practiceMode,
-              contentTooLow: contentTooLow,
-            );
-          });
-        }
-        return;
-      }
-      final bool completesDailyQueue = _usesExternalQueue;
-      final bool isShadow =
-          practiceMode == ExpressionDailyQueueItem.practiceModeShadow;
-      final int completedAttemptCount =
-          item.effectiveProgress(widget.sceneId).attempts + 1;
-      await _saveProgressForCurrent(
-        status: InterviewExpressionLearningStatus.prepared,
-        currentStep: InterviewExpressionLearningStep.recall,
-        attemptsDelta: 1,
-        bestScore: math.max(item.progress?.bestScore ?? 0, totalScore),
-        lastTranscript: transcript,
-        scoreResult: scoreResult,
-        completedStep: taskType,
-        nextReviewAt: completesDailyQueue || isShadow
-            ? DateTime.now().add(const Duration(days: 1))
-            : null,
-      );
-      if (completesDailyQueue) {
-        await _completeDailyQueueItem(
-          item,
-          transcript,
-          scoreResult: scoreResult,
-          attemptCount: completedAttemptCount,
-        );
-      }
-      if (mounted) {
-        HapticFeedback.selectionClick();
-      }
+      setState(() {
+        _errorText = '语音识别已切换为可信上传流程，当前练习暂未接入后端音频提交。';
+      });
+      return;
     } catch (error) {
       if (mounted) {
         setState(() => _errorText = '识别失败：$error');
@@ -981,16 +875,6 @@ class _InterviewExpressionWarmupDeckViewState
       textMatch: scoreResult.textMatch,
       attemptCount: attemptCount,
     );
-  }
-
-  double? _pronunciationValue(PronunciationScore? pronunciation) {
-    if (pronunciation == null) {
-      return null;
-    }
-    if (pronunciation.overall > 0) {
-      return pronunciation.overall.toDouble();
-    }
-    return pronunciation.completeness?.toDouble();
   }
 
   Future<void> _handleRightSwipe() async {

@@ -400,16 +400,6 @@ class AppSession extends ChangeNotifier {
     return _repository.fetchLearningProfile();
   }
 
-  Future<PronunciationScore> scorePronunciation({
-    required String audioPath,
-    required String expectedText,
-  }) {
-    return _repository.scorePronunciation(
-      audioPath: audioPath,
-      expectedText: expectedText,
-    );
-  }
-
   Future<SceneFeedback> generateSceneFeedback({
     required SceneDraft draft,
     required List<SceneHistoryTurn> history,

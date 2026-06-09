@@ -51,31 +51,16 @@ BLOCKED_OR_NEGATED_SUBSTRINGS = (
 
 PRODUCTION_CODE_SUFFIXES = {".dart", ".java"}
 
-LEGACY_LOCAL_AUDIO_API_DEFINITION = "lib/services/api_client.dart"
-LEGACY_LOCAL_AUDIO_CALL_ALLOWLIST = {
-    "lib/application/scene/scene_auxiliary_coordinator.dart",
-    "lib/features/interview/interview_expression_learning_page.dart",
-    "lib/features/interview/interview_practice_page.dart",
-    "lib/features/interview/interview_scene_listening_page.dart",
-    "lib/infrastructure/repositories/demo_app_repository.dart",
-    "lib/services/ai_repository.dart",
-}
-
 LEGACY_LOCAL_AUDIO_CALL_PATTERN = re.compile(
     r"\bApiClient\.(?:legacyTranscribeLocalAudioForScene|legacyScoreLocalAudioForPronunciation)\s*\(",
 )
-
-LEGACY_SCENE_AUDIO_CALL_ALLOWLIST = {
-    "lib/application/scene/scene_auxiliary_coordinator.dart",
-    "lib/features/scenario/scene_page.dart",
-}
 
 LEGACY_SCENE_AUDIO_CALL_PATTERN = re.compile(
     r"\b(?!ApiClient\b)\w+\s*\.\s*legacyTranscribeLocalAudioForScene\s*\(",
 )
 
 REMOVED_LOCAL_AUDIO_API_DEFINITION_PATTERN = re.compile(
-    r"\b(?:static\s+)?Future(?:<[^(\n]*>)?\s+(?:transcribeAudio|scoreAudio)\s*\(",
+    r"\b(?:static\s+)?Future(?:<[^(\n]*>)?\s+(?:transcribeAudio|scoreAudio|legacyTranscribeLocalAudioForScene|legacyScoreLocalAudioForPronunciation|fetchOralAssessmentAuth|scorePronunciation)\s*\(",
 )
 
 COMMERCIAL_FINAL_FACT_PATTERN = re.compile(
@@ -217,46 +202,43 @@ def check_flutter_audio_ref(path: Path, text: str) -> list[Violation]:
                 "XCB-001",
                 relative,
                 line_number(text, match.start()),
-                "Removed File-based AI audio API names must not be reintroduced; use explicit legacy wrappers or trusted media upload.",
+                "Removed File-based/local pronunciation audio API names must not be reintroduced; use trusted media upload and media://audio/... audio_ref.",
             )
         )
     patterns = []
-    if relative != LEGACY_LOCAL_AUDIO_API_DEFINITION:
-        patterns.append(
-            (
-                re.compile(r"""['"]audio_ref['"]\s*:\s*[^,\n]*\.path\b"""),
-                "Flutter must not send a local File.path as audio_ref; use backend-owned media upload first.",
-            )
-        )
     patterns.append(
         (
-            re.compile(r"""\bApiClient\.(?:transcribeAudio|scoreAudio)\s*\("""),
+            re.compile(r"""['"]audio_ref['"]\s*:\s*[^,\n]*\.path\b"""),
+            "Flutter must not send a local File.path as audio_ref; use backend-owned media upload first.",
+        )
+    )
+    patterns.append(
+        (
+            re.compile(r"""\bApiClient\.(?:transcribeAudio|scoreAudio|legacyTranscribeLocalAudioForScene|legacyScoreLocalAudioForPronunciation)\s*\("""),
             "Production Flutter flows must not call removed File-based AI audio methods.",
         )
     )
     for pattern, message in patterns:
         for match in pattern.finditer(text):
             violations.append(Violation("XCB-001", relative, line_number(text, match.start()), message))
-    if relative not in LEGACY_LOCAL_AUDIO_CALL_ALLOWLIST | {LEGACY_LOCAL_AUDIO_API_DEFINITION}:
-        for match in LEGACY_LOCAL_AUDIO_CALL_PATTERN.finditer(text):
-            violations.append(
-                Violation(
-                    "XCB-001",
-                    relative,
-                    line_number(text, match.start()),
-                    "Legacy local-file AI audio wrappers are restricted to registered legacy exception call sites.",
-                )
+    for match in LEGACY_LOCAL_AUDIO_CALL_PATTERN.finditer(text):
+        violations.append(
+            Violation(
+                "XCB-001",
+                relative,
+                line_number(text, match.start()),
+                "Legacy local-file AI audio wrappers have been retired; use trusted media upload and media://audio/... audio_ref.",
             )
-    if relative not in LEGACY_SCENE_AUDIO_CALL_ALLOWLIST:
-        for match in LEGACY_SCENE_AUDIO_CALL_PATTERN.finditer(text):
-            violations.append(
-                Violation(
-                    "XCB-001",
-                    relative,
-                    line_number(text, match.start()),
-                    "Scene coordinator legacy local-audio transcription is restricted to registered legacy scene call sites.",
-                )
+        )
+    for match in LEGACY_SCENE_AUDIO_CALL_PATTERN.finditer(text):
+        violations.append(
+            Violation(
+                "XCB-001",
+                relative,
+                line_number(text, match.start()),
+                "Scene local-audio transcription has been retired; use trusted media upload and media://audio/... audio_ref.",
             )
+        )
     return violations
 
 

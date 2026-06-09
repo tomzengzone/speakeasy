@@ -26,7 +26,7 @@ Draft - P0.1 feature spec，供后续 acceptance criteria、AI runtime schema、
 - `docs/product/feature_backlog.md`：P0.1 backlog 条目。
 - `docs/process/change_request.md`：`CR-20260523-001 表达自动化训练 Agent`。
 - `docs/product/features/mvp-learning-loop-requirements.md`：当前 MVP 代码基线需求。
-- 当前代码能力：`lib/features/interview/interview_practice_page.dart`、`lib/features/interview/interview_engine.dart`、`lib/features/interview/interview_llm_scheduler.dart`、`lib/features/interview/interview_expression_learning_page.dart`、`lib/features/interview/interview_wiki_store.dart`、`lib/services/audio_service.dart`、`lib/services/voice_chat_service.dart`、`lib/services/oral_assessment_service.dart`。
+- 当前代码能力：`lib/features/interview/interview_practice_page.dart`、`lib/features/interview/interview_engine.dart`、`lib/features/interview/interview_llm_scheduler.dart`、`lib/features/interview/interview_expression_learning_page.dart`、`lib/features/interview/interview_wiki_store.dart`、`lib/services/audio_service.dart`、`lib/services/voice_chat_service.dart`；本地 oral assessment provider 服务已退役，生产发音评分必须走 trusted upload + Backend AI Gateway。
 - 当前内容资产：`assets/data/interview_scene_catalog.json`、`assets/data/interview_scene_wikis/job_interview.json`、`assets/data/interview_scene_wikis/onboarding_introduction.json`。
 
 ## 功能目标
@@ -61,7 +61,7 @@ Draft - P0.1 feature spec，供后续 acceptance criteria、AI runtime schema、
 - 不允许 LLM 直接决定持久化掌握状态的最终变更。
 
 ## 假设与依赖
-- 现有 TTS、录音、ASR/转写、LLM 教练反馈和基础评分链路已经可被复用。
+- 现有 TTS、录音、文本类评分和 LLM 教练反馈链路可复用；生产 ASR/发音评分必须等待 trusted upload + Backend AI Gateway，不得复用本地文件或文本派生评分。
 - 官方场景资产能够提供目标表达、等级轨道和示范对话；缺失的 action chain 标注可先通过本地映射补齐。
 - 外部 ASR、TTS、LLM 或评分服务不可用时，P0.1 必须可降级并保留用户可恢复路径。
 - P0.1 的学习证据本地优先写回；是否同步云端由后续 API/domain contract 决定。

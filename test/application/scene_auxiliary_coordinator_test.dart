@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:speakeasy/application/scene/scene_auxiliary_coordinator.dart';
@@ -26,36 +24,6 @@ void main() {
     expect(translated, '你好');
     verify(() => remoteApi.translateTextToChinese('hello')).called(1);
   });
-
-  test(
-    'legacyTranscribeLocalAudioForScene 会透传 hintText 和 sceneDraft',
-    () async {
-      final File audioFile = File('/tmp/audio.wav');
-      when(
-        () => remoteApi.legacyTranscribeLocalAudioForScene(
-          audioFile,
-          hintText: 'preview',
-          sceneDraft: <String, dynamic>{'title': '场景'},
-        ),
-      ).thenAnswer((_) async => 'transcript');
-
-      final String transcript = await coordinator
-          .legacyTranscribeLocalAudioForScene(
-            audioFile,
-            hintText: 'preview',
-            sceneDraft: <String, dynamic>{'title': '场景'},
-          );
-
-      expect(transcript, 'transcript');
-      verify(
-        () => remoteApi.legacyTranscribeLocalAudioForScene(
-          audioFile,
-          hintText: 'preview',
-          sceneDraft: <String, dynamic>{'title': '场景'},
-        ),
-      ).called(1);
-    },
-  );
 
   test('generateConversationSummary 会透传 history 和 existingSummary', () async {
     when(

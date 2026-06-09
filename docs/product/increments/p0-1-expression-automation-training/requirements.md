@@ -166,7 +166,7 @@ Implementation-review ready - 从 legacy P0.1 spec 迁移生成，作为本 incr
 - 不把完整评分体系、学习报告或商业权益 gating 作为 P0.1 阻塞项。
 
 ## 假设
-- 当前 TTS、录音、ASR/转写、LLM 教练反馈和基础评分链路可复用，但真实 provider 调用必须落在当前 Spring Boot AI Gateway 后端边界内。
+- 当前 TTS、录音、文本类评分和 LLM 教练反馈链路可复用；生产 ASR/发音评分必须等待 trusted upload + Backend AI Gateway，不得复用本地文件路径或文本派生评分。
 - 官方场景资产已提供目标表达、等级轨道和示范对话。
 - P0.1 第一版曾允许学习证据本地优先写回；本轮商业软件整改要求 Product Base 合入前必须给出服务端事实源实现或明确阻断口径。
 - 真实 ASR live E2E 需要后端可访问的音频对象或 URL；本轮不把 Flutter 本地文件路径视为有效 provider 输入。

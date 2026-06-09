@@ -77,7 +77,7 @@ Owning increment: `docs/product/increments/p0-1-expression-automation-training/`
 P0.1 第一版本地验证切片曾采用 **frontend-rendered, deterministic planner module, local-first session draft**；2026-06-03 backend-only correction 后，Product Base 合入或生产模式必须使用 backend-owned Training source of truth，Flutter local Training 状态机不再作为可进入路径：
 - 新增或抽取可测试的 `Training Planner` domain/application 模块，承接 action chain、micro-action、hint ladder、retry、pressure check 和 recap state transition。
 - 现有 `lib/features/interview/interview_practice_page.dart` 可作为普通练习入口或承载页面，但 P0.1 Training 生产 UI/adapter/contract 必须位于 `lib/features/training/`；不得继续把 planner 决策、AI 候选解析、学习证据写回和 UI rendering 混成不可测试的页面内逻辑。
-- 现有 `interview_engine`、`interview_models`、`interview_wiki_store`、`audio_service`、`voice_chat_service`、`oral_assessment_service` 可复用，但必须通过 planner/application boundary 调用。
+- 现有 `interview_engine`、`interview_models`、`interview_wiki_store`、`audio_service`、`voice_chat_service` 可复用，但必须通过 planner/application boundary 调用；本地 oral assessment provider 服务已退役，生产发音评分必须走 trusted upload + Backend AI Gateway。
 - Local-first 只允许作为本地草稿、demo 和可恢复 fallback；Product Base 合入、商业生产训练或 release readiness 必须实现 OpenAPI Training family 对应的后端 controller/service/repository/test，或在 release/Product Base 状态中显式标记 blocked。
 - 后端 Training implementation 不新增 stage；它关闭同一 P0.1 increment 的 `P01-GAP-009` through `P01-GAP-014`。
 
@@ -102,7 +102,7 @@ P0.1 第一版本地验证切片曾采用 **frontend-rendered, deterministic pla
 | `interview_engine.dart` | May provide content lookup, target expression selection and existing session helpers; P0.1 planner decisions should be extracted into a small testable module. |
 | `interview_llm_scheduler.dart` / coach schema | May request AI feedback candidates; output must validate against `TrainingFeedbackCandidate` before UI consumption. |
 | `interview_wiki_store.dart` | May receive accepted evidence/recap updates; raw AI candidates must not be persisted as final mastery. |
-| `audio_service.dart` and `ApiClient.transcribeAudio` | Provide voice-first input and ASR fallback; ASR failure returns recoverable state, not learner failure. |
+| `audio_service.dart`, `voice_chat_service.dart`, and `ApiClient.transcribeTrustedAudioRef` | Provide recording/playback/runtime preview surfaces; production ASR must consume trusted `media://audio/...`, and unavailable upload/ASR returns recoverable state rather than a learner failure. |
 | OpenAPI Training family | Required contract for Product Base/production readiness. Flutter P0.1 Training must not bypass it with local draft state, local planner decisions or synthetic feedback. |
 | Current Spring Boot AI Gateway | Owns real provider adapter selection. `deterministic` remains test/dev default; `dashscope` implements Qwen LLM, DashScope TTS and Paraformer ASR behind the existing AI REST API. |
 

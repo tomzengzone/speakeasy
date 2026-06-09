@@ -89,9 +89,9 @@ Product Manager Agent
 | 推荐表达队列 | 已实现 | `lib/features/interview/expression_daily_queue_coordinator.dart` | 后续接入训练 planner |
 | 表达练习 | 已实现多种任务 | `lib/features/interview/interview_expression_learning_page.dart` | 可复用为 FSI micro-drill |
 | 语音场景模拟 | 已实现主流程 | `lib/features/interview/interview_practice_page.dart` | P0 主路径应改为语音优先 |
-| TTS/录音/转写 | 已接入 | `lib/services/audio_service.dart`, `lib/services/voice_chat_service.dart`, `ApiClient.transcribeAudio` 调用 | 不再作为 P1 后置能力处理 |
+| TTS/录音/转写 | 部分接入，生产 ASR 等待 trusted upload | `lib/services/audio_service.dart`, `lib/services/voice_chat_service.dart`, `ApiClient.transcribeTrustedAudioRef` + `media://audio/...` | 本地文件转写路径已退役；未接入可信上传的语音提交必须 fail closed |
 | LLM 教练反馈 | 已接入 | `lib/features/interview/interview_llm_scheduler.dart` | 需收敛为训练型 schema 和状态机 |
-| 发音/表达评分 | 已有基础能力 | `lib/services/oral_assessment_service.dart`, `lib/features/interview/expression_shadow_scoring.dart` | P0 可展示基础反馈，P1 做评分产品化 |
+| 发音/表达评分 | 本地 provider 服务已退役 | `lib/features/interview/expression_shadow_scoring.dart`; trusted upload + Backend AI Gateway required | P0 仅保留非音频类反馈；生产发音评分必须等待 `media://audio/...` 接入 |
 | 个人 Wiki/复习沉淀 | 已实现本地优先 | `lib/features/interview/interview_wiki_store.dart` | 作为记忆引擎基础 |
 | 会员页 | 已有页面和 Apple IAP 前端接入 | `lib/pages/membership_page.dart`, `lib/services/apple_payment_service.dart` | 不作为 P0.1 训练闭环阻塞项；作为商业化订阅上线准备的输入，不等同于真实付费闭环 |
 | MVP 后端与数据库 | 当前 stage 已完成 | `backend/`, `docs/architecture/openapi/speakeasy-api.yaml`, `docs/product/stages/mvp-backend-foundation.md`, `docs/reports/test_report.md` | Product Base 当前 MVP 能力已有后端/API/DB、测试和发布证据；真实支付 provider 和真实第三方 provider 质量仍走外部门禁 |

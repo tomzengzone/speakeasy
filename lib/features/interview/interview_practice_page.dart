@@ -1532,16 +1532,6 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
     return '${section}_${slug.length > 48 ? slug.substring(0, 48) : slug}';
   }
 
-  Future<PronunciationScore?> _scoreVoice(String audioPath, String text) async {
-    try {
-      return await AppSessionScope.of(
-        context,
-      ).scorePronunciation(audioPath: audioPath, expectedText: text);
-    } catch (_) {
-      return null;
-    }
-  }
-
   Future<_GrammarScoreResult?> _scoreGrammarForVoiceAnswer({
     required String userText,
     InterviewExpression? targetExpression,
@@ -1583,10 +1573,6 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
       return;
     }
     _logVoiceLatency('score:start', pipelineWatch);
-    final Future<PronunciationScore?> pronunciationFuture = _scoreVoice(
-      audioPath,
-      userText,
-    );
     final Future<_GrammarScoreResult?> grammarFuture =
         _scoreGrammarForVoiceAnswer(
           userText: userText,
@@ -1641,16 +1627,6 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
       unawaited(_saveActiveSession());
     }
 
-    unawaited(
-      pronunciationFuture
-          .then((PronunciationScore? score) {
-            _logVoiceLatency('pronunciation:ready', pipelineWatch);
-            applyVoiceScoreUpdate(pronunciation: score);
-          })
-          .catchError((Object error) {
-            debugPrint('[InterviewLatency] pronunciation skipped: $error');
-          }),
-    );
     unawaited(
       grammarFuture
           .then((_GrammarScoreResult? grammarResult) {
@@ -3167,13 +3143,7 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
         }
       }
       if (transcript.isEmpty) {
-        _logVoiceLatency('transcribe:file_start', pipelineWatch);
-        transcript = normalizeInterviewText(
-          await ApiClient.legacyTranscribeLocalAudioForScene(
-            File(path),
-            repairMode: 'background',
-          ),
-        );
+        debugPrint('[InterviewLatency] trusted audio_ref transcription not routed');
       }
       _logVoiceLatency('transcribe:ready', pipelineWatch);
       if (!mounted) {
@@ -9371,9 +9341,6 @@ class _VoiceScoreRow extends StatelessWidget {
 
   String _pronunciationProviderLabel(String source) {
     final String normalized = source.toLowerCase();
-    if (normalized.contains('ali') || normalized.contains('singsound')) {
-      return '来源：阿里口语测评';
-    }
     if (normalized.contains('backend') || normalized.contains('server')) {
       return '来源：后端备用评分';
     }

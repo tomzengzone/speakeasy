@@ -23,21 +23,11 @@ class ResolvedSceneVoiceUserTurn {
     required this.normalizedText,
     required this.resolvedVoiceDuration,
     required this.action,
-    this.audioPath,
   });
 
   final String normalizedText;
   final int resolvedVoiceDuration;
   final SceneVoiceUserTurnAction action;
-  final String? audioPath;
-}
-
-abstract class SceneVoiceUserTurnAudioGateway {
-  Future<String?> persistChunksAsWav(
-    List<Uint8List> chunks, {
-    required int sampleRate,
-    required String prefix,
-  });
 }
 
 class SceneVoiceUserTurnCoordinator {
@@ -77,27 +67,12 @@ class SceneVoiceUserTurnCoordinator {
     );
   }
 
-  Future<ResolvedSceneVoiceUserTurn> resolvePreparedTurn({
+  ResolvedSceneVoiceUserTurn resolvePreparedTurn({
     required PreparedSceneVoiceUserTurn preparedTurn,
-    required SceneVoiceUserTurnAudioGateway audioGateway,
-  }) async {
-    String? audioPath;
-    if (preparedTurn.userVoiceChunks.isNotEmpty) {
-      try {
-        audioPath = await audioGateway.persistChunksAsWav(
-          preparedTurn.userVoiceChunks,
-          sampleRate: 16000,
-          prefix: 'user_rt',
-        );
-      } catch (_) {
-        audioPath = null;
-      }
-    }
-
+  }) {
     return ResolvedSceneVoiceUserTurn(
       normalizedText: preparedTurn.normalizedText,
       resolvedVoiceDuration: preparedTurn.resolvedVoiceDuration,
-      audioPath: audioPath,
       action: preparedTurn.shouldSendViaPlanner
           ? SceneVoiceUserTurnAction.sendViaPlanner
           : SceneVoiceUserTurnAction.appendLocalMessage,

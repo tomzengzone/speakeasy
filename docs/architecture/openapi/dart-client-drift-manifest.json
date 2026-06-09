@@ -21,7 +21,6 @@
     "/ai/scene-turn-meta": "Legacy scene metadata endpoint outside MVP backend practice-session API.",
     "/ai/translate": "Legacy translation helper outside MVP backend active endpoint set.",
     "/ai/conversation-summary": "Legacy freeform scene summary endpoint outside MVP backend practice-session API.",
-    "/ai/oral-assessment/auth": "External provider auth helper retained as platform/provider exception.",
     "/ai/grammar-score": "Legacy grammar score helper outside current OpenAPI pronunciation/coach-turn boundary."
   }
 }

@@ -179,6 +179,10 @@ class TrainingBackendAdapter {
     int? clientStateVersion,
     String fallbackUserId = '',
   }) async {
+    final String? trustedAudioRef =
+        audioRef == null || audioRef.trim().isEmpty
+        ? null
+        : _normalizeTrustedAudioRef(audioRef);
     final Map<String, dynamic> response = await _transport(
       TrainingBackendRequest(
         operation: TrainingBackendOperation.submitTurn,
@@ -188,8 +192,7 @@ class TrainingBackendAdapter {
           'schema_version': 1,
           if (transcript != null && transcript.trim().isNotEmpty)
             'transcript': transcript.trim(),
-          if (audioRef != null && audioRef.trim().isNotEmpty)
-            'audio_ref': audioRef.trim(),
+          if (trustedAudioRef != null) 'audio_ref': trustedAudioRef,
           if (selectedOptionId != null && selectedOptionId.trim().isNotEmpty)
             'selected_option_id': selectedOptionId.trim(),
           'client_state_version': ?clientStateVersion,
@@ -326,6 +329,14 @@ class TrainingAudioUploadHandle {
   final String status;
   final String uploadUrl;
   final Map<String, String> uploadHeaders;
+}
+
+String _normalizeTrustedAudioRef(String audioRef) {
+  final String value = audioRef.trim();
+  if (!value.startsWith('media://audio/')) {
+    throw Exception('trusted audio_ref required');
+  }
+  return value;
 }
 
 Future<Map<String, dynamic>> _apiTransport(TrainingBackendRequest request) {

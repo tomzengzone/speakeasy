@@ -68,14 +68,25 @@ class GoalDiagnosticSampleInput {
     final String ref = sampleRef.trim().isEmpty
         ? fallbackSampleRef ?? ''
         : sampleRef.trim();
+    final String? trustedAudioRef =
+        audioRef == null || audioRef!.trim().isEmpty
+        ? null
+        : _normalizeTrustedAudioRef(audioRef!);
     return <String, dynamic>{
       if (ref.isNotEmpty) 'sample_ref': ref,
       if (transcript.trim().isNotEmpty) 'transcript': transcript.trim(),
-      if (audioRef != null && audioRef!.trim().isNotEmpty)
-        'audio_ref': audioRef!.trim(),
+      if (trustedAudioRef != null) 'audio_ref': trustedAudioRef,
       if (durationSeconds != null) 'duration_seconds': durationSeconds,
     };
   }
+}
+
+String _normalizeTrustedAudioRef(String audioRef) {
+  final String value = audioRef.trim();
+  if (!value.startsWith('media://audio/')) {
+    throw Exception('trusted audio_ref required');
+  }
+  return value;
 }
 
 class GoalAutopilotAdapter {

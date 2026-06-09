@@ -64,6 +64,21 @@ class ApiClient {
     }
   }
 
+  static String _normalizeTrustedAudioRef(String audioRef) {
+    final String value = audioRef.trim();
+    if (!value.startsWith('media://audio/')) {
+      throw Exception('trusted audio_ref required');
+    }
+    return value;
+  }
+
+  static String? _normalizeOptionalTrustedAudioRef(String? audioRef) {
+    if (audioRef == null || audioRef.trim().isEmpty) {
+      return null;
+    }
+    return _normalizeTrustedAudioRef(audioRef);
+  }
+
   static Map<String, dynamic> _decodeResponse(
     http.Response response, {
     bool allowEmpty = false,
@@ -458,14 +473,14 @@ class ApiClient {
     String? selectedOptionId,
     int? clientStateVersion,
   }) async {
+    final String? trustedAudioRef = _normalizeOptionalTrustedAudioRef(audioRef);
     final Map<String, dynamic> response = await _post(
       SpeakeasyApiPaths.trainingSessionTurns(sessionId),
       <String, dynamic>{
         'schema_version': 1,
         if (transcript != null && transcript.trim().isNotEmpty)
           'transcript': transcript.trim(),
-        if (audioRef != null && audioRef.trim().isNotEmpty)
-          'audio_ref': audioRef.trim(),
+        if (trustedAudioRef != null) 'audio_ref': trustedAudioRef,
         if (selectedOptionId != null && selectedOptionId.trim().isNotEmpty)
           'selected_option_id': selectedOptionId.trim(),
         'client_state_version': ?clientStateVersion,
@@ -670,6 +685,7 @@ class ApiClient {
     String? audioRef,
     double? scoreHint,
   }) async {
+    final String? trustedAudioRef = _normalizeOptionalTrustedAudioRef(audioRef);
     final Map<String, dynamic> response = await _post(
       SpeakeasyApiPaths.goalAutopilotCheckpoints,
       <String, dynamic>{
@@ -677,8 +693,7 @@ class ApiClient {
         'checkpoint_type': checkpointType.trim(),
         if (transcript != null && transcript.trim().isNotEmpty)
           'transcript': transcript.trim(),
-        if (audioRef != null && audioRef.trim().isNotEmpty)
-          'audio_ref': audioRef.trim(),
+        if (trustedAudioRef != null) 'audio_ref': trustedAudioRef,
         'score_hint': ?scoreHint,
       },
     );
@@ -1169,39 +1184,21 @@ class ApiClient {
     return audioUrl.isEmpty ? null : audioUrl;
   }
 
-  /// 语音转文字（Paraformer）——上传音频文件，返回识别文本
-  // XCB-001 legacy exception only. New audio flows must use backend media
-  // upload and submit the returned audio_ref to the owning business API.
-  static Future<String> legacyTranscribeLocalAudioForScene(
-    File audioFile, {
-    String? hintText,
-    Map<String, dynamic>? sceneDraft,
-    String repairMode = 'background',
-    bool preferRawText = false,
-  }) {
-    return _legacyTranscribeLocalAudioByPath(
-      audioFile,
-      hintText: hintText,
-      sceneDraft: sceneDraft,
-      repairMode: repairMode,
-      preferRawText: preferRawText,
-    );
-  }
-
-  static Future<String> _legacyTranscribeLocalAudioByPath(
-    File audioFile, {
-    String? hintText,
-    Map<String, dynamic>? sceneDraft,
-    String repairMode = 'background',
-    bool preferRawText = false,
+  /// 语音转文字（Paraformer）——消费可信 audio_ref，返回识别文本
+  // XCB-001: callers must pass a backend-owned trusted audio_ref.
+  static Future<String> transcribeTrustedAudioRef({
+    required String audioRef,
+    String? languageHint,
+    Duration timeout = const Duration(seconds: 30),
   }) async {
+    final String trustedAudioRef = _normalizeTrustedAudioRef(audioRef);
     final Map<String, dynamic> body =
         await _post(SpeakeasyApiPaths.aiTranscribe, <String, dynamic>{
           'schema_version': 1,
-          'audio_ref': audioFile.path,
-          if (hintText != null && hintText.trim().isNotEmpty)
-            'language_hint': hintText.trim(),
-        }, timeout: const Duration(seconds: 30));
+          'audio_ref': trustedAudioRef,
+          if (languageHint != null && languageHint.trim().isNotEmpty)
+            'language_hint': languageHint.trim(),
+        }, timeout: timeout);
     _ensureSuccess(body, fallback: '语音识别失败');
     final String text = (body['transcript'] as String? ?? '').trim();
     if (text.isEmpty) {
@@ -1245,27 +1242,17 @@ class ApiClient {
     });
   }
 
-  // XCB-001 legacy exception only. New pronunciation flows must use backend
-  // media upload and submit the returned audio_ref to the owning business API.
-  static Future<Map<String, dynamic>> legacyScoreLocalAudioForPronunciation(
-    File audioFile,
-    String refText, {
-    String? cardId,
-  }) {
-    return _legacyScoreLocalAudioByPath(audioFile, refText, cardId: cardId);
-  }
-
-  static Future<Map<String, dynamic>> _legacyScoreLocalAudioByPath(
-    File audioFile,
-    String refText, {
-    String? cardId,
+  static Future<Map<String, dynamic>> scoreTrustedAudioRefForPronunciation({
+    required String audioRef,
+    required String referenceText,
   }) async {
+    final String trustedAudioRef = _normalizeTrustedAudioRef(audioRef);
     final Map<String, dynamic> body = await _post(
       SpeakeasyApiPaths.aiPronunciation,
       <String, dynamic>{
         'schema_version': 1,
-        'audio_ref': audioFile.path,
-        'reference_text': refText,
+        'audio_ref': trustedAudioRef,
+        'reference_text': referenceText,
       },
       timeout: const Duration(seconds: 30),
     );
@@ -1279,16 +1266,6 @@ class ApiClient {
       'source': signal['source'] ?? 'server_side_adapter',
       'status': signal['status'],
     };
-  }
-
-  static Future<Map<String, dynamic>> fetchOralAssessmentAuth() async {
-    final Map<String, dynamic> response = await _post(
-      '/ai/oral-assessment/auth',
-      const <String, dynamic>{},
-      timeout: const Duration(seconds: 10),
-    );
-    _ensureSuccess(response, fallback: '口语测评授权失败');
-    return _asMap(response['data']);
   }
 
   static Future<Map<String, dynamic>> scoreGrammar({
