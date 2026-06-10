@@ -3,6 +3,83 @@
 ## Current Status
 Latest Followup-E quality state: docs-only planning/contract evidence. Followup-E Phase 0-3 planning and contract review gates are recorded, but no Followup-E backend, Flutter, OpenAPI/generated client, AI runtime, native mic/audio bytes upload, test execution, release or Product Base independent implementation review is accepted in this state.
 
+## 2026-06-10 P0 Commercial Admin Data Deletion Retry Independent Review
+
+Review ID: `P0-COM-ADMIN-DATA-DELETION-RETRY-20260610`
+
+Result: pass after transaction-boundary and report-chain follow-up. No blocker or P1 remains for the scoped `POST /admin/data-deletion/{job_id}/retry` local backend/API/contract/test closure. P0 commercial release remains blocked by external/native/store/release evidence gates.
+
+Independent agents:
+- `Beauvoir` reviewed the first implementation in read-only mode and failed it on a real AI retention rollback risk plus report-chain gaps.
+- `Planck` reviewed the corrected implementation in read-only mode and passed runtime, contract and test traceability, with only P2 report status corrections required.
+
+Findings:
+- Blocker found and fixed: the first implementation called transactional `AiRetentionService#runAccountDeletion` inside the deletion retry transaction, so a real AI retention exception could mark the outer transaction rollback-only and prevent failed deletion job/retry/audit persistence.
+- No blocker remains after adding `AccountDeletionRetentionRunner` with `REQUIRES_NEW` around the existing `AiRetentionService` call; the outer `AccountDeletionService` transaction now persists `AccountDeletionJob failed`, `AccountDeletionRetryIdempotency failed` and `account_deletion_retry_failed` audit on real retention failure.
+- No blocker remains for failure coverage. `AdminDataDeletionRetryFailureTest` no longer mocks `AiRetentionService`; it uses the real service path with a test `AiMediaStorageService` failure and verifies job, retry idempotency and audit persistence.
+- P2 found and fixed: `api_contract.md` previously over-promised that all retry attempts are audited while duplicate/completed no-op requests intentionally do not create new retry side effects. The contract now says new retry executions are audited, matching implementation and tests.
+- P2 found and fixed: `development_status.md` and this quality report lagged behind TC-COM-025. Development status now includes TC-COM-025, and this section records the independent review and closure.
+- No blocker found for OPS-only access, OpenAPI/backend/generated-client alignment, failed-only execution, completed no-op, in-progress `DELETE_IN_PROGRESS`, duplicate `Idempotency-Key` replay, redacted audit details or architecture reuse.
+- No blocker found for bidirectional traceability. TC-COM-025 links COM-SI-006/011 -> FR-COM-008/011 -> COM-SPEC-006/011 -> AC-COM-010/013 -> COM-TR-006/011 -> backend/OpenAPI/tests/reports.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminDataDeletionRetryFailureTest test` - passed with real `AiRetentionService` failure path.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminDataDeletionControllerTest,AdminDataDeletionRetryFailureTest,AccountDeletionControllerTest,AccountDeletionSessionInvalidationTest,AccountDeletionLearningDataTest,AccountDeletionFailureAuditTest,CommercialAccountDeletionProcessorTest,AiAccountDeletionMediaCleanupTest,AiRetentionPolicyTest,AdminAuditControllerTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CommercialAbuseControlTest test` - passed after deterministic provider isolation.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProviderGatewaySecurityContractTest test` - passed after deterministic provider isolation.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
+- `npm run check:api-contract` - passed with OpenAPI hash `464464b9346a28422831e56e8f5ba42118ebb0a6005d981e4381bee52fce4e30`.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed for 32 changed files.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Required corrections:
+- Fixed before close: AI retention failures are isolated through `AccountDeletionRetentionRunner` and covered by a real-service integration test.
+- Fixed before close: retry audit contract language now matches duplicate/completed no-op behavior.
+- Fixed before close: `development_status.md` and this quality report now include TC-COM-025 closure evidence.
+
+Residual risk:
+- This review accepts the local admin data deletion retry endpoint closure only. It does not close TC-COM-012/015/019/021/022 external/native/store/release gates.
+- Retry still executes synchronously in the backend process. Production queueing, alerting, WORM/SIEM audit retention and external privacy deletion evidence remain ops/release scope.
+
+## 2026-06-10 P0 Commercial Admin Audit Endpoint Independent Review
+
+Review ID: `P0-COM-ADMIN-AUDIT-ENDPOINT-20260610`
+
+Result: pass after documentation follow-up. No blocker or P1 remains for the scoped `GET /admin/audit` local backend/API/contract/test closure. P0 commercial release remains blocked by external/native/store/release evidence gates.
+
+Independent agent:
+- `Hilbert` reviewed the current workspace changes in read-only mode against commercial product design, software architecture design, reuse/no-duplicate-build requirements and full bidirectional traceability.
+
+Findings:
+- P2 found and fixed: repo-level report traceability was not fully closed because `traceability.md` still said Implementation Report and Test Report “需更新”, and `quality_report.md` had no 2026-06-10 independent review section. This section plus the updated downstream evidence rows in `docs/product/increments/commercial-subscription-readiness/traceability.md` close that report-chain gap.
+- No blocker or P1 found for backend runtime behavior.
+- No blocker found for OPS-only access. `/admin/**` reuses the existing OPS security boundary, and TC-COM-024 covers unauthenticated 401 plus non-OPS 403.
+- No blocker found for pagination/filtering. `AuditLogService` uses bounded page size, opaque keyset cursor and exact `event_type`, `actor_type`, `target_ref`, `created_after` and `created_before` filters.
+- No blocker found for sensitive data handling. Response projection omits `actor_id`; JSON and legacy `redacted_details` paths are sanitized for token, signature, URL, raw payload and transcript-like data.
+- No blocker found for self-audit. Successful audit reads write `admin_audit_events_listed` with redacted metadata.
+- No blocker found for OpenAPI/backend/generated-client alignment. The endpoint parameters, errors, schema, examples and generated Dart hash pin are synchronized.
+- No blocker found for architecture reuse. The implementation reuses `AuditLog`, `AuditLogRepository`, existing admin OPS auth, `SchemaResponse`, Flyway, OpenAPI and generated-client drift gates; it does not create a duplicate audit store or admin auth stack.
+- No blocker found for FR/AC/TC/report traceability after the P2 documentation correction. TC-COM-024 now links COM-SI-011/012 -> FR-COM-011/012 -> COM-SPEC-011/012 -> AC-COM-013/014 -> COM-TR-011/012 -> backend/OpenAPI/tests/reports.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminAuditControllerTest test` - passed.
+- `npm run check:api-contract` - passed.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `defb6aad8bbf84fe39aa3c2982137c7560145ae63d729d30d9d02b9aa70e5a4d`.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminAuditControllerTest,CommercialFoundationControllerTest,AiProviderEvidenceControllerTest,AiCostDashboardTest,AiRetentionPolicyTest,AccountDeletionFailureAuditTest test` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
+
+Required corrections:
+- Fixed before close: `traceability.md` downstream evidence now marks Implementation Report, Test Report and Quality Report updated for the 2026-06-10 admin audit closure.
+- Fixed before close: this `quality_report.md` section records the independent review, finding, correction and final pass result.
+
+Residual risk:
+- This review accepts the local admin audit endpoint closure only. It does not close TC-COM-012/015/019/021/022 external/native/store/release gates.
+- The endpoint provides local persisted audit event query, not SIEM export, immutable WORM storage, external audit warehouse sync or production incident evidence.
+
 ## 2026-06-09 P02 Followup-B XCB-003 Reminder Eligibility Endpoint Independent Review
 
 Review ID: `P02-FOLLOWUP-B-XCB-003-REMINDER-ELIGIBILITY-ENDPOINT-20260609`
@@ -2120,7 +2197,7 @@ Traceability audit:
 
 Backend / DB / API architecture review:
 - Implemented backend controller paths: 44 unique paths, all present in `docs/architecture/openapi/speakeasy-api.yaml`.
-- OpenAPI paths not implemented by backend controllers: 18 paths, all outside the current MVP backend stage implementation scope or covered by documented future/commercial boundaries: `/admin/audit`, `/admin/data-deletion/{job_id}/retry`, `/entitlements/refresh`, `/subscriptions/apple/verify`, `/subscriptions/google/verify`, `/subscriptions/restore`, `/subscriptions/webhook/apple`, `/subscriptions/webhook/google`, `/training/sessions`, `/training/sessions/{session_id}`, `/training/sessions/{session_id}/complete`, `/training/sessions/{session_id}/hints`, `/training/sessions/{session_id}/planner/next`, `/training/sessions/{session_id}/pressure-check`, `/training/sessions/{session_id}/turns`, `/usage/commit`, `/usage/release`, `/usage/reserve`.
+- OpenAPI paths not implemented by backend controllers: 18 paths in this 2026-05-29 snapshot, all outside the current MVP backend stage implementation scope or covered by documented future/commercial boundaries: `/admin/audit`, `/admin/data-deletion/{job_id}/retry`, `/entitlements/refresh`, `/subscriptions/apple/verify`, `/subscriptions/google/verify`, `/subscriptions/restore`, `/subscriptions/webhook/apple`, `/subscriptions/webhook/google`, `/training/sessions`, `/training/sessions/{session_id}`, `/training/sessions/{session_id}/complete`, `/training/sessions/{session_id}/hints`, `/training/sessions/{session_id}/planner/next`, `/training/sessions/{session_id}/pressure-check`, `/training/sessions/{session_id}/turns`, `/usage/commit`, `/usage/release`, `/usage/reserve`. Historical note: `/admin/audit` in this 2026-05-29 snapshot is superseded by the 2026-06-10 `P0-COM-ADMIN-AUDIT-ENDPOINT-20260610` closure above; `/admin/data-deletion/{job_id}/retry` is superseded by the 2026-06-10 `P0-COM-ADMIN-DATA-DELETION-RETRY-20260610` closure above.
 - Scope finding: this is acceptable for `mvp-backend-foundation` because the stage explicitly excludes full commercial subscription and P0.1 planner implementation, but the project must not describe the full OpenAPI surface as backend-implemented until those owning increments implement the missing controllers and tests.
 - Database review found Flyway-managed schema, JPA `ddl-auto: validate`, PostgreSQL-compatible migrations, user-owned data deletion coverage, idempotency constraints for practice turns and usage reservations, and server-owned auth/session/learning facts aligned with the backend foundation architecture.
 - Security/API review found no production `X-User-Id` reliance, no client-submitted provider secret boundary in backend code, server-side bearer auth on protected paths, `schema_version` request validation, shared error schema, and `Idempotency-Key` enforcement on practice turns and account deletion.

@@ -15,6 +15,107 @@ Each completed change should append:
 - risks
 - follow-up
 
+## 2026-06-10 - P0-COM-ADMIN-DATA-DELETION-RETRY-20260610
+
+Change request:
+- Close the `POST /admin/data-deletion/{job_id}/retry` implementation-level contract gap. OpenAPI already promised OPS retry for failed account deletion jobs, but the backend had no controller mapping or retry state machine.
+
+Requirement mapping:
+- Increment: `docs/product/increments/commercial-subscription-readiness/`.
+- Chain: COM-SI-006/011 -> FR-COM-008/011 -> COM-SPEC-006/011 -> AC-COM-010/013 -> COM-TR-006/011 -> TC-COM-025.
+- Architecture boundary: implement the existing Admin/Ops deletion recovery contract by reusing `AccountDeletionService`, `AccountDeletionJob`, `AuditLog`, `AiRetentionService`, Spring Security `/admin/**` OPS bearer auth, Flyway and OpenAPI/generated-client drift gates.
+
+Files changed:
+- Backend API: `backend/src/main/java/com/speakeasy/api/AdminDataDeletionController.java`, `AccountDeletionJobResponse.java`, `AuthController.java`.
+- Backend ops domain/service: `backend/src/main/java/com/speakeasy/ops/AccountDeletionService.java`, `AccountDeletionRetentionRunner.java`, `AccountDeletionJob.java`, `AccountDeletionJobRepository.java`, `AccountDeletionRetryIdempotency.java`, `AccountDeletionRetryIdempotencyRepository.java`.
+- Persistence: `backend/src/main/resources/db/migration/V202606100002__admin_data_deletion_retry_idempotency.sql`.
+- Tests: `backend/src/test/java/com/speakeasy/AdminDataDeletionControllerTest.java`, `AdminDataDeletionRetryFailureTest.java`, `BackendIntegrationTestSupport.java`, `CommercialAbuseControlTest.java`, `ProviderGatewaySecurityContractTest.java`.
+- API/generated boundary: `docs/architecture/api_contract.md`, `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/openapi/dart-client-drift-manifest.json`, `lib/generated/api/.openapi-sha256`, `lib/generated/api/speakeasy_api.dart`.
+- Traceability/reports: commercial subscription `test_cases.md`, `traceability.md`, `docs/reports/test_report.md`, `docs/reports/implementation_report.md`.
+
+Implementation summary:
+- Added `AdminDataDeletionController#retryDeletionJob` for `POST /admin/data-deletion/{job_id}/retry`.
+- Extracted shared `AccountDeletionJobResponse` so user-side and admin-side deletion APIs return the same OpenAPI schema.
+- Added explicit deletion job state transitions through `access_revoked`, `deleting_learning_data`, `anonymizing_audit_refs`, `completed` and `failed`.
+- Added `AccountDeletionService#retryDeletionJob` with `Idempotency-Key` enforcement, deletion-job row lock, completed no-op, in-progress `DELETE_IN_PROGRESS`, failed-only execution and redacted retry audit events.
+- Added `account_deletion_retry_idempotency` to prevent duplicate retry work for the same `deletion_job_id + Idempotency-Key`.
+- Kept deletion cleanup centralized in `AccountDeletionService`; retry reuses existing AI retention cleanup, user data purge, session revocation and audit logging.
+- Added `AccountDeletionRetentionRunner` as a narrow `REQUIRES_NEW` transaction boundary around the existing `AiRetentionService#runAccountDeletion` call so AI retention rollback cannot roll back deletion-job failed status, retry idempotency or retry failure audit records.
+- Replaced the retry failure test mock with a real `AiRetentionService` path and a test-only failing `AiMediaStorageService`, proving production-style AI retention failures persist the failed retry state.
+- Updated OpenAPI to include the retry idempotency header, 401/403/404/409/422 responses and `retry_count` in `AccountDeletionJobResponse`.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminDataDeletionControllerTest,AdminDataDeletionRetryFailureTest,AccountDeletionControllerTest,AccountDeletionSessionInvalidationTest,AccountDeletionLearningDataTest,AccountDeletionFailureAuditTest,CommercialAccountDeletionProcessorTest,AiAccountDeletionMediaCleanupTest,AiRetentionPolicyTest,AdminAuditControllerTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CommercialAbuseControlTest test` - passed after pinning the test to the existing deterministic AI provider pattern.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProviderGatewaySecurityContractTest test` - passed after pinning the test to the existing deterministic AI provider pattern.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
+- `npm run check:api-contract` - passed; OpenAPI contract gate reported 87 paths and 93 operations; Dart drift passed with OpenAPI hash `464464b9346a28422831e56e8f5ba42118ebb0a6005d981e4381bee52fce4e30`.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed for 30 changed files.
+- `git diff --check` - passed.
+
+Result:
+- `POST /admin/data-deletion/{job_id}/retry` is now implemented behind existing OPS bearer admin security.
+- Failed deletion jobs can be retried through the same deletion processor and cleanup path; duplicate retry keys are idempotent; completed jobs are no-op; in-progress jobs fail closed.
+- TC-COM-025 is added and passed, closing the local admin deletion retry contract gap for FR-COM-008/011 and AC-COM-010/013.
+- P0 commercial release readiness remains blocked by external/native/store/release evidence gates, not by this local admin data deletion retry endpoint.
+
+Residual risk:
+- The retry runs synchronously; production queueing, alerting, WORM audit storage and external privacy evidence remain release/ops scope.
+- TC-COM-012/015/019/021/022 external/native/store/release gates still block commercial release readiness.
+
+Follow-up:
+- Keep TC-COM-025 in the required suite for future account deletion, admin ops, privacy compliance or audit changes.
+
+## 2026-06-10 - P0-COM-ADMIN-AUDIT-ENDPOINT-20260610
+
+Change request:
+- Close the `GET /admin/audit` implementation-level contract gap. OpenAPI already promised Admin audit logs for compliance, release health and operation tracing, but the backend had no controller mapping.
+
+Requirement mapping:
+- Increment: `docs/product/increments/commercial-subscription-readiness/`.
+- Chain: COM-SI-011/012 -> FR-COM-011/012 -> COM-SPEC-011/012 -> AC-COM-013/014 -> COM-TR-011/012 -> TC-COM-024.
+- Architecture boundary: implement the existing Admin/Ops audit contract by reusing `AuditLog`, `AuditLogRepository`, Spring Security `/admin/**` OPS bearer auth, `SchemaResponse`, Flyway and OpenAPI/generated-client drift gates.
+
+Files changed:
+- Backend API: `backend/src/main/java/com/speakeasy/api/AdminAuditController.java`.
+- Backend domain/query: `backend/src/main/java/com/speakeasy/ops/AuditLogService.java`, `AuditLog.java`, `AuditLogRepository.java`.
+- Persistence: `backend/src/main/resources/db/migration/V202606100001__admin_audit_query_indexes.sql`.
+- Tests: `backend/src/test/java/com/speakeasy/AdminAuditControllerTest.java`.
+- API/generated boundary: `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/openapi/dart-client-drift-manifest.json`, `lib/generated/api/.openapi-sha256`, `lib/generated/api/speakeasy_api.dart`, `docs/architecture/api_contract.md`.
+- Traceability/reports: commercial subscription `test_cases.md`, `traceability.md`, `docs/product/development_status.md`, `docs/reports/test_report.md`, `docs/reports/implementation_report.md`.
+
+Implementation summary:
+- Added `AdminAuditController#listAuditEvents` for `GET /admin/audit`.
+- Added `AuditLogService` with bounded page size, opaque cursor keyset pagination, exact event/actor/target filters and time-window filters.
+- Added safe audit event projection with `actor_type`, `event_type`, `target_ref`, `request_id`, `created_at` and `redacted_details`; `actor_id` is intentionally not returned.
+- Added redaction hardening for JSON and legacy text audit details so tokens, raw payloads, transcripts, receipt-like values, signed URLs and media URLs are not leaked through the admin API.
+- Added self-audit behavior: each successful audit read writes `admin_audit_events_listed` with redacted metadata.
+- Added query indexes for created/id, actor/created and target/created lookup patterns.
+- Updated OpenAPI parameters, response schemas, examples, `401/403/422` errors and generated Dart drift pins.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminAuditControllerTest test` - passed.
+- `npm run check:api-contract` - passed; OpenAPI contract gate reported 87 paths and 93 operations.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `defb6aad8bbf84fe39aa3c2982137c7560145ae63d729d30d9d02b9aa70e5a4d`.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminAuditControllerTest,CommercialFoundationControllerTest,AiProviderEvidenceControllerTest,AiCostDashboardTest,AiRetentionPolicyTest,AccountDeletionFailureAuditTest test` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
+
+Result:
+- `GET /admin/audit` is now implemented behind existing OPS bearer admin security, with pagination, filters, redaction, self-audit and OpenAPI/generated-client alignment.
+- TC-COM-024 is added and passed, closing the local admin audit contract gap for FR-COM-011/012 and AC-COM-013/014.
+- P0 commercial release readiness remains blocked by external/native/store/release evidence gates, not by this local admin audit endpoint.
+
+Residual risk:
+- The endpoint lists local persisted audit events only; it does not provide SIEM export, immutable WORM retention, external audit warehouse integration or production operational evidence.
+- TC-COM-012/015/019/021/022 external/native/store/release gates still block commercial release readiness.
+
+Follow-up:
+- Keep TC-COM-024 in the required suite for future admin audit contract, audit schema, redaction or security changes.
+
 ## 2026-06-09 - P02-FOLLOWUP-B-XCB-003-REMINDER-ELIGIBILITY-ENDPOINT-20260609
 
 Change request:

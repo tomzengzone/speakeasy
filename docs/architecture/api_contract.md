@@ -83,6 +83,8 @@ Owning increment: `docs/product/increments/commercial-subscription-readiness/`.
 | P0-COM-API-001 | Provider webhooks require `webhookSignature` and are processed idempotently through `PaymentProviderEvent`. | FR-COM-002, FR-COM-003, FR-COM-005; AC-COM-005 |
 | P0-COM-API-001 | Entitlement refresh, usage summary, usage reserve/commit/release are server-owned boundaries; Flutter may cache display state but cannot mutate final entitlement or quota facts. | FR-COM-001, FR-COM-006, FR-COM-007, FR-COM-010; AC-COM-006, AC-COM-007, AC-COM-012 |
 | P0-COM-API-001 | Account deletion remains authenticated and idempotent; admin retry and release health use `opsBearerAuth`. | FR-COM-004, FR-COM-008, FR-COM-011, FR-COM-012; AC-COM-008, AC-COM-010, AC-COM-014 |
+| P0-COM-API-001 | `POST /admin/data-deletion/{job_id}/retry` is an OPS-only account-deletion recovery action requiring `Idempotency-Key`; only `failed` jobs execute a new retry, `completed` jobs return current state without re-execution, in-progress states return `DELETE_IN_PROGRESS`, and new retry executions are audited with redacted details. | FR-COM-008, FR-COM-011; AC-COM-010, AC-COM-013 |
+| P0-COM-API-001 | `GET /admin/audit` is an `opsBearerAuth`-only, paginated and filterable audit event list. It exposes only `AuditLog` safe fields, omits `actor_id`, sanitizes `redacted_details`, and records each audit-read access as its own redacted audit event. | FR-COM-011, FR-COM-012; AC-COM-013, AC-COM-014 |
 
 P0-COM-API-001 gate result: API contract and OpenAPI source-of-truth cover the commercial subscription, entitlement, usage, account deletion and admin/release API families needed before implementation. Contract lint remains the validation gate before downstream code consumes these paths.
 

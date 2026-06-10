@@ -14,7 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
+@SpringBootTest(properties = "speakeasy.ai.provider=deterministic")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class CommercialAbuseControlTest extends BackendIntegrationTestSupport {

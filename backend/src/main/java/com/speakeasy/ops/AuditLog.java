@@ -67,7 +67,31 @@ public class AuditLog {
     return redactedDetails;
   }
 
+  public UUID getAuditLogId() {
+    return auditLogId;
+  }
+
+  public String getActorType() {
+    return actorType;
+  }
+
+  public String getActorId() {
+    return actorId;
+  }
+
   public String getEventType() {
     return eventType;
+  }
+
+  public String getTargetRef() {
+    return targetRef;
+  }
+
+  public String getRequestId() {
+    return requestId;
+  }
+
+  public Instant getCreatedAt() {
+    return createdAt;
   }
 }

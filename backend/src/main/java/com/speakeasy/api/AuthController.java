@@ -3,7 +3,6 @@ package com.speakeasy.api;
 import com.speakeasy.common.SchemaResponse;
 import com.speakeasy.identity.AuthService;
 import com.speakeasy.identity.IdentityService;
-import com.speakeasy.ops.AccountDeletionJob;
 import com.speakeasy.ops.AccountDeletionService;
 import com.speakeasy.security.CurrentUser;
 import jakarta.validation.Valid;
@@ -164,21 +163,4 @@ public class AuthController {
     }
   }
 
-  public record AccountDeletionJobResponse(
-      int schemaVersion,
-      UUID deletionJobId,
-      String status,
-      Instant requestedAt,
-      Instant completedAt,
-      String failureReason) implements SchemaResponse {
-    static AccountDeletionJobResponse from(int schemaVersion, AccountDeletionJob deletionJob) {
-      return new AccountDeletionJobResponse(
-          schemaVersion,
-          deletionJob.getDeletionJobId(),
-          deletionJob.getStatus(),
-          deletionJob.getRequestedAt(),
-          deletionJob.getCompletedAt(),
-          deletionJob.getFailureReason());
-    }
-  }
 }

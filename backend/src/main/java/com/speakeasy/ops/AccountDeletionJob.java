@@ -58,6 +58,31 @@ public class AccountDeletionJob {
   public void fail(String failureReason) {
     this.status = "failed";
     this.failureReason = failureReason;
+    this.completedAt = null;
+  }
+
+  public void markAccessRevoked() {
+    this.status = "access_revoked";
+    this.completedAt = null;
+    this.failureReason = null;
+  }
+
+  public void markDeletingLearningData() {
+    this.status = "deleting_learning_data";
+    this.completedAt = null;
+    this.failureReason = null;
+  }
+
+  public void markAnonymizingAuditRefs() {
+    this.status = "anonymizing_audit_refs";
+    this.completedAt = null;
+    this.failureReason = null;
+  }
+
+  public void markRetryStarted() {
+    this.status = "requested";
+    this.completedAt = null;
+    this.failureReason = null;
     this.retryCount += 1;
   }
 

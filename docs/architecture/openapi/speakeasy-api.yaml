@@ -3252,6 +3252,57 @@ paths:
         requirements:
         - FR-COM-011
         - FR-COM-012
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+        description: Maximum number of audit events to return.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Opaque cursor returned by the previous audit event page.
+      - name: event_type
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 120
+        description: Exact audit event type filter.
+      - name: actor_type
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 40
+        description: Exact actor type filter, such as user, system, or ops.
+      - name: target_ref
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 160
+        description: Exact redacted target reference filter.
+      - name: created_after
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: Include events created at or after this timestamp.
+      - name: created_before
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+        description: Include events created before this timestamp.
       responses:
         '200':
           description: Audit event list.
@@ -3262,8 +3313,12 @@ paths:
               examples:
                 default:
                   $ref: '#/components/examples/AuditEventListResponseExample'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /admin/release-health:
@@ -3316,6 +3371,7 @@ paths:
         - FR-COM-011
       parameters:
       - $ref: '#/components/parameters/JobId'
+      - $ref: '#/components/parameters/IdempotencyKey'
       responses:
         '200':
           description: Deletion job retry scheduled.
@@ -3326,15 +3382,16 @@ paths:
               examples:
                 default:
                   $ref: '#/components/examples/AccountDeletionJobResponseExample'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
         '403':
-          description: Admin authorization required.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                default:
-                  $ref: '#/components/examples/ErrorResponseExample'
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
     parameters:
     - $ref: '#/components/parameters/RequestId'
 components:
@@ -3727,6 +3784,7 @@ components:
       - schema_version
       - deletion_job_id
       - status
+      - retry_count
       properties:
         schema_version:
           $ref: '#/components/schemas/SchemaVersion'
@@ -3751,6 +3809,9 @@ components:
         failure_reason:
           type: string
           nullable: true
+        retry_count:
+          type: integer
+          minimum: 0
     OnboardingAssessmentRequest:
       type: object
       required:
@@ -7880,10 +7941,19 @@ components:
       type: object
       required:
       - schema_version
+      - limit
+      - next_cursor
       - events
       properties:
         schema_version:
           $ref: '#/components/schemas/SchemaVersion'
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        next_cursor:
+          type: string
+          nullable: true
         events:
           type: array
           items:
@@ -7892,15 +7962,21 @@ components:
       type: object
       required:
       - audit_log_id
+      - actor_type
       - event_type
       - target_ref
+      - request_id
       - created_at
       properties:
         audit_log_id:
           type: string
+        actor_type:
+          type: string
         event_type:
           type: string
         target_ref:
+          type: string
+        request_id:
           type: string
         redacted_details:
           type: object
@@ -8018,6 +8094,7 @@ components:
         requested_at: '2026-05-26T12:00:00Z'
         completed_at: '2026-05-26T12:00:00Z'
         failure_reason: null
+        retry_count: 0
     OnboardingAssessmentRequestExample:
       summary: submitOnboardingAssessment request example
       value:
@@ -9701,11 +9778,18 @@ components:
       summary: listAuditEvents response 200 example
       value:
         schema_version: 1
+        limit: 50
+        next_cursor: null
         events:
-        - audit_log_id: audit_log_id_sample
-          event_type: sample
-          target_ref: sample
-          redacted_details: {}
+        - audit_log_id: 4b5c1d82-7855-4e1e-a5f7-9659240f61d8
+          actor_type: ops
+          event_type: admin_audit_events_listed
+          target_ref: admin_audit
+          request_id: req_admin_audit_001
+          redacted_details:
+            schema_version: 1
+            event_count: 12
+            has_filters: true
           created_at: '2026-05-26T12:00:00Z'
     ReleaseHealthResponseExample:
       summary: getReleaseHealth response 200 example

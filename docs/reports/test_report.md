@@ -3,6 +3,92 @@
 ## Current Status
 Latest recorded Followup-E state: docs-only planning/contract evidence. Followup-E Phase 0 planning, Phase 1 requirements/spec, Phase 2 domain/API/AI/UX/data contracts after correction, and Phase 3 acceptance/test_cases/traceability have planning-gate evidence. No Followup-E backend, Flutter, OpenAPI/generated client, native mic/audio bytes upload, AI runtime, retention/export/account deletion, entitlement/provider downgrade, release or Product Base test evidence is accepted in this docs-only state.
 
+## 2026-06-10 P0 Commercial Admin Data Deletion Retry Closure
+
+Report ID:
+- `P0-COM-ADMIN-DATA-DELETION-RETRY-20260610`
+
+Test scope:
+- TC-COM-025 covers local backend/API closure for `POST /admin/data-deletion/{job_id}/retry`.
+- Requirement chain: COM-SI-006/011 -> FR-COM-008/011 -> COM-SPEC-006/011 -> AC-COM-010/013 -> COM-TR-006/011 -> TC-COM-025.
+- Architecture boundary: reuse `AccountDeletionService`, `AccountDeletionJob`, `AuditLog`, `AiRetentionService`, Spring Security `/admin/**` OPS bearer auth, Flyway and OpenAPI/generated-client drift gates; no parallel deletion processor, audit store or admin auth stack.
+
+Commands run:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminDataDeletionControllerTest,AdminDataDeletionRetryFailureTest,AccountDeletionControllerTest,AccountDeletionSessionInvalidationTest,AccountDeletionLearningDataTest,AccountDeletionFailureAuditTest,CommercialAccountDeletionProcessorTest,AiAccountDeletionMediaCleanupTest,AiRetentionPolicyTest,AdminAuditControllerTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CommercialAbuseControlTest test` - passed after pinning the test to the existing deterministic AI provider pattern.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProviderGatewaySecurityContractTest test` - passed after pinning the test to the existing deterministic AI provider pattern.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
+- `npm run check:api-contract` - passed; OpenAPI contract gate reported 87 paths, 93 operations, 42 request examples, 88 success examples and 123 error examples; Dart drift passed with hash `464464b9346a28422831e56e8f5ba42118ebb0a6005d981e4381bee52fce4e30`.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed for 30 changed files.
+- `git diff --check` - passed.
+
+Passing tests:
+- TC-COM-025 auth: `/admin/data-deletion/{job_id}/retry` returns 401 without bearer token and 403 for non-OPS bearer token.
+- TC-COM-025 success: failed deletion jobs retry through OPS, transition to `completed`, revoke sessions, reuse account deletion cleanup and write `account_deletion_retry_requested` plus `account_deletion_retry_completed`.
+- TC-COM-025 idempotency: duplicate `Idempotency-Key` replay returns the current job without increasing `retry_count`, without new retry audit rows and without creating another AI retention job.
+- TC-COM-025 terminal state: completed deletion jobs return the current completed job without creating retry idempotency or retry audit rows.
+- TC-COM-025 in-progress state: `requested` jobs fail closed with 409 `DELETE_IN_PROGRESS`.
+- TC-COM-025 validation: missing `Idempotency-Key` returns 422 `SCHEMA_VALIDATION_FAILED`; malformed job id returns 404 `RESOURCE_NOT_FOUND`.
+- TC-COM-025 failure persistence: a real `AiRetentionService` execution with a failing media storage adapter leaves the deletion job in `failed`, persists retry idempotency as `failed`, writes `account_deletion_retry_failed`, increments retry count once and stores sanitized `failure_reason`.
+- Regression: existing account deletion request, session invalidation, learning data cleanup, failure status query, commercial idempotency, AI account deletion media cleanup, AI retention policy and admin audit tests continue to pass.
+- Regression: full backend test suite passes after `CommercialAbuseControlTest` and `ProviderGatewaySecurityContractTest` were aligned with the repository's existing deterministic AI provider isolation pattern.
+
+Failing tests:
+- None in the executed scope.
+
+Skipped or external tests:
+- Real Apple/Google sandbox/internal provider evidence, native/social login configuration, store submission evidence, production release secrets/signing/symbol upload, rollback approval and external release review were not run because they require external accounts or production configuration.
+
+Acceptance criteria coverage:
+- AC-COM-010 is covered locally for backend failed-deletion recovery, account deletion status flow, idempotency, audit and cleanup reuse.
+- AC-COM-013 is covered locally for commercial boundary recovery testing around account deletion failure, duplicate retry, terminal-state no-op, in-progress conflict and retry failure persistence.
+
+Residual risk:
+- This closes the local admin data deletion retry contract gap only. P0 commercial release remains blocked by TC-COM-012/015/019/021/022 external/native/store/release evidence gates.
+- The retry executes synchronously in the current backend process; production scheduling/queueing, WORM retention and external privacy evidence remain release/ops concerns outside this local endpoint closure.
+
+## 2026-06-10 P0 Commercial Admin Audit Endpoint Closure
+
+Report ID:
+- `P0-COM-ADMIN-AUDIT-ENDPOINT-20260610`
+
+Test scope:
+- TC-COM-024 covers local backend/API closure for `GET /admin/audit`.
+- Requirement chain: COM-SI-011/012 -> FR-COM-011/012 -> COM-SPEC-011/012 -> AC-COM-013/014 -> COM-TR-011/012 -> TC-COM-024.
+- Architecture boundary: reuse existing `AuditLog`, OPS bearer security, `SchemaResponse`, OpenAPI source of truth and generated Dart drift gate; no separate audit store or duplicate admin auth stack.
+
+Commands run:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminAuditControllerTest test` - passed.
+- `npm run check:api-contract` - passed; OpenAPI contract gate reported 87 paths, 93 operations, 42 request examples, 88 success examples and 119 error examples.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `defb6aad8bbf84fe39aa3c2982137c7560145ae63d729d30d9d02b9aa70e5a4d`.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminAuditControllerTest,CommercialFoundationControllerTest,AiProviderEvidenceControllerTest,AiCostDashboardTest,AiRetentionPolicyTest,AccountDeletionFailureAuditTest test` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed for 14 changed files.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
+
+Passing tests:
+- TC-COM-024 auth: `GET /admin/audit` returns 401 without bearer token and 403 for non-OPS bearer token.
+- TC-COM-024 query: endpoint supports bounded `limit`, opaque cursor pagination, exact `event_type`, `actor_type`, `target_ref`, `created_after` and `created_before` filters, and returns newest-first stable results.
+- TC-COM-024 projection: response includes schema version, page limit, next cursor and safe audit event fields; it omits `actor_id`.
+- TC-COM-024 redaction: JSON and legacy audit details do not leak token, raw transcript, signed URL, media URL or signature-like values.
+- TC-COM-024 compliance trace: every successful audit read writes `admin_audit_events_listed` with redacted details.
+- TC-COM-024 validation: out-of-range `limit` and malformed cursor return `422` `SCHEMA_VALIDATION_FAILED`.
+
+Failing tests:
+- None in the executed scope.
+
+Skipped or external tests:
+- Real Apple/Google sandbox/internal provider evidence, native/social login configuration, store submission evidence, production release secrets/signing/symbol upload, rollback approval and external release review were not run because they require external accounts or production configuration.
+
+Acceptance criteria coverage:
+- AC-COM-013 is covered locally for audit-driven commercial boundary observability and remains externally blocked for real provider evidence.
+- AC-COM-014 is covered locally for admin/compliance audit API readiness and remains release-blocked by strict external/native/store/release evidence.
+
+Residual risk:
+- This closes the `/admin/audit` implementation-level contract gap only. P0 commercial release is still not ready until TC-COM-012/015/019/021/022 external/native/store/release gates pass and are independently reviewed.
+
 ## 2026-06-09 P02 Followup-B XCB-003 Reminder Eligibility Endpoint Closure
 
 Report ID:

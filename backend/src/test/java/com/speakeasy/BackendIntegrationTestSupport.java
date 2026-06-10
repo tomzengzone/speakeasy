@@ -48,6 +48,7 @@ import com.speakeasy.learning.PracticeQueueItemRepository;
 import com.speakeasy.learning.ReviewItemRepository;
 import com.speakeasy.learning.SavedExpressionRepository;
 import com.speakeasy.ops.AccountDeletionJobRepository;
+import com.speakeasy.ops.AccountDeletionRetryIdempotencyRepository;
 import com.speakeasy.ops.AuditLogRepository;
 import com.speakeasy.practice.CoachFeedbackRepository;
 import com.speakeasy.practice.PracticeSessionRepository;
@@ -71,6 +72,7 @@ import org.springframework.test.web.servlet.MvcResult;
 public abstract class BackendIntegrationTestSupport {
   @Autowired protected MockMvc mvc;
   @Autowired AccountDeletionJobRepository deletionJobs;
+  @Autowired AccountDeletionRetryIdempotencyRepository deletionRetryIdempotency;
   @Autowired AuditLogRepository auditLogs;
   @Autowired UserScenarioStateRepository userScenarioStates;
   @Autowired LearningRouteRepository routes;
@@ -128,6 +130,7 @@ public abstract class BackendIntegrationTestSupport {
 
   @BeforeEach
   void cleanUserData() {
+    deletionRetryIdempotency.deleteAll();
     deletionJobs.deleteAll();
     aiRetentionJobs.deleteAll();
     aiProviderSandboxRuns.deleteAll();
