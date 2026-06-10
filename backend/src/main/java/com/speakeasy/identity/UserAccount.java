@@ -78,6 +78,13 @@ public class UserAccount {
     }
   }
 
+  public void updateAvatarRef(String avatarRef, Instant updatedAt) {
+    if (avatarRef != null) {
+      this.avatarRef = avatarRef.trim();
+      this.updatedAt = updatedAt;
+    }
+  }
+
   public void requestDeletion(Instant updatedAt) {
     this.accountStatus = "deletion_requested";
     this.updatedAt = updatedAt;

@@ -1,8 +1,11 @@
+import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
+
 class PaymentResult {
   const PaymentResult({
     required this.success,
     required this.status,
     this.planId,
+    this.entitlement,
     this.message,
     this.errorMessage,
     this.transactionId,
@@ -13,6 +16,7 @@ class PaymentResult {
   final bool success;
   final PaymentStatus status;
   final String? planId;
+  final CommercialEntitlementProjection? entitlement;
   final String? message;
   final String? errorMessage;
   final String? transactionId;

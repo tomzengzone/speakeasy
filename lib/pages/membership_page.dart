@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
-import 'package:speakeasy/models/app_models.dart';
 import 'package:speakeasy/config/payment_config.dart';
+import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
 import 'package:speakeasy/l10n/l10n.dart';
+import 'package:speakeasy/models/app_models.dart';
 
 class MembershipPage extends StatefulWidget {
   const MembershipPage({
     super.key,
     required this.onBack,
     required this.currentPlan,
+    required this.entitlementProjection,
     required this.onSubscribe,
     required this.onRestorePurchases,
     required this.isLoading,
@@ -17,6 +19,7 @@ class MembershipPage extends StatefulWidget {
 
   final VoidCallback onBack;
   final String currentPlan;
+  final CommercialEntitlementProjection entitlementProjection;
   final Future<void> Function(String planId) onSubscribe;
   final Future<void> Function() onRestorePurchases;
   final bool isLoading;
@@ -29,7 +32,17 @@ class MembershipPage extends StatefulWidget {
 class _MembershipPageState extends State<MembershipPage> {
   late String _selectedPlan = _defaultSelectedPlan(widget.currentPlan);
 
-  bool get _isPro => widget.currentPlan != 'free';
+  bool get _hasActivePaidEntitlement =>
+      widget.entitlementProjection.isFreshDisplayPaidFromBackendProjection();
+
+  bool get _hasKnownCurrentProductPlan =>
+      PaymentConfig.normalizePlanId(widget.currentPlan) !=
+      PaymentConfig.freePlanId;
+
+  bool get _isSelectedCurrentProductPlan =>
+      _hasActivePaidEntitlement &&
+      _hasKnownCurrentProductPlan &&
+      widget.currentPlan == _selectedPlan;
 
   @override
   void didUpdateWidget(covariant MembershipPage oldWidget) {
@@ -195,7 +208,9 @@ class _MembershipPageState extends State<MembershipPage> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      _isPro ? l10n.youAreProMember : l10n.upgradeToPro,
+                      _hasActivePaidEntitlement
+                          ? l10n.youAreProMember
+                          : l10n.upgradeToPro,
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
@@ -212,7 +227,7 @@ class _MembershipPageState extends State<MembershipPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _isPro
+                      _hasActivePaidEntitlement
                           ? l10n.youAreProSubtitle
                           : l10n.upgradeToProSubtitle,
                       textAlign: TextAlign.center,
@@ -231,7 +246,7 @@ class _MembershipPageState extends State<MembershipPage> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
               children: [
-                if (!_isPro) ...[
+                if (!_hasActivePaidEntitlement) ...[
                   const _EntitlementNotice(
                     key: ValueKey<String>('membership_free_gate_banner'),
                   ),
@@ -444,7 +459,9 @@ class _MembershipPageState extends State<MembershipPage> {
                   key: const ValueKey<String>('membership_subscribe_button'),
                   onPressed:
                       widget.isLoading ||
-                          (_isPro && widget.currentPlan == _selectedPlan)
+                          _isSelectedCurrentProductPlan ||
+                          (_hasActivePaidEntitlement &&
+                              !_hasKnownCurrentProductPlan)
                       ? null
                       : () => widget.onSubscribe(_selectedPlan),
                   style: FilledButton.styleFrom(
@@ -457,9 +474,14 @@ class _MembershipPageState extends State<MembershipPage> {
                   child: Text(
                     widget.isLoading
                         ? l10n.processing
-                        : (_isPro && widget.currentPlan == _selectedPlan)
+                        : _isSelectedCurrentProductPlan
                         ? l10n.currentPlan
-                        : (_isPro ? l10n.switchPlan : l10n.subscribeNow),
+                        : (_hasActivePaidEntitlement &&
+                              !_hasKnownCurrentProductPlan)
+                        ? '订阅已生效'
+                        : (_hasActivePaidEntitlement
+                              ? l10n.switchPlan
+                              : l10n.subscribeNow),
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,

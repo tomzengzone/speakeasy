@@ -217,7 +217,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final AppLocalizations l10n = context.l10n;
     final LearningStatsModel stats = session.stats;
     _darkMode = session.themeMode == ThemeMode.dark;
-    final bool isPro = session.isPro;
+    final bool isPro = session.hasActivePaidEntitlement;
     final bool isStatsLoading = session.isStatsLoading;
     final bool hasStats = stats.hasOverviewData;
     final List<_SkillLevel> skillLevels = _buildSkillLevels(stats);
@@ -233,7 +233,8 @@ class _ProfilePageState extends State<ProfilePage> {
     if (_showMembership) {
       return MembershipPage(
         onBack: () => setState(() => _showMembership = false),
-        currentPlan: session.memberPlan,
+        currentPlan: session.displayMemberPlan,
+        entitlementProjection: session.entitlementProjection,
         onSubscribe: (String planId) async {
           await session.changeMembership(planId);
           if (!mounted || session.membershipErrorMessage != null) {
@@ -614,17 +615,19 @@ class _ProfilePageState extends State<ProfilePage> {
           _MenuTile(
             key: const ValueKey<String>('profile_settings_membership_tile'),
             icon: Icons.workspace_premium_rounded,
-            color: session.isPro
+            color: session.hasActivePaidEntitlement
                 ? const Color(0xFFC8955A)
                 : const Color(0xFF5A6FA8),
             label: context.l10n.subscriptionManagement,
-            subtitle: session.isPro
+            subtitle: session.hasActivePaidEntitlement
                 ? context.l10n.manageSubscriptionBilling
                 : context.l10n.viewSubscriptionPlans,
-            badge: session.isPro
+            badge: session.hasActivePaidEntitlement
                 ? context.l10n.proActivated
                 : context.l10n.upgrade,
-            badgeColor: session.isPro ? const Color(0xFFC8955A) : primaryGreen,
+            badgeColor: session.hasActivePaidEntitlement
+                ? const Color(0xFFC8955A)
+                : primaryGreen,
             onTap: () => _openMembership(session),
           ),
           _MenuTile(

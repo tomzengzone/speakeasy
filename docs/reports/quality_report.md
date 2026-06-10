@@ -3079,3 +3079,36 @@ Required corrections:
 Residual risk:
 - This closes the local backend endpoint implementation gap only.
 - `COM-AI-GAP-003` and paid AI voice release remain blocked until `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` points to externally reviewed full DashScope LLM/ASR/TTS evidence and strict external gates pass.
+
+## 2026-06-10 Product Base Profile Avatar XCB-003 Independent Review
+
+Result: pass.
+
+Checked step:
+- Reviewed the Product Base profile avatar fix for `FR-010` / `Flow-010` / `AC-011` / `XCB-003`.
+- Reviewed API contract, OpenAPI/generated drift, backend profile update validation, Flutter profile sync, test evidence, implementation report and Product Base traceability.
+- Ran independent review from two perspectives: test/traceability closure and commercial product/software architecture maintainability.
+
+Findings:
+- No blocker. `PATCH /user/me` remains the only current profile update boundary for built-in avatar selection; no `/user/me/avatar` endpoint or audio media upload path was introduced.
+- No blocker. `avatar_ref` is constrained to the six built-in avatar asset refs in OpenAPI and backend validation.
+- No blocker. Flutter now sends `display_name` and `avatar_ref` through the existing profile patch flow and `ApiClient` blocks hidden `/user/me/avatar` / multipart avatar upload regressions.
+- No blocker. Deprecated `AppSession.updateAvatar` delegates to `updateProfile`, so future callers do not bypass the profile patch boundary.
+- No blocker. Unsupported legacy avatar URLs normalize to the default built-in avatar ref before display or sync.
+- No blocker. `docs/product/base/traceability.md` links FR-010/AC-011 to `TC-PB-FR010-001`, `TC-PB-FR010-002` and `TC-PB-FR010-003`, and each TC links back to the test report evidence.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AuthControllerTest test` - passed.
+- `flutter test test/application/session_profile_coordinator_test.dart test/services/app_session_profile_avatar_sync_test.dart test/services/api_client_contract_test.dart` - passed.
+- `npm run check:api-contract && npm run check:dart-client-drift` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope full` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --include-worktree --base-ref HEAD` - passed.
+- `flutter analyze lib/services/api_client.dart lib/services/app_session.dart test/application/session_profile_coordinator_test.dart test/services/app_session_profile_avatar_sync_test.dart test/services/api_client_contract_test.dart` - passed.
+- `git diff --check` - passed.
+
+Required corrections:
+- None for XCB-003.
+
+Residual risk:
+- `avatar_ref` intentionally uses Flutter asset paths as the current built-in avatar contract. This is acceptable for the current Product Base scope but future remote or user-uploaded avatars must be designed as a separate `media/image` contract.
+- The worktree contains unrelated pre-existing changes outside XCB-003; this review does not approve or reject those unrelated changes.

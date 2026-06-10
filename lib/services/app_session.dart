@@ -7,11 +7,13 @@ import 'package:speakeasy/application/contracts/app_repository.dart';
 import 'package:speakeasy/application/session/session_lifecycle_coordinator.dart';
 import 'package:speakeasy/application/session/session_profile_coordinator.dart';
 import 'package:speakeasy/application/session/session_stats_coordinator.dart';
+import 'package:speakeasy/config/payment_config.dart';
 import 'package:speakeasy/core/constants/avatar_defaults.dart';
 import 'package:speakeasy/domain/auth/auth_models.dart';
 import 'package:speakeasy/domain/scene/scene_models.dart';
+import 'package:speakeasy/features/commercial/commercial_entitlement_client.dart';
+import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
 import 'package:speakeasy/services/ai_repository.dart';
-import 'package:speakeasy/config/payment_config.dart';
 import 'package:speakeasy/models/learning_stats_model.dart';
 import 'package:speakeasy/models/app_models.dart';
 import 'package:speakeasy/services/apple_auth_service.dart';
@@ -50,6 +52,7 @@ class AppSession extends ChangeNotifier {
     PaymentService? paymentService,
     StatsService? statsService,
     AuthService? authService,
+    CommercialEntitlementClient? entitlementClient,
     SessionLifecycleCoordinator? sessionCoordinator,
     SessionProfileCoordinator? profileCoordinator,
     SessionStatsCoordinator? statsCoordinator,
@@ -62,6 +65,7 @@ class AppSession extends ChangeNotifier {
     return AppSession._(
       repository: resolvedRepository,
       paymentService: paymentService ?? _defaultPaymentService(),
+      entitlementClient: entitlementClient ?? CommercialEntitlementClient(),
       sessionCoordinator:
           sessionCoordinator ??
           SessionLifecycleCoordinator(authService: resolvedAuthService),
@@ -75,11 +79,13 @@ class AppSession extends ChangeNotifier {
   AppSession._({
     required AppRepository repository,
     required PaymentService paymentService,
+    required CommercialEntitlementClient entitlementClient,
     required SessionLifecycleCoordinator sessionCoordinator,
     required SessionProfileCoordinator profileCoordinator,
     required SessionStatsCoordinator statsCoordinator,
   }) : _repository = repository,
        _paymentService = paymentService,
+       _entitlementClient = entitlementClient,
        _sessionCoordinator = sessionCoordinator,
        _profileCoordinator = profileCoordinator,
        _statsCoordinator = statsCoordinator {
@@ -90,11 +96,17 @@ class AppSession extends ChangeNotifier {
 
   final AppRepository _repository;
   final PaymentService _paymentService;
+  final CommercialEntitlementClient _entitlementClient;
   final SessionLifecycleCoordinator _sessionCoordinator;
   final SessionProfileCoordinator _profileCoordinator;
   final SessionStatsCoordinator _statsCoordinator;
 
   AppUser? _user;
+  CommercialEntitlementProjection _entitlementProjection =
+      CommercialEntitlementProjection.unknown();
+  Future<CommercialEntitlementProjection>? _entitlementRefreshInFlight;
+  int _entitlementRefreshGeneration = 0;
+  String? _displayProductPlan;
   LearningStatsModel _stats = const LearningStatsModel();
   bool _onboardingDone = false;
   ThemeMode _themeMode = ThemeMode.light;
@@ -115,15 +127,28 @@ class AppSession extends ChangeNotifier {
   String? get statsErrorMessage => _statsErrorMessage;
   LearningStatsModel get stats => _stats;
   ThemeMode get themeMode => _themeMode;
+  CommercialEntitlementProjection get entitlementProjection =>
+      _entitlementProjection;
 
   String get nickname => _user?.nickname ?? '学习者';
   String get avatarUrl {
-    final String value = _user?.avatarUrl ?? '';
-    return value.isEmpty ? defaultAvatarUrls.first : value;
+    return _builtInAvatarRefOrDefault(_user?.avatarUrl);
   }
 
+  bool get hasActivePaidEntitlement =>
+      _entitlementProjection.isFreshDisplayPaidFromBackendProjection();
+
+  String get displayMemberPlan {
+    return _displayProductPlan ?? _user?.memberPlan ?? 'free';
+  }
+
+  @Deprecated('Display-only compatibility. Do not use for paid gates.')
   String get memberPlan => _user?.memberPlan ?? 'free';
-  bool get isPro => memberPlan != 'free';
+
+  @Deprecated(
+    'Display-only compatibility. Use entitlementProjection for gates.',
+  )
+  bool get isPro => hasActivePaidEntitlement;
 
   Future<void> signIn(LoginSubmission submission) async {
     if (submission.provider == LoginProvider.apple) {
@@ -149,6 +174,7 @@ class AppSession extends ChangeNotifier {
       if (authenticatedSession != null) {
         await _completeAuthenticatedSession(authenticatedSession);
       } else {
+        _resetEntitlementProjection();
         _user = result.user;
         unawaited(_persistUserState());
       }
@@ -249,8 +275,7 @@ class AppSession extends ChangeNotifier {
   }
 
   Future<void> changeMembership(String planId) async {
-    final AppUser? currentUser = _user;
-    if (currentUser == null) {
+    if (_user == null) {
       _membershipErrorMessage = '请先登录';
       notifyListeners();
       return;
@@ -258,28 +283,42 @@ class AppSession extends ChangeNotifier {
 
     _isUpdatingMembership = true;
     _membershipErrorMessage = null;
+    final int operationGeneration = _beginEntitlementOperation();
     notifyListeners();
 
     try {
       final PaymentResult paymentResult = await _paymentService.purchasePlan(
         planId,
       );
+      if (!_isCurrentEntitlementOperation(operationGeneration)) {
+        return;
+      }
       if (!paymentResult.success) {
         _membershipErrorMessage = paymentResult.displayMessage;
+        if (paymentResult.entitlement != null) {
+          _applyPaymentEntitlement(
+            paymentResult.entitlement,
+            expectedGeneration: operationGeneration,
+          );
+        }
         return;
       }
 
-      final String appliedPlanId = paymentResult.planId ?? planId;
-      _user = await _repository.changeMembership(
-        user: currentUser,
-        planId: appliedPlanId,
-      );
-      unawaited(_persistUserState());
+      if (!_applyPaymentEntitlement(
+        paymentResult.entitlement,
+        expectedGeneration: operationGeneration,
+      )) {
+        _membershipErrorMessage = '订阅已提交，但未收到后端权益确认，请稍后刷新';
+        return;
+      }
+      _rememberDisplayProductPlan(paymentResult.planId ?? planId);
     } catch (error) {
-      _membershipErrorMessage = _messageFromError(
-        error,
-        fallback: '会员状态更新失败，请稍后重试',
-      );
+      if (_isCurrentEntitlementOperation(operationGeneration)) {
+        _membershipErrorMessage = _messageFromError(
+          error,
+          fallback: '会员状态更新失败，请稍后重试',
+        );
+      }
     } finally {
       _isUpdatingMembership = false;
       notifyListeners();
@@ -287,8 +326,7 @@ class AppSession extends ChangeNotifier {
   }
 
   Future<void> restoreMembershipPurchases() async {
-    final AppUser? currentUser = _user;
-    if (currentUser == null) {
+    if (_user == null) {
       _membershipErrorMessage = '请先登录';
       notifyListeners();
       return;
@@ -296,25 +334,33 @@ class AppSession extends ChangeNotifier {
 
     _isUpdatingMembership = true;
     _membershipErrorMessage = null;
+    final int operationGeneration = _beginEntitlementOperation();
     notifyListeners();
 
     try {
       final PaymentResult result = await _paymentService.restorePurchases();
-      if (!result.success || result.planId == null) {
+      if (!_isCurrentEntitlementOperation(operationGeneration)) {
+        return;
+      }
+      _applyPaymentEntitlement(
+        result.entitlement,
+        expectedGeneration: operationGeneration,
+      );
+      if (!result.success) {
         _membershipErrorMessage = result.displayMessage;
         return;
       }
-
-      _user = await _repository.changeMembership(
-        user: currentUser,
-        planId: result.planId!,
-      );
-      unawaited(_persistUserState());
+      if (result.entitlement == null) {
+        _membershipErrorMessage = '恢复成功，但未收到后端权益确认，请稍后刷新';
+      }
+      _rememberDisplayProductPlan(result.planId);
     } catch (error) {
-      _membershipErrorMessage = _messageFromError(
-        error,
-        fallback: '恢复购买失败，请稍后重试',
-      );
+      if (_isCurrentEntitlementOperation(operationGeneration)) {
+        _membershipErrorMessage = _messageFromError(
+          error,
+          fallback: '恢复购买失败，请稍后重试',
+        );
+      }
     } finally {
       _isUpdatingMembership = false;
       notifyListeners();
@@ -322,11 +368,14 @@ class AppSession extends ChangeNotifier {
   }
 
   Future<void> refreshMembershipStatus({bool silent = true}) async {
-    final AppUser? currentUser = _user;
-    if (currentUser == null) {
+    if (_user == null) {
+      return;
+    }
+    if (_isUpdatingMembership) {
       return;
     }
 
+    final int operationGeneration = _beginEntitlementOperation();
     if (!silent) {
       _isUpdatingMembership = true;
       _membershipErrorMessage = null;
@@ -336,38 +385,29 @@ class AppSession extends ChangeNotifier {
     try {
       final PaymentResult result = await _paymentService
           .checkSubscriptionStatus();
-      if (result.success && result.planId != null) {
-        if (result.planId != currentUser.memberPlan) {
-          _user = await _repository.changeMembership(
-            user: currentUser,
-            planId: result.planId!,
-          );
-          unawaited(_persistUserState());
-          notifyListeners();
-        }
+      if (!_isCurrentEntitlementOperation(operationGeneration)) {
         return;
       }
-
-      if (result.status == PaymentStatus.inactive &&
-          currentUser.memberPlan != PaymentConfig.freePlanId) {
-        _user = await _repository.changeMembership(
-          user: currentUser,
-          planId: PaymentConfig.freePlanId,
-        );
-        unawaited(_persistUserState());
-        notifyListeners();
-      } else if (!silent) {
+      _applyPaymentEntitlement(
+        result.entitlement,
+        expectedGeneration: operationGeneration,
+      );
+      if (!result.success && !silent) {
         _membershipErrorMessage = result.displayMessage;
       }
     } catch (error) {
-      if (!silent) {
+      _markEntitlementRefreshFailed(
+        error,
+        expectedGeneration: operationGeneration,
+      );
+      if (!silent && _isCurrentEntitlementOperation(operationGeneration)) {
         _membershipErrorMessage = _messageFromError(
           error,
           fallback: '订阅状态检查失败，请稍后重试',
         );
       }
     } finally {
-      if (!silent) {
+      if (!silent && _isCurrentEntitlementOperation(operationGeneration)) {
         _isUpdatingMembership = false;
         notifyListeners();
       }
@@ -386,6 +426,73 @@ class AppSession extends ChangeNotifier {
       draft: draft,
       history: history,
     );
+  }
+
+  Future<CommercialEntitlementProjection> refreshEntitlementProjection({
+    bool silent = true,
+  }) async {
+    if (_user == null) {
+      _resetEntitlementProjection();
+      if (!silent) {
+        notifyListeners();
+      }
+      return _entitlementProjection;
+    }
+    if (_isUpdatingMembership) {
+      return _entitlementProjection;
+    }
+
+    final Future<CommercialEntitlementProjection>? inFlight =
+        _entitlementRefreshInFlight;
+    if (inFlight != null) {
+      return inFlight;
+    }
+
+    if (!silent) {
+      _membershipErrorMessage = null;
+    }
+    _entitlementProjection = CommercialEntitlementProjection.refreshing(
+      _entitlementProjection,
+    );
+    notifyListeners();
+
+    final int refreshGeneration = _beginEntitlementOperation();
+    late final Future<CommercialEntitlementProjection> refreshFuture;
+    refreshFuture = () async {
+      try {
+        final CommercialEntitlementProjection projection =
+            await _entitlementClient.refreshProjection();
+        if (_user == null ||
+            refreshGeneration != _entitlementRefreshGeneration) {
+          return _entitlementProjection;
+        }
+        _entitlementProjection = projection;
+        return projection;
+      } catch (error) {
+        if (_user == null ||
+            refreshGeneration != _entitlementRefreshGeneration) {
+          return _entitlementProjection;
+        }
+        _entitlementProjection = CommercialEntitlementProjection.failed(
+          _entitlementProjection,
+          errorMessage: _messageFromError(error, fallback: '权益刷新失败，请稍后重试'),
+        );
+        if (!silent) {
+          _membershipErrorMessage = _entitlementProjection.errorMessage;
+        }
+        return _entitlementProjection;
+      } finally {
+        if (identical(_entitlementRefreshInFlight, refreshFuture)) {
+          _entitlementRefreshInFlight = null;
+        }
+        if (_user != null &&
+            refreshGeneration == _entitlementRefreshGeneration) {
+          notifyListeners();
+        }
+      }
+    }();
+    _entitlementRefreshInFlight = refreshFuture;
+    return refreshFuture;
   }
 
   Future<void> syncRoleProfiles(List<Map<String, dynamic>> roles) {
@@ -412,14 +519,14 @@ class AppSession extends ChangeNotifier {
     );
   }
 
-  void updateAvatar(String avatarUrl) {
+  @Deprecated('Use updateProfile so avatar_ref syncs through PATCH /user/me.')
+  Future<void> updateAvatar(String avatarUrl) async {
     final AppUser? currentUser = _user;
-    if (currentUser == null || currentUser.avatarUrl == avatarUrl) {
+    final String avatarRef = _builtInAvatarRefOrDefault(avatarUrl);
+    if (currentUser == null || currentUser.avatarUrl == avatarRef) {
       return;
     }
-    _user = currentUser.copyWith(avatarUrl: avatarUrl);
-    notifyListeners();
-    unawaited(_persistUserState());
+    await updateProfile(nickname: nickname, avatarUrl: avatarRef);
   }
 
   Future<void> recordPracticeSession({
@@ -564,18 +671,26 @@ class AppSession extends ChangeNotifier {
   }) async {
     final String trimmed = nickname.trim();
     if (trimmed.isEmpty) return;
-    _user = _user?.copyWith(nickname: trimmed, avatarUrl: avatarUrl);
+    final String avatarRef = _builtInAvatarRefOrDefault(avatarUrl);
+    _user = _user?.copyWith(nickname: trimmed, avatarUrl: avatarRef);
     notifyListeners();
     unawaited(_persistUserState());
-    unawaited(_syncUserPatch(<String, dynamic>{'nickname': trimmed}));
+    unawaited(
+      _syncUserPatch(<String, dynamic>{
+        'display_name': trimmed,
+        'avatar_ref': avatarRef,
+      }),
+    );
   }
 
   Future<void> logout() async {
     _user = null;
+    _resetEntitlementProjection();
     _stats = const LearningStatsModel();
     _onboardingDone = false;
     _themeMode = ThemeMode.light;
     _isStatsLoading = false;
+    _isUpdatingMembership = false;
     _authErrorMessage = null;
     _membershipErrorMessage = null;
     _statsErrorMessage = null;
@@ -587,10 +702,12 @@ class AppSession extends ChangeNotifier {
   Future<void> deleteAccount() async {
     await _profileCoordinator.deleteAccount();
     _user = null;
+    _resetEntitlementProjection();
     _stats = const LearningStatsModel();
     _onboardingDone = false;
     _themeMode = ThemeMode.light;
     _isStatsLoading = false;
+    _isUpdatingMembership = false;
     _authErrorMessage = null;
     _membershipErrorMessage = null;
     _statsErrorMessage = null;
@@ -602,6 +719,72 @@ class AppSession extends ChangeNotifier {
     await _profileCoordinator.persistUser(_user);
   }
 
+  bool _applyPaymentEntitlement(
+    CommercialEntitlementProjection? projection, {
+    required int expectedGeneration,
+    bool notify = true,
+  }) {
+    if (_user == null || expectedGeneration != _entitlementRefreshGeneration) {
+      return false;
+    }
+    if (projection == null) {
+      _markEntitlementRefreshFailed(
+        Exception('后端权益确认缺失'),
+        expectedGeneration: expectedGeneration,
+        notify: notify,
+      );
+      return false;
+    }
+    _entitlementRefreshInFlight = null;
+    _entitlementProjection = projection;
+    if (notify) {
+      notifyListeners();
+    }
+    return true;
+  }
+
+  bool _isCurrentEntitlementOperation(int expectedGeneration) {
+    return _user != null && expectedGeneration == _entitlementRefreshGeneration;
+  }
+
+  int _beginEntitlementOperation() {
+    _entitlementRefreshGeneration += 1;
+    return _entitlementRefreshGeneration;
+  }
+
+  void _markEntitlementRefreshFailed(
+    Object error, {
+    required int expectedGeneration,
+    bool notify = true,
+  }) {
+    if (_user == null || expectedGeneration != _entitlementRefreshGeneration) {
+      return;
+    }
+    _entitlementRefreshInFlight = null;
+    _entitlementProjection = CommercialEntitlementProjection.failed(
+      _entitlementProjection,
+      errorMessage: _messageFromError(error, fallback: '权益刷新失败，请稍后重试'),
+    );
+    if (notify) {
+      notifyListeners();
+    }
+  }
+
+  void _resetEntitlementProjection() {
+    _entitlementRefreshGeneration += 1;
+    _entitlementRefreshInFlight = null;
+    _entitlementProjection = CommercialEntitlementProjection.unknown();
+    _displayProductPlan = null;
+  }
+
+  void _rememberDisplayProductPlan(String? planId) {
+    final String normalizedPlan = PaymentConfig.normalizePlanId(planId);
+    if (normalizedPlan == PaymentConfig.freePlanId) {
+      return;
+    }
+    _displayProductPlan = normalizedPlan;
+  }
+
   Future<void> _loadFromStorage() async {
     final StoredSessionSnapshot snapshot = await _sessionCoordinator
         .loadStoredSession();
@@ -609,6 +792,9 @@ class AppSession extends ChangeNotifier {
     _onboardingDone = snapshot.onboardingDone;
     _themeMode = snapshot.themeMode;
     notifyListeners();
+    if (_user != null) {
+      unawaited(refreshEntitlementProjection());
+    }
   }
 
   Future<void> _loadCachedStats() async {
@@ -647,6 +833,7 @@ class AppSession extends ChangeNotifier {
     }
 
     try {
+      _resetEntitlementProjection();
       _applyUserJson(session.userJson);
       final bool hadStats = _stats.hasOverviewData;
       if (!hadStats) {
@@ -654,6 +841,7 @@ class AppSession extends ChangeNotifier {
       }
       notifyListeners();
       unawaited(_persistUserState());
+      unawaited(refreshEntitlementProjection());
       try {
         await _refreshStats(notify: false, silent: hadStats);
       } catch (error, stackTrace) {
@@ -679,12 +867,14 @@ class AppSession extends ChangeNotifier {
   ) async {
     final ResolvedAuthenticatedSession session = await _sessionCoordinator
         .resolveAuthenticatedSession(payload);
+    _resetEntitlementProjection();
     _applyUserJson(session.userJson);
     final bool hadStats = _stats.hasOverviewData;
     if (!hadStats) {
       _isStatsLoading = true;
     }
     unawaited(_persistUserState());
+    unawaited(refreshEntitlementProjection());
     try {
       await _refreshStats(notify: false, silent: hadStats);
     } catch (error, stackTrace) {
@@ -903,11 +1093,13 @@ class AppSession extends ChangeNotifier {
   void _applyUserJson(Map<String, dynamic> json) {
     final AppUser remoteUser = AppUser.fromJson(json);
     final AppUser? currentUser = _user;
+    final String remoteAvatarRef = remoteUser.avatarUrl.isEmpty
+        ? (currentUser?.avatarUrl ?? '')
+        : remoteUser.avatarUrl;
     _user = remoteUser.copyWith(
-      avatarUrl: remoteUser.avatarUrl.isEmpty
-          ? (currentUser?.avatarUrl ?? '')
-          : remoteUser.avatarUrl,
+      avatarUrl: _builtInAvatarRefOrDefault(remoteAvatarRef),
     );
+    _displayProductPlan = remoteUser.memberPlan;
     _onboardingDone = _user!.onboardingDone;
     final String? themeMode = json['themeMode'] as String?;
     if (themeMode != null && themeMode.isNotEmpty) {
@@ -922,6 +1114,11 @@ class AppSession extends ChangeNotifier {
       'system' => ThemeMode.system,
       _ => ThemeMode.light,
     };
+  }
+
+  String _builtInAvatarRefOrDefault(String? avatarRef) {
+    final String value = avatarRef?.trim() ?? '';
+    return defaultAvatarUrls.contains(value) ? value : defaultAvatarUrls.first;
   }
 
   String _messageFromError(Object error, {required String fallback}) {

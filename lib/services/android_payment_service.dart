@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import 'package:speakeasy/config/payment_config.dart';
+import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
 import 'package:speakeasy/services/api_client.dart';
 import 'payment_service.dart';
 
@@ -74,18 +75,23 @@ class AndroidPaymentService implements PaymentService {
     final Map<String, dynamic> response = await ApiClient.restoreSubscription(
       platform: 'google',
     );
-    final Map<String, dynamic> entitlement = _asMap(response['entitlement']);
-    if (!_hasActiveProEntitlement(entitlement)) {
-      return const PaymentResult(
+    final CommercialEntitlementProjection entitlement =
+        CommercialEntitlementProjection.fromJson(
+          _asMap(response['entitlement']),
+        );
+    if (!entitlement.isFreshActivePaid(now: DateTime.now())) {
+      return PaymentResult(
         success: false,
         status: PaymentStatus.inactive,
+        entitlement: entitlement,
         message: '未找到可恢复的 Google Play 订阅',
+        rawData: response,
       );
     }
     return PaymentResult(
       success: true,
       status: PaymentStatus.restored,
-      planId: PaymentConfig.yearlyPlanId,
+      entitlement: entitlement,
       message: '已恢复有效 Google Play 订阅',
       rawData: response,
     );
@@ -93,22 +99,25 @@ class AndroidPaymentService implements PaymentService {
 
   @override
   Future<PaymentResult> checkSubscriptionStatus() async {
-    final Map<String, dynamic> entitlement =
+    final Map<String, dynamic> entitlementData =
         await ApiClient.refreshEntitlements();
-    if (!_hasActiveProEntitlement(entitlement)) {
+    final CommercialEntitlementProjection entitlement =
+        CommercialEntitlementProjection.fromJson(entitlementData);
+    if (!entitlement.isFreshActivePaid(now: DateTime.now())) {
       return PaymentResult(
         success: false,
         status: PaymentStatus.inactive,
         message: '当前没有有效 Google Play 订阅',
-        rawData: entitlement,
+        entitlement: entitlement,
+        rawData: entitlementData,
       );
     }
     return PaymentResult(
       success: true,
       status: PaymentStatus.success,
-      planId: PaymentConfig.yearlyPlanId,
+      entitlement: entitlement,
       message: 'Google Play 订阅有效',
-      rawData: entitlement,
+      rawData: entitlementData,
     );
   }
 
@@ -221,15 +230,20 @@ class AndroidPaymentService implements PaymentService {
           );
         case PurchaseStatus.purchased:
         case PurchaseStatus.restored:
-          final bool verified = await _validatePurchase(purchase);
-          if (!verified) {
+          final _AndroidEntitlementVerification? verification =
+              await _verifyPurchase(purchase);
+          if (verification == null || !verification.isUsable) {
             return PaymentResult(
               success: false,
               status: PaymentStatus.error,
               planId: matchedPlanId,
+              entitlement: verification?.entitlement,
               productId: purchase.productID,
               errorMessage: 'Google Play 购买凭证校验失败，请稍后重试',
-              rawData: _rawPurchaseData(purchase),
+              rawData: _paymentRawData(
+                purchase,
+                backendResponse: verification?.rawData,
+              ),
             );
           }
           return PaymentResult(
@@ -238,12 +252,16 @@ class AndroidPaymentService implements PaymentService {
                 ? PaymentStatus.restored
                 : PaymentStatus.success,
             planId: matchedPlanId,
+            entitlement: verification.entitlement,
             productId: purchase.productID,
             transactionId: purchase.purchaseID,
             message: purchase.status == PurchaseStatus.restored
                 ? '已恢复有效 Google Play 订阅'
                 : 'Google Play 购买成功',
-            rawData: _rawPurchaseData(purchase),
+            rawData: _paymentRawData(
+              purchase,
+              backendResponse: verification.rawData,
+            ),
           );
       }
     } finally {
@@ -275,13 +293,15 @@ class AndroidPaymentService implements PaymentService {
     return response.productDetails.first;
   }
 
-  Future<bool> _validatePurchase(PurchaseDetails purchase) async {
+  Future<_AndroidEntitlementVerification?> _verifyPurchase(
+    PurchaseDetails purchase,
+  ) async {
     final String purchaseToken = purchase
         .verificationData
         .serverVerificationData
         .trim();
     if (purchaseToken.isEmpty) {
-      return false;
+      return null;
     }
 
     final Map<String, dynamic> data = await ApiClient.verifyGoogleSubscription(
@@ -293,22 +313,14 @@ class AndroidPaymentService implements PaymentService {
                 data['verificationStatus'] as String? ??
                 '')
             .trim();
-    final String subscriptionStatus =
-        (data['subscription_status'] as String? ??
-                data['subscriptionStatus'] as String? ??
-                '')
-            .trim();
     final Map<String, dynamic> entitlement = _asMap(data['entitlement']);
-    final String entitlementStatus = (entitlement['status'] as String? ?? '')
-        .trim();
-    return verificationStatus == 'verified' &&
-        (subscriptionStatus == 'active' || entitlementStatus == 'active');
-  }
-
-  bool _hasActiveProEntitlement(Map<String, dynamic> entitlement) {
-    final String plan = (entitlement['plan'] as String? ?? '').trim();
-    final String status = (entitlement['status'] as String? ?? '').trim();
-    return plan == 'pro' && status == 'active';
+    final CommercialEntitlementProjection projection =
+        CommercialEntitlementProjection.fromJson(entitlement);
+    return _AndroidEntitlementVerification(
+      verified: verificationStatus == 'verified',
+      entitlement: projection,
+      rawData: data,
+    );
   }
 
   String _errorMessageFromPurchase(PurchaseDetails purchase) {
@@ -327,6 +339,19 @@ class AndroidPaymentService implements PaymentService {
     };
   }
 
+  Map<String, dynamic> _paymentRawData(
+    PurchaseDetails purchase, {
+    Map<String, dynamic>? backendResponse,
+  }) {
+    final Map<String, dynamic> data = <String, dynamic>{
+      'purchase': _rawPurchaseData(purchase),
+    };
+    if (backendResponse != null) {
+      data['backend'] = backendResponse;
+    }
+    return data;
+  }
+
   Map<String, dynamic> _asMap(Object? value) {
     if (value is Map<String, dynamic>) {
       return value;
@@ -336,4 +361,19 @@ class AndroidPaymentService implements PaymentService {
     }
     return <String, dynamic>{};
   }
+}
+
+class _AndroidEntitlementVerification {
+  const _AndroidEntitlementVerification({
+    required this.verified,
+    required this.entitlement,
+    required this.rawData,
+  });
+
+  final bool verified;
+  final CommercialEntitlementProjection entitlement;
+  final Map<String, dynamic> rawData;
+
+  bool get isUsable =>
+      verified && entitlement.isFreshActivePaid(now: DateTime.now());
 }

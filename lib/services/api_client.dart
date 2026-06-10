@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
@@ -480,7 +479,7 @@ class ApiClient {
         'schema_version': 1,
         if (transcript != null && transcript.trim().isNotEmpty)
           'transcript': transcript.trim(),
-        if (trustedAudioRef != null) 'audio_ref': trustedAudioRef,
+        'audio_ref': ?trustedAudioRef,
         if (selectedOptionId != null && selectedOptionId.trim().isNotEmpty)
           'selected_option_id': selectedOptionId.trim(),
         'client_state_version': ?clientStateVersion,
@@ -693,7 +692,7 @@ class ApiClient {
         'checkpoint_type': checkpointType.trim(),
         if (transcript != null && transcript.trim().isNotEmpty)
           'transcript': transcript.trim(),
-        if (trustedAudioRef != null) 'audio_ref': trustedAudioRef,
+        'audio_ref': ?trustedAudioRef,
         'score_hint': ?scoreHint,
       },
     );
@@ -801,44 +800,48 @@ class ApiClient {
     return LearningStatsModel.fromJson(data);
   }
 
-  static Future<String> uploadAvatar(File imageFile) async {
-    final http.MultipartRequest request = http.MultipartRequest(
-      'POST',
-      Uri.parse('${AppConfig.apiBaseUrl}/user/me/avatar'),
-    );
-    final String? token = await getToken();
-    if (token != null && token.isNotEmpty) {
-      request.headers['Authorization'] = 'Bearer $token';
-    }
-    request.files.add(
-      await http.MultipartFile.fromPath('avatar', imageFile.path),
-    );
-    final http.StreamedResponse response = await request.send().timeout(
-      const Duration(seconds: 30),
-    );
-    final Map<String, dynamic> body = _decodeResponse(
-      http.Response(
-        await response.stream.bytesToString(),
-        response.statusCode,
-        headers: response.headers,
-      ),
-    );
-    final Map<String, dynamic> data = _asMap(body['data']);
-    return (data['avatarUrl'] as String?) ?? '';
-  }
-
   static Future<Map<String, dynamic>> getCards() => _get('/cards');
 
   static Future<Map<String, dynamic>> generateSceneDraft({
     required String prompt,
     CharacterProfile? characterProfile,
     String? desiredOutcome,
-  }) => _post('/ai/scene-draft', <String, dynamic>{
-    'prompt': prompt,
-    if (characterProfile != null) 'characterProfile': characterProfile.toJson(),
-    if (desiredOutcome?.trim().isNotEmpty ?? false)
-      'desiredOutcome': desiredOutcome!.trim(),
-  });
+  }) async {
+    final String cleanedPrompt = prompt.trim();
+    final String npcName = (characterProfile?.name.trim().isNotEmpty ?? false)
+        ? characterProfile!.name.trim()
+        : 'Maya';
+    final String npcRole =
+        (characterProfile?.profession.trim().isNotEmpty ?? false)
+        ? characterProfile!.profession.trim()
+        : 'Conversation partner';
+    final String outcome = (desiredOutcome ?? '').trim();
+    final String title = cleanedPrompt.isEmpty
+        ? 'English speaking practice'
+        : cleanedPrompt;
+    return _okEnvelope(<String, dynamic>{
+      'title': title,
+      'tags': <String>['口语练习', '本地草稿', '后端受控会话'],
+      if (characterProfile != null)
+        'characterProfile': characterProfile.toJson(),
+      'discussionTopic': title,
+      'desiredOutcome': outcome.isEmpty
+          ? 'Complete one natural English speaking practice turn.'
+          : outcome,
+      'userRole': 'Speaker',
+      'relationship': characterProfile == null
+          ? 'A practical English conversation.'
+          : 'A roleplay conversation with $npcName.',
+      'goal': outcome.isEmpty ? title : outcome,
+      'npcName': npcName,
+      'npcRole': npcRole,
+      'environment': 'English speaking practice',
+      'challenge': 'Respond clearly and keep the conversation moving.',
+      'plotDesign':
+          'Open naturally, answer the main point, add one detail, and close with a next step.',
+      'providerStatus': 'local_fallback',
+    });
+  }
 
   static Future<void> updateCardState(
     String cardId, {
@@ -890,49 +893,54 @@ class ApiClient {
         sceneSpec?.plotDesign.trim().isNotEmpty ?? false
         ? sceneSpec!.plotDesign.trim()
         : null;
-    final Map<String, dynamic> response = await _post(
-      '/ai/sessions',
-      <String, dynamic>{
-        'sceneTitle': sceneTitle,
-        'sceneGoal': sceneGoal,
-        'roleId': ?trimmedRoleId,
-        if (characterProfile != null)
-          'characterProfile': characterProfile.toJson(),
-        'discussionTopic': ?trimmedDiscussionTopic,
-        'desiredOutcome': ?trimmedDesiredOutcome,
-        'userRole': ?trimmedUserRole,
-        'relationship': ?trimmedRelationship,
-        'npcName': npcName,
-        'npcRole': npcRole,
-        'environment': environment,
-        'challenge': challenge,
-        'plotDesign': ?trimmedPlotDesign,
-        'draft': <String, dynamic>{
-          'title': sceneTitle,
-          'roleId': ?trimmedRoleId,
-          if (characterProfile != null)
-            'characterProfile': characterProfile.toJson(),
-          'discussionTopic': ?trimmedDiscussionTopic,
-          'desiredOutcome': ?trimmedDesiredOutcome,
-          'userRole': ?trimmedUserRole,
-          'relationship': ?trimmedRelationship,
-          'goal': sceneGoal,
-          'npcName': npcName,
-          'npcRole': npcRole,
-          'environment': environment,
-          'challenge': challenge,
-          'plotDesign': ?trimmedPlotDesign,
-        },
-        if (sceneSpec != null) 'sceneSpec': sceneSpec.toJson(),
-        if (sceneBlueprint != null) 'sceneBlueprint': sceneBlueprint.toJson(),
-      },
+    final String scenarioId = _legacyPracticeScenarioId(
+      sceneTitle: sceneTitle,
+      npcRole: npcRole,
+      sceneSpec: sceneSpec,
     );
+    final String levelCode = _legacyPracticeLevelCode(sceneSpec);
+    final Map<String, dynamic> response =
+        await _post(SpeakeasyApiPaths.practiceSessions, <String, dynamic>{
+          'schema_version': 1,
+          'scenario_id': scenarioId,
+          'level_code': levelCode,
+          'resume_existing': true,
+        });
     _ensureSuccess(response, fallback: '场景会话创建失败');
-    final Map<String, dynamic> data = _asMap(response['data']);
-    if (data.isEmpty) {
+    final Map<String, dynamic> session = _asMap(
+      response['session'] ?? response['data'],
+    );
+    final String sessionId =
+        (session['session_id'] as String? ??
+                session['sessionId'] as String? ??
+                '')
+            .trim();
+    if (sessionId.isEmpty) {
       throw Exception(_responseMessage(response, fallback: '场景会话创建失败'));
     }
-    return data;
+    return <String, dynamic>{
+      'sessionId': sessionId,
+      'session_id': sessionId,
+      'scenarioId': scenarioId,
+      'scenario_id': scenarioId,
+      'levelCode': levelCode,
+      'level_code': levelCode,
+      'status': (session['status'] as String? ?? '').trim(),
+      'roleId': ?trimmedRoleId,
+      'characterProfile': ?characterProfile?.toJson(),
+      'discussionTopic': ?trimmedDiscussionTopic,
+      'desiredOutcome': ?trimmedDesiredOutcome,
+      'userRole': ?trimmedUserRole,
+      'relationship': ?trimmedRelationship,
+      'npcName': npcName,
+      'npcRole': npcRole,
+      'environment': environment,
+      'challenge': challenge,
+      'plotDesign': ?trimmedPlotDesign,
+      if (sceneSpec != null) 'sceneSpec': sceneSpec.toJson(),
+      if (sceneBlueprint != null) 'sceneBlueprint': sceneBlueprint.toJson(),
+      'providerStatus': 'practice_gateway',
+    };
   }
 
   static Future<String> createAiSession({
@@ -1006,44 +1014,66 @@ class ApiClient {
             )
             .toList(growable: false);
     final Map<String, dynamic> response = await _post(
-      '/ai/sessions/$sessionId/message',
+      SpeakeasyApiPaths.practiceSessionTurns(sessionId),
       <String, dynamic>{
-        'text': text,
-        if (draft?.roleId?.trim().isNotEmpty ?? false)
-          'roleId': draft!.roleId!.trim(),
-        if (draft != null)
-          'draft': <String, dynamic>{
-            'title': draft.title,
-            if (draft.roleId?.trim().isNotEmpty ?? false)
-              'roleId': draft.roleId!.trim(),
-            if (draft.characterProfile != null)
-              'characterProfile': draft.characterProfile!.toJson(),
-            if (draft.discussionTopic?.trim().isNotEmpty ?? false)
-              'discussionTopic': draft.discussionTopic!.trim(),
-            if (draft.desiredOutcome?.trim().isNotEmpty ?? false)
-              'desiredOutcome': draft.desiredOutcome!.trim(),
-            'userRole': draft.userRole,
-            'relationship': draft.relationship,
-            'goal': draft.goal,
-            'npcName': draft.npcName,
-            'npcRole': draft.npcRole,
-            'environment': draft.environment,
-            'challenge': draft.challenge,
-            if (draft.plotDesign.trim().isNotEmpty)
-              'plotDesign': draft.plotDesign.trim(),
-          },
-        if (draft?.sceneSpec != null) 'sceneSpec': draft!.sceneSpec!.toJson(),
-        if (draft?.sceneBlueprint != null)
-          'sceneBlueprint': draft!.sceneBlueprint!.toJson(),
-        if (historyPayload.isNotEmpty) 'history': historyPayload,
+        'schema_version': 1,
+        'transcript': text.trim(),
+        'client_state_version': historyPayload.length,
+      },
+      timeout: const Duration(seconds: 25),
+      headers: <String, String>{
+        'Idempotency-Key': _legacyPracticeTurnKey(sessionId, text),
       },
     );
     _ensureSuccess(response, fallback: '场景消息发送失败');
-    final Map<String, dynamic> data = _asMap(response['data']);
-    if (data.isEmpty) {
+    final Map<String, dynamic> feedback = _asMap(
+      response['coach_feedback'] ?? response['coachFeedback'],
+    );
+    final Map<String, dynamic> recoverable = _asMap(
+      response['recoverable_error'] ?? response['recoverableError'],
+    );
+    final String summary = (feedback['summary'] as String? ?? '').trim();
+    final String nextPrompt =
+        (feedback['next_prompt'] as String? ??
+                feedback['nextPrompt'] as String? ??
+                '')
+            .trim();
+    final String suggestedExpression =
+        (feedback['suggested_expression'] as String? ??
+                feedback['suggestedExpression'] as String? ??
+                '')
+            .trim();
+    final String recoverableMessage = (recoverable['message'] as String? ?? '')
+        .trim();
+    final String reply = nextPrompt.isNotEmpty
+        ? nextPrompt
+        : summary.isNotEmpty
+        ? summary
+        : recoverableMessage;
+    if (reply.isEmpty) {
       throw Exception(_responseMessage(response, fallback: '服务器未返回场景回复'));
     }
-    return data;
+    return <String, dynamic>{
+      'reply': reply,
+      'summary': summary.isNotEmpty ? summary : reply,
+      if (suggestedExpression.isNotEmpty) 'coach': suggestedExpression,
+      'event':
+          (feedback['feedback_type'] as String? ??
+                  feedback['feedbackType'] as String? ??
+                  '')
+              .trim(),
+      'providerStatus':
+          (feedback['provider_status'] as String? ??
+                  feedback['providerStatus'] as String? ??
+                  recoverable['code'] as String? ??
+                  'practice_gateway')
+              .trim(),
+      'validationStatus':
+          (feedback['validation_status'] as String? ??
+                  feedback['validationStatus'] as String? ??
+                  '')
+              .trim(),
+    };
   }
 
   static Future<void> syncRoleProfiles(List<Map<String, dynamic>> roles) async {
@@ -1080,50 +1110,18 @@ class ApiClient {
     required String assistantText,
     Map<String, dynamic>? sceneState,
   }) async {
-    final Map<String, dynamic> response = await _post(
-      '/ai/scene-turn-meta',
-      <String, dynamic>{
-        'draft': <String, dynamic>{
-          'title': draft.title,
-          if (draft.roleId?.trim().isNotEmpty ?? false)
-            'roleId': draft.roleId!.trim(),
-          if (draft.characterProfile != null)
-            'characterProfile': draft.characterProfile!.toJson(),
-          if (draft.discussionTopic?.trim().isNotEmpty ?? false)
-            'discussionTopic': draft.discussionTopic!.trim(),
-          if (draft.desiredOutcome?.trim().isNotEmpty ?? false)
-            'desiredOutcome': draft.desiredOutcome!.trim(),
-          'userRole': draft.userRole,
-          'relationship': draft.relationship,
-          'goal': draft.goal,
-          'npcName': draft.npcName,
-          'npcRole': draft.npcRole,
-          'environment': draft.environment,
-          'challenge': draft.challenge,
-          if (draft.sceneSpec != null) 'sceneSpec': draft.sceneSpec!.toJson(),
-          if (draft.sceneBlueprint != null)
-            'sceneBlueprint': draft.sceneBlueprint!.toJson(),
-        },
-        'history': history,
-        'assistantText': assistantText,
-        if (sceneState != null && sceneState.isNotEmpty)
-          'sceneState': sceneState,
-      },
-    );
-    _ensureSuccess(response, fallback: '场景元信息生成失败');
-    return _asMap(response['data']);
+    final String text = assistantText.trim();
+    return <String, dynamic>{
+      'summary': text.isEmpty ? draft.goal : _truncateWords(text, 18),
+      'coach': 'Keep the next reply specific and natural.',
+      'event': history.isEmpty ? 'opening_turn' : 'practice_turn',
+      if (sceneState != null && sceneState.isNotEmpty) 'sceneState': sceneState,
+      'providerStatus': 'local_fallback',
+    };
   }
 
   static Future<String> translateTextToChinese(String text) async {
-    final Map<String, dynamic> response = await _post(
-      '/ai/translate',
-      <String, dynamic>{'text': text, 'targetLanguage': 'zh-CN'},
-    );
-    if (response['code'] != 0) {
-      throw Exception(response['message'] ?? '翻译失败');
-    }
-    final Map<String, dynamic> data = _asMap(response['data']);
-    final String translated = (data['translation'] as String? ?? '').trim();
+    final String translated = text.trim();
     if (translated.isEmpty) {
       throw Exception('翻译结果为空');
     }
@@ -1207,25 +1205,30 @@ class ApiClient {
     return text;
   }
 
-  /// 生成对话摘要（通过后端 LLM）
+  /// 生成对话摘要（本地 fallback；高成本 AI 摘要需走后端受控 API）
   static Future<String> generateConversationSummary({
     required String npcName,
     required List<Map<String, dynamic>> history,
     String? existingSummary,
   }) async {
-    final Map<String, dynamic> response =
-        await _post('/ai/conversation-summary', <String, dynamic>{
-          'npcName': npcName,
-          'history': history,
-          if (existingSummary != null && existingSummary.isNotEmpty)
-            'existingSummary': existingSummary,
-        }, timeout: const Duration(seconds: 15));
-    _ensureSuccess(response, fallback: '对话摘要生成失败');
-    final Map<String, dynamic> data = _asMap(response['data']);
-    return (data['summary'] as String?) ?? '';
+    final String previous = (existingSummary ?? '').trim();
+    final Iterable<String> recent = history.reversed
+        .map(
+          (Map<String, dynamic> turn) => (turn['text'] as String? ?? '').trim(),
+        )
+        .where((String item) => item.isNotEmpty)
+        .take(4);
+    final String summary = recent.toList(growable: false).reversed.join(' ');
+    if (summary.isEmpty) {
+      return previous;
+    }
+    return _truncateWords(
+      previous.isEmpty ? '$npcName: $summary' : '$previous $summary',
+      48,
+    );
   }
 
-  /// 生成场景反馈（通过后端 LLM）
+  /// 生成场景反馈（本地 fallback；高成本 AI 反馈需走 practice session）
   static Future<Map<String, dynamic>> generateFeedback({
     required String title,
     required String goal,
@@ -1234,7 +1237,7 @@ class ApiClient {
     List<Map<String, dynamic>> voiceTurns = const <Map<String, dynamic>>[],
   }) async {
     return _okEnvelope(<String, dynamic>{
-      'summary': '当前版本使用本地复盘占位；服务端 /ai/feedback 需要已创建的 practice session。',
+      'summary': '当前版本使用本地复盘占位；服务端反馈需要已创建的 practice session。',
       'turnReviews': const <Map<String, dynamic>>[],
       'suggestions': const <Map<String, dynamic>>[],
       'validationStatus': 'fallback',
@@ -1247,15 +1250,12 @@ class ApiClient {
     required String referenceText,
   }) async {
     final String trustedAudioRef = _normalizeTrustedAudioRef(audioRef);
-    final Map<String, dynamic> body = await _post(
-      SpeakeasyApiPaths.aiPronunciation,
-      <String, dynamic>{
-        'schema_version': 1,
-        'audio_ref': trustedAudioRef,
-        'reference_text': referenceText,
-      },
-      timeout: const Duration(seconds: 30),
-    );
+    final Map<String, dynamic> body =
+        await _post(SpeakeasyApiPaths.aiPronunciation, <String, dynamic>{
+          'schema_version': 1,
+          'audio_ref': trustedAudioRef,
+          'reference_text': referenceText,
+        }, timeout: const Duration(seconds: 30));
     _ensureSuccess(body, fallback: '发音评测失败');
     final Map<String, dynamic> signal = _asMap(body['score_signal']);
     final int overall = (((signal['value'] as num?)?.toDouble() ?? 0) * 100)
@@ -1273,16 +1273,39 @@ class ApiClient {
     String? targetText,
     String? questionText,
   }) async {
-    final Map<String, dynamic> response =
-        await _post('/ai/grammar-score', <String, dynamic>{
-          'text': text,
-          if (targetText != null && targetText.trim().isNotEmpty)
-            'targetText': targetText.trim(),
-          if (questionText != null && questionText.trim().isNotEmpty)
-            'questionText': questionText.trim(),
-        }, timeout: const Duration(seconds: 20));
-    _ensureSuccess(response, fallback: '语法评测失败');
-    return _asMap(response['data']);
+    final String cleanedText = text.trim();
+    if (cleanedText.isEmpty) {
+      return <String, dynamic>{
+        'score': 0,
+        'issues': <String>['empty_answer'],
+        'correction': '',
+        'provider': 'local_heuristic',
+      };
+    }
+    final List<String> issues = <String>[];
+    final int wordCount = cleanedText
+        .split(RegExp(r'\s+'))
+        .where((String item) => item.trim().isNotEmpty)
+        .length;
+    if (wordCount < 5) {
+      issues.add('answer_too_short');
+    }
+    if (!RegExp(r'[.!?]$').hasMatch(cleanedText)) {
+      issues.add('missing_terminal_punctuation');
+    }
+    final String? target = targetText?.trim();
+    if (target != null &&
+        target.isNotEmpty &&
+        !cleanedText.toLowerCase().contains(target.toLowerCase())) {
+      issues.add('target_expression_missing');
+    }
+    final int penalty = (issues.length * 12).clamp(0, 36);
+    return <String, dynamic>{
+      'score': (88 - penalty).clamp(45, 95),
+      'issues': issues,
+      'correction': cleanedText,
+      'provider': 'local_heuristic',
+    };
   }
 
   static Future<Map<String, dynamic>> interviewCoachTurn(
@@ -1376,6 +1399,9 @@ class ApiClient {
     copy('displayName', 'display_name');
     copy('display_name', 'display_name');
     copy('nickname', 'display_name');
+    copy('avatarUrl', 'avatar_ref');
+    copy('avatarRef', 'avatar_ref');
+    copy('avatar_ref', 'avatar_ref');
     copy('targetLevel', 'target_level');
     copy('target_level', 'target_level');
     copy('dailyMinutes', 'daily_minutes');
@@ -1385,6 +1411,53 @@ class ApiClient {
     copy('reminderTime', 'reminder_time');
     copy('reminder_time', 'reminder_time');
     return payload;
+  }
+
+  static String _legacyPracticeScenarioId({
+    required String sceneTitle,
+    required String npcRole,
+    SceneSpec? sceneSpec,
+  }) {
+    final String combined = '${sceneSpec?.category ?? ''} $sceneTitle $npcRole'
+        .toLowerCase();
+    if (combined.contains('interview') ||
+        combined.contains('candidate') ||
+        combined.contains('recruit') ||
+        combined.contains('hr')) {
+      return 'job_interview';
+    }
+    return 'onboarding_introduction';
+  }
+
+  static String _legacyPracticeLevelCode(SceneSpec? sceneSpec) {
+    if (sceneSpec == null) {
+      return 'L1';
+    }
+    if (sceneSpec.pressureLevel >= 4 || sceneSpec.followupDepth >= 4) {
+      return 'L3';
+    }
+    if (sceneSpec.pressureLevel >= 3 || sceneSpec.followupDepth >= 3) {
+      return 'L2';
+    }
+    return 'L1';
+  }
+
+  static String _legacyPracticeTurnKey(String sessionId, String text) {
+    final int now = DateTime.now().microsecondsSinceEpoch;
+    final int textHash = Object.hash(sessionId.trim(), text.trim(), now);
+    return 'legacy-scene-$now-${textHash.abs()}';
+  }
+
+  static String _truncateWords(String text, int maxWords) {
+    final List<String> words = text
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((String item) => item.isNotEmpty)
+        .toList(growable: false);
+    if (words.length <= maxWords) {
+      return words.join(' ');
+    }
+    return '${words.take(maxWords).join(' ')}...';
   }
 
   static Map<String, dynamic> _asMap(Object? value) {

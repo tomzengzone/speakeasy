@@ -3728,7 +3728,15 @@ components:
           type: string
         avatar_ref:
           type: string
+          description: Built-in app avatar asset reference. Product Base profile editing only accepts shipped default avatar assets; user-uploaded avatars require a future media/image contract.
           nullable: true
+          enum:
+          - assets/images/avatars/default_avatar_1.png
+          - assets/images/avatars/default_avatar_2.png
+          - assets/images/avatars/default_avatar_3.png
+          - assets/images/avatars/default_avatar_4.png
+          - assets/images/avatars/default_avatar_5.png
+          - assets/images/avatars/default_avatar_6.png
         locale:
           type: string
           default: zh-CN
@@ -3768,6 +3776,17 @@ components:
           $ref: '#/components/schemas/SchemaVersion'
         display_name:
           type: string
+        avatar_ref:
+          type: string
+          description: Built-in app avatar asset reference selected by the user. Omit or set null to leave the avatar unchanged.
+          nullable: true
+          enum:
+          - assets/images/avatars/default_avatar_1.png
+          - assets/images/avatars/default_avatar_2.png
+          - assets/images/avatars/default_avatar_3.png
+          - assets/images/avatars/default_avatar_4.png
+          - assets/images/avatars/default_avatar_5.png
+          - assets/images/avatars/default_avatar_6.png
         target_level:
           $ref: '#/components/schemas/LevelCode'
         daily_minutes:
@@ -8042,7 +8061,7 @@ components:
         user:
           user_id: user_id_sample
           display_name: Sample Name
-          avatar_ref: sample
+          avatar_ref: assets/images/avatars/default_avatar_1.png
           locale: zh-CN
           target_level: L1
           daily_minutes: 1
@@ -8070,7 +8089,7 @@ components:
         user:
           user_id: user_id_sample
           display_name: Sample Name
-          avatar_ref: sample
+          avatar_ref: assets/images/avatars/default_avatar_1.png
           locale: zh-CN
           target_level: L1
           daily_minutes: 1
@@ -8081,6 +8100,7 @@ components:
       value:
         schema_version: 1
         display_name: Sample Name
+        avatar_ref: assets/images/avatars/default_avatar_1.png
         target_level: L1
         daily_minutes: 1
         reminder_enabled: true

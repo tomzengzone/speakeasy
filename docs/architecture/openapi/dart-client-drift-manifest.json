@@ -3,7 +3,7 @@
   "openapi_path": "docs/architecture/openapi/speakeasy-api.yaml",
   "target_directory": "lib/generated/api",
   "generator": "project-local OpenAPI Dart path registry",
-  "openapi_sha256": "464464b9346a28422831e56e8f5ba42118ebb0a6005d981e4381bee52fce4e30",
+  "openapi_sha256": "63618e40eaec4877be5a6927433b52da57cd487fb3e855dcc12b727b8a21d359",
   "status": "Generated Dart OpenAPI boundary is committed under lib/generated/api and pinned by .openapi-sha256. Active MVP backend calls must use generated path constants or be listed as explicit handwritten client exceptions.",
   "handwritten_client_exceptions": {
     "/user/stats": "Legacy local learning-stats sync retained until frontend migrates to learning history/report APIs.",
@@ -12,15 +12,8 @@
     "/user/stats/session-group/delete": "Legacy local stats cleanup retained until frontend migrates history deletion to /learning/history/{history_entry_id}.",
     "/cards": "Legacy card feed outside MVP backend active endpoint set.",
     "/cards/$cardId/state": "Legacy card state endpoint outside MVP backend active endpoint set.",
-    "/ai/scene-draft": "Legacy freeform scene draft endpoint outside the two-scenario MVP backend stage.",
-    "/ai/sessions": "Legacy freeform AI scene session endpoint outside the MVP backend practice-session API.",
-    "/ai/sessions/$sessionId/message": "Legacy freeform AI scene message endpoint outside the MVP backend practice-session API.",
     "/user/roles/sync": "Legacy role-memory endpoint outside Product Base MVP backend scope.",
     "/user/roles/$trimmedRoleId/memory": "Legacy role-memory endpoint outside Product Base MVP backend scope.",
-    "/user/learning-profile": "Legacy learning profile endpoint retained until learning-memory projections are wired to frontend.",
-    "/ai/scene-turn-meta": "Legacy scene metadata endpoint outside MVP backend practice-session API.",
-    "/ai/translate": "Legacy translation helper outside MVP backend active endpoint set.",
-    "/ai/conversation-summary": "Legacy freeform scene summary endpoint outside MVP backend practice-session API.",
-    "/ai/grammar-score": "Legacy grammar score helper outside current OpenAPI pronunciation/coach-turn boundary."
+    "/user/learning-profile": "Legacy learning profile endpoint retained until learning-memory projections are wired to frontend."
   }
 }

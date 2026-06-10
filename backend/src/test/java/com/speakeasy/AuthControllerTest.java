@@ -1,7 +1,8 @@
 package com.speakeasy;
 
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.blankOrNullString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -25,6 +26,8 @@ import com.speakeasy.identity.UserProfileRepository;
 import com.speakeasy.ops.AccountDeletionJobRepository;
 import com.speakeasy.usage.UsageLedgerRepository;
 import com.speakeasy.usage.UsageReservationRepository;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -125,6 +128,7 @@ class AuthControllerTest {
                 {
                   "schema_version": 1,
                   "display_name": "Updated Name",
+                  "avatar_ref": "assets/images/avatars/default_avatar_2.png",
                   "target_level": "L2",
                   "daily_minutes": 15,
                   "reminder_enabled": true,
@@ -133,8 +137,64 @@ class AuthControllerTest {
                 """))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.user.display_name").value("Updated Name"))
+        .andExpect(jsonPath("$.user.avatar_ref").value("assets/images/avatars/default_avatar_2.png"))
         .andExpect(jsonPath("$.user.target_level").value("L2"))
         .andExpect(jsonPath("$.user.daily_minutes").value(15));
+
+    mvc.perform(patch("/user/me")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "display_name": "Updated Again"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.user.display_name").value("Updated Again"))
+        .andExpect(jsonPath("$.user.avatar_ref").value("assets/images/avatars/default_avatar_2.png"));
+
+    mvc.perform(patch("/user/me")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "avatar_ref": null
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.user.avatar_ref").value("assets/images/avatars/default_avatar_2.png"));
+
+    mvc.perform(get("/user/me").header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.user.avatar_ref").value("assets/images/avatars/default_avatar_2.png"));
+
+    assertThat(users.findById(UUID.fromString(tokens.userId())).orElseThrow().getAvatarRef())
+        .isEqualTo("assets/images/avatars/default_avatar_2.png");
+  }
+
+  @Test
+  void patchMeRejectsUnsupportedAvatarRef() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800138004");
+
+    for (String avatarRef : List.of(
+        "https://example.com/avatar.png",
+        "",
+        "assets/images/avatars/default_avatar_7.png",
+        " assets/images/avatars/default_avatar_1.png ")) {
+      mvc.perform(patch("/user/me")
+              .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("""
+                  {
+                    "schema_version": 1,
+                    "avatar_ref": "%s"
+                  }
+                  """.formatted(avatarRef)))
+          .andExpect(status().isUnprocessableEntity())
+          .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"));
+    }
   }
 
   @Test

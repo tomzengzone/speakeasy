@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:speakeasy/config/app_config.dart';
+import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
 import 'package:speakeasy/features/commercial/commercial_scenario_gate.dart';
 import 'package:speakeasy/features/goal_autopilot/goal_autopilot_adapter.dart';
 import 'package:speakeasy/features/goal_autopilot/goal_autopilot_models.dart';
@@ -712,7 +713,9 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
         builder: (BuildContext context) => _HomeSceneIntroPage(
           status: status,
           isJoined: _selectedLearningSceneIds.contains(status.entry.id),
-          hasProEntitlement: AppSessionScope.of(context).isPro,
+          entitlementProjection: AppSessionScope.of(
+            context,
+          ).entitlementProjection,
           onSelectLevel: (String targetLevel) async {
             await _selectInterviewSceneLevel(status, targetLevel);
           },
@@ -762,7 +765,7 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
   bool _canAccessSceneTargetLevel(String targetLevel) {
     return CommercialScenarioGate.canAccess(
       targetLevel: targetLevel,
-      isPro: AppSessionScope.of(context).isPro,
+      entitlement: AppSessionScope.of(context).entitlementProjection,
     );
   }
 
@@ -2699,14 +2702,14 @@ class _HomeSceneIntroPage extends StatefulWidget {
   const _HomeSceneIntroPage({
     required this.status,
     required this.isJoined,
-    required this.hasProEntitlement,
+    required this.entitlementProjection,
     required this.onSelectLevel,
     required this.onJoinLearning,
   });
 
   final _InterviewSceneHomeStatus status;
   final bool isJoined;
-  final bool hasProEntitlement;
+  final CommercialEntitlementProjection entitlementProjection;
   final Future<void> Function(String targetLevel) onSelectLevel;
   final Future<void> Function(String targetLevel) onJoinLearning;
 
@@ -2758,7 +2761,7 @@ class _HomeSceneIntroPageState extends State<_HomeSceneIntroPage> {
     }
     if (!CommercialScenarioGate.canAccess(
       targetLevel: targetLevel,
-      isPro: widget.hasProEntitlement,
+      entitlement: widget.entitlementProjection,
     )) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text(CommercialScenarioGate.lockedMessage)),
@@ -2775,7 +2778,7 @@ class _HomeSceneIntroPageState extends State<_HomeSceneIntroPage> {
     }
     if (!CommercialScenarioGate.canAccess(
       targetLevel: _selectedTargetLevel,
-      isPro: widget.hasProEntitlement,
+      entitlement: widget.entitlementProjection,
     )) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text(CommercialScenarioGate.lockedMessage)),
@@ -2841,7 +2844,7 @@ class _HomeSceneIntroPageState extends State<_HomeSceneIntroPage> {
                     options: status.levelOptions,
                     selectedTargetLevel: _selectedTargetLevel,
                     selectedLabel: selectedLevelLabel,
-                    hasProEntitlement: widget.hasProEntitlement,
+                    entitlementProjection: widget.entitlementProjection,
                     onChanged: _selectTargetLevel,
                   ),
                 ],
@@ -3152,14 +3155,14 @@ class _HomeSceneIntroLevelMenu extends StatelessWidget {
     required this.options,
     required this.selectedTargetLevel,
     required this.selectedLabel,
-    required this.hasProEntitlement,
+    required this.entitlementProjection,
     required this.onChanged,
   });
 
   final List<_InterviewSceneLevelOption> options;
   final String selectedTargetLevel;
   final String selectedLabel;
-  final bool hasProEntitlement;
+  final CommercialEntitlementProjection entitlementProjection;
   final ValueChanged<String> onChanged;
 
   @override
@@ -3182,7 +3185,7 @@ class _HomeSceneIntroLevelMenu extends StatelessWidget {
           .map((_InterviewSceneLevelOption option) {
             final bool locked = !CommercialScenarioGate.canAccess(
               targetLevel: option.targetLevel,
-              isPro: hasProEntitlement,
+              entitlement: entitlementProjection,
             );
             return PopupMenuItem<String>(
               value: option.targetLevel,

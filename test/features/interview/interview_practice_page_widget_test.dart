@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speakeasy/application/session/session_lifecycle_coordinator.dart';
+import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
+import 'package:speakeasy/features/commercial/commercial_scenario_gate.dart';
 import 'package:speakeasy/features/interview/interview_llm_scheduler.dart';
 import 'package:speakeasy/features/interview/interview_models.dart';
 import 'package:speakeasy/features/interview/interview_practice_page.dart';
@@ -154,6 +156,7 @@ void main() {
     WidgetTester tester, {
     String targetLevel = 'beginner',
     String memberPlan = 'free',
+    CommercialEntitlementProjection? entitlementProjection,
   }) async {
     final AppSession session = AppSession(
       sessionCoordinator: _StaticSessionLifecycleCoordinator(memberPlan),
@@ -166,7 +169,8 @@ void main() {
             session: session,
             child: InterviewPracticePage(
               targetLevel: targetLevel,
-              hasProEntitlement: memberPlan != 'free',
+              entitlementProjection:
+                  entitlementProjection ?? _freeEntitlement(),
               llmScheduler: _FakeInterviewLlmScheduler(),
             ),
           ),
@@ -269,6 +273,7 @@ void main() {
       tester,
       targetLevel: 'advanced',
       memberPlan: 'yearly',
+      entitlementProjection: _proEntitlement(),
     );
 
     await tester.tap(
@@ -294,10 +299,65 @@ void main() {
     expect(find.textContaining('L2 进阶'), findsNothing);
   });
 
+  testWidgets(
+    'advanced scene gate ignores local paid memberPlan without entitlement',
+    (WidgetTester tester) async {
+      final AppSession session = AppSession(
+        sessionCoordinator: _StaticSessionLifecycleCoordinator('yearly'),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AudioServiceScope(
+            service: AudioService(),
+            child: AppSessionScope(
+              session: session,
+              child: InterviewPracticePage(
+                targetLevel: CommercialScenarioGate.proTargetLevel,
+                entitlementProjection: _freeEntitlement(),
+                llmScheduler: _FakeInterviewLlmScheduler(),
+              ),
+            ),
+          ),
+        ),
+      );
+      for (int i = 0; i < 20; i += 1) {
+        await tester.pump(const Duration(milliseconds: 100));
+        if (find
+            .text(CommercialScenarioGate.lockedMessage)
+            .evaluate()
+            .isNotEmpty) {
+          break;
+        }
+      }
+
+      expect(find.text(CommercialScenarioGate.lockedMessage), findsOneWidget);
+      expect(find.text('点击说话'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'advanced scene gate unlocks from backend entitlement despite local free plan',
+    (WidgetTester tester) async {
+      await pumpInterviewPage(
+        tester,
+        targetLevel: CommercialScenarioGate.proTargetLevel,
+        memberPlan: 'free',
+        entitlementProjection: _proEntitlement(),
+      );
+
+      expect(find.text('点击说话'), findsOneWidget);
+      expect(find.text(CommercialScenarioGate.lockedMessage), findsNothing);
+    },
+  );
+
   testWidgets('scene navigation level switch updates dialogue level', (
     WidgetTester tester,
   ) async {
-    await pumpInterviewPage(tester, memberPlan: 'yearly');
+    await pumpInterviewPage(
+      tester,
+      memberPlan: 'yearly',
+      entitlementProjection: _proEntitlement(),
+    );
 
     await tester.tap(
       find.byKey(const ValueKey<String>('interview_scene_map_menu_button')),
@@ -526,5 +586,25 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+}
+
+CommercialEntitlementProjection _freeEntitlement() {
+  return CommercialEntitlementProjection.fromJson(<String, dynamic>{
+    'plan': 'free',
+    'status': 'active',
+    'features': <String, dynamic>{'advanced_scenarios': false},
+    'validUntil': DateTime.now().add(const Duration(days: 1)).toIso8601String(),
+    'generatedAt': DateTime.now().toIso8601String(),
+  });
+}
+
+CommercialEntitlementProjection _proEntitlement() {
+  return CommercialEntitlementProjection.fromJson(<String, dynamic>{
+    'plan': 'pro',
+    'status': 'active',
+    'features': <String, dynamic>{'advanced_scenarios': true},
+    'validUntil': DateTime.now().add(const Duration(days: 1)).toIso8601String(),
+    'generatedAt': DateTime.now().toIso8601String(),
   });
 }

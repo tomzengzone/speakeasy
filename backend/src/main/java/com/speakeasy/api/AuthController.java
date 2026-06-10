@@ -73,7 +73,12 @@ public class AuthController {
       @AuthenticationPrincipal CurrentUser currentUser, @Valid @RequestBody UpdateUserProfileRequest request) {
     return UserProfileResponse.from(identityService.updateCurrentUser(currentUser.userId(),
         new IdentityService.UpdateUserProfileCommand(
-            request.displayName(), request.targetLevel(), request.dailyMinutes(), request.reminderEnabled(), request.reminderTime())));
+            request.displayName(),
+            request.avatarRef(),
+            request.targetLevel(),
+            request.dailyMinutes(),
+            request.reminderEnabled(),
+            request.reminderTime())));
   }
 
   @DeleteMapping("/user/me")
@@ -108,6 +113,7 @@ public class AuthController {
   public record UpdateUserProfileRequest(
       @NotNull @Min(1) @Max(1) Integer schemaVersion,
       String displayName,
+      String avatarRef,
       String targetLevel,
       @Min(1) Integer dailyMinutes,
       Boolean reminderEnabled,

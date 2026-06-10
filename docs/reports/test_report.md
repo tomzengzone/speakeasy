@@ -3130,3 +3130,33 @@ Evidence:
 
 Residual:
 - This is local backend endpoint evidence only. Strict paid AI voice release remains blocked until `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` points to externally reviewed full DashScope LLM/ASR/TTS evidence and strict external gates pass.
+
+## 2026-06-10 Product Base Profile Avatar XCB-003 Tests
+
+Scope:
+- Product Base profile identity boundary.
+- Coverage: `FR-010` / `Flow-010` / `AC-011` / `XCB-003`.
+- Test cases: `TC-PB-FR010-001`, `TC-PB-FR010-002`, `TC-PB-FR010-003`.
+
+Commands:
+```bash
+cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AuthControllerTest test
+flutter test test/application/session_profile_coordinator_test.dart test/services/app_session_profile_avatar_sync_test.dart test/services/api_client_contract_test.dart
+npm run check:api-contract && npm run check:dart-client-drift
+python3 scripts/check_cross_cutting_boundaries.py --scope full
+python3 scripts/check_cross_cutting_boundaries.py --scope changed --include-worktree --base-ref HEAD
+flutter analyze lib/services/api_client.dart lib/services/app_session.dart test/application/session_profile_coordinator_test.dart test/services/app_session_profile_avatar_sync_test.dart test/services/api_client_contract_test.dart
+git diff --check
+```
+
+Result: passed.
+
+Evidence:
+- `TC-PB-FR010-001`: `AuthControllerTest` verifies `PATCH /user/me` persists a built-in `avatar_ref`, returns it through `PATCH` and `GET /user/me`, preserves it when omitted or `null`, and rejects remote URLs, blank strings, unknown assets and whitespace-padded refs with `SCHEMA_VALIDATION_FAILED`.
+- `TC-PB-FR010-002`: Flutter session/profile tests verify `updateProfile` sends `display_name` and `avatar_ref` through the existing profile patch flow, deprecated `updateAvatar` delegates to the same profile patch boundary, unsupported legacy avatar URLs normalize to the default built-in avatar ref before sync, and `SessionProfileCoordinator` maps the backend `avatar_ref` response back into the local user profile.
+- `TC-PB-FR010-003`: API contract gates verify `avatar_ref` is declared on `UpdateUserProfileRequest` and generated Dart drift hash `63618e40eaec4877be5a6927433b52da57cd487fb3e855dcc12b727b8a21d359` matches the OpenAPI source; the Flutter API contract test blocks `/user/me/avatar` and multipart avatar upload regressions.
+- Cross-cutting checks passed for both full scope and changed worktree scope, confirming the profile avatar path now uses the generated `/user/me` boundary instead of a hidden hard-coded API.
+
+Residual:
+- The current product supports built-in avatar selection only. Remote avatar URLs and user-uploaded images remain out of scope until a dedicated media/image API contract is designed.
+- The worktree contained unrelated pre-existing changes outside XCB-003; they were not reverted and are not part of this test result.

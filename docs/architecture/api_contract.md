@@ -71,6 +71,16 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | Admin / Ops | `Admin` | P0 FR-COM-008, FR-COM-011, FR-COM-012 | In OpenAPI |
 | P0.2/P1/P2 future extensions | `Deferred` | Roadmap/stage/future feature registry boundaries only | No implementation-level endpoints |
 
+## Product Base Identity/Profile Contract Note
+
+Owning product object: `docs/product/base/` FR-010 / AC-011.
+
+- `GET /user/me` returns the authenticated user's profile and account state, including the display-only `avatar_ref`.
+- `PATCH /user/me` is the only Product Base profile update boundary for display name, profile preferences and the built-in avatar selection.
+- `avatar_ref` is an in-app built-in avatar reference. The current implementation only accepts the existing shipped avatar asset paths under `assets/images/avatars/default_avatar_1.png` through `assets/images/avatars/default_avatar_6.png`.
+- Flutter must call `PATCH /user/me` through the generated OpenAPI path boundary. It must not call or create `/user/me/avatar`, multipart avatar upload, or the audio media upload flow for the current built-in avatar picker.
+- Future user-uploaded or remote avatars require a separately approved `media/image` contract with storage, ownership, content type, byte size, deletion, moderation and release evidence. They are out of scope for the current Product Base avatar fix.
+
 ## P0 Commercial Contract Gate
 
 Owning increment: `docs/product/increments/commercial-subscription-readiness/`.

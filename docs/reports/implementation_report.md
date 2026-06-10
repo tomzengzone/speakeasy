@@ -4068,3 +4068,64 @@ Result:
 Residual risk:
 - This does not close `COM-AI-GAP-003`.
 - Strict paid AI voice release still requires `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, externally reviewed full DashScope LLM/ASR/TTS matrix evidence, `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external`, and aggregate paid AI external evidence gates.
+
+## 2026-06-10 - Product Base Profile Avatar XCB-003 Implementation
+
+Change request:
+- Remove the hidden Flutter avatar upload API path and route built-in avatar selection through the existing Product Base profile boundary.
+- Keep the current product scope limited to built-in avatar references; do not create a new `/user/me/avatar` endpoint or reuse the audio media upload pipeline for image/avatar behavior.
+
+Requirement mapping:
+- Product Base requirement: `FR-010`.
+- Spec flow: `Flow-010`.
+- Acceptance: `AC-011`.
+- Architecture boundary: `docs/process/cross_cutting_boundary_registry.md` `XCB-003`.
+- API contract: `docs/architecture/api_contract.md` and `docs/architecture/openapi/speakeasy-api.yaml`.
+- Test cases: `TC-PB-FR010-001`, `TC-PB-FR010-002`, `TC-PB-FR010-003`.
+- Traceability row: `docs/product/base/traceability.md` FR-010 and Product Base FR-010 Avatar Regression Test Case Library.
+
+Files changed for this scope:
+- `docs/architecture/api_contract.md`
+- `docs/architecture/openapi/speakeasy-api.yaml`
+- `docs/architecture/openapi/dart-client-drift-manifest.json`
+- `lib/generated/api/speakeasy_api.dart`
+- `lib/generated/api/.openapi-sha256`
+- `backend/src/main/java/com/speakeasy/api/AuthController.java`
+- `backend/src/main/java/com/speakeasy/identity/IdentityService.java`
+- `backend/src/main/java/com/speakeasy/identity/UserAccount.java`
+- `lib/services/api_client.dart`
+- `lib/services/app_session.dart`
+- `backend/src/test/java/com/speakeasy/AuthControllerTest.java`
+- `test/application/session_profile_coordinator_test.dart`
+- `test/services/api_client_contract_test.dart`
+- `test/services/app_session_profile_avatar_sync_test.dart`
+- `docs/product/base/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+
+Implementation summary:
+- Added `avatar_ref` to `UpdateUserProfileRequest` and constrained both request and response schema to the six shipped built-in avatar asset paths.
+- Documented the Product Base identity/profile contract so `PATCH /user/me` is the only current profile update boundary for display name, preferences and built-in avatar selection.
+- Updated the backend profile update flow to pass `avatar_ref` through `AuthController` into `IdentityService`, validate it against the built-in avatar set and persist it on `UserAccount`.
+- Removed the hidden Flutter `uploadAvatar` multipart path and blocked `/user/me/avatar` regressions in the API client contract test.
+- Updated Flutter profile sync so `AppSession.updateProfile` sends `display_name` and `avatar_ref` through the existing profile patch flow, while `ApiClient._updateProfilePayload` maps `avatarUrl`, `avatarRef` and `avatar_ref` to the canonical `avatar_ref` wire field.
+- Deprecated the public `AppSession.updateAvatar` compatibility entry point and made it delegate to `updateProfile`, so future callers cannot bypass the `/user/me` profile patch boundary.
+- Normalized unsupported legacy avatar URLs in `AppSession` to the default built-in avatar ref before display or sync, preventing old remote URLs from being sent as `avatar_ref`.
+- Added Product Base FR-010 avatar regression test cases and linked their passed evidence back to the test report.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AuthControllerTest test` - passed.
+- `flutter test test/application/session_profile_coordinator_test.dart test/services/app_session_profile_avatar_sync_test.dart test/services/api_client_contract_test.dart` - passed.
+- `npm run check:api-contract && npm run check:dart-client-drift` - passed with OpenAPI hash `63618e40eaec4877be5a6927433b52da57cd487fb3e855dcc12b727b8a21d359`.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope full` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --include-worktree --base-ref HEAD` - passed.
+- `flutter analyze lib/services/api_client.dart lib/services/app_session.dart test/application/session_profile_coordinator_test.dart test/services/app_session_profile_avatar_sync_test.dart test/services/api_client_contract_test.dart` - passed.
+- `git diff --check` - passed.
+
+Result:
+- XCB-003 for Product Base profile avatar now uses the generated `/user/me` boundary instead of a hidden hard-coded Flutter API path.
+- Built-in avatar selection is covered by backend integration tests, Flutter unit/contract tests, OpenAPI/generated drift gates, cross-cutting boundary checks, test report evidence and Product Base traceability.
+
+Residual risk:
+- Current contract intentionally supports built-in avatar asset refs only. Remote avatar URLs and user-uploaded images require a future formal media/image API contract.
+- The worktree contained unrelated pre-existing changes outside XCB-003; this report does not classify, revert or claim those changes as part of the avatar fix.

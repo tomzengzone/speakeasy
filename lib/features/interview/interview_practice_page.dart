@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
 import 'package:speakeasy/features/commercial/commercial_scenario_gate.dart';
 import 'package:speakeasy/features/interview/expression_shadow_scoring.dart';
 import 'package:speakeasy/features/interview/expression_scene_orchestrator.dart';
@@ -49,14 +50,14 @@ class InterviewPracticePage extends StatefulWidget {
     this.sceneId = defaultInterviewSceneId,
     this.targetLevel = 'beginner',
     this.initialNodeId = '',
-    this.hasProEntitlement,
+    this.entitlementProjection,
     this.llmScheduler,
   });
 
   final String sceneId;
   final String targetLevel;
   final String initialNodeId;
-  final bool? hasProEntitlement;
+  final CommercialEntitlementProjection? entitlementProjection;
   final InterviewLlmScheduler? llmScheduler;
 
   @override
@@ -618,7 +619,7 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
     final String selectedTargetLevel = _runtimeTargetLevel;
     if (!CommercialScenarioGate.canAccess(
       targetLevel: selectedTargetLevel,
-      isPro: _hasProEntitlement(context),
+      entitlement: _entitlementProjection(context),
     )) {
       setState(() {
         _resetMessageUiState();
@@ -3143,7 +3144,9 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
         }
       }
       if (transcript.isEmpty) {
-        debugPrint('[InterviewLatency] trusted audio_ref transcription not routed');
+        debugPrint(
+          '[InterviewLatency] trusted audio_ref transcription not routed',
+        );
       }
       _logVoiceLatency('transcribe:ready', pipelineWatch);
       if (!mounted) {
@@ -4063,8 +4066,9 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
     });
   }
 
-  bool _hasProEntitlement(BuildContext context) {
-    return widget.hasProEntitlement ?? AppSessionScope.of(context).isPro;
+  CommercialEntitlementProjection _entitlementProjection(BuildContext context) {
+    return widget.entitlementProjection ??
+        AppSessionScope.of(context).entitlementProjection;
   }
 
   @override
@@ -4664,7 +4668,7 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
                     dueNodeIds: _dueNodeIds(),
                     weakNodeIds: _weakNodeIds(session),
                     practiceStatsByNode: practiceStatsByNode,
-                    hasProEntitlement: _hasProEntitlement(context),
+                    entitlementProjection: _entitlementProjection(context),
                   );
                 },
             transitionsBuilder:
@@ -4708,7 +4712,7 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
     final String normalizedLevel = _normalizeSceneMapTargetLevel(targetLevel);
     if (!CommercialScenarioGate.canAccess(
       targetLevel: normalizedLevel,
-      isPro: _hasProEntitlement(context),
+      entitlement: _entitlementProjection(context),
     )) {
       setState(() => _errorText = CommercialScenarioGate.lockedMessage);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -6595,7 +6599,7 @@ class _SceneMapPage extends StatefulWidget {
     required this.dueNodeIds,
     required this.weakNodeIds,
     required this.practiceStatsByNode,
-    required this.hasProEntitlement,
+    required this.entitlementProjection,
   });
 
   final InterviewSceneGraph sceneGraph;
@@ -6605,7 +6609,7 @@ class _SceneMapPage extends StatefulWidget {
   final Set<String> dueNodeIds;
   final Set<String> weakNodeIds;
   final Map<String, _SceneNodePracticeStats> practiceStatsByNode;
-  final bool hasProEntitlement;
+  final CommercialEntitlementProjection entitlementProjection;
 
   @override
   State<_SceneMapPage> createState() => _SceneMapPageState();
@@ -6777,7 +6781,7 @@ class _SceneMapPageState extends State<_SceneMapPage> {
                     options: levelOptions,
                     selectedTargetLevel: selectedTargetLevel,
                     activeTargetLevel: activeTargetLevel,
-                    hasProEntitlement: widget.hasProEntitlement,
+                    entitlementProjection: widget.entitlementProjection,
                     onChanged: (String targetLevel) {
                       Navigator.of(
                         context,
@@ -6817,14 +6821,14 @@ class _SceneTargetLevelDropdown extends StatelessWidget {
     required this.options,
     required this.selectedTargetLevel,
     required this.activeTargetLevel,
-    required this.hasProEntitlement,
+    required this.entitlementProjection,
     required this.onChanged,
   });
 
   final List<_SceneTargetLevelOption> options;
   final String selectedTargetLevel;
   final String activeTargetLevel;
-  final bool hasProEntitlement;
+  final CommercialEntitlementProjection entitlementProjection;
   final ValueChanged<String> onChanged;
 
   @override
@@ -6861,7 +6865,7 @@ class _SceneTargetLevelDropdown extends StatelessWidget {
               value: option.targetLevel,
               enabled: CommercialScenarioGate.canAccess(
                 targetLevel: option.targetLevel,
-                isPro: hasProEntitlement,
+                entitlement: entitlementProjection,
               ),
               child: KeyedSubtree(
                 key: ValueKey<String>('scene_map_level_${option.targetLevel}'),
@@ -6896,7 +6900,7 @@ class _SceneTargetLevelDropdown extends StatelessWidget {
                       const _TinyBadge(label: '当前', color: darkGreen),
                     ] else if (!CommercialScenarioGate.canAccess(
                       targetLevel: option.targetLevel,
-                      isPro: hasProEntitlement,
+                      entitlement: entitlementProjection,
                     )) ...[
                       const SizedBox(width: 8),
                       const _TinyBadge(

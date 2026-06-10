@@ -77,13 +77,19 @@ void main() {
       '/ai/score',
       '/ai/interview/coach-turn',
       '/payments/apple/verify-receipt',
+      '/user/me/avatar',
     ]) {
       expect(source, isNot(contains(oldPath)), reason: oldPath);
     }
+    expect(source, isNot(contains('uploadAvatar(')));
+    expect(source, isNot(contains('MultipartRequest')));
 
     expect(source, contains('SpeakeasyApiPaths.authLoginPhone'));
     expect(source, contains('SpeakeasyApiPaths.aiPronunciation'));
     expect(source, contains('SpeakeasyApiPaths.userMe'));
+    expect(source, contains("copy('avatarUrl', 'avatar_ref')"));
+    expect(source, contains("copy('avatarRef', 'avatar_ref')"));
+    expect(source, contains("copy('avatar_ref', 'avatar_ref')"));
     expect(source, contains('SpeakeasyApiPaths.subscriptionsAppleVerify'));
     expect(source, contains('SpeakeasyApiPaths.subscriptionsGoogleVerify'));
     expect(source, contains('SpeakeasyApiPaths.subscriptionsRestore'));

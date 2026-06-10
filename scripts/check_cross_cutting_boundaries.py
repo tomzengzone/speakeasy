@@ -83,6 +83,37 @@ GOAL_FINAL_FACT_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+LOCAL_PAID_GATE_PATTERNS = (
+    (
+        re.compile(r"(?:\)\s*|[A-Za-z_$][\w$]*(?:\s*(?:\.|\?\.)\s*[A-Za-z_$][\w$]*(?:\s*\([^;\n]*?\))?)*)\s*(?:\.|\?\.)\s*isPro\b"),
+        "Paid UI gates must consume backend entitlement projection, not local AppSession.isPro/memberPlan compatibility state.",
+    ),
+    (
+        re.compile(r"\bmemberPlan\b\s*(?:==|!=)\s*['\"](?:free|pro|monthly|yearly|enterprise)['\"]"),
+        "Paid UI gates must not compare local memberPlan; consume backend entitlement projection.",
+    ),
+    (
+        re.compile(r"['\"](?:free|pro|monthly|yearly|enterprise)['\"]\s*(?:==|!=)\s*\bmemberPlan\b"),
+        "Paid UI gates must not compare local memberPlan; consume backend entitlement projection.",
+    ),
+    (
+        re.compile(r"\bcurrentPlan\b\s*(?:==|!=)\s*['\"]free['\"]"),
+        "Paid UI gates must not treat currentPlan/free as entitlement truth; consume backend entitlement projection.",
+    ),
+    (
+        re.compile(r"\bhasProEntitlement\b"),
+        "Boolean hasProEntitlement plumbing must not be reintroduced; pass CommercialEntitlementProjection instead.",
+    ),
+    (
+        re.compile(r"CommercialScenarioGate\.canAccess\s*\([\s\S]{0,300}\bisPro\s*:"),
+        "CommercialScenarioGate must be called with backend entitlement projection, not an isPro boolean.",
+    ),
+)
+
+LEGACY_RAW_AI_ENDPOINT_PATTERN = re.compile(
+    r"""['"][^'"]*(?:/ai/(?:scene-draft|sessions(?:/[^'"]*)?|scene-turn-meta|translate|conversation-summary|grammar-score|voice-chat))""",
+)
+
 LOG_CALL_PATTERN = re.compile(r"\b(?:logger|log|print|System\.out|auditLogs?\.save)\b", re.IGNORECASE)
 
 SENSITIVE_FIELD_NAME_PATTERN = re.compile(
@@ -313,6 +344,60 @@ def check_flutter_commercial_and_goal_facts(path: Path, text: str) -> list[Viola
     return violations
 
 
+def is_allowed_app_session_compatibility_line(relative: str, line: str, match_text: str) -> bool:
+    if relative != "lib/services/app_session.dart":
+        return False
+    stripped = line.strip()
+    if match_text == "memberPlan":
+        return (
+            stripped.startswith("String get displayMemberPlan")
+            or stripped.startswith("String get memberPlan")
+            or "_user?.memberPlan" in stripped
+            or "remoteUser.memberPlan" in stripped
+        )
+    if "isPro" in match_text:
+        return stripped.startswith("bool get isPro => hasActivePaidEntitlement;")
+    return False
+
+
+def check_flutter_commercial_gate_sources(path: Path, text: str) -> list[Violation]:
+    relative = rel(path)
+    if not relative.startswith("lib/") or not relative.endswith(".dart") or is_test_or_generated(relative):
+        return []
+    violations: list[Violation] = []
+    for pattern, message in LOCAL_PAID_GATE_PATTERNS:
+        for match in pattern.finditer(text):
+            line_start = text.rfind("\n", 0, match.start()) + 1
+            line_end = text.find("\n", match.start())
+            if line_end == -1:
+                line_end = len(text)
+            line = text[line_start:line_end]
+            matched_text = match.group(0).strip()
+            if is_allowed_app_session_compatibility_line(relative, line, matched_text):
+                continue
+            if ".isPro" in match.group(0) and "this.isPro" in line:
+                continue
+            violations.append(Violation("XCB-004", relative, line_number(text, match.start()), message))
+    return violations
+
+
+def check_flutter_raw_ai_endpoint_paths(path: Path, text: str) -> list[Violation]:
+    relative = rel(path)
+    if not relative.startswith("lib/") or not relative.endswith(".dart") or is_test_or_generated(relative):
+        return []
+    violations: list[Violation] = []
+    for match in LEGACY_RAW_AI_ENDPOINT_PATTERN.finditer(text):
+        violations.append(
+            Violation(
+                "XCB-004",
+                relative,
+                line_number(text, match.start()),
+                "Flutter must not call legacy raw high-cost AI endpoints; use generated backend gateway paths, practice/training APIs, or deterministic fallback.",
+            )
+        )
+    return violations
+
+
 def check_sensitive_payload_exposure(path: Path, text: str) -> list[Violation]:
     relative = rel(path)
     if is_test_or_generated(relative):
@@ -406,6 +491,8 @@ def check_file_content(paths: list[Path]) -> list[Violation]:
         text = read_text(path)
         violations.extend(check_flutter_audio_ref(path, text))
         violations.extend(check_flutter_commercial_and_goal_facts(path, text))
+        violations.extend(check_flutter_commercial_gate_sources(path, text))
+        violations.extend(check_flutter_raw_ai_endpoint_paths(path, text))
         violations.extend(check_backend_provider_bypass(path, text))
         violations.extend(check_sensitive_payload_exposure(path, text))
         violations.extend(check_status_document_claims(path, text))

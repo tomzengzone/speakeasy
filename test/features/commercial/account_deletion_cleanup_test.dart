@@ -4,6 +4,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:speakeasy/application/session/session_lifecycle_coordinator.dart';
 import 'package:speakeasy/application/session/session_profile_coordinator.dart';
 import 'package:speakeasy/application/session/session_stats_coordinator.dart';
+import 'package:speakeasy/features/commercial/commercial_entitlement_client.dart';
+import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
 import 'package:speakeasy/models/learning_stats_model.dart';
 import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/services/payment_service.dart';
@@ -67,6 +69,13 @@ void main() {
   test('TC-COM-014 账号删除后清理本地会员态与缓存', () async {
     final AppSession session = AppSession(
       paymentService: const UnsupportedPaymentService(),
+      entitlementClient: CommercialEntitlementClient(
+        refreshTransport: () async => <String, dynamic>{
+          'plan': 'pro',
+          'status': 'active',
+          'features': <String, dynamic>{'advanced_scenarios': true},
+        },
+      ),
       sessionCoordinator: sessionCoordinator,
       profileCoordinator: profileCoordinator,
       statsCoordinator: statsCoordinator,
@@ -75,11 +84,16 @@ void main() {
     await pumpEventQueue(times: 8);
     expect(session.isLoggedIn, isTrue);
     expect(session.memberPlan, 'yearly');
+    expect(session.entitlementProjection.plan, 'pro');
 
     await session.deleteAccount();
 
     expect(session.isLoggedIn, isFalse);
     expect(session.memberPlan, 'free');
+    expect(
+      session.entitlementProjection.refreshState,
+      CommercialEntitlementRefreshState.unknown,
+    );
     expect(session.membershipErrorMessage, isNull);
     verify(() => profileCoordinator.deleteAccount()).called(1);
     verify(() => statsCoordinator.clearCache()).called(1);

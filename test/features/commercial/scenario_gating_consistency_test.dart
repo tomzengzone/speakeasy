@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speakeasy/application/session/session_lifecycle_coordinator.dart';
+import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
 import 'package:speakeasy/features/commercial/commercial_scenario_gate.dart';
 import 'package:speakeasy/features/interview/interview_llm_scheduler.dart';
 import 'package:speakeasy/features/interview/interview_models.dart';
@@ -145,6 +146,7 @@ void main() {
     WidgetTester tester, {
     required String memberPlan,
     String targetLevel = 'beginner',
+    CommercialEntitlementProjection? entitlementProjection,
   }) async {
     await tester.binding.setSurfaceSize(const Size(1200, 800));
     addTearDown(() async {
@@ -158,7 +160,8 @@ void main() {
             session: await sessionForPlan(memberPlan),
             child: InterviewPracticePage(
               targetLevel: targetLevel,
-              hasProEntitlement: memberPlan != 'free',
+              entitlementProjection:
+                  entitlementProjection ?? _freeEntitlement(),
               llmScheduler: _FakeInterviewLlmScheduler(),
             ),
           ),
@@ -225,10 +228,38 @@ void main() {
     );
   });
 
+  testWidgets('TC-COM-010 本地付费方案不能绕过后端权益投影', (WidgetTester tester) async {
+    await pumpPractice(
+      tester,
+      memberPlan: 'yearly',
+      targetLevel: CommercialScenarioGate.proTargetLevel,
+      entitlementProjection: _freeEntitlement(),
+    );
+
+    expect(find.text(CommercialScenarioGate.lockedMessage), findsOneWidget);
+    expect(find.text('点击说话'), findsNothing);
+  });
+
+  testWidgets('TC-COM-010 后端 Pro 权益可覆盖本地免费展示态', (WidgetTester tester) async {
+    await pumpPractice(
+      tester,
+      memberPlan: 'free',
+      targetLevel: CommercialScenarioGate.proTargetLevel,
+      entitlementProjection: _proEntitlement(),
+    );
+
+    expect(find.text('点击说话'), findsOneWidget);
+    expect(find.text(CommercialScenarioGate.lockedMessage), findsNothing);
+  });
+
   testWidgets('TC-COM-010 Pro 用户列表、详情和训练入口一致解锁 L3', (
     WidgetTester tester,
   ) async {
-    await pumpPractice(tester, memberPlan: 'yearly');
+    await pumpPractice(
+      tester,
+      memberPlan: 'yearly',
+      entitlementProjection: _proEntitlement(),
+    );
 
     await openSceneMap(tester);
     await tester.tap(
@@ -256,5 +287,25 @@ void main() {
       findsWidgets,
     );
     expect(find.textContaining('Thank you for making the time.'), findsNothing);
+  });
+}
+
+CommercialEntitlementProjection _freeEntitlement() {
+  return CommercialEntitlementProjection.fromJson(<String, dynamic>{
+    'plan': 'free',
+    'status': 'active',
+    'features': <String, dynamic>{'advanced_scenarios': false},
+    'validUntil': DateTime.now().add(const Duration(days: 1)).toIso8601String(),
+    'generatedAt': DateTime.now().toIso8601String(),
+  });
+}
+
+CommercialEntitlementProjection _proEntitlement() {
+  return CommercialEntitlementProjection.fromJson(<String, dynamic>{
+    'plan': 'pro',
+    'status': 'active',
+    'features': <String, dynamic>{'advanced_scenarios': true},
+    'validUntil': DateTime.now().add(const Duration(days: 1)).toIso8601String(),
+    'generatedAt': DateTime.now().toIso8601String(),
   });
 }
