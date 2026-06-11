@@ -79,5 +79,12 @@ FR-001..009 implemented locally / release-gated - AC-P02-FUA-009 已有本地 Fl
 ## AC-to-TC Requirement
 Every AC-P02-FUA-001 through AC-P02-FUA-009 must map to at least one stable TC-P02-FUA ID before implementation routing. Code work remains blocked until this mapping is complete.
 
+## 2026-06-11 XCB-005 Regression Addendum
+- AC-P02-FUA-004 additionally requires backend rejection of untrusted `diagnostic_samples.audio_ref` values such as local paths, naked URLs, wrong-owner refs or unvalidated refs before any GoalProfile/DiagnosticAssessment fact persists.
+- AC-P02-FUA-004 allows diagnostic audio only when the ref is an authenticated-user-owned validated `media://audio/...` produced by the existing Media upload create/complete flow and checked through AI Gateway.
+- AC-P02-FUA-005 additionally requires `POST /goal-autopilot/goals` to be idempotent by `Idempotency-Key`; Flutter production transport must send that header, same-key/same-body replay must return the same summary, same-key/different-body must return `IDEMPOTENCY_CONFLICT`, and the data layer must preserve the single server-owned active goal revision chain.
+- AC-P02-FUA-005 additionally requires the `goal_profiles.user_id` uniqueness migration to be upgrade-safe for legacy duplicate rows by pruning to the service-canonical active/latest profile before adding the unique constraint.
+- AC-P02-FUA-008 additionally requires goal intake replay metadata, raw diagnostic audio refs and response JSON to follow XCB-006 export/deletion/redaction rules.
+
 ## Acceptance Independent Review
 Result: pass after implementation evidence update. AC-P02-FUA-009 has executed TC-P02-FUA-014..016 coverage for no active goal empty state, explicit Set-a-goal transition, Explore Mode API isolation, evidence isolation, prohibited goal claims and `createDefaultGoal()` production-path exclusion.

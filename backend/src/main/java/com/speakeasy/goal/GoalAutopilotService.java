@@ -3,6 +3,7 @@ package com.speakeasy.goal;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.speakeasy.ai.AiCostMetricsService;
+import com.speakeasy.ai.AiGatewayService;
 import com.speakeasy.ai.AiProviderInvocationMetric;
 import com.speakeasy.commerce.CommercialFoundationService;
 import com.speakeasy.commerce.EntitlementSnapshot;
@@ -67,11 +68,13 @@ public class GoalAutopilotService {
   private static final TypeReference<Map<String, Object>> OBJECT_MAP = new TypeReference<>() {};
   private static final TypeReference<ClaimGuardView> CLAIM_GUARD = new TypeReference<>() {};
   private static final TypeReference<ControlResult> CONTROL_RESULT = new TypeReference<>() {};
+  private static final TypeReference<SummaryView> SUMMARY_VIEW = new TypeReference<>() {};
 
   private final UserAccountRepository users;
   private final GoalProfileRepository goalProfiles;
   private final GoalAutopilotControlRepository controls;
   private final GoalAutopilotControlIdempotencyRepository controlIdempotency;
+  private final GoalAutopilotGoalIdempotencyRepository goalIdempotency;
   private final GoalDiagnosticAssessmentRepository diagnostics;
   private final GoalMasteryInitialStateRepository masteryInitialStates;
   private final GoalMasteryTransitionDecisionRepository masteryTransitions;
@@ -90,6 +93,7 @@ public class GoalAutopilotService {
   private final UsageReservationRepository usageReservations;
   private final UsageService usageService;
   private final AiCostMetricsService aiCostMetricsService;
+  private final AiGatewayService aiGatewayService;
   private final GoalAutopilotTelemetryService telemetryService;
   private final ObjectMapper objectMapper;
   private final Clock clock;
@@ -106,6 +110,7 @@ public class GoalAutopilotService {
       GoalProfileRepository goalProfiles,
       GoalAutopilotControlRepository controls,
       GoalAutopilotControlIdempotencyRepository controlIdempotency,
+      GoalAutopilotGoalIdempotencyRepository goalIdempotency,
       GoalDiagnosticAssessmentRepository diagnostics,
       GoalMasteryInitialStateRepository masteryInitialStates,
       GoalMasteryTransitionDecisionRepository masteryTransitions,
@@ -124,6 +129,7 @@ public class GoalAutopilotService {
       UsageReservationRepository usageReservations,
       UsageService usageService,
       AiCostMetricsService aiCostMetricsService,
+      AiGatewayService aiGatewayService,
       GoalAutopilotTelemetryService telemetryService,
       ObjectMapper objectMapper,
       Clock clock) {
@@ -131,6 +137,7 @@ public class GoalAutopilotService {
     this.goalProfiles = goalProfiles;
     this.controls = controls;
     this.controlIdempotency = controlIdempotency;
+    this.goalIdempotency = goalIdempotency;
     this.diagnostics = diagnostics;
     this.masteryInitialStates = masteryInitialStates;
     this.masteryTransitions = masteryTransitions;
@@ -149,15 +156,39 @@ public class GoalAutopilotService {
     this.usageReservations = usageReservations;
     this.usageService = usageService;
     this.aiCostMetricsService = aiCostMetricsService;
+    this.aiGatewayService = aiGatewayService;
     this.telemetryService = telemetryService;
     this.objectMapper = objectMapper;
     this.clock = clock;
   }
 
   @Transactional
-  public SummaryView createGoal(UUID userId, GoalInput input, String requestId) {
+  public SummaryView createGoal(UUID userId, GoalInput input, String requestId, String idempotencyKey) {
     runtimeGate.requireMutationAllowed(userId, "goal_create_or_update", requestId);
-    requireUser(userId);
+    requireIdempotencyKey(idempotencyKey);
+    requireUserForUpdate(userId);
+    String requestHash = goalCreateRequestHash(input);
+    GoalAutopilotGoalIdempotency existing = goalIdempotency.findByUserIdAndIdempotencyKey(userId, idempotencyKey).orElse(null);
+    if (existing != null) {
+      if (!existing.getRequestHash().equals(requestHash)) {
+        throw new ApiException(HttpStatus.CONFLICT, "IDEMPOTENCY_CONFLICT", "Idempotency key reused with different goal payload.");
+      }
+      return fromJson(existing.getResponseJson(), SUMMARY_VIEW);
+    }
+    SummaryView result = createGoalMutation(userId, input, requestId);
+    goalIdempotency.save(new GoalAutopilotGoalIdempotency(
+        UUID.randomUUID(),
+        userId,
+        idempotencyKey,
+        requestHash,
+        result.goalProfile().goalProfileId(),
+        result.goalProfile().revision(),
+        toJson(result),
+        Instant.now(clock)));
+    return result;
+  }
+
+  private SummaryView createGoalMutation(UUID userId, GoalInput input, String requestId) {
     LocalDate today = LocalDate.now(clock);
     String goalType = cleanRequired(input.goalType(), "goal_type");
     if (input.deadline() == null || !input.deadline().isAfter(today)) {
@@ -215,6 +246,7 @@ public class GoalAutopilotService {
     }
     profile = goalProfiles.save(profile);
     ensureControl(profile, now);
+    validateDiagnosticAudioRefs(userId, input.diagnosticSamples());
     GoalDiagnosticAssessment diagnostic = diagnostics.save(buildDiagnostic(profile, input.diagnosticSamples(), support, now));
     saveInitialMasteryStates(profile, diagnostic, now);
     GoalProgressForecast forecast = upsertForecast(profile, diagnostic, "goal_intake", null, now);
@@ -586,6 +618,7 @@ public class GoalAutopilotService {
     List<GoalProgressForecast> forecastRows = forecasts.findByUserIdOrderByUpdatedAtDesc(userId);
     List<GoalOutcomeCheckpoint> checkpointRows = checkpoints.findByUserIdOrderByCreatedAtDesc(userId);
     List<GoalAutopilotControl> controlRows = controls.findByUserIdOrderByUpdatedAtDesc(userId);
+    List<GoalAutopilotGoalIdempotency> goalReplayRows = goalIdempotency.findByUserIdOrderByCreatedAtDesc(userId);
     List<GoalAutopilotControlIdempotency> controlReplayRows = controlIdempotency.findByUserIdOrderByCreatedAtDesc(userId);
     List<NotificationOutboxService.OutboxRecordView> outboxRows = notificationOutboxService.outboxRecords(userId);
     List<PlannerReplayAudit> replayRows = replayAudits.findByUserIdOrderByCreatedAtDesc(userId);
@@ -669,6 +702,14 @@ public class GoalAutopilotService {
             List.of("pause_reason", "intensity_override", "missed_day_policy"),
             List.of("raw_control_payload"),
             "control_state_export"),
+        dataFamily(
+            "goal_autopilot_goal_idempotency",
+            goalReplayRows.size(),
+            sourceRefs(goalReplayRows, "goal_replay", GoalAutopilotGoalIdempotency::getReplayId),
+            List.of("request_hash", "goal_profile_id", "goal_revision", "created_at"),
+            List.of("idempotency_key_hash", "response_json_redacted"),
+            List.of("raw_idempotency_key", "response_json", "raw_goal_payload"),
+            "redacted_goal_intake_replay"),
         dataFamily(
             "goal_autopilot_control_idempotency",
             controlReplayRows.size(),
@@ -791,6 +832,7 @@ public class GoalAutopilotService {
         new RetentionRuleView("goal_progress_forecasts", "hard_delete_on_account_deletion", "account_deletion_or_forecast_stale", "exports forecast state and reason codes with ETA/gap details redacted"),
         new RetentionRuleView("goal_outcome_checkpoints", "hard_delete_on_account_deletion", "account_deletion_or_checkpoint_expiry", "exports checkpoint status metadata; raw transcript/audio/provider payload omitted"),
         new RetentionRuleView("goal_autopilot_controls", "hard_delete_on_account_deletion", "account_deletion_or_user_export", "exports control state; raw control payload omitted"),
+        new RetentionRuleView("goal_autopilot_goal_idempotency", "hard_delete_on_account_deletion", "account_deletion_or_replay_window_expiry", "exports request hash only; raw idempotency key and response body omitted"),
         new RetentionRuleView("goal_autopilot_control_idempotency", "hard_delete_on_account_deletion", "account_deletion_or_replay_window_expiry", "exports request hash only; raw idempotency key and response body omitted"),
         new RetentionRuleView("goal_notification_outbox_records", "hard_delete_on_account_deletion", "account_deletion_or_reminder_expiry", "exports lifecycle and hashes only; raw notification payload omitted"),
         new RetentionRuleView("goal_planner_replay_audits", "hard_delete_on_account_deletion", "account_deletion_or_replay_window_expiry", "exports deterministic replay hashes only"),
@@ -814,6 +856,7 @@ public class GoalAutopilotService {
         "goal_progress_forecasts",
         "goal_outcome_checkpoints",
         "goal_autopilot_controls",
+        "goal_autopilot_goal_idempotency",
         "goal_autopilot_control_idempotency",
         "goal_notification_outbox_records",
         "goal_planner_replay_audits",
@@ -835,6 +878,7 @@ public class GoalAutopilotService {
         "raw_provider_payload",
         "raw_prompt",
         "raw_idempotency_key",
+        "goal_create_response_json",
         "control_response_json",
         "learner_note");
   }
@@ -1227,6 +1271,7 @@ public class GoalAutopilotService {
     if (!allowedCheckpointTypes(profile).contains(checkpointType)) {
       throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "checkpoint_type is invalid.");
     }
+    validateCheckpointAudioRef(userId, input.audioRef());
     String usagePayloadHash = usagePayloadHash("checkpoint_submit", profile, Map.of(
         "checkpoint_type", checkpointType,
         "result_status", requestedStatus,
@@ -1439,6 +1484,34 @@ public class GoalAutopilotService {
     payload.put("goal_profile_id", profile.getGoalProfileId().toString());
     payload.put("goal_revision", Integer.toString(profile.getRevision()));
     payload.putAll(requestValues);
+    return sha256(toJson(payload));
+  }
+
+  private String goalCreateRequestHash(GoalInput input) {
+    TreeMap<String, Object> payload = new TreeMap<>();
+    payload.put("operation", "goal_create_or_update");
+    payload.put("goal_type", nullableHashValue(clean(input.goalType())));
+    payload.put("target_score", nullableHashValue(input.targetScore()));
+    payload.put("target_ability", nullableHashValue(clean(input.targetAbility())));
+    payload.put("deadline", nullableHashValue(input.deadline()));
+    payload.put("daily_minutes", nullableHashValue(input.dailyMinutes()));
+    payload.put("intensity_preference", nullableHashValue(clean(input.intensityPreference())));
+    payload.put("quiet_hours_start", nullableHashValue(clean(input.quietHoursStart())));
+    payload.put("quiet_hours_end", nullableHashValue(clean(input.quietHoursEnd())));
+    payload.put("notification_consent", Boolean.toString(input.notificationConsent()));
+    List<Map<String, String>> samples = input.diagnosticSamples() == null
+        ? List.of()
+        : input.diagnosticSamples().stream()
+            .map(sample -> {
+              Map<String, String> samplePayload = new TreeMap<>();
+              samplePayload.put("sample_ref", nullableHashValue(clean(sample.sampleRef())));
+              samplePayload.put("transcript", nullableHashValue(clean(sample.transcript())));
+              samplePayload.put("audio_ref", nullableHashValue(clean(sample.audioRef())));
+              samplePayload.put("duration_seconds", nullableHashValue(sample.durationSeconds()));
+              return samplePayload;
+            })
+            .toList();
+    payload.put("diagnostic_samples", samples);
     return sha256(toJson(payload));
   }
 
@@ -1907,6 +1980,24 @@ public class GoalAutopilotService {
     return cleaned;
   }
 
+  private void validateDiagnosticAudioRefs(UUID userId, List<DiagnosticSampleInput> samples) {
+    if (samples == null) {
+      return;
+    }
+    samples.stream()
+        .map(DiagnosticSampleInput::audioRef)
+        .map(this::clean)
+        .filter(value -> value != null)
+        .forEach(audioRef -> aiGatewayService.validateTrustedAudioRef(userId, "goal_diagnostic", audioRef));
+  }
+
+  private void validateCheckpointAudioRef(UUID userId, String audioRef) {
+    String cleaned = clean(audioRef);
+    if (cleaned != null) {
+      aiGatewayService.validateTrustedAudioRef(userId, "goal_checkpoint", cleaned);
+    }
+  }
+
   private String validateReminderSlot(String value) {
     String cleaned = cleanRequired(value, "reminder_slot");
     if (!cleaned.matches(REMINDER_SLOT_PATTERN)) {
@@ -2178,6 +2269,12 @@ public class GoalAutopilotService {
 
   private void requireUser(UUID userId) {
     users.findById(userId)
+        .filter(user -> "active".equals(user.getAccountStatus()))
+        .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "User is not active."));
+  }
+
+  private void requireUserForUpdate(UUID userId) {
+    users.findByIdForUpdate(userId)
         .filter(user -> "active".equals(user.getAccountStatus()))
         .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "User is not active."));
   }

@@ -21,6 +21,7 @@ import org.springframework.test.context.ActiveProfiles;
 class GoalProgressProjectionDataGovernanceTest extends BackendIntegrationTestSupport {
   @Autowired GoalAutopilotService goalAutopilotService;
   @Autowired GoalProgressForecastRepository goalProgressForecasts;
+  private int goalCreateSequence;
 
   @Test
   void tcP02Fuc017DowngradesUnavailableUnsupportedStaleAndControlBlockedSurfaces() throws Exception {
@@ -139,6 +140,7 @@ class GoalProgressProjectionDataGovernanceTest extends BackendIntegrationTestSup
     mvc.perform(post("/goal-autopilot/goals")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
             .header("X-Request-Id", "req_p02_fuc017_goal")
+            .header("Idempotency-Key", "fuc017-goal-" + (++goalCreateSequence) + "-" + tokens.userId())
             .contentType(MediaType.APPLICATION_JSON)
             .content("""
                 {

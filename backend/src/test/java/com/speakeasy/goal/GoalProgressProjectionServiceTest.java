@@ -92,6 +92,7 @@ class GoalProgressProjectionServiceTest extends BackendIntegrationTestSupport {
     mvc.perform(post("/goal-autopilot/goals")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
             .header("X-Request-Id", "req_p02_fuc010_goal")
+            .header("Idempotency-Key", "projection-goal-" + tokens.userId())
             .contentType(MediaType.APPLICATION_JSON)
             .content("""
                 {

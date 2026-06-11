@@ -157,6 +157,7 @@ class GoalAutopilotRecoveryControllerTest extends BackendIntegrationTestSupport 
     return mvc.perform(post("/goal-autopilot/goals")
         .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
         .header("X-Request-Id", "req_fub010_goal")
+        .header("Idempotency-Key", "recovery-goal-" + tokens.userId())
         .contentType(MediaType.APPLICATION_JSON)
         .content("""
             {

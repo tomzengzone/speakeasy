@@ -35,6 +35,7 @@ public class GoalAutopilotController {
   public GoalAutopilotSummaryResponse createGoal(
       @AuthenticationPrincipal CurrentUser currentUser,
       @RequestHeader(name = "X-Request-Id", required = false) String requestId,
+      @RequestHeader(name = "Idempotency-Key") String idempotencyKey,
       @Valid @RequestBody CreateGoalRequest request) {
     return GoalAutopilotSummaryResponse.from(service.createGoal(
         currentUser.userId(),
@@ -54,7 +55,8 @@ public class GoalAutopilotController {
             request.autopilotControl() == null ? null : request.autopilotControl().quietHoursStart(),
             request.autopilotControl() == null ? null : request.autopilotControl().quietHoursEnd(),
             request.autopilotControl() != null && Boolean.TRUE.equals(request.autopilotControl().notificationConsent())),
-        requestId));
+        requestId,
+        idempotencyKey));
   }
 
   @GetMapping("/goal-autopilot/summary")

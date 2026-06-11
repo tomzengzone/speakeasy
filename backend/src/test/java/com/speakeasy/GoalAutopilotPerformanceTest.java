@@ -53,6 +53,7 @@ class GoalAutopilotPerformanceTest extends BackendIntegrationTestSupport {
   private org.springframework.test.web.servlet.ResultActions createGoal(AuthTokens tokens, int revision) throws Exception {
     return mvc.perform(post("/goal-autopilot/goals")
         .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+        .header("Idempotency-Key", "perf-goal-" + revision + "-" + tokens.userId())
         .contentType(MediaType.APPLICATION_JSON)
         .content("""
             {

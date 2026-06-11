@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -29,6 +30,8 @@ S007_REVIEW_ANCHOR = "2026-06-06-p02-followup-c-s007-final-independent-review"
 S007_REPORT_ID = "P02-FOLLOWUP-C-S007-QUALITY-GATES-20260606"
 S007_OPENAPI_CLEANUP_ID = "P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606"
 S007_OPENAPI_SHA = "d8b492b07c98e948caf0b5912744f05fa6dcd4b76f97f0ece04dc9778df7da0f"
+XCB005_ANCHOR = "2026-06-11-p02-xcb005-goal-autopilot-fact-boundaries"
+XCB005_REPORT_ID = "P02-XCB005-GOAL-AUTOPILOT-FACT-BOUNDARIES-20260611"
 
 REQUIRED_FILES = [
     DEFINITION,
@@ -75,10 +78,22 @@ TC_EXPECTATIONS = {
         "passed",
         S007_REVIEW_ANCHOR,
     ],
+    "TC-P02-FUC-023": [
+        "GoalAutopilotControllerTest.java",
+        "tcP02Xcb005CheckpointRejectsUntrustedAudioAndIgnoresScoreHintForConfidence",
+        "GoalAutopilotTelemetryTest.java",
+        "GoalAutopilotDataExportRetentionTest.java",
+        "passed",
+        XCB005_ANCHOR,
+    ],
 }
 
 TRACEABILITY_TERMS = [
+    "P02-FUC-TR-003",
     "P02-FUC-TR-007",
+    "TC-P02-FUC-023",
+    "P02-FUC-GAP-010",
+    "validateCheckpointAudioRef",
     "TC-P02-FUC-020 passed",
     "TC-P02-FUC-021 passed",
     "TC-P02-FUC-022 passed",
@@ -87,8 +102,10 @@ TRACEABILITY_TERMS = [
     "check_p0_2_followup_c_traceability.py",
     "check_p0_2_goal_autopilot_coverage.py",
     "FUC-FIX-007",
+    "FUC-FIX-008",
     S007_ANCHOR,
     S007_REVIEW_ANCHOR,
+    XCB005_ANCHOR,
 ]
 
 REPORT_TERMS = {
@@ -103,6 +120,9 @@ REPORT_TERMS = {
         "python3 scripts/check_p0_2_goal_autopilot_coverage.py",
         S007_OPENAPI_CLEANUP_ID,
         S007_OPENAPI_SHA,
+        XCB005_REPORT_ID,
+        "TC-P02-FUC-023",
+        "tcP02Xcb005CheckpointRejectsUntrustedAudioAndIgnoresScoreHintForConfidence",
         "Followup-C is locally complete for S001-S007",
         "Followup-C is not release-ready",
         "Product Base merge is not approved",
@@ -119,6 +139,9 @@ REPORT_TERMS = {
         "check_p0_2_followup_c_traceability.py",
         S007_OPENAPI_CLEANUP_ID,
         S007_OPENAPI_SHA,
+        XCB005_REPORT_ID,
+        "TC-P02-FUC-023",
+        "validateCheckpointAudioRef",
         "No production backend, Flutter or API code changed",
         "Followup-C is not release-ready",
     ],
@@ -132,6 +155,9 @@ REPORT_TERMS = {
         "No blocker",
         S007_OPENAPI_CLEANUP_ID,
         S007_OPENAPI_SHA,
+        XCB005_REPORT_ID,
+        "TC-P02-FUC-023",
+        "P02-FUC-GAP-010",
         "Followup-C is not release-ready",
         "Product Base merge is not approved",
     ],
@@ -177,7 +203,7 @@ def validate_test_cases() -> None:
             if term not in row:
                 raise SystemExit(f"{tc_id} row in {TEST_CASES} is missing {term!r}")
 
-    for fixture_id in [f"FUC-FIX-{index:03d}" for index in range(0, 8)]:
+    for fixture_id in [f"FUC-FIX-{index:03d}" for index in range(0, 9)]:
         if fixture_id not in text:
             raise SystemExit(f"Missing fixture routing {fixture_id} in {TEST_CASES}")
 
@@ -224,9 +250,16 @@ def validate_openapi_nullable_cleanup() -> None:
     if forbidden_ref_nullable in spec:
         raise SystemExit("ProgressForecast.eta_range still uses $ref with nullable sibling")
 
-    for path in [DART_DRIFT_MANIFEST, DART_HASH_MARKER, DART_API_REGISTRY]:
-        if S007_OPENAPI_SHA not in read(path):
-            raise SystemExit(f"OpenAPI hash {S007_OPENAPI_SHA} is missing from {path}")
+    manifest = json.loads(read(DART_DRIFT_MANIFEST))
+    current_hash = manifest.get("openapi_sha256")
+    if not current_hash:
+        raise SystemExit(f"OpenAPI manifest is missing openapi_sha256 in {DART_DRIFT_MANIFEST}")
+
+    marker_hash = read(DART_HASH_MARKER).strip()
+    if marker_hash != current_hash:
+        raise SystemExit(f"Generated Dart hash marker does not match manifest hash {current_hash}")
+    if current_hash not in read(DART_API_REGISTRY):
+        raise SystemExit(f"Generated Dart registry does not embed current OpenAPI hash {current_hash}")
 
 
 def main() -> int:

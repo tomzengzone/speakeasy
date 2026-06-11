@@ -40,6 +40,7 @@ class GoalAutopilotDataExportRetentionTest extends BackendIntegrationTestSupport
   @Autowired EntitlementSnapshotRepository entitlements;
   @Autowired AiCostMetricsService aiCostMetricsService;
   @Autowired JdbcTemplate jdbcTemplate;
+  private int mediaUploadSequence;
 
   @Test
   void tcP02Fud013ExportReturnsRedactedRecordsAndRetentionRulesForP02Families() throws Exception {
@@ -80,6 +81,8 @@ class GoalAutopilotDataExportRetentionTest extends BackendIntegrationTestSupport
         .contains("raw_diagnostic_transcript", "raw_diagnostic_audio_ref", "provider_payload");
     assertThat(assertFamily(export, "goal_outcome_checkpoints", 1).omittedFields())
         .contains("raw_checkpoint_transcript", "raw_checkpoint_audio_ref", "provider_payload");
+    assertThat(assertFamily(export, "goal_autopilot_goal_idempotency", 1).omittedFields())
+        .contains("raw_idempotency_key", "response_json");
     assertThat(assertFamily(export, "goal_autopilot_control_idempotency", 1).omittedFields())
         .contains("raw_idempotency_key", "response_json");
     assertThat(assertFamily(export, "goal_notification_outbox_records", 1).safeFields())
@@ -100,6 +103,7 @@ class GoalAutopilotDataExportRetentionTest extends BackendIntegrationTestSupport
         .doesNotContain(RAW_DIAGNOSTIC)
         .doesNotContain(RAW_CHECKPOINT)
         .doesNotContain(RAW_AUDIO_REF)
+        .doesNotContain(dataset.audioRef())
         .doesNotContain("s007-control-idempotency-raw")
         .doesNotContain("s007-recovery-idempotency-raw")
         .doesNotContain("s007-reminder-slot-raw")
@@ -111,6 +115,7 @@ class GoalAutopilotDataExportRetentionTest extends BackendIntegrationTestSupport
     Dataset dataset = createS007Dataset("+8613800140702");
 
     assertThat(count("goal_profiles", dataset.userId())).isEqualTo(1);
+    assertThat(count("goal_autopilot_goal_idempotency", dataset.userId())).isEqualTo(1);
     assertThat(count("goal_autopilot_control_idempotency", dataset.userId())).isEqualTo(1);
     assertThat(count("goal_notification_outbox_records", dataset.userId())).isEqualTo(1);
     assertThat(count("goal_recovery_plan_decisions", dataset.userId())).isEqualTo(1);
@@ -144,10 +149,12 @@ class GoalAutopilotDataExportRetentionTest extends BackendIntegrationTestSupport
     AuthTokens tokens = loginPhone(phoneNumber);
     UUID userId = UUID.fromString(tokens.userId());
     saveEntitlement(userId);
+    String audioRef = createValidatedAudioRef(tokens, "s007-proof");
 
     MvcResult goalResult = mvc.perform(post("/goal-autopilot/goals")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
             .header("X-Request-Id", "req_s007_goal")
+            .header("Idempotency-Key", "s007-goal-create")
             .contentType(MediaType.APPLICATION_JSON)
             .content("""
                 {
@@ -182,7 +189,7 @@ class GoalAutopilotDataExportRetentionTest extends BackendIntegrationTestSupport
                     "notification_consent": true
                   }
                 }
-                """.formatted(LocalDate.now().plusDays(75), RAW_DIAGNOSTIC, RAW_AUDIO_REF)))
+                """.formatted(LocalDate.now().plusDays(75), RAW_DIAGNOSTIC, audioRef)))
         .andExpect(status().isOk())
         .andReturn();
     String goalBody = goalResult.getResponse().getContentAsString();
@@ -278,10 +285,10 @@ class GoalAutopilotDataExportRetentionTest extends BackendIntegrationTestSupport
                   "audio_ref": "%s",
                   "result_status": "recorded"
                 }
-                """.formatted(RAW_CHECKPOINT, RAW_AUDIO_REF)))
+                """.formatted(RAW_CHECKPOINT, audioRef)))
         .andExpect(status().isOk());
 
-    return new Dataset(tokens, userId, goalProfileId, planItemId);
+    return new Dataset(tokens, userId, goalProfileId, planItemId, audioRef);
   }
 
   private GoalAutopilotService.DataFamilyExportRecord assertFamily(
@@ -308,6 +315,7 @@ class GoalAutopilotDataExportRetentionTest extends BackendIntegrationTestSupport
         "goal_progress_forecasts",
         "goal_outcome_checkpoints",
         "goal_autopilot_controls",
+        "goal_autopilot_goal_idempotency",
         "goal_autopilot_control_idempotency",
         "goal_notification_outbox_records",
         "goal_planner_replay_audits",
@@ -365,5 +373,42 @@ class GoalAutopilotDataExportRetentionTest extends BackendIntegrationTestSupport
         Instant.now()));
   }
 
-  private record Dataset(AuthTokens tokens, UUID userId, UUID goalProfileId, UUID planItemId) {}
+  private String createValidatedAudioRef(AuthTokens tokens, String purposeSuffix) throws Exception {
+    mediaUploadSequence += 1;
+    String suffix = purposeSuffix + "-" + mediaUploadSequence;
+    String checksum = "checksum-" + suffix;
+    MvcResult create = mvc.perform(post("/media/audio/uploads")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("Idempotency-Key", "audio-upload-" + suffix)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "purpose": "asr_input",
+                  "content_type": "audio/m4a",
+                  "byte_size": 240000,
+                  "duration_seconds": 12,
+                  "checksum_sha256": "%s",
+                  "client_upload_id": "client-%s"
+                }
+                """.formatted(checksum, suffix)))
+        .andExpect(status().isCreated())
+        .andReturn();
+    String mediaId = JsonPath.read(create.getResponse().getContentAsString(), "$.media.media_id");
+    String audioRef = JsonPath.read(create.getResponse().getContentAsString(), "$.media.audio_ref");
+    mvc.perform(post("/media/audio/uploads/%s/complete".formatted(mediaId))
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "checksum_sha256": "%s"
+                }
+                """.formatted(checksum)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.media.status").value("validated"));
+    return audioRef;
+  }
+
+  private record Dataset(AuthTokens tokens, UUID userId, UUID goalProfileId, UUID planItemId, String audioRef) {}
 }

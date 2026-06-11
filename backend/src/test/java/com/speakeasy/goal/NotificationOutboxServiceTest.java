@@ -175,7 +175,8 @@ class NotificationOutboxServiceTest {
             "22:00",
             "08:00",
             true),
-        "req_" + displayName);
+        "req_" + displayName,
+        "outbox-service-goal-" + displayName.replace(" ", "-"));
     GoalAutopilotService.PlanResult plan = goalAutopilotService.generatePlan(userId, false, "initial_backplan", "req_plan");
     UUID planItemId = plan.dailyPlan().items().get(0).planItemId();
     return new Fixture(

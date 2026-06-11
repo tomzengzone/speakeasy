@@ -101,6 +101,7 @@ class CheckpointReplayAuditTest extends BackendIntegrationTestSupport {
     mvc.perform(post("/goal-autopilot/goals")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
             .header("X-Request-Id", "req_p02_fuc008_goal")
+            .header("Idempotency-Key", "checkpoint-replay-goal-" + tokens.userId())
             .contentType(MediaType.APPLICATION_JSON)
             .content("""
                 {

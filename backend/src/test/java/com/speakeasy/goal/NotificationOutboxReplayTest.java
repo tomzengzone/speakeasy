@@ -115,7 +115,8 @@ class NotificationOutboxReplayTest {
             "22:00",
             "08:00",
             true),
-        "req_fub_008");
+        "req_fub_008",
+        "outbox-replay-goal");
     GoalAutopilotService.PlanResult plan = goalAutopilotService.generatePlan(userId, false, "initial_backplan", "req_plan");
     return new Fixture(
         userId,

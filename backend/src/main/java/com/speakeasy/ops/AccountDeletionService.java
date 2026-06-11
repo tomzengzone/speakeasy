@@ -159,6 +159,7 @@ public class AccountDeletionService {
     delete("goal_notification_outbox_records", userId);
     delete("goal_mastery_transition_decisions", userId);
     delete("goal_recovery_plan_decisions", userId);
+    delete("goal_autopilot_goal_idempotency", userId);
     delete("goal_autopilot_control_idempotency", userId);
     delete("goal_autopilot_controls", userId);
     delete("goal_plan_items", userId);

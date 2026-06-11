@@ -123,6 +123,7 @@ class MemoryCurveReplayTest extends BackendIntegrationTestSupport {
     return mvc.perform(post("/goal-autopilot/goals")
         .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
         .header("X-Request-Id", "req_fub012_goal")
+        .header("Idempotency-Key", "memory-curve-goal-" + tokens.userId())
         .contentType(MediaType.APPLICATION_JSON)
         .content("""
             {

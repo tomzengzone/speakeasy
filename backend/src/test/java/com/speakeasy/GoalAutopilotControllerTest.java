@@ -45,6 +45,8 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
   @Autowired NotificationOutboxService notificationOutboxService;
   @Autowired AccountDeletionService accountDeletionService;
   @Autowired Clock clock;
+  private int goalCreateSequence;
+  private int mediaUploadSequence;
 
   @Test
   void tcP02Diag001CreatesGoalDiagnosticAndClaimGuardSourceOfTruth() throws Exception {
@@ -200,7 +202,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
         List.of(),
         null,
         null,
-        false), "req_service_blank_goal"))
+        false), "req_service_blank_goal", "svc-goal-blank"))
         .isInstanceOf(ApiException.class);
     assertThatThrownBy(() -> goalAutopilotService.createGoal(userId, new GoalAutopilotService.GoalInput(
         "ielts_speaking",
@@ -212,7 +214,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
         List.of(),
         null,
         null,
-        false), "req_service_null_deadline"))
+        false), "req_service_null_deadline", "svc-goal-null-deadline"))
         .isInstanceOf(ApiException.class);
     assertThatThrownBy(() -> goalAutopilotService.createGoal(userId, new GoalAutopilotService.GoalInput(
         "ielts_speaking",
@@ -224,7 +226,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
         List.of(),
         null,
         null,
-        false), "req_service_null_minutes"))
+        false), "req_service_null_minutes", "svc-goal-null-minutes"))
         .isInstanceOf(ApiException.class);
     assertThatThrownBy(() -> goalAutopilotService.createGoal(userId, new GoalAutopilotService.GoalInput(
         "ielts_speaking",
@@ -236,7 +238,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
         List.of(),
         null,
         null,
-        false), "req_service_large_minutes"))
+        false), "req_service_large_minutes", "svc-goal-large-minutes"))
         .isInstanceOf(ApiException.class);
     assertThatThrownBy(() -> goalAutopilotService.createGoal(userId, new GoalAutopilotService.GoalInput(
         "ielts_speaking",
@@ -248,7 +250,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
         List.of(),
         null,
         null,
-        false), "req_service_bad_intensity"))
+        false), "req_service_bad_intensity", "svc-goal-bad-intensity"))
         .isInstanceOf(ApiException.class);
 
     var toeflOutOfRange = goalAutopilotService.createGoal(userId, new GoalAutopilotService.GoalInput(
@@ -261,7 +263,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
         null,
         null,
         null,
-        false), "req_service_toefl_out");
+        false), "req_service_toefl_out", "svc-goal-toefl-out");
     assertThat(toeflOutOfRange.goalProfile().supportStatus()).isEqualTo("unsupported");
     assertThat(toeflOutOfRange.supportDecision().reasonCode()).isEqualTo("target_score_out_of_supported_range");
 
@@ -275,7 +277,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
         null,
         null,
         null,
-        false), "req_service_toefl_supported");
+        false), "req_service_toefl_supported", "svc-goal-toefl-supported");
     assertThat(supportedLowConfidence.goalProfile().supportStatus()).isEqualTo("supported");
     assertThat(supportedLowConfidence.diagnostic().confidenceBand()).isEqualTo("low");
 
@@ -1125,6 +1127,193 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
   }
 
   @Test
+  void tcP02Xcb005RejectsUntrustedGoalDiagnosticAudioRefBeforeFacts() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140320");
+    UUID userId = UUID.fromString(tokens.userId());
+
+    createGoal(tokens, """
+        {
+          "schema_version": 1,
+          "goal_type": "ielts_speaking",
+          "target_score": 8,
+          "target_ability": "sustain a structured IELTS part 2 answer",
+          "deadline": "%s",
+          "daily_minutes": 30,
+          "intensity_preference": "standard",
+          "diagnostic_samples": [
+            {
+              "sample_ref": "xcb005-diag-a",
+              "transcript": "I can answer with a clear example and explain the reason behind my opinion.",
+              "audio_ref": "/tmp/local-answer.wav",
+              "duration_seconds": 55
+            }
+          ]
+        }
+        """.formatted(LocalDate.now().plusDays(75)))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"))
+        .andExpect(jsonPath("$.error.details.media_error").value("unsupported_media_ref"));
+
+    assertThat(count("goal_profiles", userId)).isZero();
+    assertThat(count("goal_diagnostic_assessments", userId)).isZero();
+  }
+
+  @Test
+  void tcP02Xcb005AcceptsValidatedGoalDiagnosticAudioRefThroughExistingMediaBoundary() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140321");
+    String audioRef = createValidatedAudioRef(tokens, "goal_diagnostic");
+
+    createGoal(tokens, """
+        {
+          "schema_version": 1,
+          "goal_type": "ielts_speaking",
+          "target_score": 8,
+          "target_ability": "sustain a structured IELTS part 2 answer",
+          "deadline": "%s",
+          "daily_minutes": 30,
+          "intensity_preference": "standard",
+          "diagnostic_samples": [
+            {
+              "sample_ref": "xcb005-diag-a",
+              "transcript": "I can answer familiar questions, extend one example with details, and connect it back to the topic without claiming an official score.",
+              "audio_ref": "%s",
+              "duration_seconds": 55
+            },
+            {
+              "sample_ref": "xcb005-diag-b",
+              "transcript": "I can compare choices, explain a tradeoff, and give a clear conclusion in a speaking answer.",
+              "duration_seconds": 52
+            }
+          ]
+        }
+        """.formatted(LocalDate.now().plusDays(75), audioRef))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.diagnostic.status").value("complete"))
+        .andExpect(jsonPath("$.diagnostic.claim_guard.official_score_equivalence").value(false));
+  }
+
+  @Test
+  void tcP02Xcb005CheckpointRejectsUntrustedAudioAndIgnoresScoreHintForConfidence() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140322");
+    UUID userId = UUID.fromString(tokens.userId());
+    createSupportedGoal(tokens).andExpect(status().isOk());
+    generatePlan(tokens, false, "initial_backplan").andExpect(status().isOk());
+
+    mvc.perform(post("/goal-autopilot/checkpoints")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("X-Request-Id", "req_p02_xcb005_checkpoint_reject")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "checkpoint_type": "weekly_mock",
+                  "transcript": "I gave a complete answer with one example.",
+                  "audio_ref": "/tmp/local-checkpoint.wav",
+                  "score_hint": 9.0
+                }
+                """))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"))
+        .andExpect(jsonPath("$.error.details.media_error").value("unsupported_media_ref"));
+
+    assertThat(count("goal_outcome_checkpoints", userId)).isZero();
+
+    String audioRef = createValidatedAudioRef(tokens, "goal_checkpoint");
+    mvc.perform(post("/goal-autopilot/checkpoints")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("X-Request-Id", "req_p02_xcb005_checkpoint_low")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "checkpoint_type": "weekly_mock",
+                  "transcript": "short",
+                  "audio_ref": "%s",
+                  "score_hint": 9.0
+                }
+                """.formatted(audioRef)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.checkpoint.result_status").value("low_confidence"))
+        .andExpect(jsonPath("$.checkpoint.confidence_band").value("low"))
+        .andExpect(jsonPath("$.forecast.eta_date").doesNotExist())
+        .andExpect(jsonPath("$.forecast.claim_guard.goal_completion_claim_allowed").value(false));
+  }
+
+  @Test
+  void tcP02Xcb005GoalCreateRequiresAndReplaysIdempotencyKey() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800140323");
+    UUID userId = UUID.fromString(tokens.userId());
+    String body = """
+        {
+          "schema_version": 1,
+          "goal_type": "ielts_speaking",
+          "target_score": 8,
+          "target_ability": "sustain a structured IELTS part 2 answer",
+          "deadline": "%s",
+          "daily_minutes": 30,
+          "intensity_preference": "standard",
+          "diagnostic_samples": [
+            {
+              "sample_ref": "xcb005-idem-a",
+              "transcript": "I can give a clear example, extend the answer, and keep the claim guard product-internal.",
+              "duration_seconds": 55
+            }
+          ]
+        }
+        """.formatted(LocalDate.now().plusDays(75));
+
+    mvc.perform(post("/goal-autopilot/goals")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body))
+        .andExpect(status().isBadRequest());
+
+    MvcResult first = createGoal(tokens, body, "goal-create-idempotency-xcb005")
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.goal_profile.revision").value(1))
+        .andReturn();
+    String firstGoalId = JsonPath.read(first.getResponse().getContentAsString(), "$.goal_profile.goal_profile_id");
+
+    createGoal(tokens, body, "goal-create-idempotency-xcb005")
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.goal_profile.goal_profile_id").value(firstGoalId))
+        .andExpect(jsonPath("$.goal_profile.revision").value(1));
+
+    createGoal(tokens, body.replace("daily_minutes\": 30", "daily_minutes\": 35"), "goal-create-idempotency-xcb005")
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.error.code").value("IDEMPOTENCY_CONFLICT"));
+
+    assertThat(count("goal_profiles", userId)).isEqualTo(1);
+    assertThat(count("goal_diagnostic_assessments", userId)).isEqualTo(1);
+    assertThat(count("goal_autopilot_goal_idempotency", userId)).isEqualTo(1);
+    assertThatThrownBy(() -> jdbcTemplate.update("""
+        INSERT INTO goal_profiles (
+          goal_profile_id, user_id, goal_type, target_score, target_ability, deadline, daily_minutes,
+          intensity_preference, support_status, status, revision, limitation_message,
+          quiet_hours_start, quiet_hours_end, notification_consent, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        UUID.randomUUID(),
+        userId,
+        "ielts_speaking",
+        8.0,
+        "duplicate active chain",
+        java.sql.Date.valueOf(LocalDate.now().plusDays(75)),
+        30,
+        "standard",
+        "supported",
+        "active",
+        1,
+        "",
+        "22:00",
+        "08:00",
+        true,
+        java.sql.Timestamp.from(Instant.now()),
+        java.sql.Timestamp.from(Instant.now())))
+        .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+  }
+
+  @Test
   void tcP02Auto003MediumDiagnosticCheckpointKeepsMediumForecastConfidence() throws Exception {
     AuthTokens tokens = loginPhone("+8613800140211");
     createGoal(tokens, """
@@ -1651,6 +1840,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
 
     assertThat(count("goal_profiles", userId)).isEqualTo(1);
     assertThat(count("goal_autopilot_controls", userId)).isEqualTo(1);
+    assertThat(count("goal_autopilot_goal_idempotency", userId)).isEqualTo(1);
     assertThat(count("goal_plan_items", userId)).isGreaterThan(0);
     assertThat(count("goal_notification_outbox_records", userId)).isEqualTo(1);
     assertThat(count("goal_mastery_transition_decisions", userId)).isEqualTo(1);
@@ -1664,6 +1854,7 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
 
     assertThat(count("goal_profiles", userId)).isZero();
     assertThat(count("goal_autopilot_controls", userId)).isZero();
+    assertThat(count("goal_autopilot_goal_idempotency", userId)).isZero();
     assertThat(count("goal_diagnostic_assessments", userId)).isZero();
     assertThat(count("goal_mastery_initial_states", userId)).isZero();
     assertThat(count("goal_backplans", userId)).isZero();
@@ -1781,11 +1972,55 @@ class GoalAutopilotControllerTest extends BackendIntegrationTestSupport {
   }
 
   private org.springframework.test.web.servlet.ResultActions createGoal(AuthTokens tokens, String body) throws Exception {
+    goalCreateSequence += 1;
+    return createGoal(tokens, body, "goal-create-" + goalCreateSequence + "-" + tokens.userId());
+  }
+
+  private org.springframework.test.web.servlet.ResultActions createGoal(
+      AuthTokens tokens, String body, String idempotencyKey) throws Exception {
     return mvc.perform(post("/goal-autopilot/goals")
         .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
         .header("X-Request-Id", "req_p02_goal")
+        .header("Idempotency-Key", idempotencyKey)
         .contentType(MediaType.APPLICATION_JSON)
         .content(body));
+  }
+
+  private String createValidatedAudioRef(AuthTokens tokens, String purposeSuffix) throws Exception {
+    mediaUploadSequence += 1;
+    String suffix = purposeSuffix + "-" + mediaUploadSequence;
+    String checksum = "checksum-" + suffix;
+    MvcResult create = mvc.perform(post("/media/audio/uploads")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("Idempotency-Key", "audio-upload-" + suffix)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "purpose": "asr_input",
+                  "content_type": "audio/m4a",
+                  "byte_size": 240000,
+                  "duration_seconds": 12,
+                  "checksum_sha256": "%s",
+                  "client_upload_id": "client-%s"
+                }
+                """.formatted(checksum, suffix)))
+        .andExpect(status().isCreated())
+        .andReturn();
+    String mediaId = JsonPath.read(create.getResponse().getContentAsString(), "$.media.media_id");
+    String audioRef = JsonPath.read(create.getResponse().getContentAsString(), "$.media.audio_ref");
+    mvc.perform(post("/media/audio/uploads/%s/complete".formatted(mediaId))
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "checksum_sha256": "%s"
+                }
+                """.formatted(checksum)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.media.status").value("validated"));
+    return audioRef;
   }
 
   private org.springframework.test.web.servlet.ResultActions generatePlan(

@@ -4129,3 +4129,68 @@ Result:
 Residual risk:
 - Current contract intentionally supports built-in avatar asset refs only. Remote avatar URLs and user-uploaded images require a future formal media/image API contract.
 - The worktree contained unrelated pre-existing changes outside XCB-003; this report does not classify, revert or claim those changes as part of the avatar fix.
+
+## 2026-06-11 - P02 XCB005 Goal Autopilot Fact Boundary Implementation
+
+Report ID:
+- `P02-XCB005-GOAL-AUTOPILOT-FACT-BOUNDARIES-20260611`
+
+Change request:
+- Close XCB-005 fact-provenance gaps for Goal Autopilot goal intake and checkpoint submission without duplicating existing Media upload, AI Gateway, control idempotency, data export or account deletion mechanisms.
+
+Requirement mapping:
+- Followup-A: `P02-FUA-FR-004`, `P02-FUA-FR-005`, `P02-FUA-FR-008`; `AC-P02-FUA-004`, `AC-P02-FUA-005`, `AC-P02-FUA-008`; `TC-P02-FUA-017`, `TC-P02-FUA-018`, `TC-P02-FUA-019`; `P02-FUA-TR-010`, `P02-FUA-TR-011`.
+- Followup-C: `P02-FUC-FR-003`; `AC-P02-FUC-003`; `TC-P02-FUC-023`; `P02-FUC-TR-003`.
+- Cross-cutting registry: `XCB-001`, `XCB-002`, `XCB-005`, `XCB-006`.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotGoalIdempotency.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotGoalIdempotencyRepository.java`
+- `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`
+- `backend/src/main/java/com/speakeasy/identity/UserAccountRepository.java`
+- `backend/src/main/java/com/speakeasy/ops/AccountDeletionService.java`
+- `backend/src/main/resources/db/migration/V202606110001__p0_2_xcb005_goal_autopilot_fact_boundaries.sql`
+- `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`
+- `backend/src/test/java/com/speakeasy/FoundationMigrationTest.java`
+- `backend/src/test/java/com/speakeasy/goal/GoalAutopilotDataExportRetentionTest.java`
+- `backend/src/test/java/com/speakeasy/goal/GoalAutopilotTelemetryTest.java`
+- `lib/features/goal_autopilot/goal_autopilot_adapter.dart`
+- `lib/services/api_client.dart`
+- `test/features/goal_autopilot/goal_autopilot_adapter_test.dart`
+- `docs/architecture/api_contract.md`
+- `docs/architecture/openapi/speakeasy-api.yaml`
+- `docs/architecture/openapi/dart-client-drift-manifest.json`
+- `lib/generated/api/speakeasy_api.dart`
+- `lib/generated/api/.openapi-sha256`
+- `docs/process/cross_cutting_boundary_registry.md`
+- `docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening/acceptance.md`
+- `docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening/test_cases.md`
+- `docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening/traceability.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/acceptance.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/test_cases.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/traceability.md`
+- `scripts/check_p0_2_goal_autopilot_traceability.py`
+- `scripts/check_p0_2_followup_c_traceability.py`
+
+Implementation summary:
+- Reused `AiGatewayService.validateTrustedAudioRef` through `GoalAutopilotService.validateDiagnosticAudioRefs` and `GoalAutopilotService.validateCheckpointAudioRef` for goal diagnostic and checkpoint `audio_ref` validation. No new media validation service or Followup-E-specific upload pipeline was introduced.
+- Added goal-create idempotency as a dedicated replay table, mirroring the existing control idempotency pattern but scoped to goal intake, with request hash, response replay and conflict behavior.
+- Added a user-row pessimistic lock through `UserAccountRepository.findByIdForUpdate` so create/revise operations serialize on the existing user identity boundary.
+- Added `Idempotency-Key` as a required `POST /goal-autopilot/goals` API contract and propagated it from Flutter `GoalAutopilotAdapter` through `ApiClient.createGoalAutopilotGoal`.
+- Added `goal_profiles.user_id` uniqueness after a migration-time prune step that keeps the service-canonical active/latest profile and deletes non-canonical duplicate rows.
+- Extended account deletion and data export to include goal-create idempotency metadata with raw replay response JSON redacted.
+- Updated OpenAPI generated-client hash to `44739a588708eb47e82707680c0ab0dbada178530abe12a4c7525750f8e35cd5`.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,GoalAutopilotDataExportRetentionTest,GoalAutopilotTelemetryTest,FoundationMigrationTest test` - passed.
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `npm run check:dart-client-drift` - passed.
+
+Result:
+- XCB-005 goal intake and checkpoint fact boundaries are locally implemented and traceable from AC to code to TC evidence.
+- The implementation uses existing Media/AI Gateway, control-style idempotency, account deletion, export and telemetry patterns instead of parallel mechanisms.
+
+Residual risk:
+- Migration prune is intentionally upgrade-safe for uniqueness but destructive for non-canonical duplicate goal chains. If production data must preserve duplicate-chain audit history, run a backup/archive step before applying `V202606110001__p0_2_xcb005_goal_autopilot_fact_boundaries.sql`.
+- Missing-header behavior currently returns Spring `400` because `Idempotency-Key` is a required controller header. The service-level validation remains available for non-controller callers; changing this to a JSON `422` would be a contract refinement, not a blocker for the current OpenAPI required-header contract.

@@ -3160,3 +3160,43 @@ Evidence:
 Residual:
 - The current product supports built-in avatar selection only. Remote avatar URLs and user-uploaded images remain out of scope until a dedicated media/image API contract is designed.
 - The worktree contained unrelated pre-existing changes outside XCB-003; they were not reverted and are not part of this test result.
+
+## 2026-06-11 P02 XCB005 Goal Autopilot Fact Boundaries
+
+Report ID:
+- `P02-XCB005-GOAL-AUTOPILOT-FACT-BOUNDARIES-20260611`
+
+Scope:
+- XCB-005 fact provenance for Goal Autopilot goal intake and checkpoint submission.
+- Followup-A trace rows: `P02-FUA-TR-010`, `P02-FUA-TR-011`.
+- Followup-C trace row: `P02-FUC-TR-003`.
+- Cross-cutting rules: `XCB-001`, `XCB-002`, `XCB-005`, `XCB-006`.
+
+Test cases:
+- `TC-P02-FUA-017`: goal diagnostic `audio_ref` rejects untrusted refs and accepts only validated `media://audio/...` refs through existing Media upload and AI Gateway validation.
+- `TC-P02-FUA-018`: `POST /goal-autopilot/goals` requires `Idempotency-Key`, replays same body, rejects mismatched replay, propagates the header from Flutter production transport, and upgrades duplicate legacy `goal_profiles` rows before applying `UNIQUE(user_id)`.
+- `TC-P02-FUA-019`: export/deletion/telemetry redacts raw diagnostic/checkpoint audio refs and goal-create replay response JSON.
+- `TC-P02-FUC-023`: checkpoint `audio_ref` uses the same trusted media boundary, and client `score_hint` cannot raise confidence, ETA, claim guard, mastery or completion facts.
+
+Commands:
+```bash
+cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,GoalAutopilotDataExportRetentionTest,GoalAutopilotTelemetryTest,FoundationMigrationTest test
+flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart
+npm run check:dart-client-drift
+```
+
+Result: passed.
+
+Evidence:
+- `GoalAutopilotControllerTest#tcP02Xcb005RejectsUntrustedGoalDiagnosticAudioRefBeforeFacts` covers untrusted diagnostic audio rejection before persistence.
+- `GoalAutopilotControllerTest#tcP02Xcb005AcceptsValidatedGoalDiagnosticAudioRefThroughExistingMediaBoundary` covers validated media audio acceptance.
+- `GoalAutopilotControllerTest#tcP02Xcb005CheckpointRejectsUntrustedAudioAndIgnoresScoreHintForConfidence` covers checkpoint trusted audio validation and score-hint candidate-only behavior.
+- `GoalAutopilotControllerTest#tcP02Xcb005GoalCreateRequiresAndReplaysIdempotencyKey` covers goal-create missing key/replay/conflict and single-chain uniqueness.
+- `FoundationMigrationTest#xcb005GoalProfileUniqueMigrationPrunesLegacyDuplicateRows` proves the XCB-005 migration can upgrade a legacy database with duplicate `goal_profiles` rows and retain the same active/latest profile that the service would read.
+- `GoalAutopilotDataExportRetentionTest` and `GoalAutopilotTelemetryTest` prove raw `media://audio/...` refs and replay response JSON are not exposed in export/telemetry, and account deletion removes goal-create idempotency rows.
+- Flutter `goal_autopilot_adapter_test.dart` proves `GoalAutopilotAdapter.createGoal` sends `Idempotency-Key` through the production request object.
+- Dart client drift gate passed with OpenAPI hash `44739a588708eb47e82707680c0ab0dbada178530abe12a4c7525750f8e35cd5`.
+
+Residual:
+- The migration intentionally prunes non-canonical duplicate `goal_profiles` rows before adding `UNIQUE(user_id)`. Existing foreign-key cascade removes facts attached only to those non-canonical rows. If production needs audit retention for duplicate legacy chains, a backup or archive step must run before applying this migration.
+- This report does not claim Followup-E diagnostic-audio feature completion; it only validates trusted `audio_ref` consumption through the existing Media/AI Gateway boundary.

@@ -3112,3 +3112,42 @@ Required corrections:
 Residual risk:
 - `avatar_ref` intentionally uses Flutter asset paths as the current built-in avatar contract. This is acceptable for the current Product Base scope but future remote or user-uploaded avatars must be designed as a separate `media/image` contract.
 - The worktree contains unrelated pre-existing changes outside XCB-003; this review does not approve or reject those unrelated changes.
+
+## 2026-06-11 P02 XCB005 Goal Autopilot Fact Boundaries Independent Review
+
+Report ID:
+- `P02-XCB005-GOAL-AUTOPILOT-FACT-BOUNDARIES-20260611`
+
+Result:
+- Pass. Final independent review found no P0 findings and no remaining P1 after this report status was updated. Prior P1 findings for Flutter `Idempotency-Key`, duplicate-profile migration upgrade, OpenAPI/generated drift, report/checker traceability and final report source-of-truth status are closed.
+
+Checked step:
+- Reviewed `P02-FUA-TR-010`, `P02-FUA-TR-011`, `P02-FUC-TR-003`, `P02-FUC-GAP-010`, `TC-P02-FUA-017`, `TC-P02-FUA-018`, `TC-P02-FUA-019` and `TC-P02-FUC-023`.
+- Reviewed backend audio-ref validation, goal-create idempotency, Flutter header propagation, migration upgrade safety, export/telemetry redaction and OpenAPI generated drift.
+
+Findings:
+- Closed P1. Flutter production `createGoal` now sends `Idempotency-Key` through `GoalAutopilotRequest.headers` and `ApiClient.createGoalAutopilotGoal`.
+- Closed P1. `V202606110001` can upgrade legacy duplicate `goal_profiles` rows by pruning to the service-canonical active/latest row before adding `UNIQUE(user_id)`, with `FoundationMigrationTest` coverage.
+- Closed P1. OpenAPI generated Dart drift is synchronized to hash `44739a588708eb47e82707680c0ab0dbada178530abe12a4c7525750f8e35cd5`.
+- Closed P1. XCB-005 report and traceability checker coverage now include Followup-A rows `P02-FUA-TR-010/011` and Followup-C checkpoint regression `TC-P02-FUC-023`.
+- Closed P1. Final quality-report source-of-truth status is now recorded as pass rather than pending.
+- Closed P2. OpenAPI now explicitly documents `400` for missing required `Idempotency-Key` binding errors on `POST /goal-autopilot/goals`.
+- No duplicate wheel concern identified in the local implementation: trusted audio uses existing Media/AI Gateway validation, idempotency follows the existing replay-table pattern, deletion/export reuse existing data-governance paths, and Flutter uses the existing adapter/ApiClient transport.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,GoalAutopilotDataExportRetentionTest,GoalAutopilotTelemetryTest,FoundationMigrationTest test` - passed.
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `npm run check:api-contract` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_c_traceability.py` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope full` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --include-worktree --base-ref HEAD` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Required corrections:
+- None.
+
+Residual risk:
+- Migration prune deletes non-canonical duplicate goal chains through existing FK cascade. This is consistent with the single active goal-chain architecture, but production environments that require duplicate-chain audit history must archive before migration.
+- Followup-E diagnostic-audio upload feature completion is not claimed by this review.

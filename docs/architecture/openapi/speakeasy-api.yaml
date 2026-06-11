@@ -831,10 +831,12 @@ paths:
       - Goal Autopilot
       operationId: createGoalAutopilotGoal
       summary: Create or revise the active P0.2 goal profile and diagnostic baseline.
+      x-idempotency-required: true
       x-traceability:
         product_objects:
         - p0-2-training-memory
         - p0-2-goal-diagnostic-foundation
+        - p0-2-followup-a-goal-intake-diagnostic-hardening
         requirements:
         - P02-DIAG-FR-001
         - P02-DIAG-FR-002
@@ -843,6 +845,10 @@ paths:
         - P02-DIAG-FR-005
         - P02-DIAG-FR-006
         - P02-DIAG-FR-007
+        - P02-FUA-FR-004
+        - P02-FUA-FR-005
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -864,6 +870,10 @@ paths:
                   $ref: '#/components/examples/GoalAutopilotSummaryResponseExample'
         '503':
           $ref: '#/components/responses/GoalAutopilotRuntimeDisabled'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/IdempotencyConflict'
         '422':
           $ref: '#/components/responses/ValidationFailed'
     parameters:

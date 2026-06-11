@@ -193,6 +193,7 @@ class GoalAutopilotRuntimeGateTest extends BackendIntegrationTestSupport {
     return mvc.perform(post("/goal-autopilot/goals")
         .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
         .header("X-Request-Id", requestId)
+        .header("Idempotency-Key", "runtime-goal-" + requestId)
         .contentType(MediaType.APPLICATION_JSON)
         .content("""
             {

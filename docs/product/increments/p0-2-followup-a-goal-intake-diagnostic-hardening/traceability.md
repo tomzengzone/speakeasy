@@ -6,11 +6,11 @@ FR-001..009 implemented locally / release-gated - 本文件已补充 No-goal Exp
 ## 版本和状态管理
 | 字段 | 值 |
 | --- | --- |
-| Traceability version | v1.2-p0.2-followup-a-no-goal-explore-implementation |
-| Last updated | 2026-06-04 |
+| Traceability version | v1.3-p0.2-followup-a-xcb005-fact-boundary-regression |
+| Last updated | 2026-06-11 |
 | Owner | Product Manager Agent |
 | Checker | Product Object Governance Check Agent / Documentation Governance / Independent Quality Review |
-| Workflow state | requirements/spec/acceptance/test_cases/code/test evidence complete for FR-001..009；release still gated by Followup-B/C/D |
+| Workflow state | requirements/spec/acceptance/test_cases/code/test evidence complete for FR-001..009 plus XCB-005 backend/Flutter/migration regression TC-P02-FUA-017..019；release still gated by Followup-B/C/D |
 
 ## 上游链路
 ```text
@@ -38,16 +38,18 @@ docs/product/stages/p0-2-training-memory.md
 | P02-FUA-TR-007 | P02-FUA-WP-007 | P02-SI-007, P02-SI-008 | P02-PG-001, P02-PG-002, P02-PG-003, P02-PG-004, P02-PG-005 | All Followup-A rows | P02-FUA-FR-007 | P02-FUA-SPEC-007 | AC-P02-FUA-007 | TC-P02-FUA-010, TC-P02-FUA-011, TC-P02-FUA-012 | QA scripts and existing backend regression contracts; no new API field was required | Changed Flutter tests; no backend code change | Backend regression/performance passed; coverage script passed backend line 96.3%, branch 88.6%, Flutter line 90.9% | QA and performance review passed locally | Implemented locally / release-gated |
 | P02-FUA-TR-008 | P02-FUA-WP-008 | P02-SI-007, P02-SI-008 | P02-PG-001, P02-PG-002, P02-PG-003, P02-PG-004, P02-PG-005 | All Followup-A rows | P02-FUA-FR-008 | P02-FUA-SPEC-008 | AC-P02-FUA-008 | TC-P02-FUA-013 | Reporting and documentation contracts only | `docs/reports/quality_report.md`, `docs/reports/test_report.md`, `docs/reports/implementation_report.md`; strengthened traceability script | `python3 scripts/check_p0_2_goal_autopilot_traceability.py` passed; `python3 scripts/project_agent_runner.py validate` passed | Independent final review passed locally | Implemented locally / release-gated |
 | P02-FUA-TR-009 | P02-FUA-WP-009 | P02-SI-007 | P02-PG-001, P02-PG-002, P02-PG-003, P02-PG-005 | P02-DIAG-TR-001 | P02-FUA-FR-009 | P02-FUA-SPEC-009 | AC-P02-FUA-009 | TC-P02-FUA-014, TC-P02-FUA-015, TC-P02-FUA-016 | Existing OpenAPI can represent absence by no active goal/no goal-autopilot requests; no new backend field required | `GoalAutopilotPanel` renders `No active goal`, `Set a goal`, `Explore practice`, `Try a sample drill`; `Set a goal` opens `_GoalSetup` without transport; `_ExplorePractice` renders ordinary sample feedback; production browse path does not call `createDefaultGoal()` or goal-autopilot APIs beyond initial summary lookup | `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` passed; TC-P02-FUA-014/015/016; `flutter analyze ...` passed; coverage passed at Flutter line 90.9% | Product/UX/data-governance review passed locally | Implemented locally / release-gated |
+| P02-FUA-TR-010 | P02-FUA-WP-004 | P02-SI-008 | P02-PG-001, P02-PG-004, P02-PG-005 | P02-DIAG-TR-003, XCB-001, XCB-002, XCB-005, XCB-006 | P02-FUA-FR-004 | P02-FUA-SPEC-004 | AC-P02-FUA-004, AC-P02-FUA-008 | TC-P02-FUA-017, TC-P02-FUA-019 | `docs/architecture/openapi/speakeasy-api.yaml` requires goal diagnostic audio refs to remain on `POST /goal-autopilot/goals`; `docs/architecture/api_contract.md` and `docs/process/cross_cutting_boundary_registry.md` require trusted `media://audio/...` through Media/AI Gateway | `GoalAutopilotService.validateDiagnosticAudioRefs`; `AiGatewayService.validateTrustedAudioRef`; `GoalAutopilotDataExportRetentionTest`; `GoalAutopilotTelemetryTest` | TC-P02-FUA-017/019 passed with backend Maven command; evidence `docs/reports/test_report.md#2026-06-11-p02-xcb005-goal-autopilot-fact-boundaries` | Independent audio boundary review passed locally; no Followup-E completion claim | Implemented locally / release-gated |
+| P02-FUA-TR-011 | P02-FUA-WP-005 | P02-SI-007, P02-SI-009 | P02-PG-003, P02-PG-005 | P02-DIAG-TR-001, P02-PLAN-TR-002, XCB-005, XCB-006 | P02-FUA-FR-005 | P02-FUA-SPEC-005 | AC-P02-FUA-005, AC-P02-FUA-008 | TC-P02-FUA-018 | `POST /goal-autopilot/goals` requires `Idempotency-Key`; `docs/architecture/api_contract.md` defines replay/conflict behavior, Flutter production header propagation and single server-owned goal chain | `GoalAutopilotGoalIdempotency`; `GoalAutopilotGoalIdempotencyRepository`; `GoalAutopilotService.createGoal`; `UserAccountRepository.findByIdForUpdate`; `V202606110001__p0_2_xcb005_goal_autopilot_fact_boundaries.sql`; `FoundationMigrationTest#xcb005GoalProfileUniqueMigrationPrunesLegacyDuplicateRows`; `GoalAutopilotAdapter.createGoal`; `ApiClient.createGoalAutopilotGoal`; `AccountDeletionService` | TC-P02-FUA-018 passed with `GoalAutopilotControllerTest,FoundationMigrationTest` and `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart`; evidence `docs/reports/test_report.md#2026-06-11-p02-xcb005-goal-autopilot-fact-boundaries` | Independent idempotency review rerun after P1 fixes; final verdict recorded in quality report | Implemented locally / release-gated |
 
 ## Bidirectional Coverage Index
 | Direction | Coverage |
 | --- | --- |
 | Stage scope -> WP | P02-SI-007 maps to WP-001, WP-002, WP-005, WP-006, WP-007, WP-008, WP-009；P02-SI-008 maps to WP-003, WP-004, WP-006, WP-007, WP-008；P02-SI-009 maps to WP-005 only as stale-plan visibility, not Followup-B implementation |
 | WP -> FR | P02-FUA-WP-001..009 each map to exactly one primary FR; WP-000 is documentation setup only |
-| FR -> Spec -> AC -> TC | P02-FUA-FR-001..009 each has a primary P02-FUA-SPEC, AC-P02-FUA and at least one TC-P02-FUA |
-| TC -> AC | TC-P02-FUA-001..016 all reference at least one AC; AC-P02-FUA-001..009 all have primary TC coverage |
-| Contract -> Code | Existing OpenAPI is sufficient for planned Followup-A code unless implementation discovers a missing field; any contract gap must stop code and update contract first |
-| Code -> Test | Flutter code targets map to widget/adapter/model tests; backend code changes trigger backend regression, coverage and performance gates; FR-009 code maps to TC-P02-FUA-014..016 and passed locally |
+| FR -> Spec -> AC -> TC | P02-FUA-FR-001..009 each has a primary P02-FUA-SPEC, AC-P02-FUA and at least one TC-P02-FUA；XCB-005 regression rows add TC-P02-FUA-017..019 without introducing new FR IDs |
+| TC -> AC | TC-P02-FUA-001..019 all reference at least one AC; AC-P02-FUA-001..009 all have primary TC coverage |
+| Contract -> Code | Existing OpenAPI covers baseline Followup-A behavior; XCB-005 updates the `POST /goal-autopilot/goals` contract with trusted diagnostic `audio_ref`, required `Idempotency-Key`, replay/conflict behavior and single-chain persistence |
+| Code -> Test | Flutter code targets map to widget/adapter/model tests; backend code changes trigger backend regression, coverage and performance gates; FR-009 code maps to TC-P02-FUA-014..016 and passed locally；XCB-005 backend/Flutter/migration code maps to TC-P02-FUA-017..019 and passed locally |
 
 ## Gap Register
 | Gap ID | Gap | Trace Row | Current handling |
@@ -58,6 +60,8 @@ docs/product/stages/p0-2-training-memory.md
 | P02-FUA-GAP-004 | Unsupported/partial/low-confidence action gating was not fully visible in Flutter. | P02-FUA-TR-002, P02-FUA-TR-006 | Closed locally by UI gating and TC-P02-FUA-006/007/008. |
 | P02-FUA-GAP-005 | Followup-A execution evidence and coverage evidence did not exist. | P02-FUA-TR-007, P02-FUA-TR-008 | Closed locally by executed evidence addendum and coverage script result. |
 | P02-FUA-GAP-006 | No active goal previously routed directly to editable form and lacked Explore Mode no-fact boundary. | P02-FUA-TR-009 | Closed locally by No active goal empty state, Set-a-goal transition, Explore practice isolation and TC-P02-FUA-014..016. |
+| P02-FUA-GAP-007 | Goal diagnostic `audio_ref` could remain as an untrusted opaque input unless backend reused the XCB-001/XCB-002 media boundary. | P02-FUA-TR-010 | Closed locally by `AiGatewayService.validateTrustedAudioRef` in goal intake, negative/positive backend tests, redacted export and telemetry non-leakage checks. |
+| P02-FUA-GAP-008 | Goal create/revision lacked API idempotency and data-layer single-chain protection. | P02-FUA-TR-011 | Closed locally by Flutter `Idempotency-Key` propagation, backend goal replay table, user-level lock, duplicate-profile pruning before `goal_profiles.user_id` unique constraint, account deletion coverage and TC-P02-FUA-018. |
 
 ## Remaining Non-Followup-A Gates
 - Followup-B pause/resume, notification scheduler, missed-day recovery and memory queue hardening remain open.
@@ -65,4 +69,4 @@ docs/product/stages/p0-2-training-memory.md
 - Followup-D commercial/release/data export/telemetry/Product Base approval remains open.
 
 ## Traceability Independent Review
-Result: pass after implementation evidence update. P02-FUA-TR-009 maps WP-009 -> FR-009 -> SPEC-009 -> AC-009 -> TC-014/015/016 with real code and passed test evidence. Bidirectional requirements-code-test traceability is 100% for Followup-A FR-001..009; release remains gated by Followup-B/C/D.
+Result: pass after implementation evidence update. P02-FUA-TR-009 maps WP-009 -> FR-009 -> SPEC-009 -> AC-009 -> TC-014/015/016 with real code and passed test evidence. XCB-005 P02-FUA-TR-010/011 maps trusted diagnostic `audio_ref`, goal-create idempotency, Flutter header propagation and migration upgrade safety to TC-P02-FUA-017..019. Bidirectional requirements-code-test traceability is 100% for Followup-A FR-001..009 plus XCB-005 regression rows; release remains gated by Followup-B/C/D.

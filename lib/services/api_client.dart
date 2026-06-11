@@ -536,11 +536,13 @@ class ApiClient {
   }
 
   static Future<Map<String, dynamic>> createGoalAutopilotGoal(
-    Map<String, dynamic> payload,
-  ) async {
+    Map<String, dynamic> payload, {
+    required String idempotencyKey,
+  }) async {
     final Map<String, dynamic> response = await _post(
       SpeakeasyApiPaths.goalAutopilotGoals,
       payload,
+      headers: <String, String>{'Idempotency-Key': idempotencyKey.trim()},
     );
     _ensureSuccess(response, fallback: '目标创建失败');
     return response;

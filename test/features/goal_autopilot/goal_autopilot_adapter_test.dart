@@ -274,6 +274,10 @@ void main() {
             request.operation == GoalAutopilotOperation.createGoal,
       );
       expect(createRequest.path, SpeakeasyApiPaths.goalAutopilotGoals);
+      expect(
+        createRequest.headers['Idempotency-Key'],
+        startsWith('goal-create-'),
+      );
       expect(createRequest.body['goal_type'], 'ielts_speaking');
       expect(createRequest.body['target_score'], 7.5);
       expect(
@@ -332,6 +336,10 @@ void main() {
 
       final List<dynamic> samples =
           requests.single.body['diagnostic_samples'] as List<dynamic>;
+      expect(
+        requests.single.headers['Idempotency-Key'],
+        startsWith('goal-create-'),
+      );
       expect(samples, hasLength(2));
       expect(samples[0]['sample_ref'], 'flutter_goal_sample_1');
       expect(samples[1]['sample_ref'], 'flutter_goal_sample_3');
@@ -369,6 +377,10 @@ void main() {
 
       final List<dynamic> samples =
           requests.single.body['diagnostic_samples'] as List<dynamic>;
+      expect(
+        requests.single.headers['Idempotency-Key'],
+        startsWith('goal-create-'),
+      );
       expect(
         samples.single,
         containsPair('sample_ref', 'flutter_goal_sample_1'),

@@ -14,6 +14,7 @@ import com.speakeasy.commerce.EntitlementSnapshot;
 import com.speakeasy.commerce.EntitlementSnapshotRepository;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -43,6 +44,8 @@ class GoalAutopilotTelemetryTest extends BackendIntegrationTestSupport {
   @Autowired AiCostMetricsService aiCostMetricsService;
   @Autowired ConfigurableApplicationContext context;
   @Autowired JdbcTemplate jdbcTemplate;
+  private final List<String> submittedAudioRefs = new ArrayList<>();
+  private int mediaUploadSequence;
 
   @AfterEach
   void resetTelemetryProperties() {
@@ -124,6 +127,7 @@ class GoalAutopilotTelemetryTest extends BackendIntegrationTestSupport {
           .doesNotContain(RAW_AUDIO_REF)
           .doesNotContain("provider payload")
           .doesNotContain("idempotency");
+      submittedAudioRefs.forEach(audioRef -> assertThat(rendered).doesNotContain(audioRef));
     });
   }
 
@@ -149,6 +153,8 @@ class GoalAutopilotTelemetryTest extends BackendIntegrationTestSupport {
         .contains("\"schema_version\":1")
         .doesNotContain(RAW_DIAGNOSTIC)
         .doesNotContain(RAW_AUDIO_REF));
+    assertThat(fallbackAudits).allSatisfy(
+        details -> submittedAudioRefs.forEach(audioRef -> assertThat(details).doesNotContain(audioRef)));
   }
 
   private void assertUserMetricTypes(UUID userId, String... eventTypes) {
@@ -183,9 +189,11 @@ class GoalAutopilotTelemetryTest extends BackendIntegrationTestSupport {
   }
 
   private ResultActions createSupportedGoal(AuthTokens tokens, String requestId) throws Exception {
+    String audioRef = createValidatedAudioRef(tokens, "diag-" + requestId);
     return mvc.perform(post("/goal-autopilot/goals")
         .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
         .header("X-Request-Id", requestId)
+        .header("Idempotency-Key", "telemetry-goal-" + requestId)
         .contentType(MediaType.APPLICATION_JSON)
         .content("""
             {
@@ -212,7 +220,7 @@ class GoalAutopilotTelemetryTest extends BackendIntegrationTestSupport {
                 "notification_consent": true
               }
             }
-            """.formatted(LocalDate.now().plusDays(75), RAW_DIAGNOSTIC, RAW_AUDIO_REF)));
+            """.formatted(LocalDate.now().plusDays(75), RAW_DIAGNOSTIC, audioRef)));
   }
 
   private ResultActions generatePlan(AuthTokens tokens, String requestId, boolean forceReplan, String reasonCode) throws Exception {
@@ -263,6 +271,7 @@ class GoalAutopilotTelemetryTest extends BackendIntegrationTestSupport {
   }
 
   private ResultActions submitCheckpoint(AuthTokens tokens, String requestId, String resultStatus, String transcript) throws Exception {
+    String audioRef = createValidatedAudioRef(tokens, "checkpoint-" + requestId);
     return mvc.perform(post("/goal-autopilot/checkpoints")
         .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
         .header("X-Request-Id", requestId)
@@ -276,7 +285,45 @@ class GoalAutopilotTelemetryTest extends BackendIntegrationTestSupport {
               "score_hint": 7.0,
               "result_status": "%s"
             }
-            """.formatted(transcript, RAW_AUDIO_REF, resultStatus)));
+            """.formatted(transcript, audioRef, resultStatus)));
+  }
+
+  private String createValidatedAudioRef(AuthTokens tokens, String purposeSuffix) throws Exception {
+    mediaUploadSequence += 1;
+    String suffix = purposeSuffix + "-" + mediaUploadSequence;
+    String checksum = "checksum-" + suffix;
+    MvcResult create = mvc.perform(post("/media/audio/uploads")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .header("Idempotency-Key", "audio-upload-" + suffix)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "purpose": "asr_input",
+                  "content_type": "audio/m4a",
+                  "byte_size": 240000,
+                  "duration_seconds": 12,
+                  "checksum_sha256": "%s",
+                  "client_upload_id": "client-%s"
+                }
+                """.formatted(checksum, suffix)))
+        .andExpect(status().isCreated())
+        .andReturn();
+    String mediaId = JsonPath.read(create.getResponse().getContentAsString(), "$.media.media_id");
+    String audioRef = JsonPath.read(create.getResponse().getContentAsString(), "$.media.audio_ref");
+    submittedAudioRefs.add(audioRef);
+    mvc.perform(post("/media/audio/uploads/%s/complete".formatted(mediaId))
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "checksum_sha256": "%s"
+                }
+                """.formatted(checksum)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.media.status").value("validated"));
+    return audioRef;
   }
 
   private ResultActions progressProjection(AuthTokens tokens) throws Exception {

@@ -68,14 +68,13 @@ class GoalDiagnosticSampleInput {
     final String ref = sampleRef.trim().isEmpty
         ? fallbackSampleRef ?? ''
         : sampleRef.trim();
-    final String? trustedAudioRef =
-        audioRef == null || audioRef!.trim().isEmpty
+    final String? trustedAudioRef = audioRef == null || audioRef!.trim().isEmpty
         ? null
         : _normalizeTrustedAudioRef(audioRef!);
     return <String, dynamic>{
       if (ref.isNotEmpty) 'sample_ref': ref,
       if (transcript.trim().isNotEmpty) 'transcript': transcript.trim(),
-      if (trustedAudioRef != null) 'audio_ref': trustedAudioRef,
+      'audio_ref': ?trustedAudioRef,
       if (durationSeconds != null) 'duration_seconds': durationSeconds,
     };
   }
@@ -240,6 +239,9 @@ class GoalAutopilotAdapter {
             'intensity_override': intensityPreference.trim(),
           },
         },
+        headers: <String, String>{
+          'Idempotency-Key': _idempotencyKey('goal-create'),
+        },
       ),
     );
     return GoalAutopilotSummary.fromJson(response);
@@ -403,6 +405,7 @@ Future<Map<String, dynamic>> _apiTransport(GoalAutopilotRequest request) {
   return switch (request.operation) {
     GoalAutopilotOperation.createGoal => ApiClient.createGoalAutopilotGoal(
       request.body,
+      idempotencyKey: request.headers['Idempotency-Key'] ?? '',
     ),
     GoalAutopilotOperation.summary => ApiClient.getGoalAutopilotSummary(),
     GoalAutopilotOperation.control => ApiClient.getGoalAutopilotControl(),

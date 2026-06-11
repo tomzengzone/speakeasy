@@ -3,7 +3,7 @@
   "openapi_path": "docs/architecture/openapi/speakeasy-api.yaml",
   "target_directory": "lib/generated/api",
   "generator": "project-local OpenAPI Dart path registry",
-  "openapi_sha256": "63618e40eaec4877be5a6927433b52da57cd487fb3e855dcc12b727b8a21d359",
+  "openapi_sha256": "44739a588708eb47e82707680c0ab0dbada178530abe12a4c7525750f8e35cd5",
   "status": "Generated Dart OpenAPI boundary is committed under lib/generated/api and pinned by .openapi-sha256. Active MVP backend calls must use generated path constants or be listed as explicit handwritten client exceptions.",
   "handwritten_client_exceptions": {
     "/user/stats": "Legacy local learning-stats sync retained until frontend migrates to learning history/report APIs.",
