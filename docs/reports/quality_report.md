@@ -3151,3 +3151,78 @@ Required corrections:
 Residual risk:
 - Migration prune deletes non-canonical duplicate goal chains through existing FK cascade. This is consistent with the single active goal-chain architecture, but production environments that require duplicate-chain audit history must archive before migration.
 - Followup-E diagnostic-audio upload feature completion is not claimed by this review.
+
+## 2026-06-11 XCB-006 Data Lifecycle Boundary Hardening Independent Review
+
+Report ID:
+- `XCB006-DATA-LIFECYCLE-BOUNDARY-HARDENING-20260611`
+
+Result:
+- Pass for local XCB-006 boundary hardening, audit redaction, AI retention evidence and changed-scope static enforcement.
+
+Checked scope:
+- Cross-cutting rule: `docs/process/cross_cutting_boundary_registry.md` `XCB-006`.
+- Requirements and acceptance: `FR-COM-011`, `FR-COM-012`, `AC-COM-013`, `AC-COM-014`, `TC-COM-024`, `COM-TR-011`, `COM-TR-012`; `FR-COM-AI-005`, `AC-COM-AI-005`, `TC-COM-AI-006`, `COM-AI-TR-005`.
+- Architecture and domain: `docs/domain/domain_schema.md` `AuditLog`, `RetentionPolicy`, `AiRetentionJob`; `docs/domain/entity_relationship.md` account deletion/audit and retention relationships; `docs/architecture/backend_db_foundation_contract.md`; `docs/architecture/api_contract.md` `/admin/audit` and `/admin/ai/retention-jobs`.
+- Code and tests: `AuditRedaction`, `AuditLog`, `AuditLogService`, `AiRetentionService`, `AdminAuditControllerTest`, `AiRetentionPolicyTest`, `scripts/check_cross_cutting_boundaries.py`, `test/scripts/test_cross_cutting_boundaries.py`.
+
+Findings:
+- No blocker. XCB-006 now has an executable changed-scope migration gate for sensitive tables, with tests covering missing coverage, complete coverage, staged/index coverage, explicit exceptions and non-sensitive reference tables.
+- No blocker. Audit write-side and read-side redaction now use shared `AuditRedaction`; this closes the previous duplicated-rule drift between `AuditLog` and `AuditLogService`.
+- No blocker. Safe aggregate retention counts ending in `_deleted_count` or `_redacted_count` remain visible as lifecycle evidence while raw audio, full transcript, provider payload, tokens, signed URLs and sensitive target refs are redacted.
+- No blocker. `AiRetentionService` persists JSON audit evidence rather than Java `Map.toString()` output, so DB evidence and `/admin/audit` API output are both machine-readable and sanitized.
+- No blocker. Product traceability rows now point from `TC-COM-024` and `TC-COM-AI-006` to the 2026-06-11 XCB-006 test evidence, and the implementation/test reports point back to the owning requirements and architecture.
+
+Independent agent reviews:
+- Static XCB-006 gate review: passed; no duplicate-wheel concern, residual SQL parser limitations noted as non-blocking.
+- Audit redaction architecture review: passed; `AuditRedaction` is the single read/write redaction boundary and does not duplicate existing mechanisms.
+- Test/traceability review: passed; write-side persistence, legacy read-side sanitization, AI retention DB/API evidence and XCB-006 traceability all covered.
+- Target-ref follow-up review: passed; `usage:*`, `ai_retention:*` and `account_deletion:*` are not over-redacted, and sensitive `audio_ref:*` / `transcript_ref:*` target refs are redacted.
+- Final architecture/traceability review: passed; only low-risk traceability metadata freshness was found and then corrected in the two affected traceability headers.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminAuditControllerTest,AiRetentionPolicyTest test` - passed.
+- `python3 -m unittest test.scripts.test_cross_cutting_boundaries` - passed.
+- `python3 -m py_compile scripts/check_cross_cutting_boundaries.py` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Residual risk:
+- The static SQL detector is regex-based and intentionally scoped to standard migration files; nonstandard SQL generation still requires human architecture/security review.
+- This does not approve paid-AI release. External retention policy approval and object-storage lifecycle evidence refs remain separate release gates.
+
+## 2026-06-11 XCB-006 Structured Exception Gate Final Independent Review
+
+Report ID:
+- `XCB006-STRUCTURED-EXCEPTION-GATE-20260611`
+
+Result:
+- Pass. Final independent agent review found no remaining wide exception path and no duplicate data-governance service.
+
+Checked scope:
+- `docs/process/cross_cutting_boundary_registry.md` XCB-006 structured exception rules.
+- `scripts/check_cross_cutting_boundaries.py` XCB-006 migration governance checker.
+- `test/scripts/test_cross_cutting_boundaries.py` XCB-006 gate tests.
+- `docs/reports/implementation_report.md` and `docs/reports/test_report.md` traceability evidence.
+
+Findings:
+- No blocker. `planned exception` is no longer an allowed release path, including lines whose rationale mentions retained-redacted evidence.
+- No blocker. Only exact lowercase `retained-redacted exception`, `legacy exception` and `not-applicable exception` declarations are accepted.
+- No blocker. Required fields, empty duplicate fields, placeholder values, sensitive `safe_fields`, user-subject identifiers and rationale false assignments are rejected.
+- No blocker. `legacy exception` rationale must prove `pre_existing` or `migration_compatibility`; `not-applicable exception` must use exact bare fixed fields and an allowed non-user-data rationale.
+- No blocker. No parallel `DataGovernanceService` or privacy service was introduced; the solution remains in the existing XCB checker, registry and unit-test path.
+
+Independent agent result:
+- Final pass from agent `Mill`: no remaining correction required after the false-assignment rationale blocker was fixed.
+
+Validation:
+- `python3 -m unittest test.scripts.test_cross_cutting_boundaries` - passed, 59 tests.
+- `python3 -m py_compile scripts/check_cross_cutting_boundaries.py` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminAuditControllerTest,AiRetentionPolicyTest test` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Residual risk:
+- The checker remains intentionally line-oriented for deterministic changed-scope enforcement; long-form exception reasoning can live in owning docs, but the machine gate requires the compact structured line.

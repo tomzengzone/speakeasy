@@ -14,9 +14,11 @@ import com.speakeasy.ops.AuditLog;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -25,6 +27,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @ActiveProfiles("test")
 class AdminAuditControllerTest extends BackendIntegrationTestSupport {
   private static final String OPS_BEARER = "Bearer ops-test-token";
+  @Autowired JdbcTemplate jdbcTemplate;
 
   @Test
   void tcCom024AdminAuditEndpointRequiresOpsBearerToken() throws Exception {
@@ -89,13 +92,14 @@ class AdminAuditControllerTest extends BackendIntegrationTestSupport {
   @Test
   void tcCom024AdminAuditEndpointRedactsSensitiveDetailsAndLegacyText() throws Exception {
     Instant base = Instant.parse("2026-06-10T11:00:00Z");
-    audit("00000000-0000-0000-0000-000000000011", "system", "system", "sensitive_fixture", "audit:redaction",
+    rawAudit("00000000-0000-0000-0000-000000000011", "system", "system", "sensitive_fixture", "audit:redaction",
         """
             {
               "schema_version": 1,
               "safe_status": "blocked",
               "token": "secret-token",
               "full_transcript": "raw words should not leak",
+              "safe_note": "see https://media.test.local/audio.wav for detail",
               "nested": {
                 "safe_reason": "quota",
                 "signed_url": "https://media.test.local/audio.wav?signature=secret-token"
@@ -105,7 +109,7 @@ class AdminAuditControllerTest extends BackendIntegrationTestSupport {
             """,
         "req-sensitive-json",
         base.plusSeconds(60));
-    audit("00000000-0000-0000-0000-000000000012", "system", "system", "sensitive_fixture", "audit:redaction",
+    rawAudit("00000000-0000-0000-0000-000000000012", "system", "system", "sensitive_fixture", "audit:redaction",
         "{token=secret-token, signed_url=https://media.test.local/audio.wav?signature=secret-token}",
         "req-sensitive-legacy",
         base);
@@ -130,6 +134,94 @@ class AdminAuditControllerTest extends BackendIntegrationTestSupport {
     assertThat(body).doesNotContain("signed_url");
     assertThat(body).doesNotContain("raw words should not leak");
     assertThat(body).doesNotContain("https://media.test.local");
+  }
+
+  @Test
+  void tcCom024AdminAuditEndpointRedactsSensitiveTargetRefs() throws Exception {
+    rawAudit("00000000-0000-0000-0000-000000000013", "system", "system", "sensitive_target_fixture",
+        "audio_ref:media://audio/raw-audio-1", "{\"schema_version\":1,\"safe_status\":\"recorded\"}",
+        "req-sensitive-target",
+        Instant.parse("2026-06-10T11:03:00Z"));
+
+    MvcResult result = mvc.perform(get("/admin/audit")
+            .header(HttpHeaders.AUTHORIZATION, OPS_BEARER)
+            .queryParam("event_type", "sensitive_target_fixture")
+            .queryParam("limit", "1"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.events", hasSize(1)))
+        .andExpect(jsonPath("$.events[0].target_ref").value("redacted:target_ref"))
+        .andReturn();
+
+    assertThat(result.getResponse().getContentAsString()).doesNotContain("media://audio/raw-audio-1");
+  }
+
+  @Test
+  void tcCom024AuditWritePathSanitizesSensitiveDetailsBeforePersistence() {
+    Instant createdAt = Instant.parse("2026-06-10T12:00:00Z");
+    auditLogs.save(new AuditLog(
+        UUID.fromString("00000000-0000-0000-0000-000000000021"),
+        "system",
+        "system",
+        "sensitive_write_fixture",
+        "https://media.test.local/audio.wav?signature=secret-token",
+        """
+            {
+              "schema_version": 1,
+              "safe_status": "blocked",
+              "token": "secret-token",
+              "full_transcript": "raw words should not persist",
+              "nested": {
+                "safe_reason": "quota",
+                "signed_url": "https://media.test.local/audio.wav?signature=secret-token"
+              },
+              "safe_note": "see https://media.test.local/audio.wav for detail",
+              "items": ["safe", "https://media.test.local/audio.wav?token=secret-token"]
+            }
+            """,
+        "https://request.test.local/audit?token=secret-token",
+        createdAt));
+
+    String details = jdbcTemplate.queryForObject(
+        "SELECT redacted_details FROM audit_logs WHERE audit_log_id = ?",
+        String.class,
+        UUID.fromString("00000000-0000-0000-0000-000000000021"));
+    String targetRef = jdbcTemplate.queryForObject(
+        "SELECT target_ref FROM audit_logs WHERE audit_log_id = ?",
+        String.class,
+        UUID.fromString("00000000-0000-0000-0000-000000000021"));
+    String requestId = jdbcTemplate.queryForObject(
+        "SELECT request_id FROM audit_logs WHERE audit_log_id = ?",
+        String.class,
+        UUID.fromString("00000000-0000-0000-0000-000000000021"));
+
+    assertThat(details)
+        .contains("\"safe_status\":\"blocked\"")
+        .contains("\"safe_reason\":\"quota\"")
+        .doesNotContain("secret-token")
+        .doesNotContain("signature=")
+        .doesNotContain("full_transcript")
+        .doesNotContain("signed_url")
+        .doesNotContain("raw words should not persist")
+        .doesNotContain("see https://")
+        .doesNotContain("https://media.test.local");
+    assertThat(targetRef).isEqualTo("redacted:target_ref");
+    assertThat(requestId).isEqualTo("unknown");
+
+    auditLogs.save(new AuditLog(
+        UUID.fromString("00000000-0000-0000-0000-000000000022"),
+        "system",
+        "system",
+        "sensitive_target_write_fixture",
+        "transcript_ref:raw-transcript-1",
+        "{\"schema_version\":1,\"safe_status\":\"blocked\"}",
+        "req-sensitive-target-write",
+        createdAt.plusSeconds(1)));
+
+    String sensitiveTokenTargetRef = jdbcTemplate.queryForObject(
+        "SELECT target_ref FROM audit_logs WHERE audit_log_id = ?",
+        String.class,
+        UUID.fromString("00000000-0000-0000-0000-000000000022"));
+    assertThat(sensitiveTokenTargetRef).isEqualTo("redacted:target_ref");
   }
 
   @Test
@@ -165,5 +257,30 @@ class AdminAuditControllerTest extends BackendIntegrationTestSupport {
         redactedDetails,
         requestId,
         createdAt));
+  }
+
+  private void rawAudit(
+      String auditLogId,
+      String actorType,
+      String actorId,
+      String eventType,
+      String targetRef,
+      String redactedDetails,
+      String requestId,
+      Instant createdAt) {
+    jdbcTemplate.update(
+        """
+            INSERT INTO audit_logs (
+              audit_log_id, actor_type, actor_id, event_type, target_ref, redacted_details, request_id, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+        UUID.fromString(auditLogId),
+        actorType,
+        actorId,
+        eventType,
+        targetRef,
+        redactedDetails,
+        requestId,
+        createdAt);
   }
 }

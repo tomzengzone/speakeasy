@@ -4194,3 +4194,90 @@ Result:
 Residual risk:
 - Migration prune is intentionally upgrade-safe for uniqueness but destructive for non-canonical duplicate goal chains. If production data must preserve duplicate-chain audit history, run a backup/archive step before applying `V202606110001__p0_2_xcb005_goal_autopilot_fact_boundaries.sql`.
 - Missing-header behavior currently returns Spring `400` because `Idempotency-Key` is a required controller header. The service-level validation remains available for non-controller callers; changing this to a JSON `422` would be a contract refinement, not a blocker for the current OpenAPI required-header contract.
+
+## 2026-06-11 - XCB006 Data Lifecycle Boundary Hardening
+
+Report ID:
+- `XCB006-DATA-LIFECYCLE-BOUNDARY-HARDENING-20260611`
+
+Change request:
+- Fix XCB-006 data lifecycle boundary gaps without creating a parallel data-governance mechanism, and preserve bidirectional traceability from requirement to architecture, code and tests.
+
+Requirement mapping:
+- Cross-cutting registry: `docs/process/cross_cutting_boundary_registry.md` `XCB-006`.
+- Commercial admin audit: `FR-COM-011`, `FR-COM-012`, `AC-COM-013`, `AC-COM-014`, `TC-COM-024`, `COM-TR-011`, `COM-TR-012`.
+- Commercial AI retention: `FR-COM-AI-005`, `AC-COM-AI-005`, `TC-COM-AI-006`, `COM-AI-TR-005`.
+- Domain/architecture references: `docs/domain/domain_schema.md` `AuditLog`, `RetentionPolicy`, `AiRetentionJob`; `docs/domain/entity_relationship.md` account deletion/audit and retention job relationships; `docs/architecture/backend_db_foundation_contract.md` audit/retention persistence boundary; `docs/architecture/api_contract.md` `/admin/audit` and `/admin/ai/retention-jobs`.
+
+Files changed:
+- `docs/process/cross_cutting_boundary_registry.md`
+- `scripts/check_cross_cutting_boundaries.py`
+- `test/scripts/test_cross_cutting_boundaries.py`
+- `backend/src/main/java/com/speakeasy/ops/AuditRedaction.java`
+- `backend/src/main/java/com/speakeasy/ops/AuditLog.java`
+- `backend/src/main/java/com/speakeasy/ops/AuditLogService.java`
+- `backend/src/main/java/com/speakeasy/ai/AiRetentionService.java`
+- `backend/src/test/java/com/speakeasy/AdminAuditControllerTest.java`
+- `backend/src/test/java/com/speakeasy/AiRetentionPolicyTest.java`
+- `docs/product/increments/commercial-subscription-readiness/test_cases.md`
+- `docs/product/increments/commercial-subscription-readiness/traceability.md`
+- `docs/product/increments/commercial-ai-provider-hardening/test_cases.md`
+- `docs/product/increments/commercial-ai-provider-hardening/traceability.md`
+- `docs/reports/test_report.md`
+
+Implementation summary:
+- Added executable XCB-006 governance rules requiring new sensitive migration tables to prove deletion, export and retention coverage or an explicit XCB-006 exception.
+- Extended the cross-cutting boundary checker so changed-scope scans include staged and untracked files, detect sensitive table names/fields in migrations, and ignore test fixtures for production sensitive-payload checks.
+- Introduced `AuditRedaction` as the shared audit redaction boundary used by `AuditLog` write-side persistence and `AuditLogService` read-side projection, eliminating duplicate redaction rules.
+- Hardened audit redaction for nested JSON, legacy text, embedded URLs, sensitive request ids and sensitive target refs while preserving safe aggregate counts such as `media_deleted_count` and `provider_payload_redacted_count`.
+- Changed `AiRetentionService` audit details from Java `Map.toString()` output to JSON evidence so DB records and `/admin/audit` can expose safe lifecycle proof without raw media, transcript, provider payload or signed URL leakage.
+- Updated product test-case and traceability rows so `TC-COM-024` and `TC-COM-AI-006` point to the new XCB-006 evidence report.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminAuditControllerTest,AiRetentionPolicyTest test` - passed.
+- `python3 -m unittest test.scripts.test_cross_cutting_boundaries` - passed.
+- `python3 -m py_compile scripts/check_cross_cutting_boundaries.py` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
+
+Result:
+- XCB-006 now has executable changed-scope enforcement for newly introduced sensitive persistence tables.
+- Audit write and read paths share one redaction component and no longer drift on safe aggregate count handling.
+- AI retention evidence remains queryable as safe aggregate proof in DB and `/admin/audit` while sensitive media/provider payload details stay redacted.
+
+Residual risk:
+- The migration checker is regex-based and targets ordinary SQL migration files; nonstandard SQL generation still needs architecture/security review.
+- This closes local lifecycle and audit boundary hardening only. External paid-AI release evidence gates remain blocked until production retention policy and storage lifecycle evidence refs are supplied.
+
+## 2026-06-11 - XCB006 Structured Exception Gate Follow-up
+
+Report ID:
+- `XCB006-STRUCTURED-EXCEPTION-GATE-20260611`
+
+Change request:
+- Remove the wide XCB-006 `planned exception` bypass and require machine-checkable exception declarations for retained-redacted, legacy and not-applicable cases.
+
+Implementation summary:
+- Removed ordinary `planned exception` from the XCB-006 migration exception allow path.
+- Added structured exception parsing in `scripts/check_cross_cutting_boundaries.py`, with exception type anchored to the exact lowercase `XCB-006 <type> exception:` declaration head instead of scanning rationale text; space-separated and case-variant aliases such as `retained redacted`, `not applicable`, `Retained-Redacted`, `LEGACY` and `NOT-APPLICABLE` are rejected.
+- Required exception declarations to include `table`, `owner`, `safe_fields`, `redacted_fields`, `omitted_fields`, `retention_trigger`, `deletion_behavior`, `export_behavior` and `rationale`.
+- Added strict rationale checks for `legacy exception` and `not-applicable exception`.
+- Blocked sensitive fields from `safe_fields`, including snake_case, kebab-case and camelCase compound names and bare user-subject identifiers such as `raw_audio`, `rawAudio`, `refresh_token_hash`, `refreshTokenHash`, `upload_signed_url`, `uploadSignedUrl`, `user_email`, `userEmail`, `actor`, `account`, `member`, `customer`, `learner`, `profile`, `actor_id`, `actorId`, `account_identifier`, `member-key`, `customerRef`, `learnerUuid`, `profile-name`, `targetRef`, `target-ref`, `redactedDetails` and `redacted-details`.
+- Rejected duplicate structured exception fields so later values cannot override an unsafe earlier `safe_fields` or `table` declaration.
+- Rejected duplicate structured exception fields, including empty-value duplicates such as `table=; table=...`, so later values cannot override an unsafe or empty earlier declaration.
+- Restricted `legacy exception` and `not-applicable exception` rationale checks to the `rationale` field itself, rejected negated or false-assignment phrases such as `not_pre_existing`, `pre_existing=false`, `migration_compatibility=false` and `not_user_owned=false`, and enforced exact bare `not-applicable` field values as `redacted_fields=none`, `omitted_fields=none`, `deletion_behavior=not_user_owned` and `export_behavior=not_in_user_export`.
+- Rejected placeholder governance wording such as `tbd`, `planned`, `later`, `review_later`, `plannedReview`, `pendingReview`, `temporary-export` or `temporary` across all required structured exception fields.
+- Updated the XCB-006 registry with the required single-line exception templates and clarified that `planned exception` is only planning text, not release evidence.
+
+Validation:
+- `python3 -m unittest test.scripts.test_cross_cutting_boundaries` - passed, 59 tests.
+- `python3 -m py_compile scripts/check_cross_cutting_boundaries.py` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
+- `git diff --check` - passed.
+
+Result:
+- New sensitive migration tables can no longer pass XCB-006 by citing a broad planned exception, including planned-exception lines whose rationale mentions retained-redacted evidence.
+- Only structured retained-redacted, legacy or not-applicable exceptions can substitute for deletion/export/retention code coverage.
+- Structured exception declarations cannot pass with sensitive safe fields, duplicate keys, non-actionable placeholders, negated rationale phrases, invalid `not-applicable` field values or rationale tokens hidden outside the `rationale` field.
+
+Residual risk:
+- Exception validation remains line-oriented by design so changed-scope checks are deterministic; long-form rationale can still live in docs, but the machine gate requires the compact structured line.

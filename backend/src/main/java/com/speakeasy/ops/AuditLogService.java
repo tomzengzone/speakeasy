@@ -1,6 +1,5 @@
 package com.speakeasy.ops;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.speakeasy.common.ApiException;
 import jakarta.persistence.criteria.Predicate;
@@ -10,9 +9,7 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
@@ -26,23 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuditLogService {
   private static final int DEFAULT_LIMIT = 50;
   private static final int MAX_LIMIT = 100;
-  private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
-  private static final List<String> SENSITIVE_KEY_TOKENS = List.of(
-      "api_key",
-      "audio",
-      "authorization",
-      "credential",
-      "idempotency",
-      "payload",
-      "provider_key",
-      "raw",
-      "receipt",
-      "secret",
-      "signature",
-      "signed",
-      "token",
-      "transcript",
-      "url");
 
   private final AuditLogRepository auditLogs;
   private final ObjectMapper objectMapper;
@@ -105,95 +85,12 @@ public class AuditLogService {
   private AuditEventView view(AuditLog audit) {
     return new AuditEventView(
         audit.getAuditLogId().toString(),
-        safeValue(audit.getActorType(), "unknown"),
-        safeValue(audit.getEventType(), "unknown"),
-        safeTargetRef(audit.getTargetRef()),
-        safeRequestId(audit.getRequestId()),
-        sanitizedDetails(audit.getRedactedDetails()),
+        AuditRedaction.safeValue(audit.getActorType(), "unknown"),
+        AuditRedaction.safeValue(audit.getEventType(), "unknown"),
+        AuditRedaction.safeTargetRef(audit.getTargetRef()),
+        AuditRedaction.safeRequestId(audit.getRequestId()),
+        AuditRedaction.sanitizedDetailsForView(audit.getRedactedDetails(), objectMapper),
         audit.getCreatedAt());
-  }
-
-  private Map<String, Object> sanitizedDetails(String raw) {
-    if (raw == null || raw.isBlank()) {
-      return Map.of();
-    }
-    try {
-      Map<String, Object> parsed = objectMapper.readValue(raw, MAP_TYPE);
-      return sanitizeMap(parsed);
-    } catch (Exception ignored) {
-      return Map.of("format", "legacy_text", "summary", "redacted");
-    }
-  }
-
-  private Map<String, Object> sanitizeMap(Map<String, Object> input) {
-    Map<String, Object> sanitized = new LinkedHashMap<>();
-    for (Map.Entry<String, Object> entry : input.entrySet()) {
-      String key = safeKey(entry.getKey());
-      if (isSensitiveKey(key)) {
-        sanitized.put("redacted_field_" + sanitized.size(), "redacted");
-      } else {
-        sanitized.put(key, sanitizeValue(entry.getValue()));
-      }
-    }
-    return sanitized;
-  }
-
-  @SuppressWarnings("unchecked")
-  private Object sanitizeValue(Object value) {
-    if (value instanceof Map<?, ?> map) {
-      Map<String, Object> converted = new LinkedHashMap<>();
-      for (Map.Entry<?, ?> entry : map.entrySet()) {
-        converted.put(String.valueOf(entry.getKey()), entry.getValue());
-      }
-      return sanitizeMap(converted);
-    }
-    if (value instanceof List<?> list) {
-      return list.stream().map(this::sanitizeValue).toList();
-    }
-    if (value instanceof String text) {
-      return containsSensitiveValue(text) ? "redacted" : text;
-    }
-    return value;
-  }
-
-  private boolean isSensitiveKey(String key) {
-    String normalized = key.toLowerCase(Locale.ROOT);
-    return SENSITIVE_KEY_TOKENS.stream().anyMatch(normalized::contains);
-  }
-
-  private boolean containsSensitiveValue(String value) {
-    String normalized = value.toLowerCase(Locale.ROOT);
-    return normalized.contains("signature=")
-        || normalized.contains("token=")
-        || normalized.contains("secret")
-        || normalized.contains("api_key")
-        || normalized.contains("raw_payload")
-        || normalized.contains("full_transcript")
-        || normalized.startsWith("http://")
-        || normalized.startsWith("https://");
-  }
-
-  private String safeKey(String key) {
-    String cleaned = key == null ? "unknown" : key.trim();
-    return cleaned.isBlank() ? "unknown" : cleaned;
-  }
-
-  private String safeTargetRef(String targetRef) {
-    String cleaned = safeValue(targetRef, "unknown");
-    return containsSensitiveValue(cleaned) ? "redacted:target_ref" : cleaned;
-  }
-
-  private String safeRequestId(String requestId) {
-    String cleaned = requestId == null ? "" : requestId.trim();
-    if (cleaned.isBlank() || isSensitiveKey(cleaned) || containsSensitiveValue(cleaned)) {
-      return "unknown";
-    }
-    return cleaned.length() > 120 ? cleaned.substring(0, 120) : cleaned;
-  }
-
-  private String safeValue(String value, String fallback) {
-    String cleaned = value == null ? "" : value.trim();
-    return cleaned.isBlank() ? fallback : cleaned;
   }
 
   private void auditAccess(int eventCount, AuditQuery query, String requestId) {
@@ -206,7 +103,7 @@ public class AuditLogService {
         """
             {"schema_version":1,"event_count":%d,"limit":%d,"has_filters":%s}
             """.formatted(eventCount, query.limit(), query.hasFilters()).trim(),
-        safeRequestId(requestId),
+        AuditRedaction.safeRequestId(requestId),
         Instant.now(clock)));
   }
 

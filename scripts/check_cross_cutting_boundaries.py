@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OPENAPI_SOURCE = "docs/architecture/openapi/speakeasy-api.yaml"
 GENERATED_DART_ROOT = "lib/generated/api/"
+MIGRATION_ROOT = "backend/src/main/resources/db/migration/"
 
 STATUS_DOC_PREFIXES = (
     "docs/reports/",
@@ -139,6 +140,186 @@ API_DTO_DECLARATION_PREFIX_PATTERN = re.compile(
     r"(?:[A-Za-z_$][\w$.]*(?:\s*<[^;\n()]*>)?(?:\[\])?\s+)+$"
 )
 
+CREATE_TABLE_PATTERN = re.compile(
+    r"\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?"
+    r"((?:\"[^\"]+\"|[A-Za-z_][\w]*)(?:\s*\.\s*(?:\"[^\"]+\"|[A-Za-z_][\w]*))?)"
+    r"\s*\((.*?)\)\s*;",
+    re.IGNORECASE | re.DOTALL,
+)
+
+XCB006_SENSITIVE_FIELD_PATTERN = re.compile(
+    r"\b(?:"
+    r"user_id|user_hash|user_ref|owner_hash|owner_ref|owner_ref_id|audio_ref|media_id|cache_id|"
+    r"raw_transcript|transcript|provider_payload|raw_provider_payload|signed_url|payload_ref|"
+    r"idempotency_key|idempotency_key_hash|request_hash|response_json|response_json_redacted|"
+    r"target_ref|redacted_details|notification_payload|receipt|access_token_hash|token_hash|token|secret"
+    r")\b",
+    re.IGNORECASE,
+)
+
+XCB006_SENSITIVE_FIELD_TOKENS = {
+    "audit",
+    "audits",
+    "audio",
+    "details",
+    "email",
+    "evidence",
+    "idempotency",
+    "media",
+    "owner",
+    "payload",
+    "provider",
+    "receipt",
+    "redacted",
+    "ref",
+    "secret",
+    "signed",
+    "target",
+    "token",
+    "transcript",
+    "url",
+    "user",
+}
+
+XCB006_SENSITIVE_SAFE_FIELD_TOKENS = {
+    "audio",
+    "cache",
+    "email",
+    "idempotency",
+    "media",
+    "owner",
+    "payload",
+    "provider",
+    "receipt",
+    "redacted",
+    "ref",
+    "secret",
+    "signed",
+    "target",
+    "token",
+    "transcript",
+    "url",
+    "user",
+}
+
+XCB006_SENSITIVE_TABLE_TOKENS = {
+    "ai",
+    "audit",
+    "audits",
+    "audio",
+    "cache",
+    "diagnostic",
+    "evidence",
+    "evidences",
+    "idempotency",
+    "media",
+    "metric",
+    "metrics",
+    "notification",
+    "notifications",
+    "provider",
+    "retention",
+    "replay",
+    "replays",
+    "telemetry",
+    "transcript",
+}
+
+XCB006_CODE_COVERAGE_PATHS = (
+    "backend/src/main/java/com/speakeasy/ops/AccountDeletionService.java",
+    "backend/src/main/java/com/speakeasy/ai/AiRetentionService.java",
+    "backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java",
+)
+
+XCB006_EXCEPTION_DOC_PATHS = (
+    "docs/process/cross_cutting_boundary_registry.md",
+    "docs/domain/domain_schema.md",
+    "docs/domain/entity_relationship.md",
+    "docs/architecture/backend_db_foundation_contract.md",
+    "docs/architecture/api_contract.md",
+)
+
+XCB006_EXCEPTION_FIELD_PATTERN = re.compile(
+    r"\b("
+    r"table|owner|safe_fields|redacted_fields|omitted_fields|"
+    r"retention_trigger|deletion_behavior|export_behavior|rationale"
+    r")\s*=\s*([^;]*)",
+    re.IGNORECASE,
+)
+
+XCB006_EXCEPTION_TYPE_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9_])XCB-006\s+"
+    r"(retained-redacted|legacy|not-applicable)"
+    r"\s+exception\s*:"
+)
+
+XCB006_PLANNED_EXCEPTION_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9_])XCB-006\s+planned\s+exception\s*:",
+    re.IGNORECASE,
+)
+
+XCB006_EXCEPTION_REQUIRED_FIELDS = {
+    "table",
+    "owner",
+    "safe_fields",
+    "redacted_fields",
+    "omitted_fields",
+    "retention_trigger",
+    "deletion_behavior",
+    "export_behavior",
+    "rationale",
+}
+
+XCB006_NOT_APPLICABLE_RATIONALE_TOKENS = {
+    "configuration",
+    "no_user_data",
+    "not_user_owned",
+    "public_reference",
+    "reference_data",
+}
+
+XCB006_LEGACY_RATIONALE_TOKENS = {
+    "migration_compatibility",
+    "pre_existing",
+}
+
+XCB006_EXCEPTION_PLACEHOLDER_PATTERN = re.compile(
+    r"\b(?:todo|tbd|later|future|planned|pending|unknown|temporary)\b",
+    re.IGNORECASE,
+)
+
+XCB006_EXCEPTION_PLACEHOLDER_TOKENS = {
+    "future",
+    "later",
+    "pending",
+    "planned",
+    "tbd",
+    "temporary",
+    "todo",
+    "unknown",
+}
+
+XCB006_USER_IDENTIFIER_SUBJECT_TOKENS = {
+    "account",
+    "actor",
+    "customer",
+    "learner",
+    "member",
+    "profile",
+}
+
+XCB006_USER_IDENTIFIER_VALUE_TOKENS = {
+    "hash",
+    "id",
+    "identifier",
+    "key",
+    "name",
+    "ref",
+    "uuid",
+}
+
+XCB006_SENSITIVE_SAFE_FIELD_TOKENS.update(XCB006_USER_IDENTIFIER_SUBJECT_TOKENS)
+
 STATUS_CLAIM_PATTERNS = [
     (
         "XCB-007",
@@ -193,6 +374,31 @@ def run_git(args: list[str]) -> list[str]:
     return [line.strip().replace("\\", "/") for line in completed.stdout.splitlines() if line.strip()]
 
 
+def read_git_index_text(relative_path: str) -> str | None:
+    completed = subprocess.run(
+        ["git", "show", f":{relative_path}"],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if completed.returncode != 0:
+        return None
+    return completed.stdout
+
+
+def git_index_path_exists(relative_path: str) -> bool:
+    completed = subprocess.run(
+        ["git", "cat-file", "-e", f":{relative_path}"],
+        cwd=ROOT,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    return completed.returncode == 0
+
+
 def changed_paths(base_ref: str | None, include_worktree: bool) -> list[Path]:
     names: set[str] = set()
     if base_ref and not re.fullmatch(r"0{40}", base_ref):
@@ -201,8 +407,12 @@ def changed_paths(base_ref: str | None, include_worktree: bool) -> list[Path]:
             names.update(run_git(["diff", "--name-only", "--diff-filter=ACMRT", base_ref, "HEAD"]))
     if include_worktree:
         names.update(run_git(["diff", "--name-only", "--diff-filter=ACMRT"]))
+        names.update(run_git(["diff", "--cached", "--name-only", "--diff-filter=ACMRT"]))
         names.update(run_git(["ls-files", "--others", "--exclude-standard"]))
-    return sorted((ROOT / name for name in names if (ROOT / name).exists()), key=lambda path: rel(path))
+    return sorted(
+        (ROOT / name for name in names if (ROOT / name).exists() or git_index_path_exists(name)),
+        key=lambda path: rel(path),
+    )
 
 
 def full_scan_paths() -> list[Path]:
@@ -274,7 +484,7 @@ def check_flutter_audio_ref(path: Path, text: str) -> list[Violation]:
 
 
 def is_test_or_generated(relative: str) -> bool:
-    return relative.startswith(("test/", "integration_test/", GENERATED_DART_ROOT))
+    return relative.startswith(("test/", "integration_test/", "backend/src/test/", GENERATED_DART_ROOT))
 
 
 def is_status_doc(relative: str) -> bool:
@@ -438,6 +648,367 @@ def check_sensitive_payload_exposure(path: Path, text: str) -> list[Violation]:
     return violations
 
 
+def is_migration_file(relative: str) -> bool:
+    return relative.startswith(MIGRATION_ROOT) and relative.endswith(".sql")
+
+
+@dataclass(frozen=True)
+class Xcb006GovernanceCoverage:
+    code_text: str
+    exception_text: str
+
+
+def xcb006_governance_coverage() -> Xcb006GovernanceCoverage:
+    code_chunks: list[str] = []
+    for relative in XCB006_CODE_COVERAGE_PATHS:
+        path = ROOT / relative
+        if path.exists():
+            code_chunks.append(f"\n# {relative}\n{read_text(path)}")
+    chunks: list[str] = []
+    for relative in XCB006_EXCEPTION_DOC_PATHS:
+        path = ROOT / relative
+        if path.exists():
+            chunks.append(f"\n# {relative}\n{read_text(path)}")
+    product_increment_root = ROOT / "docs/product/increments"
+    if product_increment_root.exists():
+        for path in sorted(product_increment_root.rglob("*.md"), key=lambda item: rel(item)):
+            chunks.append(f"\n# {rel(path)}\n{read_text(path)}")
+    return Xcb006GovernanceCoverage("\n".join(code_chunks), "\n".join(chunks))
+
+
+def xcb006_staged_governance_coverage() -> Xcb006GovernanceCoverage:
+    code_chunks: list[str] = []
+    for relative in XCB006_CODE_COVERAGE_PATHS:
+        text = read_git_index_text(relative)
+        if text is not None:
+            code_chunks.append(f"\n# {relative}\n{text}")
+    chunks: list[str] = []
+    for relative in XCB006_EXCEPTION_DOC_PATHS:
+        text = read_git_index_text(relative)
+        if text is not None:
+            chunks.append(f"\n# {relative}\n{text}")
+    product_increment_root = ROOT / "docs/product/increments"
+    staged_docs = [
+        path
+        for path in run_git(["ls-files", "docs/product/increments"])
+        if path.endswith(".md")
+    ]
+    for relative in sorted(staged_docs):
+        text = read_git_index_text(relative)
+        if text is not None:
+            chunks.append(f"\n# {relative}\n{text}")
+    return Xcb006GovernanceCoverage("\n".join(code_chunks), "\n".join(chunks))
+
+
+def normalize_sql_identifier(identifier: str) -> str:
+    cleaned = identifier.strip()
+    final_part = re.split(r"\s*\.\s*", cleaned)[-1]
+    if final_part.startswith('"') and final_part.endswith('"'):
+        return final_part[1:-1]
+    return final_part
+
+
+def identifier_tokens(value: str) -> set[str]:
+    camel_split = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", value)
+    camel_split = re.sub(r"(?<=[A-Z])(?=[A-Z][a-z])", "_", camel_split)
+    return {token for token in re.split(r"[^a-z0-9]+", camel_split.lower()) if token}
+
+
+def snake_tokens(value: str) -> set[str]:
+    return identifier_tokens(value)
+
+
+def xcb006_sensitive_table_reason(table_name: str, table_body: str) -> str | None:
+    table_tokens = snake_tokens(table_name)
+    semantic_tokens = sorted(table_tokens & XCB006_SENSITIVE_TABLE_TOKENS)
+    if semantic_tokens:
+        return semantic_tokens[0]
+    match = XCB006_SENSITIVE_FIELD_PATTERN.search(table_body)
+    if match:
+        return match.group(0)
+    field_tokens = sorted(snake_tokens(table_body) & XCB006_SENSITIVE_FIELD_TOKENS)
+    if field_tokens:
+        return field_tokens[0]
+    return None
+
+
+def quoted_table_pattern(table_name: str) -> str:
+    return re.escape(table_name)
+
+
+def strip_java_comments(text: str) -> str:
+    without_block_comments = re.sub(r"/\*[\s\S]*?\*/", "", text)
+    return re.sub(r"//.*", "", without_block_comments)
+
+
+def xcb006_structured_code_coverage_dimensions(table_name: str, coverage_text: str) -> set[str]:
+    table = quoted_table_pattern(table_name)
+    searchable = strip_java_comments(coverage_text)
+    dimension_patterns = {
+        "deletion": (
+            rf'\bdelete\s*\(\s*"{table}"\s*,',
+            rf'\bdelete\s*\(\s*\'{table}\'\s*,',
+            rf'\bDELETE\s+FROM\s+{table}\b',
+            rf'\bDELETE\s+FROM\s+"{table}"\b',
+        ),
+        "export": (
+            rf'\bdataFamily\s*\(\s*"{table}"\s*,',
+            rf'\bdataFamily\s*\(\s*\'{table}\'\s*,',
+            rf'\bnew\s+DataFamilyExportRecord\s*\(\s*"{table}"\s*,',
+            rf'\bnew\s+DataFamilyExportRecord\s*\(\s*\'{table}\'\s*,',
+        ),
+        "retention": (
+            rf'\bnew\s+RetentionRuleView\s*\(\s*"{table}"\s*,',
+            rf'\bnew\s+RetentionRuleView\s*\(\s*\'{table}\'\s*,',
+        ),
+    }
+    return {
+        dimension
+        for dimension, patterns in dimension_patterns.items()
+        if any(re.search(pattern, searchable, re.IGNORECASE) for pattern in patterns)
+    }
+
+
+def xcb006_has_structured_code_coverage(table_name: str, coverage_text: str) -> bool:
+    required_dimensions = {"deletion", "export", "retention"}
+    return required_dimensions.issubset(
+        xcb006_structured_code_coverage_dimensions(table_name, coverage_text)
+    )
+
+
+def xcb006_exception_type(line: str) -> str | None:
+    if XCB006_PLANNED_EXCEPTION_PATTERN.search(line):
+        return None
+    match = XCB006_EXCEPTION_TYPE_PATTERN.search(line)
+    if match is None:
+        return None
+    normalized = match.group(1)
+    if normalized == "retained-redacted":
+        return "retained-redacted"
+    if normalized == "legacy":
+        return "legacy"
+    if normalized == "not-applicable":
+        return "not-applicable"
+    return None
+
+
+def xcb006_parse_exception_fields(line: str) -> dict[str, str]:
+    return {
+        match.group(1).lower(): match.group(2).strip()
+        for match in XCB006_EXCEPTION_FIELD_PATTERN.finditer(line)
+    }
+
+
+def xcb006_exception_has_duplicate_fields(line: str) -> bool:
+    seen: set[str] = set()
+    for match in XCB006_EXCEPTION_FIELD_PATTERN.finditer(line):
+        field = match.group(1).lower()
+        if field in seen:
+            return True
+        seen.add(field)
+    return False
+
+
+def xcb006_exception_table_value(value: str) -> str:
+    cleaned = value.strip().strip("`'\"")
+    return normalize_sql_identifier(cleaned)
+
+
+def xcb006_exception_required_fields_present(fields: dict[str, str]) -> bool:
+    if not XCB006_EXCEPTION_REQUIRED_FIELDS.issubset(fields):
+        return False
+    return all(fields[field].strip() for field in XCB006_EXCEPTION_REQUIRED_FIELDS)
+
+
+def xcb006_exception_safe_fields_are_safe(fields: dict[str, str]) -> bool:
+    safe_fields = fields.get("safe_fields", "")
+    for field in re.split(r"[,\s]+", safe_fields):
+        cleaned = field.strip().strip("`'\"")
+        if not cleaned or cleaned.lower() in {"none", "n/a", "not_applicable"}:
+            continue
+        tokens = identifier_tokens(cleaned)
+        if XCB006_SENSITIVE_FIELD_PATTERN.search(cleaned):
+            return False
+        if tokens & XCB006_SENSITIVE_SAFE_FIELD_TOKENS:
+            return False
+        if (
+            tokens & XCB006_USER_IDENTIFIER_SUBJECT_TOKENS
+            and tokens & XCB006_USER_IDENTIFIER_VALUE_TOKENS
+        ):
+            return False
+    return True
+
+
+def xcb006_exception_fields_are_actionable(fields: dict[str, str]) -> bool:
+    return not any(
+        XCB006_EXCEPTION_PLACEHOLDER_PATTERN.search(fields.get(field, ""))
+        or identifier_tokens(fields.get(field, "")) & XCB006_EXCEPTION_PLACEHOLDER_TOKENS
+        for field in XCB006_EXCEPTION_REQUIRED_FIELDS
+    )
+
+
+def xcb006_exact_exception_value(value: str) -> str:
+    return value.strip()
+
+
+def xcb006_rationale_has_allowed_phrase(rationale: str, phrases: set[str]) -> bool:
+    normalized = rationale.lower()
+    for phrase in phrases:
+        phrase_pattern = r"[-_\s]+".join(re.escape(part) for part in phrase.split("_"))
+        if re.search(rf"\b(?:not|no|without|non)[-_\s]+{phrase_pattern}\b", normalized):
+            return False
+        if re.search(
+            rf"(?<![A-Za-z0-9_]){phrase_pattern}(?![A-Za-z0-9_])\s*[:=]\s*"
+            rf"(?:false|0|no|not|none|without|non)\b",
+            normalized,
+        ):
+            return False
+    return any(
+        re.search(
+            rf"(?<![A-Za-z0-9_])"
+            + r"[-_\s]+".join(re.escape(part) for part in phrase.split("_"))
+            + r"(?![A-Za-z0-9_])",
+            normalized,
+        )
+        for phrase in phrases
+    )
+
+
+def xcb006_exception_type_fields_are_consistent(exception_type: str, fields: dict[str, str]) -> bool:
+    if exception_type != "not-applicable":
+        return True
+    return (
+        xcb006_exact_exception_value(fields.get("redacted_fields", "")) == "none"
+        and xcb006_exact_exception_value(fields.get("omitted_fields", "")) == "none"
+        and xcb006_exact_exception_value(fields.get("deletion_behavior", "")) == "not_user_owned"
+        and xcb006_exact_exception_value(fields.get("export_behavior", "")) == "not_in_user_export"
+    )
+
+
+def xcb006_exception_has_required_rationale(exception_type: str, fields: dict[str, str]) -> bool:
+    rationale = fields.get("rationale", "")
+    if exception_type == "not-applicable":
+        return xcb006_rationale_has_allowed_phrase(rationale, XCB006_NOT_APPLICABLE_RATIONALE_TOKENS)
+    if exception_type == "legacy":
+        return xcb006_rationale_has_allowed_phrase(rationale, XCB006_LEGACY_RATIONALE_TOKENS)
+    return exception_type == "retained-redacted"
+
+
+def xcb006_line_has_valid_structured_exception(table_name: str, line: str) -> bool:
+    exception_type = xcb006_exception_type(line)
+    if exception_type is None:
+        return False
+    if xcb006_exception_has_duplicate_fields(line):
+        return False
+    fields = xcb006_parse_exception_fields(line)
+    if not xcb006_exception_required_fields_present(fields):
+        return False
+    if xcb006_exception_table_value(fields["table"]) != table_name:
+        return False
+    if not xcb006_exception_safe_fields_are_safe(fields):
+        return False
+    if not xcb006_exception_fields_are_actionable(fields):
+        return False
+    if not xcb006_exception_type_fields_are_consistent(exception_type, fields):
+        return False
+    return xcb006_exception_has_required_rationale(exception_type, fields)
+
+
+def xcb006_has_explicit_document_exception(table_name: str, coverage_text: str) -> bool:
+    table_pattern = re.compile(rf"(?<![A-Za-z0-9_]){re.escape(table_name)}(?![A-Za-z0-9_])", re.IGNORECASE)
+    for line in coverage_text.splitlines():
+        if not table_pattern.search(line):
+            continue
+        has_boundary_context = "XCB-006" in line
+        if has_boundary_context and xcb006_line_has_valid_structured_exception(table_name, line):
+            return True
+    return False
+
+
+def xcb006_table_has_governance_coverage(
+    table_name: str,
+    code_coverage_text: str,
+    exception_coverage_text: str,
+) -> bool:
+    return (
+        xcb006_has_structured_code_coverage(table_name, code_coverage_text)
+        or xcb006_has_explicit_document_exception(table_name, exception_coverage_text)
+    )
+
+
+def check_xcb006_migration_data_governance(
+    path: Path,
+    text: str,
+    coverage_text: str | None = None,
+    code_coverage_text: str | None = None,
+    exception_coverage_text: str | None = None,
+) -> list[Violation]:
+    relative = rel(path)
+    if not is_migration_file(relative):
+        return []
+    if coverage_text is not None:
+        code_coverage = coverage_text
+        exception_coverage = coverage_text
+    elif code_coverage_text is not None or exception_coverage_text is not None:
+        code_coverage = code_coverage_text or ""
+        exception_coverage = exception_coverage_text or ""
+    else:
+        coverage = xcb006_governance_coverage()
+        code_coverage = coverage.code_text
+        exception_coverage = coverage.exception_text
+    violations: list[Violation] = []
+    for match in CREATE_TABLE_PATTERN.finditer(text):
+        table_name = normalize_sql_identifier(match.group(1))
+        reason = xcb006_sensitive_table_reason(table_name, match.group(2))
+        if reason is None:
+            continue
+        if xcb006_table_has_governance_coverage(table_name, code_coverage, exception_coverage):
+            continue
+        violations.append(
+            Violation(
+                "XCB-006",
+                relative,
+                line_number(text, match.start(1)),
+                "New sensitive table "
+                + table_name
+                + " appears to include "
+                + reason
+                + " data but is not covered by AccountDeletionService, AiRetentionService, a domain export/retention helper, or a structured XCB-006 retained-redacted, legacy, or not-applicable exception.",
+            )
+        )
+    return violations
+
+
+def check_xcb006_migration_data_governance_for_paths(paths: list[Path]) -> list[Violation]:
+    migration_paths = [path for path in paths if is_migration_file(rel(path))]
+    if not migration_paths:
+        return []
+    coverage = xcb006_governance_coverage()
+    staged_coverage = xcb006_staged_governance_coverage()
+    staged_paths = set(run_git(["diff", "--cached", "--name-only", "--diff-filter=ACMRT"]))
+    violations: list[Violation] = []
+    for path in migration_paths:
+        relative = rel(path)
+        worktree_text = read_text(path) if path.exists() else None
+        if worktree_text is not None:
+            violations.extend(check_xcb006_migration_data_governance(
+                path,
+                worktree_text,
+                code_coverage_text=coverage.code_text,
+                exception_coverage_text=coverage.exception_text,
+            ))
+        if relative in staged_paths:
+            staged_text = read_git_index_text(relative)
+            if staged_text is not None:
+                violations.extend(check_xcb006_migration_data_governance(
+                    path,
+                    staged_text,
+                    code_coverage_text=staged_coverage.code_text,
+                    exception_coverage_text=staged_coverage.exception_text,
+                ))
+    return list(dict.fromkeys(violations))
+
+
 def check_status_document_claims(path: Path, text: str) -> list[Violation]:
     relative = rel(path)
     if not is_status_doc(relative):
@@ -530,6 +1101,8 @@ def main() -> int:
 
     paths = changed_paths(args.base_ref, args.include_worktree) if args.scope == "changed" else full_scan_paths()
     violations = check_file_content(paths)
+    if args.scope == "changed":
+        violations.extend(check_xcb006_migration_data_governance_for_paths(paths))
     violations.extend(check_generated_client_changes(paths, args.scope))
 
     if violations:

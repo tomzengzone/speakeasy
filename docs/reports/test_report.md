@@ -3200,3 +3200,62 @@ Evidence:
 Residual:
 - The migration intentionally prunes non-canonical duplicate `goal_profiles` rows before adding `UNIQUE(user_id)`. Existing foreign-key cascade removes facts attached only to those non-canonical rows. If production needs audit retention for duplicate legacy chains, a backup or archive step must run before applying this migration.
 - This report does not claim Followup-E diagnostic-audio feature completion; it only validates trusted `audio_ref` consumption through the existing Media/AI Gateway boundary.
+
+## 2026-06-11 XCB-006 Data Lifecycle Boundary Hardening
+
+Report ID:
+- `XCB006-DATA-LIFECYCLE-BOUNDARY-HARDENING-20260611`
+
+Scope:
+- XCB-006 data retention, deletion, export and audit boundary.
+- Commercial admin audit: `FR-COM-011`, `FR-COM-012`, `AC-COM-013`, `AC-COM-014`, `TC-COM-024`, `COM-TR-011`, `COM-TR-012`.
+- Commercial AI retention: `FR-COM-AI-005`, `AC-COM-AI-005`, `TC-COM-AI-006`, `COM-AI-TR-005`.
+
+Commands:
+```bash
+cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminAuditControllerTest,AiRetentionPolicyTest test
+python3 -m unittest test.scripts.test_cross_cutting_boundaries
+python3 -m py_compile scripts/check_cross_cutting_boundaries.py
+python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree
+```
+
+Result: passed.
+
+Evidence:
+- `TC-COM-024`: `AdminAuditControllerTest` now verifies `/admin/audit` still enforces OPS bearer auth, pagination/filtering and self-audit, while legacy JSON/text audit rows are sanitized on read.
+- `TC-COM-024`: `AdminAuditControllerTest` verifies write-side `AuditLog` persistence stores sanitized `redacted_details`, redacts sensitive `target_ref` values such as signed URLs and `transcript_ref:*`, and normalizes sensitive request ids.
+- `TC-COM-024`: `AdminAuditControllerTest` verifies legacy `audio_ref:media://...` target refs are redacted before API response.
+- `TC-COM-AI-006`: `AiRetentionPolicyTest` verifies completed retention jobs delete expired media/cache, persist JSON audit evidence with safe aggregate counts and expose those counts through `/admin/audit` without leaking media or upload URLs.
+- Static XCB-006 tests verify changed-scope migration checks require deletion/export/retention coverage or an explicit XCB-006 exception for newly introduced sensitive tables.
+
+Residual:
+- Static migration parsing is intentionally scoped to standard `CREATE TABLE` statements in changed files; unusual SQL generation patterns still require human review.
+- This local hardening does not close external paid-AI release evidence gates such as `AI_RETENTION_POLICY_EVIDENCE_REF` or object-storage lifecycle approval.
+
+## 2026-06-11 XCB-006 Structured Exception Gate Follow-up
+
+Report ID:
+- `XCB006-STRUCTURED-EXCEPTION-GATE-20260611`
+
+Scope:
+- Close the XCB-006 exception wide gate so ordinary `planned exception` text cannot bypass deletion/export/retention coverage for new sensitive migration tables.
+
+Commands:
+```bash
+python3 -m unittest test.scripts.test_cross_cutting_boundaries
+python3 -m py_compile scripts/check_cross_cutting_boundaries.py
+python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree
+git diff --check
+```
+
+Result: passed.
+
+Evidence:
+- XCB-006 boundary unit tests now run 59 cases.
+- Planned exception fixtures are negative tests and no longer allow sensitive migrations to pass, even when rationale text mentions retained-redacted evidence.
+- Structured `retained-redacted exception`, `legacy exception` and `not-applicable exception` cases require table, owner, safe/redacted/omitted fields, retention trigger, deletion behavior, export behavior and rationale; space-separated and case-variant aliases such as `retained redacted exception`, `not applicable exception`, `Retained-Redacted exception`, `LEGACY exception` and `NOT-APPLICABLE exception` are rejected.
+- `safe_fields` containing sensitive values such as `target_ref`, `targetRef`, `target-ref`, `redacted_details`, `redactedDetails`, `redacted-details`, `raw_audio`, `rawAudio`, `refresh_token_hash`, `refreshTokenHash`, `upload_signed_url`, `uploadSignedUrl`, `user_email`, `userEmail`, `actor`, `account`, `member`, `customer`, `learner`, `profile`, `actor_id`, `actorId`, `account_identifier`, `member-key`, `customerRef`, `learnerUuid`, `profile_hash` or `profile-name` is rejected.
+- Duplicate structured fields such as repeated `safe_fields`, repeated `table`, or empty-value duplicates like `table=; table=...` are rejected instead of letting later values override unsafe earlier values.
+- `legacy exception` requires pre-existing or migration-compatibility rationale from the `rationale` field; bare `legacy`, negated `not_pre_existing`, `pre_existing=false` and `migration_compatibility=false` wording are rejected.
+- `not-applicable exception` requires not-user-owned/public-reference/no-user-data rationale from the `rationale` field, not only from deletion/export behavior fields; false assignments such as `not_user_owned=false`, `public_reference=false`, `reference_data=false`, `configuration=false` and `no_user_data=false` are rejected. It also requires exact bare `redacted_fields=none`, `omitted_fields=none`, `deletion_behavior=not_user_owned`, `export_behavior=not_in_user_export`; aliases such as `NONE`, `` `none` ``, `"none"`, `NOT_USER_OWNED`, `'not_in_user_export'`, `not user owned` and `not-in-user-export` are rejected.
+- Placeholder wording such as `tbd`, `planned`, `later`, `review_later`, `plannedReview`, `pendingReview`, `temporary-export` or `temporary` is rejected across required structured exception fields.

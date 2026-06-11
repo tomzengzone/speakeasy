@@ -1,5 +1,6 @@
 package com.speakeasy.ops;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -10,6 +11,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "audit_logs")
 public class AuditLog {
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
   @Id
   @Column(name = "audit_log_id", nullable = false)
   private UUID auditLogId;
@@ -57,9 +60,9 @@ public class AuditLog {
     this.actorType = actorType;
     this.actorId = actorId;
     this.eventType = eventType;
-    this.targetRef = targetRef;
-    this.redactedDetails = redactedDetails;
-    this.requestId = requestId;
+    this.targetRef = AuditRedaction.safeTargetRef(targetRef);
+    this.redactedDetails = AuditRedaction.sanitizeDetailsForStorage(redactedDetails, OBJECT_MAPPER);
+    this.requestId = AuditRedaction.safeRequestId(requestId);
     this.createdAt = createdAt;
   }
 

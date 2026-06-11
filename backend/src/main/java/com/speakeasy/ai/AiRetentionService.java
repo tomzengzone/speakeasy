@@ -1,5 +1,7 @@
 package com.speakeasy.ai;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.speakeasy.common.ApiException;
 import com.speakeasy.ops.AuditLog;
 import com.speakeasy.ops.AuditLogRepository;
@@ -8,8 +10,11 @@ import java.security.MessageDigest;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -17,6 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AiRetentionService {
+  private static final Pattern USER_SHA256_REF = Pattern.compile("^user_sha256:([0-9a-fA-F]{16})$");
+  private static final Pattern DELETION_JOB_REF = Pattern.compile(
+      "^deletion_job:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$");
+
   private final AiRetentionJobRepository jobs;
   private final AiMediaAssetRepository mediaAssets;
   private final AiTtsCacheEntryRepository ttsCacheEntries;
@@ -25,6 +34,7 @@ public class AiRetentionService {
   private final AiMediaStorageService mediaStorage;
   private final AuditLogRepository auditLogs;
   private final JdbcTemplate jdbcTemplate;
+  private final ObjectMapper objectMapper;
   private final Clock clock;
 
   public AiRetentionService(
@@ -36,6 +46,7 @@ public class AiRetentionService {
       AiMediaStorageService mediaStorage,
       AuditLogRepository auditLogs,
       JdbcTemplate jdbcTemplate,
+      ObjectMapper objectMapper,
       Clock clock) {
     this.jobs = jobs;
     this.mediaAssets = mediaAssets;
@@ -45,24 +56,27 @@ public class AiRetentionService {
     this.mediaStorage = mediaStorage;
     this.auditLogs = auditLogs;
     this.jdbcTemplate = jdbcTemplate;
+    this.objectMapper = objectMapper;
     this.clock = clock;
   }
 
   @Transactional
   public AiRetentionJob createAndRun(String scope, String userRef, String reason, String idempotencyKey, String requestId) {
     requireIdempotencyKey(idempotencyKey);
+    String normalizedScope = normalizeScope(scope);
+    String normalizedUserRef = redactedUserRef(userRef);
+    String normalizedReason = safeReason(reason);
     AiRetentionJob existing = jobs.findByIdempotencyKey(idempotencyKey).orElse(null);
     if (existing != null) {
       return existing;
     }
-    String normalizedScope = normalizeScope(scope);
     Instant now = Instant.now(clock);
     AiRetentionJob job = jobs.save(new AiRetentionJob(
         UUID.randomUUID(),
         idempotencyKey,
         normalizedScope,
-        redactedUserRef(userRef),
-        safeReason(reason),
+        normalizedUserRef,
+        normalizedReason,
         now));
     return run(job, null, requestId);
   }
@@ -234,16 +248,26 @@ public class AiRetentionService {
         "ai-retention",
         "ai_retention_job_completed",
         "ai_retention:" + job.getJobId(),
-        Map.of(
-            "scope", job.getScope(),
-            "user_ref", job.getUserRef() == null ? "none" : job.getUserRef(),
-            "media_deleted_count", counts.mediaDeletedCount(),
-            "transcript_deleted_count", counts.transcriptDeletedCount(),
-            "tts_cache_deleted_count", counts.ttsCacheDeletedCount(),
-            "provider_payload_redacted_count", counts.providerPayloadRedactedCount(),
-            "evidence_ref", job.getRedactedEvidenceRef()).toString(),
+        auditDetails(job, counts),
         requestId,
         Instant.now(clock)));
+  }
+
+  private String auditDetails(AiRetentionJob job, Counts counts) {
+    Map<String, Object> details = new LinkedHashMap<>();
+    details.put("schema_version", 1);
+    details.put("scope", job.getScope());
+    details.put("user_ref", job.getUserRef() == null ? "none" : job.getUserRef());
+    details.put("media_deleted_count", counts.mediaDeletedCount());
+    details.put("transcript_deleted_count", counts.transcriptDeletedCount());
+    details.put("tts_cache_deleted_count", counts.ttsCacheDeletedCount());
+    details.put("provider_payload_redacted_count", counts.providerPayloadRedactedCount());
+    details.put("evidence_ref", job.getRedactedEvidenceRef());
+    try {
+      return objectMapper.writeValueAsString(details);
+    } catch (JsonProcessingException e) {
+      throw new IllegalStateException("Unable to serialize AI retention audit details.", e);
+    }
   }
 
   private String normalizeScope(String scope) {
@@ -259,8 +283,25 @@ public class AiRetentionService {
     if (cleaned.isBlank()) {
       return null;
     }
-    if (cleaned.startsWith("user_sha256:") || cleaned.startsWith("deletion_job:")) {
-      return cleaned;
+    if (cleaned.startsWith("user_sha256:")) {
+      var matcher = USER_SHA256_REF.matcher(cleaned);
+      if (!matcher.matches()) {
+        throw new ApiException(
+            HttpStatus.UNPROCESSABLE_ENTITY,
+            "SCHEMA_VALIDATION_FAILED",
+            "AI retention user_ref must use user_sha256:<hex> when preserving a hashed user reference.");
+      }
+      return "user_sha256:" + matcher.group(1).toLowerCase(Locale.ROOT);
+    }
+    if (cleaned.startsWith("deletion_job:")) {
+      var matcher = DELETION_JOB_REF.matcher(cleaned);
+      if (!matcher.matches()) {
+        throw new ApiException(
+            HttpStatus.UNPROCESSABLE_ENTITY,
+            "SCHEMA_VALIDATION_FAILED",
+            "AI retention user_ref must use deletion_job:<uuid> when preserving a deletion job reference.");
+      }
+      return "deletion_job:" + UUID.fromString(matcher.group(1));
     }
     return "user_ref_sha256:" + sha256(cleaned).substring(0, 16);
   }
