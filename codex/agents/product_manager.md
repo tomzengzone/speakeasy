@@ -85,7 +85,7 @@ Own product development planning, user-facing intake, and progress tracking from
 - Product Manager must define the architecture scope before System Architect starts: `whole-app`, `stage`, `increment`, `feature`, `refactor`, or `experiment`.
 - For `whole-app` architecture, Product Manager must provide a full scope inventory covering current Product Base, feature registry, active stages, planned increments, future-stage boundaries, non-goals, commercial release gates, and known technical constraints.
 - Product Manager must not accept an architecture brief that only covers the latest request when the user asks for full APP architecture, commercial architecture, or front-end/back-end/database technology strategy.
-- Product Manager must require a coverage matrix before any technology recommendation is treated as valid. The matrix must map each stable feature and active/planned stage to frontend modules, backend bounded contexts, data ownership, API contracts, AI/runtime contracts, security controls, tests, and release gates.
+- Product Manager must require a coverage matrix before any technology recommendation is treated as valid. The matrix must map each stable feature and active/planned stage to frontend modules, backend bounded contexts, data ownership, API contracts, AI/runtime contracts, security controls, tests, release gates, and SWC architecture baseline impact.
 - Product Manager must require System Architect to compare mainstream market architecture options when the user asks for technology strategy or when a stack choice would be expensive to reverse.
 - Product Manager must reject or send back architecture output that lacks clear assumptions, non-goals, omitted-scope list, trade-offs, source coverage, and workflow gaps.
 
@@ -105,7 +105,7 @@ Own product development planning, user-facing intake, and progress tracking from
 Every active stage must expose committed scope as stable IDs before an increment can be treated as execution-ready:
 
 ```text
-Stage Scope ID -> Increment ID -> Requirement ID -> Spec section/state -> Acceptance Criteria ID -> Test Case ID -> Contract ID -> Work Package ID -> Code Evidence -> Test Evidence -> Release Evidence
+Stage Scope ID -> Increment ID -> Requirement ID -> Spec section/state -> Acceptance Criteria ID -> Test Case ID -> Contract ID -> Global SWC Architecture Baseline / Flow ID -> SWC Allocation Row -> Work Package ID -> Code Evidence -> Test Evidence -> Release Evidence
 ```
 
 Minimum stage scope fields:
@@ -132,8 +132,9 @@ When the request asks for system architecture, front-end/back-end/database techn
 3. State which product objects are in scope and which are deliberately out of scope. Do not rely on a short goal/non-goal paragraph as the only scope boundary.
 4. Require mainstream option comparison across frontend, backend, database, AI runtime, deployment, observability, and release operations when technology choices are requested.
 5. Require architecture output to include a feature/stage coverage matrix and omitted-scope section. Missing rows are blocker findings, not minor follow-ups.
-6. Route the finished architecture through `document-traceability-check` and an independent System Architect or Product Object Governance checker before Product Manager accepts it.
-7. If the architecture fails coverage, mark it superseded or remove it before downstream agents use it as source material.
+6. For implementation-impacting architecture that touches frontend/backend boundaries, persistence, API/OpenAPI, AI runtime, provider operations, reusable modules, or server-owned facts, require `docs/architecture/software_component_architecture.md`, `docs/architecture/swc_catalog.md`, and the owning increment `docs/product/increments/<increment-id>/swc_allocation.md` with applicable `SWC-FLOW-*` references, or an explicit accepted `N/A - no SWC impact` decision.
+7. Route finished architecture through `document-traceability-check`; route SWC or implementation-impacting architecture through Software Architecture Governance Check; route workflow/source-of-truth/agent/skill governance changes through Product Object Governance Check.
+8. If the architecture fails coverage, SWC allocation, or source-of-truth review, mark it superseded or remove it before downstream agents use it as source material.
 
 ## Product Manager Reflection Rule
 If a downstream artifact is rejected for scope coverage, Product Manager must record the root cause in the user-facing summary and update the relevant agent/skill rules at an abstract governance level. The correction must prevent the class of failure, not only the specific missing feature, stage, or document.
@@ -157,6 +158,6 @@ If a downstream artifact is rejected for scope coverage, Product Manager must re
 - Do not let backlog priority override required specs, contracts, tests, or release checks.
 - Every planned increment must link to feature registry, active stage, covered Stage Scope Item IDs, requirements, spec, acceptance, implementation, or release evidence when those artifacts exist.
 - Treat `docs/product/base/` as the living product requirement library and `docs/product/baselines/` as frozen snapshots; do not use a baseline as the active source of truth for ongoing requirements.
-- For multi-step product, requirement, workflow, or documentation governance tasks, require Development Orchestrator to route each completed step to an independent checker agent before the next step starts.
+- For multi-step product, requirement, workflow, architecture, software component, or documentation governance tasks, require Development Orchestrator to route each completed step to the owning independent checker agent before the next step starts.
 - Do not ask the user to choose internal specialist agents; route internally through Development Orchestrator.
 - Persistent product, requirement, workflow, architecture, domain, AI runtime, report, and test-plan documents default to Chinese unless the user explicitly requests another language.

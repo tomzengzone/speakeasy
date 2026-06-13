@@ -1,15 +1,15 @@
 # MVP 学习闭环需求
 
 ## 文档状态
-Legacy requirements source - 本文是 MVP 阶段需求主文档，已迁移到 Product Base 活需求库。
+Legacy requirements source（历史需求来源） - 本文是 MVP 阶段需求主文档，已迁移到 Product Base 活需求库。
 
-当前稳定需求 source of truth：
+当前稳定需求 source of truth（事实源）：
 - `docs/product/base/requirements.md`
 - `docs/product/base/spec.md`
 - `docs/product/base/acceptance.md`
 - `docs/product/base/traceability.md`
 
-本文只作为 Product Base consolidation 的上游来源、审计依据和历史参考保留。后续稳定需求不得继续直接写回本文；increment 完成实现、验收、追溯、测试和报告后，应 merge back 到 `docs/product/base/requirements.md`。
+本文只作为 Product Base consolidation（Product Base 合并整理）的上游来源、审计依据和历史参考保留。后续稳定需求不得继续直接写回本文；increment（增量）完成实现、验收、追溯、测试和报告后，应 merge back（回并）到 `docs/product/base/requirements.md`。
 
 ## 状态
 当前 Flutter 前端代码基线。本文由当前前端代码反向生成，作为 MVP 阶段需求主文档。

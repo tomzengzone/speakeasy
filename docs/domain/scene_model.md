@@ -35,3 +35,6 @@ idle -> awaiting_user -> analyzing -> awaiting_ai -> feedback_shown -> completed
 - A practice session must know the current action step.
 - AI should not advance the action step unless success conditions are met.
 
+- Scenario 必须至少包含一个 objective 和一个 action step。
+- PracticeSession 必须知道当前所在的 Action Chain Step。
+- 除非 success_condition 已满足，否则 AI 不得推进 action step。

@@ -1,15 +1,15 @@
-# Product Base Requirements
+# Product Base Requirements（Product Base 需求）
 
 ## 状态
-Accepted - 当前文件是产品总需求库的需求源，记录已接受且稳定的产品行为。本文不是 baseline 快照；后续阶段或版本需要冻结时，应从 `docs/product/base/` 生成 `docs/product/baselines/<baseline-id>/`。
+Accepted（已接受） - 当前文件是产品总需求库的需求源，记录已接受且稳定的产品行为。本文不是 baseline（基线）快照；后续阶段或版本需要冻结时，应从 `docs/product/base/` 生成 `docs/product/baselines/<baseline-id>/`。
 
-## Owner
-Requirement Development Agent
+## Owner（负责人）
+Requirement Development Agent（需求开发 Agent）
 
-## Product Manager Decision
-- Product object mode: `product-base-consolidation`
+## Product Manager Decision（产品经理决策）
+- Product object mode（产品对象模式）: `product-base-consolidation`
 - 范围：把当前 MVP 已实现、已验收或已接受的稳定产品能力合并到 Product Base。
-- 非范围：不纳入 P0.1 `expression-automation-training` 的 planned 行为，不纳入 P0.2/P1/P2 backlog，不把 `docs/product/features/mvp-learning-loop-spec.md` 作为当前 base spec 或 requirements 来源。
+- 非范围：不纳入 P0.1 `expression-automation-training` 的 planned（计划中）行为，不纳入 P0.2/P1/P2 backlog（待办池），不把 `docs/product/features/mvp-learning-loop-spec.md` 作为当前 base spec（基础规格）或 requirements（需求）来源。
 
 ## 上游来源
 - `docs/product/features/mvp-learning-loop-requirements.md`：MVP 阶段需求主文档，作为本文主要来源。
@@ -20,8 +20,8 @@ Requirement Development Agent
 
 ## Product Base 规则
 - Product Base 是活的总需求库，承载已接受稳定行为。
-- Increment 需求在完成实现、验收、追溯、测试和报告前，不得合并进 Product Base。
-- Baseline 是从 Product Base 冻结出的快照，不得替代本文作为持续需求源。
+- Increment（增量）需求在完成实现、验收、追溯、测试和报告前，不得合并进 Product Base。
+- Baseline（基线）是从 Product Base 冻结出的快照，不得替代本文作为持续需求源。
 - 本文只写用户目标、用户路径、功能需求、成功标准、非目标和边界；不写 API schema、prompt schema、UI 布局或代码实现。
 
 ## 稳定能力范围
@@ -30,16 +30,16 @@ Requirement Development Agent
 ## 稳定 Feature 映射
 | Feature slug | 纳入状态 | Product Base 边界 |
 | --- | --- | --- |
-| `access-onboarding` | Included | 启动、登录门禁、首评和初始学习路线。 |
-| `official-scenario-library` | Included | 官方场景目录、场景选择、场景等级和现有两套场景资产。 |
-| `listening-shadowing` | Included | 听力热身、对话播放、跟读录音和基础反馈。 |
-| `expression-practice-queue` | Included | 推荐表达队列、表达小练、复习和变体任务。 |
-| `voice-scenario-practice` | Included | 语音场景模拟、录音作答、转写提交、教练反馈和会话恢复。 |
-| `learning-memory-review` | Included | 学习证据、个人 Wiki、复习沉淀、薄弱表达和练习总结的当前本地能力。 |
-| `scoring-feedback` | Included partial | 当前已有的发音、表达完成度、语法或任务完成度反馈信号；不承诺完整评分产品化。 |
-| `profile-membership` | Included | 我的、学习结果入口、会员页、Apple IAP 前端入口和设置。 |
-| `expression-automation-training` | Excluded | P0.1 planned increment，完成后再按 merge-back 规则进入 Product Base。 |
-| `notebook-vocabulary` | Excluded | P1 planned，当前不进入 Product Base。 |
+| `access-onboarding` | Included（已纳入） | 启动、登录门禁、首评和初始学习路线。 |
+| `official-scenario-library` | Included（已纳入） | 官方场景目录、场景选择、场景等级和现有两套场景资产。 |
+| `listening-shadowing` | Included（已纳入） | 听力热身、对话播放、跟读录音和基础反馈。 |
+| `expression-practice-queue` | Included（已纳入） | 推荐表达队列、表达小练、复习和变体任务。 |
+| `voice-scenario-practice` | Included（已纳入） | 语音场景模拟、录音作答、转写提交、教练反馈和会话恢复。 |
+| `learning-memory-review` | Included（已纳入） | 学习证据、个人 Wiki、复习沉淀、薄弱表达和练习总结的当前本地能力。 |
+| `scoring-feedback` | Included partial（部分纳入） | 当前已有的发音、表达完成度、语法或任务完成度反馈信号；不承诺完整评分产品化。 |
+| `profile-membership` | Included（已纳入） | 我的、学习结果入口、会员页、Apple IAP 前端入口和设置。 |
+| `expression-automation-training` | Excluded（不纳入） | P0.1 planned increment（计划增量），完成后再按 merge-back（回并）规则进入 Product Base。 |
+| `notebook-vocabulary` | Excluded（不纳入） | P1 planned（计划中），当前不进入 Product Base。 |
 
 ## 假设
 - 当前稳定能力只承认可从现有前端入口进入、被用户观察到，并有代码或资产支撑的行为。
@@ -189,4 +189,4 @@ Requirement Development Agent
 - `docs/product/base/traceability.md`
 
 ## 后续合并规则
-后续 increment 完成后，只有在实现、验收、追溯、测试和报告证据完整或例外已记录时，Product Manager 才能批准将稳定行为合并进本文。合并时必须保留来源 increment、验收证据和非目标变化记录。
+后续 increment（增量）完成后，只有在实现、验收、追溯、测试和报告证据完整或例外已记录时，Product Manager 才能批准将稳定行为合并进本文。合并时必须保留来源 increment（增量）、验收证据和非目标变化记录。

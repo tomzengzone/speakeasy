@@ -1,21 +1,21 @@
-# Product Base Acceptance
+# Product Base Acceptance（Product Base 验收标准）
 
 ## 状态
-Accepted - 当前文件是 Product Base 活需求库的稳定验收标准，覆盖已接受 MVP 能力。本文不是冻结 baseline 快照；后续冻结版本应从 `docs/product/base/` 生成 `docs/product/baselines/<baseline-id>/`。
+Accepted（已接受） - 当前文件是 Product Base 活需求库的稳定验收标准，覆盖已接受 MVP 能力。本文不是冻结 baseline（基线）快照；后续冻结版本应从 `docs/product/base/` 生成 `docs/product/baselines/<baseline-id>/`。
 
-## Owner
-Acceptance Criteria Generate Skill
+## Owner（负责人）
+Acceptance Criteria Generate Skill（验收标准生成技能）
 
 ## 上游输入
-- Product Base requirements: `docs/product/base/requirements.md`
-- Product Base spec: `docs/product/base/spec.md`
-- Legacy MVP acceptance source: `docs/product/acceptance_criteria.md`
-- Legacy MVP traceability source: `docs/product/traceability_matrix.md`
-- Current app evidence and tests listed in `docs/product/base/traceability.md`
+- Product Base requirements（Product Base 需求）: `docs/product/base/requirements.md`
+- Product Base spec（Product Base 规格）: `docs/product/base/spec.md`
+- Legacy MVP acceptance source（MVP 历史验收来源）: `docs/product/acceptance_criteria.md`
+- Legacy MVP traceability source（MVP 历史追溯来源）: `docs/product/traceability_matrix.md`
+- Current app evidence and tests（当前 App 证据和测试） listed in `docs/product/base/traceability.md`
 
 ## 范围
 - 本文只纳入当前已实现、已接受或已稳定验收的 MVP 能力。
-- 本文不纳入 P0.1 `expression-automation-training` 的 planned 行为。
+- 本文不纳入 P0.1 `expression-automation-training` 的 planned（计划中）行为。
 - 本文不把 `docs/product/features/mvp-learning-loop-spec.md` 作为 MVP Product Base spec 迁移来源。
 - 本文只定义可观察验收标准，不定义 API schema、prompt schema、数据库字段、UI 布局或代码实现。
 
@@ -23,9 +23,9 @@ Acceptance Criteria Generate Skill
 - 每个 FR 必须至少有 1 个 AC 覆盖。
 - 每个 AC 必须反向引用 1 个或多个 FR 和 Product Base spec flow。
 - 每个 AC 必须在 `docs/product/base/traceability.md` 中具备 Code Evidence 与 Test Evidence，或明确标记为人工验收、外部服务依赖或暂不可自动化。
-- 后续 increment 只有在实现、验收、追溯、测试和报告证据完整或例外已记录后，才能 merge back 到 Product Base。
+- 后续 increment（增量）只有在实现、验收、追溯、测试和报告证据完整或例外已记录后，才能 merge back（回并）到 Product Base。
 
-## Acceptance Coverage Map
+## Acceptance Coverage Map（验收覆盖映射）
 | AC | FR | Spec flow |
 | --- | --- | --- |
 | AC-001 | FR-001 | Flow-001 |

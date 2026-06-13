@@ -72,10 +72,13 @@ description: Use when a project document needs a content boundary, required sect
 - `docs/product/increments/<increment-id>/spec.md`：写本次增量的状态、输入输出、状态、依赖、失败路径、模块影响和测试映射；不写代码实现或产品优先级决策。
 - `docs/product/increments/<increment-id>/acceptance.md`：写本次增量可观察 pass/fail 行为；不写类名、函数名、数据库字段或测试实现。
 - `docs/product/increments/<increment-id>/traceability.md`：写本次增量的 `Requirement -> AC -> Test Case ID -> Contract -> Code Evidence -> Test Evidence -> Status`；不新增需求或替代验收标准。
+- `docs/product/increments/<increment-id>/swc_allocation.md`：写本次增量的 Existing Implementation Baseline、Delta From Existing Baseline、`Stage Scope ID -> FR -> Spec -> AC -> FE SWC -> BE SWC -> API/OpenAPI -> Domain Entity -> DB Table/Migration -> Provider/AI Boundary -> TC` 分配、SWC 间数据流、复用要求和禁止重复实现边界；不新增需求、不改验收标准、不复制 OpenAPI schema、不定义领域实体语义、不写代码实现。
 - `docs/product/features/<feature-slug>-requirements.md`：写假设、目标、用户路径、入口、涉及数据、成功标准、非目标、开放问题；不写实现细节。
 - `docs/product/features/<feature-slug>-spec.md`：写功能规格、状态、输入输出、依赖、失败情况、模块影响和测试映射；不写代码实现。
 - `docs/product/acceptance_criteria.md`：写可通过/失败判断的用户可观察行为；不写类名、函数名或数据库字段。
 - `docs/product/traceability_matrix.md`：写 `FR -> User Story -> AC -> Test Case ID -> Code Evidence -> Test Evidence -> Status`，用于证明需求覆盖完整性；不新增需求、不替代验收标准、不把 100% 覆盖表述为代码行覆盖率或线上零缺陷保证。
+- `docs/architecture/software_component_architecture.md`：写全局 SWC 架构基准，包括系统级职责分配、SWC 拓扑、稳定 `SWC-FLOW-*`、canonical SWC-to-SWC sequence、局部变更参考基准和历史迁移说明；不复制 SWC Catalog 的完整组件字段表、不替代增量 `swc_allocation.md`、不定义 Domain Schema 或 OpenAPI schema。
+- `docs/architecture/swc_catalog.md`：写稳定 SWC 目录，包括 SWC ID、layer、code path、职责、非职责、provided/required interfaces、数据所有权、持久化所有权、测试责任、必须复用和禁止绕过；不复制 Domain Schema、OpenAPI request/response schema、prompt schema、UX layout 或实现报告。
 - `docs/domain/<domain>_model.md`：写实体、关系、生命周期、状态机和约束；不写 API response 或 UI 布局。
 - `docs/architecture/api_contract.md`：写接口路径、请求、响应、错误、兼容性和示例；不写数据库实现或 prompt 文案。
 - `docs/ai_runtime/prompt_contract.md`：写 LLM 输入、输出、禁止决策、fallback 和示例；不让 LLM 拥有持久状态更新权。
@@ -100,6 +103,12 @@ description: Use when a project document needs a content boundary, required sect
 - 把测试报告、feature spec 或验收标准正文当作追溯矩阵 source of truth。
 - 实现报告补写需求或跳过缺失的验收标准。
 - Prompt 契约允许 LLM 直接更新持久状态。
+- SWC allocation 写成实现计划或代码任务清单，却没有 FR/AC 到 SWC/API/domain/DB/test 的分配。
+- SWC allocation 缺少 Existing Implementation Baseline，或者没有列出现有用户流、代码路径、SWC、Flow ID、API、数据归属、测试和不可回归行为。
+- SWC allocation 缺少 Delta From Existing Baseline，或者没有列出复用 SWC/Flow、允许新增代码、禁止新增代码、允许修改的旧代码和回归证明。
+- SWC allocation 没有引用全局 SWC 架构基准或 `SWC-FLOW-*`，导致局部设计无法判断是否偏离稳定架构。
+- 全局 SWC 架构基准复制 `swc_catalog.md` 的完整组件字段表，导致拓扑/流基准和组件目录职责混杂。
+- SWC catalog 复制 OpenAPI 或 Domain Schema 字段，导致 source of truth 冲突。
 
 ## Verification
 - 文档目的、读者、必需内容和禁止内容清晰。

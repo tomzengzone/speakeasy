@@ -1,7 +1,11 @@
 # ADR 0004: Deterministic Training Planner And AI Boundary
 
+ADR 0004：确定性训练规划器与 AI 边界。
+
 ## Status
 Proposed - pending document traceability and Product Object Governance checks.
+
+提议中 - 等待文档追踪和 Product Object Governance 检查通过。
 
 ## Context
 P0.1 要把现有语音场景模拟升级为 session 内训练型 Agent，覆盖 action chain、micro-action、hint ladder、retry、in-session pressure check 和学习证据写回。产品边界明确要求 AI 不直接拥有持久化掌握状态的最终变更权。
@@ -10,6 +14,8 @@ P0.1 要把现有语音场景模拟升级为 session 内训练型 Agent，覆盖
 P0.1 训练推进采用 deterministic Training Planner。LLM 只生成结构化候选反馈、提示、追问和表达建议；planner/domain rules 决定当前 micro-action、hint level、retry、pressure check、step completion 和 learning evidence write-back。
 
 Core objects:
+
+核心对象：
 - TrainingSession
 - ActionChainStep
 - MicroAction
@@ -24,6 +30,12 @@ AI output must:
 - include schema version;
 - be validated before UI rendering;
 - never directly mark mastery or entitlement state final.
+
+AI 输出必须：
+- 匹配 `docs/ai_runtime/llm_output_schema.md` 或后续 schema；
+- 包含 schema version；
+- 在 UI 渲染前完成校验；
+- 永远不能直接把 mastery 或 entitlement state 标记为最终状态。
 
 ## Alternatives
 - Free-form LLM conversation drives training：拒绝。不可测试，容易越过阶段边界，难以追踪学习证据。

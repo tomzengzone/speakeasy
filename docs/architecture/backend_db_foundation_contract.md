@@ -1,7 +1,9 @@
-# Backend / DB / Foundation Contract
+# Backend / DB / Foundation Contract / 后端、数据库与基础契约
 
 ## 状态
 Proposed - P0/P0.1 共同技术前置。
+
+提议状态 - 本文件定义 P0/P0.1 共同技术前置，尚需完成复核后才能作为实现输入。
 
 本文定义 P0 商业化订阅上线准备与 P0.1 表达自动化训练闭环共享的后端、数据库和契约基础边界。它不是新产品 feature，不新增用户可见范围，不替代 Domain Schema、API Contract/OpenAPI、AI Runtime、UX、QA 或 DevOps 后续产物。本文通过 `document-traceability-check` 和 Product Object Governance Check Agent 复核前，不得作为实现开工依据。
 
@@ -16,21 +18,21 @@ Proposed - P0/P0.1 共同技术前置。
 ## 上游依据
 | 来源 | 路径 | 用途 |
 | --- | --- | --- |
-| PM handoff | `.codex_tmp_remote_patch/agent-handoffs/foundation_contract_pm_brief.md` | 确认本轮是 P0/P0.1 共同技术前置，不是新 feature |
+| PM handoff / PM 交接 | `.codex_tmp_remote_patch/agent-handoffs/foundation_contract_pm_brief.md` | 确认本轮是 P0/P0.1 共同技术前置，不是新 feature |
 | Product Base | `docs/product/base/requirements.md`, `docs/product/base/spec.md`, `docs/product/base/acceptance.md`, `docs/product/base/traceability.md` | 确认当前稳定能力、会员入口、本地学习闭环和后端/DB 缺口 |
-| Feature registry | `docs/product/feature_registry.md` | 确认受影响 feature 与 P0/P0.1 边界 |
-| P0 stage | `docs/product/stages/p0-commercial-readiness.md` | 确认商业化账号、订阅、权益、用量、合规、发布门禁 |
-| P0.1 stage | `docs/product/stages/p0-1-expression-automation.md` | 确认 session 内 planner、micro-action、hint、学习证据写回 |
-| P0 traceability | `docs/product/increments/commercial-subscription-readiness/traceability.md` | 确认商业 Domain/API/Architecture/Security/QA/DevOps 仍待补 |
-| P0.1 traceability | `docs/product/increments/p0-1-expression-automation-training/traceability.md` | 确认 TrainingSession、PlannerDecision、LearningEvidence 等契约仍待补 |
-| Whole-app architecture | `docs/architecture/system_overview.md` | 继承推荐架构和缺口分类 |
-| Module boundary | `docs/architecture/module_boundary.md` | 继承前后端、AI、数据事实源职责切分 |
-| API contract | `docs/architecture/api_contract.md` | 继承 API-first、统一 error schema、generated Dart client 缺口 |
-| Data flow | `docs/architecture/data_flow.md` | 继承支付、用量、训练、删除和观测流程边界 |
-| Security design | `docs/architecture/security_design.md` | 继承 provider/payment secrets、用量、删除和日志安全边界 |
-| Domain schema draft | `docs/domain/domain_schema.md` | 确认现有领域草案尚未覆盖 P0/P0.1 关键对象 |
+| Feature registry / 功能登记 | `docs/product/feature_registry.md` | 确认受影响 feature 与 P0/P0.1 边界 |
+| P0 stage / P0 阶段 | `docs/product/stages/p0-commercial-readiness.md` | 确认商业化账号、订阅、权益、用量、合规、发布门禁 |
+| P0.1 stage / P0.1 阶段 | `docs/product/stages/p0-1-expression-automation.md` | 确认 session 内 planner、micro-action、hint、学习证据写回 |
+| P0 traceability / P0 追溯 | `docs/product/increments/commercial-subscription-readiness/traceability.md` | 确认商业 Domain/API/Architecture/Security/QA/DevOps 仍待补 |
+| P0.1 traceability / P0.1 追溯 | `docs/product/increments/p0-1-expression-automation-training/traceability.md` | 确认 TrainingSession、PlannerDecision、LearningEvidence 等契约仍待补 |
+| Whole-app architecture / 全应用架构 | `docs/architecture/system_overview.md` | 继承推荐架构和缺口分类 |
+| Module boundary / 模块边界 | `docs/architecture/module_boundary.md` | 继承前后端、AI、数据事实源职责切分 |
+| API contract / API 契约 | `docs/architecture/api_contract.md` | 继承 API-first、统一 error schema、generated Dart client 缺口 |
+| Data flow / 数据流 | `docs/architecture/data_flow.md` | 继承支付、用量、训练、删除和观测流程边界 |
+| Security design / 安全设计 | `docs/architecture/security_design.md` | 继承 provider/payment secrets、用量、删除和日志安全边界 |
+| Domain schema draft / 领域 schema 草案 | `docs/domain/domain_schema.md` | 确认现有领域草案尚未覆盖 P0/P0.1 关键对象 |
 
-## Scope Inventory
+## Scope Inventory / 范围清单
 本 foundation contract 只覆盖下列基础决策：
 
 1. backend 工程边界：未来后端工程的模块、层次、可信边界，以及与 Flutter 的责任切分。
@@ -39,19 +41,19 @@ Proposed - P0/P0.1 共同技术前置。
 4. generated Dart client policy：生成代码边界、手写例外、版本同步和错误模型。
 5. 服务端事实源边界：用户、权益、用量、训练 session、学习证据。
 
-## Omitted-Scope List
-| Scope | 分类 | 原因 |
+## Omitted-Scope List / 省略范围清单
+| Scope / 范围 | 分类 | 原因 |
 | --- | --- | --- |
-| 修改 Flutter 业务代码或 Flutter 工程配置 | Non-goal | 本轮只产出架构文档正文 |
-| 创建后端工程目录、Spring/FastAPI/NestJS 项目或部署配置 | Non-goal | 需等 foundation contract 和复核通过后进入实现计划 |
-| 编写 PostgreSQL migration SQL | Non-goal | migration 需等 Domain Schema 通过后生成 |
-| 创建 OpenAPI 实体文件 | Non-goal | OpenAPI 需等 Domain Schema 通过后进入 API Contract 阶段 |
-| 定义 subscription、entitlement、usage、planner、learning evidence 的完整字段 | Explicitly deferred | 下一步 Domain Schema 负责 |
-| 定义 P0/P0.1 endpoint request/response 细节 | Explicitly deferred | API Contract/OpenAPI 阶段负责 |
-| 编写 AI prompt/schema/eval | Explicitly deferred | AI Runtime 阶段负责 |
-| 设计训练页面 UX、付费墙 UX、错误态 UX | Explicitly deferred | UX/Screen Spec 阶段负责 |
-| 编写 QA 测试矩阵或 DevOps release workflow | Explicitly deferred | QA、DevOps 阶段负责 |
-| P0.2 跨 session 记忆编排、P1/P2 内容/CMS/评分产品化 | Explicitly deferred | 不属于 P0/P0.1 foundation contract |
+| 修改 Flutter 业务代码或 Flutter 工程配置 | Non-goal / 非目标 | 本轮只产出架构文档正文 |
+| 创建后端工程目录、Spring/FastAPI/NestJS 项目或部署配置 | Non-goal / 非目标 | 需等 foundation contract 和复核通过后进入实现计划 |
+| 编写 PostgreSQL migration SQL | Non-goal / 非目标 | migration 需等 Domain Schema 通过后生成 |
+| 创建 OpenAPI 实体文件 | Non-goal / 非目标 | OpenAPI 需等 Domain Schema 通过后进入 API Contract 阶段 |
+| 定义 subscription、entitlement、usage、planner、learning evidence 的完整字段 | Explicitly deferred / 明确后置 | 下一步 Domain Schema 负责 |
+| 定义 P0/P0.1 endpoint request/response 细节 | Explicitly deferred / 明确后置 | API Contract/OpenAPI 阶段负责 |
+| 编写 AI prompt/schema/eval | Explicitly deferred / 明确后置 | AI Runtime 阶段负责 |
+| 设计训练页面 UX、付费墙 UX、错误态 UX | Explicitly deferred / 明确后置 | UX/Screen Spec 阶段负责 |
+| 编写 QA 测试矩阵或 DevOps release workflow | Explicitly deferred / 明确后置 | QA、DevOps 阶段负责 |
+| P0.2 跨 session 记忆编排、P1/P2 内容/CMS/评分产品化 | Explicitly deferred / 明确后置 | 不属于 P0/P0.1 foundation contract |
 
 ## Backend 工程边界
 
@@ -86,17 +88,17 @@ backend/
 | Worker / Ops jobs | 支付 webhook、账号删除、provider 重试、审计修复 | 不作为用户体验主入口 |
 
 ### Bounded Context 初始边界
-| Context | P0/P0.1 责任 | Server fact-source |
+| Context / 上下文 | P0/P0.1 责任 | Server fact-source / 服务端事实源 |
 | --- | --- | --- |
-| Identity | 登录、token、用户资料、测试登录发布门禁、账号删除入口 | User、AuthIdentity、AccountLifecycle |
-| Commerce / Entitlement | Apple/Google 校验、订阅状态、退款/过期/宽限期、权益快照 | Subscription、Purchase、EntitlementSnapshot |
-| Usage Control | AI/ASR/TTS/评分 quota、reserve/commit/release、速率限制、滥用检测 | UsageLedger、UsageReservation、ProviderUsageEvent |
-| Content / Scenario | 官方场景、内容版本、场景权益 gating | Scenario、ScenarioVersion |
-| Training Session | session 生命周期、turn 提交、恢复、完成 | TrainingSession、TrainingTurn |
-| Training Planner | session 内 action chain、micro-action、hint、retry、pressure decision | PlannerDecision、ActionChainStep、HintState |
-| Learning Evidence | 学习证据、掌握/薄弱候选、复习触发依据 | LearningEvidence、EvidenceRuleTrace |
-| AI Gateway | LLM/ASR/TTS/评分 provider routing、schema validation、fallback、成本观测 | ProviderRequestLog、AIResultRef |
-| Admin / Ops | 审计、删除任务、发布健康、人工重试 | AuditLog、AccountDeletionJob |
+| Identity / 身份 | 登录、token、用户资料、测试登录发布门禁、账号删除入口 | User、AuthIdentity、AccountLifecycle |
+| Commerce / Entitlement / 商业与权益 | Apple/Google 校验、订阅状态、退款/过期/宽限期、权益快照 | Subscription、Purchase、EntitlementSnapshot |
+| Usage Control / 用量控制 | AI/ASR/TTS/评分 quota、reserve/commit/release、速率限制、滥用检测 | UsageLedger、UsageReservation、ProviderUsageEvent |
+| Content / Scenario / 内容与场景 | 官方场景、内容版本、场景权益 gating | Scenario、ScenarioVersion |
+| Training Session / 训练 session | session 生命周期、turn 提交、恢复、完成 | TrainingSession、TrainingTurn |
+| Training Planner / 训练 planner | session 内 action chain、micro-action、hint、retry、pressure decision | PlannerDecision、ActionChainStep、HintState |
+| Learning Evidence / 学习证据 | 学习证据、掌握/薄弱候选、复习触发依据 | LearningEvidence、EvidenceRuleTrace |
+| AI Gateway / AI 网关 | LLM/ASR/TTS/评分 provider routing、schema validation、fallback、成本观测 | ProviderRequestLog、AIResultRef |
+| Admin / Ops / 管理与运维 | 审计、删除任务、发布健康、人工重试 | AuditLog、AccountDeletionJob |
 
 ### 与 Flutter 的责任切分
 | 领域 | Flutter 可做 | 服务端必须拥有 |
@@ -115,7 +117,7 @@ backend/
 PostgreSQL 是 P0/P0.1 服务端业务事实源。JSONB 只允许用于 provider raw payload 摘要、audit details、低频扩展字段或第三方事件原文索引，不得替代核心业务实体建模。
 
 ### 初始 schema 分区方向
-| Schema / table group | 负责上下文 | 说明 |
+| Schema / table group / 表组 | 负责上下文 | 说明 |
 | --- | --- | --- |
 | `identity_*` | Identity | users、auth_identities、sessions、account_lifecycle |
 | `commerce_*` | Commerce / Entitlement | subscription_plans、purchases、subscriptions、entitlement_snapshots、payment_events |
@@ -158,7 +160,7 @@ PostgreSQL 是 P0/P0.1 服务端业务事实源。JSONB 只允许用于 provider
 - Account deletion job 必须定义 hard delete、anonymize、retain-for-audit 三类处理策略。
 - Learning evidence 删除或匿名化不得破坏剩余审计日志的合规可读性。
 
-## OpenAPI Source-of-Truth
+## OpenAPI Source-of-Truth / OpenAPI 事实源
 
 ### 契约源文件
 后续 API Contract 阶段应创建唯一 OpenAPI source-of-truth。建议路径：
@@ -170,15 +172,15 @@ PostgreSQL 是 P0/P0.1 服务端业务事实源。JSONB 只允许用于 provider
 ### Owner 和变更原则
 | 项 | 决策 |
 | --- | --- |
-| Source of truth | OpenAPI 文件，而不是后端 controller 或 Flutter 手写 client |
-| Owner | API Contract / Backend owner，System Architect 维护边界原则 |
-| Downstream consumers | Backend implementation、generated Dart client、contract tests、QA test cases |
-| Breaking change | 必须有 ADR 或 migration plan，并说明客户端兼容策略 |
-| Versioning | API schema 使用 `schema_version` 或等价版本字段；路径版本化按后续 API Contract 决策 |
-| Error model | 继承统一 error schema：`error.code`、`error.message`、`request_id`、`details` |
-| Idempotency | 支付、用量、账号删除、训练 turn replay 必须定义 idempotency key 或 provider event id |
+| Source of truth / 事实源 | OpenAPI 文件，而不是后端 controller 或 Flutter 手写 client |
+| Owner / 负责人 | API Contract / Backend owner，System Architect 维护边界原则 |
+| Downstream consumers / 下游消费者 | Backend implementation、generated Dart client、contract tests、QA test cases |
+| Breaking change / 破坏性变更 | 必须有 ADR 或 migration plan，并说明客户端兼容策略 |
+| Versioning / 版本策略 | API schema 使用 `schema_version` 或等价版本字段；路径版本化按后续 API Contract 决策 |
+| Error model / 错误模型 | 继承统一 error schema：`error.code`、`error.message`、`request_id`、`details` |
+| Idempotency / 幂等 | 支付、用量、账号删除、训练 turn replay 必须定义 idempotency key 或 provider event id |
 
-### CI Drift Check
+### CI Drift Check / CI 漂移检查
 后续进入实现前必须建立 drift check：
 
 1. 校验 OpenAPI 语法和 schema 引用。
@@ -188,7 +190,7 @@ PostgreSQL 是 P0/P0.1 服务端业务事实源。JSONB 只允许用于 provider
 5. 若 OpenAPI、后端 DTO、generated Dart client 不一致，CI 阻断。
 6. API breaking change 必须更新 traceability 和 release notes。
 
-## Generated Dart Client Policy
+## Generated Dart Client Policy / Generated Dart Client 策略
 
 ### 基本原则
 Flutter 业务代码不得长期依赖手写 API DTO 作为跨端事实。后续 API Contract 阶段创建 OpenAPI 后，应生成 Dart client，并逐步替换或包裹现有 `lib/services/api_client.dart` 这类手写调用。
@@ -304,9 +306,17 @@ Flutter 只拥有：
 - planner
 - learning evidence
 
+- subscription：订阅。
+- entitlement：权益。
+- usage：用量。
+- account deletion：账号删除。
+- training session：训练 session。
+- planner：训练 planner。
+- learning evidence：学习证据。
+
 Domain Schema 通过 `document-traceability-check` 和 Product Object Governance Check Agent 后，才能进入 API Contract / OpenAPI。之后才允许进入 AI Runtime、UX、QA、DevOps 分步契约补齐。最后才进入代码实现。
 
-## Foundation Acceptance Checklist
+## Foundation Acceptance Checklist / Foundation 验收清单
 本文件作为下游输入前，必须满足：
 
 - 已明确它是 P0/P0.1 共同技术前置，不是新产品 feature。

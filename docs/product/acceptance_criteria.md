@@ -1,17 +1,17 @@
 # 验收标准
 
 ## 文档状态
-Legacy source - 本文是 MVP 阶段验收标准的历史来源文件，已迁移到 Product Base 活需求库。
+Legacy source（历史来源） - 本文是 MVP 阶段验收标准的历史来源文件，已迁移到 Product Base 活需求库。
 
-当前稳定验收标准 source of truth：
+当前稳定验收标准 source of truth（事实源）：
 - `docs/product/base/acceptance.md`
 - `docs/product/base/traceability.md`
 
-本文只作为迁移来源、审计依据和历史参考保留。后续 increment 验收标准不得继续写回本文；完成实现、验收、追溯、测试和报告后，应 merge back 到 `docs/product/base/acceptance.md`。
+本文只作为迁移来源、审计依据和历史参考保留。后续 increment（增量）验收标准不得继续写回本文；完成实现、验收、追溯、测试和报告后，应 merge back（回并）到 `docs/product/base/acceptance.md`。
 
 ## 来源与追溯规则
 
-当前验收标准基于 `docs/product/features/mvp-learning-loop-requirements.md` 生成，并以 `docs/product/mvp_scope.md`、`docs/product/user_stories.md` 和当前前端代码证据校验边界。后续 P0 或新增功能存在详细 feature specification 时，验收标准必须以已批准的 feature specification 为直接输入，并反向追溯到需求文档、用户故事和范围边界。
+当前验收标准基于 `docs/product/features/mvp-learning-loop-requirements.md` 生成，并以 `docs/product/mvp_scope.md`、`docs/product/user_stories.md` 和当前前端代码证据校验边界。后续 P0 或新增功能存在详细 feature specification（功能规格）时，验收标准必须以已批准的 feature specification（功能规格）为直接输入，并反向追溯到需求文档、用户故事和范围边界。
 
 强制追溯矩阵见 `docs/product/traceability_matrix.md`。每个 FR 必须至少有 1 个 AC 覆盖；每个 AC 必须反向引用 1 个或多个 FR，并具备实现证据和测试证据，或明确标记为人工验收、外部服务依赖或暂不可自动化。
 

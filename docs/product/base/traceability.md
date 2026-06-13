@@ -1,10 +1,10 @@
-# Product Base Traceability
+# Product Base Traceability（Product Base 追溯矩阵）
 
 ## 状态
-Accepted - 当前文件是 Product Base 活需求库的强制追溯矩阵，连接稳定需求、规格、验收标准、实现证据和测试证据。本文不是冻结 baseline 快照。
+Accepted（已接受） - 当前文件是 Product Base 活需求库的强制追溯矩阵，连接稳定需求、规格、验收标准、实现证据和测试证据。本文不是冻结 baseline（基线）快照。
 
-## Owner
-Document Traceability Check Skill
+## Owner（负责人）
+Document Traceability Check Skill（文档追溯检查技能）
 
 ## 目的
 本文用于把 Product Base 中的稳定 MVP 能力建立强制追溯关系，保证每条需求都能追到验收标准、规格流程、实现证据和测试证据或明确例外。
@@ -14,21 +14,21 @@ Document Traceability Check Skill
 ## 上游来源判定
 当前 Product Base 由现有 MVP 文档和 Flutter 前端代码反向固化：
 
-1. Product Base requirements: `docs/product/base/requirements.md`
-2. Product Base spec: `docs/product/base/spec.md`
-3. Product Base acceptance: `docs/product/base/acceptance.md`
-4. Legacy MVP requirements source: `docs/product/features/mvp-learning-loop-requirements.md`
-5. MVP boundary source: `docs/product/mvp_scope.md`
-6. Legacy acceptance source: `docs/product/acceptance_criteria.md`
-7. Legacy traceability source: `docs/product/traceability_matrix.md`
+1. Product Base requirements（Product Base 需求）: `docs/product/base/requirements.md`
+2. Product Base spec（Product Base 规格）: `docs/product/base/spec.md`
+3. Product Base acceptance（Product Base 验收标准）: `docs/product/base/acceptance.md`
+4. Legacy MVP requirements source（MVP 历史需求来源）: `docs/product/features/mvp-learning-loop-requirements.md`
+5. MVP boundary source（MVP 边界来源）: `docs/product/mvp_scope.md`
+6. Legacy acceptance source（历史验收来源）: `docs/product/acceptance_criteria.md`
+7. Legacy traceability source（历史追溯来源）: `docs/product/traceability_matrix.md`
 8. 当前前端代码、资产、存储、服务调用和已有测试证据
 
-`docs/product/features/mvp-learning-loop-spec.md` 是 P0.1 planned spec source，不作为当前 Product Base spec 的直接迁移来源。
+`docs/product/features/mvp-learning-loop-spec.md` 是 P0.1 planned spec source（计划规格来源），不作为当前 Product Base spec（Product Base 规格）的直接迁移来源。
 
 ## 阶段约束
-- Product Base 是活需求库；后续 increment 完成实现、验收、追溯、测试和报告前，不得合并到 Product Base。
-- Baseline 是从 Product Base 冻结出的快照，路径应为 `docs/product/baselines/<baseline-id>/`。
-- Acceptance Criteria 阶段必须建立强制追溯矩阵，最晚不得晚于 implementation plan 前。
+- Product Base 是活需求库；后续 increment（增量）完成实现、验收、追溯、测试和报告前，不得合并到 Product Base。
+- Baseline（基线）是从 Product Base 冻结出的快照，路径应为 `docs/product/baselines/<baseline-id>/`。
+- Acceptance Criteria（验收标准）阶段必须建立强制追溯矩阵，最晚不得晚于 implementation plan（实现计划）前。
 - 测试阶段只负责补齐和验证 Test Evidence，不负责事后定义需求覆盖关系。
 
 ## P0 以后新增能力规则
@@ -104,13 +104,13 @@ Document Traceability Check Skill
 - 若要把“字段不得为空”变成机器门禁，需要由 Development Orchestrator 在后续执行阶段路由到 QA 或工程实现，新增脚本或 CI 检查。
 - 标记为人工验收、外部服务依赖或暂不可自动化的项，不计为空缺，但必须在测试报告中记录实际验收结果或环境限制。
 
-## Product Base FR-010 Avatar Regression Test Case Library
+## Product Base FR-010 Avatar Regression Test Case Library（Product Base FR-010 头像回归测试用例库）
 
 | TC ID | Stage Scope ID | FR | Spec | AC | Traceability Row | Gap | 测试层级 | 自动化状态 | 测试脚本路径 | 执行命令 | 结果状态 | 证据报告 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TC-PB-FR010-001 | N/A - Product Base stable behavior | FR-010 | Flow-010 | AC-011 | Product Base traceability FR-010 row | XCB-003 hidden `/user/me/avatar` path and missing server-side `avatar_ref` update | integration | automated | `backend/src/test/java/com/speakeasy/AuthControllerTest.java` | `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AuthControllerTest test` | passed | `docs/reports/test_report.md#2026-06-10-product-base-profile-avatar-xcb-003-tests` |
-| TC-PB-FR010-002 | N/A - Product Base stable behavior | FR-010 | Flow-010 | AC-011 | Product Base traceability FR-010 row | Flutter profile edit updated local avatar but did not sync `avatar_ref` through `/user/me` | unit | automated | `test/application/session_profile_coordinator_test.dart`; `test/services/app_session_profile_avatar_sync_test.dart`; `test/services/api_client_contract_test.dart` | `flutter test test/application/session_profile_coordinator_test.dart test/services/app_session_profile_avatar_sync_test.dart test/services/api_client_contract_test.dart` | passed | `docs/reports/test_report.md#2026-06-10-product-base-profile-avatar-xcb-003-tests` |
-| TC-PB-FR010-003 | N/A - XCB-003 governance boundary for Product Base profile API | FR-010 | Flow-010; XCB-003 | AC-011 | Product Base traceability FR-010 row; `docs/process/cross_cutting_boundary_registry.md` XCB-003 | OpenAPI/generated boundary drift could allow hidden Flutter API paths | contract | automated | `docs/architecture/openapi/speakeasy-api.yaml`; `lib/generated/api/speakeasy_api.dart`; `scripts/check_openapi_dart_drift.py` | `npm run check:api-contract && npm run check:dart-client-drift` | passed | `docs/reports/test_report.md#2026-06-10-product-base-profile-avatar-xcb-003-tests` |
+| TC-PB-FR010-001 | N/A - Product Base stable behavior（Product Base 稳定行为） | FR-010 | Flow-010 | AC-011 | Product Base traceability FR-010 row（Product Base 追溯 FR-010 行） | XCB-003 hidden `/user/me/avatar` path and missing server-side `avatar_ref` update（XCB-003 暗藏 `/user/me/avatar` 路径且缺少服务端 `avatar_ref` 更新） | integration（集成） | automated（已自动化） | `backend/src/test/java/com/speakeasy/AuthControllerTest.java` | `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AuthControllerTest test` | passed（通过） | `docs/reports/test_report.md#2026-06-10-product-base-profile-avatar-xcb-003-tests` |
+| TC-PB-FR010-002 | N/A - Product Base stable behavior（Product Base 稳定行为） | FR-010 | Flow-010 | AC-011 | Product Base traceability FR-010 row（Product Base 追溯 FR-010 行） | Flutter profile edit updated local avatar but did not sync `avatar_ref` through `/user/me`（Flutter 资料编辑已更新本地头像，但没有通过 `/user/me` 同步 `avatar_ref`） | unit（单元） | automated（已自动化） | `test/application/session_profile_coordinator_test.dart`; `test/services/app_session_profile_avatar_sync_test.dart`; `test/services/api_client_contract_test.dart` | `flutter test test/application/session_profile_coordinator_test.dart test/services/app_session_profile_avatar_sync_test.dart test/services/api_client_contract_test.dart` | passed（通过） | `docs/reports/test_report.md#2026-06-10-product-base-profile-avatar-xcb-003-tests` |
+| TC-PB-FR010-003 | N/A - XCB-003 governance boundary for Product Base profile API（Product Base profile API 的 XCB-003 治理边界） | FR-010 | Flow-010; XCB-003 | AC-011 | Product Base traceability FR-010 row（Product Base 追溯 FR-010 行）; `docs/process/cross_cutting_boundary_registry.md` XCB-003 | OpenAPI/generated boundary drift could allow hidden Flutter API paths（OpenAPI/generated 边界漂移可能让隐藏 Flutter API path 进入实现） | contract（契约） | automated（已自动化） | `docs/architecture/openapi/speakeasy-api.yaml`; `lib/generated/api/speakeasy_api.dart`; `scripts/check_openapi_dart_drift.py` | `npm run check:api-contract && npm run check:dart-client-drift` | passed（通过） | `docs/reports/test_report.md#2026-06-10-product-base-profile-avatar-xcb-003-tests` |
 
-## Merge-Back Rule
-后续 increment 只有在实现、验收、追溯、测试和报告证据完整或例外已记录后，才能由 Product Manager 批准合并进 Product Base traceability。合并时必须保留来源 increment、关联 FR/AC、实现证据、测试证据、人工验收结果和非目标变化。
+## Merge-Back Rule（回并规则）
+后续 increment（增量）只有在实现、验收、追溯、测试和报告证据完整或例外已记录后，才能由 Product Manager 批准合并进 Product Base traceability（Product Base 追溯矩阵）。合并时必须保留来源 increment（增量）、关联 FR/AC、实现证据、测试证据、人工验收结果和非目标变化。

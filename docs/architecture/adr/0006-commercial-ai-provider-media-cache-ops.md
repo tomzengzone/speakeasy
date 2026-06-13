@@ -3,6 +3,8 @@
 ## 状态
 Accepted for `P0-AI-ARCH-001`。
 
+已接受，适用于 `P0-AI-ARCH-001`。
+
 ## Context
 `commercial-ai-provider-hardening` 需要在 paid AI voice 前关闭对象存储上传、持久化 TTS cache、真实 DashScope evidence、成本看板和生产数据策略缺口。现有 fake transport、进程内 TTS cache 和本地路径式 ASR 证据不能证明生产可用性。
 

@@ -40,6 +40,9 @@ description: Use when project documentation needs a workflow traceability audit 
 - `docs/product/features/*.md`
 - `docs/domain/*.md`
 - `docs/architecture/*.md`
+- `docs/architecture/software_component_architecture.md`
+- `docs/architecture/swc_catalog.md`
+- `docs/product/increments/<increment-id>/swc_allocation.md`
 - `docs/ai_runtime/*.md`
 - `docs/ux/*.md`
 - `docs/reports/*.md`
@@ -79,6 +82,9 @@ docs/product/mvp_scope.md
   -> docs/product/traceability_matrix.md
   -> docs/domain/<domain>_model.md
   -> docs/architecture/api_contract.md
+  -> docs/architecture/software_component_architecture.md
+  -> docs/architecture/swc_catalog.md
+  -> docs/product/increments/<increment-id>/swc_allocation.md when implementation-impacting
   -> docs/ai_runtime/prompt_contract.md
   -> docs/ux/screen_spec.md
   -> test/、backend/src/test/java/ 或 tests/
@@ -99,6 +105,8 @@ Stage Scope ID
   -> docs/product/increments/<increment-id>/acceptance.md
   -> docs/product/increments/<increment-id>/test_cases.md
   -> docs/product/increments/<increment-id>/traceability.md
+  -> docs/architecture/software_component_architecture.md / SWC-FLOW-* when implementation-impacting
+  -> docs/product/increments/<increment-id>/swc_allocation.md when implementation-impacting
   -> docs/domain/ 或 docs/architecture/ 或 docs/ai_runtime/ 或 docs/ux/ when applicable
   -> test/、backend/src/test/java/ 或 tests/
   -> docs/reports/implementation_report.md
@@ -106,7 +114,7 @@ Stage Scope ID
   -> docs/release/release_checklist.md when release scope is affected
 ```
 
-`100% traceability` for committed stage work means every required Stage Scope Item ID is covered by at least one increment or has an explicit deferred/not-applicable decision, every increment requirement traces back to at least one Stage Scope Item ID, every FR has at least one AC, every AC maps to stable TC IDs or explicit exceptions, every AC has code/test evidence or a documented exception once implementation has started, and release evidence exists when the increment affects release scope.
+`100% traceability` for committed stage work means every required Stage Scope Item ID is covered by at least one increment or has an explicit deferred/not-applicable decision, every increment requirement traces back to at least one Stage Scope Item ID, every FR has at least one AC, every AC maps to stable TC IDs or explicit exceptions, implementation-impacting ACs map to the global SWC architecture baseline/Flow ID and SWC allocation rows or explicit no-SWC-impact decisions, every AC has code/test evidence or a documented exception once implementation has started, and release evidence exists when the increment affects release scope.
 
 Increment Test Evidence review must verify:
 - every AC listed in increment acceptance appears in the increment test case library or has an allowed exception;
@@ -122,6 +130,7 @@ Increment Test Evidence review must verify:
 - `whole-app` 架构必须覆盖 Product Base、当前 APP baseline、feature registry、roadmap、development status、active stages、planned increments、future-stage boundaries 和 explicit non-goals。
 - 架构文档必须包含 feature/stage coverage matrix；每个 stable feature、active stage、planned increment 至少映射到 frontend、backend、data、API、AI/runtime、security、test、release 中的适用项或明确 `not applicable`。
 - 技术栈推荐必须能追溯到 requirements、constraints、trade-offs 和至少两个 viable options。没有 option comparison 的技术栈只能标记为 exploratory。
+- 代码实现前架构必须能追溯到全局 SWC 架构基准、SWC Catalog、increment SWC allocation、Existing Implementation Baseline 和 Delta From Existing Baseline；实现影响前端、后端、数据库、API、AI runtime、provider、复用模块或 server-owned facts 时，缺少 `docs/architecture/software_component_architecture.md`、`SWC-FLOW-*` 引用、`swc_allocation.md`、旧实现继承证据、delta-only 设计或明确 no-SWC-impact 决策，只能标记为 Blocked 或 Conditional。
 - ADR 只能记录通过 coverage gate 的重大决策；未覆盖全量范围的 ADR 不能作为全量架构 source of truth。
 - 架构输出如果缺少覆盖矩阵、遗漏范围说明、市场方案对比或下游契约缺口，结论必须是 `Blocked` 或 `Conditional`，不得标记为完整通过。
 
@@ -133,12 +142,15 @@ Increment Test Evidence review must verify:
 5. 当前 MVP 代码基线固化时，检查 AC 是否基于主需求文档、MVP scope、用户故事和实际代码证据；P0/新增功能时，检查 AC 是否以已批准 increment spec 为直接输入，并保留 Stage Scope Item IDs。
 6. 沿 workflow 检查是否存在 feature/increment spec、验收标准、强制追溯矩阵、相关契约、测试和报告。
 7. 检查新 increment 链路是否完整：每个 required Stage Scope ID 有 increment 覆盖或明确 deferred/not applicable；每个 FR 至少有 1 个 AC；每个 AC 反向引用 1 个或多个 FR 和上游 Stage Scope ID；每个 AC 映射到 stable TC ID 或明确例外；Code Evidence 不为空；Test Evidence 不为空或有明确例外。
-8. 对 increment Test Evidence 执行 `AC -> TC -> 测试脚本/执行命令/结果/证据报告 -> traceability Test Evidence` 复核；缺少 TC ID、脚本路径、执行命令、结果状态或证据报告时，不得通过完成审查。
-9. 检查 Product Base 链路时，检查 `FR -> User Story -> AC -> Code Evidence -> Test Evidence -> Status` 是否完整。
-10. 标记缺失、不适用、重复、过期或状态冲突。
-11. 检查 accepted/proposed/deferred 等状态是否和实际推进阶段一致。
-12. 输出断链清单和下一步建议；不直接生成缺失文档。
-13. 若修改 skill 或质量标准，运行 `python scripts/validate_agent_skills.py`。
+8. 对 implementation-impacting increment 检查 `swc_allocation.md`：每个受影响 FR/AC 是否映射到 FE SWC、BE SWC、API/OpenAPI、Domain Entity、DB Table/Migration、Provider/AI Boundary、TC 或明确 `N/A - <reason>`，并是否引用全局 SWC 架构基准和适用 `SWC-FLOW-*` ID。
+9. 对 brownfield/refactor increment 检查 Existing Implementation Baseline 和 Delta From Existing Baseline：是否列出现有用户流、代码路径、SWC、Flow ID、API、数据归属、测试、不可回归行为、复用 SWC/Flow、允许/禁止新增代码、允许修改旧代码、迁移/废弃和回归证明。
+10. 检查 SWC allocation gate evidence：implementation-impacting PR 是否运行或计划运行 `python3 scripts/check_swc_allocation.py --scope changed --base-ref <base-ref>`；若变更场景对话路径，是否引用 `SWC-FLOW-SCENARIO-PRACTICE-RUNTIME` 和 `FE-SCENARIO-PRACTICE` / `FE-PRACTICE-RUNTIME`。
+11. 对 increment Test Evidence 执行 `AC -> TC -> 测试脚本/执行命令/结果/证据报告 -> traceability Test Evidence` 复核；缺少 TC ID、脚本路径、执行命令、结果状态或证据报告时，不得通过完成审查。
+12. 检查 Product Base 链路时，检查 `FR -> User Story -> AC -> Code Evidence -> Test Evidence -> Status` 是否完整。
+13. 标记缺失、不适用、重复、过期或状态冲突。
+14. 检查 accepted/proposed/deferred 等状态是否和实际推进阶段一致。
+15. 输出断链清单和下一步建议；不直接生成缺失文档。
+16. 若修改 skill 或质量标准，运行 `python scripts/validate_agent_skills.py`。
 
 ## Red Flags
 - P0 或新增功能代码实现存在，但没有 feature spec 或验收标准；当前 MVP 反向固化任务必须显式标记为代码基线例外。
@@ -147,6 +159,12 @@ Increment Test Evidence review must verify:
 - 需求仍是 proposed，但下游已经按 accepted 实现。
 - acceptance criteria 没有对应测试或测试报告说明。
 - 测试阶段才开始定义 FR/AC 覆盖关系，而不是在 acceptance criteria 阶段建立。
+- 代码实现已经开始，但 implementation-impacting FR/AC 没有 `swc_allocation.md` 或 no-SWC-impact 决策。
+- implementation-impacting increment 没有引用全局 SWC 架构基准或适用 `SWC-FLOW-*`，局部 SWC flow 也没有 `one-off`、`proposed-global` 或 `legacy-compatible` 分类。
+- brownfield/refactor increment 缺少 Existing Implementation Baseline 或 Delta From Existing Baseline，导致后续设计没有基于已有功能和代码实现。
+- changed implementation path 没有被 owning `swc_allocation.md` 的旧实现基线、允许新增代码或允许修改旧代码覆盖。
+- SWC allocation 只写“前端实现/后端实现”，没有映射到具体 SWC、API/OpenAPI、Domain Entity、DB Table/Migration 和 TC。
+- SWC allocation 绕过现有 SWC 或 cross-cutting boundary，新增重复组件却没有迁移/废弃理由。
 - `FR`、`AC`、`Code Evidence` 或 `Test Evidence` 字段为空且无明确例外。
 - Stage scope is written only as bullets with no stable Stage Scope Item IDs for committed work.
 - Increment definition lacks `Covered Stage Scope Items`, or requirements/spec/AC drop those IDs downstream.
@@ -170,6 +188,8 @@ Increment Test Evidence review must verify:
 - Increment Test Evidence 复核确认 AC-to-TC mapping、script path、execution command、result status、evidence report 和 traceability Test Evidence 一致。
 - 架构检查已明确范围模式，并给出 coverage matrix 通过、条件通过或阻塞结论。
 - 全量架构没有把 future-stage、P1/P2 或商业发布门禁遗漏为隐性非目标。
+- Implementation-impacting increment 的全局 SWC 架构基准、`SWC-FLOW-*`、SWC allocation 覆盖受影响 FR/AC，且没有替代 Domain Schema、OpenAPI、AI runtime、UX、测试或发布 source of truth。
+- Brownfield/refactor increment 的 Existing Implementation Baseline、Delta From Existing Baseline 和 `scripts/check_swc_allocation.py` gate evidence 已覆盖受影响代码路径，防止另造轮子或不读旧方案。
 
 ## Common Rationalizations
 | Rationalization | Reality |

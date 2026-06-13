@@ -1,25 +1,25 @@
-# Product Base Spec
+# Product Base Spec（Product Base 规格）
 
 ## 状态
-Accepted - 当前文件是 Product Base 的稳定产品规格，描述已接受稳定行为如何被用户触发、观察和验收。本文不是 baseline 快照，也不是 P0.1 increment spec。
+Accepted（已接受） - 当前文件是 Product Base 的稳定产品规格，描述已接受稳定行为如何被用户触发、观察和验收。本文不是 baseline（基线）快照，也不是 P0.1 increment spec（增量规格）。
 
-## Owner
-Feature Spec Generate Skill
+## Owner（负责人）
+Feature Spec Generate Skill（功能规格生成技能）
 
 ## 上游输入
-- Product Base requirements: `docs/product/base/requirements.md`
-- MVP scope: `docs/product/mvp_scope.md`
-- Legacy MVP requirements source: `docs/product/features/mvp-learning-loop-requirements.md`
-- Feature registry: `docs/product/feature_registry.md`
-- Current app evidence: existing Flutter pages, services, assets, local storage, and tests referenced in Product Base traceability.
+- Product Base requirements（Product Base 需求）: `docs/product/base/requirements.md`
+- MVP scope（MVP 范围）: `docs/product/mvp_scope.md`
+- Legacy MVP requirements source（MVP 历史需求来源）: `docs/product/features/mvp-learning-loop-requirements.md`
+- Feature registry（功能登记表）: `docs/product/feature_registry.md`
+- Current app evidence（当前 App 证据）: existing Flutter pages, services, assets, local storage, and tests referenced in Product Base traceability（指 Product Base traceability 中引用的现有 Flutter 页面、服务、资产、本地存储和测试）。
 
 ## 明确排除
-- 不从 `docs/product/features/mvp-learning-loop-spec.md` 迁移 P0.1 planned behavior。
+- 不从 `docs/product/features/mvp-learning-loop-spec.md` 迁移 P0.1 planned behavior（计划行为）。
 - 不定义 `expression-automation-training` 的训练型 Agent、session planner、micro-action、hint ladder、action chain 或 pressure check。
 - 不定义 API request/response schema、LLM prompt schema、数据库字段、UI 布局或代码实现。
 
 ## 规格目标
-把当前已实现的官方职场场景学习闭环整理为可执行产品规格，使下游 acceptance、traceability、测试计划和后续 increment merge-back 都能引用同一个稳定行为源。
+把当前已实现的官方职场场景学习闭环整理为可执行产品规格，使下游 acceptance（验收标准）、traceability（追溯矩阵）、测试计划和后续 increment merge-back（增量回并）都能引用同一个稳定行为源。
 
 ## 稳定用户流程
 
@@ -165,7 +165,7 @@ Feature Spec Generate Skill
 | 我的与设置 | `lib/pages/profile_page.dart`, `lib/pages/edit_profile_page.dart`, `lib/application/profile/notification_preferences_coordinator.dart` |
 | 会员、报告、占位 | `lib/pages/membership_page.dart`, `lib/services/apple_payment_service.dart`, `lib/services/android_payment_service.dart`, `lib/pages/learning_report_page.dart`, `lib/pages/offline_content_page.dart`, `lib/pages/achievements_page.dart` |
 
-## Requirement Mapping
+## Requirement Mapping（需求映射）
 | Requirement | Spec flows |
 | --- | --- |
 | FR-001 | Flow-001, Flow-002 |
@@ -180,11 +180,11 @@ Feature Spec Generate Skill
 | FR-010 | Flow-010 |
 | FR-011 | Flow-011 |
 
-## Acceptance Coverage Expectations
+## Acceptance Coverage Expectations（验收覆盖期望）
 - 每个 Flow 必须至少有一个可观察 acceptance criterion。
 - 每个 FR 必须至少追溯到一个 AC。
 - 每个 AC 必须能反向追溯到 FR，并具备 Code Evidence 与 Test Evidence，或明确记录人工验收、外部服务依赖、暂不可自动化。
-- Product Base traceability 应写入 `docs/product/base/traceability.md`。
+- Product Base traceability（Product Base 追溯）应写入 `docs/product/base/traceability.md`。
 
 ## 非目标
 - 不承诺任意场景生成。
@@ -199,6 +199,7 @@ Feature Spec Generate Skill
 - `docs/product/base/acceptance.md`
 - `docs/product/base/traceability.md`
 - `docs/reports/test_report.md` when executable or manual test evidence changes.
+- `docs/reports/test_report.md`：当可执行测试证据或人工测试证据发生变化时更新。
 
-## Merge-Back Rule
-后续 increment 只有在实现、验收、追溯、测试和报告证据完整或例外已记录后，才能由 Product Manager 批准合并进本文。合并时必须保留来源 increment、变更范围、验收证据和非目标变更。
+## Merge-Back Rule（回并规则）
+后续 increment（增量）只有在实现、验收、追溯、测试和报告证据完整或例外已记录后，才能由 Product Manager 批准合并进本文。合并时必须保留来源 increment（增量）、变更范围、验收证据和非目标变更。

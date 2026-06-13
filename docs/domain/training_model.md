@@ -3,6 +3,8 @@
 ## 状态
 Proposed - P0.1 Domain Gate Ready；2026-06-03 commercial production-hardening domain addendum added.
 
+状态：拟议；P0.1 Domain Gate 已准备就绪，并在 2026-06-03 增加 commercial production-hardening domain addendum。
+
 本文是 `p0-1-expression-automation-training` 的专项领域模型，用于关闭 `P01-GAP-001`。本文只定义领域对象、关系、生命周期、不变量和持久化边界，不定义 API request/response、不写数据库 migration、不实现 Flutter 或 backend 代码。
 
 ## Owning Product Object
@@ -155,6 +157,16 @@ Rules:
 | Evidence rule trace | Accepted evidence stores deterministic rule trace and source turn; rejected or merged duplicate candidates remain auditable but must not update final mastery projections. |
 | Media and AI pipeline | `TrainingTurn.audio_ref` must be a trusted backend media ref in production. Provider failures become typed fallback and must release or settle usage reservations according to auditable AI Gateway rules. |
 | Metrics and rollout | `TrainingMetricEvent` supports rollout, fallback, latency, completion and evidence-write health without storing sensitive payloads. Rollout gates must separate local pass, Product Base merge readiness and paid AI release readiness. |
+
+中文等价说明：
+
+- Training API source of truth：Product Base/production mode 必须在 server 持久化 authenticated `TrainingSession`、`TrainingTurn`、`PlannerDecision`、`HintState`、`TrainingRecap` 和 evidence handoff state。Local draft 可以恢复或同步，但没有 version 和 owner checks 时不得覆盖 accepted server facts。
+- Idempotency and authorization：创建 `TrainingTurn` 必须使用 idempotency key 加 session owner scope。Replay 不得重复创建 turns、evidence writes、usage charges、provider calls 或 metric events。
+- Versioned training content：`TrainingContentMapping` 将每个 session 关联到 reviewed `scenario_version_id`、`action_chain_version`、`step_key` 和 stable target expressions。Mapping drift 必须通过显式 migration、backward-compatible replay 或 blocked status 处理。
+- Planner replay：`PlannerDecision` 必须保存 rule version、normalized input snapshot refs、使用到的 AI candidate refs、selected next action、hint level 和 reason code，使 Backend/QA 能通过 fixtures 复现决策。
+- Evidence rule trace：Accepted evidence 必须保存 deterministic rule trace 和 source turn；rejected 或 merged duplicate candidates 仍可审计，但不得更新最终 mastery projections。
+- Media and AI pipeline：production 中 `TrainingTurn.audio_ref` 必须是可信 backend media ref。Provider failures 必须转成 typed fallback，并按照可审计的 AI Gateway rules release 或 settle usage reservations。
+- Metrics and rollout：`TrainingMetricEvent` 支持 rollout、fallback、latency、completion 和 evidence-write health，不保存 sensitive payloads。Rollout gates 必须区分 local pass、Product Base merge readiness 和 paid AI release readiness。
 
 ## Test And Contract Handoff
 

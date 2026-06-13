@@ -4,6 +4,8 @@
 
 Proposed - Domain Schema Baseline + P0/P0.1/P0.2 Extension companion document。
 
+状态：拟议；本文是 Domain Schema baseline 与 P0/P0.1/P0.2 扩展的 companion document。
+
 本文描述 Product Base accepted domain、P0 commercial extension、P0.1 training extension 和 P0.2 goal autopilot extension 的实体关系、ownership、cardinality 和跨域约束。本文不定义 API response shape，不写 database migration SQL，不修改 Flutter/backend 代码。
 
 ## Relationship Principles
@@ -157,6 +159,8 @@ flowchart LR
 
 Owning increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`。
 
+归属增量：`docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`。
+
 本节是 Followup-B 的 planned relationship contract。它定义后续 API/OpenAPI、UX、AI runtime 和 backend 实现输入，但不声明这些关系已在代码或数据库中实现。
 
 | From | Relationship | To | Cardinality | Owner / source of truth | Notes |
@@ -190,6 +194,8 @@ Owning increment: `docs/product/increments/p0-2-followup-b-autopilot-control-pla
 
 Owning increment: `docs/product/increments/mvp-backend-learning-memory/`.
 
+归属增量：`docs/product/increments/mvp-backend-learning-memory/`。
+
 | Implemented relationship | Evidence |
 | --- | --- |
 | User -> PracticeQueueItem -> TargetExpression | `/expressions/queue` returns joined-scenario expression tasks, stable target IDs, priority and explicit empty states. |
@@ -198,11 +204,23 @@ Owning increment: `docs/product/increments/mvp-backend-learning-memory/`.
 | LearningEvidence -> MasteryRecord / ReviewItem / SavedExpression / LearningHistoryEntry | Accepted evidence updates mastery, schedules review, saves a personal wiki entry, records history, and creates a follow-up queue item. |
 | LearningHistoryEntry deletion | `/learning/history/{history_entry_id}` soft-deletes history visibility without deleting saved wiki evidence. |
 
+中文等价说明：
+
+- `User -> PracticeQueueItem -> TargetExpression`：`/expressions/queue` 返回已加入场景的 expression tasks、稳定 target IDs、priority 和明确空状态。
+- `PracticeQueueItem -> ExpressionPracticeAttempt -> LearningEvidence`：`/expressions/tasks/{queue_item_id}/complete` 持久化 attempts，并把 high/low score 投影到 accepted learning evidence。
+- `User -> FavoriteExpression -> TargetExpression`：`/favorites/expressions` 按 user 和 stable target expression 保持幂等，delete 会从 active list 移除该项。
+- `LearningEvidence -> MasteryRecord / ReviewItem / SavedExpression / LearningHistoryEntry`：accepted evidence 会更新 mastery、安排 review、保存 personal wiki entry、记录 history，并创建 follow-up queue item。
+- `LearningHistoryEntry deletion`：`/learning/history/{history_entry_id}` 仅软删除 history visibility，不删除 saved wiki evidence。
+
 These implemented relationships close MVP-BE-GAP-006 for MVP-BE-TR-007 and MVP-BE-TR-010. P0.2 Followup-B planned relationships above do not change MVP implementation evidence status; backend implementation remains gated by contracts, code, tests and independent review.
+
+这些已实现关系关闭 MVP-BE-GAP-006，并覆盖 MVP-BE-TR-007 与 MVP-BE-TR-010。上方 P0.2 Followup-B planned relationships 不改变 MVP implementation evidence status；backend implementation 仍受 contracts、code、tests 和 independent review gate 约束。
 
 ## MVP Membership/Boundary Increment Relationships
 
 Owning increment: `docs/product/increments/mvp-backend-membership-boundary/`.
+
+归属增量：`docs/product/increments/mvp-backend-membership-boundary/`。
 
 | Implemented relationship | Evidence |
 | --- | --- |
@@ -212,7 +230,17 @@ Owning increment: `docs/product/increments/mvp-backend-membership-boundary/`.
 | AccountDeletionJob -> AuditLog | Completion or failure is auditable with redacted details and request id. |
 | User -> Membership boundary / placeholder facts | Membership, Android billing, report, offline content, and achievement endpoints return explicit MVP boundary states rather than implied commercial readiness. |
 
+中文等价说明：
+
+- `User -> AccountDeletionJob`：`DELETE /user/me` 为 authenticated user 创建并完成最新 deletion job。
+- `AccountDeletionJob -> AuthSession`：账号删除会撤销 user sessions；删除完成后，既有 access token 和 refresh token 都应失效。
+- `AccountDeletionJob -> Profile / Onboarding / Practice / Learning data`：用户自有 Product Base rows 被删除，account row 仅保留为 deleted identity marker。
+- `AccountDeletionJob -> AuditLog`：完成或失败都必须带 redacted details 和 request id，可被审计。
+- `User -> Membership boundary / placeholder facts`：Membership、Android billing、report、offline content 和 achievement endpoints 返回明确 MVP boundary states，而不是暗示 commercial readiness。
+
 These relationships close MVP-BE-GAP-008 and MVP-BE-GAP-009 for MVP-BE-TR-011 and MVP-BE-TR-012; complete commercial subscription, payment provider integration, paid reports, offline packages, and achievements remain deferred to their owning increments.
+
+这些关系关闭 MVP-BE-GAP-008 和 MVP-BE-GAP-009，并覆盖 MVP-BE-TR-011 与 MVP-BE-TR-012；完整 commercial subscription、payment provider integration、paid reports、offline packages 和 achievements 仍 deferred 到各自 owning increments。
 
 ## Deletion / Retention Relationship Rules
 

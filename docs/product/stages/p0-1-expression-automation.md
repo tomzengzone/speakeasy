@@ -1,7 +1,7 @@
 # P0.1 阶段范围：表达自动化训练闭环
 
 ## 状态
-Executed partial - P0.1 core Training Agent、本地 route integration 和 AI eval 已有执行证据；本阶段仍不是商业发布批准。2026-06-03 commercial software remediation 在同一 stage/increment 内新增 Product Base/production blocker `P01-GAP-009` through `P01-GAP-014`；P01-GAP-008 的真实 provider / object storage / paid AI release residual 由 `commercial-ai-provider-hardening` 和 P0 release gates 管理。
+Executed partial（部分已执行） - P0.1 core Training Agent（核心训练 Agent）、本地 route integration（路由集成）和 AI eval（AI 评测）已有执行证据；本阶段仍不是商业发布批准。2026-06-03 commercial software remediation（商业软件整改）在同一 stage/increment（阶段/增量）内新增 Product Base/production blocker（Product Base/生产阻断项）`P01-GAP-009` through（至） `P01-GAP-014`；P01-GAP-008 的真实 provider / object storage / paid AI release residual（真实 provider、对象存储和付费 AI 发布遗留项）由 `commercial-ai-provider-hardening` 和 P0 release gates（发布门禁）管理。
 
 ## 阶段目标
 在当前 Product Base 稳定能力之上，把现有语音场景模拟升级为训练型 Agent：用户只完成听一句、选一个、回一句、跟一句、补一句、在追问下继续说等小动作；agent 在 session 内接管训练组织、节奏控制、难度拆解、重复推进、即时反馈和轻量场景施压。
@@ -27,22 +27,22 @@ Executed partial - P0.1 core Training Agent、本地 route integration 和 AI ev
 - 发音评分进入反馈，但不作为唯一通关条件。
 - 每轮训练写回学习证据。
 
-## Stage Scope Items
-Current status 以 `p0-1-expression-automation-training/traceability.md`、`test_cases.md` 和 `docs/reports/test_report.md` 的最新证据为准；`local passed` 不等于商业发布 ready。2026-06-03 商业软件整改不新增 stage，而是在本 stage 的 `p0-1-expression-automation-training` increment 内追踪后端 Training API/source-of-truth、证据治理、内容版本、真实媒体/AI pipeline、planner 审计和 rollout gates。
+## Stage Scope Items（阶段范围项）
+Current status（当前状态）以 `p0-1-expression-automation-training/traceability.md`、`test_cases.md` 和 `docs/reports/test_report.md` 的最新证据为准；`local passed`（本地通过）不等于商业发布 ready（就绪）。2026-06-03 商业软件整改不新增 stage（阶段），而是在本 stage（阶段）的 `p0-1-expression-automation-training` increment（增量）内追踪后端 Training API/source-of-truth（训练 API/事实源）、证据治理、内容版本、真实媒体/AI pipeline（流水线）、planner（规划器）审计和 rollout gates（发布门禁）。
 
 | Stage Scope ID | Capability / obligation | Required status | Target increment | Current status |
 | --- | --- | --- | --- | --- |
-| P01-SI-001 | 以 `job_interview` 和 `onboarding_introduction` 两个官方场景验证 P0.1 训练 | required | `p0-1-expression-automation-training` | Implemented / local integration passed |
-| P01-SI-002 | 引入 session 内训练 planner | required | `p0-1-expression-automation-training` | Core implemented / local integration passed |
-| P01-SI-003 | 引入 action chain | required | `p0-1-expression-automation-training` | Core implemented / local tests passed |
-| P01-SI-004 | 引入 micro-action flow | required | `p0-1-expression-automation-training` | Core implemented / local integration passed |
-| P01-SI-005 | 引入 hint ladder | required | `p0-1-expression-automation-training` | Core implemented / local tests passed |
-| P01-SI-006 | 引入 in-session pressure check | required | `p0-1-expression-automation-training` | Core implemented / local integration passed |
-| P01-SI-007 | 语音作为主路径，文本作为 ASR 失败、麦克风拒绝或调试兜底 | required | `p0-1-expression-automation-training` | Core implemented / local tests passed；real provider release residual tracked by P0 paid AI gates |
-| P01-SI-008 | 发音评分进入反馈，但不作为唯一通关条件 | required | `p0-1-expression-automation-training` | Core implemented / AI eval passed；real provider release residual tracked by P0 paid AI gates |
-| P01-SI-009 | 每轮训练写回学习证据 | required | `p0-1-expression-automation-training` | Core implemented / local integration passed；server sync not required for local route |
-| P01-SI-010 | P0.1 非目标边界守护：不把 P0.2/P1/P2 范围标记为 P0.1 完成 | required | `p0-1-expression-automation-training` | Boundary guard implemented / local integration passed |
-| P01-SI-011 | 外部服务、音频、ASR、LLM、评分或写回失败时提供可恢复路径 | required | `p0-1-expression-automation-training` | Core implemented / AI eval passed；provider/storage release residual tracked by P0 paid AI gates |
+| P01-SI-001 | 以 `job_interview` 和 `onboarding_introduction` 两个官方场景验证 P0.1 训练 | required（必需） | `p0-1-expression-automation-training` | Implemented / local integration passed（已实现 / 本地集成通过） |
+| P01-SI-002 | 引入 session 内训练 planner | required（必需） | `p0-1-expression-automation-training` | Core implemented / local integration passed（核心已实现 / 本地集成通过） |
+| P01-SI-003 | 引入 action chain | required（必需） | `p0-1-expression-automation-training` | Core implemented / local tests passed（核心已实现 / 本地测试通过） |
+| P01-SI-004 | 引入 micro-action flow | required（必需） | `p0-1-expression-automation-training` | Core implemented / local integration passed（核心已实现 / 本地集成通过） |
+| P01-SI-005 | 引入 hint ladder | required（必需） | `p0-1-expression-automation-training` | Core implemented / local tests passed（核心已实现 / 本地测试通过） |
+| P01-SI-006 | 引入 in-session pressure check | required（必需） | `p0-1-expression-automation-training` | Core implemented / local integration passed（核心已实现 / 本地集成通过） |
+| P01-SI-007 | 语音作为主路径，文本作为 ASR 失败、麦克风拒绝或调试兜底 | required（必需） | `p0-1-expression-automation-training` | Core implemented / local tests passed（核心已实现 / 本地测试通过）；real provider release residual tracked by P0 paid AI gates（真实 provider 发布遗留项由 P0 付费 AI 门禁追踪） |
+| P01-SI-008 | 发音评分进入反馈，但不作为唯一通关条件 | required（必需） | `p0-1-expression-automation-training` | Core implemented / AI eval passed（核心已实现 / AI 评测通过）；real provider release residual tracked by P0 paid AI gates（真实 provider 发布遗留项由 P0 付费 AI 门禁追踪） |
+| P01-SI-009 | 每轮训练写回学习证据 | required（必需） | `p0-1-expression-automation-training` | Core implemented / local integration passed（核心已实现 / 本地集成通过）；server sync not required for local route（本地路线不要求服务端同步） |
+| P01-SI-010 | P0.1 非目标边界守护：不把 P0.2/P1/P2 范围标记为 P0.1 完成 | required（必需） | `p0-1-expression-automation-training` | Boundary guard implemented / local integration passed（边界守护已实现 / 本地集成通过） |
+| P01-SI-011 | 外部服务、音频、ASR、LLM、评分或写回失败时提供可恢复路径 | required（必需） | `p0-1-expression-automation-training` | Core implemented / AI eval passed（核心已实现 / AI 评测通过）；provider/storage release residual tracked by P0 paid AI gates（provider/storage 发布遗留项由 P0 付费 AI 门禁追踪） |
 
 ## 阶段非目标
 - 不新增第三个官方场景。
@@ -54,10 +54,10 @@ Current status 以 `p0-1-expression-automation-training/traceability.md`、`test
 - 不把完整评分体系、学习报告或商业权益 gating 作为 P0.1 阻塞项。
 
 ## 纳入 increment
-- `p0-1-expression-automation-training`：表达自动化训练 Agent 增量。
+- `p0-1-expression-automation-training`：表达自动化训练 Agent increment（增量）。
 
 ## 出口条件
-- P0.1 increment definition、requirements、spec、acceptance、traceability 均存在或明确不适用。
-- 必要的 domain/API/AI/UX contract 已完成或记录不适用原因。
-- 实现计划、代码、测试、实现报告和质量报告能追踪到 P0.1 increment。
+- P0.1 increment definition、requirements、spec、acceptance、traceability（增量定义、需求、规格、验收标准和追溯矩阵）均存在或明确不适用。
+- 必要的 domain/API/AI/UX contract（领域/API/AI/UX 契约）已完成或记录不适用原因。
+- 实现计划、代码、测试、实现报告和质量报告能追踪到 P0.1 increment（增量）。
 - 不把 P0.2/P1/P2 范围误标为 P0.1 完成。

@@ -1,16 +1,16 @@
 # MVP 阶段范围：后端与数据库全量补齐
 
 ## 状态
-Validated with local system E2E gate - MVP backend-first stage 已完成六个 implementation increment 的实现、测试和 release evidence 闭环；本地系统级黑盒验证作为 `MVP-SI-014` 的测试能力加固已通过 TC-MVP-E2E-001 到 TC-MVP-E2E-010，真实支付 provider 保留外部门禁。
+Validated with local system E2E gate（已通过本地系统 E2E 门禁验证） - MVP backend-first stage（后端优先阶段）已完成六个 implementation increment（实现增量）的实现、测试和 release evidence（发布证据）闭环；本地系统级黑盒验证作为 `MVP-SI-014` 的测试能力加固已通过 TC-MVP-E2E-001 到 TC-MVP-E2E-010，真实支付 provider（提供方）保留外部门禁。
 
-## Version / Status
+## Version / Status（版本 / 状态）
 | Version | Date | Status | Change |
 | --- | --- | --- | --- |
-| v0.1 | 2026-05-28 | Draft | 建立 MVP 从 roadmap 到 stage scope 到 increments 的后端优先全量分解。 |
-| v1.0 | 2026-05-29 | Validated | MVP-SI-001 到 MVP-SI-014 均通过 increment traceability、code/test/report/release evidence 或明确例外闭环。 |
-| v1.1 | 2026-05-29 | Hardening | 新增 `mvp-system-e2e-validation`，补齐电脑端 Flutter + backend + PostgreSQL 系统 E2E 验证链路。 |
-| v1.2 | 2026-05-29 | Validated | `mvp-system-e2e-validation` TC-MVP-E2E-001 到 TC-MVP-E2E-005 已自动化并通过，TC-MVP-E2E-006 到 TC-MVP-E2E-010 保留为深度系统回归 backlog/外部例外。 |
-| v1.3 | 2026-05-29 | Validated | `mvp-system-e2e-validation` TC-MVP-E2E-006 到 TC-MVP-E2E-010 已自动化并通过；真实支付 provider 保留 manual/external gate。 |
+| v0.1 | 2026-05-28 | Draft（草稿） | 建立 MVP 从 roadmap 到 stage scope 到 increments 的后端优先全量分解。 |
+| v1.0 | 2026-05-29 | Validated（已验证） | MVP-SI-001 到 MVP-SI-014 均通过 increment traceability、code/test/report/release evidence 或明确例外闭环。 |
+| v1.1 | 2026-05-29 | Hardening（加固中） | 新增 `mvp-system-e2e-validation`，补齐电脑端 Flutter + backend + PostgreSQL 系统 E2E 验证链路。 |
+| v1.2 | 2026-05-29 | Validated（已验证） | `mvp-system-e2e-validation` TC-MVP-E2E-001 到 TC-MVP-E2E-005 已自动化并通过，TC-MVP-E2E-006 到 TC-MVP-E2E-010 保留为深度系统回归 backlog（待办）/外部例外。 |
+| v1.3 | 2026-05-29 | Validated（已验证） | `mvp-system-e2e-validation` TC-MVP-E2E-006 到 TC-MVP-E2E-010 已自动化并通过；真实支付 provider（提供方）保留 manual/external gate（人工/外部门禁）。 |
 
 ## 阶段目标
 把 Product Base 已接受的 MVP 学习闭环从当前本地/前端优先状态补齐为可上线演进的服务端事实：账号、首评、官方场景、练习会话、AI/语音网关、学习证据、会员边界、OpenAPI client、测试和发布证据都必须具备后端/API/数据库承接。
@@ -33,70 +33,70 @@ Validated with local system E2E gate - MVP backend-first stage 已完成六个 i
 - MVP 会员边界、账号删除和云端学习数据处理；不等同于完整商业化订阅上线。
 - OpenAPI 与 Flutter generated/client integration、契约测试、后端测试、端到端证据和 release readiness。
 
-## Stage Scope Items
+## Stage Scope Items（阶段范围项）
 | Stage Scope ID | Capability / obligation | Required status | Target increment | Current status |
 | --- | --- | --- | --- | --- |
-| MVP-SI-001 | 后端 runtime、PostgreSQL、Flyway migration、统一响应和错误模型 | required | `mvp-backend-foundation-auth` | Done |
-| MVP-SI-002 | Auth/session/current user/profile 后端事实和 token 生命周期 | required | `mvp-backend-foundation-auth` | Done |
-| MVP-SI-003 | 首评 assessment、学习路线和 Product Base 场景映射持久化 | required | `mvp-backend-onboarding-content` | Done |
-| MVP-SI-004 | 官方场景、版本、等级、target expressions 和内容种子/API | required | `mvp-backend-onboarding-content` | Done |
-| MVP-SI-005 | 加入/移除/当前场景、首页学习状态和下一步建议的服务端承接 | required | `mvp-backend-onboarding-content` | Done |
-| MVP-SI-006 | TTS、ASR、pronunciation、LLM feedback 网关与 provider secret 后端边界 | required | `mvp-backend-practice-ai` | Done |
-| MVP-SI-007 | 推荐表达队列、复习、收藏和表达任务进度的服务端承接 | required | `mvp-backend-learning-memory` | Done |
-| MVP-SI-008 | Practice session lifecycle：start/resume/get/turn/complete/recovery | required | `mvp-backend-practice-ai` | Done |
-| MVP-SI-009 | Coach feedback、message assistance、score signal 和可恢复失败 | required | `mvp-backend-practice-ai` | Done |
-| MVP-SI-010 | Learning evidence、summary、mastery、weakness、history 和 personal wiki | required | `mvp-backend-learning-memory` | Done |
-| MVP-SI-011 | Account deletion、云端学习数据删除/匿名化和审计边界 | required | `mvp-backend-membership-boundary` | Done |
-| MVP-SI-012 | MVP membership/report/placeholder boundary 的服务端事实和非商业化限制 | required | `mvp-backend-membership-boundary` | Done |
-| MVP-SI-013 | OpenAPI 对齐、generated Dart client、Flutter integration 和 endpoint drift 清理 | required | `mvp-backend-client-qa-release` | Done with documented exceptions |
-| MVP-SI-014 | 后端测试、契约测试、Flutter integration/e2e、报告和 release evidence | required | `mvp-backend-client-qa-release` | Done |
+| MVP-SI-001 | 后端 runtime、PostgreSQL、Flyway migration、统一响应和错误模型 | required（必需） | `mvp-backend-foundation-auth` | Done（已完成） |
+| MVP-SI-002 | Auth/session/current user/profile 后端事实和 token 生命周期 | required（必需） | `mvp-backend-foundation-auth` | Done（已完成） |
+| MVP-SI-003 | 首评 assessment、学习路线和 Product Base 场景映射持久化 | required（必需） | `mvp-backend-onboarding-content` | Done（已完成） |
+| MVP-SI-004 | 官方场景、版本、等级、target expressions 和内容种子/API | required（必需） | `mvp-backend-onboarding-content` | Done（已完成） |
+| MVP-SI-005 | 加入/移除/当前场景、首页学习状态和下一步建议的服务端承接 | required（必需） | `mvp-backend-onboarding-content` | Done（已完成） |
+| MVP-SI-006 | TTS、ASR、pronunciation、LLM feedback 网关与 provider secret 后端边界 | required（必需） | `mvp-backend-practice-ai` | Done（已完成） |
+| MVP-SI-007 | 推荐表达队列、复习、收藏和表达任务进度的服务端承接 | required（必需） | `mvp-backend-learning-memory` | Done（已完成） |
+| MVP-SI-008 | Practice session lifecycle：start/resume/get/turn/complete/recovery | required（必需） | `mvp-backend-practice-ai` | Done（已完成） |
+| MVP-SI-009 | Coach feedback、message assistance、score signal 和可恢复失败 | required（必需） | `mvp-backend-practice-ai` | Done（已完成） |
+| MVP-SI-010 | Learning evidence、summary、mastery、weakness、history 和 personal wiki | required（必需） | `mvp-backend-learning-memory` | Done（已完成） |
+| MVP-SI-011 | Account deletion、云端学习数据删除/匿名化和审计边界 | required（必需） | `mvp-backend-membership-boundary` | Done（已完成） |
+| MVP-SI-012 | MVP membership/report/placeholder boundary 的服务端事实和非商业化限制 | required（必需） | `mvp-backend-membership-boundary` | Done（已完成） |
+| MVP-SI-013 | OpenAPI 对齐、generated Dart client、Flutter integration 和 endpoint drift 清理 | required（必需） | `mvp-backend-client-qa-release` | Done with documented exceptions（已完成，有记录例外） |
+| MVP-SI-014 | 后端测试、契约测试、Flutter integration/e2e、报告和 release evidence | required（必需） | `mvp-backend-client-qa-release` | Done（已完成） |
 
 ## Increment 分解
 | Increment ID | Lifecycle status | Covered Stage Scope Items | Primary output |
 | --- | --- | --- | --- |
-| `mvp-backend-foundation-auth` | Done | MVP-SI-001, MVP-SI-002 | 后端运行时、DB migration、认证/session/current user/profile 基础。 |
-| `mvp-backend-onboarding-content` | Done | MVP-SI-003, MVP-SI-004, MVP-SI-005 | 首评、学习路线、官方场景内容和首页状态 API。 |
-| `mvp-backend-practice-ai` | Done | MVP-SI-006, MVP-SI-008, MVP-SI-009 | 练习 session、AI/语音 provider 网关、反馈和恢复。 |
-| `mvp-backend-learning-memory` | Done | MVP-SI-007, MVP-SI-010 | 推荐表达、收藏、复习、学习证据和记忆沉淀。 |
-| `mvp-backend-membership-boundary` | Done | MVP-SI-011, MVP-SI-012 | MVP 账号删除、学习数据处理、会员/报告边界。 |
-| `mvp-backend-client-qa-release` | Done | MVP-SI-013, MVP-SI-014 | OpenAPI/Dart client/frontend integration、测试和发布证据。 |
-| `mvp-system-e2e-validation` | Validated local system gate | MVP-SI-014 | 本地电脑端 Flutter UI + Spring Boot backend + 真实 PostgreSQL 系统 E2E 用例库、脚本和证据加固；TC-MVP-E2E-001 到 TC-MVP-E2E-010 已通过，真实支付 provider 保留外部门禁。 |
+| `mvp-backend-foundation-auth` | Done（已完成） | MVP-SI-001, MVP-SI-002 | 后端运行时、DB migration、认证/session/current user/profile 基础。 |
+| `mvp-backend-onboarding-content` | Done（已完成） | MVP-SI-003, MVP-SI-004, MVP-SI-005 | 首评、学习路线、官方场景内容和首页状态 API。 |
+| `mvp-backend-practice-ai` | Done（已完成） | MVP-SI-006, MVP-SI-008, MVP-SI-009 | 练习 session、AI/语音 provider 网关、反馈和恢复。 |
+| `mvp-backend-learning-memory` | Done（已完成） | MVP-SI-007, MVP-SI-010 | 推荐表达、收藏、复习、学习证据和记忆沉淀。 |
+| `mvp-backend-membership-boundary` | Done（已完成） | MVP-SI-011, MVP-SI-012 | MVP 账号删除、学习数据处理、会员/报告边界。 |
+| `mvp-backend-client-qa-release` | Done（已完成） | MVP-SI-013, MVP-SI-014 | OpenAPI/Dart client/frontend integration、测试和发布证据。 |
+| `mvp-system-e2e-validation` | Validated local system gate（本地系统门禁已验证） | MVP-SI-014 | 本地电脑端 Flutter UI + Spring Boot backend + 真实 PostgreSQL 系统 E2E 用例库、脚本和证据加固；TC-MVP-E2E-001 到 TC-MVP-E2E-010 已通过，真实支付 provider 保留外部门禁。 |
 
-## Stage Traceability Matrix
+## Stage Traceability Matrix（阶段追溯矩阵）
 | Stage Scope ID | Increment ID | Requirement ID | Spec ID | Acceptance Criteria ID | Traceability Row ID | Status | Gap |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| MVP-SI-001 | `mvp-backend-foundation-auth` | MVP-BE-FR-001 | MVP-BE-SPEC-001 | AC-MVP-BE-001 | MVP-BE-TR-001 | Done | Closed |
-| MVP-SI-002 | `mvp-backend-foundation-auth` | MVP-BE-FR-002 | MVP-BE-SPEC-002 | AC-MVP-BE-002 | MVP-BE-TR-002 | Done | Closed |
-| MVP-SI-003 | `mvp-backend-onboarding-content` | MVP-BE-FR-003 | MVP-BE-SPEC-003 | AC-MVP-BE-003 | MVP-BE-TR-003 | Done | Closed |
-| MVP-SI-004 | `mvp-backend-onboarding-content` | MVP-BE-FR-004 | MVP-BE-SPEC-004 | AC-MVP-BE-004 | MVP-BE-TR-004 | Done | Closed |
-| MVP-SI-005 | `mvp-backend-onboarding-content` | MVP-BE-FR-005 | MVP-BE-SPEC-005 | AC-MVP-BE-005 | MVP-BE-TR-005 | Done | Closed |
-| MVP-SI-006 | `mvp-backend-practice-ai` | MVP-BE-FR-006 | MVP-BE-SPEC-006 | AC-MVP-BE-006 | MVP-BE-TR-006 | Done | Closed |
-| MVP-SI-007 | `mvp-backend-learning-memory` | MVP-BE-FR-007 | MVP-BE-SPEC-007 | AC-MVP-BE-007 | MVP-BE-TR-007 | Done | Closed |
-| MVP-SI-008 | `mvp-backend-practice-ai` | MVP-BE-FR-008 | MVP-BE-SPEC-008 | AC-MVP-BE-008 | MVP-BE-TR-008 | Done | Closed |
-| MVP-SI-009 | `mvp-backend-practice-ai` | MVP-BE-FR-009 | MVP-BE-SPEC-009 | AC-MVP-BE-009 | MVP-BE-TR-009 | Done | Closed |
-| MVP-SI-010 | `mvp-backend-learning-memory` | MVP-BE-FR-010 | MVP-BE-SPEC-010 | AC-MVP-BE-010 | MVP-BE-TR-010 | Done | Closed |
-| MVP-SI-011 | `mvp-backend-membership-boundary` | MVP-BE-FR-011 | MVP-BE-SPEC-011 | AC-MVP-BE-011 | MVP-BE-TR-011 | Done | Closed |
-| MVP-SI-012 | `mvp-backend-membership-boundary` | MVP-BE-FR-012 | MVP-BE-SPEC-012 | AC-MVP-BE-012 | MVP-BE-TR-012 | Done | Closed |
-| MVP-SI-013 | `mvp-backend-client-qa-release` | MVP-BE-FR-013 | MVP-BE-SPEC-013 | AC-MVP-BE-013 | MVP-BE-TR-013 | Done with documented exceptions | Closed |
-| MVP-SI-014 | `mvp-backend-client-qa-release` | MVP-BE-FR-014 | MVP-BE-SPEC-014 | AC-MVP-BE-014 | MVP-BE-TR-014 | Done | Closed |
-| MVP-SI-014 | `mvp-system-e2e-validation` | MVP-E2E-FR-001..004 | MVP-E2E-SPEC-001..004 | AC-MVP-E2E-001..004 | MVP-E2E-TR-001..004 | Validated local system gate | MVP-E2E-GAP-001..007 closed; MVP-E2E-GAP-008 accepted external payment exception |
+| MVP-SI-001 | `mvp-backend-foundation-auth` | MVP-BE-FR-001 | MVP-BE-SPEC-001 | AC-MVP-BE-001 | MVP-BE-TR-001 | Done（已完成） | Closed（已关闭） |
+| MVP-SI-002 | `mvp-backend-foundation-auth` | MVP-BE-FR-002 | MVP-BE-SPEC-002 | AC-MVP-BE-002 | MVP-BE-TR-002 | Done（已完成） | Closed（已关闭） |
+| MVP-SI-003 | `mvp-backend-onboarding-content` | MVP-BE-FR-003 | MVP-BE-SPEC-003 | AC-MVP-BE-003 | MVP-BE-TR-003 | Done（已完成） | Closed（已关闭） |
+| MVP-SI-004 | `mvp-backend-onboarding-content` | MVP-BE-FR-004 | MVP-BE-SPEC-004 | AC-MVP-BE-004 | MVP-BE-TR-004 | Done（已完成） | Closed（已关闭） |
+| MVP-SI-005 | `mvp-backend-onboarding-content` | MVP-BE-FR-005 | MVP-BE-SPEC-005 | AC-MVP-BE-005 | MVP-BE-TR-005 | Done（已完成） | Closed（已关闭） |
+| MVP-SI-006 | `mvp-backend-practice-ai` | MVP-BE-FR-006 | MVP-BE-SPEC-006 | AC-MVP-BE-006 | MVP-BE-TR-006 | Done（已完成） | Closed（已关闭） |
+| MVP-SI-007 | `mvp-backend-learning-memory` | MVP-BE-FR-007 | MVP-BE-SPEC-007 | AC-MVP-BE-007 | MVP-BE-TR-007 | Done（已完成） | Closed（已关闭） |
+| MVP-SI-008 | `mvp-backend-practice-ai` | MVP-BE-FR-008 | MVP-BE-SPEC-008 | AC-MVP-BE-008 | MVP-BE-TR-008 | Done（已完成） | Closed（已关闭） |
+| MVP-SI-009 | `mvp-backend-practice-ai` | MVP-BE-FR-009 | MVP-BE-SPEC-009 | AC-MVP-BE-009 | MVP-BE-TR-009 | Done（已完成） | Closed（已关闭） |
+| MVP-SI-010 | `mvp-backend-learning-memory` | MVP-BE-FR-010 | MVP-BE-SPEC-010 | AC-MVP-BE-010 | MVP-BE-TR-010 | Done（已完成） | Closed（已关闭） |
+| MVP-SI-011 | `mvp-backend-membership-boundary` | MVP-BE-FR-011 | MVP-BE-SPEC-011 | AC-MVP-BE-011 | MVP-BE-TR-011 | Done（已完成） | Closed（已关闭） |
+| MVP-SI-012 | `mvp-backend-membership-boundary` | MVP-BE-FR-012 | MVP-BE-SPEC-012 | AC-MVP-BE-012 | MVP-BE-TR-012 | Done（已完成） | Closed（已关闭） |
+| MVP-SI-013 | `mvp-backend-client-qa-release` | MVP-BE-FR-013 | MVP-BE-SPEC-013 | AC-MVP-BE-013 | MVP-BE-TR-013 | Done with documented exceptions（已完成，有记录例外） | Closed（已关闭） |
+| MVP-SI-014 | `mvp-backend-client-qa-release` | MVP-BE-FR-014 | MVP-BE-SPEC-014 | AC-MVP-BE-014 | MVP-BE-TR-014 | Done（已完成） | Closed（已关闭） |
+| MVP-SI-014 | `mvp-system-e2e-validation` | MVP-E2E-FR-001..004 | MVP-E2E-SPEC-001..004 | AC-MVP-E2E-001..004 | MVP-E2E-TR-001..004 | Validated local system gate（本地系统门禁已验证） | MVP-E2E-GAP-001..007 closed（已关闭）; MVP-E2E-GAP-008 accepted external payment exception（已接受外部支付例外） |
 
-## Gap Register
+## Gap Register（缺口登记）
 | Gap ID | Gap | Owner / next route | Status |
 | --- | --- | --- | --- |
-| MVP-BE-GAP-001 | Foundation 已有 backend skeleton/migration/tests，但需确认 Product Base 全量 schema、统一 DTO 和错误模型覆盖。 | Backend + QA | Closed 2026-05-29 |
-| MVP-BE-GAP-002 | Auth endpoints 已有部分实现，但 Flutter client endpoint drift、生产登录策略和 current user/profile 覆盖需补齐。 | Backend + Frontend + QA | Closed 2026-05-29 |
-| MVP-BE-GAP-003 | 首评、learning route、official scenario content 有 schema 或 OpenAPI，但缺完整 controller/service/seed/versioning。 | Backend + Domain Schema | Closed 2026-05-29 |
-| MVP-BE-GAP-004 | 加入/移除/当前场景、首页学习状态和下一步建议仍主要由前端/本地状态承接。 | Backend + Frontend | Closed 2026-05-29 |
-| MVP-BE-GAP-005 | AI/ASR/TTS/pronunciation provider 网关、secret 边界、重试和失败兜底未完成。 | Backend + AI Runtime + Security | Closed 2026-05-29 |
-| MVP-BE-GAP-006 | 推荐表达、收藏、复习、learning evidence、mastery、history 和 personal wiki 缺服务端持久化闭环。 | Backend + Domain Schema + QA | Closed 2026-05-29 |
-| MVP-BE-GAP-007 | Practice session/turn/complete/recovery API 未实现，教练反馈 schema 与持久化证据未闭环。 | Backend + AI Runtime + QA | Closed 2026-05-29 |
-| MVP-BE-GAP-008 | 账号删除已有 foundation，但缺 Product Base 学习数据删除/匿名化完整执行和验收证据。 | Backend + Security + QA | Closed 2026-05-29 |
-| MVP-BE-GAP-009 | 会员/报告/占位页只需 MVP 边界事实，不应误升级为完整商业订阅；需防止与 P0 商业化 scope 混淆。 | Product Manager + Backend + Frontend | Closed 2026-05-29 |
-| MVP-BE-GAP-010 | OpenAPI 与 Flutter 现有 API client 存在 drift，缺 generated Dart client 或等效强约束。 | Frontend + Backend + QA | Closed 2026-05-29 |
-| MVP-BE-GAP-011 | 后端测试、契约测试、Flutter integration/e2e、implementation report 和 quality report 尚未覆盖本 stage 全量。 | QA + Development Orchestrator | Closed 2026-05-29 |
-| MVP-E2E-GAP-001..004 | 本地系统级黑盒验证能力加固：真实 PostgreSQL + backend + Flutter integration test、Product Base AC 覆盖审计、证据报告。 | QA + Development Orchestrator | Closed 2026-05-29 in `mvp-system-e2e-validation` |
-| MVP-E2E-GAP-005..008 | 场景目录/听力/学习记忆、语音模拟/反馈、profile/settings/session persistence 和真实支付 provider 的深度系统回归或外部例外。 | Frontend + Backend + QA + Product | GAP-005..007 Closed 2026-05-29; GAP-008 accepted external payment exception |
+| MVP-BE-GAP-001 | Foundation 已有 backend skeleton/migration/tests，但需确认 Product Base 全量 schema、统一 DTO 和错误模型覆盖。 | Backend + QA | Closed（已关闭） 2026-05-29 |
+| MVP-BE-GAP-002 | Auth endpoints 已有部分实现，但 Flutter client endpoint drift、生产登录策略和 current user/profile 覆盖需补齐。 | Backend + Frontend + QA | Closed（已关闭） 2026-05-29 |
+| MVP-BE-GAP-003 | 首评、learning route、official scenario content 有 schema 或 OpenAPI，但缺完整 controller/service/seed/versioning。 | Backend + Domain Schema | Closed（已关闭） 2026-05-29 |
+| MVP-BE-GAP-004 | 加入/移除/当前场景、首页学习状态和下一步建议仍主要由前端/本地状态承接。 | Backend + Frontend | Closed（已关闭） 2026-05-29 |
+| MVP-BE-GAP-005 | AI/ASR/TTS/pronunciation provider 网关、secret 边界、重试和失败兜底未完成。 | Backend + AI Runtime + Security | Closed（已关闭） 2026-05-29 |
+| MVP-BE-GAP-006 | 推荐表达、收藏、复习、learning evidence、mastery、history 和 personal wiki 缺服务端持久化闭环。 | Backend + Domain Schema + QA | Closed（已关闭） 2026-05-29 |
+| MVP-BE-GAP-007 | Practice session/turn/complete/recovery API 未实现，教练反馈 schema 与持久化证据未闭环。 | Backend + AI Runtime + QA | Closed（已关闭） 2026-05-29 |
+| MVP-BE-GAP-008 | 账号删除已有 foundation，但缺 Product Base 学习数据删除/匿名化完整执行和验收证据。 | Backend + Security + QA | Closed（已关闭） 2026-05-29 |
+| MVP-BE-GAP-009 | 会员/报告/占位页只需 MVP 边界事实，不应误升级为完整商业订阅；需防止与 P0 商业化 scope 混淆。 | Product Manager + Backend + Frontend | Closed（已关闭） 2026-05-29 |
+| MVP-BE-GAP-010 | OpenAPI 与 Flutter 现有 API client 存在 drift，缺 generated Dart client 或等效强约束。 | Frontend + Backend + QA | Closed（已关闭） 2026-05-29 |
+| MVP-BE-GAP-011 | 后端测试、契约测试、Flutter integration/e2e、implementation report 和 quality report 尚未覆盖本 stage 全量。 | QA + Development Orchestrator | Closed（已关闭） 2026-05-29 |
+| MVP-E2E-GAP-001..004 | 本地系统级黑盒验证能力加固：真实 PostgreSQL + backend + Flutter integration test、Product Base AC 覆盖审计、证据报告。 | QA + Development Orchestrator | Closed（已关闭） 2026-05-29 in `mvp-system-e2e-validation` |
+| MVP-E2E-GAP-005..008 | 场景目录/听力/学习记忆、语音模拟/反馈、profile/settings/session persistence 和真实支付 provider 的深度系统回归或外部例外。 | Frontend + Backend + QA + Product | GAP-005..007 Closed（已关闭） 2026-05-29; GAP-008 accepted external payment exception（已接受外部支付例外） |
 
 ## 阶段非目标
 - 不实现 P0.1 训练型 Agent 的 session planner、micro-action、hint ladder 或 pressure check；这些仍由 `p0-1-expression-automation-training` 管理。

@@ -14,6 +14,7 @@ Independently verify product object, workflow, agent, skill, path, and source-of
 - Verify that Product Base, baselines, stages, increments, and legacy artifacts remain distinct.
 - Verify that committed stage scope uses stable Stage Scope Item IDs and that increment definitions, requirements, specs, acceptance criteria, and traceability rules preserve those IDs downstream when touched.
 - Verify that changed agent/skill/document rules are internally consistent.
+- Verify that Software Architecture Governance Check Agent remains the technical reviewer for SWC readiness, while this agent remains the meta-governance reviewer for workflow, source-of-truth, product-object, agent, and skill changes.
 - Run or request lightweight validation when skills or workflow rules change.
 - Return a pass/block finding with concrete files and required corrections.
 
@@ -22,6 +23,8 @@ Independently verify product object, workflow, agent, skill, path, and source-of
 - `docs/process/product_object_governance_remediation.md`
 - Changed files from the current step
 - `docs/process/workflow.md`
+- `docs/process/software_component_architecture_governance.md`
+- `docs/architecture/software_component_architecture.md`
 - `docs/process/skill_quality_standard.md`
 - `scripts/project_agent_runner.py`
 - `codex/templates/agent_runner_packet.template.md`
@@ -31,6 +34,7 @@ Independently verify product object, workflow, agent, skill, path, and source-of
 - `.agents/skills/document-traceability-check/SKILL.md`
 - Relevant `.agents/skills/*/SKILL.md` and `.agents/skills/*/SPEC.md`
 - Relevant `codex/agents/*.md`
+- `codex/agents/software_architecture_governance_check.md`
 
 ## Outputs
 - Step check finding
@@ -50,7 +54,7 @@ Independently verify product object, workflow, agent, skill, path, and source-of
 5. Confirm the current-step change does not redefine active product scope, roadmap priority, or feature content.
 6. Confirm the current-step change preserves boundaries among Product Base, feature, stage, increment, baseline, change request, and artifact.
 7. If the current step changes stage-to-increment traceability rules, confirm Product Manager, workflow, relevant generation skills, and traceability check rules all use the same Stage Scope Item ID coverage model.
-8. Confirm references to new document categories are backed by path and content rules.
+8. Confirm references to new document categories are backed by path and content rules, including global SWC architecture baseline vs SWC catalog vs increment allocation source-of-truth separation.
 9. If skills changed, run `python scripts/validate_agent_skills.py` or require it before passing.
 10. If project agent definitions, agent routing rules, runner script, or runner packet template changed, run `python scripts/project_agent_runner.py validate` or require it before passing.
 11. Return `pass` only when the step is within scope and no blocking inconsistency is found.
@@ -74,3 +78,4 @@ Residual risk:
 - Do not generate missing requirements, specs, acceptance criteria, or contracts directly.
 - Escalate to Product Manager if a check exposes an unresolved product decision.
 - Escalate to Documentation Governance if a check exposes a path or content-contract conflict.
+- Escalate to Software Architecture Governance Check Agent if a check exposes unresolved SWC allocation, component data-flow, reuse, or duplicate-build risk.

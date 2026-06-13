@@ -3,6 +3,45 @@
 ## Current Status
 Latest Followup-E quality state: docs-only planning/contract evidence. Followup-E Phase 0-3 planning and contract review gates are recorded, but no Followup-E backend, Flutter, OpenAPI/generated client, AI runtime, native mic/audio bytes upload, test execution, release or Product Base independent implementation review is accepted in this state.
 
+## 2026-06-11 SWC 架构治理上线独立审核
+
+审核 ID：`SWC-ARCH-GOVERNANCE-ROLLOUT-20260611`
+
+结果：process-governance rollout 在独立 blocker 修复复查后通过。初次独立审核因 SWC catalog 字段完整性、Product Manager 路由和持久状态一致性阻塞完整验收。后续修复扩展了 catalog，更新了 Product Manager 路由，并对齐状态。本审核不批准任何 product feature、Product Base merge、release readiness、backend implementation、Flutter implementation 或外部 evidence。
+
+已检查 artifact：
+- `docs/process/workflow.md`
+- `docs/process/definition_of_done.md`
+- `docs/process/software_component_architecture_governance.md`
+- `docs/process/skill_quality_standard.md`
+- `docs/architecture/swc_catalog.md`
+- `codex/agents/system_architect.md`
+- `codex/agents/product_manager.md`
+- `codex/agents/development_orchestrator.md`
+- `codex/agents/software_architecture_governance_check.md`
+- `codex/agents/product_object_governance_check.md`
+- `.agents/skills/document-path-governance/SKILL.md`
+- `.agents/skills/document-content-contract/SKILL.md`
+- `.agents/skills/document-traceability-check/SKILL.md`
+
+发现：
+- Workflow placement 未发现 blocker。SWC allocation 现在位于 architecture/domain/API/screen/AI spec 和 AC-to-TC mapping 之后，implementation planning 和 code 之前。
+- 初始 blocker 已修复：`swc_catalog.md` 现在包含必需 catalog 字段，包括 layer、owning agent、provided/required interface、owned data/DB/migration、called API/provider boundary、test ownership、reuse/forbidden bypass 和 status。
+- 初始 blocker 已修复：Product Manager architecture intake 现在把 SWC 或 implementation-impacting architecture 路由到 Software Architecture Governance Check；Product Object Governance Check 继续作为 workflow/source-of-truth/agent/skill 变更的 meta-governance checker。
+- 初始 blocker 已修复：`docs/process/software_component_architecture_governance.md` 和本报告现在记录已修正的 follow-up 状态，不再出现 pending/pass 冲突表述。
+- 修正后 content boundary 未发现 blocker。`swc_catalog.md` 拥有 stable component inventory；per-increment `swc_allocation.md` 拥有 FR/AC-to-SWC allocation；两者都不替代 Domain Schema、OpenAPI、AI runtime、UX、test case 或 release gate。
+- 修正后 agent responsibility separation 未发现 blocker。System Architect 产出 SWC artifact；Development Orchestrator 执行 gate；Software Architecture Governance Check 独立审核 SWC readiness；Product Object Governance Check 仍是 workflow/source-of-truth/agent/skill 变更的 meta-governance checker。
+- Stable output 未发现 blocker。Implementation-impacting increment 现在要求 `docs/product/increments/<increment-id>/swc_allocation.md`，或明确已接受的 `N/A - no SWC impact` decision。
+
+验证：
+- `python3 scripts/project_agent_runner.py validate`：passed。
+- `python3 scripts/validate_agent_skills.py`：passed。
+- `git diff --check`：passed。
+
+残余风险：
+- 既有历史 increment 并非全部已有 `swc_allocation.md`；本 rollout 前向生效，active increment 下次被触碰且开始新 implementation 前必须补齐 SWC allocation。
+- 后续仍可增加 automation，进一步强制 SWC allocation presence。
+
 ## 2026-06-10 P0 Commercial Admin Data Deletion Retry Independent Review
 
 Review ID: `P0-COM-ADMIN-DATA-DELETION-RETRY-20260610`
@@ -3226,3 +3265,88 @@ Validation:
 
 Residual risk:
 - The checker remains intentionally line-oriented for deterministic changed-scope enforcement; long-form exception reasoning can live in owning docs, but the machine gate requires the compact structured line.
+
+## 2026-06-11 Global SWC 架构基线治理审核
+
+报告 ID：
+- `GLOBAL-SWC-ARCHITECTURE-BASELINE-GOVERNANCE-20260611`
+
+结果：
+- 独立 blocker 修复复查后通过。本审核批准 global SWC architecture baseline、Flow ID reference、increment SWC allocation 和 allocation template usage 的 workflow/source-of-truth governance change。本审核不批准任何 product feature、implementation、Product Base merge、commercial release readiness、backend code、Flutter code、provider evidence 或 release evidence。
+
+检查范围：
+- Global SWC architecture baseline：`docs/architecture/software_component_architecture.md`。
+- SWC catalog boundary：`docs/architecture/swc_catalog.md`。
+- Business flow 和 module-boundary source reference：`docs/architecture/data_flow.md`、`docs/architecture/module_boundary.md`、`docs/architecture/system_overview.md`。
+- Process gate：`docs/process/software_component_architecture_governance.md`、`docs/process/workflow.md`、`docs/process/definition_of_done.md`、`docs/process/skill_quality_standard.md`。
+- Agent 和 skill routing：`codex/agents/system_architect.md`、`codex/agents/development_orchestrator.md`、`codex/agents/product_manager.md`、`codex/agents/software_architecture_governance_check.md`、`codex/agents/product_object_governance_check.md`、`.agents/skills/document-path-governance/`、`.agents/skills/document-content-contract/`、`.agents/skills/document-traceability-check/`。
+- Template：`codex/templates/swc_allocation.template.md`。
+
+发现：
+- 无剩余 blocker。`docs/architecture/software_component_architecture.md` 现在拥有完整 SWC topology、稳定 `SWC-FLOW-*` library、canonical SWC-to-SWC sequence、increment delta rule 和 local architecture change baseline。
+- 无剩余 blocker。`docs/architecture/swc_catalog.md` 继续作为 stable component inventory，不变成完整 architecture 或 increment allocation artifact。
+- 无剩余 blocker。Increment `swc_allocation.md` 现在定义为相对 global SWC baseline 的 delta，并且必须引用适用 `SWC-FLOW-*` ID，或把 local flow 分类为 `one-off`、`proposed-global` 或 `legacy-compatible`。
+- 无剩余 blocker。`data_flow.md` 和 `module_boundary.md` 现在声明它们为 SWC baseline 提供 business flow/fact-source rule 和 context boundary，而不是与其竞争。
+- 无剩余 blocker。Product Manager、Development Orchestrator、System Architect、Software Architecture Governance Check、Product Object Governance Check 和 document governance skill 现在对 baseline/catalog/allocation 拆分保持一致。
+- 初始 template blocker 已修复：`codex/templates/swc_allocation.template.md` 不再暗示 AI/provider 可以拥有最终持久化事实。Candidate output 保留在 AI/provider；accepted persistent fact 由 deterministic rule 接受后归 backend/domain SWC 拥有。
+- Template governance 已澄清：修改 `codex/templates/swc_allocation.template.md` 属于 workflow/source-of-truth governance change，需要 Product Object Governance Check。
+
+独立 agent 结果：
+- Agent `Aristotle` 初次 global-baseline review：pass，并提出 template、future CI gate、catalog precision 和 acceptance status 的非阻塞建议。
+- Agent `Aristotle` template follow-up：因 AI/provider final-fact ownership ambiguity 阻塞。
+- Agent `Aristotle` final template follow-up：文字修正和 template-change governance note 补齐后通过。
+
+验证：
+- `python3 scripts/project_agent_runner.py validate`：passed。
+- `python3 scripts/validate_agent_skills.py`：passed。
+- `git diff --check`：passed。
+
+残余风险：
+- Historical increment 仍非全部已有 `swc_allocation.md`；这仍是前向迁移风险，必须在下次触碰 slice、Product Base merge review 或 release-readiness review 时处理。
+- `SWC-FLOW-*` reference 和 SWC catalog entry 目前通过 document governance 与 independent review 维护；后续 automation 可以减少与 OpenAPI、Domain Schema 和 code path 的漂移。
+- `N/A - no SWC impact` decision 依赖独立 reviewer 纪律；过度使用会削弱 gate。
+
+## 2026-06-12 Scenario Practice Runtime Migration 架构治理审核
+
+报告 ID：
+- `SCENARIO-PRACTICE-RUNTIME-MIGRATION-ARCH-GOV-20260612`
+
+结果：
+- 独立 blocker 修复复查后通过。本审核批准未来 frontend-only `scenario-practice-runtime-migration` implementation 的 architecture plan 和 SWC allocation readiness。本审核不批准 business-code change、OpenAPI/backend/DB/provider change、Product Base merge、commercial release readiness 或 production rollout。
+
+检查范围：
+- Increment docs：`docs/product/increments/scenario-practice-runtime-migration/definition.md`、`requirements.md`、`spec.md`、`acceptance.md`、`test_cases.md`、`traceability.md`、`swc_allocation.md`。
+- Global SWC baseline：`docs/architecture/software_component_architecture.md`、`docs/architecture/swc_catalog.md`、`docs/architecture/module_boundary.md`、`docs/architecture/data_flow.md`。
+- Process 和 checker contract：`docs/process/software_component_architecture_governance.md`、`codex/agents/software_architecture_governance_check.md`。
+- Code evidence 只读检查：`lib/features/interview/`、`lib/features/scenario/`、`lib/application/scene/`、`lib/services/audio_service.dart`、`lib/services/voice_chat_service.dart`、`lib/services/voice_turn_orchestrator.dart`、`lib/services/api_client.dart`、`lib/services/app_session.dart`、`lib/application/session/session_stats_coordinator.dart`、`lib/services/stats_service.dart`、`lib/models/learning_stats_model.dart`。
+
+发现：
+- 无剩余 blocker。`FE-SCENARIO-PRACTICE`、`FE-PRACTICE-RUNTIME`、`FE-LEGACY-SCENARIO-SANDBOX` 和 global `SWC-FLOW-SCENARIO-PRACTICE-RUNTIME` 已存在于 global SWC baseline。
+- 无剩余 blocker。只要 implementation 不改变 OpenAPI、backend、DB、provider、media trust、usage、entitlement 或 server-owned fact，该 migration 正确分类为 frontend-only。
+- 无剩余 blocker。`swc_allocation.md` 现在把 `MIG-FR-001` 到 `MIG-FR-011` 映射到具体 SWC、OpenAPI operation ID 或明确 frontend-only `N/A`、Domain entity、DB table group、provider boundary 和 TC ID。
+- 无剩余 blocker。Core flow 覆盖 start/resume、content load、voice/ASR、text turn、AI coach、TTS、hint、feedback/review、wiki/memory/queue、practice history 和 legacy sandbox，并包含 failure handling、auth、idempotency/retry、rollback/compensation、audit/logging/metrics、privacy 和 response-to-UI mapping。
+- 无剩余 blocker。`lib/services/voice_turn_orchestrator.dart` 现在明确归类为 `FE-PRACTICE-RUNTIME` migration 的 existing voice-turn mechanics，并被 scenario-practice CI gate 覆盖。
+- 无剩余 blocker。Practice history/stats call 已明确分类为 legacy non-OpenAPI client path：`GET /user/stats`、`POST /user/stats/session`、`POST /user/stats/session/feedback` 和 `POST /user/stats/session-group/delete`。它们只能在 `AppSession` / `SessionStatsCoordinator` / `StatsService` adapter 后使用，不是稳定 cross-end contract。
+- 无剩余 blocker。Reuse 和 forbidden boundary 阻止第三套 `scenario_practice` runtime、duplicate voice/TTS/API/cache/history store、Flutter direct provider call、client-generated trusted media ref、local final mastery/evidence 和 Training source-of-truth duplication。
+- 无剩余 blocker。SWC allocation CI gate 现在要求 `Existing Implementation Baseline`、`Delta From Existing Baseline`、具体 FE/BE SWC ID 或明确 `N/A - <reason>`、brownfield/refactor inheritance evidence、changed-path coverage 三个允许字段、scenario-practice Flow/SWC reuse，以及结构化 `N/A - no SWC impact` exception。
+
+独立 agent 结果：
+- System Architect Agent `Epicurus`：产出只读 architecture review，并确认 frontend-only classification 及对应 boundary。
+- Software Architecture Governance Check Agent `Peirce`：首次审核因 generic API/backend placeholder 和 stats/OpenAPI source-of-truth ambiguity 阻塞。
+- Software Architecture Governance Check Agent `Singer`：blocker 修复后二次审核通过。
+- Independent SWC allocation gate reviewer `Hypatia`：首次 follow-up 因 generic SWC allocation、过宽 path coverage、不完整 scenario-practice trigger path 和宽松 no-impact exception 阻塞；补齐 strict gate check 和 `voice_turn_orchestrator.dart` coverage 后最终通过。
+
+验证：
+- `python3 scripts/check_swc_allocation.py --scope changed --include-worktree`：passed。
+- `python3 scripts/check_swc_allocation.py --scope all`：passed。
+- `python3 scripts/project_agent_runner.py validate`：passed。
+- `python3 scripts/validate_agent_skills.py`：passed。
+- 针对已触碰 architecture/increment docs 的 `git diff --check`：passed。
+- 未运行 Flutter/backend test，因为这是 architecture-only documentation increment，没有 business-code change。
+
+残余风险：
+- `FE-PRACTICE-RUNTIME` 在通过 `test/application/practice_runtime/*`、import-boundary guard 和 history adapter parity test 实现前仍是 proposed 状态。
+- 如果 implementation 改变 OpenAPI、backend、DB、provider、media trust、usage、entitlement 或 server-owned fact，该 frontend-only migration 必须重新分类为 cross-layer increment。
+- Legacy `/user/stats*` path 应通过单独 API Contract / OpenAPI increment 稳定后，才能视为 durable cross-end contract。
+- Changed-mode CI 只检查当前 change 中的文件；historical increment 仍需要 scheduled `--scope all` audit，或在被触碰时进行明确 review。
+- Scenario-practice trigger file 作为 gate whitelist 维护；未来新增 voice/session/stats implementation file 时，必须同步更新 script、SWC catalog 和 owning allocation。

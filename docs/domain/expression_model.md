@@ -25,3 +25,6 @@
 - Keep user notes separate from authored expression metadata.
 - Saved expressions can generate review items.
 
+- 重复检查前必须先规范化表达文本。
+- 用户笔记必须与官方编写的表达元数据分离。
+- SavedExpression 可以按规则生成 ReviewItem。

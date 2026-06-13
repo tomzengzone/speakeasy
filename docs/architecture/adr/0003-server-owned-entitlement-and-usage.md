@@ -3,6 +3,8 @@
 ## Status
 Proposed - pending document traceability and Product Object Governance checks.
 
+提议中 - 等待文档追踪和 Product Object Governance 检查通过。
+
 ## Context
 当前会员页和 Apple IAP 前端雏形只能证明客户端有商业入口，不能证明真实付费闭环。P0 商业化上线需要覆盖购买、恢复、退款、过期、宽限期、Android Billing、账号切换、商业权益 gating、AI 成本控制和发布回滚。
 
@@ -10,6 +12,8 @@ Proposed - pending document traceability and Product Object Governance checks.
 订阅权益、用量额度、退款/过期/宽限期和 AI quota 以服务端为事实源。客户端只展示 EntitlementSnapshot 缓存，并通过 API 刷新状态。
 
 Core objects:
+
+核心对象：
 - SubscriptionPlan
 - Purchase
 - SubscriptionState
@@ -19,6 +23,8 @@ Core objects:
 - ProviderUsageEvent
 
 Required APIs:
+
+必需 API：
 - `GET /entitlements`
 - `POST /entitlements/refresh`
 - `POST /subscriptions/apple/verify`

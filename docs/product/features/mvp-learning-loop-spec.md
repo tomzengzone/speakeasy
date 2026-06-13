@@ -1,24 +1,24 @@
-# P0.1 表达自动化训练闭环 Feature Spec
+# P0.1 表达自动化训练闭环 Feature Spec（功能规格）
 
 ## 文档状态
-Legacy P0.1 spec source - 本文是 P0.1 表达自动化训练闭环的早期 feature spec 来源，不是当前 MVP Product Base spec。
+Legacy P0.1 spec source（历史 P0.1 规格来源） - 本文是 P0.1 表达自动化训练闭环的早期 feature spec（功能规格）来源，不是当前 MVP Product Base spec（Product Base 规格）。
 
-当前稳定 Product Base source of truth：
+当前稳定 Product Base source of truth（事实源）：
 - `docs/product/base/spec.md`
 - `docs/product/base/requirements.md`
 - `docs/product/base/acceptance.md`
 - `docs/product/base/traceability.md`
 
-当前 P0.1 increment source of truth：
+当前 P0.1 increment source of truth（增量事实源）：
 - `docs/product/increments/p0-1-expression-automation-training/spec.md`
 - `docs/product/increments/p0-1-expression-automation-training/requirements.md`
 - `docs/product/increments/p0-1-expression-automation-training/acceptance.md`
 - `docs/product/increments/p0-1-expression-automation-training/traceability.md`
 
-本文只作为 P0.1 legacy spec source 和历史参考保留。不得整份作为 MVP Product Base spec 迁移来源。
+本文只作为 P0.1 legacy spec source（历史规格来源）和历史参考保留。不得整份作为 MVP Product Base spec（Product Base 规格）迁移来源。
 
 ## 状态
-Draft - P0.1 feature spec，供后续 acceptance criteria、AI runtime schema、dialogue state machine、domain model、screen spec 和测试用例使用。
+Draft（草稿） - P0.1 feature spec（功能规格），供后续 acceptance criteria（验收标准）、AI runtime schema（AI 运行时结构）、dialogue state machine（对话状态机）、domain model（领域模型）、screen spec（屏幕规格）和测试用例使用。
 
 ## 上游依据
 - `docs/product/roadmap.md`：Now / P0.1 表达自动化训练闭环。
@@ -116,17 +116,17 @@ Draft - P0.1 feature spec，供后续 acceptance criteria、AI runtime schema、
 | ContinueUnderPrompt | 在追问下继续说 | 能在少提示或无提示下完成当前 action step 的核心任务。 |
 
 ## 状态与失败处理
-- Loading：加载场景、表达、历史证据或音频资源。
-- Ready：等待用户开始当前 micro-action。
-- Listening：播放 TTS 或示范音频。
-- Recording：录音中。
-- Transcribing：语音转写中。
-- Evaluating：表达、任务完成度和可用评分信号评估中。
-- Feedback：展示即时反馈、重试建议和地道表达提示。
-- Retry：按当前或更高 HintLevel 重试。
-- PressureCheck：轻量追问或近场景复现。
-- Recap：本轮总结和证据写回结果。
-- RecoverableError：麦克风拒绝、ASR 失败、TTS 失败、LLM 失败、评分失败或本地写回失败时的可恢复错误。
+- Loading（加载中）：加载场景、表达、历史证据或音频资源。
+- Ready（就绪）：等待用户开始当前 micro-action。
+- Listening（播放/听力中）：播放 TTS 或示范音频。
+- Recording（录音中）：录音中。
+- Transcribing（转写中）：语音转写中。
+- Evaluating（评估中）：表达、任务完成度和可用评分信号评估中。
+- Feedback（反馈中）：展示即时反馈、重试建议和地道表达提示。
+- Retry（重试）：按当前或更高 HintLevel 重试。
+- PressureCheck（压力检测）：轻量追问或近场景复现。
+- Recap（复盘）：本轮总结和证据写回结果。
+- RecoverableError（可恢复错误）：麦克风拒绝、ASR 失败、TTS 失败、LLM 失败、评分失败或本地写回失败时的可恢复错误。
 
 ## AI Runtime 影响
 - 需要结构化输出当前 micro-action 的反馈、提示、重试建议、下一步建议和轻量追问建议。
@@ -178,4 +178,4 @@ Draft - P0.1 feature spec，供后续 acceptance criteria、AI runtime schema、
 - `test/` 或 `tests/`：补充 planner、schema、widget 和回归测试。
 
 ## 规格状态
-本 spec 足以作为 P0.1 `acceptance-criteria-generate` 的直接上游输入；在生成 acceptance criteria 前，仍需 Development Orchestrator 确认下游文档路径和必需契约清单。
+本 spec（规格）足以作为 P0.1 `acceptance-criteria-generate` 的直接上游输入；在生成 acceptance criteria（验收标准）前，仍需 Development Orchestrator 确认下游文档路径和必需契约清单。

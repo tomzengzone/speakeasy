@@ -51,6 +51,14 @@ consecutive pass
 - P0.1 text answer is a fallback path, not the default speaking path.
 - P0.1 pressure check stays inside the current session and must not imply cross-day scheduling or full L0-L5 mastery.
 
+- 学习者应始终知道下一步动作。
+- 反馈应简短且具体。
+- 空状态应告诉学习者接下来做什么。
+- 错误状态应让已完成内容保持可恢复。
+- P0.1 训练一次只展示一个主要微动作。
+- P0.1 文本回答是兜底路径，不是默认口语路径。
+- P0.1 pressure check 只存在于当前 session 内，不得暗示跨天排期或完整 L0-L5 掌握。
+
 ## P0 Commercial Subscription Flow
 ```text
 profile / paid feature

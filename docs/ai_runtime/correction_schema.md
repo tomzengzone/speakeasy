@@ -24,3 +24,7 @@
 - Keep explanation short enough for mobile UI.
 - If correction is saved, create or update a notebook item.
 
+- 每个 learner turn 只展示一个主纠错点。
+- 优先给出可直接使用的替代表达，而不是抽象的语法讲解。
+- 解释要足够短，适合移动端 UI 展示。
+- 如果纠错被保存，则创建或更新一个 notebook item。
