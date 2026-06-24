@@ -86,17 +86,32 @@ description: Use when a project document needs a content boundary, required sect
 - `docs/reports/implementation_report.md`：写实际完成范围、文件、验证、风险和后续；不补写需求或替代验收标准。
 - `docs/reports/quality_report.md`：写审查发现、风险、阻塞项和质量结论；不新增产品范围。
 
+## 文档语义质量模型
+- 颗粒度：一个条目只表达一个业务目的、业务规则、状态转移、用户/系统可观察结果或安全约束；如果需要多个独立验收结论，应拆分；如果继续拆分只剩 UI、接口、数据库、类名、函数或测试步骤，应停止。
+- 清晰度：条目必须语义无歧义，触发条件或状态清楚，行为主体清楚，核心动作单一，结果可观察，边界可由数字、枚举、状态、错误类型、允许/禁止范围或明确非目标判定。
+- 覆盖度：文档必须覆盖上游目标、主流程、已知异常分支、权限、安全/隐私、关键状态转移、跨域依赖和非目标边界；ID 数量匹配只能作为基础证据，不能单独证明语义覆盖完整。
+
+## 语义质量在文档类型中的落点
+- Requirements：每条需求应保留独立业务价值，说明用户或系统目标、场景、行为结果、边界和非目标；不得用技术任务替代业务需求。
+- Spec：从 requirement 做 1:1 或 1:N 行为分解；spec item 应是可独立验收的行为契约，不写成 AC、TC、API schema 或实现计划。
+- Acceptance criteria：把已批准 spec 转成可观察 pass/fail 判断；不得新增范围或把测试步骤写成验收标准。
+- Test cases：把 AC 转成可执行或可人工执行的验证设计；不得重新定义需求、规格或验收标准。
+- Traceability：检查上下游 ID 链和语义链是否一致；不得只用 ID 出现次数替代业务意图覆盖。
+
 ## Process
 1. 判断目标文档类型和主要读者。
 2. 对照内容契约基线，列出应包含和不应包含的内容。
-3. 检查文档是否混入上游战略、下游设计或实现报告内容。
-4. 检查是否缺少状态、假设、非目标、验收检查或上游/下游引用。
-5. 对发现的问题按阻塞、重要、建议分类。
-6. 如需修正规则，更新对应生成类 skill 或 `docs/process/skill_quality_standard.md`。
-7. 完成后运行 `python scripts/validate_agent_skills.py`，若修改了 skill。
+3. 按文档语义质量模型检查颗粒度、清晰度和覆盖度。
+4. 检查文档是否混入上游战略、下游设计或实现报告内容。
+5. 检查是否缺少状态、假设、非目标、验收检查或上游/下游引用。
+6. 对发现的问题按阻塞、重要、建议分类。
+7. 如需修正规则，更新对应生成类 skill 或 `docs/process/skill_quality_standard.md`。
+8. 完成后运行 `python scripts/validate_agent_skills.py`，若修改了 skill。
 
 ## Red Flags
 - 需求文档写 API 字段、数据库表或 UI 布局。
+- 文档条目机械匹配 ID 数量，但遗漏上游业务意图、异常分支、权限、安全/隐私、状态转移或非目标边界。
+- 文档条目混合多个独立业务结论，或被拆到 UI/API/DB/class/test 任务而失去业务属性。
 - feature spec 补写产品愿景，导致产品级 source of truth 分散。
 - 验收标准描述实现方式而不是可观察行为。
 - 追溯矩阵缺少 FR、AC、Test Case ID、Code Evidence 或 Test Evidence，或把缺测试项写成已覆盖而没有人工验收/外部服务依赖/暂不可自动化说明。
@@ -112,6 +127,7 @@ description: Use when a project document needs a content boundary, required sect
 
 ## Verification
 - 文档目的、读者、必需内容和禁止内容清晰。
+- 文档条目通过颗粒度、清晰度和覆盖度语义检查，或明确记录例外。
 - 文档没有混入不属于该阶段的下游实现细节。
 - 上游输入和下游输出明确。
 - 内容完整性可以被审查者独立判断。

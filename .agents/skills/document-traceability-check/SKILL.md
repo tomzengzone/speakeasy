@@ -123,6 +123,12 @@ Increment Test Evidence review must verify:
 - every executed TC has result status and evidence report;
 - the owning increment traceability row has Test Evidence that cites the TC ID, script path, command, result status, and evidence report, or a documented exception.
 
+## Semantic Traceability Gate
+- ID coverage is only the first check. A requirement ID appearing in a downstream spec, AC, or traceability row does not prove that the upstream business intent is covered.
+- For requirements/spec/AC chains, verify semantic coverage using the shared `文档语义质量模型` from `document-content-contract`: granularity, clarity, and coverage.
+- Check whether parent goals, main flows, exception branches, permissions, security/privacy boundaries, state transitions, cross-domain dependencies, and non-goals survive downstream.
+- If a compound requirement maps to a single downstream item that cannot support independent acceptance conclusions, mark the chain `conditional` or `blocked` and route back to the owning generation skill.
+
 ## Architecture Traceability Gate
 当检查系统架构、技术栈、前后端数据库方案、商业化架构或全量 APP 架构时，必须增加以下检查：
 
@@ -146,11 +152,12 @@ Increment Test Evidence review must verify:
 9. 对 brownfield/refactor increment 检查 Existing Implementation Baseline 和 Delta From Existing Baseline：是否列出现有用户流、代码路径、SWC、Flow ID、API、数据归属、测试、不可回归行为、复用 SWC/Flow、允许/禁止新增代码、允许修改旧代码、迁移/废弃和回归证明。
 10. 检查 SWC allocation gate evidence：implementation-impacting PR 是否运行或计划运行 `python3 scripts/check_swc_allocation.py --scope changed --base-ref <base-ref>`；若变更场景对话路径，是否引用 `SWC-FLOW-SCENARIO-PRACTICE-RUNTIME` 和 `FE-SCENARIO-PRACTICE` / `FE-PRACTICE-RUNTIME`。
 11. 对 increment Test Evidence 执行 `AC -> TC -> 测试脚本/执行命令/结果/证据报告 -> traceability Test Evidence` 复核；缺少 TC ID、脚本路径、执行命令、结果状态或证据报告时，不得通过完成审查。
-12. 检查 Product Base 链路时，检查 `FR -> User Story -> AC -> Code Evidence -> Test Evidence -> Status` 是否完整。
-13. 标记缺失、不适用、重复、过期或状态冲突。
-14. 检查 accepted/proposed/deferred 等状态是否和实际推进阶段一致。
-15. 输出断链清单和下一步建议；不直接生成缺失文档。
-16. 若修改 skill 或质量标准，运行 `python scripts/validate_agent_skills.py`。
+12. 对 requirements/spec/AC 链路执行 semantic traceability check；只完成 ID 数量覆盖时，结论不得高于 `conditional`。
+13. 检查 Product Base 链路时，检查 `FR -> User Story -> AC -> Code Evidence -> Test Evidence -> Status` 是否完整。
+14. 标记缺失、不适用、重复、过期、状态冲突或语义断链。
+15. 检查 accepted/proposed/deferred 等状态是否和实际推进阶段一致。
+16. 输出断链清单和下一步建议；不直接生成缺失文档。
+17. 若修改 skill 或质量标准，运行 `python scripts/validate_agent_skills.py`。
 
 ## Red Flags
 - P0 或新增功能代码实现存在，但没有 feature spec 或验收标准；当前 MVP 反向固化任务必须显式标记为代码基线例外。
@@ -166,6 +173,8 @@ Increment Test Evidence review must verify:
 - SWC allocation 只写“前端实现/后端实现”，没有映射到具体 SWC、API/OpenAPI、Domain Entity、DB Table/Migration 和 TC。
 - SWC allocation 绕过现有 SWC 或 cross-cutting boundary，新增重复组件却没有迁移/废弃理由。
 - `FR`、`AC`、`Code Evidence` 或 `Test Evidence` 字段为空且无明确例外。
+- Traceability claims pass because IDs match, while parent requirement intent, exception branches, permission/security boundaries, state transitions, or non-goals are missing downstream.
+- A compound requirement maps to one spec or AC item that cannot support independent acceptance conclusions.
 - Stage scope is written only as bullets with no stable Stage Scope Item IDs for committed work.
 - Increment definition lacks `Covered Stage Scope Items`, or requirements/spec/AC drop those IDs downstream.
 - 100% traceability is claimed while a required Stage Scope Item ID is uncovered, deferred without reason, or not represented in the increment traceability matrix.
@@ -184,6 +193,7 @@ Increment Test Evidence review must verify:
 - 必要时质量报告保留审查结论。
 - AC 来源模式被明确判定，且不和当前 phase 冲突。
 - 需求覆盖完整性已通过追溯矩阵检查；该结论不被表述为代码行覆盖率或线上零缺陷保证。
+- 语义追溯检查已确认 ID 链路和业务意图链路都成立；若只完成 ID 覆盖，结果标记为 `conditional`。
 - 新 increment 追溯检查确认 Stage Scope ID coverage、increment coverage、FR coverage、AC coverage 和 evidence status 均有结论。
 - Increment Test Evidence 复核确认 AC-to-TC mapping、script path、execution command、result status、evidence report 和 traceability Test Evidence 一致。
 - 架构检查已明确范围模式，并给出 coverage matrix 通过、条件通过或阻塞结论。

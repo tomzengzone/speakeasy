@@ -1,7 +1,7 @@
 # Feature Spec Generate Spec
 
 ## Purpose
-Create a feature-level contract that connects requirements, architecture impact, tests, and non-goals.
+Create an executable product specification that turns approved requirements into clear, traceable behavior contracts without becoming acceptance criteria, API schema, or implementation tasks.
 
 ## Scope
 This project-local skill applies to development workflow assets in this repository. It supports the Codex software engineering pipeline and must not silently expand product scope or bypass the project Definition of Done.
@@ -27,16 +27,16 @@ This project-local skill applies to development workflow assets in this reposito
 - `docs/process/definition_of_done.md`
 
 ## Outputs
-- 功能规格：`docs/product/features/<feature-slug>-spec.md`。
-- API、数据、UI、AI、测试影响说明：写入同一 feature spec 的影响段。
-- 供验收标准使用的上游追溯引用：写入同一 feature spec。
+- Product object, upstream sources, goal/boundary, requirement-to-spec mapping, behavior spec items, shared state/signal definitions, module impact, downstream contract needs, non-goals, acceptance coverage expectations, and rollout or merge-back notes.
+- 供验收标准使用的上游追溯引用：写入 owning spec。
 - 范围扩展记录：必要时更新 `docs/process/change_request.md`。
 - 不直接写入架构、领域、AI runtime 或 UX 契约；仅标记后续对应文档需求。
 
 ## Product Object Outputs
-- Product Base spec for accepted stable behavior: `docs/product/base/spec.md`.
 - New increment spec: `docs/product/increments/<increment-id>/spec.md`.
 - Stage Scope Item ID references preserved in increment spec flows, states, dependencies, and non-goals.
+- Product Base spec for accepted stable behavior: `docs/product/base/spec.md`.
+- Product Base module spec when declared by upstream requirements: `docs/product/base/<module-slug>/spec.md`.
 - Stable feature contract update when explicitly requested: `docs/product/features/<feature-slug>/README.md`.
 - Legacy feature spec: `docs/product/features/<feature-slug>-spec.md` only for existing flat artifacts until migration.
 - Required downstream contract list for architecture, domain, API, AI runtime, UX, and tests.
@@ -44,16 +44,18 @@ This project-local skill applies to development workflow assets in this reposito
 ## Quality Bar
 - The feature can be accepted or rejected from the spec alone.
 - Every module impact has an owner Agent.
-- Every criterion maps to a QA item.
+- Every spec item maps to expected acceptance coverage or an explicit exception.
 - Non-goals prevent obvious scope creep.
-- Output path follows `docs/product/features/<feature-slug>-spec.md`.
 - For P0 or new features, the approved feature spec is the direct upstream source for acceptance criteria.
 - The feature spec preserves traceability to requirements, user stories, MVP/P0 scope, and non-goals.
-- Requirement coverage completeness is established later by acceptance criteria and the traceability matrix, not by the feature spec alone.
+- The shared semantic quality model in `document-content-contract` is the source for granularity, clarity, and coverage checks.
+- A requirement with multiple independent business conclusions maps to multiple spec items.
+- The spec stops before implementation tasks; it must not decompose into UI rendering steps, endpoint work items, table fields, class names, or test steps.
 - For new product work, output path follows `docs/product/increments/<increment-id>/spec.md`.
 - The spec cites active stage, covered Stage Scope Item IDs, primary feature, affected features, increment definition, and increment requirements.
 - Stage goals and stable feature boundaries are referenced but not rewritten as the increment spec.
 - New behavior in the spec must be traceable to a Stage Scope Item ID, an increment requirement, or a Product Manager-approved change request.
+- Shared states, inputs, outputs, errors, downgrade and security signals are defined once in the Specification section when they are development inputs; functional sections reference them without duplicating per-section reference tables.
 
 ## Maintenance Notes
 - Keep SKILL.md concise enough for runtime use.

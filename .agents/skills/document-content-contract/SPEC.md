@@ -22,6 +22,7 @@
 ## Outputs
 - 文档内容边界定义。
 - 必需章节和禁止内容清单。
+- 通用文档语义质量模型：颗粒度、清晰度、覆盖度。
 - Product Base content boundary definitions for requirements, spec, acceptance, and traceability.
 - 内容审查结论。
 - 必要时更新相关 skill 或 `docs/process/skill_quality_standard.md`。
@@ -32,6 +33,7 @@
 ## Quality Bar
 - 每类文档的目的和读者清晰。
 - 每类文档都有必需内容和禁止内容。
+- 每类文档都能按颗粒度、清晰度和覆盖度做语义质量判断，且该判断不退化为 ID 数量检查或格式检查。
 - 文档内容不越过 workflow 阶段边界。
 - 审查结论能指导具体修订。
 - 不和路径治理、追踪检查职责重叠。
@@ -42,6 +44,7 @@
 
 ## Maintenance Notes
 - 新增文档类别时，同时检查是否需要更新 `document-path-governance`。
+- 修改通用语义质量模型时，同步检查 requirement-refine、feature-spec-generate、acceptance-criteria-generate、test-case-generate 和 document-traceability-check，避免各 skill 复制出不同版本。
 - 修改验收标准或追溯矩阵内容边界时，同步检查 acceptance-criteria-generate、test-case-generate 和 document-traceability-check。
 - 修改 stage scope item 或 stage-to-increment coverage 内容边界时，同步检查 Product Manager agent、workflow、requirement-refine、feature-spec-generate、acceptance-criteria-generate 和 document-traceability-check。
 - 修改 SWC 架构内容边界时，同步检查 software component architecture governance、System Architect、Software Architecture Governance Check 和 document-traceability-check。

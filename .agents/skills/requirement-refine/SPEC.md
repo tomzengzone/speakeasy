@@ -47,6 +47,8 @@ This project-local skill applies to development workflow assets in this reposito
 ## Quality Bar
 - Every success criterion can become at least one test.
 - Every user story has a user, action, and outcome.
+- Requirement items satisfy the shared semantic quality model in `document-content-contract`: useful business granularity, clear semantics, and coverage of parent goal, main flow, exceptions, boundaries, permissions/security, and non-goals.
+- Requirements do not decompose into UI/API/DB/class/test implementation tasks.
 - Assumptions are separate from confirmed requirements.
 - Scope additions are recorded as backlog or change request.
 - Every created or updated requirement artifact has a concrete repository path.
@@ -62,6 +64,7 @@ This project-local skill applies to development workflow assets in this reposito
 ## Maintenance Notes
 - Keep SKILL.md concise enough for runtime use.
 - Keep this SPEC.md focused on governance, traceability, and future maintenance.
+- If the shared semantic quality model changes, sync this skill with `document-content-contract`.
 - Update docs/process/skill_quality_standard.md before changing required sections.
 - Run `python scripts/validate_agent_skills.py` after editing this skill.
 - If external content is vendored, retain attribution and license in this directory.

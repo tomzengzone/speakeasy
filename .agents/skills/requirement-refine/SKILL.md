@@ -62,19 +62,28 @@ Turn natural-language product intent into constrained, testable requirements bef
 - Each new increment requirement ID must trace back to at least one Stage Scope Item ID, or explicitly mark the source as a Product Manager-approved change request.
 - If a request mixes feature, stage, increment, and baseline content, split it before writing requirements.
 
+## Semantic Quality Source
+- Apply the shared `文档语义质量模型` from `document-content-contract`: granularity, clarity, and coverage.
+- Requirement items must preserve business value: they may describe a user need, system rule, state boundary, or success condition, but must not collapse into UI/API/DB/class/test tasks.
+- If a requirement includes multiple independent business conclusions, split it before sending downstream to `feature-spec-generate`.
+
 ## Process
 1. List assumptions before conclusions.
 2. Classify the product object and source mode before choosing an output path.
 3. For new increment work, list the covered Stage Scope Item IDs before drafting requirements.
 4. Restate the functional goal in one sentence.
 5. Identify user path, entry point, data touched, and expected outcome.
-6. Convert expectations into measurable success criteria.
-7. Mark out-of-stage ideas as backlog unless the user explicitly includes them through a change request.
-8. State whether the output is Product Base consolidation, baseline snapshot consolidation, stable feature requirements, or increment requirements.
-9. Request clarification only when a risky decision cannot be inferred.
+6. Apply the shared semantic quality model to requirement items before finalizing them.
+7. Convert expectations into measurable success criteria.
+8. Mark out-of-stage ideas as backlog unless the user explicitly includes them through a change request.
+9. State whether the output is Product Base consolidation, baseline snapshot consolidation, stable feature requirements, or increment requirements.
+10. Request clarification only when a risky decision cannot be inferred.
 
 ## Red Flags
 - The requirement contains words like smart, seamless, complete, or advanced without measurable behavior.
+- Requirement items are mechanically numerous but miss the parent business goal, exception branch, permission/security boundary, or non-goal.
+- A requirement mixes multiple independent business conclusions that downstream spec would need to split.
+- A requirement is decomposed into implementation tasks rather than business-value items.
 - The proposed feature adds unrelated screens or data models.
 - Acceptance criteria describe implementation details instead of observable behavior.
 - The output omits non-goals.
@@ -87,6 +96,7 @@ Turn natural-language product intent into constrained, testable requirements bef
 
 ## Verification
 - Every success criterion can become at least one test.
+- Requirement items pass the shared semantic quality model for granularity, clarity, and coverage, or record an explicit exception.
 - Every user story has a user, action, and outcome.
 - Assumptions are separate from confirmed requirements.
 - Scope additions are recorded as backlog or change request.

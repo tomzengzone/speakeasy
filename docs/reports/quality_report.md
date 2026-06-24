@@ -3,6 +3,662 @@
 ## Current Status
 Latest Followup-E quality state: docs-only planning/contract evidence. Followup-E Phase 0-3 planning and contract review gates are recorded, but no Followup-E backend, Flutter, OpenAPI/generated client, AI runtime, native mic/audio bytes upload, test execution, release or Product Base independent implementation review is accepted in this state.
 
+## 2026-06-24 Identity Account Lifecycle 内容契约语义审查
+
+Review ID：`PB-IDENTITY-CONTENT-CONTRACT-SEMANTIC-20260624`
+
+结果：conditional。被审查文档可以继续作为 Product Base 模块草案输入，但在下列重要语义修正完成或明确豁免前，不应驱动 Product Base merge、acceptance criteria 生成、实现计划或 release-readiness 声明。
+
+Reviewer：`codex/agents/document_content_contract.md`
+
+审查文档：
+- `docs/product/base/identity-account-lifecycle/requirements.md`
+- `docs/product/base/identity-account-lifecycle/spec.md`
+
+只读上下文：
+- `docs/product/base/identity-account-lifecycle/traceability.md`
+
+审查重点：对 requirements/spec 职责边界、颗粒度、清晰度、覆盖度和内容越界做内容契约与语义审查。本次不是完整追溯审查，也不验证 code evidence 是否准确。
+
+审查-修复双门禁任务划分：
+| Task | 类型 | 子章节范围 | Requirements item | Spec item | 修复/检查范围 | 当前状态 | 门禁说明 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1-R | Review | `IDENTITY-ACCOUNT` 账号创建与身份解析 | `IDENTITY-ACCOUNT-001..011` | `IDENTITY-SPEC-ACCOUNT-001..011` | 逐条语义审查与复审报告 | Confirmed by user | 用户已放行进入 Task 2-R。 |
+| 1-F | Fix | `IDENTITY-ACCOUNT` 账号创建与身份解析 | `IDENTITY-ACCOUNT-001..011` | `IDENTITY-SPEC-ACCOUNT-001..011` | 已完成的账号/profile 语义拆分、spec 映射和 traceability 同步 | Completed before Task 2-R | 本报告保留复审结果；不再重复执行。 |
+| 2-R | Review | `IDENTITY-OTP` 当前代码基线 | `IDENTITY-OTP-001..003` | `IDENTITY-SPEC-OTP-001..003` | 逐条语义审查、解决方案和修复任务拆分 | Confirmed by user | 用户已放行进入 Task 2-F。 |
+| 2-F | Fix | `IDENTITY-OTP` 当前代码基线 | `IDENTITY-OTP-001..003` | `IDENTITY-SPEC-OTP-001..003` | 修复 requirements/spec 中的 baseline limitation、移除“服务层”实现表述、补足不得进入身份解析/账号创建/session 签发边界，并同步 traceability Spec Flow | Confirmed by user | 用户已放行进入 Task 3-R。 |
+| 3-R | Review | `IDENTITY-OTP` 真实短信 OTP 目标态 | `IDENTITY-OTP-004..031` | `IDENTITY-SPEC-OTP-004..031` | 逐条语义审查 | Confirmed by user | 用户已确认 Requirement / Spec 分离后的 3-R 修复方案，并放行 Task 3-F。 |
+| 3-F | Fix | `IDENTITY-OTP` 真实短信 OTP 目标态 | `IDENTITY-OTP-004..030, 032..037`；`OTP-TESTABILITY-001` 单独 QA 输入 | `IDENTITY-SPEC-OTP-004..030, 032..037`；`OTP-TESTABILITY-001` 单独 testability expectation | 根据 Task 3-R 发现修复 requirements/spec/必要追溯同步 | Confirmed by user | 用户已确认 3-F 修复报告，并放行 Task 4-R。 |
+| 4-R | Review | `IDENTITY-PROVIDER` Apple / WeChat 第三方身份 | `IDENTITY-PROVIDER-001..004` | `IDENTITY-SPEC-PROVIDER-001..004` | 逐条检查 provider baseline limitation 和目标态边界 | Confirmed by user | 用户已确认 4-R 审查表，并放行 Task 4-F。 |
+| 4-F | Fix | `IDENTITY-PROVIDER` Apple / WeChat 第三方身份 | `IDENTITY-PROVIDER-001..004` | `IDENTITY-SPEC-PROVIDER-001..004` | 根据 Task 4-R 发现修复 requirements/spec/必要追溯同步 | Confirmed by user | 用户已确认 4-F 修复报告，并放行 Task 5-R。 |
+| 5-R | Review | `IDENTITY-LOGIN` 登录与 session 签发 | `IDENTITY-LOGIN-001..007` | `IDENTITY-SPEC-LOGIN-001..007` | 逐条语义审查 | Confirmed by user | 用户已确认 5-R 审查表，并放行 Task 5-F。 |
+| 5-F | Fix | `IDENTITY-LOGIN` 登录与 session 签发 | `IDENTITY-LOGIN-001..007` | `IDENTITY-SPEC-LOGIN-001..007` | 根据 Task 5-R 发现修复 requirements/spec/必要追溯同步 | Completed - pending user confirmation | 本轮已执行 login 子章节修复并生成 5-F 修复复审；用户确认前不得进入 Task 6-R。 |
+| 6-R | Review | `IDENTITY-TOKEN` Access / refresh token 生命周期 | `IDENTITY-TOKEN-001..012` | `IDENTITY-SPEC-TOKEN-001..012` | 逐条语义审查 | Pending | 待前置修复 gate 确认。 |
+| 6-F | Fix | `IDENTITY-TOKEN` Access / refresh token 生命周期 | `IDENTITY-TOKEN-001..012` | `IDENTITY-SPEC-TOKEN-001..012` | 根据 Task 6-R 发现修复 requirements/spec/必要追溯同步 | Pending | 待 Task 6-R 用户确认后执行。 |
+| 7-R | Review | `IDENTITY-ME` 当前用户与 profile gate state | `IDENTITY-ME-001..008` | `IDENTITY-SPEC-ME-001..008` | 逐条语义审查 | Pending | 待前置修复 gate 确认。 |
+| 7-F | Fix | `IDENTITY-ME` 当前用户与 profile gate state | `IDENTITY-ME-001..008` | `IDENTITY-SPEC-ME-001..008` | 根据 Task 7-R 发现修复 requirements/spec/必要追溯同步 | Pending | 待 Task 7-R 用户确认后执行。 |
+| 8-R | Review | `IDENTITY-LINK` 身份绑定与解绑 | `IDENTITY-LINK-001..003` | `IDENTITY-SPEC-LINK-001..003` | 逐条语义审查 | Pending | 待前置修复 gate 确认。 |
+| 8-F | Fix | `IDENTITY-LINK` 身份绑定与解绑 | `IDENTITY-LINK-001..003` | `IDENTITY-SPEC-LINK-001..003` | 根据 Task 8-R 发现修复 requirements/spec/必要追溯同步 | Pending | 待 Task 8-R 用户确认后执行。 |
+| 9-R | Review | `IDENTITY-LOGOUT` 退出登录 | `IDENTITY-LOGOUT-001..005` | `IDENTITY-SPEC-LOGOUT-001..005` | 逐条语义审查 | Pending | 待前置修复 gate 确认。 |
+| 9-F | Fix | `IDENTITY-LOGOUT` 退出登录 | `IDENTITY-LOGOUT-001..005` | `IDENTITY-SPEC-LOGOUT-001..005` | 根据 Task 9-R 发现修复 requirements/spec/必要追溯同步 | Pending | 待 Task 9-R 用户确认后执行。 |
+| 10-R | Review | `IDENTITY-DELETE` 账号删除与生命周期状态 | `IDENTITY-DELETE-001..020` | `IDENTITY-SPEC-DELETE-001..020` | 逐条语义审查 | Pending | 待前置修复 gate 确认。 |
+| 10-F | Fix | `IDENTITY-DELETE` 账号删除与生命周期状态 | `IDENTITY-DELETE-001..020` | `IDENTITY-SPEC-DELETE-001..020` | 根据 Task 10-R 发现修复 requirements/spec/必要追溯同步 | Pending | 待 Task 10-R 用户确认后执行。 |
+| 11-R | Review | `IDENTITY-RISK` 风控、限流与防滥用 | `IDENTITY-RISK-001..003` | `IDENTITY-SPEC-RISK-001..003` | 逐条语义审查 | Pending | 待前置修复 gate 确认。 |
+| 11-F | Fix | `IDENTITY-RISK` 风控、限流与防滥用 | `IDENTITY-RISK-001..003` | `IDENTITY-SPEC-RISK-001..003` | 根据 Task 11-R 发现修复 requirements/spec/必要追溯同步 | Pending | 待 Task 11-R 用户确认后执行。 |
+| 12-R | Review | `IDENTITY-AUDIT` 审计、隐私与合规 | `IDENTITY-AUDIT-001..006` | `IDENTITY-SPEC-AUDIT-001..006` | 逐条语义审查 | Pending | 待前置修复 gate 确认。 |
+| 12-F | Fix | `IDENTITY-AUDIT` 审计、隐私与合规 | `IDENTITY-AUDIT-001..006` | `IDENTITY-SPEC-AUDIT-001..006` | 根据 Task 12-R 发现修复 requirements/spec/必要追溯同步 | Pending | 待 Task 12-R 用户确认后执行。 |
+| 13-R | Review | `IDENTITY-RELEASE` 测试替身与生产环境 release gate | 无可归档 requirement item | `IDENTITY-SPEC-RELEASE-000` | 检查无基线边界是否被误写为已实现 | Pending | 待前置修复 gate 确认。 |
+| 13-F | Fix | `IDENTITY-RELEASE` 测试替身与生产环境 release gate | 无可归档 requirement item | `IDENTITY-SPEC-RELEASE-000` | 根据 Task 13-R 发现修复 release boundary/spec/必要追溯同步 | Pending | 待 Task 13-R 用户确认后执行。 |
+
+门禁执行状态：Task 1-R、Task 2-R、Task 2-F、Task 3-R、Task 3-F、Task 4-R、Task 4-F 与 Task 5-R 已由用户放行；本轮执行 Task 5-F 修复。`spec.md` 的公共状态、输入输出与错误信号定义随对应子章节交叉审查；本轮只修复 login 代码基线 `IDENTITY-LOGIN-001..007` 和 `IDENTITY-SPEC-LOGIN-001..007` 以及必要追溯同步，不提前审查 token、me、link、logout、delete、risk、audit 或 release 后续章节。用户确认 Task 5-F 修复复审前不得进入 Task 6-R。
+
+发现：
+- 未发现阻止两份文件继续作为 Draft 模块 artifact 存在的 blocker。两份文档都能区分 `Code baseline` 和 `Target pending` OTP 行为，并多次避免把目标态 OTP 写成已实现。
+- Fixed follow-up：`requirements.md` 曾写明本次不生成 `spec.md` 且 `Spec Flow` 后续补齐，但 `spec.md` 已存在。已在本次修正中同步 workflow-state 语言，明确 `spec.md` 已作为 Draft 规格生成，AC/TC/test evidence 仍待后续补齐。
+- Important：部分 requirement item 混入了其他内容层级。`IDENTITY-OTP-031` 是测试设计要求，应放到 QA/test-case 或 testability contract，不应放在 Product Base requirements；`IDENTITY-DELETE-006` 命名了实现 runner，而不是业务删除义务；`IDENTITY-OTP-021` 和若干删除项使用 class/record 风格名称，除非 domain model 已接受这些术语，否则应改写为业务或领域对象。
+- Important：`spec.md` 主要通过 Ref ID 对 requirements 做 1:1 映射，但还缺少足够的流程级分解。AC/TC 生成前，应为登录、OTP send/verify、refresh、logout、当前用户/profile update、账号删除/retry、audit query 补充显式流程段，包含前置条件、触发、状态转移、输出、typed failure、幂等性和后置条件。
+- Important：Apple/WeChat provider 当前把 provider token hash 作为 identity subject。只有在明确标记为 current-code-baseline limitation 时才可接受；不能把它当作稳定目标态 identity 语义。Product Base merge 前应有独立的目标态 provider validation requirement/spec。
+- Important：账号删除语义列出了大量 cleanup target，但产品/spec 层面的 lifecycle model 仍不完整。Spec 应定义 deletion job state、转移触发、partial failure 行为、retry/idempotency 关系、跨域 cleanup ownership，以及每个状态对应的 audit event。
+- Important：release-gate 语言不一致。requirements 的 scope 说本模块不承载 identity 专属 release gate implementation，但 feature mapping 又把生产 release gate 写入模块候选边界。除非 Product Manager 明确接受为产品模块范围，否则 release gate 应保留为下游 DevOps/Security target boundary。
+- Suggestion：按 requirement family 增加紧凑 status column 或小节，让 `Code baseline`、`Target pending`、`No accepted baseline` 不必依赖段落说明才能识别。
+- Suggestion：补清 terms/privacy consent 的语义来源。文档要求已接受条款，但也说明 consent persistence 未实现，因此 consent 的 source of truth 仍不清楚。
+
+下游 AC/TC 或 Product Base merge 前的必需修正：
+- 已完成：同步 `requirements.md` 的 workflow-state 语言和 `spec.md` 已存在这一事实。
+- 移出或重写测试专属、实现 runner、class name 和 record-list 风格语句，让 requirements 保持业务语义优先。
+- 在 `spec.md` 补充流程级行为段；保留现有 spec item table 作为映射证据，而不是唯一行为契约。
+- 明确把未校验 Apple/WeChat provider-token-hash 登录标记为 baseline limitation。
+- 在 spec 层定义账号删除 lifecycle state 与 failure/retry 语义，或先路由到 domain model 后再生成 acceptance/test。
+
+### IDENTITY-ACCOUNT 第一个子章节逐条语义审查与修复复审
+
+审查范围：
+- 初审 Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-ACCOUNT-001..009`
+- 初审 Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 `IDENTITY-SPEC-ACCOUNT-001..009`
+- 修复后 Requirements：`IDENTITY-ACCOUNT-001..011`
+- 修复后 Spec：`IDENTITY-SPEC-ACCOUNT-001..011`
+
+语义审查定义：
+- 颗粒度：一个 item 只表达一个业务规则、状态转移、可观察结果或安全约束；如会产生多个独立验收结论，应拆分。
+- 清晰度：主体、触发条件、状态、核心动作、结果或错误边界必须明确。
+- 覆盖度：不能只做 ID 映射；需要覆盖主流程、异常分支、权限/安全、关键状态转移、跨域依赖和非目标边界。
+
+Requirements 初审逐条结论（已在本轮修复）：
+| Requirement | 颗粒度 | 清晰度 | 覆盖度 | 结论 | 解决方案 |
+| --- | --- | --- | --- | --- | --- |
+| `IDENTITY-ACCOUNT-001` | 通过 | 条件通过：触发是手机号登录，但需避免被误读为目标态 E.164 规范化 | 已由非目标说明 E.164 未归档 | Suggestion | 改为“当前代码基线的手机号登录解析使用 trim 后手机号作为 `phone` subject；不等同于目标态 E.164 规范化”。 |
+| `IDENTITY-ACCOUNT-002` | 通过 | 条件通过：“已有用户”应明确为身份键绑定的账号 | 账号状态校验由 login 需求覆盖 | Suggestion | 改为“当身份来源和 subject 组成的身份键已绑定账号时，解析到该账号；账号可登录状态由登录需求处理”。 |
+| `IDENTITY-ACCOUNT-003` | 通过 | 不足：缺少创建账号的前置条件，容易和目标态 OTP send 阶段冲突 | 未明确 OTP 验证成功前不得创建账号 | Important | 增加前置条件：“仅在身份凭证校验通过后；目标态手机号 OTP 仅在 OTP 验证成功后触发创建”。 |
+| `IDENTITY-ACCOUNT-004` | 通过 | 通过 | 覆盖新账号生命周期初始状态 | Pass | 可保留。 |
+| `IDENTITY-ACCOUNT-005` | 通过 | 通过 | 覆盖 access-onboarding 初始状态 | Pass | 可保留。 |
+| `IDENTITY-ACCOUNT-006` | 通过 | 条件通过：默认 locale 触发条件隐含为新账号创建 | 覆盖默认本地化状态 | Suggestion | 可改为“新用户账号创建时，在未提供已接受 locale 的情况下默认初始化为 `zh-CN`”。 |
+| `IDENTITY-ACCOUNT-007` | 通过 | 不足：“初始登录身份”缺少来源，可能被误解为任意身份 | 覆盖新账号与登录身份绑定，但不够精确 | Important | 改为“新账号必须绑定本次通过认证的登录身份作为初始登录身份”。 |
+| `IDENTITY-ACCOUNT-008` | 不通过：同时表达 profile 创建、目标等级默认值、每日分钟数默认值 | 清晰，但包含多个独立可验收结果 | 覆盖跨 profile 依赖，但粒度过粗 | Important | 拆分为默认 profile 创建、默认目标等级 `L1`、默认每日分钟数 `10` 三条独立 item。 |
+| `IDENTITY-ACCOUNT-009` | 通过 | 条件通过：“防止”缺少系统行为和冲突结果 | 覆盖身份唯一性安全约束，但缺少冲突分支 | Important | 改为“同一 provider+subject 的有效身份绑定最多对应一个账号；发生冲突时不得创建或绑定重复身份”。 |
+
+Spec 初审逐条结论（已在本轮修复）：
+| Spec item | 颗粒度 | 清晰度 | 覆盖度 | 结论 | 解决方案 |
+| --- | --- | --- | --- | --- | --- |
+| `IDENTITY-SPEC-ACCOUNT-001` | 通过 | 条件通过：同 requirement 001，需标明当前代码基线边界 | 覆盖输入映射，但非目标边界不在 item 内 | Suggestion | 增加“current code baseline，不等同于 E.164 target normalization”的限定。 |
+| `IDENTITY-SPEC-ACCOUNT-002` | 通过 | 条件通过：解析结果明确，但账号状态校验边界隐含 | 账号状态由 login spec 覆盖 | Suggestion | 增加“账号 active/inactive 校验由 `IDENTITY-SPEC-LOGIN-004` 处理”。 |
+| `IDENTITY-SPEC-ACCOUNT-003` | 通过 | 不足：缺少已通过身份校验这个前置条件 | 未覆盖目标态 OTP 创建时机 | Important | 改为“当身份凭证已验证且未解析到身份键时，创建账号；OTP target 仅在 verify success 后进入本 spec”。 |
+| `IDENTITY-SPEC-ACCOUNT-004` | 通过 | 通过 | 覆盖账号状态转移 | Pass | 可保留。 |
+| `IDENTITY-SPEC-ACCOUNT-005` | 通过 | 通过 | 覆盖 onboarding 初始状态 | Pass | 可保留。 |
+| `IDENTITY-SPEC-ACCOUNT-006` | 通过 | 条件通过：默认条件可更清楚 | 覆盖 locale 输出 | Suggestion | 补充“新账号创建时默认 locale”。 |
+| `IDENTITY-SPEC-ACCOUNT-007` | 通过 | 条件通过：已写 active，但初始身份来源可更明确 | 覆盖账号与身份绑定 | Suggestion | 改为“绑定本次通过认证的 provider+subject，并使该身份进入 active”。 |
+| `IDENTITY-SPEC-ACCOUNT-008` | 不通过：`PROFILE-DEFAULT-L1-10` 是组合输出 | 清晰，但不是单一行为契约 | 覆盖 profile 依赖，但无法细分 AC/TC | Important | 拆成 profile 创建、target level 默认、daily minutes 默认三个 spec item。 |
+| `IDENTITY-SPEC-ACCOUNT-009` | 通过 | 不足：引用错误但没有说明冲突处理结果 | 覆盖唯一性，但失败路径不完整 | Important | 增加“保持既有绑定不变、不得创建重复身份、返回 `ACCOUNT-ERR-DUPLICATE-IDENTITY`”。 |
+
+已执行改写方案：
+```text
+Requirements:
+- IDENTITY-ACCOUNT-001 当前代码基线的手机号登录解析中，系统必须使用去除前后空白后的手机号作为 `phone` 身份来源的 subject；该行为不等同于目标态 E.164 规范化。
+- IDENTITY-ACCOUNT-002 当身份来源和身份 subject 组成的身份键已绑定用户账号时，系统必须解析到该绑定账号；账号可登录状态由登录需求处理。
+- IDENTITY-ACCOUNT-003 当身份凭证校验通过且未解析到已有身份时，系统必须创建新的用户账号；目标态手机号 OTP 只能在 OTP 验证成功后触发账号创建。
+- IDENTITY-ACCOUNT-004 新用户账号必须初始化为 `active` 账号状态。
+- IDENTITY-ACCOUNT-005 新用户账号必须初始化为 `incomplete` 首评状态。
+- IDENTITY-ACCOUNT-006 新用户账号创建时必须默认初始化 locale 为 `zh-CN`。
+- IDENTITY-ACCOUNT-007 新用户账号必须绑定本次通过认证的登录身份作为初始登录身份。
+- IDENTITY-ACCOUNT-008 新用户账号必须同时创建默认 profile。
+- IDENTITY-ACCOUNT-009 同一身份来源和身份 subject 的有效身份绑定最多只能对应一个用户账号；冲突时系统不得创建或绑定重复身份。
+- IDENTITY-ACCOUNT-010 默认 profile 的目标等级必须为 `L1`。
+- IDENTITY-ACCOUNT-011 默认 profile 的每日分钟数必须为 `10`。
+
+Spec:
+- IDENTITY-SPEC-ACCOUNT-001 手机号登录解析身份时，系统必须在 current code baseline 下使用 `ACCOUNT-IN-PHONE-SUBJECT` 作为 `phone` provider 的 subject；该规格不表示目标态 E.164 normalization。
+- IDENTITY-SPEC-ACCOUNT-002 当存在 `ACCOUNT-IN-IDENTITY-KEY` 对应身份时，系统必须解析到该身份绑定的已有账号；账号 active/inactive 登录校验由 `IDENTITY-SPEC-LOGIN-004` 处理。
+- IDENTITY-SPEC-ACCOUNT-003 当身份凭证已验证且未解析到 `ACCOUNT-IN-IDENTITY-KEY` 时，系统必须创建新的用户账号；目标态 OTP 只在 verify success 后进入本创建流程。
+- IDENTITY-SPEC-ACCOUNT-004 新用户账号创建后必须进入 `ACCOUNT-STATE-ACTIVE`。
+- IDENTITY-SPEC-ACCOUNT-005 新用户账号创建后必须进入 `ONBOARDING-STATE-INCOMPLETE`。
+- IDENTITY-SPEC-ACCOUNT-006 新用户账号创建后必须初始化 locale 为 `zh-CN`。
+- IDENTITY-SPEC-ACCOUNT-007 新用户账号创建时必须绑定本次通过认证的 provider+subject，并使该初始登录身份进入 active。
+- IDENTITY-SPEC-ACCOUNT-008 新用户账号创建时必须同时创建默认 profile。
+- IDENTITY-SPEC-ACCOUNT-009 当同一 `ACCOUNT-IN-IDENTITY-KEY` 试图绑定多个用户时，系统必须保持既有绑定不变，不得创建重复身份，并返回 `ACCOUNT-ERR-DUPLICATE-IDENTITY`。
+- IDENTITY-SPEC-ACCOUNT-010 默认 profile 的 target level 必须为 `L1`。
+- IDENTITY-SPEC-ACCOUNT-011 默认 profile 的 daily minutes 必须为 `10`。
+```
+
+执行情况：
+- 已执行：将 `IDENTITY-ACCOUNT-008` / `IDENTITY-SPEC-ACCOUNT-008` 拆分为默认 profile 创建、默认 target level、默认 daily minutes 三个独立语义 item。
+- 已执行：新增 `IDENTITY-ACCOUNT-010..011` 和 `IDENTITY-SPEC-ACCOUNT-010..011`。
+- 已执行：同步更新 `spec.md` 的 `IDENTITY-ACCOUNT-001..011 -> IDENTITY-SPEC-ACCOUNT-001..011` 映射。
+- 已执行：同步更新 `traceability.md` 的账号创建子章节 Spec Flow，并为 `IDENTITY-ACCOUNT-010..011` 新增追溯行。
+
+执行后复审结果：
+| 复审对象 | 颗粒度 | 清晰度 | 覆盖度 | 结论 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-ACCOUNT-001..011` | Pass：每条只表达一个业务规则、状态、默认值或安全约束 | Pass：baseline 边界、认证前置、默认值触发、身份唯一性冲突行为已明确 | Pass：覆盖手机号 subject baseline、身份解析、账号创建、账号/onboarding/locale/profile 初始状态、身份绑定和唯一性约束 | 子章节 requirements 语义问题关闭 |
+| `IDENTITY-SPEC-ACCOUNT-001..011` | Pass：`PROFILE-DEFAULT-L1-10` 组合输出已拆分 | Pass：spec item 的前置条件、跨 spec 边界、错误输出和默认输出已明确 | Pass：与 requirements 形成 1:1 映射，并补齐 traceability 的账号章节 Spec Flow | 子章节 spec 语义问题关闭 |
+| `traceability.md` 账号创建行 | Pass：新增 requirement/spec ID 均有独立行 | Pass：`Spec Flow` 已从 TBD 替换为具体 spec ID | Pass：账号创建子章节覆盖 `001..011`；AC/TC 仍按当前流程标记后续补齐 | 账号创建追溯同步问题关闭 |
+
+复审验证：
+- `identity account semantic sync check`：passed，确认 `IDENTITY-ACCOUNT-001..011`、`IDENTITY-SPEC-ACCOUNT-001..011`、spec 映射和 traceability 行全部存在。
+- `PROFILE-DEFAULT-L1-10` 组合 Ref ID 已从 `spec.md` 移除，替换为 `PROFILE-DEFAULT`、`PROFILE-DEFAULT-TARGET-LEVEL-L1`、`PROFILE-DEFAULT-DAILY-MINUTES-10`。
+- 本次复审只关闭 `IDENTITY-ACCOUNT` 子章节的语义表达问题；不批准 Product Base merge、AC/TC 完成、测试证据或代码证据准确性。
+
+残余风险：
+- 本次未检查 backend code，也未验证 traceability 中 code evidence 是否准确。
+- 本次不批准 Product Base root merge、release readiness、acceptance criteria、test cases 或 implementation start。
+
+### IDENTITY-OTP 当前代码基线逐条语义审查
+
+审查范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-OTP-001..003`
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 `IDENTITY-SPEC-OTP-001..003`
+- 交叉引用 Ref ID：`OTP-IN-PHONE-RAW`、`OTP-IN-CODE-RAW`、`OTP-ERR-VALIDATION`
+- 只读上下文：`docs/product/base/identity-account-lifecycle/traceability.md` 中 `IDENTITY-OTP-001..003`
+
+本轮结果：conditional pass。Task 2 没有 blocker；requirements/spec 可继续作为 Draft 输入。但在生成 AC/TC 或 Product Base merge 前，应把实现层表述改为系统行为，并明确当前代码基线只覆盖手机号登录请求的输入存在性校验，不代表真实短信 OTP 发送、challenge、验证码正确性、过期、一次性消费或重放控制已实现。
+
+Requirements 逐条结论：
+| Requirement | 颗粒度 | 清晰度 | 覆盖度 | 结论 | 解决方案 |
+| --- | --- | --- | --- | --- | --- |
+| `IDENTITY-OTP-001` | Pass：只表达手机号字段存在性要求 | 条件通过：需明确这是当前代码基线的手机号登录请求输入校验，不是目标态 OTP send/verify 入口 | 条件通过：覆盖手机号缺失主失败前置，但不覆盖格式、E.164、国家地区或真实 OTP challenge | Suggestion | 改为“当前代码基线的手机号登录请求必须提供非空手机号字段；该要求只代表输入存在性校验，不代表 E.164 规范化、短信发送或 OTP challenge 已实现”。 |
+| `IDENTITY-OTP-002` | Pass：只表达验证码字段存在性要求 | 条件通过：需明确“验证码字段”只按当前代码基线做存在性校验 | 条件通过：覆盖验证码缺失前置，但不覆盖验证码正确性、过期、一次性消费或重放控制 | Suggestion | 改为“当前代码基线的手机号登录请求必须提供非空验证码字段；该要求不代表验证码正确性、过期、一次性消费或重放控制已实现”。 |
+| `IDENTITY-OTP-003` | 条件通过：手机号为空或验证码为空共享同一拒绝行为，可保留为一个失败规则 | 不足：“服务层”是实现层边界，不是 requirements 语义；“拒绝”缺少后置结果 | 条件通过：覆盖缺失输入失败路径，但未说明不得继续身份解析、账号创建或 session 签发 | Important | 改为“当手机号或验证码字段为空时，系统必须拒绝当前手机号登录请求并停止登录处理；不得继续身份解析、账号创建或 session 签发”。 |
+
+Spec 逐条结论：
+| Spec item | 颗粒度 | 清晰度 | 覆盖度 | 结论 | 解决方案 |
+| --- | --- | --- | --- | --- | --- |
+| `IDENTITY-SPEC-OTP-001` | Pass：只表达 `OTP-IN-PHONE-RAW` 输入存在性 | 条件通过：Ref ID 已说明当前代码基线只要求非空，但 item 本身可更明确 baseline limitation | 条件通过：可下沉为 AC/TC 的输入校验；不覆盖目标态手机号规范化 | Suggestion | 改为“current code baseline 下，手机号登录请求必须包含非空 `OTP-IN-PHONE-RAW`；该 item 不表示 `OTP-IN-PHONE-E164` 或 OTP challenge 已实现”。 |
+| `IDENTITY-SPEC-OTP-002` | Pass：只表达 `OTP-IN-CODE-RAW` 输入存在性 | 条件通过：Ref ID 已说明当前代码基线只要求非空，但 item 本身可更明确不验证 OTP 正确性 | 条件通过：可下沉为 AC/TC 的输入校验；不覆盖过期、消费或重放 | Suggestion | 改为“current code baseline 下，手机号登录请求必须包含非空 `OTP-IN-CODE-RAW`；该 item 不表示验证码正确性、过期、一次性消费或重放控制已实现”。 |
+| `IDENTITY-SPEC-OTP-003` | 条件通过：两个输入缺失场景共用同一错误输出，可保留一个 spec item | 不足：“服务层”会把 spec 写成实现层约束；停止处理范围应更明确 | 条件通过：覆盖 `OTP-ERR-VALIDATION`，但缺少不进入账号创建/session 签发的后置边界 | Important | 改为“当 `OTP-IN-PHONE-RAW` 或 `OTP-IN-CODE-RAW` 为空时，系统必须返回 `OTP-ERR-VALIDATION`，停止手机号登录处理，并不得进入身份解析、账号创建或 session 签发流程”。 |
+
+建议改写方案（本轮未写入 requirements/spec 原文）：
+```text
+Requirements:
+- IDENTITY-OTP-001 当前代码基线的手机号登录请求必须提供非空手机号字段；该要求只代表输入存在性校验，不代表 E.164 规范化、短信发送或 OTP challenge 已实现。
+- IDENTITY-OTP-002 当前代码基线的手机号登录请求必须提供非空验证码字段；该要求不代表验证码正确性、过期、一次性消费或重放控制已实现。
+- IDENTITY-OTP-003 当手机号或验证码字段为空时，系统必须拒绝当前手机号登录请求并停止登录处理；不得继续身份解析、账号创建或 session 签发。
+
+Spec:
+- IDENTITY-SPEC-OTP-001 current code baseline 下，手机号登录请求必须包含非空 `OTP-IN-PHONE-RAW`；该 item 不表示 `OTP-IN-PHONE-E164` 或 OTP challenge 已实现。
+- IDENTITY-SPEC-OTP-002 current code baseline 下，手机号登录请求必须包含非空 `OTP-IN-CODE-RAW`；该 item 不表示验证码正确性、过期、一次性消费或重放控制已实现。
+- IDENTITY-SPEC-OTP-003 当 `OTP-IN-PHONE-RAW` 或 `OTP-IN-CODE-RAW` 为空时，系统必须返回 `OTP-ERR-VALIDATION`，停止手机号登录处理，并不得进入身份解析、账号创建或 session 签发流程。
+```
+
+执行情况：
+- 已执行：完成 `IDENTITY-OTP-001..003` 和 `IDENTITY-SPEC-OTP-001..003` 的逐条内容契约语义审查。
+- 已执行：确认 Task 2 未提前审查 `IDENTITY-OTP-004..031` 目标态需求。
+- 已关闭：用户已确认 Task 2-R 修复方案；Task 2-F 已按本节解决方案修改 `requirements.md`、`spec.md` 和 `traceability.md`，见下方修复复审。
+
+执行后复审结果：
+| 复审对象 | 颗粒度 | 清晰度 | 覆盖度 | 结论 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-OTP-001..002` | Pass：每条只表达一个输入存在性要求 | Conditional：需要在 item 内补强 current-code-baseline limitation | Conditional：只覆盖当前登录请求输入存在性，不覆盖目标态 OTP 能力 | 可作为 Draft 输入，建议修文后再生成 AC/TC |
+| `IDENTITY-OTP-003` | Conditional：两个缺失输入共享同一失败行为，可保留一个 item | Important：应移除“服务层”实现表述并补足停止处理后置边界 | Conditional：失败路径存在，但缺少不得创建账号或 session 的明确边界 | 建议修文后再生成 AC/TC |
+| `IDENTITY-SPEC-OTP-001..003` | Pass/Conditional：输入存在性和失败输出可以独立验收 | Important：`IDENTITY-SPEC-OTP-003` 应避免实现层语言 | Conditional：可映射 AC/TC，但需补足与账号创建/session 签发的边界 | 建议修文后再生成 AC/TC |
+| `traceability.md` OTP code baseline 行 | Not reviewed as traceability gate | Not reviewed as traceability gate | Risk：`Spec Flow` 仍为 `TBD - 后续补齐`，与已存在 spec ID 不同步 | 后续应更新为 `IDENTITY-SPEC-OTP-001..003`，但本轮不改追溯矩阵 |
+
+残余风险：
+- 本次未检查 backend code，也未验证 traceability 中 code evidence 是否准确。
+- 本次不批准 Product Base root merge、release readiness、acceptance criteria、test cases 或 implementation start。
+- 已关闭：用户已确认 Task 2-F 修复报告并放行 Task 3-R。
+
+### IDENTITY-OTP 当前代码基线 2-F 修复复审
+
+修复范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-OTP-001..003`
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 `IDENTITY-SPEC-OTP-001..003`
+- Traceability：`docs/product/base/identity-account-lifecycle/traceability.md` 中 `IDENTITY-OTP-001..003` 的 `Spec Flow`
+
+已执行修复：
+| 修复项 | 文件 | 修复内容 | 复审结论 |
+| --- | --- | --- | --- |
+| `IDENTITY-OTP-001` | `requirements.md` | 增加 current-code-baseline 限定，明确只代表手机号字段输入存在性校验，不代表 E.164、短信发送或 OTP challenge 已实现。 | Pass |
+| `IDENTITY-OTP-002` | `requirements.md` | 增加 current-code-baseline 限定，明确只代表验证码字段输入存在性校验，不代表验证码正确性、过期、一次性消费或重放控制已实现。 | Pass |
+| `IDENTITY-OTP-003` | `requirements.md` | 移除“服务层”实现层表述，改为系统拒绝手机号登录请求并停止处理；补足不得继续身份解析、账号创建或 session 签发。 | Pass |
+| `IDENTITY-SPEC-OTP-001` | `spec.md` | 增加 current-code-baseline 限定，明确不表示 `OTP-IN-PHONE-E164` 或 OTP challenge 已实现。 | Pass |
+| `IDENTITY-SPEC-OTP-002` | `spec.md` | 增加 current-code-baseline 限定，明确不表示验证码正确性、过期、一次性消费或重放控制已实现。 | Pass |
+| `IDENTITY-SPEC-OTP-003` | `spec.md` | 移除“服务层”实现层表述，明确返回 `OTP-ERR-VALIDATION`、停止手机号登录处理，并不得进入身份解析、账号创建或 session 签发流程。 | Pass |
+| `IDENTITY-OTP-001..003` traceability | `traceability.md` | 将 `Spec Flow` 从 `TBD - 后续补齐` 分别同步为 `IDENTITY-SPEC-OTP-001..003`；`AC` 与 `TC` 继续保留 `TBD - 后续补齐`。 | Pass |
+
+修复后复审结果：
+| 复审对象 | 颗粒度 | 清晰度 | 覆盖度 | 结论 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-OTP-001..003` | Pass：每条只表达输入存在性或缺失输入失败处理；未混入目标态 OTP 能力 | Pass：current-code-baseline、未实现目标态边界和失败后置条件已明确 | Pass：覆盖当前代码基线手机号登录请求输入校验与缺失输入失败路径；不误承诺真实 OTP 能力 | Task 2-F requirements 修复关闭 |
+| `IDENTITY-SPEC-OTP-001..003` | Pass：输入项和失败输出均可独立验收 | Pass：已移除实现层语言，补足 `OTP-ERR-VALIDATION` 与停止处理边界 | Pass：可作为后续 AC/TC 上游；目标态 OTP 仍由 Task 3-R 单独审查 | Task 2-F spec 修复关闭 |
+| `traceability.md` OTP code baseline 行 | Pass：`IDENTITY-OTP-001..003` 均映射到具体 spec ID | Pass：AC/TC 未生成前继续显式标记后续补齐 | Pass：Spec 链路同步问题关闭；不声明 AC/TC 或测试证据完成 | Task 2-F traceability 同步关闭 |
+
+修复验证：
+- `IDENTITY-OTP-001..003` 均保留在当前代码基线小节，未移动或扩展到目标态 OTP。
+- `IDENTITY-SPEC-OTP-001..003` 均保留 `Code baseline` 状态，未改动 `IDENTITY-SPEC-OTP-004..031`。
+- `traceability.md` 仅同步 `Spec Flow`，未伪造 AC、TC 或测试证据。
+- 本次修复不批准 Product Base root merge、release readiness、acceptance criteria、test cases 或 implementation start。
+
+2-F 修复完成时门禁状态（历史记录；当前状态以本文顶部任务表和 3-F 门禁表为准）：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 2-R | Confirmed by user | 已放行并完成 Task 2-F。 |
+| Task 2-F | Confirmed by user | 已放行并执行 Task 3-R。 |
+| Task 3-R | Completed - pending user confirmation | 用户确认 Task 3-R 审查表前，不得执行 Task 3-F。 |
+
+### IDENTITY-OTP 真实短信 OTP 目标态 3-R 逐条语义审查
+
+审查范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-OTP-004..031`
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 `IDENTITY-SPEC-OTP-004..031`
+- 只读上下文：`docs/product/base/identity-account-lifecycle/traceability.md` 中 `IDENTITY-OTP-004..031`
+
+本轮结果：conditional。目标态 OTP 需求和规格可以继续作为 Draft target 输入，但在进入 3-F 修复、AC/TC 生成、实现计划或 Product Base merge 前，必须先处理下表中的内容边界、语义粒度、清晰度和 traceability 同步问题。本轮不修改 `requirements.md`、`spec.md` 或 `traceability.md` 正文。
+
+按文档定位拆分的确认表：
+| Item | 级别 | Requirement 问题 | Requirement 修复方案 | Spec 问题 | Spec 修复方案 | Traceability / Cross-doc 修复 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `OTP-004` | Suggestion | 需求只说“流程入口”，未定义业务范围内哪些 OTP 入口必须统一处理手机号，也未写非法号码的业务后果。 | 写成目标态业务规则：所有接收手机号的 OTP 入口必须先完成 E.164 规范化；非法或不支持号码不得进入 OTP 登录或注册流程。 | 规格未定义 send/verify 等入口的输入处理、typed error 和后置状态。 | 写成行为契约：接收手机号时输出 `OTP-IN-PHONE-E164`；失败返回 `OTP-ERR-INVALID-PHONE`，且不创建 challenge/session。 | 无。 |
+| `OTP-005` | Suggestion | 需求应表达“请求 OTP 不等于登录成功或账号创建”的业务边界，但不应细写 challenge 创建细节过多。 | 改为：用户请求 OTP 只启动一次待验证的 OTP 挑战，不得完成账号创建或认证会话。 | 规格需要定义前置校验通过后创建 challenge，provider 失败时不创建可验证 challenge。 | 写明手机号、consent、频控、风险和 provider 前置校验通过后进入 `OTP-STATE-CHALLENGE-ACTIVE`；与 `OTP-023` 对齐。 | 无。 |
+| `OTP-006` | Suggestion | 需求列出 challenge 业务绑定对象即可，不应定义过细输入结构。 | 保留“challenge 绑定手机号、purpose、请求上下文和过期时间”的业务要求。 | 规格需定义 `OTP-IN-CONTEXT` 的最低字段和缺失处理。 | 定义 context 至少包含可用 request/client/device 标识；不可用时记录 absent，不改变 challenge 语义。 | 无。 |
+| `OTP-007` | Important | 需求把安全来源、默认格式、配置下限混成一条。 | 拆为两条业务安全要求：OTP 必须由服务端安全随机生成；OTP 默认 6 位数字且配置不得低于 6 位。 | 规格也应拆成可独立验收的生成规则和格式配置规则。 | 拆为两个 spec item：生成来源输出约束；格式默认值和配置下限约束。 | 更新映射时新增对应 spec ID。 |
+| `OTP-008` | Suggestion | 需求未说明有效期业务起点。 | 补充 OTP 有效期从 challenge 可验证开始计算，默认 5 分钟，配置上限 10 分钟。 | 规格需定义起算状态和过期后的状态/错误。 | 从 `OTP-STATE-CHALLENGE-ACTIVE` 开始计时；过期后不可验证并返回过期错误或进入 expired 状态。 | 无。 |
+| `OTP-010` | Suggestion | 需求中的 “HMAC 或 hash” 容易允许不安全解释。 | 改为 OTP 校验值必须使用服务端 secret 参与的不可逆校验机制。 | 规格需定义可验收的存储输出约束。 | 使用 keyed HMAC 或等效 secret-peppered hash；不得保存可逆明文或普通裸 hash。 | 无。 |
+| `OTP-011` | Important | 需求缺少 consent source/version 和未同意时业务结果。 | 写成发送前必须确认用户已接受当前版本服务条款和隐私政策；未接受不得发送 OTP。 | 规格需定义输入来源、失败输出和不产生副作用。 | 定义 consent 输入、版本校验、失败 typed error，并声明不创建 challenge/session。 | 无。 |
+| `OTP-012` | Suggestion | Requirement 未说明冷却命中结果。 | 补充命中冷却时不得发送 OTP，并返回限流类业务错误。 | Spec 已有 `OTP-ERR-RATE-LIMITED`，无需新增语义。 | 保持或对齐 wording。 | 无。 |
+| `OTP-013` | Suggestion | 需求未说明窗口策略是否可配置。 | 写成手机号级发送窗口限制是配置策略，默认每小时 5 次、每天 10 次。 | 规格需定义窗口算法/配置输入和超限输出。 | 明确窗口策略为配置项；超限返回 `OTP-ERR-RATE-LIMITED`。 | 无。 |
+| `OTP-014` | Important | Requirement 已包含 IP/device/install_id 默认阈值，语义基本完整但过密。 | 可保留或拆成 IP 限流与 device/install_id 限流两条业务规则。 | Spec 丢失默认阈值，只写独立限流，无法生成完整 AC/TC。 | 用表格补 IP、device、install_id 小时/日阈值和统一 `OTP-ERR-RATE-LIMITED` 输出。 | 无。 |
+| `OTP-015` | Suggestion | 需求把“新 challenge 或新 secret”写成实现选择。 | 写成用户重新发送 OTP 后，旧 active OTP 不得再通过验证，且失败计数不得被重置。 | 规格可说明实现允许路径，但行为契约应围绕状态转移。 | 定义 resend 后旧 challenge 进入不可验证状态；实现可通过新 challenge 或新 secret 达成。 | 无。 |
+| `OTP-016..017` | Important | 需求未清晰区分单 challenge 尝试上限与手机号+purpose 累计锁定。 | 拆清两层业务规则：单 challenge 错误上限；手机号+purpose 累计错误锁定。 | 规格需定义两个计数器、状态变化和 typed error。 | 定义 per-challenge attempts 和 phone-purpose window attempts；达到阈值后的状态和错误码。 | 无。 |
+| `OTP-018` | Important | 需求含“事务或行锁”实现语言，且把一次性消费和账号解析/创建混在一条。 | 改为业务规则：OTP 验证成功只能消费一次；只有消费成功后才允许创建或解析账号。 | 规格需定义原子消费状态转移和后续账号流程调用。 | 定义 `OTP-STATE-CHALLENGE-CONSUMED` 只成功一次；成功后进入账号创建/解析流程。 | 无。 |
+| `OTP-019` | Suggestion | 需求重复定义 token 生命周期细节。 | 写成 OTP 验证成功后用户应获得登录会话能力。 | 规格应引用 token 生命周期 spec，而不是重写 token 规则。 | 按 `IDENTITY-SPEC-TOKEN-*` 签发 access/refresh token，并返回对应会话输出。 | 无。 |
+| `OTP-021` | Important | 需求使用 `UserAccount`、`AuthIdentity`、`UserProfile` 类/记录名，且一条有三个结果。 | 改成业务语义或引用 `IDENTITY-ACCOUNT-003..011`：新手机号首次验证成功后创建账号、初始身份和默认资料。 | 规格可引用具体领域对象，但应拆成可验收输出或引用账号创建 spec。 | 改为引用 `IDENTITY-SPEC-ACCOUNT-003..011`，或拆成账号、身份、profile 三个 spec item。 | 无。 |
+| `OTP-023` | Suggestion | Requirement 写 typed error 但未命名。 | 补充短信 provider 失败返回 provider 失败类业务错误，且不得完成 OTP 登录。 | Spec 已有 `OTP-ERR-PROVIDER-FAILED`，需与 challenge 创建时机对齐。 | 明确 provider 失败时不产生可验证 challenge/session。 | 无。 |
+| `OTP-024` | Important | 需求把 release gate/test provider 禁用写成普通 OTP 业务需求。 | 移到 Release/DevOps target boundary；在需求主流程中只保留“生产不得使用测试验证码能力”的安全边界。 | 规格不应把 release gate 实现写成普通行为 item。 | 移到 release boundary spec 或 `IDENTITY-SPEC-RELEASE-*`，不作为 OTP user flow spec。 | 可能调整 traceability 分类为 release target boundary。 |
+| `OTP-026` | Suggestion | HTTPS 是 Security/DevOps 边界，需求未标明归属。 | 标记为生产安全边界：生产 OTP 能力只能通过安全传输入口提供。 | 规格需定义入口约束和拒绝行为，而不是部署实现。 | 写明非 HTTPS 生产入口不得处理 OTP 请求，并返回安全错误或由网关阻断。 | 标记为 Architecture/Security boundary。 |
+| `OTP-027` | Important | 需求把 audit event 集合和脱敏字段规则混成一条。 | 拆成两条：应记录哪些 OTP 审计事件；审计内容必须脱敏且不得含明文 OTP/token。 | 规格需定义事件枚举、字段白名单和禁止字段。 | 拆成 audit event set spec 与 redaction/data-minimization spec。 | 可链接 Audit 章节，避免重复定义全局审计规则。 |
+| `OTP-028` | Important | 需求把风险信号、block、step-up 三类决策混在一条，step-up 未定义。 | 拆成业务策略：风险信号纳入；block 风险不得发送 OTP 或发放会话；step-up 风险需额外验证。 | 规格需定义风险等级输入、状态分支、typed error 和 step-up 成功/失败路径。 | 拆成 risk-signal、risk-block、risk-step-up 三个 spec item，并引用下游 step-up 契约。 | 可能需要 Architecture/Security 或 Risk contract。 |
+| `OTP-029` | Suggestion | 需求没有写 CAPTCHA 失败业务结果。 | 补充 CAPTCHA 未通过时不得发送 OTP 或发放 session；CAPTCHA 通过也不能替代 OTP。 | 规格需定义 CAPTCHA 分支状态和后续仍需 OTP verify。 | 增加 captcha-required、captcha-failed、captcha-passed 后续转移。 | 无。 |
+| `OTP-030` | Important | 需求把 OTP 明文、challenge、audit 三类 retention 混在一条。 | 拆成三条业务数据保留规则。 | 规格需分别定义对象生命周期和到期动作。 | 拆成 plaintext never stored、challenge cleanup、audit retention 三个 spec item。 | 可能链接数据保留或隐私契约。 |
+| `OTP-031` | Blocker before AC/TC | 测试替身和测试覆盖不属于 Product Base requirement。 | 从 requirements 主列表移出；作为 QA/testability 输入保留。 | 测试替身和覆盖不属于产品 spec item。 | 从 spec item 主列表移出；放到 testability expectations 或后续 test cases。 | Traceability 标记为 QA/testability，不作为 requirement row。 |
+| OTP target spec section | Important | 无 requirement 问题。 | 不改 requirement。 | Spec 缺少 send、verify、resend、risk block、step-up、provider failure 流程级行为段。 | 只在 spec 补流程级行为段；item table 保留为映射证据。 | 无。 |
+| `OTP-004..031` traceability | Important | 无 requirement 问题。 | 不改 requirement。 | 无 spec 正文问题。 | 不改 spec 正文。 | 只修 traceability，把 Spec Flow 同步为 `IDENTITY-SPEC-OTP-004..031`；AC/TC/code evidence 保持 pending。 |
+| OTP target section cross-doc | Important | Requirement 中混有 Security、DevOps、Audit、QA 内容，边界不清。 | 增加类型/状态或分小节：Product behavior target、Security target boundary、Release target、QA/testability input。 | Spec 中也需区分用户流程行为、security boundary、release boundary、testability expectation。 | 增加 spec 类型列或小节，并把非行为项移到对应边界。 | 同步 traceability 的状态/分类，避免把 QA 或 release boundary 当作已实现产品行为。 |
+
+逐条审查与修复方案：
+| Item | 颗粒度 | 清晰度 | 覆盖度 | 结论 | 3-F 修复方案 |
+| --- | --- | --- | --- | --- | --- |
+| `IDENTITY-OTP-004` / `IDENTITY-SPEC-OTP-004` | Conditional：规范化和拒绝非法号码属于同一输入校验规则，可保留 | 入口范围不够清楚，容易不区分 send/verify 中哪些地方接收手机号 | 覆盖格式和地区边界，但未说明成功规范化后的后续使用 | Suggestion | 改为“所有接收手机号的 OTP 入口必须先规范化为 E.164；非法或不支持号码返回 `OTP-ERR-INVALID-PHONE`，且不得创建 challenge 或 session”。 |
+| `IDENTITY-OTP-005` / `IDENTITY-SPEC-OTP-005` | Pass：只表达 send/request 阶段不得创建账号或 session | “只创建 OTP challenge”需与 provider 失败时不创建可验证 challenge 对齐 | 覆盖 send 阶段核心非目标，但缺少前置校验通过条件 | Suggestion | 补充“通过手机号、consent、频控、风险和 provider 前置校验后”，并与 `IDENTITY-OTP-023` 对齐。 |
+| `IDENTITY-OTP-006` / `IDENTITY-SPEC-OTP-006` | Conditional：一个 challenge 输出绑定多个必要属性，可保留 | `OTP-IN-CONTEXT` 含义较宽，设备/客户端上下文最低要求不清 | 覆盖 challenge 绑定，但上下文边界不足 | Suggestion | 明确 context 至少包含可用的 request/client/device 标识；不可用时记录为 absent，不影响字段语义。 |
+| `IDENTITY-OTP-007` / `IDENTITY-SPEC-OTP-007` | Important：混合生成来源、默认格式和配置下限 | 业务安全目标清楚，但一个 item 会产生多个 AC/TC | 覆盖随机性和格式策略 | Important | 拆为“OTP 由服务端 CSPRNG 生成”和“默认 6 位数字且配置不得低于 6 位”两个 item/spec。 |
+| `IDENTITY-OTP-008` / `IDENTITY-SPEC-OTP-008` | Pass | 需明确有效期从 challenge 创建或发送成功开始计算 | 覆盖默认值和配置上限 | Suggestion | 补充有效期起算点，并保持默认 5 分钟、配置上限 10 分钟。 |
+| `IDENTITY-OTP-009` / `IDENTITY-SPEC-OTP-009` | Pass | 明文流向和禁止面清楚 | 覆盖持久化、日志和错误响应泄露 | Pass | 可保留；3-F 只需检查是否与审计 item 重复但不改语义。 |
+| `IDENTITY-OTP-010` / `IDENTITY-SPEC-OTP-010` | Pass | “HMAC 或 hash”需避免被误读为无 secret 的普通 hash | 覆盖持久化校验值安全边界 | Suggestion | 改为“keyed HMAC 或等效 secret-peppered hash”，明确不得保存可逆明文或普通裸 hash。 |
+| `IDENTITY-OTP-011` / `IDENTITY-SPEC-OTP-011` | Pass | “当前服务条款和隐私政策”的 consent source/version 不清 | 覆盖发送前 consent gate，但未定义失败行为 | Important | 补充 consent source/version 与未接受时的拒绝行为；避免与当前未实现 consent persistence 混淆。 |
+| `IDENTITY-OTP-012` / `IDENTITY-SPEC-OTP-012` | Pass | Requirements 未说明命中冷却时的 typed failure，spec 已补 `OTP-ERR-RATE-LIMITED` | 覆盖重复发送冷却 | Suggestion | 在 requirement 中同步超冷却失败输出，并保留默认 60 秒。 |
+| `IDENTITY-OTP-013` / `IDENTITY-SPEC-OTP-013` | Pass | 时间窗口类型不清，固定窗口/滑动窗口/配置窗口都可能被误读 | 覆盖手机号级小时/日限制 | Suggestion | 明确窗口策略为配置项，并在默认策略下保留每小时 5 次、每天 10 次。 |
+| `IDENTITY-OTP-014` / `IDENTITY-SPEC-OTP-014` | Important：IP、device、install_id 三组阈值在一个 item 中过密 | Spec 丢失默认阈值，只写“独立限流” | Requirements 覆盖完整，Spec 覆盖不足 | Important | 拆分或表格化 IP 与 device/install_id 阈值；同步 spec 中的默认每小时/每天数值。 |
+| `IDENTITY-OTP-015` / `IDENTITY-SPEC-OTP-015` | Conditional：resend 策略可保留为一个规则 | “新 challenge 或新 secret”实现选择过宽，用户可观察边界是旧 OTP 不可验证 | 覆盖旧 OTP 失效与失败计数保持 | Suggestion | 改为“重新发送后旧 active OTP 不再可验证；实现可通过新 challenge 或新 secret 达成”，把实现选择降为说明。 |
+| `IDENTITY-OTP-016` / `IDENTITY-SPEC-OTP-016` | Pass | 达到单 challenge 5 次后的状态和错误输出不清 | 覆盖 per-challenge 尝试上限，但后置行为不足 | Important | 补充第 5 次之后 challenge 进入不可验证状态，并返回明确 typed error 或引用 `OTP-ERR-ATTEMPTS-LOCKED`/新错误。 |
+| `IDENTITY-OTP-017` / `IDENTITY-SPEC-OTP-017` | Conditional：失败计数和手机号+purpose 锁定可保留为一个累计失败规则 | 与 `IDENTITY-OTP-016` 的 per-challenge 上限关系不清 | 覆盖累计错误锁定、窗口和返回码 | Important | 明确 per-challenge 上限与手机号+purpose 累计锁定是两个独立计数层；失败时同时更新适用计数。 |
+| `IDENTITY-OTP-018` / `IDENTITY-SPEC-OTP-018` | Important：原子消费和账号创建/解析是两个验收结论，可 1:N 拆分 | “事务或行锁”是实现层表述 | 覆盖一次性消费和账号生命周期入口，但内容越界 | Important | 移除“事务或行锁”，改为“原子且只成功一次地消费 challenge”；拆出“消费成功后才创建或解析账号”。 |
+| `IDENTITY-OTP-019` / `IDENTITY-SPEC-OTP-019` | Pass | 需引用 token 生命周期规格，避免重复定义 token 语义 | 覆盖 verify success 后会话发放 | Suggestion | 改为“按 `IDENTITY-TOKEN` 生命周期签发 access/refresh token”。 |
+| `IDENTITY-OTP-020` / `IDENTITY-SPEC-OTP-020` | Pass | 清晰 | 覆盖已绑定手机号身份不重复创建账号 | Pass | 可保留；3-F 可只对齐措辞。 |
+| `IDENTITY-OTP-021` / `IDENTITY-SPEC-OTP-021` | Important：同时创建账号、身份、profile 三个独立结果 | 使用 `UserAccount`、`AuthIdentity`、`UserProfile` class/record 风格名称，requirements 层越界 | 覆盖首次验证成功的新账号初始化，但与 `IDENTITY-ACCOUNT` 有重复 | Important | 改写为业务/领域对象语义，或拆分并引用 `IDENTITY-ACCOUNT-003..011`；避免 class name。 |
+| `IDENTITY-OTP-022` / `IDENTITY-SPEC-OTP-022` | Pass | 清晰 | 覆盖防用户枚举安全约束 | Pass | 可保留。 |
+| `IDENTITY-OTP-023` / `IDENTITY-SPEC-OTP-023` | Pass | Requirements 的 “typed error” 未命名，spec 已命名 `OTP-ERR-PROVIDER-FAILED` | 覆盖 provider 失败下不创建 challenge/session | Suggestion | 在 requirement 中同步 `OTP-ERR-PROVIDER-FAILED`，并与 `IDENTITY-OTP-005` 的 challenge 创建时机对齐。 |
+| `IDENTITY-OTP-024` / `IDENTITY-SPEC-OTP-024` | Important：生产 provider 禁用和 release gate 属 DevOps/Security release 边界，不应作为普通 Product Base requirement | 与本文“identity 专属 release gate 未实现/不承载 implementation”存在边界张力 | 覆盖发布安全目标，但内容位置不稳 | Important | 从 OTP requirement 主列表移到 release/DevOps target boundary，或改为明确的 target boundary item，不作为用户流程 requirement。 |
+| `IDENTITY-OTP-025` / `IDENTITY-SPEC-OTP-025` | Pass | SMS 文案必含/禁含边界清楚 | 覆盖安全短信内容 | Pass | 可保留。 |
+| `IDENTITY-OTP-026` / `IDENTITY-SPEC-OTP-026` | Pass/Conditional | HTTPS 是架构/DevOps 安全约束，requirements 中可保留但应标为 security boundary | 覆盖生产传输安全 | Suggestion | 标注为 Architecture/Security/DevOps target boundary，并保留不得通过非 HTTPS 入口处理 OTP。 |
+| `IDENTITY-OTP-027` / `IDENTITY-SPEC-OTP-027` | Important：事件覆盖和脱敏字段规则混在一个长 item 中 | event name、字段和禁止项清楚，但过密 | 覆盖审计事件和数据最小化 | Important | 拆分为“必须记录的 OTP audit event set”和“OTP audit redaction/data-minimization rule”。 |
+| `IDENTITY-OTP-028` / `IDENTITY-SPEC-OTP-028` | Important：风险信号、block 行为、step-up 行为混合多个业务结论 | “额外验证”未定义，step-up 成功/失败边界不清 | 覆盖风险输入和处置等级，但不可直接生成稳定 AC/TC | Important | 拆为风险信号纳入、block 决策、step-up 决策三组 item；定义 step-up 的允许验证类型或下游契约。 |
+| `IDENTITY-OTP-029` / `IDENTITY-SPEC-OTP-029` | Pass | CAPTCHA 通过后的 OTP 主校验边界清楚；失败行为可更明确 | 覆盖 CAPTCHA 不替代 OTP 的安全边界 | Suggestion | 补充 CAPTCHA 未通过时不得发送 OTP 或发放 session。 |
+| `IDENTITY-OTP-030` / `IDENTITY-SPEC-OTP-030` | Important：明文不保存、challenge retention、audit retention 三个生命周期规则混在一个 item 中 | 保留期限清楚，但对象生命周期不同 | 覆盖数据保留策略，但粒度过粗 | Important | 拆分为 OTP 明文永不保存、challenge/校验值过期后 24h 删除或失效、audit 脱敏数据按 retention policy version 保留。 |
+| `IDENTITY-OTP-031` / `IDENTITY-SPEC-OTP-031` | Blocker for content boundary：测试替身和测试覆盖属于 test cases/testability contract，不属于 Product Base requirements/spec item | 语义清楚但文档类型错误 | 覆盖 QA 设计，不覆盖产品行为 | Blocker before AC/TC | 从 requirements/spec 主列表移出；放入 QA/test-case 或 testability contract，并在 traceability 中标为测试设计来源而非 requirement。 |
+
+跨 item 发现：
+| 发现 | 影响 | 级别 | 3-F 修复方案 |
+| --- | --- | --- | --- |
+| `spec.md` 对 OTP 目标态仍主要是 1:1 item table，缺少 OTP send、verify、resend、risk block、step-up、provider failure 的流程级行为段 | AC/TC 很难判断前置条件、触发、状态转移、输出和失败路径 | Important | 在 spec 中补充目标态 OTP 流程段；保留 item table 作为映射证据。 |
+| `traceability.md` 中 `IDENTITY-OTP-004..031` 的 `Spec Flow` 仍为 `TBD - 后续补齐`，但 spec ID 已存在 | 追溯链路显示落后，可能导致 AC/TC 生成引用错误 | Important | 在 3-F 中同步 `Spec Flow` 到 `IDENTITY-SPEC-OTP-004..031`；AC/TC 和 code evidence 继续保持 target pending/TBD，不伪造实现证据。 |
+| 目标态 OTP 中安全、DevOps、审计、QA 内容混在同一 requirement 列表中 | Product Base requirement、Architecture/Security、Release、QA 职责边界不清 | Important | 通过小节或状态列标明 `Product behavior target`、`Security target boundary`、`Release/DevOps target boundary`、`QA/testability target`。 |
+
+Task 3-R 执行情况：
+- 已执行：完成 `IDENTITY-OTP-004..031` 和 `IDENTITY-SPEC-OTP-004..031` 的逐条内容契约语义审查。
+- 已执行：形成 3-F 修复输入表。
+- 未执行：未修改 `requirements.md`、`spec.md` 或 `traceability.md` 正文；等待用户确认后再执行 Task 3-F。
+
+Task 3-R 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 3-R | Confirmed by user | 用户已确认 Requirement / Spec 分离后的修复方案，并放行 Task 3-F。 |
+| Task 3-F | Completed - pending user confirmation | 已执行 OTP 目标态 3-F 修复；用户确认本修复复审前，不得执行 Task 4-R。 |
+
+### IDENTITY-OTP 真实短信 OTP 目标态 3-F 修复复审
+
+修复范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的目标态 OTP 段。
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的目标态 OTP 段、公共 OTP Ref ID、Requirement 到 Spec 映射。
+- Traceability：`docs/product/base/identity-account-lifecycle/traceability.md` 的目标态 OTP pending 追溯区。
+
+执行结果：conditional pass for docs-only repair。Task 3-F 已完成内容边界修复、语义拆分、spec 流程段补齐和追溯同步；目标态 OTP 仍是 `Target pending`，未声明代码实现、AC/TC 完成、测试证据或 release readiness。
+
+Requirement 修复复审表：
+| Requirement item | 原始 Requirement 描述（修复前摘要） | 3-F 修复结果 | 复审结论 |
+| --- | --- | --- | --- |
+| `IDENTITY-OTP-004` | OTP 流程入口先做 E.164 规范化并拒绝不支持或非法号码。 | 改为所有接收手机号的 OTP 登录或注册入口必须先完成 E.164 规范化；非法或不支持号码不得进入 OTP 登录或注册流程。 | Pass |
+| `IDENTITY-OTP-005` | 请求 OTP 只创建 OTP challenge，不创建账号或 session。 | 改为请求 OTP 只启动待验证挑战，不得完成账号创建或认证会话。 | Pass |
+| `IDENTITY-OTP-006` | OTP challenge 绑定手机号、purpose、上下文和过期时间。 | 补充 challenge id，保留规范化手机号、`purpose=login_or_register`、请求上下文和过期时间。 | Pass |
+| `IDENTITY-OTP-007` | OTP 安全随机生成、默认 6 位数字且配置不得低于 6 位混在一条。 | 保留为“OTP 必须由服务端安全随机能力生成”。 | Pass |
+| `IDENTITY-OTP-032` | 原 `IDENTITY-OTP-007` 中的 OTP 格式和配置下限。 | 新增为独立 requirement：默认 6 位数字，位数配置不得低于 6 位。 | Pass |
+| `IDENTITY-OTP-008` | OTP 默认有效期 5 分钟、配置上限 10 分钟，起算点不清。 | 补充有效期从 challenge 可验证开始计算。 | Pass |
+| `IDENTITY-OTP-009` | OTP 明文只进短信发送，不持久化、不记录日志、不进入错误响应。 | 保留明文流向和禁止面，作为产品安全边界。 | Pass |
+| `IDENTITY-OTP-010` | OTP 校验值使用 HMAC 或 hash，存在普通 hash 误读风险。 | 改为使用服务端 secret 参与的不可逆校验机制，并绑定 challenge 和规范化手机号。 | Pass |
+| `IDENTITY-OTP-011` | 发送前要求接受服务条款和隐私政策，但版本和失败结果不清。 | 改为必须接受当前版本条款和隐私政策；未接受不得发送 OTP。 | Pass |
+| `IDENTITY-OTP-012` | 同手机号重复发送有 60 秒冷却。 | 补充命中冷却时不得发送 OTP。 | Pass |
+| `IDENTITY-OTP-013` | 同手机号每小时 5 次、每天 10 次。 | 改为手机号级发送限流按可配置时间窗口执行，并保留默认阈值。 | Pass |
+| `IDENTITY-OTP-014` | IP、device、install_id 发送限流阈值集中在一条。 | 保留为业务限流边界，明确 IP 和 device/install_id 独立限流及默认小时/日阈值。 | Conditional pass：后续 AC/TC 可再按维度拆验收。 |
+| `IDENTITY-OTP-015` | 重发后旧 OTP 或旧 secret 失效，失败计数不重置。 | 改为用户可观察业务语义：旧 active OTP 不得再通过验证，失败计数不得重置。 | Pass |
+| `IDENTITY-OTP-016` | 单个 challenge 最多 5 次错误验证。 | 补足超过上限后该 challenge 不得继续验证成功。 | Pass |
+| `IDENTITY-OTP-017` | 手机号和 purpose 级失败计数，30 分钟 10 次锁 15 分钟。 | 明确发送和验证都被锁定，区别于单 challenge 错误上限。 | Pass |
+| `IDENTITY-OTP-018` | 通过事务或行锁保证验证成功只消费一次，并进入账号解析/创建。 | 移除实现语言，只保留一次性消费规则。 | Pass |
+| `IDENTITY-OTP-033` | 原 `IDENTITY-OTP-018` 中“消费成功后才允许账号创建或解析”的第二个结论。 | 新增为独立 requirement：只有 challenge 成功消费后才允许进入账号创建或解析流程。 | Pass |
+| `IDENTITY-OTP-019` | OTP 验证成功后签发 token / session。 | 改为产品语义：验证成功后用户必须获得登录会话能力，token 细节由 token 生命周期承接。 | Pass |
+| `IDENTITY-OTP-020` | 已存在手机号身份时解析到原用户，不重复创建账号。 | 保留。 | Pass |
+| `IDENTITY-OTP-021` | 新手机号首次成功后创建 `UserAccount`、`AuthIdentity`、`UserProfile`。 | 改为账号、初始登录身份和默认资料的业务语义，引用账号创建规则，移除 class/record 风格名称。 | Pass |
+| `IDENTITY-OTP-022` | OTP 错误不得泄露手机号是否已注册。 | 保留。 | Pass |
+| `IDENTITY-OTP-023` | 短信 provider 失败返回 typed error，不完成登录。 | 改为 provider 失败类业务错误，且不得完成 OTP 登录。 | Pass |
+| `IDENTITY-OTP-025` | SMS 内容包含 App 名称、验证码、有效期、风险提示，禁含敏感资料。 | 移入安全与防滥用目标边界，语义保留。 | Pass |
+| `IDENTITY-OTP-026` | 生产 OTP 只能通过 HTTPS。 | 改为生产 OTP 只能通过安全传输入口提供；非安全传输入口不得处理生产 OTP 请求。 | Pass |
+| `IDENTITY-OTP-027` | 审计事件集合和脱敏字段规则混在一条。 | 保留为审计事件集合：send requested、verify succeeded/failed、expired、rate limited、provider failed。 | Pass |
+| `IDENTITY-OTP-034` | 原 `IDENTITY-OTP-027` 中的审计脱敏和禁止明文规则。 | 新增为独立 requirement：审计内容只能使用脱敏/hash 手机号、purpose、request_id、风险结果，不记录 OTP/token 明文。 | Pass |
+| `IDENTITY-OTP-028` | 风险信号、block、step-up 混在一条。 | 保留为风险输入集合：SIM swap/号码转移、异常设备、异常 IP、短时大量请求。 | Pass |
+| `IDENTITY-OTP-035` | 原 `IDENTITY-OTP-028` 中的 block 处置。 | 新增为独立 requirement：block 风险不得发送 OTP 或发放会话，并返回风险阻断错误。 | Pass |
+| `IDENTITY-OTP-036` | 原 `IDENTITY-OTP-028` 中的 step-up 处置。 | 新增为独立 requirement：step-up 风险要求额外验证，完成前不得发放会话。 | Pass |
+| `IDENTITY-OTP-029` | CAPTCHA 不得替代 OTP。 | 补充 CAPTCHA 未通过时不得发送 OTP 或发放会话，通过后仍需正确 OTP。 | Pass |
+| `IDENTITY-OTP-030` | OTP 明文、challenge、audit retention 混在一条。 | 保留 challenge 和校验值过期后 24 小时内删除或失效；明文禁止由 `IDENTITY-OTP-009` 承接。 | Pass |
+| `IDENTITY-OTP-037` | 原 `IDENTITY-OTP-030` 中的 audit retention。 | 新增为独立 requirement：OTP 审计事件保留脱敏数据和 retention policy 版本。 | Pass |
+| `IDENTITY-OTP-024` | 生产不得使用 deterministic/test OTP provider，错误配置由 release gate 阻断。 | 移入 Release / DevOps target boundary，避免作为普通用户流程 requirement。 | Pass |
+| `IDENTITY-OTP-031` | 测试应使用 fake SMS provider、覆盖成功/过期/重放/限流/provider 失败。 | 从 Product Base requirement item 移出，改为 `OTP-TESTABILITY-001` QA/testability 输入。 | Pass |
+
+Spec 修复复审表：
+| Spec item | 原始 Spec 描述（修复前摘要） | 3-F 修复结果 | 复审结论 |
+| --- | --- | --- | --- |
+| OTP target flow section | 原规格主要是 1:1 item table，缺少 send、resend、verify、risk、provider failure 流程段。 | 新增 `OTP-FLOW-SEND`、`OTP-FLOW-RESEND`、`OTP-FLOW-VERIFY`、`OTP-FLOW-RISK`、`OTP-FLOW-PROVIDER-FAILURE`，定义触发、前置、状态转移、输出和失败边界。 | Pass |
+| OTP Ref IDs | 原 Ref ID 覆盖 active/consumed/locked 和部分错误，缺少 consent、captcha、expired、invalidated、step-up 等状态或输入。 | 新增 consent、captcha、expired、invalidated、step-up required、consent required、expired、challenge attempts exceeded、captcha failed 等 Ref ID。 | Pass |
+| `IDENTITY-SPEC-OTP-004` | E.164 规范化规格缺少明确失败后置状态。 | 输出 `OTP-IN-PHONE-E164`；非法或不支持号码返回 `OTP-ERR-INVALID-PHONE`，不得创建 challenge/session。 | Pass |
+| `IDENTITY-SPEC-OTP-005` | 创建 challenge 与 provider 失败时机未对齐。 | 明确 send 前置校验通过后才创建 active challenge 并发送 SMS；不得创建账号/session。 | Pass |
+| `IDENTITY-SPEC-OTP-006` | challenge 绑定字段存在，但上下文定义较宽。 | 明确绑定 `OTP-IN-PHONE-E164`、purpose、challenge_id、`OTP-IN-CONTEXT` 和过期时间。 | Pass |
+| `IDENTITY-SPEC-OTP-007` | 生成来源、格式和配置下限混在一条。 | 保留为 OTP 原始值由服务端安全随机能力生成。 | Pass |
+| `IDENTITY-SPEC-OTP-032` | 原 `IDENTITY-SPEC-OTP-007` 中的 OTP 格式配置规则。 | 新增独立 spec item：默认 6 位数字，配置不得低于 6 位。 | Pass |
+| `IDENTITY-SPEC-OTP-008` | 有效期缺少起算状态和过期输出。 | 从 active challenge 开始默认 5 分钟、配置不超过 10 分钟；过期后进入 expired 并返回过期错误。 | Pass |
+| `IDENTITY-SPEC-OTP-009` | 明文流向和禁止面清楚。 | 保留为只允许进入短信发送流程，不得持久化、写日志或进入错误响应。 | Pass |
+| `IDENTITY-SPEC-OTP-010` | “HMAC 或 hash”可能被误读为普通 hash。 | 改为 keyed HMAC 或等效 secret-peppered hash，并禁止可逆明文或普通裸 hash。 | Pass |
+| `IDENTITY-SPEC-OTP-011` | consent 输入和失败输出不完整。 | 定义 `OTP-IN-CONSENT`、版本不匹配返回 `OTP-ERR-CONSENT-REQUIRED`，不得创建 challenge/session。 | Pass |
+| `IDENTITY-SPEC-OTP-012..014` | 冷却、手机号限流、IP/device/install_id 限流规则不完整或阈值缺失。 | 对齐默认 60 秒冷却、手机号小时/日阈值、IP 与 device/install_id 小时/日阈值，统一返回 `OTP-ERR-RATE-LIMITED`。 | Pass |
+| `IDENTITY-SPEC-OTP-015` | resend 语义含实现选择。 | 改为旧 active challenge 进入 invalidated，失败计数不重置。 | Pass |
+| `IDENTITY-SPEC-OTP-016..017` | per-challenge attempts 与 phone-purpose attempts 边界不清。 | 明确单 challenge 错误上限、challenge invalidated、手机号+purpose 30 分钟累计锁 15 分钟和对应错误。 | Pass |
+| `IDENTITY-SPEC-OTP-018` | 一次性消费和账号解析/创建混在一条。 | 保留 challenge consumed 的一次性成功状态转移。 | Pass |
+| `IDENTITY-SPEC-OTP-033` | 原 `IDENTITY-SPEC-OTP-018` 中的账号解析/创建前置。 | 新增独立 spec item：只有 consumed challenge 才能进入账号创建或解析流程。 | Pass |
+| `IDENTITY-SPEC-OTP-019` | 重写 token 细节风险。 | 改为引用 `IDENTITY-SPEC-TOKEN-*` 签发 token 并返回登录会话输出。 | Pass |
+| `IDENTITY-SPEC-OTP-020..023` | 已有/新手机号、枚举防护、provider 失败语义基本存在。 | 对齐账号创建 spec 引用、错误防枚举、provider failure 不创建可验证 challenge/session。 | Pass |
+| `IDENTITY-SPEC-OTP-025..026` | SMS 内容和安全传输作为普通 OTP item 混在同一段。 | 移入 Security and Abuse-Control Target Boundary Spec Items，并保留可验收行为。 | Pass |
+| `IDENTITY-SPEC-OTP-027` | 审计事件和数据最小化混在一条。 | 保留为 OTP 审计事件枚举。 | Pass |
+| `IDENTITY-SPEC-OTP-034` | 原 `IDENTITY-SPEC-OTP-027` 中的审计安全字段规则。 | 新增为只写入 `OTP-AUDIT-SAFE`，禁止 OTP/token 明文。 | Pass |
+| `IDENTITY-SPEC-OTP-028` | 风险信号、block、step-up 决策混在一条。 | 保留为风险输入集合。 | Pass |
+| `IDENTITY-SPEC-OTP-035..036` | 原风险 item 中的 block 和 step-up 分支。 | 拆成 block 返回 `OTP-ERR-RISK-BLOCKED` 且不发送/发 session；step-up 进入 `OTP-STATE-STEP-UP-REQUIRED` 且完成前不发 session。 | Pass |
+| `IDENTITY-SPEC-OTP-029` | CAPTCHA 分支缺少失败输出。 | 补充 `OTP-ERR-CAPTCHA-FAILED`、不得发送 OTP/session，且通过后仍需正确 OTP。 | Pass |
+| `IDENTITY-SPEC-OTP-030` | challenge retention 与 audit retention 混在一条。 | 保留 challenge 和校验值过期后 24 小时内删除或失效。 | Pass |
+| `IDENTITY-SPEC-OTP-037` | 原 `IDENTITY-SPEC-OTP-030` 中的 audit retention。 | 新增为审计事件保留脱敏数据和 retention policy 版本。 | Pass |
+| `IDENTITY-SPEC-OTP-024` | release gate 作为普通 OTP behavior item。 | 移入 Release / DevOps Target Boundary Spec Items，保留生产禁用 deterministic/test provider 的 release 边界。 | Pass |
+| `IDENTITY-SPEC-OTP-031` | fake SMS provider 和覆盖场景属于测试设计。 | 从产品 spec item 移出，改为 `OTP-TESTABILITY-001` Testability Expectation。 | Pass |
+
+Traceability 修复复审表：
+| 对象 | 修复内容 | 复审结论 |
+| --- | --- | --- |
+| `IDENTITY-OTP-004..030,032..037` | `Spec Flow` 从 `TBD - 后续补齐` 同步为对应 `IDENTITY-SPEC-OTP-*`；`AC`、`TC` 继续 `TBD - 后续补齐`；`Code Evidence` 继续 target pending。 | Pass |
+| `IDENTITY-OTP-024..030,034..037` | 对安全、防滥用、release 边界使用 `target boundary` 或 `release target boundary` 状态，不伪装成已实现用户流程。 | Pass |
+| `IDENTITY-OTP-031` | 从 requirement pending 矩阵移出。 | Pass |
+| `OTP-TESTABILITY-001` | 新增单独 QA/testability 输入表，标记为不计入 Product Base requirement 或 code evidence。 | Pass |
+
+3-F 修复后复审结果：
+| 复审对象 | 颗粒度 | 清晰度 | 覆盖度 | 结论 |
+| --- | --- | --- | --- | --- |
+| Target OTP requirements | Pass：随机生成/格式、消费/账号入口、审计事件/脱敏、风险信号/block/step-up、retention/testability 已拆分 | Pass：Product behavior、Security boundary、Release boundary、QA input 已分段 | Pass：覆盖 send、verify、resend、失败计数、provider failure、安全、审计、保留和测试输入边界 | Task 3-F requirements 修复关闭 |
+| Target OTP spec | Pass：新增流程段并拆分组合 item | Pass：状态、输入、错误、失败边界和下游引用更明确 | Pass：可作为后续 AC/TC 上游；仍不声明实现完成 | Task 3-F spec 修复关闭 |
+| Target OTP traceability | Pass：目标 requirement/spec ID 已同步；QA 输入独立 | Pass：pending code evidence、AC/TC 待补齐状态清楚 | Pass：不再把 `IDENTITY-OTP-031` 当作 requirement 追溯行 | Task 3-F traceability 同步关闭 |
+
+修复验证：
+- `IDENTITY-OTP-031` 和 `IDENTITY-SPEC-OTP-031` 已不再作为目标态产品 requirement/spec item 出现在 `requirements.md` 或 `spec.md` 主 item 表中；其语义改为 `OTP-TESTABILITY-001`。
+- 新增 `IDENTITY-OTP-032..037` / `IDENTITY-SPEC-OTP-032..037` 承接原组合 item 的独立业务或规格语义。
+- `traceability.md` 对目标态 OTP 只声明 pending requirement/spec 链路，未声明 AC、TC、代码证据或测试证据完成。
+- 本次修复不批准 Product Base root merge、release readiness、acceptance criteria、test cases、backend implementation 或测试执行完成。
+
+Task 3-F 门禁状态（当前已由用户确认）：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 3-F | Confirmed by user | 已放行并执行 Task 4-R。 |
+| Task 4-R | Completed - pending user confirmation | 用户确认 Task 4-R 审查表前，不得执行 Task 4-F。 |
+
+### IDENTITY-PROVIDER Apple / WeChat 第三方身份 4-R 逐条语义审查
+
+审查范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-PROVIDER-001..004`
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 `IDENTITY-SPEC-PROVIDER-001..004`
+- 交叉引用 Ref ID：`PROVIDER-IN-APPLE`、`PROVIDER-IN-WECHAT`、`PROVIDER-IN-TOKEN`、`PROVIDER-SUBJECT-HASH`、`PROVIDER-ERR-VALIDATION`
+- 只读上下文：`docs/product/base/identity-account-lifecycle/traceability.md` 中 `IDENTITY-PROVIDER-001..004`
+
+本轮结果：conditional。provider 子章节可继续作为 current-code-baseline Draft 输入；没有阻止 Draft 留存的 blocker。但在生成 AC/TC、Product Base merge 或后续实现计划前，必须把 Apple/WeChat 当前行为明确标记为“入口路由 + token 存在性 + token hash subject 的代码基线限制”，不得把 provider token hash 误读为生产级 Apple `sub`、WeChat `openid/unionid` 或已完成真实 provider 校验。
+
+Requirement 审查与 4-F 修复方案：
+| Requirement item | 原始 Requirement 描述 | 颗粒度 | 清晰度 | 覆盖度 | 结论 | 4-F Requirement 修复方案 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `IDENTITY-PROVIDER-001` | Apple 登录入口必须把请求路由到 `apple` 身份来源。 | Pass：单一入口来源归属规则 | Conditional：未在 item 内写明这是当前代码基线路由，不代表 Apple token 已验证 | Conditional：覆盖 Apple 入口来源归属；真实 Apple identity 校验由非归档段落排除 | Suggestion | 改为“当前代码基线的 Apple 登录入口必须把请求归属为 `apple` 身份来源；该行为不代表 Apple identity token 签名、audience、issuer、expiry 或 nonce 校验已实现”。 |
+| `IDENTITY-PROVIDER-002` | WeChat 登录入口必须把请求路由到 `wechat` 身份来源。 | Pass：单一入口来源归属规则 | Conditional：未在 item 内写明这是当前代码基线路由，不代表 WeChat 服务端校验 | Conditional：覆盖 WeChat 入口来源归属；真实 WeChat code/openid/unionid/session 校验由非归档段落排除 | Suggestion | 改为“当前代码基线的 WeChat 登录入口必须把请求归属为 `wechat` 身份来源；该行为不代表 WeChat code、openid、unionid 或 session 校验已实现”。 |
+| `IDENTITY-PROVIDER-003` | 第三方登录请求必须包含非空 provider token。 | Pass：单一输入存在性要求 | Conditional：容易被误读为 provider token 有效性校验 | Conditional：覆盖缺失 token 的失败前置；不覆盖 token 真实性、过期、签名或 provider 交换 | Important | 改为“当前代码基线的 Apple/WeChat 登录请求必须包含非空 provider token；该要求只代表输入存在性校验，不代表 provider token 真实性或服务端校验已实现”。 |
+| `IDENTITY-PROVIDER-004` | 系统必须把 provider token 的 hash 作为第三方身份 subject。 | Pass：表达一个 current-code-baseline subject 派生规则 | Important：以 `必须` 形式出现时容易被当作稳定目标态身份语义；provider token hash 不是生产级 provider subject | Important：覆盖当前代码行为，但未在 item 内保护目标态边界；可能污染后续账号唯一性和社交登录 AC/TC | Important | 改为“当前代码基线必须把 provider token 的 hash 作为第三方身份 subject；该行为仅归档当前实现限制，不代表目标态 Apple/WeChat 稳定身份 subject 规则”。 |
+
+Spec 审查与 4-F 修复方案：
+| Spec item | 原始 Spec 描述 | 颗粒度 | 清晰度 | 覆盖度 | 结论 | 4-F Spec 修复方案 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `IDENTITY-SPEC-PROVIDER-001` | Apple 登录入口必须把 `PROVIDER-IN-APPLE` 路由到 `apple` 身份来源。 | Pass：单一输入到 provider source 的行为契约 | Conditional：缺少 current-code-baseline limitation，可能被误读为 Apple 登录完整规格 | Conditional：覆盖入口路由；不覆盖 provider token 解析、校验或 subject 抽取失败路径 | Suggestion | 增加 current code baseline 限定，并声明该 spec 不表示 Apple identity token validation 或 Apple stable subject extraction 已实现。 |
+| `IDENTITY-SPEC-PROVIDER-002` | WeChat 登录入口必须把 `PROVIDER-IN-WECHAT` 路由到 `wechat` 身份来源。 | Pass：单一输入到 provider source 的行为契约 | Conditional：缺少 current-code-baseline limitation，可能被误读为 WeChat 登录完整规格 | Conditional：覆盖入口路由；不覆盖 WeChat code/session/openid/unionid 校验或抽取失败路径 | Suggestion | 增加 current code baseline 限定，并声明该 spec 不表示 WeChat code/session/openid/unionid validation 或 stable subject extraction 已实现。 |
+| `IDENTITY-SPEC-PROVIDER-003` | 第三方登录请求必须包含非空 `PROVIDER-IN-TOKEN`，否则返回 `PROVIDER-ERR-VALIDATION`。 | Pass：输入存在性和缺失失败可作为一个 spec item | Conditional：`PROVIDER-ERR-VALIDATION` 未说明这只是缺失输入，不是 token 无效/过期/签名失败 | Conditional：覆盖 token 缺失错误；不覆盖 provider 校验失败、provider 不可用、token expired、nonce mismatch 等目标态失败 | Important | 改为 current baseline 输入存在性规格；错误定义限制为 token missing/blank。真实 provider validation failure 应留到后续目标态 provider spec。 |
+| `IDENTITY-SPEC-PROVIDER-004` | 系统必须把 `PROVIDER-IN-TOKEN` 计算为 `PROVIDER-SUBJECT-HASH` 并作为第三方身份 subject。 | Pass：单一 subject 派生规则 | Important：规格直接把 token hash 写成 subject，会被 AC/TC 当作稳定身份契约 | Important：未覆盖真实 provider subject 抽取，且可能和账号唯一性语义产生错误链路 | Important | 改为“current code baseline 下计算 `PROVIDER-SUBJECT-HASH` 作为第三方 identity subject；该 spec 不表示 Apple `sub` 或 WeChat `openid/unionid` 已验证或使用”。 |
+
+跨文档发现与 4-F 修复方案：
+| 对象 | 问题 | 影响 | 级别 | 4-F 修复方案 |
+| --- | --- | --- | --- | --- |
+| `traceability.md` provider 行 | `IDENTITY-PROVIDER-001..004` 的 `Spec Flow` 仍为 `TBD - 后续补齐`，但 `IDENTITY-SPEC-PROVIDER-001..004` 已存在。 | 追溯链路显示落后，后续 AC/TC 生成可能继续引用 TBD。 | Important | 在 4-F 中同步 `Spec Flow` 到 `IDENTITY-SPEC-PROVIDER-001..004`；`AC` 和 `TC` 继续保留 `TBD - 后续补齐`，不伪造测试或代码新证据。 |
+| provider target boundary | requirements/spec 已在段落中说明真实 Apple/WeChat 校验不归档，但 item 内没有 limitation。 | 单条 item 被抽取到 AC/TC 或 Product Base root 时可能丢失非目标边界。 | Important | 将 limitation 写入相关 requirement/spec item 本身，保留段落级“当前不归档为已实现”作为补充边界。 |
+
+Task 4-R 执行情况：
+- 已执行：完成 `IDENTITY-PROVIDER-001..004` 和 `IDENTITY-SPEC-PROVIDER-001..004` 的逐条内容契约语义审查。
+- 已执行：按 Requirement / Spec 分离格式形成 4-F 修复输入表，并在 item 后附原始描述。
+- 未执行：未修改 `requirements.md`、`spec.md` 或 `traceability.md` 正文；等待用户确认后再执行 Task 4-F。
+
+Task 4-R 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 4-R | Confirmed by user | 用户已确认本审查表，并放行 Task 4-F。 |
+| Task 4-F | Completed - pending user confirmation | 已执行 provider 子章节修复；用户确认本修复复审前，不得执行 Task 5-R。 |
+
+### IDENTITY-PROVIDER Apple / WeChat 第三方身份 4-F 修复复审
+
+修复范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-PROVIDER-001..004`
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 provider Ref ID 和 `IDENTITY-SPEC-PROVIDER-001..004`
+- Traceability：`docs/product/base/identity-account-lifecycle/traceability.md` 中 `IDENTITY-PROVIDER-001..004` 的 `Spec Flow`
+
+执行结果：conditional pass for docs-only repair。Task 4-F 已完成 current-code-baseline limitation 补强、provider token hash subject 目标态边界保护和 provider traceability Spec Flow 同步；仍不声明真实 Apple/WeChat provider 校验、AC/TC、测试证据或 release readiness 完成。
+
+Requirement 修复复审表：
+| Requirement item | 原始 Requirement 描述 | 4-F 修复结果 | 复审结论 |
+| --- | --- | --- | --- |
+| `IDENTITY-PROVIDER-001` | Apple 登录入口必须把请求路由到 `apple` 身份来源。 | 改为当前代码基线 Apple 登录入口把请求归属为 `apple`；明确不代表 Apple identity token 签名、audience、issuer、expiry 或 nonce 校验已实现。 | Pass |
+| `IDENTITY-PROVIDER-002` | WeChat 登录入口必须把请求路由到 `wechat` 身份来源。 | 改为当前代码基线 WeChat 登录入口把请求归属为 `wechat`；明确不代表 WeChat code、openid、unionid 或 session 校验已实现。 | Pass |
+| `IDENTITY-PROVIDER-003` | 第三方登录请求必须包含非空 provider token。 | 改为当前代码基线 Apple / WeChat 登录请求必须包含非空 provider token；明确只代表输入存在性，不代表真实性、过期、签名或服务端 provider 校验。 | Pass |
+| `IDENTITY-PROVIDER-004` | 系统必须把 provider token 的 hash 作为第三方身份 subject。 | 改为当前代码基线把 provider token hash 作为第三方身份 subject；明确只是当前实现限制，不代表目标态 Apple / WeChat 稳定身份 subject。 | Pass |
+
+Spec 修复复审表：
+| Spec item | 原始 Spec 描述 | 4-F 修复结果 | 复审结论 |
+| --- | --- | --- | --- |
+| `PROVIDER-IN-TOKEN` | 第三方登录请求携带的非空 provider token。 | 补充 current-code-baseline 限定；不表示 token 真实性、过期、签名或服务端 provider 校验完成。 | Pass |
+| `PROVIDER-SUBJECT-HASH` | provider token 的 hash，作为第三方身份 subject。 | 补充 current-code-baseline 限定；不表示 Apple `sub` 或 WeChat `openid` / `unionid` 已验证或使用。 | Pass |
+| `PROVIDER-ERR-VALIDATION` | provider token 为空时的校验失败。 | 改为 provider token 缺失或空白时的输入存在性失败。 | Pass |
+| `IDENTITY-SPEC-PROVIDER-001` | Apple 登录入口必须把 `PROVIDER-IN-APPLE` 路由到 `apple` 身份来源。 | 补充 current-code-baseline 限定，并明确不表示 Apple identity token validation 或 Apple stable subject extraction 已实现。 | Pass |
+| `IDENTITY-SPEC-PROVIDER-002` | WeChat 登录入口必须把 `PROVIDER-IN-WECHAT` 路由到 `wechat` 身份来源。 | 补充 current-code-baseline 限定，并明确不表示 WeChat code/session/openid/unionid validation 或 stable subject extraction 已实现。 | Pass |
+| `IDENTITY-SPEC-PROVIDER-003` | 第三方登录请求必须包含非空 `PROVIDER-IN-TOKEN`，否则返回 `PROVIDER-ERR-VALIDATION`。 | 改为 current baseline 输入存在性规格；缺失或空白返回 `PROVIDER-ERR-VALIDATION`；不表示真实性、过期、签名或服务端校验已实现。 | Pass |
+| `IDENTITY-SPEC-PROVIDER-004` | 系统必须把 `PROVIDER-IN-TOKEN` 计算为 `PROVIDER-SUBJECT-HASH` 并作为第三方身份 subject。 | 补充 current-code-baseline 限定，并明确不表示 Apple `sub` 或 WeChat `openid` / `unionid` 已验证或使用。 | Pass |
+
+Traceability 修复复审表：
+| 对象 | 修复内容 | 复审结论 |
+| --- | --- | --- |
+| `IDENTITY-PROVIDER-001..004` | `Spec Flow` 从 `TBD - 后续补齐` 同步为 `IDENTITY-SPEC-PROVIDER-001..004`。 | Pass |
+| `IDENTITY-PROVIDER-001..004` AC/TC | 继续保留 `TBD - 后续补齐`，未伪造 acceptance criteria 或 test case。 | Pass |
+| `IDENTITY-PROVIDER-001..004` Code Evidence | 保留当前代码证据状态；本次未声明真实 Apple/WeChat provider 校验完成。 | Pass |
+
+4-F 修复后复审结果：
+| 复审对象 | 颗粒度 | 清晰度 | 覆盖度 | 结论 |
+| --- | --- | --- | --- | --- |
+| Provider requirements | Pass：四条仍各自表达入口归属、token 输入存在性或 subject 派生规则 | Pass：current-code-baseline limitation 和目标态 provider 校验非目标已写入 item 内 | Pass：覆盖当前 Apple/WeChat 入口路由、provider token 存在性、token hash subject，同时防止误承诺真实 provider 校验 | Task 4-F requirements 修复关闭 |
+| Provider spec | Pass：Ref ID 与 spec item 均保持单一行为契约 | Pass：missing/blank token 错误与 provider validation failure 已区分 | Pass：可作为当前代码基线 AC/TC 上游；目标态 Apple/WeChat 校验仍需后续独立需求/spec | Task 4-F spec 修复关闭 |
+| Provider traceability | Pass：provider requirements 均映射到具体 spec ID | Pass：AC/TC 仍显式待补齐，代码证据未扩大解释 | Pass：Spec 链路同步问题关闭 | Task 4-F traceability 同步关闭 |
+
+修复验证：
+- provider requirement item 内已显式写入 current-code-baseline limitation。
+- provider spec item 内已显式排除真实 Apple/WeChat validation 和 stable subject extraction。
+- `traceability.md` provider 行已同步 `IDENTITY-SPEC-PROVIDER-001..004`，未伪造 AC、TC 或新代码证据。
+- 本次修复不批准 Product Base root merge、release readiness、acceptance criteria、test cases、backend implementation 或测试执行完成。
+
+Task 4-F 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 4-F | Confirmed by user | 用户已确认本修复复审表，并放行 Task 5-R。 |
+| Task 5-R | Confirmed by user | 用户已确认 login 子章节审查表，并放行 Task 5-F。 |
+| Task 5-F | Completed - pending user confirmation | 已执行 login 子章节修复；用户确认本修复复审前，不得执行 Task 6-R。 |
+
+### IDENTITY-LOGIN 登录与 session 签发 5-R 逐条语义审查
+
+审查范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-LOGIN-001..007`
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 `IDENTITY-SPEC-LOGIN-001..007`
+- 交叉引用 Ref ID：`LOGIN-IN-TERMS-ACCEPTED`、`LOGIN-IN-SCHEMA-VERSION`、`LOGIN-STATE-PUBLIC-ENDPOINT`、`LOGIN-STATE-ACCOUNT-ACTIVE`、`LOGIN-STATE-SESSION-ACTIVE`、`LOGIN-OUT-TOKEN-PAIR`、`LOGIN-ERR-TERMS-REQUIRED`、`LOGIN-ERR-INACTIVE-ACCOUNT`、`LOGIN-ERR-UNSUPPORTED-SCHEMA`
+- 只读上下文：`docs/product/base/identity-account-lifecycle/traceability.md` 中 `IDENTITY-LOGIN-001..007`
+
+本轮结果：conditional。login 子章节可继续作为 current-code-baseline Draft 输入；没有阻止 Draft 留存的 blocker。但在生成 AC/TC、Product Base merge 或后续实现计划前，应补清登录前置校验失败的后置边界、public endpoint 的权限含义、schema version 的兼容性语义，并同步 traceability 中已存在的 spec ID。
+
+Requirement 审查与 5-F 修复方案：
+| Requirement item | 原始 Requirement 描述 | 修复后 Requirement 描述 | 颗粒度 | 清晰度 | 覆盖度 | 结论 | 5-F Requirement 修复方案 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `IDENTITY-LOGIN-001` | 手机号登录请求必须在用户接受条款后才能继续处理。 | 当前代码基线的手机号登录请求必须声明已接受条款后才允许继续认证处理；未接受时必须拒绝，且不得进入身份解析、账号创建或 session 签发；该要求不代表 Terms/Privacy consent 持久化已实现。 | Pass：单一手机号登录 consent gate | Conditional：`继续处理` 未说明失败后置边界，也容易和目标态 current-version consent persistence 混淆 | Conditional：覆盖手机号登录条款前置；未明确未接受时不得进入身份解析、账号创建或 session 签发 | Important | 在 5-F 中按“修复后 Requirement 描述”改写。 |
+| `IDENTITY-LOGIN-002` | 第三方登录请求必须在用户接受条款后才能继续处理。 | 当前代码基线的 Apple / WeChat 登录请求必须声明已接受条款后才允许继续认证处理；未接受时必须拒绝，且不得进入 provider token subject 处理、身份解析、账号创建或 session 签发。 | Pass：单一第三方登录 consent gate | Conditional：同样缺少失败后置边界，且未限定 Apple/WeChat current-code-baseline | Conditional：覆盖第三方登录条款前置；未明确未接受时不得进入 provider token subject 处理、身份解析或 session 签发 | Important | 在 5-F 中按“修复后 Requirement 描述”改写。 |
+| `IDENTITY-LOGIN-003` | 手机号、Apple、WeChat 登录入口必须允许未认证客户端调用。 | 手机号、Apple、WeChat 登录入口必须不要求既有认证 session；public entry 不得绕过 schema version、terms、凭证或账号状态校验。 | Pass：单一 public entry rule | Conditional：`允许未认证客户端调用` 可能被误读为绕过 schema、terms 或凭证校验 | Conditional：覆盖 public endpoint 安全配置；未说明 public 只是不要求既有 session | Suggestion | 在 5-F 中按“修复后 Requirement 描述”改写。 |
+| `IDENTITY-LOGIN-004` | 系统必须拒绝非 `active` 账号登录。 | 身份解析或账号创建得到的账号不为 `active` 时，系统必须拒绝登录，且不得创建认证 session 或发放 token。 | Pass：单一账号状态门禁 | Conditional：触发点未说明是在身份解析/账号创建后、session 创建前 | Conditional：覆盖 inactive 账号拒绝；未明确不得发放 token/session | Suggestion | 在 5-F 中按“修复后 Requirement 描述”改写。 |
+| `IDENTITY-LOGIN-005` | 登录成功时，系统必须创建一个 `active` 认证 session。 | 登录请求通过 schema version、terms、凭证和账号状态门禁后，系统必须为本次解析或创建的用户创建 `active` 认证 session。 | Pass：单一成功状态转移 | Conditional：`登录成功` 的前置条件隐含在其他 item 中；session 归属对象不明 | Conditional：覆盖成功后 session 创建，但未写绑定到本次解析/创建账号 | Suggestion | 在 5-F 中按“修复后 Requirement 描述”改写。 |
+| `IDENTITY-LOGIN-006` | 登录成功响应必须返回当前用户、access token、refresh token 和 access token 过期时间。 | 登录成功响应必须返回当前用户、access token、refresh token 和 access token 过期时间；access / refresh token 的生命周期和轮换语义由 `IDENTITY-TOKEN` 子章节承接。 | Pass：一个登录成功响应输出 | Conditional：token 语义应引用 token 生命周期，避免在 login requirement 中重定义 | Pass：覆盖登录成功响应核心输出 | Suggestion | 在 5-F 中按“修复后 Requirement 描述”改写。 |
+| `IDENTITY-LOGIN-007` | 登录和刷新请求必须拒绝不支持的 schema version。 | 当前代码基线的登录和刷新请求必须在认证状态变化前拒绝不支持的 schema version；拒绝后不得创建 session、发放 token 或刷新 token；具体 schema 字段形态由 API contract 承接。 | Conditional：登录和刷新共享同一兼容性规则，可保留；但跨 login/token 两个子章节 | Conditional：未说明拒绝发生在认证状态变化前，也未限定这是兼容性失败而非 API schema 细节 | Conditional：覆盖 schema compatibility；未明确不得创建 session、刷新 token 或进入登录处理 | Important | 在 5-F 中按“修复后 Requirement 描述”改写。 |
+
+Spec 审查与 5-F 修复方案：
+| Spec item | 原始 Spec 描述 | 修复后 Spec 描述 | 颗粒度 | 清晰度 | 覆盖度 | 结论 | 5-F Spec 修复方案 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `IDENTITY-SPEC-LOGIN-001` | 手机号登录请求只有满足 `LOGIN-IN-TERMS-ACCEPTED` 后才能继续处理，否则返回 `LOGIN-ERR-TERMS-REQUIRED`。 | Current code baseline 下，手机号登录请求只有满足 `LOGIN-IN-TERMS-ACCEPTED` 后才能继续认证处理；否则返回 `LOGIN-ERR-TERMS-REQUIRED`，并不得进入身份解析、账号创建或 session 签发流程。 | Pass：单一手机号 terms gate | Conditional：未写清失败后不得进入身份解析、账号创建或 session 签发 | Conditional：覆盖 terms failure；未区分 spec-level error 与 current baseline 具体 API error surface | Important | 在 5-F 中按“修复后 Spec 描述”改写。 |
+| `IDENTITY-SPEC-LOGIN-002` | 第三方登录请求只有满足 `LOGIN-IN-TERMS-ACCEPTED` 后才能继续处理，否则返回 `LOGIN-ERR-TERMS-REQUIRED`。 | Current code baseline 下，Apple / WeChat 登录请求只有满足 `LOGIN-IN-TERMS-ACCEPTED` 后才能继续认证处理；否则返回 `LOGIN-ERR-TERMS-REQUIRED`，并不得进入 provider token subject 处理、身份解析、账号创建或 session 签发流程。 | Pass：单一第三方 terms gate | Conditional：未写清失败后不得处理 provider token subject 或 session | Conditional：覆盖 terms failure；未限定 Apple/WeChat 当前 provider baseline | Important | 在 5-F 中按“修复后 Spec 描述”改写。 |
+| `IDENTITY-SPEC-LOGIN-003` | 手机号、Apple 和 WeChat 登录入口必须处于 `LOGIN-STATE-PUBLIC-ENDPOINT`。 | 手机号、Apple 和 WeChat 登录入口必须处于 `LOGIN-STATE-PUBLIC-ENDPOINT`；该状态只表示不要求既有认证 session，仍必须执行 schema version、terms、凭证和账号状态门禁。 | Pass：单一 public endpoint 状态 | Conditional：public endpoint 的语义边界不足 | Conditional：覆盖无既有认证访问；未说明仍需 schema、terms、凭证和账号状态门禁 | Suggestion | 在 5-F 中按“修复后 Spec 描述”改写。 |
+| `IDENTITY-SPEC-LOGIN-004` | 账号不处于 `LOGIN-STATE-ACCOUNT-ACTIVE` 时，系统必须返回 `LOGIN-ERR-INACTIVE-ACCOUNT` 并拒绝登录。 | 账号不处于 `LOGIN-STATE-ACCOUNT-ACTIVE` 时，系统必须返回 `LOGIN-ERR-INACTIVE-ACCOUNT` 并拒绝登录；不得创建 `LOGIN-STATE-SESSION-ACTIVE` 或返回 `LOGIN-OUT-TOKEN-PAIR`。 | Pass：单一账号状态失败契约 | Conditional：缺少状态转移后置结果 | Conditional：覆盖 inactive 失败；未明确不得创建 `LOGIN-STATE-SESSION-ACTIVE` 或 `LOGIN-OUT-TOKEN-PAIR` | Suggestion | 在 5-F 中按“修复后 Spec 描述”改写。 |
+| `IDENTITY-SPEC-LOGIN-005` | 登录成功时，系统必须创建 `LOGIN-STATE-SESSION-ACTIVE`。 | 登录请求通过 schema version、terms、凭证和账号状态门禁后，系统必须为本次解析或创建的用户创建 `LOGIN-STATE-SESSION-ACTIVE`。 | Pass：单一成功状态输出 | Conditional：前置条件和 session 归属对象不完整 | Conditional：覆盖 session 创建；未显式绑定到本次登录用户 | Suggestion | 在 5-F 中按“修复后 Spec 描述”改写。 |
+| `IDENTITY-SPEC-LOGIN-006` | 登录成功响应必须返回 `LOGIN-OUT-TOKEN-PAIR`。 | 登录成功响应必须返回 `LOGIN-OUT-TOKEN-PAIR`；token 生命周期、有效期和轮换行为以 `IDENTITY-SPEC-TOKEN-*` 为 source of truth。 | Pass：单一成功响应输出 | Conditional：token 输出应引用 token spec，避免重复 token 生命周期 | Pass：覆盖当前用户、access/refresh token 和 access expiry 输出 | Suggestion | 在 5-F 中按“修复后 Spec 描述”改写。 |
+| `IDENTITY-SPEC-LOGIN-007` | 登录和刷新请求携带不支持的 `LOGIN-IN-SCHEMA-VERSION` 时，系统必须返回 `LOGIN-ERR-UNSUPPORTED-SCHEMA`。 | 登录和刷新请求携带不支持的 `LOGIN-IN-SCHEMA-VERSION` 时，系统必须在认证状态变化前返回 `LOGIN-ERR-UNSUPPORTED-SCHEMA`；失败后不得创建 session、签发 token 或轮换 token；API 字段形态由 API contract 承接。 | Conditional：登录和刷新共享 schema compatibility 规则，可保留 | Conditional：未说明该失败发生在认证状态变化前；`LOGIN-ERR-UNSUPPORTED-SCHEMA` 应为 spec-level compatibility failure，不等同 API schema 字段实现 | Conditional：覆盖 unsupported schema failure；未明确不得创建 session、不得刷新 token | Important | 在 5-F 中按“修复后 Spec 描述”改写。 |
+
+跨文档发现与 5-F 修复方案：
+| 对象 | 问题 | 影响 | 级别 | 5-F 修复方案 |
+| --- | --- | --- | --- | --- |
+| `traceability.md` login 行 | `IDENTITY-LOGIN-001..007` 的 `Spec Flow` 仍为 `TBD - 后续补齐`，但 `IDENTITY-SPEC-LOGIN-001..007` 已存在。 | 追溯链路显示落后，后续 AC/TC 生成可能继续引用 TBD。 | Important | 在 5-F 中同步 `Spec Flow` 到 `IDENTITY-SPEC-LOGIN-001..007`；`AC` 和 `TC` 继续保留 `TBD - 后续补齐`，不伪造测试或代码新证据。 |
+| login target boundary | login requirements/spec 与 OTP target、provider baseline、token lifecycle 存在交叉引用，但 item 内部分边界不清。 | 后续生成 AC/TC 时可能把 terms persistence、真实 provider validation 或 token lifecycle 细节错误归入 login 子章节。 | Important | 在 5-F 中把 login item 明确为 current-code-baseline 登录处理边界；terms persistence、真实 provider validation、token lifecycle 细节分别由后续 consent/provider/token 文档承接。 |
+| login flow ordering | spec 只有 item table，缺少紧凑登录处理顺序。 | AC/TC 难判断 schema、terms、credential、account status、session creation 的先后和失败副作用。 | Suggestion | 可在 `IDENTITY-LOGIN` spec 小节补一个简短 flow segment：public entry -> schema version -> terms -> credential/identity -> account active -> session/response；失败分支不产生 session/token。 |
+
+Task 5-R 执行情况：
+- 已执行：完成 `IDENTITY-LOGIN-001..007` 和 `IDENTITY-SPEC-LOGIN-001..007` 的逐条内容契约语义审查。
+- 已执行：按 Requirement / Spec 分离格式形成 5-F 修复输入表，并在 item 后附原始描述。
+- 未执行：未修改 `requirements.md`、`spec.md` 或 `traceability.md` 正文；等待用户确认后再执行 Task 5-F。
+
+Task 5-R 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 5-R | Confirmed by user | 用户已确认本审查表，并放行 Task 5-F。 |
+| Task 5-F | Completed - pending user confirmation | 已执行 login 子章节修复；用户确认本修复复审前，不得执行 Task 6-R。 |
+
+### IDENTITY-LOGIN 登录与 session 签发 5-F 修复复审
+
+修复范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-LOGIN-001..007`
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的登录 Ref ID、`LOGIN-FLOW-*` flow segment、`IDENTITY-SPEC-LOGIN-001..007`
+- Traceability：`docs/product/base/identity-account-lifecycle/traceability.md` 的 `IDENTITY-LOGIN-001..007` Spec Flow
+
+本轮结果：pass for Task 5-F scope。已按用户确认的 Requirement / Spec 分离方案修复 login 子章节；AC、TC、Product Base merge、release readiness 和代码实现不在本轮范围内。
+
+Requirement 修复复审表：
+| Requirement item | 原始 Requirement 描述 | 修复后 Requirement 描述 | 复审结论 |
+| --- | --- | --- | --- |
+| `IDENTITY-LOGIN-001` | 手机号登录请求必须在用户接受条款后才能继续处理。 | 当前代码基线的手机号登录请求必须声明已接受条款后才允许继续认证处理；未接受时必须拒绝，且不得进入身份解析、账号创建或 session 签发；该要求不代表 Terms/Privacy consent 持久化已实现。 | Pass：terms gate 的失败后置边界和 consent persistence 非目标已补清。 |
+| `IDENTITY-LOGIN-002` | 第三方登录请求必须在用户接受条款后才能继续处理。 | 当前代码基线的 Apple / WeChat 登录请求必须声明已接受条款后才允许继续认证处理；未接受时必须拒绝，且不得进入 provider token subject 处理、身份解析、账号创建或 session 签发。 | Pass：Apple/WeChat current baseline 和失败后置边界已补清。 |
+| `IDENTITY-LOGIN-003` | 手机号、Apple、WeChat 登录入口必须允许未认证客户端调用。 | 手机号、Apple、WeChat 登录入口必须不要求既有认证 session；public entry 不得绕过 schema version、terms、凭证或账号状态校验。 | Pass：public endpoint 的权限边界从“允许调用”改为“不要求既有 session”。 |
+| `IDENTITY-LOGIN-004` | 系统必须拒绝非 `active` 账号登录。 | 身份解析或账号创建得到的账号不为 `active` 时，系统必须拒绝登录，且不得创建认证 session 或发放 token。 | Pass：账号状态门禁的触发点和失败副作用已补清。 |
+| `IDENTITY-LOGIN-005` | 登录成功时，系统必须创建一个 `active` 认证 session。 | 登录请求通过 schema version、terms、凭证和账号状态门禁后，系统必须为本次解析或创建的用户创建 `active` 认证 session。 | Pass：成功 session 创建的前置条件和归属对象已补清。 |
+| `IDENTITY-LOGIN-006` | 登录成功响应必须返回当前用户、access token、refresh token 和 access token 过期时间。 | 登录成功响应必须返回当前用户、access token、refresh token 和 access token 过期时间；access / refresh token 的生命周期和轮换语义由 `IDENTITY-TOKEN` 子章节承接。 | Pass：login 输出和 token lifecycle source of truth 已分离。 |
+| `IDENTITY-LOGIN-007` | 登录和刷新请求必须拒绝不支持的 schema version。 | 当前代码基线的登录和刷新请求必须在认证状态变化前拒绝不支持的 schema version；拒绝后不得创建 session、发放 token 或刷新 token；具体 schema 字段形态由 API contract 承接。 | Pass：schema compatibility 的失败时机、副作用和 API contract 边界已补清。 |
+
+Spec 修复复审表：
+| Spec item | 原始 Spec 描述 | 修复后 Spec 描述 | 复审结论 |
+| --- | --- | --- | --- |
+| `IDENTITY-SPEC-LOGIN-001` | 手机号登录请求只有满足 `LOGIN-IN-TERMS-ACCEPTED` 后才能继续处理，否则返回 `LOGIN-ERR-TERMS-REQUIRED`。 | Current code baseline 下，手机号登录请求只有满足 `LOGIN-IN-TERMS-ACCEPTED` 后才能继续认证处理；否则返回 `LOGIN-ERR-TERMS-REQUIRED`，并不得进入身份解析、账号创建或 session 签发流程。 | Pass：spec failure boundary 已对齐 requirement。 |
+| `IDENTITY-SPEC-LOGIN-002` | 第三方登录请求只有满足 `LOGIN-IN-TERMS-ACCEPTED` 后才能继续处理，否则返回 `LOGIN-ERR-TERMS-REQUIRED`。 | Current code baseline 下，Apple / WeChat 登录请求只有满足 `LOGIN-IN-TERMS-ACCEPTED` 后才能继续认证处理；否则返回 `LOGIN-ERR-TERMS-REQUIRED`，并不得进入 provider token subject 处理、身份解析、账号创建或 session 签发流程。 | Pass：第三方登录 spec 限定 Apple/WeChat current baseline，并补齐 provider token subject 失败边界。 |
+| `IDENTITY-SPEC-LOGIN-003` | 手机号、Apple 和 WeChat 登录入口必须处于 `LOGIN-STATE-PUBLIC-ENDPOINT`。 | 手机号、Apple 和 WeChat 登录入口必须处于 `LOGIN-STATE-PUBLIC-ENDPOINT`；该状态只表示不要求既有认证 session，仍必须执行 schema version、terms、凭证和账号状态门禁。 | Pass：public endpoint 状态定义已避免绕过门禁的歧义。 |
+| `IDENTITY-SPEC-LOGIN-004` | 账号不处于 `LOGIN-STATE-ACCOUNT-ACTIVE` 时，系统必须返回 `LOGIN-ERR-INACTIVE-ACCOUNT` 并拒绝登录。 | 账号不处于 `LOGIN-STATE-ACCOUNT-ACTIVE` 时，系统必须返回 `LOGIN-ERR-INACTIVE-ACCOUNT` 并拒绝登录；不得创建 `LOGIN-STATE-SESSION-ACTIVE` 或返回 `LOGIN-OUT-TOKEN-PAIR`。 | Pass：inactive account 的状态转移禁止项已补清。 |
+| `IDENTITY-SPEC-LOGIN-005` | 登录成功时，系统必须创建 `LOGIN-STATE-SESSION-ACTIVE`。 | 登录请求通过 schema version、terms、凭证和账号状态门禁后，系统必须为本次解析或创建的用户创建 `LOGIN-STATE-SESSION-ACTIVE`。 | Pass：成功路径的前置条件和 session 归属已补清。 |
+| `IDENTITY-SPEC-LOGIN-006` | 登录成功响应必须返回 `LOGIN-OUT-TOKEN-PAIR`。 | 登录成功响应必须返回 `LOGIN-OUT-TOKEN-PAIR`；token 生命周期、有效期和轮换行为以 `IDENTITY-SPEC-TOKEN-*` 为 source of truth。 | Pass：login spec 保留输出契约，token lifecycle 移交 token spec。 |
+| `IDENTITY-SPEC-LOGIN-007` | 登录和刷新请求携带不支持的 `LOGIN-IN-SCHEMA-VERSION` 时，系统必须返回 `LOGIN-ERR-UNSUPPORTED-SCHEMA`。 | 登录和刷新请求携带不支持的 `LOGIN-IN-SCHEMA-VERSION` 时，系统必须在认证状态变化前返回 `LOGIN-ERR-UNSUPPORTED-SCHEMA`；失败后不得创建 session、签发 token 或轮换 token；API 字段形态由 API contract 承接。 | Pass：schema version 失败的时机、副作用和字段边界已补清。 |
+
+Spec Ref / Flow 修复复审表：
+| 对象 | 修复内容 | 复审结论 |
+| --- | --- | --- |
+| `LOGIN-IN-TERMS-ACCEPTED` | 明确为当前登录请求中的用户声明，不表示 Terms/Privacy consent 持久化已实现。 | Pass：输入定义与 requirement 的 current baseline 边界一致。 |
+| `LOGIN-IN-SCHEMA-VERSION` | 明确为兼容性版本信号，具体字段形态由 API contract 承接。 | Pass：spec 未越界写 API schema。 |
+| `LOGIN-STATE-PUBLIC-ENDPOINT` | 明确 public endpoint 只是不要求既有 session，不绕过 schema、terms、凭证或账号状态校验。 | Pass：权限语义清晰。 |
+| `LOGIN-ERR-*` | 补齐 terms、inactive account、unsupported schema 的失败副作用。 | Pass：失败路径具备可验收后置边界。 |
+| `LOGIN-FLOW-AUTHENTICATE` | 新增 public entry -> schema version -> terms -> credential/identity -> account active -> session/token pair 的登录处理顺序。 | Pass：flow segment 支持后续 AC/TC 生成，不新增实现任务。 |
+| `LOGIN-FLOW-REFRESH-SCHEMA` | 新增 refresh 请求进入 token 生命周期前的 schema version gate。 | Pass：保留 login compatibility 边界，同时将 token 生命周期交给 `IDENTITY-SPEC-TOKEN-*`。 |
+
+Traceability 修复复审表：
+| Requirement | Spec Flow | AC | Test Case ID | 复审结论 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-LOGIN-001` | `IDENTITY-SPEC-LOGIN-001` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+| `IDENTITY-LOGIN-002` | `IDENTITY-SPEC-LOGIN-002` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+| `IDENTITY-LOGIN-003` | `IDENTITY-SPEC-LOGIN-003` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+| `IDENTITY-LOGIN-004` | `IDENTITY-SPEC-LOGIN-004` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+| `IDENTITY-LOGIN-005` | `IDENTITY-SPEC-LOGIN-005` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+| `IDENTITY-LOGIN-006` | `IDENTITY-SPEC-LOGIN-006` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+| `IDENTITY-LOGIN-007` | `IDENTITY-SPEC-LOGIN-007` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+
+Task 5-F 执行情况：
+- 已执行：按用户确认的 5-R 方案修复 login requirements、spec items、spec Ref ID 和 flow segment。
+- 已执行：同步 `traceability.md` 中 `IDENTITY-LOGIN-001..007` 的 `Spec Flow`。
+- 未执行：未生成或修改 AC/TC，未修改代码，未审查 Task 6 token 子章节。
+
+Task 5-F 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 5-F | Completed - pending user confirmation | 用户确认本修复复审表前，不得执行 Task 6-R。 |
+| Task 6-R | Pending | 只允许在用户确认 Task 5-F 后开始。 |
+
 ## 2026-06-11 SWC 架构治理上线独立审核
 
 审核 ID：`SWC-ARCH-GOVERNANCE-ROLLOUT-20260611`

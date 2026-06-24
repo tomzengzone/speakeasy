@@ -33,6 +33,7 @@
 ## Outputs
 - 链路完整性结论。
 - 缺失、重复、过期或状态冲突清单。
+- 语义追溯结论：确认 ID 链路之外，上游业务意图、异常、权限、安全/隐私、状态转移、跨域依赖和非目标是否被下游保留。
 - 下一步 workflow 建议。
 - 用户要求时写入 `docs/reports/quality_report.md`。
 - 对 `FR -> User Story -> AC -> Code Evidence -> Test Evidence -> Status` 的完整性审查结论。
@@ -45,6 +46,8 @@
 ## Quality Bar
 - 检查范围明确。
 - 每个缺口都有具体文件或 workflow 阶段。
+- ID coverage is treated as necessary but insufficient; semantic traceability must use the shared quality model in `document-content-contract`.
+- A traceability review that only proves ID counts match cannot return higher than conditional when semantic coverage was requested or required by workflow.
 - 不把缺失文档直接补写成新内容。
 - 不和路径治理或内容契约治理混淆。
 - 输出可以指导下一步使用哪个 skill。
@@ -58,6 +61,7 @@
 
 ## Maintenance Notes
 - workflow 变化时同步更新 Traceability Model。
+- 修改 semantic traceability gate 时，同步检查 `document-content-contract`、`requirement-refine`、`feature-spec-generate`、`acceptance-criteria-generate` 和 `test-case-generate`。
 - Product Base traceability lives at `docs/product/base/traceability.md`; global traceability remains a legacy or index path after migration.
 - Definition of Done 变化时同步更新检查规则。
 - 当追溯矩阵字段、AC 来源规则或测试阶段职责变化时，同步更新 acceptance-criteria-generate 和 test-case-generate。
