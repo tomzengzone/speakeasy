@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'package:speakeasy/config/app_config.dart';
@@ -32,7 +30,13 @@ class AssistantTurnMeta {
   final SceneStateSnapshot? sceneState;
 }
 
-enum VoiceChatAssistantEventType { started, textDelta, audioChunk, speaking, done }
+enum VoiceChatAssistantEventType {
+  started,
+  textDelta,
+  audioChunk,
+  speaking,
+  done,
+}
 
 class VoiceChatAssistantEvent {
   const VoiceChatAssistantEvent({
@@ -166,8 +170,7 @@ class VoiceChatService extends ChangeNotifier {
     return meta;
   }
 
-  /// 连接到后端 WebSocket 代理
-  /// 后端会转发到 DashScope Qwen3-Omni Realtime API
+  /// 暂不连接 realtime WebSocket；需等待后端提供已审计的 usage gateway。
   Future<void> connect({
     String? sessionId,
     String? systemPrompt,
@@ -185,76 +188,29 @@ class VoiceChatService extends ChangeNotifier {
     _connectionController.add(_connectionState);
     notifyListeners();
 
-    try {
-      _protocol = _VoiceChatProtocol.auto;
-      _pendingSessionId = sessionId;
-      _pendingSystemPrompt = systemPrompt;
-      _pendingModel = model;
-      _pendingManualTurnDetection = manualTurnDetection;
-      _pendingPlannerMode = plannerMode;
-      _pendingTranscriptionOnly = transcriptionOnly;
-      _plannerModeActive = false;
-      _officialSessionConfigured = false;
-      _lastAssistantTurnMeta = null;
-      _assistantTextBuffer.clear();
-      _userTranscriptBuffer.clear();
-
-      // 构建 WebSocket URL，替换 https:// 为 wss://
-      String wsBase = AppConfig.apiBaseUrl
-          .replaceFirst('https://', 'wss://')
-          .replaceFirst('http://', 'ws://');
-      final Uri wsUri = Uri.parse('$wsBase/ai/voice-chat?token=$token');
-      debugPrint('[VoiceChat] Connecting to: $wsUri');
-
-      // 用 dart:io WebSocket 直接连接，确保连接成功后再发数据
-      final WebSocket socket = await WebSocket.connect(
-        wsUri.toString(),
-      ).timeout(const Duration(seconds: 15));
-      debugPrint('[VoiceChat] WebSocket connected');
-
-      _channel = IOWebSocketChannel(socket);
-
-      // 先设置监听，再发送数据
-      _channel!.stream.listen(_onMessage, onError: _onError, onDone: _onDone);
-
-      _sendCustomStart(
-        sessionId: sessionId,
-        systemPrompt: systemPrompt,
-        model: model,
-        manualTurnDetection: manualTurnDetection,
-        plannerMode: plannerMode,
-        transcriptionOnly: transcriptionOnly,
-        sceneContext: sceneContext,
-      );
-      _startupFallbackTimer?.cancel();
-      _startupFallbackTimer = Timer(const Duration(milliseconds: 2800), () {
-        if (_channel == null ||
-            _isConnected ||
-            _connectionState != 'connecting') {
-          return;
-        }
-        debugPrint('[VoiceChat] No start ack, falling back to legacy config');
-        _protocol = _VoiceChatProtocol.legacy;
-        _sendLegacyConfig(
-          sessionId: sessionId,
-          systemPrompt: systemPrompt,
-          model: model,
-          manualTurnDetection: manualTurnDetection,
-          plannerMode: plannerMode,
-          transcriptionOnly: transcriptionOnly,
-          sceneContext: sceneContext,
-        );
-      });
-    } catch (e) {
-      _startupFallbackTimer?.cancel();
-      _connectionState = 'error';
-      _connectionController.add(_connectionState);
-      _isConnected = false;
-      notifyListeners();
-      rethrow;
-    }
+    _startupFallbackTimer?.cancel();
+    _protocol = _VoiceChatProtocol.auto;
+    _pendingSessionId = sessionId;
+    _pendingSystemPrompt = systemPrompt;
+    _pendingModel = model;
+    _pendingManualTurnDetection = manualTurnDetection;
+    _pendingPlannerMode = plannerMode;
+    _pendingTranscriptionOnly = transcriptionOnly;
+    _plannerModeActive = false;
+    _officialSessionConfigured = false;
+    _lastAssistantTurnMeta = null;
+    _assistantTextBuffer.clear();
+    _userTranscriptBuffer.clear();
+    _connectionState = 'error';
+    _connectionController.add(_connectionState);
+    _isConnected = false;
+    notifyListeners();
+    throw UnsupportedError(
+      'Realtime voice chat requires an audited backend usage gateway.',
+    );
   }
 
+  // ignore: unused_element
   void _onMessage(dynamic message) {
     if (message is String) {
       try {
@@ -708,6 +664,7 @@ class VoiceChatService extends ChangeNotifier {
     }
   }
 
+  // ignore: unused_element
   void _onError(Object error) {
     if (_disposed) {
       return;
@@ -724,6 +681,7 @@ class VoiceChatService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ignore: unused_element
   void _onDone() {
     if (_disposed) {
       return;

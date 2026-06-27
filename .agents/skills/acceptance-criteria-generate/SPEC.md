@@ -19,6 +19,7 @@ This project-local skill applies to development workflow assets in this reposito
 - `docs/product/increments/<increment-id>/spec.md`
 - `docs/product/increments/<increment-id>/requirements.md`
 - `docs/product/increments/<increment-id>/definition.md`
+- `docs/product/stages/<stage-id>.md` with stable Stage Scope Item IDs for new increment work.
 - `docs/product/features/<feature-slug>-spec.md`
 - `docs/product/features/<feature-slug>-requirements.md`
 - Legacy global traceability `docs/product/traceability_matrix.md` only as migration, compatibility, or audit input after Product Base exists.
@@ -32,9 +33,10 @@ This project-local skill applies to development workflow assets in this reposito
 - Product Base 强制追溯矩阵：`docs/product/base/traceability.md`。
 - Increment 验收标准：`docs/product/increments/<increment-id>/acceptance.md`。
 - Increment 强制追溯矩阵：`docs/product/increments/<increment-id>/traceability.md`。
+- Increment traceability rows that preserve `Stage Scope ID -> Increment ID -> FR -> AC -> Test Case ID -> Contract Evidence -> Code Evidence -> Test Evidence -> Release Evidence -> Status`.
 - 大型功能的功能级验收标准：`docs/product/features/<feature-slug>-acceptance.md`；Product Base 建立后，只有显式 legacy compatibility/index 任务才更新全局文档索引或摘要。
 - Legacy 全局验收标准和追溯矩阵：`docs/product/acceptance_criteria.md`, `docs/product/traceability_matrix.md`，仅限显式 migration、compatibility 或 audit 任务，不作为 Product Base 建立后的默认写回目标。
-- 测试映射说明：写入对应验收标准条目或追溯矩阵。
+- 测试映射说明：写入对应验收标准条目或追溯矩阵；稳定 TC ID 由 `test-case-generate` 在实现前写入 increment test case library 并回填追溯证据。
 
 ## Product Object Outputs
 - Product Base acceptance criteria: `docs/product/base/acceptance.md`.
@@ -53,11 +55,12 @@ This project-local skill applies to development workflow assets in this reposito
 - Acceptance criteria paths are explicit and linked from the owning Product Base, increment, or legacy compatibility index when split.
 - For the current MVP baseline, AC can be generated from requirements, MVP scope, user stories, and actual code evidence.
 - For P0 or new features, AC uses the approved feature spec as the direct upstream source and traces back to requirements, user stories, and scope.
-- The traceability matrix has no empty FR, AC, Code Evidence, or Test Evidence fields unless Test Evidence is an explicit exception.
+- The traceability matrix has no empty FR, AC, Test Case ID, Code Evidence, or Test Evidence fields unless the field is explicitly pending the next workflow gate or has an allowed exception.
 - Requirement coverage completeness is not represented as code line coverage or a guarantee of zero production defects.
 - For new product work, AC uses the approved increment spec as the direct upstream source.
 - Increment AC and traceability live under the same increment directory.
 - Stage scope, feature registry entries, and baseline notes are upstream context, not direct AC sources except for explicit Product Base or baseline consolidation work.
+- For new increment work, the traceability matrix proves all required Stage Scope Item IDs are covered by the increment or explicitly deferred/not applicable, and every FR/AC preserves those upstream IDs.
 
 ## Maintenance Notes
 - Keep SKILL.md concise enough for runtime use.

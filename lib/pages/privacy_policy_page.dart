@@ -56,7 +56,6 @@ class PrivacyPolicyPage extends StatelessWidget {
 为提供 AI 对话、文本生成、语音分析、登录、支付、崩溃诊断或学习反馈等能力，我们可能会使用第三方技术服务，包括但不限于：
 
 - 阿里云 / DashScope 等 AI 与语音能力服务
-- SingSound 等口语评测服务
 - Apple 登录与 App Store 订阅服务
 - 微信登录服务
 - Sentry 等崩溃诊断服务

@@ -249,11 +249,6 @@ abstract class AppRepository {
     required List<SceneHistoryTurn> history,
   });
 
-  Future<PronunciationScore> scorePronunciation({
-    required String audioPath,
-    required String expectedText,
-  });
-
   Future<SceneFeedback> generateSceneFeedback({
     required SceneDraft draft,
     required List<SceneHistoryTurn> history,

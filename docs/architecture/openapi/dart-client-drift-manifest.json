@@ -1,0 +1,19 @@
+{
+  "mode": "generated_client_drift",
+  "openapi_path": "docs/architecture/openapi/speakeasy-api.yaml",
+  "target_directory": "lib/generated/api",
+  "generator": "project-local OpenAPI Dart path registry",
+  "openapi_sha256": "44739a588708eb47e82707680c0ab0dbada178530abe12a4c7525750f8e35cd5",
+  "status": "Generated Dart OpenAPI boundary is committed under lib/generated/api and pinned by .openapi-sha256. Active MVP backend calls must use generated path constants or be listed as explicit handwritten client exceptions.",
+  "handwritten_client_exceptions": {
+    "/user/stats": "Legacy local learning-stats sync retained until frontend migrates to learning history/report APIs.",
+    "/user/stats/session": "Legacy local learning-stats sync retained until frontend migrates practice completion to /practice and /learning evidence APIs.",
+    "/user/stats/session/feedback": "Legacy local feedback stats sync retained until frontend migrates practice completion to /practice and /learning evidence APIs.",
+    "/user/stats/session-group/delete": "Legacy local stats cleanup retained until frontend migrates history deletion to /learning/history/{history_entry_id}.",
+    "/cards": "Legacy card feed outside MVP backend active endpoint set.",
+    "/cards/$cardId/state": "Legacy card state endpoint outside MVP backend active endpoint set.",
+    "/user/roles/sync": "Legacy role-memory endpoint outside Product Base MVP backend scope.",
+    "/user/roles/$trimmedRoleId/memory": "Legacy role-memory endpoint outside Product Base MVP backend scope.",
+    "/user/learning-profile": "Legacy learning profile endpoint retained until learning-memory projections are wired to frontend."
+  }
+}

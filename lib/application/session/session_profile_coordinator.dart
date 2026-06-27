@@ -12,6 +12,10 @@ abstract class SessionProfileRemoteApi {
 
   Future<Map<String, dynamic>> updateMe(Map<String, dynamic> patch);
 
+  Future<Map<String, dynamic>> submitOnboardingAssessment(
+    Map<String, dynamic> assessment,
+  );
+
   Future<Map<String, dynamic>> deleteAccount();
 }
 
@@ -27,6 +31,20 @@ class ApiClientSessionProfileRemoteApi implements SessionProfileRemoteApi {
   @override
   Future<Map<String, dynamic>> updateMe(Map<String, dynamic> patch) {
     return ApiClient.updateMe(patch);
+  }
+
+  @override
+  Future<Map<String, dynamic>> submitOnboardingAssessment(
+    Map<String, dynamic> assessment,
+  ) {
+    return ApiClient.submitOnboardingAssessment(
+      goalDirection: assessment['goal_direction'] as String,
+      painPoints: (assessment['pain_points'] as List<dynamic>)
+          .map((dynamic item) => item.toString())
+          .toList(growable: false),
+      outputLevel: assessment['output_level'] as String,
+      dailyMinutes: assessment['daily_minutes'] as int,
+    );
   }
 
   @override
@@ -143,6 +161,29 @@ class SessionProfileCoordinator {
 
     final Map<String, dynamic> data = _asMap(res['data']);
     return data.isEmpty ? null : data;
+  }
+
+  Future<void> syncOnboardingAssessment({
+    required String goalDirection,
+    required List<String> painPoints,
+    required String outputLevel,
+    required int dailyMinutes,
+  }) async {
+    final String? token = await _remoteApi.getToken();
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
+    final Map<String, dynamic> res = await _remoteApi
+        .submitOnboardingAssessment(<String, dynamic>{
+          'goal_direction': goalDirection,
+          'pain_points': painPoints,
+          'output_level': outputLevel,
+          'daily_minutes': dailyMinutes,
+        });
+    if (res['code'] != 0) {
+      throw Exception(res['message'] ?? '首评结果同步失败');
+    }
   }
 
   Future<void> deleteAccount() async {

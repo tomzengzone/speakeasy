@@ -1,5 +1,4 @@
 #import "SafePluginRegistrant.h"
-#import <SingSound/SingSound.h>
 
 #if __has_include(<audio_session/AudioSessionPlugin.h>)
 #import <audio_session/AudioSessionPlugin.h>
@@ -56,53 +55,6 @@
   // shared_preferences_foundation, sign_in_with_apple, and speech_to_text are
   // Swift-backed plugins that currently crash during cold launch registration.
   [SqflitePlugin registerWithRegistrar:[registry registrarForPlugin:@"SqflitePlugin"]];
-}
-
-@end
-
-@interface AliOralAssessmentDelegateProxy () <SSOralEvaluatingManagerDelegate>
-@end
-
-@implementation AliOralAssessmentDelegateProxy
-
-- (void)oralEvaluatingInitSuccess {
-  NSLog(@"[AliOralAssessmentProxy] init success");
-}
-
-- (void)oralEvaluatingDidStart {
-  NSLog(@"[AliOralAssessmentProxy] did start");
-}
-
-- (void)oralEvaluatingDidStop {
-  NSLog(@"[AliOralAssessmentProxy] did stop");
-}
-
-- (void)oralEvaluatingDidEndWithResult:(NSDictionary *)result isLast:(BOOL)isLast {
-  NSLog(@"[AliOralAssessmentProxy] result isLast=%@ keys=%@", isLast ? @"true" : @"false", result.allKeys);
-  if (self.resultHandler) {
-    self.resultHandler(result);
-  }
-}
-
-- (void)oralEvaluatingDidEndWithResult:(NSDictionary *)result RequestId:(NSString *)request_id {
-  NSLog(@"[AliOralAssessmentProxy] result requestId=%@ keys=%@", request_id ?: @"", result.allKeys);
-  if (self.resultHandler) {
-    self.resultHandler(result);
-  }
-}
-
-- (void)oralEvaluatingDidEndError:(NSError *)error {
-  NSLog(@"[AliOralAssessmentProxy] error %@", error);
-  if (self.errorHandler) {
-    self.errorHandler(error);
-  }
-}
-
-- (void)oralEvaluatingDidEndError:(NSError *)error RequestId:(NSString *)request_id {
-  NSLog(@"[AliOralAssessmentProxy] error requestId=%@ %@", request_id ?: @"", error);
-  if (self.errorHandler) {
-    self.errorHandler(error);
-  }
 }
 
 @end

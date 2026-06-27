@@ -76,6 +76,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
     );
 
     return Scaffold(
+      key: const ValueKey<String>('favorites_page'),
       backgroundColor: pageBackground,
       appBar: AppBar(
         title: Text(l10n.myFavorites),
@@ -93,6 +94,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
           itemBuilder: (BuildContext context, int index) {
             if (index == 0) {
               return _FavoritesIntro(
+                key: const ValueKey<String>('favorites_intro'),
                 count: _items.length,
                 description: l10n.favoritesDescription,
               );
@@ -112,7 +114,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
 }
 
 class _FavoritesIntro extends StatelessWidget {
-  const _FavoritesIntro({required this.count, required this.description});
+  const _FavoritesIntro({
+    super.key,
+    required this.count,
+    required this.description,
+  });
 
   final int count;
   final String description;

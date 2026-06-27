@@ -34,6 +34,7 @@ class FeaturePlaceholderPage extends StatelessWidget {
     );
 
     return Scaffold(
+      key: ValueKey<String>('feature_placeholder_page_$title'),
       backgroundColor: pageBackground,
       appBar: AppBar(
         title: Text(title),

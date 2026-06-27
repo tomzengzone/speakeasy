@@ -61,7 +61,6 @@ class ScenePage extends StatefulWidget {
   @override
   State<ScenePage> createState() => _ScenePageState();
 }
-
 class _ScenePageState extends State<ScenePage> {
   final SceneAuxiliaryCoordinator _sceneAuxiliaryCoordinator =
       const SceneAuxiliaryCoordinator();
@@ -153,7 +152,6 @@ class _ScenePageState extends State<ScenePage> {
   final Set<int> _translatedVoiceMessageIndexes = <int>{};
   final Set<int> _translatingVoiceMessageIndexes = <int>{};
   final List<Uint8List> _pendingRealtimeUserVoiceChunks = <Uint8List>[];
-  String? _pendingUserVoiceAudioPath;
   SceneDraft _draft = sampleSceneDraft;
   Timer? _promptTimer;
   Timer? _mockInputTimer;
@@ -247,7 +245,9 @@ class _ScenePageState extends State<ScenePage> {
     await _syncVirtualFriendsToServer();
   }
 
-  Future<void> _syncVirtualFriendsToServer([List<_VirtualFriend>? friends]) async {
+  Future<void> _syncVirtualFriendsToServer([
+    List<_VirtualFriend>? friends,
+  ]) async {
     final AppSession session = AppSessionScope.of(context);
     if (!session.isLoggedIn) {
       return;
@@ -494,114 +494,6 @@ class _ScenePageState extends State<ScenePage> {
         unawaited(_startChatSpeechPreview());
       },
     );
-  }
-
-  bool _looksWeakVoiceTranscript(String text) {
-    final String normalized = text.trim().toLowerCase();
-    if (normalized.isEmpty) {
-      return true;
-    }
-    if (_containsChineseText(normalized)) {
-      return true;
-    }
-    final List<String> words = normalized
-        .split(RegExp(r'\s+'))
-        .where((String item) => item.trim().isNotEmpty)
-        .toList(growable: false);
-    if (words.length <= 1 && normalized.length < 8) {
-      return true;
-    }
-    return _containsAny(normalized, <String>[
-      'um',
-      'uh',
-      'hmm',
-      'hello',
-      'hi there',
-      'can you help',
-    ]);
-  }
-
-  String _repairServiceVoiceTranscript(String primary, String preview) {
-    final String item =
-        _serviceOrderItemFromText(primary) ??
-        _serviceOrderItemFromText(preview) ??
-        '';
-    if (item.isEmpty) {
-      return primary;
-    }
-    final String flavor =
-        _serviceFlavorFromText(primary) ??
-        _serviceFlavorFromText(preview) ??
-        '';
-    final String size =
-        _serviceSizeFromText(primary) ?? _serviceSizeFromText(preview) ?? '';
-    final String temperature =
-        _serviceTemperatureFromText(primary) ??
-        _serviceTemperatureFromText(preview) ??
-        '';
-    final String sweetness =
-        _serviceSweetnessFromText(primary) ??
-        _serviceSweetnessFromText(preview) ??
-        '';
-    final String milk =
-        _serviceMilkFromText(primary) ?? _serviceMilkFromText(preview) ?? '';
-    final String pickup =
-        _servicePickupFromText(primary) ??
-        _servicePickupFromText(preview) ??
-        '';
-    final List<String> parts = <String>[
-      if (size.isNotEmpty) size,
-      if (temperature.isNotEmpty) temperature,
-      if (flavor.isNotEmpty) flavor,
-      item.replaceFirst(RegExp(r'^(a|an)\s+', caseSensitive: false), ''),
-    ];
-    String resolved = "I'd like ${parts.join(' ')}";
-    if (milk.isNotEmpty) {
-      resolved += ' with $milk';
-    }
-    if (sweetness.isNotEmpty) {
-      resolved += ' and $sweetness';
-    }
-    if (pickup.isNotEmpty) {
-      resolved += ', $pickup';
-    }
-    return '$resolved, please.';
-  }
-
-  String _resolveBestVoiceTranscript({
-    required String serverTranscript,
-    String localPreviewTranscript = '',
-    double? localPreviewConfidence,
-  }) {
-    final String normalizedServer = _normalizeVoiceTranscriptForScene(
-      serverTranscript,
-    );
-    final String normalizedPreview = _normalizeVoiceTranscriptForScene(
-      localPreviewTranscript,
-    );
-    if (normalizedServer.isEmpty) {
-      return normalizedPreview;
-    }
-    if (normalizedPreview.isEmpty) {
-      return normalizedServer;
-    }
-    if (_effectiveSceneSpec.category == 'service') {
-      final String repaired = _repairServiceVoiceTranscript(
-        normalizedServer,
-        normalizedPreview,
-      );
-      if (repaired.trim().isNotEmpty && !_looksWeakVoiceTranscript(repaired)) {
-        return repaired.trim();
-      }
-    }
-    final bool previewReliable =
-        !_looksWeakVoiceTranscript(normalizedPreview) &&
-        ((localPreviewConfidence ?? 0) >= 0.35 ||
-            normalizedPreview.length >= normalizedServer.length + 10);
-    if (_looksWeakVoiceTranscript(normalizedServer) && previewReliable) {
-      return normalizedPreview;
-    }
-    return normalizedServer;
   }
 
   bool _containsChineseText(String text) {
@@ -1408,7 +1300,6 @@ class _ScenePageState extends State<ScenePage> {
     _translatedVoiceMessageIndexes.clear();
     _translatingVoiceMessageIndexes.clear();
     _pendingRealtimeUserVoiceChunks.clear();
-    _pendingUserVoiceAudioPath = null;
     _serverTurnContract = turnContract;
     _serverSceneState = sceneState;
     _sceneRoleMemoryHints = List<String>.unmodifiable(roleMemoryHints);
@@ -1435,7 +1326,10 @@ class _ScenePageState extends State<ScenePage> {
     _persistConversationHistory();
   }
 
-  Future<void> _generateDraft([String? prompt, bool openChatDirectly = false]) async {
+  Future<void> _generateDraft([
+    String? prompt,
+    bool openChatDirectly = false,
+  ]) async {
     final _VirtualFriend? friend = _activeFriend;
     final String rawInput = (prompt ?? _controller.text).trim();
     final String input = friend != null && prompt == null
@@ -2579,7 +2473,6 @@ class _ScenePageState extends State<ScenePage> {
           (entry) => SceneFeedbackVoiceTurn(
             turnIndex: entry.$1 + 1,
             text: entry.$2.text.trim(),
-            audioPath: entry.$2.audioPath?.trim(),
           ),
         )
         .toList(growable: false);
@@ -2633,8 +2526,6 @@ class _ScenePageState extends State<ScenePage> {
             (SceneFeedbackVoiceTurn turn) => <String, dynamic>{
               'turnIndex': turn.turnIndex,
               'text': turn.text,
-              if (turn.audioPath?.trim().isNotEmpty ?? false)
-                'audioPath': turn.audioPath!.trim(),
             },
           )
           .toList(growable: false),
@@ -2707,7 +2598,6 @@ class _ScenePageState extends State<ScenePage> {
               return SceneFeedbackVoiceTurn(
                 turnIndex: (map['turnIndex'] as num?)?.toInt() ?? 0,
                 text: (map['text'] as String? ?? '').trim(),
-                audioPath: (map['audioPath'] as String?)?.trim(),
               );
             })
             .where((SceneFeedbackVoiceTurn item) => item.text.isNotEmpty)
@@ -2733,29 +2623,8 @@ class _ScenePageState extends State<ScenePage> {
         .where((SceneHistoryTurn t) => t.role == 'user')
         .length;
     final int overall = (64 + rounds * 4).clamp(64, 92);
-    final List<SceneFeedbackTurnReview> turnReviews = data.voiceTurns
-        .map((SceneFeedbackVoiceTurn turn) {
-          final String text = turn.text.trim();
-          final int pronunciationScore = text.isEmpty
-              ? 74
-              : (72 + (text.length % 12)).clamp(72, 88);
-          return SceneFeedbackTurnReview(
-            turnIndex: turn.turnIndex,
-            originalText: text,
-            pronunciationScore: pronunciationScore,
-            pronunciationComment: pronunciationScore >= 82
-                ? '发音整体比较清楚，继续注意句尾收音和重音稳定。'
-                : '发音基本可懂，但关键词重音和连读还可以更清楚。',
-            grammarComment: text.split(' ').length >= 10
-                ? '这句信息有点满，语法上建议拆成更短的两句。'
-                : '语法基本成立，下一轮可以把主谓宾结构再说得更直接。',
-            expressionComment: '意思已经表达出来了，但还可以更像真实场景里的自然英文。',
-            betterExpression: _betterExpressionForText(text),
-            betterExpressionTranslation: '这句可以换成更自然、更稳的英文表达。',
-          );
-        })
-        .where((SceneFeedbackTurnReview item) => item.originalText.isNotEmpty)
-        .toList(growable: false);
+    final List<SceneFeedbackTurnReview> turnReviews =
+        const <SceneFeedbackTurnReview>[];
 
     final int clarity = turnReviews.isEmpty
         ? 78
@@ -2799,17 +2668,6 @@ class _ScenePageState extends State<ScenePage> {
       ],
       turnReviews: turnReviews,
     );
-  }
-
-  String _betterExpressionForText(String text) {
-    if (text.isEmpty) {
-      return 'Let me put that more clearly.';
-    }
-    final String normalized = text.trim();
-    if (normalized.length <= 24) {
-      return 'Let me say that more clearly: $normalized';
-    }
-    return normalized;
   }
 
   void _ensureFeedbackReady() {
@@ -3629,7 +3487,7 @@ class _ScenePageState extends State<ScenePage> {
     audioService
         .stopStreamRecording()
         .then((_) async {
-          final String previewTranscript = await previewTranscriptFuture;
+          await previewTranscriptFuture;
           if (!mounted) {
             return;
           }
@@ -3642,23 +3500,10 @@ class _ScenePageState extends State<ScenePage> {
             );
             return;
           }
-          final List<Uint8List> packedChunks = _packPcmChunks(recordedChunks);
-          final int voiceDuration = _estimateVoiceDurationSeconds(packedChunks);
-          try {
-            _pendingUserVoiceAudioPath = await audioService
-                .persistPcmChunksAsWav(
-                  packedChunks,
-                  sampleRate: 16000,
-                  prefix: 'user_turn',
-                );
-          } catch (_) {
-            _pendingUserVoiceAudioPath = null;
-          }
-          unawaited(
-            _sendRecordedVoiceMessage(
-              voiceDuration: voiceDuration,
-              audioPath: _pendingUserVoiceAudioPath,
-              localPreviewTranscript: previewTranscript,
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('语音提交暂未接入可信上传流程，请改用文字输入'),
+              duration: Duration(seconds: 2),
             ),
           );
           setState(() {
@@ -3678,72 +3523,6 @@ class _ScenePageState extends State<ScenePage> {
             ),
           );
         });
-  }
-
-  Future<void> _sendRecordedVoiceMessage({
-    required int voiceDuration,
-    String? audioPath,
-    String localPreviewTranscript = '',
-    double? localPreviewConfidence,
-  }) async {
-    final String? resolvedAudioPath = audioPath?.trim();
-    if (resolvedAudioPath == null || resolvedAudioPath.isEmpty) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('语音保存失败，请重试'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    String transcript = '';
-    String? transcriptErrorMessage;
-    try {
-      transcript = (await _sceneAuxiliaryCoordinator.transcribeAudio(
-        File(resolvedAudioPath),
-        hintText: localPreviewTranscript,
-        sceneDraft: _draft.toJson(),
-      )).trim();
-      transcript = _resolveBestVoiceTranscript(
-        serverTranscript: transcript,
-        localPreviewTranscript: localPreviewTranscript,
-        localPreviewConfidence: localPreviewConfidence,
-      );
-      transcript = _normalizeVoiceTranscriptForScene(transcript);
-    } catch (error) {
-      debugPrint('[Scene] Voice transcription failed: $error');
-      transcriptErrorMessage = _friendlyErrorMessage(error);
-    }
-    if (!mounted) {
-      return;
-    }
-    if (transcript.isEmpty) {
-      final String localFallback = _normalizeVoiceTranscriptForScene(
-        localPreviewTranscript,
-      );
-      if (localFallback.isNotEmpty) {
-        transcript = localFallback;
-      }
-    }
-    if (transcript.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(transcriptErrorMessage ?? '语音识别失败，请重试'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-    _sendMessage(
-      asVoice: true,
-      voiceDuration: voiceDuration,
-      overrideText: transcript,
-      userAudioPath: resolvedAudioPath,
-    );
   }
 
   void _toggleChatRecording() {
@@ -3827,7 +3606,8 @@ class _ScenePageState extends State<ScenePage> {
     return <String, dynamic>{
       'draft': <String, dynamic>{
         'title': _draft.title,
-        if (_draft.roleId?.trim().isNotEmpty ?? false) 'roleId': _draft.roleId!.trim(),
+        if (_draft.roleId?.trim().isNotEmpty ?? false)
+          'roleId': _draft.roleId!.trim(),
         if (_draft.characterProfile != null)
           'characterProfile': _draft.characterProfile!.toJson(),
         if (_draft.discussionTopic?.trim().isNotEmpty ?? false)
@@ -6073,62 +5853,17 @@ class _ScenePageState extends State<ScenePage> {
     if (preparedTurn == null) {
       return;
     }
-    final ResolvedSceneVoiceUserTurn resolvedTurn =
-        await _sceneVoiceUserTurnCoordinator.resolvePreparedTurn(
-          preparedTurn: preparedTurn,
-          audioGateway: _SceneVoiceUserTurnAudioGateway(_realtimeAudioService),
-        );
-    final String normalizedText = resolvedTurn.normalizedText;
-
     if (plannerModeAware) {
-      debugPrint('[Realtime] User transcript received: $normalizedText');
-    }
-
-    if (resolvedTurn.action == SceneVoiceUserTurnAction.appendLocalMessage) {
-      _appendRealtimeUserMessage(
-        normalizedText,
-        voiceDuration: resolvedTurn.resolvedVoiceDuration,
-        audioPath: resolvedTurn.audioPath,
+      debugPrint(
+        '[Realtime] Trusted upload not routed; user final transcript dropped',
       );
-      return;
     }
-
-    try {
-      await _stopRealtimeStreamRecording();
-    } catch (error) {
-      debugPrint('[Realtime] Stop stream before planner send failed: $error');
-    }
-    if (mounted &&
-        _voiceChatService == service &&
-        _realtimeCallGeneration == callGeneration) {
-      setState(() {
-        _isRecording = false;
-      });
-    }
-    await _sendMessage(
-      asVoice: true,
-      voiceDuration: resolvedTurn.resolvedVoiceDuration,
-      overrideText: normalizedText,
-      userAudioPath: resolvedTurn.audioPath,
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('实时语音提交暂未接入可信上传流程，请改用文字输入'),
+        duration: Duration(seconds: 2),
+      ),
     );
-    if (!mounted ||
-        _voiceChatService != service ||
-        _realtimeCallGeneration != callGeneration ||
-        _voiceSessionMode != _VoiceSessionMode.realtime) {
-      return;
-    }
-    try {
-      await _startRealtimeStreamRecording();
-      if (mounted &&
-          _voiceChatService == service &&
-          _realtimeCallGeneration == callGeneration) {
-        setState(() {
-          _isRecording = true;
-        });
-      }
-    } catch (error) {
-      debugPrint('[Realtime] Restart stream after planner send failed: $error');
-    }
   }
 
   Future<void> _handleVoiceAssistantTurnReady(
@@ -6539,62 +6274,6 @@ class _ScenePageState extends State<ScenePage> {
     await audioService.stopPlayback();
   }
 
-  void _appendRealtimeUserMessage(
-    String text, {
-    int? voiceDuration,
-    String? audioPath,
-  }) {
-    if (_awaitingAssistantReplyForLastUser && text == _lastRealtimeUserText) {
-      return;
-    }
-    _lastRealtimeUserText = text;
-    _awaitingAssistantReplyForLastUser = true;
-    _awaitingUserReplyForLastNpc = false;
-    final String? resolvedAudioPath = (audioPath?.trim().isNotEmpty ?? false)
-        ? audioPath!.trim()
-        : _pendingUserVoiceAudioPath?.trim();
-    _pendingUserVoiceAudioPath = null;
-    final bool assistantTurnInFlight =
-        _isAiSpeaking ||
-        _isFinalizingAiTurn ||
-        _voiceTurnOrchestrator.hasBufferedAssistantTurn;
-    setState(() {
-      final _ChatMessage userMessage = _ChatMessage(
-        role: _MessageRole.user,
-        text: text,
-        inputType: _ChatInputType.voice,
-        voiceDuration: voiceDuration ?? _pendingVoiceMessageDuration,
-        audioPath: resolvedAudioPath?.isNotEmpty ?? false
-            ? resolvedAudioPath
-            : null,
-      );
-      final int lastIndex = _messages.length - 1;
-      if (assistantTurnInFlight &&
-          lastIndex >= 0 &&
-          _messages[lastIndex].role == _MessageRole.npc) {
-        _messages.insert(lastIndex, userMessage);
-      } else {
-        _messages.add(userMessage);
-      }
-      _expandedCoachMessageIndex = null;
-      _showHintReferenceAnswer = false;
-    });
-    _scrollChatToLatest();
-    _persistConversationHistory();
-    if (_effectiveSceneSpec.category == 'service') {
-      final List<SceneHistoryTurn> turns = _currentSceneHistoryTurns();
-      _recordServiceTurnTrace(
-        _servicePolicyDecision(turns),
-        source: _voiceSessionMode == _VoiceSessionMode.realtime
-            ? 'realtime_user'
-            : 'turn_based_user',
-        turns: turns,
-      );
-    }
-    _refreshVoiceSessionGuidance();
-    unawaited(_ensureLlmHint());
-  }
-
   void _appendRealtimeNpcMessage(
     String text, {
     String? audioPath,
@@ -6937,7 +6616,6 @@ class _ScenePageState extends State<ScenePage> {
     bool asVoice = false,
     int? voiceDuration,
     String? overrideText,
-    String? userAudioPath,
   }) async {
     final input = (overrideText ?? _controller.text).trim();
     if (input.isEmpty || _isNpcThinking) return;
@@ -6980,7 +6658,6 @@ class _ScenePageState extends State<ScenePage> {
           voiceDuration: asVoice
               ? (voiceDuration ?? (input.length / 14).ceil())
               : null,
-          audioPath: asVoice ? userAudioPath?.trim() : null,
         ),
       );
       _isNpcThinking = true;
@@ -11787,26 +11464,6 @@ class _ScenePageState extends State<ScenePage> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _SceneVoiceUserTurnAudioGateway
-    implements SceneVoiceUserTurnAudioGateway {
-  const _SceneVoiceUserTurnAudioGateway(this.audioService);
-
-  final AudioService audioService;
-
-  @override
-  Future<String?> persistChunksAsWav(
-    List<Uint8List> chunks, {
-    required int sampleRate,
-    required String prefix,
-  }) {
-    return audioService.persistPcmChunksAsWav(
-      chunks,
-      sampleRate: sampleRate,
-      prefix: prefix,
     );
   }
 }

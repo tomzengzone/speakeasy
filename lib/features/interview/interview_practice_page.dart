@@ -6,6 +6,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
+import 'package:speakeasy/features/commercial/commercial_scenario_gate.dart';
 import 'package:speakeasy/features/interview/expression_shadow_scoring.dart';
 import 'package:speakeasy/features/interview/expression_scene_orchestrator.dart';
 import 'package:speakeasy/features/interview/interview_coach_schema.dart';
@@ -48,12 +50,14 @@ class InterviewPracticePage extends StatefulWidget {
     this.sceneId = defaultInterviewSceneId,
     this.targetLevel = 'beginner',
     this.initialNodeId = '',
+    this.entitlementProjection,
     this.llmScheduler,
   });
 
   final String sceneId;
   final String targetLevel;
   final String initialNodeId;
+  final CommercialEntitlementProjection? entitlementProjection;
   final InterviewLlmScheduler? llmScheduler;
 
   @override
@@ -608,6 +612,29 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
       _errorText = null;
       _wikiWriteSummary = null;
     });
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) {
+      return;
+    }
+    final String selectedTargetLevel = _runtimeTargetLevel;
+    if (!CommercialScenarioGate.canAccess(
+      targetLevel: selectedTargetLevel,
+      entitlement: _entitlementProjection(context),
+    )) {
+      setState(() {
+        _resetMessageUiState();
+        _session = null;
+        _messages.clear();
+        _review = null;
+        _aiReviewNote = null;
+        _wikiWriteSummary = null;
+        _lastPronunciationScore = null;
+        _pendingVoiceAudioPath = null;
+        _loading = false;
+        _errorText = CommercialScenarioGate.lockedMessage;
+      });
+      return;
+    }
     try {
       final InterviewSceneGraph sceneGraph = await loadInterviewSceneGraph(
         sceneId: widget.sceneId,
@@ -628,7 +655,6 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
       final List<InterviewWeakExpressionState> weakExpressions = _wikiStore
           .loadUserGrowthWiki()
           .weakExpressions;
-      final String selectedTargetLevel = _runtimeTargetLevel;
       final bool hasInitialNode = widget.initialNodeId.trim().isNotEmpty;
       final InterviewActiveSessionSnapshot? activeSnapshot =
           roundMode == null && !hasInitialNode
@@ -1507,16 +1533,6 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
     return '${section}_${slug.length > 48 ? slug.substring(0, 48) : slug}';
   }
 
-  Future<PronunciationScore?> _scoreVoice(String audioPath, String text) async {
-    try {
-      return await AppSessionScope.of(
-        context,
-      ).scorePronunciation(audioPath: audioPath, expectedText: text);
-    } catch (_) {
-      return null;
-    }
-  }
-
   Future<_GrammarScoreResult?> _scoreGrammarForVoiceAnswer({
     required String userText,
     InterviewExpression? targetExpression,
@@ -1558,10 +1574,6 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
       return;
     }
     _logVoiceLatency('score:start', pipelineWatch);
-    final Future<PronunciationScore?> pronunciationFuture = _scoreVoice(
-      audioPath,
-      userText,
-    );
     final Future<_GrammarScoreResult?> grammarFuture =
         _scoreGrammarForVoiceAnswer(
           userText: userText,
@@ -1616,16 +1628,6 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
       unawaited(_saveActiveSession());
     }
 
-    unawaited(
-      pronunciationFuture
-          .then((PronunciationScore? score) {
-            _logVoiceLatency('pronunciation:ready', pipelineWatch);
-            applyVoiceScoreUpdate(pronunciation: score);
-          })
-          .catchError((Object error) {
-            debugPrint('[InterviewLatency] pronunciation skipped: $error');
-          }),
-    );
     unawaited(
       grammarFuture
           .then((_GrammarScoreResult? grammarResult) {
@@ -3142,9 +3144,8 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
         }
       }
       if (transcript.isEmpty) {
-        _logVoiceLatency('transcribe:file_start', pipelineWatch);
-        transcript = normalizeInterviewText(
-          await ApiClient.transcribeAudio(File(path), repairMode: 'background'),
+        debugPrint(
+          '[InterviewLatency] trusted audio_ref transcription not routed',
         );
       }
       _logVoiceLatency('transcribe:ready', pipelineWatch);
@@ -4065,6 +4066,11 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
     });
   }
 
+  CommercialEntitlementProjection _entitlementProjection(BuildContext context) {
+    return widget.entitlementProjection ??
+        AppSessionScope.of(context).entitlementProjection;
+  }
+
   @override
   Widget build(BuildContext context) {
     final InterviewPracticeSession? session = _session;
@@ -4662,6 +4668,7 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
                     dueNodeIds: _dueNodeIds(),
                     weakNodeIds: _weakNodeIds(session),
                     practiceStatsByNode: practiceStatsByNode,
+                    entitlementProjection: _entitlementProjection(context),
                   );
                 },
             transitionsBuilder:
@@ -4703,6 +4710,16 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
 
   Future<void> _switchToTargetLevel(String targetLevel) async {
     final String normalizedLevel = _normalizeSceneMapTargetLevel(targetLevel);
+    if (!CommercialScenarioGate.canAccess(
+      targetLevel: normalizedLevel,
+      entitlement: _entitlementProjection(context),
+    )) {
+      setState(() => _errorText = CommercialScenarioGate.lockedMessage);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(CommercialScenarioGate.lockedMessage)),
+      );
+      return;
+    }
     final InterviewPracticeEngine? engine = _engine;
     final InterviewSceneGraph? sceneGraph = _sceneGraph;
     final InterviewLibrary? library = _library;
@@ -6582,6 +6599,7 @@ class _SceneMapPage extends StatefulWidget {
     required this.dueNodeIds,
     required this.weakNodeIds,
     required this.practiceStatsByNode,
+    required this.entitlementProjection,
   });
 
   final InterviewSceneGraph sceneGraph;
@@ -6591,6 +6609,7 @@ class _SceneMapPage extends StatefulWidget {
   final Set<String> dueNodeIds;
   final Set<String> weakNodeIds;
   final Map<String, _SceneNodePracticeStats> practiceStatsByNode;
+  final CommercialEntitlementProjection entitlementProjection;
 
   @override
   State<_SceneMapPage> createState() => _SceneMapPageState();
@@ -6762,6 +6781,7 @@ class _SceneMapPageState extends State<_SceneMapPage> {
                     options: levelOptions,
                     selectedTargetLevel: selectedTargetLevel,
                     activeTargetLevel: activeTargetLevel,
+                    entitlementProjection: widget.entitlementProjection,
                     onChanged: (String targetLevel) {
                       Navigator.of(
                         context,
@@ -6801,12 +6821,14 @@ class _SceneTargetLevelDropdown extends StatelessWidget {
     required this.options,
     required this.selectedTargetLevel,
     required this.activeTargetLevel,
+    required this.entitlementProjection,
     required this.onChanged,
   });
 
   final List<_SceneTargetLevelOption> options;
   final String selectedTargetLevel;
   final String activeTargetLevel;
+  final CommercialEntitlementProjection entitlementProjection;
   final ValueChanged<String> onChanged;
 
   @override
@@ -6841,6 +6863,10 @@ class _SceneTargetLevelDropdown extends StatelessWidget {
           for (final _SceneTargetLevelOption option in options)
             PopupMenuItem<String>(
               value: option.targetLevel,
+              enabled: CommercialScenarioGate.canAccess(
+                targetLevel: option.targetLevel,
+                entitlement: entitlementProjection,
+              ),
               child: KeyedSubtree(
                 key: ValueKey<String>('scene_map_level_${option.targetLevel}'),
                 child: Row(
@@ -6872,6 +6898,15 @@ class _SceneTargetLevelDropdown extends StatelessWidget {
                     if (option.targetLevel == activeTargetLevel) ...[
                       const SizedBox(width: 8),
                       const _TinyBadge(label: '当前', color: darkGreen),
+                    ] else if (!CommercialScenarioGate.canAccess(
+                      targetLevel: option.targetLevel,
+                      entitlement: entitlementProjection,
+                    )) ...[
+                      const SizedBox(width: 8),
+                      const _TinyBadge(
+                        label: CommercialScenarioGate.lockedBadge,
+                        color: Color(0xFFA0622A),
+                      ),
                     ],
                   ],
                 ),
@@ -9310,9 +9345,6 @@ class _VoiceScoreRow extends StatelessWidget {
 
   String _pronunciationProviderLabel(String source) {
     final String normalized = source.toLowerCase();
-    if (normalized.contains('ali') || normalized.contains('singsound')) {
-      return '来源：阿里口语测评';
-    }
     if (normalized.contains('backend') || normalized.contains('server')) {
       return '来源：后端备用评分';
     }

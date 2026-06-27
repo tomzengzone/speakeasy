@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import 'package:speakeasy/models/app_models.dart';
-import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/services/audio_service.dart';
 import 'package:speakeasy/l10n/l10n.dart';
 
@@ -536,15 +535,14 @@ class _LearningPageState extends State<LearningPage> {
                     if (path != null) _recordingPaths[index] = path;
                   });
                   if (path != null && mounted) {
-                    final AppSession session = AppSessionScope.of(context);
                     try {
-                      final PronunciationScore score = await session
-                          .scorePronunciation(
-                            audioPath: path,
-                            expectedText: item.en,
-                          );
                       if (mounted) {
-                        setState(() => _scores[index] = score);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('发音评分暂未接入可信上传流程'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
                       }
                     } catch (error) {
                       if (mounted) {

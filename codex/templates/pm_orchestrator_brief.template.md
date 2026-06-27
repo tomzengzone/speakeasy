@@ -13,7 +13,9 @@
 - Feature registry: <confirmed | missing | not applicable>
 - Baseline: <path or not applicable>
 - Active stage: <path or not applicable>
+- Stage scope item IDs: <confirmed | missing | not applicable>
 - Increment definition: <path or missing | not applicable>
+- Increment coverage: <covered | partially covered | missing | not applicable>
 
 ## Active Stage Goal
 <Current product stage goal from docs/product/roadmap.md and docs/product/development_status.md.>
@@ -22,6 +24,9 @@
 - Primary feature: <stable feature slug>
 - Affected features: <feature slugs or none>
 - Increment id: <increment id or not applicable>
+- Covered Stage Scope Items: <Stage Scope Item IDs or not applicable>
+- Excluded Stage Scope Items: <Stage Scope Item IDs or not applicable>
+- Uncovered required Stage Scope Items: <none | IDs with deferred/not-applicable reason | blocker>
 
 ## Priority
 <P0 | P1 | P2 | Parking Lot | Not Now>

@@ -28,6 +28,7 @@ This project-local skill applies to development workflow assets in this reposito
 - Test gaps are clearly separated from defects.
 - The review result can drive a fix list.
 - Persistent review output, when needed, uses `docs/reports/quality_report.md`.
+- Reviews check implementation simplicity, justified abstraction, explicit data ownership, typed error behavior, contract alignment, and evidence quality for generated or provider-facing code.
 
 ## Maintenance Notes
 - Keep SKILL.md concise enough for runtime use.

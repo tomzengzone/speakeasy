@@ -1,0 +1,35 @@
+# Review Model
+
+## ReviewItem
+- id
+- user_id
+- source_type
+- source_id
+- prompt_type
+- prompt
+- answer
+- due_at
+- interval_days
+- mastery_score
+- status
+
+## Prompt Types
+- flashcard
+- multiple_choice
+- fill_blank
+- speaking_challenge
+
+## Lifecycle
+```text
+created -> due -> completed -> rescheduled
+created -> dismissed
+```
+
+## MVP Scheduling Rule
+- Correct answer increases mastery score.
+- Incorrect answer lowers mastery score and shortens next interval.
+- The exact scheduling algorithm can remain simple in MVP.
+
+- 回答正确时提升 mastery_score。
+- 回答错误时降低 mastery_score，并缩短下一次复习间隔。
+- MVP 阶段的具体调度算法可以保持简单，但必须稳定、可解释。

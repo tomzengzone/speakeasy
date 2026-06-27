@@ -1,0 +1,35 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:speakeasy;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    deserialization:
+      fail-on-unknown-properties: true
+
+speakeasy:
+  ai:
+    provider: deterministic
+    media:
+      metadata-signing-key: media-test-signing-key
+      public-base-url: https://media.test.local/audio
+      upload-base-url: https://upload.test.local/audio
+      upload-ttl: 15m
+      provider-read-ttl: 10m
+      tts-cache-ttl: 7d
+      max-upload-bytes: 10000000
+      max-upload-duration-seconds: 120
+      storage-provider: local
+  ops:
+    bearer-token: ops-test-token
+  payment:
+    webhook-signature: provider-test-signature

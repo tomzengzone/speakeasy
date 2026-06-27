@@ -62,7 +62,9 @@ description: Use when project documentation needs a canonical path, document own
 - 增量需求：`docs/product/increments/<increment-id>/requirements.md`
 - 增量规格：`docs/product/increments/<increment-id>/spec.md`
 - 增量验收：`docs/product/increments/<increment-id>/acceptance.md`
+- 增量测试用例库：`docs/product/increments/<increment-id>/test_cases.md`
 - 增量追踪：`docs/product/increments/<increment-id>/traceability.md`
+- 增量 SWC 分配：`docs/product/increments/<increment-id>/swc_allocation.md`
 - 用户故事：`docs/product/user_stories.md`
 - 功能级需求收敛：`docs/product/features/<feature-slug>-requirements.md`
 - 功能规格：`docs/product/features/<feature-slug>-spec.md`
@@ -73,8 +75,11 @@ description: Use when project documentation needs a canonical path, document own
 - 工作流程：`docs/process/workflow.md`
 - 完成定义：`docs/process/definition_of_done.md`
 - skill 质量标准：`docs/process/skill_quality_standard.md`
+- 软件组件架构治理：`docs/process/software_component_architecture_governance.md`
 - 架构总览：`docs/architecture/system_overview.md`
 - 模块边界：`docs/architecture/module_boundary.md`
+- 全局 SWC 架构基准：`docs/architecture/software_component_architecture.md`
+- SWC 目录：`docs/architecture/swc_catalog.md`
 - API 契约：`docs/architecture/api_contract.md`
 - OpenAPI source of truth：`docs/architecture/openapi/speakeasy-api.yaml`
 - 数据流：`docs/architecture/data_flow.md`
@@ -102,7 +107,7 @@ description: Use when project documentation needs a canonical path, document own
 - 新增产品工作必须先判断对象类型：feature、stage、increment、baseline、change request 或 artifact。
 - Feature 是 APP 长期稳定能力，只能使用稳定功能路径，不得用 MVP、P0.1、P0.2、Now、Next、Later 等阶段名作为 feature slug。
 - Stage 只描述阶段目标、入口/出口和纳入/排除的 increment，不承载 feature requirements 或 implementation plan。
-- Increment 是实际交付切片，需求、规格、验收和追踪优先写入 `docs/product/increments/<increment-id>/`。
+- Increment 是实际交付切片，需求、规格、验收、测试用例库和追踪优先写入 `docs/product/increments/<increment-id>/`。
 - Product Base 是活的总需求库，记录已接受稳定产品行为；increment 完成并通过验收后才能合并回 `docs/product/base/`。
 - Baseline 是从 Product Base 冻结出的阶段、版本、发布或审计快照，只记录该冻结点的事实和回归边界，不得替代活的 Product Base。
 - 旧的扁平 feature 文档路径可作为历史兼容路径；新文档类别或新 increment 默认使用对象化路径。
@@ -124,6 +129,7 @@ description: Use when project documentation needs a canonical path, document own
 - 新建目录只是为了当前任务方便，和现有 `docs/` 分类不一致。
 - 变更请求、feature spec、验收标准和实现报告之间路径无法互相引用。
 - 需求、验收标准、代码证据和测试证据的追溯矩阵没有 canonical path，或被写入验收标准正文导致职责混杂。
+- SWC 目录、module boundary、domain schema、OpenAPI、increment swc allocation 互相重复定义同一事实源。
 
 ## Verification
 - 每个新增或修改文档都有明确路径。
@@ -131,6 +137,7 @@ description: Use when project documentation needs a canonical path, document own
 - 每个相关 agent 的 Outputs 被 Allowed Paths 覆盖。
 - 不存在明显重复 source of truth。
 - API 契约总览与机器可执行 OpenAPI 不得互相竞争：`docs/architecture/api_contract.md` 记录契约边界、追溯、错误模型、版本和兼容策略；`docs/architecture/openapi/speakeasy-api.yaml` 是 request/response schema、paths、components 和 OpenAPI lint 的唯一 source of truth。
+- 全局 SWC 架构基准、SWC 目录与增量 SWC 分配不得互相替代：`docs/architecture/software_component_architecture.md` 记录完整 SWC 拓扑、稳定 `SWC-FLOW-*` 和局部变更参考基准；`docs/architecture/swc_catalog.md` 记录稳定组件职责边界；`docs/product/increments/<increment-id>/swc_allocation.md` 记录已批准增量的 FR/AC 到 SWC/API/domain/DB/test 分配。
 - Product Base 强制追溯矩阵使用 `docs/product/base/traceability.md`；increment 强制追溯矩阵使用 `docs/product/increments/<increment-id>/traceability.md`；legacy 全局 `docs/product/traceability_matrix.md` 只作为兼容、迁移或审计来源。
 - `python scripts/validate_agent_skills.py` 通过。
 

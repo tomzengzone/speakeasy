@@ -62,20 +62,23 @@ description: Use when a project document needs a content boundary, required sect
 - `docs/product/base/requirements.md`：写已接受稳定产品行为的 FR、用户目标、用户路径、成功标准、非目标、假设和来源；不写阶段计划、API schema、prompt schema、UI 布局或代码实现。
 - `docs/product/base/spec.md`：写已接受稳定产品行为的用户流程、状态、输入输出、失败路径、模块影响和测试期望；不写代码实现或产品优先级决策。
 - `docs/product/base/acceptance.md`：写已接受稳定产品行为的可观察 pass/fail 行为；不写类名、函数名、数据库字段或测试实现。
-- `docs/product/base/traceability.md`：写 Product Base 的 `Requirement -> AC -> Code Evidence -> Test Evidence -> Status`；不新增需求，不替代验收标准。
+- `docs/product/base/traceability.md`：写 Product Base 的 `Requirement -> AC -> Test Case ID -> Code Evidence -> Test Evidence -> Status`；不新增需求，不替代验收标准。
 - `docs/product/baselines/<baseline-slug>.md`：写当前已实现能力快照、事实来源、代码/资产证据、回归边界和不承诺项；不写未来新增需求或未批准计划。
-- `docs/product/stages/<stage-id>.md`：写阶段目标、阶段范围、阶段非目标、入口条件、出口条件、纳入/排除的 increments；不写 API schema、UI 布局、prompt schema 或代码实现。
+- `docs/product/stages/<stage-id>.md`：写阶段目标、入口条件、出口条件、纳入/排除的 increments，并用稳定 Stage Scope Item ID 表表达阶段范围；不写 API schema、UI 布局、prompt schema 或代码实现。
 - `docs/product/features/<feature-slug>/README.md`：写稳定 feature 的定义、用户价值、长期边界、owner 和相关 increments；不写阶段交付细节。
 - `docs/product/features/<feature-slug>/requirements.md`：写该稳定 feature 的长期能力需求、用户路径和非目标；不写某个阶段的具体交付任务。
-- `docs/product/increments/<increment-id>/definition.md`：写 active stage、primary feature、affected features、scope、non-goals、upstream decision 和 required artifacts；不写验收用例或实现计划。
+- `docs/product/increments/<increment-id>/definition.md`：写 active stage、covered/excluded Stage Scope Item IDs、primary feature、affected features、scope、non-goals、upstream decision 和 required artifacts；不写验收用例或实现计划。
 - `docs/product/increments/<increment-id>/requirements.md`：写本次增量的用户目标、用户路径、成功标准、非目标、假设和开放问题；不写 API 字段、prompt schema、UI 布局或代码实现。
 - `docs/product/increments/<increment-id>/spec.md`：写本次增量的状态、输入输出、状态、依赖、失败路径、模块影响和测试映射；不写代码实现或产品优先级决策。
 - `docs/product/increments/<increment-id>/acceptance.md`：写本次增量可观察 pass/fail 行为；不写类名、函数名、数据库字段或测试实现。
-- `docs/product/increments/<increment-id>/traceability.md`：写本次增量的 `Requirement -> AC -> Contract -> Code Evidence -> Test Evidence -> Status`；不新增需求或替代验收标准。
+- `docs/product/increments/<increment-id>/traceability.md`：写本次增量的 `Requirement -> AC -> Test Case ID -> Contract -> Code Evidence -> Test Evidence -> Status`；不新增需求或替代验收标准。
+- `docs/product/increments/<increment-id>/swc_allocation.md`：写本次增量的 Existing Implementation Baseline、Delta From Existing Baseline、`Stage Scope ID -> FR -> Spec -> AC -> FE SWC -> BE SWC -> API/OpenAPI -> Domain Entity -> DB Table/Migration -> Provider/AI Boundary -> TC` 分配、SWC 间数据流、复用要求和禁止重复实现边界；不新增需求、不改验收标准、不复制 OpenAPI schema、不定义领域实体语义、不写代码实现。
 - `docs/product/features/<feature-slug>-requirements.md`：写假设、目标、用户路径、入口、涉及数据、成功标准、非目标、开放问题；不写实现细节。
 - `docs/product/features/<feature-slug>-spec.md`：写功能规格、状态、输入输出、依赖、失败情况、模块影响和测试映射；不写代码实现。
 - `docs/product/acceptance_criteria.md`：写可通过/失败判断的用户可观察行为；不写类名、函数名或数据库字段。
-- `docs/product/traceability_matrix.md`：写 `FR -> User Story -> AC -> Code Evidence -> Test Evidence -> Status`，用于证明需求覆盖完整性；不新增需求、不替代验收标准、不把 100% 覆盖表述为代码行覆盖率或线上零缺陷保证。
+- `docs/product/traceability_matrix.md`：写 `FR -> User Story -> AC -> Test Case ID -> Code Evidence -> Test Evidence -> Status`，用于证明需求覆盖完整性；不新增需求、不替代验收标准、不把 100% 覆盖表述为代码行覆盖率或线上零缺陷保证。
+- `docs/architecture/software_component_architecture.md`：写全局 SWC 架构基准，包括系统级职责分配、SWC 拓扑、稳定 `SWC-FLOW-*`、canonical SWC-to-SWC sequence、局部变更参考基准和历史迁移说明；不复制 SWC Catalog 的完整组件字段表、不替代增量 `swc_allocation.md`、不定义 Domain Schema 或 OpenAPI schema。
+- `docs/architecture/swc_catalog.md`：写稳定 SWC 目录，包括 SWC ID、layer、code path、职责、非职责、provided/required interfaces、数据所有权、持久化所有权、测试责任、必须复用和禁止绕过；不复制 Domain Schema、OpenAPI request/response schema、prompt schema、UX layout 或实现报告。
 - `docs/domain/<domain>_model.md`：写实体、关系、生命周期、状态机和约束；不写 API response 或 UI 布局。
 - `docs/architecture/api_contract.md`：写接口路径、请求、响应、错误、兼容性和示例；不写数据库实现或 prompt 文案。
 - `docs/ai_runtime/prompt_contract.md`：写 LLM 输入、输出、禁止决策、fallback 和示例；不让 LLM 拥有持久状态更新权。
@@ -83,26 +86,48 @@ description: Use when a project document needs a content boundary, required sect
 - `docs/reports/implementation_report.md`：写实际完成范围、文件、验证、风险和后续；不补写需求或替代验收标准。
 - `docs/reports/quality_report.md`：写审查发现、风险、阻塞项和质量结论；不新增产品范围。
 
+## 文档语义质量模型
+- 颗粒度：一个条目只表达一个业务目的、业务规则、状态转移、用户/系统可观察结果或安全约束；如果需要多个独立验收结论，应拆分；如果继续拆分只剩 UI、接口、数据库、类名、函数或测试步骤，应停止。
+- 清晰度：条目必须语义无歧义，触发条件或状态清楚，行为主体清楚，核心动作单一，结果可观察，边界可由数字、枚举、状态、错误类型、允许/禁止范围或明确非目标判定。
+- 覆盖度：文档必须覆盖上游目标、主流程、已知异常分支、权限、安全/隐私、关键状态转移、跨域依赖和非目标边界；ID 数量匹配只能作为基础证据，不能单独证明语义覆盖完整。
+
+## 语义质量在文档类型中的落点
+- Requirements：每条需求应保留独立业务价值，说明用户或系统目标、场景、行为结果、边界和非目标；不得用技术任务替代业务需求。
+- Spec：从 requirement 做 1:1 或 1:N 行为分解；spec item 应是可独立验收的行为契约，不写成 AC、TC、API schema 或实现计划。
+- Acceptance criteria：把已批准 spec 转成可观察 pass/fail 判断；不得新增范围或把测试步骤写成验收标准。
+- Test cases：把 AC 转成可执行或可人工执行的验证设计；不得重新定义需求、规格或验收标准。
+- Traceability：检查上下游 ID 链和语义链是否一致；不得只用 ID 出现次数替代业务意图覆盖。
+
 ## Process
 1. 判断目标文档类型和主要读者。
 2. 对照内容契约基线，列出应包含和不应包含的内容。
-3. 检查文档是否混入上游战略、下游设计或实现报告内容。
-4. 检查是否缺少状态、假设、非目标、验收检查或上游/下游引用。
-5. 对发现的问题按阻塞、重要、建议分类。
-6. 如需修正规则，更新对应生成类 skill 或 `docs/process/skill_quality_standard.md`。
-7. 完成后运行 `python scripts/validate_agent_skills.py`，若修改了 skill。
+3. 按文档语义质量模型检查颗粒度、清晰度和覆盖度。
+4. 检查文档是否混入上游战略、下游设计或实现报告内容。
+5. 检查是否缺少状态、假设、非目标、验收检查或上游/下游引用。
+6. 对发现的问题按阻塞、重要、建议分类。
+7. 如需修正规则，更新对应生成类 skill 或 `docs/process/skill_quality_standard.md`。
+8. 完成后运行 `python scripts/validate_agent_skills.py`，若修改了 skill。
 
 ## Red Flags
 - 需求文档写 API 字段、数据库表或 UI 布局。
+- 文档条目机械匹配 ID 数量，但遗漏上游业务意图、异常分支、权限、安全/隐私、状态转移或非目标边界。
+- 文档条目混合多个独立业务结论，或被拆到 UI/API/DB/class/test 任务而失去业务属性。
 - feature spec 补写产品愿景，导致产品级 source of truth 分散。
 - 验收标准描述实现方式而不是可观察行为。
-- 追溯矩阵缺少 FR、AC、Code Evidence 或 Test Evidence，或把缺测试项写成已覆盖而没有人工验收/外部服务依赖/暂不可自动化说明。
+- 追溯矩阵缺少 FR、AC、Test Case ID、Code Evidence 或 Test Evidence，或把缺测试项写成已覆盖而没有人工验收/外部服务依赖/暂不可自动化说明。
 - 把测试报告、feature spec 或验收标准正文当作追溯矩阵 source of truth。
 - 实现报告补写需求或跳过缺失的验收标准。
 - Prompt 契约允许 LLM 直接更新持久状态。
+- SWC allocation 写成实现计划或代码任务清单，却没有 FR/AC 到 SWC/API/domain/DB/test 的分配。
+- SWC allocation 缺少 Existing Implementation Baseline，或者没有列出现有用户流、代码路径、SWC、Flow ID、API、数据归属、测试和不可回归行为。
+- SWC allocation 缺少 Delta From Existing Baseline，或者没有列出复用 SWC/Flow、允许新增代码、禁止新增代码、允许修改的旧代码和回归证明。
+- SWC allocation 没有引用全局 SWC 架构基准或 `SWC-FLOW-*`，导致局部设计无法判断是否偏离稳定架构。
+- 全局 SWC 架构基准复制 `swc_catalog.md` 的完整组件字段表，导致拓扑/流基准和组件目录职责混杂。
+- SWC catalog 复制 OpenAPI 或 Domain Schema 字段，导致 source of truth 冲突。
 
 ## Verification
 - 文档目的、读者、必需内容和禁止内容清晰。
+- 文档条目通过颗粒度、清晰度和覆盖度语义检查，或明确记录例外。
 - 文档没有混入不属于该阶段的下游实现细节。
 - 上游输入和下游输出明确。
 - 内容完整性可以被审查者独立判断。

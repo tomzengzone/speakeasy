@@ -181,12 +181,10 @@ class SceneFeedbackVoiceTurn {
   const SceneFeedbackVoiceTurn({
     required this.turnIndex,
     required this.text,
-    this.audioPath,
   });
 
   final int turnIndex;
   final String text;
-  final String? audioPath;
 }
 
 class SceneFeedbackTurnReview {

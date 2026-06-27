@@ -1,0 +1,67 @@
+# Acceptance Criteria：商业化订阅上线准备
+
+## 状态
+Draft - 来自 `commercial-subscription-readiness` spec 的增量验收标准。
+
+## Upstream
+- Requirements：`docs/product/increments/commercial-subscription-readiness/requirements.md`
+- Spec：`docs/product/increments/commercial-subscription-readiness/spec.md`
+- Change request：`CR-20260524-001`
+
+## Stage Scope Acceptance Coverage
+| Stage Scope ID | Requirement ID | Spec ID | Acceptance Criteria |
+| --- | --- | --- | --- |
+| COM-SI-001 | FR-COM-001 | COM-SPEC-001 | AC-COM-001, AC-COM-005, AC-COM-006 |
+| COM-SI-002 | FR-COM-002 | COM-SPEC-002 | AC-COM-001, AC-COM-002, AC-COM-003, AC-COM-004, AC-COM-005 |
+| COM-SI-003 | FR-COM-003 | COM-SPEC-003 | AC-COM-001, AC-COM-002, AC-COM-003, AC-COM-004, AC-COM-005 |
+| COM-SI-004 | FR-COM-004 | COM-SPEC-004 | AC-COM-008 |
+| COM-SI-005 | FR-COM-005 | COM-SPEC-005 | AC-COM-009 |
+| COM-SI-006 | FR-COM-008 | COM-SPEC-006 | AC-COM-010 |
+| COM-SI-007 | FR-COM-006 | COM-SPEC-007 | AC-COM-006, AC-COM-012 |
+| COM-SI-008 | FR-COM-007 | COM-SPEC-008 | AC-COM-007 |
+| COM-SI-009 | FR-COM-009 | COM-SPEC-009 | AC-COM-011 |
+| COM-SI-010 | FR-COM-010 | COM-SPEC-010 | AC-COM-012 |
+| COM-SI-011 | FR-COM-011 | COM-SPEC-011 | AC-COM-013 |
+| COM-SI-012 | FR-COM-012 | COM-SPEC-012 | AC-COM-014 |
+
+## AC-COM-001 购买后权益生效
+给定已登录用户购买有效 Apple 或 Google Play 订阅，当后端校验通过后，客户端必须从服务端权益状态刷新为付费状态，并展示订阅已生效。
+
+## AC-COM-002 收据或 purchase token 无效
+给定商店凭据无效、商品不匹配或用户身份不匹配，当客户端提交校验时，系统不得授予权益，并必须展示可理解失败信息。
+
+## AC-COM-003 恢复购买成功
+给定用户存在有效历史订阅，当用户点击恢复购买并完成后端校验时，系统必须恢复对应权益。
+
+## AC-COM-004 恢复购买为空
+给定用户没有有效可恢复订阅，当用户点击恢复购买时，系统必须展示“未找到有效订阅”类空状态，不得错误升级会员。
+
+## AC-COM-005 退款、过期或撤销降级
+给定用户订阅已退款、过期或撤销，当客户端刷新权益或后端收到状态变化时，系统必须取消付费权益，并展示降级或重新订阅入口。
+
+## AC-COM-006 免费/付费权益 gating
+给定免费用户访问受限权益，当用户无权益或额度耗尽时，系统必须阻止受限能力并展示升级入口；给定付费用户权益有效时，系统必须允许进入。
+
+## AC-COM-007 场景包 gating 一致
+给定场景包被定义为会员权益，当用户在场景列表、场景详情或训练入口访问受限场景时，三个入口的 gating 结果必须一致。
+
+## AC-COM-008 生产登录门禁
+给定 release 构建配置，当测试手机号登录开启、生产 API 缺失或支付商品缺失时，发布流程必须失败或阻断发布。
+
+## AC-COM-009 社交登录配置
+给定微信或 Apple 登录入口可见，当生产配置缺失时，系统必须阻止发布或在测试环境展示配置错误；不得在商店版本中保留占位 AppID、URL scheme 或未启用能力。
+
+## AC-COM-010 账号注销数据处理
+给定用户确认注销账号，当后端删除或匿名化完成后，客户端必须清理本地会话、用户资料、学习进度、收藏、个人 Wiki、会话和缓存，并回到未登录状态。
+
+## AC-COM-011 商业文案一致
+给定会员页、商店文案或隐私说明出现权益描述，当对应能力未完成或不可用时，该描述必须隐藏、降级或明确标记为未开放，不得作为已兑现付费承诺。
+
+## AC-COM-012 AI 成本和用量限制
+给定用户调用 AI、ASR、TTS 或评分能力，当超出免费额度、付费额度或风控限制时，系统必须阻止或降级调用，并记录可审计事件。本 AC 只覆盖用量和风控边界；生产媒体上传、持久化 TTS cache、真实 DashScope evidence、成本看板和数据策略由 `AC-COM-AI-001` 到 `AC-COM-AI-005` 覆盖。
+
+## AC-COM-013 商业边界测试矩阵
+给定商业化发布候选版本，QA 必须完成购买、恢复、退款、过期、宽限期、账号切换、注销、弱网、权限拒绝、崩溃恢复和 AI 额度耗尽测试，并记录结果。
+
+## AC-COM-014 发布材料齐备
+给定商业化发布候选版本，App Store Connect / Play Console 元数据、订阅条款、隐私 URL、支持 URL、审核账号、release secrets、签名、符号表和回滚方案必须齐备。

@@ -1,6 +1,5 @@
 import AVFoundation
 import Flutter
-import SingSound
 import UIKit
 
 private enum PathProviderFallbackDirectoryType: Int {
@@ -129,7 +128,6 @@ private final class PathProviderFoundationFallback {
 @objc class AppDelegate: FlutterAppDelegate {
   private let realtimePcmPlayer = RealtimePcmPlayer()
   private let nativeAudioRecorder = NativeAudioRecorder()
-  private let oralAssessmentBridge = AliOralAssessmentBridge()
 
   override func application(
     _ application: UIApplication,
@@ -231,17 +229,6 @@ private final class PathProviderFoundationFallback {
         }
       }
 
-      let oralAssessmentChannel = FlutterMethodChannel(
-        name: "speakeasy/oral_assessment",
-        binaryMessenger: controller.binaryMessenger
-      )
-      oralAssessmentChannel.setMethodCallHandler { [weak self] call, result in
-        guard let self else {
-          result(FlutterError(code: "unavailable", message: "AppDelegate released", details: nil))
-          return
-        }
-        self.oralAssessmentBridge.handle(call, result: result)
-      }
     }
     return launchResult
   }
@@ -479,233 +466,6 @@ final class NativeAudioRecorder: NSObject, FlutterStreamHandler {
       converter = nil
       targetFormat = nil
     }
-  }
-}
-
-final class AliOralAssessmentBridge: NSObject {
-  private var pendingResult: FlutterResult?
-  private var timeoutTimer: Timer?
-  private var currentManager: SSOralEvaluatingManager?
-  private var delegateProxy: AliOralAssessmentDelegateProxy?
-
-  func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-    switch call.method {
-    case "scorePronunciation":
-      scorePronunciation(arguments: call.arguments, result: result)
-    case "isAvailable":
-      result(true)
-    default:
-      result(FlutterMethodNotImplemented)
-    }
-  }
-
-  private func scorePronunciation(arguments: Any?, result: @escaping FlutterResult) {
-    guard pendingResult == nil else {
-      result(FlutterError(code: "busy", message: "Oral assessment is already running", details: nil))
-      return
-    }
-    guard
-      let args = arguments as? [String: Any],
-      let audioPath = args["audioPath"] as? String,
-      let expectedText = args["expectedText"] as? String,
-      let appId = args["appId"] as? String,
-      let warrantId = args["warrantId"] as? String,
-      let authTimeout = args["authTimeout"] as? String
-    else {
-      result(FlutterError(code: "bad_args", message: "Missing oral assessment args", details: nil))
-      return
-    }
-    let trimmedAudioPath = audioPath.trimmingCharacters(in: .whitespacesAndNewlines)
-    let trimmedText = expectedText.trimmingCharacters(in: .whitespacesAndNewlines)
-    let trimmedAppId = appId.trimmingCharacters(in: .whitespacesAndNewlines)
-    let trimmedWarrantId = warrantId.trimmingCharacters(in: .whitespacesAndNewlines)
-    let trimmedAuthTimeout = authTimeout.trimmingCharacters(in: .whitespacesAndNewlines)
-    let trimmedSecret = (args["appSecret"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    guard !trimmedAudioPath.isEmpty, FileManager.default.fileExists(atPath: trimmedAudioPath) else {
-      result(FlutterError(code: "missing_audio", message: "Audio file does not exist", details: nil))
-      return
-    }
-    guard !trimmedText.isEmpty, !trimmedAppId.isEmpty, !trimmedWarrantId.isEmpty, !trimmedAuthTimeout.isEmpty else {
-      result(FlutterError(code: "bad_args", message: "Empty oral assessment text or authorization", details: nil))
-      return
-    }
-    let managerConfig = SSOralEvaluatingManagerConfig()
-    let evaluateConfig = SSOralEvaluatingConfig()
-    let userId = (args["userId"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
-    let resolvedUserId = (userId?.isEmpty == false ? userId! : UIDevice.current.identifierForVendor?.uuidString)
-      ?? "speakeasy-ios-user"
-    configureManagerConfig(managerConfig, appId: trimmedAppId, appSecret: trimmedSecret)
-    configureEvaluateConfig(
-      evaluateConfig,
-      text: trimmedText,
-      userId: resolvedUserId,
-      coreType: (args["coreType"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
-    )
-    let manager = SSOralEvaluatingManager.share()
-    let proxy = AliOralAssessmentDelegateProxy()
-    proxy.resultHandler = { [weak self] sdkResult in
-      self?.finish(success: (sdkResult ?? [:]) as NSDictionary)
-    }
-    proxy.errorHandler = { [weak self] sdkError in
-      let nsError = sdkError as NSError?
-      self?.finish(error: FlutterError(
-        code: "assessment_failed",
-        message: nsError?.localizedDescription ?? "Ali oral assessment failed",
-        details: nsError?.userInfo ?? [:]
-      ))
-    }
-
-    NSLog(
-      "[AliOralAssessment] start path=%@ bytes=%lld textChars=%d appId=%@ warrant=%@ timeout=%@ hasSecret=%@",
-      trimmedAudioPath,
-      fileSize(atPath: trimmedAudioPath),
-      trimmedText.count,
-      trimmedAppId,
-      String(trimmedWarrantId.prefix(8)),
-      trimmedAuthTimeout,
-      trimmedSecret.isEmpty ? "false" : "true"
-    )
-
-    pendingResult = result
-    currentManager = manager
-    delegateProxy = proxy
-    SSOralEvaluatingManager.register(managerConfig)
-    manager.register(.line, userId: resolvedUserId)
-    manager.delegate = proxy
-    _ = manager.perform(
-      NSSelectorFromString("setAuthInfoWithWarrantId:AuthTimeout:"),
-      with: trimmedWarrantId,
-      with: trimmedAuthTimeout
-    )
-    timeoutTimer = Timer.scheduledTimer(withTimeInterval: 35, repeats: false) { [weak self] _ in
-      NSLog("[AliOralAssessment] timeout")
-      self?.currentManager?.cancelEvaluate()
-      self?.finish(error: FlutterError(
-        code: "timeout",
-        message: "Ali oral assessment timed out",
-        details: nil
-      ))
-    }
-    // The SingSound engine is created asynchronously after register(...). Starting
-    // immediately can produce SDK error 70002 "Engine is NULL" even with valid
-    // appKey/secret/warrant. Give the engine one run-loop window to finish init.
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self, weak manager] in
-      guard let self, let manager, self.pendingResult != nil else {
-        return
-      }
-      manager.delegate = self.delegateProxy
-      manager.startEvaluateOral(withWavPath: trimmedAudioPath, config: evaluateConfig)
-    }
-  }
-
-  private func configureManagerConfig(
-    _ config: SSOralEvaluatingManagerConfig,
-    appId: String,
-    appSecret: String
-  ) {
-    config.appKey = appId
-    config.secretKey = appSecret
-    config.protocolHeader = "wss"
-    config.serverTimeout = 35
-    config.connectTimeout = 20
-    config.vad = false
-    config.allowDynamicService = true
-    config.isOutputLog = true
-    config.logLevel = 4
-    if let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-      config.logPath = documents.appendingPathComponent("SSError").path
-    }
-  }
-
-  private func configureEvaluateConfig(
-    _ config: SSOralEvaluatingConfig,
-    text: String,
-    userId: String,
-    coreType: String?
-  ) {
-    config.audioType = "wav"
-    config.sampleRate = 16000
-    config.channel = 1
-    config.sampleBytes = 2
-    config.mixedType = .online
-    config.oralType = .sentence
-    config.coreType = coreType?.isEmpty == false ? coreType! : "en.sent.score"
-    config.oralContent = text
-    config.rank = 100
-    config.userId = userId
-    config.precision = .high
-    config.checkPhones = true
-    config.isOutputPhonogramForSentence = true
-    config.enableRetry = 1
-  }
-
-  private func finish(success result: NSDictionary) {
-    var payload = dictionaryToFlutter(result)
-    payload["provider"] = "ali_singsound"
-    NSLog("[AliOralAssessment] success keys=%@", Array(payload.keys).joined(separator: ","))
-    DispatchQueue.main.async { [weak self] in
-      guard let self, let callback = self.pendingResult else {
-        return
-      }
-      self.cleanup()
-      callback(payload)
-    }
-  }
-
-  private func finish(error: FlutterError) {
-    NSLog("[AliOralAssessment] error code=%@ message=%@ details=%@", error.code, error.message ?? "", String(describing: error.details))
-    DispatchQueue.main.async { [weak self] in
-      guard let self, let callback = self.pendingResult else {
-        return
-      }
-      self.cleanup()
-      callback(error)
-    }
-  }
-
-  private func cleanup() {
-    timeoutTimer?.invalidate()
-    timeoutTimer = nil
-    currentManager = nil
-    delegateProxy = nil
-    pendingResult = nil
-  }
-
-  private func fileSize(atPath path: String) -> Int64 {
-    guard
-      let attributes = try? FileManager.default.attributesOfItem(atPath: path),
-      let size = attributes[.size] as? NSNumber
-    else {
-      return 0
-    }
-    return size.int64Value
-  }
-
-  private func dictionaryToFlutter(_ dictionary: NSDictionary) -> [String: Any] {
-    var result: [String: Any] = [:]
-    for (key, value) in dictionary {
-      result[String(describing: key)] = flutterValue(value)
-    }
-    return result
-  }
-
-  private func flutterValue(_ value: Any) -> Any {
-    if let dictionary = value as? NSDictionary {
-      return dictionaryToFlutter(dictionary)
-    }
-    if let array = value as? NSArray {
-      return array.map { flutterValue($0) }
-    }
-    if let number = value as? NSNumber {
-      return number
-    }
-    if let string = value as? NSString {
-      return string as String
-    }
-    if value is NSNull {
-      return NSNull()
-    }
-    return String(describing: value)
   }
 }
 
