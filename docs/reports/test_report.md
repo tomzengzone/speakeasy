@@ -1,7 +1,36 @@
 # Test Report
 
 ## Current Status
-Latest recorded Followup-E state: docs-only planning/contract evidence. Followup-E Phase 0 planning, Phase 1 requirements/spec, Phase 2 domain/API/AI/UX/data contracts after correction, and Phase 3 acceptance/test_cases/traceability have planning-gate evidence. No Followup-E backend, Flutter, OpenAPI/generated client, native mic/audio bytes upload, AI runtime, retention/export/account deletion, entitlement/provider downgrade, release or Product Base test evidence is accepted in this docs-only state.
+Latest recorded Followup-E state 是 docs-only planning/contract evidence。Followup-E Phase 0 planning、Phase 1 requirements/spec、Phase 2 修正后的 domain/API/AI/UX/data contracts，以及 Phase 3 acceptance/test_cases/traceability 具备 planning-gate evidence。在这个 docs-only state 中，不接受 Followup-E backend、Flutter、OpenAPI/generated client、native mic/audio bytes upload、AI runtime、retention/export/account deletion、entitlement/provider downgrade、release 或 Product Base test evidence。
+
+## 2026-06-25 - mvp-backend-foundation-auth TC-MVP-BE-004 Social Login Evidence Repair
+
+Report ID:
+- `MVP-BE-FOUNDATION-AUTH-TC004-SOCIAL-EVIDENCE-20260625`
+
+Test scope:
+- Increment：`docs/product/increments/mvp-backend-foundation-auth/`。
+- Stage Scope Item：MVP-SI-002。
+- Acceptance criterion：AC-MVP-BE-002。
+- Test case：TC-MVP-BE-004。
+- 覆盖 backend auth/current-user behavior for phone login，以及 Apple/WeChat test-substitute provider boundary。
+
+Commands run:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AuthControllerTest,AuthServiceTest test` - passed.
+
+Passing tests:
+- `AuthControllerTest.socialLoginsBindToCurrentUserAndPreserveProviderNamespace` 验证 `/auth/login/apple` 和 `/auth/login/wechat` 返回 schema-versioned token responses，把 bearer `/user/me` 绑定到返回用户，同一 provider token 在同一 provider 下解析到同一用户，并在 test-substitute provider token 相同时保持 Apple 与 WeChat identities 隔离。
+- `AuthControllerTest.socialLoginRejectsInvalidRequestContracts` 验证 Apple/WeChat social login requests 在 unsupported schema version、缺少 provider token、空白 provider token 或 terms 未接受时，在 endpoint schema gate 以 `SCHEMA_VALIDATION_FAILED` 失败。
+- `AuthServiceTest.socialLoginCreatesRefreshableSessionAndPreservesProviderNamespace` 验证 `AuthService.loginSocial` 通过既有 identity/session stack 创建或解析用户，保持 provider namespace isolation，并在 refresh 时轮换 access tokens。
+- `AuthServiceTest.socialLoginRejectsInvalidInputsWithoutSideEffects` 验证 service-level social login 对未接受 terms、空白 token 和 null token 返回 `UNAUTHENTICATED`，且不创建 users、identities、profiles 或 sessions。
+
+Acceptance criteria coverage:
+- AC-MVP-BE-002 的 MVP foundation-auth contract/session/current-user behavior 由 TC-MVP-BE-004、TC-MVP-BE-005 和 TC-MVP-BE-006 覆盖。
+- 本次 2026-06-25 修复专门关闭 Apple/WeChat test-substitute endpoint 和 service coverage 的 TC-MVP-BE-004 evidence mismatch。
+
+Residual risk:
+- 本报告中的 Apple/WeChat evidence 仅限 MVP test-substitute provider boundary 和 contract-compatible endpoints。
+- 真实 Apple identity token validation、nonce/audience/issuer checks、WeChat code/session/openid/unionid validation，以及 commercial production release readiness 仍不属于本增量。
 
 ## 2026-06-10 P0 Commercial Admin Data Deletion Retry Closure
 
@@ -2430,15 +2459,15 @@ Commands run:
 - `flutter test test/services/auth_service_test.dart` from repository root - passed.
 
 Passing tests:
-- TC-MVP-BE-001: `FoundationMigrationTest` and `PostgresFoundationMigrationTest` verify H2 and PostgreSQL-compatible Flyway migrations create the foundation/auth schema.
-- TC-MVP-BE-002: `FoundationResponseContractTest` verifies auth, current-user, and subscription-plan responses do not expose raw persistence fields.
-- TC-MVP-BE-003: `FoundationErrorContractTest` verifies validation, malformed JSON, and unauthenticated errors use stable shared error contracts and do not expose stack traces.
-- TC-MVP-BE-004: `AuthControllerTest` and `AuthServiceTest` verify login, refresh, logout, and current-user/profile behavior.
-- TC-MVP-BE-005: `AuthSessionLifecycleTest` verifies expired access rejection, expired refresh rejection, token rotation, and user-wide session revocation.
-- TC-MVP-BE-006: `npm run check:api-contract` and `flutter test test/services/auth_service_test.dart` verify OpenAPI/Dart-safe drift and Flutter auth service compatibility.
+- TC-MVP-BE-001：`FoundationMigrationTest` 和 `PostgresFoundationMigrationTest` 验证 H2 与 PostgreSQL-compatible Flyway migrations 会创建 foundation/auth schema。
+- TC-MVP-BE-002：`FoundationResponseContractTest` 验证 auth、current-user 和 subscription-plan responses 不暴露 raw persistence fields。
+- TC-MVP-BE-003：`FoundationErrorContractTest` 验证 validation、malformed JSON 和 unauthenticated errors 使用稳定 shared error contracts，且不暴露 stack traces。
+- TC-MVP-BE-004：`AuthControllerTest` 和 `AuthServiceTest` 验证 MVP login、refresh、logout 和 current-user/profile behavior；上方 2026-06-25 addendum 覆盖 Apple/WeChat test-substitute endpoint 和 service evidence。
+- TC-MVP-BE-005：`AuthSessionLifecycleTest` 验证 expired access rejection、expired refresh rejection、token rotation 和 user-wide session revocation。
+- TC-MVP-BE-006：`npm run check:api-contract` 和 `flutter test test/services/auth_service_test.dart` 验证 OpenAPI/Dart-safe drift 和 Flutter auth service compatibility。
 
 Failing tests:
-- None remaining.
+- 当前没有剩余失败项。
 
 Skipped or unavailable tests:
 - None in this machine's final validation path.
@@ -2446,7 +2475,7 @@ Skipped or unavailable tests:
 
 Acceptance criteria coverage:
 - AC-MVP-BE-001 is fully covered by TC-MVP-BE-001, TC-MVP-BE-002, and TC-MVP-BE-003.
-- AC-MVP-BE-002 is fully covered by TC-MVP-BE-004, TC-MVP-BE-005, and TC-MVP-BE-006.
+- AC-MVP-BE-002 is fully covered for MVP foundation-auth contract/session/current-user behavior by TC-MVP-BE-004, TC-MVP-BE-005, and TC-MVP-BE-006; this is not commercial production identity trust coverage.
 - Increment traceability rows MVP-BE-TR-001 and MVP-BE-TR-002 cite the same TC IDs, script paths, execution commands, result status, and this report.
 
 Residual risk:
@@ -3259,3 +3288,53 @@ Evidence:
 - `legacy exception` requires pre-existing or migration-compatibility rationale from the `rationale` field; bare `legacy`, negated `not_pre_existing`, `pre_existing=false` and `migration_compatibility=false` wording are rejected.
 - `not-applicable exception` requires not-user-owned/public-reference/no-user-data rationale from the `rationale` field, not only from deletion/export behavior fields; false assignments such as `not_user_owned=false`, `public_reference=false`, `reference_data=false`, `configuration=false` and `no_user_data=false` are rejected. It also requires exact bare `redacted_fields=none`, `omitted_fields=none`, `deletion_behavior=not_user_owned`, `export_behavior=not_in_user_export`; aliases such as `NONE`, `` `none` ``, `"none"`, `NOT_USER_OWNED`, `'not_in_user_export'`, `not user owned` and `not-in-user-export` are rejected.
 - Placeholder wording such as `tbd`, `planned`, `later`, `review_later`, `plannedReview`, `pendingReview`, `temporary-export` or `temporary` is rejected across required structured exception fields.
+
+<a id="identity-otp-production-hardening-20260625"></a>
+## 2026-06-25 Identity OTP Production Hardening Backend Slice
+
+Report ID:
+- `IDENTITY-OTP-PRODUCTION-HARDENING-BACKEND-20260625`
+
+Scope:
+- 覆盖 Identity OTP Product Base rows `IDENTITY-OTP-004..030`、`IDENTITY-OTP-032..037` 和 release boundary `IDENTITY-OTP-024` 的 Backend API/DB/domain/core implementation。
+- 本证据覆盖 repository 内 OTP pending/active challenge lifecycle、E.164 normalization、secure code generation、HMAC verifier、resend invalidation and consumed cooldown、atomic consume、phone/IP/device/install rate limits、failure locks、redacted audit、retention invalidation/scheduler boundary、API contract 和 auth lifecycle integration。
+- 本报告不声明 commercial release readiness。Production SMS provider evidence、SIM-swap/phone-risk provider evidence and allowed-country coverage、CAPTCHA provider evidence、step-up provider evidence、trusted HTTPS/proxy evidence、Dart client drift closure 和 Apple/WeChat verifier closure 仍为 pending。
+
+Commands:
+```bash
+cd backend && mvn -q -DskipTests compile
+cd backend && mvn -q -Dtest='com.speakeasy.identity.Otp*Test' test
+cd backend && mvn -q -Dtest='AuthControllerTest,AuthServiceTest,AuthServicePhoneLoginProfileTest,FoundationErrorContractTest,FoundationResponseContractTest' test
+npm run lint:openapi
+npm run check:openapi-contract
+python3 test/scripts/test_identity_release_guard.py
+python3 -m py_compile scripts/check_identity_release_guard.py
+APP_API_BASE_URL=https://api.speakeasyapp.com ENV=production ENABLE_TEST_PHONE_LOGIN=false SPRING_PROFILES_ACTIVE=production scripts/check_release_configuration.sh
+python3 scripts/check_identity_release_guard.py
+```
+
+Result:
+- Backend compile 已通过。
+- OTP backend/API/domain/core tests 已通过。
+- Auth and foundation compatibility tests 已通过。
+- OpenAPI lint 和 OpenAPI contract gate 已通过。
+- Identity release guard unit tests 已通过。
+- Release configuration fixture 在 production Spring profile 下通过，并在 Spring `test` profile 激活时失败。
+- Strict identity release guard 仍按设计使 release readiness 失败，因为 `IDENTITY-RELEASE-002` 和 `IDENTITY-RELEASE-003` 仍未关闭，包括 phone-risk allowed-country coverage 和 `CN` SIM-swap evidence。当前 repository 不再出现 `IDENTITY-RELEASE-001`，所以本后端切片已关闭 raw phone OTP creation blocker。
+
+Evidence:
+- `OtpPhoneNormalizationTest`、`OtpExistingPhoneIdentityTest`：覆盖 E.164 normalization 和 existing phone identity reuse。
+- `OtpSendFlowTest`、`OtpSmsProviderFailureTest`、`OtpConsentContractTest`：覆盖 send 只创建 OTP challenge、provider failure 不留下 active/verifiable challenge、provider send 前必须满足 consent。
+- `OtpCodeGeneratorTest`、`OtpVerifierHashTest`、`OtpSmsTemplateTest`：覆盖 secure random code length、HMAC/constant-time verifier behavior 和 safe SMS template content。
+- `OtpRateLimitTest`、`OtpConsumedCooldownTest`、`OtpContextRateLimitTest`、`OtpIpDailyRateLimitTest`、`OtpAttemptLimitTest`、`OtpFailureLockTest`、`OtpResendInvalidationTest`、`OtpExpiryTest`：覆盖 resend、consumed-challenge cooldown、phone/IP/device/install rate-limit、expiry 和 lock behavior。
+- `OtpLoginSessionTest`、`AuthServicePhoneLoginProfileTest`：验证 OTP v2 verify/consume 必须先于既有 `AuthService.loginOrCreate(...)` 执行；schema v1 raw phone login 在 Spring `test` profile 之外被拒绝。
+- `OtpSchemaValidationTest`：验证 malformed OTP code 和 undersized CAPTCHA token 在 verifier/provider logic 前被 endpoint schema validation 拒绝。
+- `OtpAuditEventTest`、`OtpRetentionCleanupTest`、`OtpRetentionCleanupSchedulerTest`：覆盖 redacted audit、retention policy version、expired challenge invalidation 和 scheduled cleanup boundary evidence。
+- `OtpRiskBlockTest`、`OtpCaptchaTest`、`OtpStepUpTest`、`OtpStepUpProviderBoundaryTest`、`OtpSecureTransportTest`、`OtpTrustedForwardedProtoTest`：覆盖 risk、CAPTCHA server-verifier absence、step-up passed-provider/failed-provider behavior 和 send/login/step-up secure transport 的 backend fail-closed policy gates 与 provider boundaries，包括 trusted forwarded HTTPS headers 的显式 opt-in。
+
+Residual:
+- 默认 SMS provider 在 production provider config 和 evidence refs 提供前，仍保持 disabled/fail-closed。
+- SIM swap/number-transfer intelligence、allowed-country phone-risk coverage、live CAPTCHA verification 和 step-up proof 属于 provider integration work，不是本批次已完成的 production provider evidence。
+- Production HMAC secret、trusted proxy/HTTPS 和 retention operation evidence 必须以非占位 release refs 提供；strict identity release guard 现在会在这些 refs 缺失时全部阻断。
+- `npm run check:api-contract` 仍要求在本后端批次之外关闭 generated Dart client drift。
+- Apple/WeChat provider validation 仍是独立 release blocker，未被 OTP work 关闭。

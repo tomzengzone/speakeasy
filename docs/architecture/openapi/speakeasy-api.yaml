@@ -2,8 +2,8 @@ openapi: 3.0.3
 info:
   title: SpeakEasy API
   version: 0.1.0
-  description: 'Machine-readable OpenAPI source of truth for SpeakEasy server-backed Product Base behavior, P0 commercial
-    subscription readiness, P0.1 expression automation training, and P0.2 goal-driven learning autopilot including
+  description: 'Machine-readable OpenAPI source of truth for SpeakEasy server-backed Product Base behavior, Identity
+    OTP production hardening, P0 commercial subscription readiness, P0.1 expression automation training, and P0.2 goal-driven learning autopilot including
     Followup-B control/planner/memory hardening. P1/P2
     roadmap items are intentionally excluded from implementation-level paths until they have owning increments.
 
@@ -17,7 +17,7 @@ security:
 - bearerAuth: []
 tags:
 - name: Auth
-  description: Login, refresh, and logout.
+  description: Login, refresh, logout, and OTP v2 production-hardening contract boundaries.
 - name: User
   description: User profile and account lifecycle.
 - name: Onboarding
@@ -57,6 +57,7 @@ tags:
 x-product-scope:
   implementation_level:
   - product-base
+  - identity-otp-production-hardening
   - p0-commercial-readiness
   - commercial-ai-provider-hardening
   - p0-1-expression-automation-training
@@ -80,20 +81,161 @@ x-deferred-boundaries:
     reason: Roadmap/future feature boundary only.
     prohibited_endpoint_generation: true
 paths:
+  /auth/otp/send:
+    post:
+      tags:
+      - Auth
+      operationId: sendOtp
+      summary: Send or resend an OTP challenge.
+      description: schema_version=2 OTP send/resend boundary for identity-otp-production-hardening. Success returns only an opaque challenge and never creates an account, identity, token, or auth session.
+      security: []
+      x-traceability:
+        product_objects:
+        - identity-otp-production-hardening
+        requirements:
+        - IDENTITY-OTP-004
+        - IDENTITY-OTP-005
+        - IDENTITY-OTP-006
+        - IDENTITY-OTP-011
+        - IDENTITY-OTP-012
+        - IDENTITY-OTP-013
+        - IDENTITY-OTP-014
+        - IDENTITY-OTP-015
+        - IDENTITY-OTP-023
+        - IDENTITY-OTP-028
+        - IDENTITY-OTP-029
+        - IDENTITY-OTP-035
+      x-error-codes:
+      - OTP_INVALID_PHONE
+      - OTP_CONSENT_REQUIRED
+      - OTP_RATE_LIMITED
+      - OTP_ATTEMPTS_LOCKED
+      - OTP_RISK_BLOCKED
+      - OTP_CAPTCHA_REQUIRED
+      - OTP_INSECURE_TRANSPORT
+      - PROVIDER_UNAVAILABLE
+      - SCHEMA_VALIDATION_FAILED
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OtpSendRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/OtpSendRequestExample'
+      responses:
+        '200':
+          description: OTP challenge created and send accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtpSendResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/OtpSendResponseExample'
+        '403':
+          $ref: '#/components/responses/OtpForbidden'
+        '422':
+          $ref: '#/components/responses/OtpUnprocessable'
+        '429':
+          $ref: '#/components/responses/OtpRateLimited'
+        '503':
+          $ref: '#/components/responses/OtpProviderUnavailable'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /auth/otp/step-up:
+    post:
+      tags:
+      - Auth
+      operationId: submitOtpStepUp
+      summary: Submit OTP step-up proof.
+      description: schema_version=2 OTP step-up boundary for a step-up-required challenge. Success updates the challenge step-up state and does not issue an auth session.
+      security: []
+      x-traceability:
+        product_objects:
+        - identity-otp-production-hardening
+        requirements:
+        - IDENTITY-OTP-028
+        - IDENTITY-OTP-035
+        - IDENTITY-OTP-036
+      x-error-codes:
+      - OTP_ATTEMPTS_LOCKED
+      - OTP_EXPIRED
+      - OTP_INVALID_CODE
+      - OTP_RISK_BLOCKED
+      - OTP_STEP_UP_REQUIRED
+      - OTP_INSECURE_TRANSPORT
+      - PROVIDER_UNAVAILABLE
+      - SCHEMA_VALIDATION_FAILED
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OtpStepUpRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/OtpStepUpRequestExample'
+      responses:
+        '200':
+          description: Step-up proof accepted for the challenge.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtpStepUpResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/OtpStepUpResponseExample'
+        '401':
+          $ref: '#/components/responses/OtpInvalidCode'
+        '403':
+          $ref: '#/components/responses/OtpForbidden'
+        '410':
+          $ref: '#/components/responses/OtpExpired'
+        '422':
+          $ref: '#/components/responses/OtpUnprocessable'
+        '429':
+          $ref: '#/components/responses/OtpRateLimited'
+        '503':
+          $ref: '#/components/responses/OtpProviderUnavailable'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
   /auth/login/phone:
     post:
       tags:
       - Auth
       operationId: loginPhone
-      summary: Login with phone verification code.
+      summary: Login with OTP v2 phone challenge.
+      description: Production OTP login uses schema_version=2 with challenge_id, phone_number, verification_code, and terms_accepted. schema_version=1 is retained only for non-production/test compatibility and must not be treated as a production OTP completion path.
       security: []
       x-traceability:
         product_objects:
         - product-base
+        - identity-otp-production-hardening
         - p0-commercial-readiness
         requirements:
         - FR-001
+        - IDENTITY-OTP-008
+        - IDENTITY-OTP-016
+        - IDENTITY-OTP-017
+        - IDENTITY-OTP-018
+        - IDENTITY-OTP-019
+        - IDENTITY-OTP-022
+        - IDENTITY-OTP-033
+        - IDENTITY-OTP-035
+        - IDENTITY-OTP-036
         - FR-COM-004
+      x-error-codes:
+      - OTP_INVALID_PHONE
+      - OTP_CONSENT_REQUIRED
+      - OTP_ATTEMPTS_LOCKED
+      - OTP_EXPIRED
+      - OTP_INVALID_CODE
+      - OTP_RISK_BLOCKED
+      - OTP_STEP_UP_REQUIRED
+      - PROVIDER_UNAVAILABLE
+      - SCHEMA_VALIDATION_FAILED
       requestBody:
         required: true
         content:
@@ -113,10 +255,18 @@ paths:
               examples:
                 default:
                   $ref: '#/components/examples/AuthSessionResponseExample'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
-          $ref: '#/components/responses/Unauthenticated'
+          $ref: '#/components/responses/OtpInvalidCode'
+        '403':
+          $ref: '#/components/responses/OtpForbidden'
+        '410':
+          $ref: '#/components/responses/OtpExpired'
+        '422':
+          $ref: '#/components/responses/OtpUnprocessable'
+        '429':
+          $ref: '#/components/responses/OtpRateLimited'
+        '503':
+          $ref: '#/components/responses/OtpProviderUnavailable'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /auth/login/apple:
@@ -3579,6 +3729,70 @@ components:
           examples:
             default:
               $ref: '#/components/examples/ErrorResponseExample'
+    OtpUnprocessable:
+      description: OTP request failed schema validation or phone validation.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalid_phone:
+              $ref: '#/components/examples/OtpInvalidPhoneErrorExample'
+            schema_validation_failed:
+              $ref: '#/components/examples/OtpSchemaValidationFailedErrorExample'
+    OtpForbidden:
+      description: OTP request blocked by consent, CAPTCHA, risk, step-up, or secure transport policy.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            consent_required:
+              $ref: '#/components/examples/OtpConsentRequiredErrorExample'
+            captcha_required:
+              $ref: '#/components/examples/OtpCaptchaRequiredErrorExample'
+            risk_blocked:
+              $ref: '#/components/examples/OtpRiskBlockedErrorExample'
+            step_up_required:
+              $ref: '#/components/examples/OtpStepUpRequiredErrorExample'
+    OtpRateLimited:
+      description: OTP request blocked by rate limit or attempts lock.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            rate_limited:
+              $ref: '#/components/examples/OtpRateLimitedErrorExample'
+            attempts_locked:
+              $ref: '#/components/examples/OtpAttemptsLockedErrorExample'
+    OtpExpired:
+      description: OTP challenge expired.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            expired:
+              $ref: '#/components/examples/OtpExpiredErrorExample'
+    OtpInvalidCode:
+      description: OTP code or proof is invalid, already consumed, or replayed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalid_code:
+              $ref: '#/components/examples/OtpInvalidCodeErrorExample'
+    OtpProviderUnavailable:
+      description: OTP provider dependency unavailable.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            provider_unavailable:
+              $ref: '#/components/examples/OtpProviderUnavailableErrorExample'
     GoalAutopilotRuntimeDisabled:
       description: P0.2 goal autopilot runtime disabled by feature flag or kill switch.
       content:
@@ -3611,6 +3825,10 @@ components:
       type: integer
       enum:
       - 1
+    OtpSchemaVersion:
+      type: integer
+      enum:
+      - 2
     TrustedAudioRef:
       type: string
       pattern: '^media://audio/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
@@ -3650,6 +3868,16 @@ components:
       - IDEMPOTENCY_CONFLICT
       - SCHEMA_VALIDATION_FAILED
       - PROVIDER_UNAVAILABLE
+      - OTP_INVALID_PHONE
+      - OTP_CONSENT_REQUIRED
+      - OTP_RATE_LIMITED
+      - OTP_ATTEMPTS_LOCKED
+      - OTP_EXPIRED
+      - OTP_INVALID_CODE
+      - OTP_RISK_BLOCKED
+      - OTP_STEP_UP_REQUIRED
+      - OTP_CAPTCHA_REQUIRED
+      - OTP_INSECURE_TRANSPORT
       - DELETE_IN_PROGRESS
       - RESOURCE_NOT_FOUND
       - CONFLICT
@@ -3684,8 +3912,150 @@ components:
         expires_at:
           type: string
           format: date-time
-    PhoneLoginRequest:
+    OtpChallengeId:
+      type: string
+      minLength: 16
+      maxLength: 160
+      description: Opaque OTP challenge identifier returned by /auth/otp/send.
+    OtpVerificationCode:
+      type: string
+      pattern: '^[0-9]{6,10}$'
+      description: User-entered OTP code. Production configuration must not accept fewer than 6 digits.
+    OtpRiskDecision:
+      type: string
+      enum:
+      - allow
+      - step_up
+      description: Client-visible risk decision for the OTP challenge. Blocked decisions are returned as typed errors.
+    OtpStepUpStatus:
+      type: string
+      enum:
+      - not_required
+      - pending
+      - passed
+    OtpSendRequest:
       type: object
+      additionalProperties: false
+      required:
+      - schema_version
+      - phone_number
+      - terms_accepted
+      - consent_version
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/OtpSchemaVersion'
+        phone_number:
+          type: string
+          minLength: 3
+          maxLength: 32
+          description: Client-submitted phone number to normalize and validate before challenge creation.
+        terms_accepted:
+          type: boolean
+          description: User assertion that the current terms and privacy notice were accepted.
+        consent_version:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Client-visible consent version shown to the user.
+        captcha_token:
+          type: string
+          minLength: 8
+          maxLength: 4096
+          description: CAPTCHA proof token to verify server-side before OTP send.
+        device_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        install_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+    OtpSendResponse:
+      type: object
+      required:
+      - schema_version
+      - challenge_id
+      - expires_at
+      - resend_after_seconds
+      - risk_decision
+      - step_up_status
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/OtpSchemaVersion'
+        challenge_id:
+          $ref: '#/components/schemas/OtpChallengeId'
+        expires_at:
+          type: string
+          format: date-time
+        resend_after_seconds:
+          type: integer
+          minimum: 0
+        risk_decision:
+          $ref: '#/components/schemas/OtpRiskDecision'
+        step_up_status:
+          $ref: '#/components/schemas/OtpStepUpStatus'
+    OtpStepUpRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - schema_version
+      - challenge_id
+      - step_up_token
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/OtpSchemaVersion'
+        challenge_id:
+          $ref: '#/components/schemas/OtpChallengeId'
+        step_up_token:
+          type: string
+          minLength: 8
+          maxLength: 4096
+          description: Client-visible step-up proof token bound to the OTP challenge.
+    OtpStepUpResponse:
+      type: object
+      required:
+      - schema_version
+      - challenge_id
+      - step_up_status
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/OtpSchemaVersion'
+        challenge_id:
+          $ref: '#/components/schemas/OtpChallengeId'
+        step_up_status:
+          $ref: '#/components/schemas/OtpStepUpStatus'
+    PhoneLoginRequest:
+      description: OTP v2 production phone login request. The v1 shape is retained only for non-production/test compatibility.
+      oneOf:
+      - $ref: '#/components/schemas/PhoneLoginRequestV2'
+      - $ref: '#/components/schemas/PhoneLoginRequestV1TestCompatibility'
+    PhoneLoginRequestV2:
+      type: object
+      additionalProperties: false
+      required:
+      - schema_version
+      - challenge_id
+      - phone_number
+      - verification_code
+      - terms_accepted
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/OtpSchemaVersion'
+        challenge_id:
+          $ref: '#/components/schemas/OtpChallengeId'
+        phone_number:
+          type: string
+          minLength: 3
+          maxLength: 32
+          description: Phone number that must match the OTP challenge after server-side normalization.
+        verification_code:
+          $ref: '#/components/schemas/OtpVerificationCode'
+        terms_accepted:
+          type: boolean
+    PhoneLoginRequestV1TestCompatibility:
+      type: object
+      additionalProperties: false
+      description: Legacy raw phone login shape retained only for non-production/test compatibility behind release guards.
       required:
       - schema_version
       - phone_number
@@ -3693,7 +4063,9 @@ components:
       - terms_accepted
       properties:
         schema_version:
-          $ref: '#/components/schemas/SchemaVersion'
+          type: integer
+          enum:
+          - 1
         phone_number:
           type: string
         verification_code:
@@ -8060,10 +8432,142 @@ components:
     PhoneLoginRequestExample:
       summary: loginPhone request example
       value:
-        schema_version: 1
+        schema_version: 2
+        challenge_id: otp_challenge_sample_20260625
         phone_number: '+8613800138000'
-        verification_code: SAMPLE_CODE
+        verification_code: '123456'
         terms_accepted: true
+    OtpSendRequestExample:
+      summary: sendOtp request example
+      value:
+        schema_version: 2
+        phone_number: '+8613800138000'
+        terms_accepted: true
+        consent_version: privacy_terms_2026_06
+        captcha_token: captcha-proof-token-sample
+        device_id: device_sample
+        install_id: install_sample
+    OtpSendResponseExample:
+      summary: sendOtp response 200 example
+      value:
+        schema_version: 2
+        challenge_id: otp_challenge_sample_20260625
+        expires_at: '2026-06-25T12:05:00Z'
+        resend_after_seconds: 60
+        risk_decision: allow
+        step_up_status: not_required
+    OtpStepUpRequestExample:
+      summary: submitOtpStepUp request example
+      value:
+        schema_version: 2
+        challenge_id: otp_challenge_sample_20260625
+        step_up_token: step-up-proof-token-sample
+    OtpStepUpResponseExample:
+      summary: submitOtpStepUp response 200 example
+      value:
+        schema_version: 2
+        challenge_id: otp_challenge_sample_20260625
+        step_up_status: passed
+    OtpInvalidPhoneErrorExample:
+      summary: OTP invalid phone error
+      value:
+        error:
+          code: OTP_INVALID_PHONE
+          message: Phone number is invalid or unsupported.
+          request_id: req_20260625_sample
+          details:
+            field: phone_number
+    OtpConsentRequiredErrorExample:
+      summary: OTP consent required error
+      value:
+        error:
+          code: OTP_CONSENT_REQUIRED
+          message: Current terms and privacy consent is required.
+          request_id: req_20260625_sample
+          details:
+            field: consent_version
+    OtpRateLimitedErrorExample:
+      summary: OTP rate limited error
+      value:
+        error:
+          code: OTP_RATE_LIMITED
+          message: Too many OTP requests. Try again later.
+          request_id: req_20260625_sample
+          details:
+            retry_after_seconds: 60
+    OtpAttemptsLockedErrorExample:
+      summary: OTP attempts locked error
+      value:
+        error:
+          code: OTP_ATTEMPTS_LOCKED
+          message: OTP verification attempts are temporarily locked.
+          request_id: req_20260625_sample
+          details:
+            retry_after_seconds: 900
+    OtpExpiredErrorExample:
+      summary: OTP expired error
+      value:
+        error:
+          code: OTP_EXPIRED
+          message: OTP challenge expired.
+          request_id: req_20260625_sample
+          details:
+            challenge_id: otp_challenge_sample_20260625
+    OtpInvalidCodeErrorExample:
+      summary: OTP invalid code error
+      value:
+        error:
+          code: OTP_INVALID_CODE
+          message: OTP code is invalid or already used.
+          request_id: req_20260625_sample
+          details:
+            challenge_id: otp_challenge_sample_20260625
+    OtpRiskBlockedErrorExample:
+      summary: OTP risk blocked error
+      value:
+        error:
+          code: OTP_RISK_BLOCKED
+          message: OTP request cannot continue.
+          request_id: req_20260625_sample
+          details:
+            risk_decision: blocked
+    OtpStepUpRequiredErrorExample:
+      summary: OTP step-up required error
+      value:
+        error:
+          code: OTP_STEP_UP_REQUIRED
+          message: Additional verification is required before login.
+          request_id: req_20260625_sample
+          details:
+            challenge_id: otp_challenge_sample_20260625
+    OtpCaptchaRequiredErrorExample:
+      summary: OTP CAPTCHA required error
+      value:
+        error:
+          code: OTP_CAPTCHA_REQUIRED
+          message: CAPTCHA verification is required.
+          request_id: req_20260625_sample
+          details:
+            field: captcha_token
+    OtpProviderUnavailableErrorExample:
+      summary: OTP provider unavailable error
+      value:
+        error:
+          code: PROVIDER_UNAVAILABLE
+          message: OTP service is temporarily unavailable.
+          request_id: req_20260625_sample
+          details:
+            retry_after_seconds: 60
+    OtpSchemaValidationFailedErrorExample:
+      summary: OTP schema validation failed error
+      value:
+        error:
+          code: SCHEMA_VALIDATION_FAILED
+          message: Request validation failed.
+          request_id: req_20260625_sample
+          details:
+            field: schema_version
+            reason: Unsupported schema version.
     AuthSessionResponseExample:
       summary: loginPhone response 200 example
       value:

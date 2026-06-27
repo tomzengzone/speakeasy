@@ -28,7 +28,14 @@ public class SecurityConfig {
     http.csrf(AbstractHttpConfigurer::disable)
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers(HttpMethod.POST, "/auth/login/phone", "/auth/login/apple", "/auth/login/wechat", "/auth/refresh")
+            .requestMatchers(
+                HttpMethod.POST,
+                "/auth/otp/send",
+                "/auth/otp/step-up",
+                "/auth/login/phone",
+                "/auth/login/apple",
+                "/auth/login/wechat",
+                "/auth/refresh")
             .permitAll()
             .requestMatchers(HttpMethod.POST, "/subscriptions/webhook/apple", "/subscriptions/webhook/google")
             .permitAll()

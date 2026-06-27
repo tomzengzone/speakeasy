@@ -1,13 +1,13 @@
 # 产品开发状态
 
 ## 状态
-Revalidated / P0.2 stage replanned for goal-driven autopilot - TC-P01-013/014 local blockers closed；2026-06-03 P0.1 Product Base/production hardening TC-P01-021 through TC-P01-031 have local passed evidence inside the existing P0.1 stage；P0.2 has been replanned from memory scheduling into GoalProfile, DiagnosticAssessment, GoalBackplan, AutopilotTraining, MemoryCurvePolicy, ProgressForecast and OutcomeCheckpoint across three planned increments；commercial release and paid AI voice remain blocked by explicit external/native/store/release evidence
+Revalidated / identity OTP 后端切片已回写 - 2026-06-26 `identity-otp-production-hardening` 已补齐后端 API、DB migration、OpenAPI、release scripts、SWC allocation、test/traceability/report evidence；`IDENTITY-RELEASE-001` 已清除。Product Base merge、商业发布、paid AI voice、Apple/WeChat verifier、外部 provider evidence、Dart/Flutter client parity 和 `IDENTITY-RELEASE-002/003` 仍 blocked。
 
 ## Owner
 Product Manager Agent
 
 ## Current Date
-2026-06-07
+2026-06-26
 
 ## 活动目标
 以 Product Base 活需求库承载已接受稳定能力。本轮已按顺序完成 TC-P01-013、TC-P01-014、TC-COM-AI-004 evidence preparation 和 TC-COM-012/015/019/021/022 strict gate revalidation，并完成独立审核；2026-06-03 又在同一 P0.1 stage/increment 内补充商业软件整改设计、需求、验收、测试和追踪口径。后续工作不得把本地通过扩展为 Product Base 合入、生产训练或商业发布批准。
@@ -17,6 +17,7 @@ Product Manager Agent
 - P0.2 目标达成线：用户目标驱动审查后，旧单体记忆调度 artifact 已删除并被新的 stage scope 吸收；P0.2 正式 stage scope 扩展为 P02-SI-001..013，并拆成 `p0-2-goal-diagnostic-foundation`、`p0-2-goal-backplan-memory-policy` 和 `p0-2-autopilot-progress-checkpoint`。三个新 increment 已完成 requirements/spec/acceptance/test_cases/traceability 下沉设计；Followup-A 已完成本地实现审核；Followup-B 已完成 requirements/spec/acceptance/test_cases/traceability、Domain、API/OpenAPI/generated client sync、AI runtime 和 UX 合同门禁，且 backend/frontend UserAutopilotControl control slice、S002-A notification eligibility policy、S002-B notification outbox lifecycle/replay、S003 missed-day recovery planner、S004 item-level MemoryCurvePolicy、S005 mastery transition 和 S006 replay/performance/coverage/traceability gates 已有本地执行证据；TC-P02-FUB-001/002/003/004/005/006/007/008/009/010/011/012/013/014/015/016/017 passed。Followup-C 已完成 S000 document chain、S001 forecast hardening、S002 checkpoint task library、S003 checkpoint-to-plan update、S004 backend projection、S005 surface propagation、S006 surface deletion/unavailable downgrade 和 S007 performance/coverage/traceability/report/review gates 本地实现/测试/独立审核，TC-P02-FUC-001/002/003/004/005/006/007/008/009/010/011/012/013/014/015/016/017/018/019/020/021/022 passed。`P02-FOLLOWUP-C-S007-QUALITY-GATES-20260606` records TC-P02-FUC-020/021/022 passed；`P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606` removes the current Redocly nullable `$ref` warnings and syncs OpenAPI hash `d8b492b07c98e948caf0b5912744f05fa6dcd4b76f97f0ece04dc9778df7da0f`。Followup-C is locally complete for S001-S007. Followup-C is not release-ready and Product Base merge is not approved。Followup-D S000 文档链、S001 backend/API runtime gate、S002 Flutter rollback、S003 entitlement depth、S004 usage reservation/quota、S005 cost telemetry/AI fallback、S006 quota downgrade、S007 data governance、S008 consent/privacy UX、S009 telemetry、S010 contract/traceability/release drift gates 和 S011 final Product Base/release review 已本地通过，TC-P02-FUD-000/001/002/003/004/005/006/007/008/009/010/011/012/013/014/015/016/017/018/019/020/021 passed；Followup-D is not release-ready and Product Base merge is not approved。
 - 2026-06-07 `P02-FOLLOWUP-C-S007-CHECKER-HASH-SYNC-20260607` 修复 Followup-C S007 checker 对历史 OpenAPI hash 的当前产物硬编码断言；checker 现在读取当前 manifest/marker/registry 并校验三处一致，同时保留历史 nullable-cleanup 报告证据。该修复不改变生产 backend、Flutter、OpenAPI 或 generated Dart API shape，也不关闭 release/Product Base blockers。
 - 2026-06-07 `CR-20260607-001` accepted：新增 `p0-2-followup-e-speaking-diagnostic-production` 作为 P0.2 后续增量，目标是把 Followup-A 的文本兜底诊断升级为音频优先 Speaking Check、真实后端 `audio_ref`、文本低置信兜底、隐私/质量/成本/claim guard 边界。当前仅完成阶段 0 独立审核、阶段 1 requirements/spec 独立审核、阶段 2 domain/API/AI/UX/data contract 修正后独立复核和 Phase 3 acceptance/test_cases/traceability 独立审核；Followup-E 处于规划/合同证据状态，所有 TC-P02-FUE-000..026 仍为 planned。backend、Flutter、OpenAPI/generated client、native mic/audio bytes upload、diagnostic assessment ASR/scoring/result、retention/export/account deletion、entitlement/provider downgrade、paid AI external evidence、release readiness 和 Product Base merge 均未关闭。Product Base merge is not approved。
+- 2026-06-26 Identity/account 生命周期线：`identity-otp-production-hardening` 已补齐 OTP production hardening 的后端本地实现、OpenAPI、DB migration、release guard、SWC allocation、test report 和 implementation report 回写；该证据只关闭本地后端切片和 `IDENTITY-RELEASE-001`，不关闭 `IDENTITY-RELEASE-002/003`、Apple/WeChat verifier、SMS/phone-risk/CAPTCHA/step-up/trusted proxy/HMAC provider evidence、phone-risk `CN/US` coverage、`CN` SIM-swap evidence、Dart/Flutter client parity、Product Base merge 或商业发布。
 
 ## 产品对象状态
 - Product Base requirements：`docs/product/base/requirements.md`
@@ -24,6 +25,8 @@ Product Manager Agent
 - Product Base acceptance：`docs/product/base/acceptance.md`
 - Product Base traceability：`docs/product/base/traceability.md`
 - Feature registry：`docs/product/feature_registry.md`
+- Identity account lifecycle Product Base docs：`docs/product/base/identity-account-lifecycle/requirements.md`, `docs/product/base/identity-account-lifecycle/spec.md`, `docs/product/base/identity-account-lifecycle/traceability.md`
+- Identity OTP production hardening increment：`docs/product/increments/identity-otp-production-hardening/definition.md`, `docs/product/increments/identity-otp-production-hardening/requirements.md`, `docs/product/increments/identity-otp-production-hardening/spec.md`, `docs/product/increments/identity-otp-production-hardening/acceptance.md`, `docs/product/increments/identity-otp-production-hardening/test_cases.md`, `docs/product/increments/identity-otp-production-hardening/traceability.md`, `docs/product/increments/identity-otp-production-hardening/swc_allocation.md`
 - Validated MVP backend stage：`docs/product/stages/mvp-backend-foundation.md`
 - MVP backend foundation/auth increment：`docs/product/increments/mvp-backend-foundation-auth/definition.md`
 - MVP backend onboarding/content increment：`docs/product/increments/mvp-backend-onboarding-content/definition.md`
@@ -75,6 +78,7 @@ Product Manager Agent
 - MVP backend stage 已完成当前 committed stage work；它没有改变 Product Base 用户范围，而是补齐后端/API/数据库、客户端集成、测试、发布证据和本地系统 E2E 证据。
 - `mvp-system-e2e-validation` 已验证 TC-MVP-E2E-001 到 TC-MVP-E2E-010；其中真实支付 provider 只作为 manual/external gate 保留，不作为本地自动化通过项。
 - P0 `commercial-subscription-readiness` 是商业软件功能补齐和付费发布阻塞 stage；完成实现、验收、追溯、测试、发布和外部门禁后，才允许 Product Manager 批准商业发布口径。
+- `identity-otp-production-hardening` 是 `identity-account-lifecycle` 的 Product Base target implementation package；当前后端 OTP production hardening 本地证据已补齐，可作为后续 Product Base 合入复核输入，但 Product Base Accepted merge、Flutter/Dart client parity、Apple/WeChat verifier 和 release/provider evidence 仍未批准。
 - P0.1 `expression-automation-training` 是 next value-experience stage；完成实现、验收、追溯、测试和报告后，才允许由 Product Manager 批准 merge back 到 Product Base。
 - 2026-06-03 复测结论：P0.1 TC-P01-013/014 本地关闭；P0.1 Product Base/production hardening TC-P01-021 through TC-P01-031 已有本地 passed evidence，可作为设计确认后的 Product Base 合入复核输入；TC-COM-AI-004 controlled-live evidence-prep 报告已生成；所有 strict external/native/store/release evidence blockers 仍不得关闭。
 - 后续每个多步骤产品、需求、工作流或文档治理任务，每一步完成后必须由独立 checker agent 审查是否符合预期、是否偏离、是否存在非预期变更。
@@ -83,6 +87,7 @@ Product Manager Agent
 | 能力 | 当前状态 | 证据 | 产品判断 |
 | --- | --- | --- | --- |
 | 登录、首评、首页 | 已实现前端主流程 | `lib/main.dart`, `lib/core/bootstrap/app_root.dart`, `lib/pages/onboarding_page.dart`, `lib/pages/home_page.dart` | 作为 Product Base 稳定能力保留 |
+| 身份账号与 OTP 后端加固 | 后端本地实现和测试证据已补齐，release pending | `docs/product/base/identity-account-lifecycle/`, `docs/product/increments/identity-otp-production-hardening/`, `docs/reports/test_report.md`, `docs/reports/implementation_report.md` | 仅作为 Product Base identity-account-lifecycle 合入复核输入；商业发布仍受 `IDENTITY-RELEASE-002/003`、provider evidence 和 Flutter/Dart client parity 阻断 |
 | 官方场景资产 | 已有 2 个真实场景 | `assets/data/interview_scene_catalog.json`, `assets/data/interview_scene_wikis/` | 后续先扩展场景包，不承诺任意场景 |
 | 场景等级 | 已有 L1/L2/L3 | `assets/data/interview_scene_wikis/*.json` | 后续再映射到 CEFR A1-C2 |
 | 听力热身/跟读 | 已实现 | `lib/features/interview/interview_scene_listening_page.dart` | 进入口语训练前的输入环节 |
@@ -181,6 +186,7 @@ Product Manager Agent
 51. 2026-06-07 P0.2 Followup-D S011 final Product Base/release review 本地实现/测试/独立审核已完成：`P02-FOLLOWUP-D-S011-FINAL-REVIEW-20260607` records TC-P02-FUD-020/021 passed，覆盖 final report sync、Product Base/release/paid AI state separation、release checklist blocker preservation、strict release readiness expected-blocked preservation、dual product/software independent review、development_status sync 和 forbidden release/Product Base claim guard。Followup-D S011 is locally complete for final review execution only；Followup-D is not release-ready and Product Base merge is not approved。
 52. 2026-06-07 P0.2 Followup-E 状态已修正为规划/合同证据：`CR-20260607-001`、increment definition、requirements/spec、domain/API/AI/UX/data contracts、acceptance/test_cases/traceability 和 implementation plan 可作为后续实现输入；所有 TC-P02-FUE-000..026 保持 planned。当前不接受 Followup-E backend、Flutter、OpenAPI/generated client、AI runtime、native mic/audio bytes upload、测试通过或 independent implementation review 证据。Full Followup-E remains incomplete，diagnostic assessment ASR/scoring/result、full data governance、entitlement/provider downgrade、paid AI external evidence、release readiness 和 Product Base merge 均未关闭。
 53. 2026-06-11 P0.2 XCB-005 Goal Autopilot fact-boundary regression 本地实现/测试证据已补齐：`P02-XCB005-GOAL-AUTOPILOT-FACT-BOUNDARIES-20260611` records TC-P02-FUA-017/018/019 and TC-P02-FUC-023 passed，覆盖 goal diagnostic/checkpoint trusted `audio_ref` 复用 Media/AI Gateway、goal-create `Idempotency-Key` backend/OpenAPI/Flutter/header replay、duplicate legacy `goal_profiles` migration prune + `UNIQUE(user_id)`、export/deletion/telemetry redaction、OpenAPI generated hash `44739a588708eb47e82707680c0ab0dbada178530abe12a4c7525750f8e35cd5`、Followup-A/C traceability checker 和 cross-cutting boundary gates。该证据不声明 Followup-E diagnostic-audio 完成，不声明 release-ready 或 Product Base 合入批准。
+54. 2026-06-26 `identity-otp-production-hardening` 后端本地切片证据已回写：`docs/product/increments/identity-otp-production-hardening/`、`docs/reports/test_report.md#2026-06-25---identity-otp-production-hardening-20260625`、`docs/reports/implementation_report.md#2026-06-26---identity-otp-production-hardening-backend-20260625` 和 `docs/product/increments/identity-otp-production-hardening/swc_allocation.md` 已形成 traceability/report/SWC evidence。下一步不是另起账号系统，而是关闭 `IDENTITY-RELEASE-002/003`、Apple/WeChat verifier、provider evidence、phone-risk country/SIM-swap evidence、Flutter/Dart client parity 和 Product Base/release review。
 
 ## PM 下一阶段开发计划
 
@@ -210,6 +216,8 @@ Product Manager Agent
 
 ### Now - P0 商业发布外部门禁关闭
 目标：把 `commercial-subscription-readiness` 从“本地边界和契约通过”推进到“可被 PM 判断是否进入商业发布口径”。
+
+Identity production trust 依赖：`identity-otp-production-hardening` 已提供后端 OTP 本地证据，但仍必须先关闭 `IDENTITY-RELEASE-002/003`、Apple/WeChat verifier、SMS/phone-risk/CAPTCHA/step-up/trusted proxy/HMAC provider evidence、phone-risk `CN/US` coverage、`CN` SIM-swap evidence、Dart/Flutter client parity 和 release evidence，才能允许商业发布或 store submission 继续推进。
 
 优先批次：
 1. `P0-COM-EXT-001`：补齐 TC-COM-019 支付 provider evidence，提供 `APPLE_SANDBOX_EVIDENCE_REF` 和 `GOOGLE_PLAY_INTERNAL_EVIDENCE_REF`，覆盖购买、恢复、空恢复、退款、过期、宽限期和账号切换。

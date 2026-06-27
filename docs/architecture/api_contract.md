@@ -22,6 +22,7 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | Source / 来源 | Path / 路径 | API use / API 用途 |
 | --- | --- | --- |
 | Product Base requirements/spec/acceptance/traceability | `docs/product/base/` | 稳定能力的 server-backed contract 输入 |
+| Identity OTP production hardening increment | `docs/product/increments/identity-otp-production-hardening/` | OTP v2 send、step-up、phone login production-hardening API 边界 |
 | P0 commercial subscription increment | `docs/product/increments/commercial-subscription-readiness/` | 订阅、权益、用量、账号删除、审计和 release gate API |
 | P0 commercial AI provider hardening increment | `docs/product/increments/commercial-ai-provider-hardening/` | media upload/signing、persistent TTS cache、provider evidence、cost dashboard and retention API planning |
 | P0.1 training increment | `docs/product/increments/p0-1-expression-automation-training/` | training session、turn、planner、hint、pressure、evidence API |
@@ -36,6 +37,7 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | Scope / 范围 | OpenAPI treatment / OpenAPI 处理方式 | Reason / 原因 |
 | --- | --- | --- |
 | Product Base stable behavior<br>Product Base 稳定行为 | Implementation-level paths allowed<br>允许实现级 path | Accepted Product Base artifacts and traceability exist<br>Product Base 已有接受产物和可追溯依据 |
+| Identity OTP production hardening<br>身份 OTP 生产加固 | Implementation-level paths allowed for `/auth/otp/send`, `/auth/otp/step-up`, and OTP v2 `/auth/login/phone` contract only<br>仅允许 `/auth/otp/send`、`/auth/otp/step-up` 和 OTP v2 `/auth/login/phone` 契约进入实现级 path | Owning increment `identity-otp-production-hardening` has draft spec/acceptance/test_cases/traceability for OTP 10-32; contract does not declare production readiness<br>归属增量 `identity-otp-production-hardening` 已为 OTP 10-32 建立 draft spec/acceptance/test_cases/traceability；契约不声明生产就绪 |
 | P0 commercial subscription readiness<br>P0 商业订阅上线准备 | Implementation-level paths allowed<br>允许实现级 path | Approved increment artifacts exist<br>已有获批增量产物 |
 | P0 commercial AI provider hardening<br>P0 商业 AI provider 加固 | Implementation-level paths allowed for media upload/signing, provider evidence, cost metrics and retention operations<br>允许为媒体上传/签名、provider evidence、成本指标和保留任务定义实现级 path | Approved increment artifacts exist and `P0-AI-ARCH-001` records the API/security contract gate<br>已有获批增量产物，且 `P0-AI-ARCH-001` 记录 API/安全契约门禁 |
 | P0.1 expression automation training<br>P0.1 表达自动化训练 | Implementation-level paths allowed where server-backed behavior is required<br>仅在需要服务端支撑的行为上允许实现级 path | Approved increment artifacts exist; local-only behavior must not be over-promoted<br>已有获批增量产物；纯本地行为不能被提升为服务端产品能力 |
@@ -61,7 +63,7 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 
 | Family / 家族 | OpenAPI tag | Product object source / 产品对象来源 | Implementation status / 实现状态 |
 | --- | --- | --- | --- |
-| Auth / Identity<br>认证/身份 | `Auth`, `User` | Product Base FR-001, FR-010; P0 FR-COM-004, FR-COM-005, FR-COM-008 | In OpenAPI<br>已进入 OpenAPI |
+| Auth / Identity<br>认证/身份 | `Auth`, `User` | Product Base FR-001, FR-010; `identity-otp-production-hardening`; P0 FR-COM-004, FR-COM-005, FR-COM-008 | In OpenAPI, including planned OTP v2 contract boundaries for `/auth/otp/send`, `/auth/otp/step-up`, and `/auth/login/phone`; not a production-ready claim<br>已进入 OpenAPI，包含 planned OTP v2 契约边界 `/auth/otp/send`、`/auth/otp/step-up` 和 `/auth/login/phone`；不代表生产就绪 |
 | Onboarding<br>新手引导 | `Onboarding` | Product Base FR-002 | In OpenAPI, including assessment and route creation<br>已进入 OpenAPI，覆盖评估和路线创建 |
 | Scenario / Content<br>场景/内容 | `Scenario`, `Home` | Product Base FR-003, FR-004, FR-005; P0.1 P01-FR-001, P01-FR-002 | In OpenAPI, including official content, user scenario state, and home summary<br>已进入 OpenAPI，覆盖官方内容、用户场景状态和首页摘要 |
 | Product Base practice<br>Product Base 练习 | `Practice` | Product Base FR-007, FR-008, FR-009; `mvp-backend-practice-ai` MVP-SI-008/MVP-SI-009 | In OpenAPI, including start/resume/get/turn/complete, recoverable provider failure, and summary candidate input<br>已进入 OpenAPI，覆盖 start/resume/get/turn/complete、可恢复 provider failure 和 summary candidate input |
@@ -89,6 +91,27 @@ Owning product object / 归属产品对象：`docs/product/base/` FR-010 / AC-01
 - `avatar_ref` 是应用内置头像引用；当前实现只接受已经随包发布的 `assets/images/avatars/default_avatar_1.png` 到 `assets/images/avatars/default_avatar_6.png`。
 - Flutter 必须通过 generated OpenAPI path 调用 `PATCH /user/me`，当前内置头像选择器不得调用或创建 `/user/me/avatar`、multipart avatar upload 或音频 media upload 流程。
 - 用户上传头像或远程头像需要单独获批的 `media/image` 契约，覆盖 storage、ownership、content type、byte size、deletion、moderation 和 release evidence；这些不在当前 Product Base avatar 修复范围内。
+
+## Identity OTP Production Hardening Contract Note / 身份 OTP 生产加固契约说明
+
+Owning increment / 归属增量：`docs/product/increments/identity-otp-production-hardening/`。
+
+Contract status / 契约状态：planned API contract for OTP 10-32 implementation routing only. It does not declare backend implementation complete, provider evidence accepted, release guard passed, or production readiness.
+
+契约状态：仅作为 OTP 10-32 实现路由使用的 planned API contract。不声明后端实现完成、provider evidence 已接受、release guard 已通过或生产就绪。
+
+| Contract boundary / 契约边界 | Method / path | Schema version / schema 版本 | Auth / 认证 | Contract rule / 契约规则 |
+| --- | --- | --- | --- | --- |
+| OTP send/resend | `POST /auth/otp/send` | request/response `schema_version=2` | `security: []` | Validates phone, consent, policy-required CAPTCHA, risk and rate limits before returning an opaque `challenge_id`; success creates only an OTP challenge and must not create account, identity, token or session. |
+| OTP step-up proof | `POST /auth/otp/step-up` | request/response `schema_version=2` | `security: []` | Accepts only an opaque `challenge_id` and step-up proof token; success marks the challenge step-up state for later phone login and does not issue a session. |
+| OTP phone login | `POST /auth/login/phone` | production boundary `schema_version=2` | `security: []` | Requires `challenge_id`, `phone_number`, `verification_code`, and `terms_accepted`; only a consumed, verified OTP challenge may enter the existing account/session lifecycle and return `AuthSessionResponse`. |
+| Non-production/test compatibility | `POST /auth/login/phone` | `schema_version=1` | `security: []` | Preserved only for non-production/test compatibility behind environment/release guards; it must not be treated as a production OTP completion path. |
+
+Typed OTP errors / OTP 类型化错误：`OTP_INVALID_PHONE`, `OTP_CONSENT_REQUIRED`, `OTP_RATE_LIMITED`, `OTP_ATTEMPTS_LOCKED`, `OTP_EXPIRED`, `OTP_INVALID_CODE`, `OTP_RISK_BLOCKED`, `OTP_STEP_UP_REQUIRED`, `OTP_CAPTCHA_REQUIRED`, `OTP_INSECURE_TRANSPORT`, `PROVIDER_UNAVAILABLE`, `SCHEMA_VALIDATION_FAILED`。
+
+The OpenAPI schema exposes only client-visible OTP contract fields. It intentionally does not expose database table names, hash material, SMS/risk/CAPTCHA/step-up provider implementations, provider payloads, audit storage fields, normalized-subject migration details, or future unapproved endpoints.
+
+OpenAPI schema 只暴露客户端可见的 OTP 契约字段。它有意不暴露数据库表名、hash 材料、SMS/risk/CAPTCHA/step-up provider 实现、provider payload、审计存储字段、normalized-subject migration 细节或未来未批准 endpoint。
 
 ## P0 Commercial Contract Gate / P0 商业契约门禁
 
@@ -237,6 +260,15 @@ OpenAPI component / OpenAPI 组件：`ErrorResponse`。
 | `IDEMPOTENCY_CONFLICT` | 幂等键重复但参数不一致 | 409 |
 | `SCHEMA_VALIDATION_FAILED` | 请求或 AI/provider 输出 schema 无效 | 422 |
 | `PROVIDER_UNAVAILABLE` | AI/ASR/TTS/评分/支付 provider 不可用 | 503 |
+| `OTP_INVALID_PHONE` | OTP phone number is invalid or unsupported; no challenge/session is created<br>OTP 手机号无效或不受支持；不创建 challenge/session | 422 |
+| `OTP_CONSENT_REQUIRED` | Current terms/privacy consent is missing or does not match the required version<br>缺少当前条款/隐私同意或 consent version 不匹配 | 403 |
+| `OTP_RATE_LIMITED` | OTP send or verification frequency exceeds configured limits<br>OTP 发送或验证频率超过限制 | 429 |
+| `OTP_ATTEMPTS_LOCKED` | Challenge or phone-purpose verification attempts are locked<br>challenge 或 phone-purpose 验证尝试已锁定 | 429 |
+| `OTP_EXPIRED` | OTP challenge expired or can no longer be consumed<br>OTP challenge 已过期或不可再消费 | 410 |
+| `OTP_INVALID_CODE` | OTP code is invalid, replayed, already consumed, or does not match the challenge<br>OTP code 无效、重放、已消费或不匹配 challenge | 401 |
+| `OTP_RISK_BLOCKED` | Risk policy blocks OTP send, step-up or session issuance<br>风险策略阻断 OTP 发送、step-up 或 session 签发 | 403 |
+| `OTP_STEP_UP_REQUIRED` | Challenge requires step-up proof before session issuance<br>challenge 需要 step-up proof 后才能签发 session | 403 |
+| `OTP_CAPTCHA_REQUIRED` | CAPTCHA proof is required, missing or failed<br>需要 CAPTCHA proof，或 proof 缺失/失败 | 403 |
 | `DELETE_IN_PROGRESS` | 账号删除任务处理中 | 409 |
 | `RESOURCE_NOT_FOUND` | 指定资源不存在或不属于当前用户 | 404 |
 | `CONFLICT` | 当前状态不允许该操作 | 409 |
@@ -245,6 +277,7 @@ OpenAPI component / OpenAPI 组件：`ErrorResponse`。
 
 - Initial API path prefix: `/v1`.
 - Response body uses `schema_version: 1`.
+- OTP production-hardening request/response DTOs use `schema_version: 2`; `schema_version=1` phone login is retained only for non-production/test compatibility and is not a production-ready OTP path.
 - Breaking path or DTO changes require ADR or migration notes.
 - Additive optional fields are compatible only when clients can ignore unknown fields.
 - Generated Dart client drift check is required before implementation merge.
@@ -252,6 +285,7 @@ OpenAPI component / OpenAPI 组件：`ErrorResponse`。
 
 - 初始 API path prefix 是 `/v1`。
 - Response body 使用 `schema_version: 1`。
+- OTP 生产加固 request/response DTO 使用 `schema_version: 2`；`schema_version=1` phone login 只保留作 non-production/test compatibility，不是生产就绪 OTP path。
 - Breaking path 或 DTO change 必须有 ADR 或 migration notes。
 - 只有客户端能忽略未知字段时，新增 optional field 才视为兼容。
 - 实现合并前必须通过 generated Dart client drift check。

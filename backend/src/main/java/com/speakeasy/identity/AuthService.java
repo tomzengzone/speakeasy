@@ -9,8 +9,10 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +27,10 @@ public class AuthService {
   private final AuthIdentityRepository identities;
   private final AuthSessionRepository sessions;
   private final AccountDeletionJobRepository deletionJobs;
+  private final OtpService otpService;
+  private final PhoneNumberNormalizer phoneNumberNormalizer;
   private final Clock clock;
+  private final Environment environment;
   private final SecureRandom secureRandom = new SecureRandom();
 
   public AuthService(
@@ -34,13 +39,36 @@ public class AuthService {
       AuthIdentityRepository identities,
       AuthSessionRepository sessions,
       AccountDeletionJobRepository deletionJobs,
-      Clock clock) {
+      OtpService otpService,
+      PhoneNumberNormalizer phoneNumberNormalizer,
+      Clock clock,
+      Environment environment) {
     this.users = users;
     this.profiles = profiles;
     this.identities = identities;
     this.sessions = sessions;
     this.deletionJobs = deletionJobs;
+    this.otpService = otpService;
+    this.phoneNumberNormalizer = phoneNumberNormalizer;
     this.clock = clock;
+    this.environment = environment;
+  }
+
+  @Transactional(noRollbackFor = ApiException.class)
+  public AuthSessionResult loginPhone(
+      UUID challengeId, String phoneNumber, String verificationCode, boolean termsAccepted, OtpRequestContext context) {
+    if (!termsAccepted) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "SCHEMA_VALIDATION_FAILED", "Terms must be accepted.");
+    }
+    OtpService.ConsumedOtpChallenge consumedOtpChallenge =
+        otpService.verifyAndConsume(challengeId, phoneNumber, verificationCode, context);
+    final String consumedVerifiedE164Phone = consumedOtpChallenge.verifiedE164Phone();
+    return loginOrCreate("phone", consumedVerifiedE164Phone, "Phone User");
+  }
+
+  @Transactional
+  public AuthSessionResult loginPhone(UUID challengeId, String phoneNumber, String verificationCode, boolean termsAccepted) {
+    return loginPhone(challengeId, phoneNumber, verificationCode, termsAccepted, OtpRequestContext.empty());
   }
 
   @Transactional
@@ -51,7 +79,11 @@ public class AuthService {
     if (phoneNumber == null || phoneNumber.isBlank() || verificationCode == null || verificationCode.isBlank()) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "SCHEMA_VALIDATION_FAILED", "Phone number and verification code are required.");
     }
-    return loginOrCreate("phone", phoneNumber.trim(), "Phone User");
+    if (!isTestProfile()) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "schema_version=1 phone login is only available in test.");
+    }
+    String testOnlyE164Phone = phoneNumberNormalizer.normalize(phoneNumber);
+    return loginOrCreate("phone", testOnlyE164Phone, "Phone User");
   }
 
   @Transactional
@@ -167,6 +199,10 @@ public class AuthService {
     byte[] bytes = new byte[32];
     secureRandom.nextBytes(bytes);
     return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+  }
+
+  private boolean isTestProfile() {
+    return Arrays.stream(environment.getActiveProfiles()).anyMatch("test"::equals);
   }
 
   public record AuthSessionResult(

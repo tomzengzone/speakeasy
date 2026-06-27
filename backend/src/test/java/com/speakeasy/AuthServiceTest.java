@@ -20,10 +20,12 @@ import com.speakeasy.identity.UserProfileRepository;
 import com.speakeasy.ops.AccountDeletionJobRepository;
 import com.speakeasy.usage.UsageLedgerRepository;
 import com.speakeasy.usage.UsageReservationRepository;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
@@ -80,6 +82,27 @@ class AuthServiceTest {
   }
 
   @Test
+  void socialLoginCreatesRefreshableSessionAndPreservesProviderNamespace() {
+    AuthService.AuthSessionResult apple = authService.loginSocial("apple", "shared-social-provider-token", true);
+    AuthService.AuthSessionResult appleAgain = authService.loginSocial("apple", "shared-social-provider-token", true);
+    AuthService.AuthSessionResult wechat = authService.loginSocial("wechat", "shared-social-provider-token", true);
+
+    assertThat(appleAgain.user().getUserId()).isEqualTo(apple.user().getUserId());
+    assertThat(wechat.user().getUserId()).isNotEqualTo(apple.user().getUserId());
+    assertThat(authService.authenticateAccessToken(apple.accessToken())).isPresent();
+
+    AuthService.AuthSessionResult refresh = authService.refresh(apple.refreshToken());
+
+    assertThat(refresh.user().getUserId()).isEqualTo(apple.user().getUserId());
+    assertThat(refresh.accessToken()).isNotEqualTo(apple.accessToken());
+    assertThat(authService.authenticateAccessToken(apple.accessToken())).isEmpty();
+    assertThat(authService.authenticateAccessToken(refresh.accessToken())).isPresent();
+    assertThat(users.count()).isEqualTo(2);
+    assertThat(identities.count()).isEqualTo(2);
+    assertThat(profiles.count()).isEqualTo(2);
+  }
+
+  @Test
   void logoutRevokesCurrentSession() {
     AuthService.AuthSessionResult login = authService.loginPhone("+8613800138000", "123456", true);
     var currentUser = authService.authenticateAccessToken(login.accessToken()).orElseThrow();
@@ -94,5 +117,32 @@ class AuthServiceTest {
     assertThatThrownBy(() -> authService.loginPhone("+8613800138000", "123456", false))
         .isInstanceOf(ApiException.class)
         .hasMessageContaining("Terms");
+  }
+
+  @Test
+  void socialLoginRejectsInvalidInputsWithoutSideEffects() {
+    assertUnauthenticated(() -> authService.loginSocial("apple", "apple-token", false));
+    assertStoresEmpty();
+
+    assertUnauthenticated(() -> authService.loginSocial("apple", " ", true));
+    assertStoresEmpty();
+
+    assertUnauthenticated(() -> authService.loginSocial("wechat", null, true));
+    assertStoresEmpty();
+  }
+
+  private void assertUnauthenticated(ThrowingCallable action) {
+    assertThatThrownBy(action)
+        .isInstanceOfSatisfying(ApiException.class, exception -> {
+          assertThat(exception.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED);
+          assertThat(exception.getCode()).isEqualTo("UNAUTHENTICATED");
+        });
+  }
+
+  private void assertStoresEmpty() {
+    assertThat(users.count()).isZero();
+    assertThat(identities.count()).isZero();
+    assertThat(profiles.count()).isZero();
+    assertThat(sessions.count()).isZero();
   }
 }

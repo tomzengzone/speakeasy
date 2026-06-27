@@ -3,6 +3,30 @@
 ## Current Status
 Latest Followup-E quality state: docs-only planning/contract evidence. Followup-E Phase 0-3 planning and contract review gates are recorded, but no Followup-E backend, Flutter, OpenAPI/generated client, AI runtime, native mic/audio bytes upload, test execution, release or Product Base independent implementation review is accepted in this state.
 
+## 2026-06-25 mvp-backend-foundation-auth TC-MVP-BE-004 Social Evidence Quality Check
+
+Result: pass for MVP foundation-auth TC-MVP-BE-004 evidence repair only; not a commercial production identity or release-readiness pass.
+
+Review scope:
+- `backend/src/test/java/com/speakeasy/AuthControllerTest.java`
+- `backend/src/test/java/com/speakeasy/AuthServiceTest.java`
+- `docs/product/increments/mvp-backend-foundation-auth/test_cases.md`
+- `docs/product/increments/mvp-backend-foundation-auth/traceability.md`
+- `docs/reports/test_report.md`
+
+Findings:
+- Apple/WeChat login evidence now exists at endpoint level through `AuthControllerTest.socialLoginsBindToCurrentUserAndPreserveProviderNamespace`.
+- `AuthService.loginSocial` now has service-level coverage for provider namespace isolation, refresh/session behavior, and invalid-input no-side-effect behavior.
+- TC-MVP-BE-004 evidence now cites the focused 2026-06-25 command, script paths, result status, and this test report.
+- The repair reuses the existing controller/service/session/identity test structure and does not introduce a provider SDK, mock gateway, or parallel auth stack.
+
+Boundary:
+- This closes the TC-MVP-BE-004 test-evidence mismatch for MVP test-substitute provider boundary and contract-compatible endpoints.
+- This does not close production Apple identity token validation, nonce/audience/issuer checks, WeChat code/session/openid/unionid validation, scripted login detection, production test-login disabling, provider config release gates, or commercial release readiness.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AuthControllerTest,AuthServiceTest test` - passed.
+
 ## 2026-06-24 Identity Account Lifecycle 内容契约语义审查
 
 Review ID：`PB-IDENTITY-CONTENT-CONTRACT-SEMANTIC-20260624`
@@ -32,25 +56,25 @@ Reviewer：`codex/agents/document_content_contract.md`
 | 4-R | Review | `IDENTITY-PROVIDER` Apple / WeChat 第三方身份 | `IDENTITY-PROVIDER-001..004` | `IDENTITY-SPEC-PROVIDER-001..004` | 逐条检查 provider baseline limitation 和目标态边界 | Confirmed by user | 用户已确认 4-R 审查表，并放行 Task 4-F。 |
 | 4-F | Fix | `IDENTITY-PROVIDER` Apple / WeChat 第三方身份 | `IDENTITY-PROVIDER-001..004` | `IDENTITY-SPEC-PROVIDER-001..004` | 根据 Task 4-R 发现修复 requirements/spec/必要追溯同步 | Confirmed by user | 用户已确认 4-F 修复报告，并放行 Task 5-R。 |
 | 5-R | Review | `IDENTITY-LOGIN` 登录与 session 签发 | `IDENTITY-LOGIN-001..007` | `IDENTITY-SPEC-LOGIN-001..007` | 逐条语义审查 | Confirmed by user | 用户已确认 5-R 审查表，并放行 Task 5-F。 |
-| 5-F | Fix | `IDENTITY-LOGIN` 登录与 session 签发 | `IDENTITY-LOGIN-001..007` | `IDENTITY-SPEC-LOGIN-001..007` | 根据 Task 5-R 发现修复 requirements/spec/必要追溯同步 | Completed - pending user confirmation | 本轮已执行 login 子章节修复并生成 5-F 修复复审；用户确认前不得进入 Task 6-R。 |
-| 6-R | Review | `IDENTITY-TOKEN` Access / refresh token 生命周期 | `IDENTITY-TOKEN-001..012` | `IDENTITY-SPEC-TOKEN-001..012` | 逐条语义审查 | Pending | 待前置修复 gate 确认。 |
-| 6-F | Fix | `IDENTITY-TOKEN` Access / refresh token 生命周期 | `IDENTITY-TOKEN-001..012` | `IDENTITY-SPEC-TOKEN-001..012` | 根据 Task 6-R 发现修复 requirements/spec/必要追溯同步 | Pending | 待 Task 6-R 用户确认后执行。 |
-| 7-R | Review | `IDENTITY-ME` 当前用户与 profile gate state | `IDENTITY-ME-001..008` | `IDENTITY-SPEC-ME-001..008` | 逐条语义审查 | Pending | 待前置修复 gate 确认。 |
-| 7-F | Fix | `IDENTITY-ME` 当前用户与 profile gate state | `IDENTITY-ME-001..008` | `IDENTITY-SPEC-ME-001..008` | 根据 Task 7-R 发现修复 requirements/spec/必要追溯同步 | Pending | 待 Task 7-R 用户确认后执行。 |
-| 8-R | Review | `IDENTITY-LINK` 身份绑定与解绑 | `IDENTITY-LINK-001..003` | `IDENTITY-SPEC-LINK-001..003` | 逐条语义审查 | Pending | 待前置修复 gate 确认。 |
-| 8-F | Fix | `IDENTITY-LINK` 身份绑定与解绑 | `IDENTITY-LINK-001..003` | `IDENTITY-SPEC-LINK-001..003` | 根据 Task 8-R 发现修复 requirements/spec/必要追溯同步 | Pending | 待 Task 8-R 用户确认后执行。 |
-| 9-R | Review | `IDENTITY-LOGOUT` 退出登录 | `IDENTITY-LOGOUT-001..005` | `IDENTITY-SPEC-LOGOUT-001..005` | 逐条语义审查 | Pending | 待前置修复 gate 确认。 |
-| 9-F | Fix | `IDENTITY-LOGOUT` 退出登录 | `IDENTITY-LOGOUT-001..005` | `IDENTITY-SPEC-LOGOUT-001..005` | 根据 Task 9-R 发现修复 requirements/spec/必要追溯同步 | Pending | 待 Task 9-R 用户确认后执行。 |
-| 10-R | Review | `IDENTITY-DELETE` 账号删除与生命周期状态 | `IDENTITY-DELETE-001..020` | `IDENTITY-SPEC-DELETE-001..020` | 逐条语义审查 | Pending | 待前置修复 gate 确认。 |
-| 10-F | Fix | `IDENTITY-DELETE` 账号删除与生命周期状态 | `IDENTITY-DELETE-001..020` | `IDENTITY-SPEC-DELETE-001..020` | 根据 Task 10-R 发现修复 requirements/spec/必要追溯同步 | Pending | 待 Task 10-R 用户确认后执行。 |
-| 11-R | Review | `IDENTITY-RISK` 风控、限流与防滥用 | `IDENTITY-RISK-001..003` | `IDENTITY-SPEC-RISK-001..003` | 逐条语义审查 | Pending | 待前置修复 gate 确认。 |
-| 11-F | Fix | `IDENTITY-RISK` 风控、限流与防滥用 | `IDENTITY-RISK-001..003` | `IDENTITY-SPEC-RISK-001..003` | 根据 Task 11-R 发现修复 requirements/spec/必要追溯同步 | Pending | 待 Task 11-R 用户确认后执行。 |
-| 12-R | Review | `IDENTITY-AUDIT` 审计、隐私与合规 | `IDENTITY-AUDIT-001..006` | `IDENTITY-SPEC-AUDIT-001..006` | 逐条语义审查 | Pending | 待前置修复 gate 确认。 |
-| 12-F | Fix | `IDENTITY-AUDIT` 审计、隐私与合规 | `IDENTITY-AUDIT-001..006` | `IDENTITY-SPEC-AUDIT-001..006` | 根据 Task 12-R 发现修复 requirements/spec/必要追溯同步 | Pending | 待 Task 12-R 用户确认后执行。 |
-| 13-R | Review | `IDENTITY-RELEASE` 测试替身与生产环境 release gate | 无可归档 requirement item | `IDENTITY-SPEC-RELEASE-000` | 检查无基线边界是否被误写为已实现 | Pending | 待前置修复 gate 确认。 |
-| 13-F | Fix | `IDENTITY-RELEASE` 测试替身与生产环境 release gate | 无可归档 requirement item | `IDENTITY-SPEC-RELEASE-000` | 根据 Task 13-R 发现修复 release boundary/spec/必要追溯同步 | Pending | 待 Task 13-R 用户确认后执行。 |
+| 5-F | Fix | `IDENTITY-LOGIN` 登录与 session 签发 | `IDENTITY-LOGIN-001..007` | `IDENTITY-SPEC-LOGIN-001..007` | 根据 Task 5-R 发现修复 requirements/spec/必要追溯同步 | Confirmed by user | 用户已确认 5-F 修复复审，并放行 Task 6-R。 |
+| 6-R | Review | `IDENTITY-TOKEN` Access / refresh token 生命周期 | `IDENTITY-TOKEN-001..012` | `IDENTITY-SPEC-TOKEN-001..012` | 逐条语义审查 | Confirmed by user | 用户已确认 6-R 审查表，并放行 Task 6-F。 |
+| 6-F | Fix | `IDENTITY-TOKEN` Access / refresh token 生命周期 | `IDENTITY-TOKEN-001..012` | `IDENTITY-SPEC-TOKEN-001..012` | 根据 Task 6-R 发现修复 requirements/spec/必要追溯同步 | Confirmed by user | 用户已确认 6-F 修复复审，并放行 Task 7-R。 |
+| 7-R | Review | `IDENTITY-ME` 当前用户与 profile gate state | `IDENTITY-ME-001..008` | `IDENTITY-SPEC-ME-001..008` | 逐条语义审查 | Confirmed by user | 用户已确认 ME 审查发现，并要求执行模块边界调整与 Task 7-F。 |
+| 7-F | Fix | `IDENTITY-ME` 当前用户与 profile 模块边界修复 | `IDENTITY-ME-001..006`；删除出本模块：原 `IDENTITY-ME-007..008` | `IDENTITY-SPEC-ME-001..006`；删除出本模块：原 `IDENTITY-SPEC-ME-007..008` | 根据 Task 7-R 发现修复 ME requirements/spec/必要追溯同步，并删除不属于 Identity 模块的首评提交推进和首页下一步动作 | Confirmed by user | 用户已确认 7-F 修复复审，并放行 Task 8-R。 |
+| 8-R | Review | `IDENTITY-LINK` 身份绑定与解绑 | `IDENTITY-LINK-001..003` | `IDENTITY-SPEC-LINK-001..003` | 逐条语义审查 | Confirmed by user | 用户已确认 LINK 审查发现，并放行 Task 8-F。 |
+| 8-F | Fix | `IDENTITY-LINK` 初始登录身份绑定与身份键解析 | `IDENTITY-LINK-001..003` | `IDENTITY-SPEC-LINK-001..003` | 根据 Task 8-R 发现修复 requirements/spec/必要追溯同步 | Confirmed by user | 用户已确认 8-F 修复复审，并放行 Task 9-R。 |
+| 9-R | Review | `IDENTITY-LOGOUT` 退出登录 | `IDENTITY-LOGOUT-001..005` | `IDENTITY-SPEC-LOGOUT-001..005` | 逐条语义审查 | Confirmed by user | 用户已确认 9-R 审查表，并放行 Task 9-F。 |
+| 9-F | Fix | `IDENTITY-LOGOUT` 退出登录 | `IDENTITY-LOGOUT-001..005` | `IDENTITY-SPEC-LOGOUT-001..005` | 根据 Task 9-R 发现修复 requirements/spec/必要追溯同步 | Confirmed by user | 用户已确认 9-F 修复复审，并放行 Task 10-R。 |
+| 10-R | Review | `IDENTITY-DELETE` 账号删除与生命周期状态 | `IDENTITY-DELETE-001..020` | `IDENTITY-SPEC-DELETE-001..020` | 逐条语义审查 | Passed by main+independent agents | 独立 agent 已复核通过，按用户更新后的门禁规则自动进入 Task 10-F。 |
+| 10-F | Fix | `IDENTITY-DELETE` 账号删除与生命周期状态 | `IDENTITY-DELETE-001..020` | `IDENTITY-SPEC-DELETE-001..020` | 根据 Task 10-R 发现修复 requirements/spec/必要追溯同步 | Passed by main+independent agents | 独立 agent 已复核通过，按用户更新后的门禁规则自动进入 Task 11-R。 |
+| 11-R | Review | `IDENTITY-RISK` 风控、限流与防滥用 | `IDENTITY-RISK-001..003` | `IDENTITY-SPEC-RISK-001..003` | 逐条语义审查 | Passed by main+independent agents | 独立 agent 已复核通过，按用户更新后的门禁规则自动进入 Task 11-F。 |
+| 11-F | Fix | `IDENTITY-RISK` 风控、限流与防滥用 | `IDENTITY-RISK-001..003` | `IDENTITY-SPEC-RISK-001..003` | 根据 Task 11-R 发现修复 requirements/spec/必要追溯同步 | Passed by main+independent agents | 独立 agent 已复核通过，按用户更新后的门禁规则自动进入 Task 12-R。 |
+| 12-R | Review | `IDENTITY-AUDIT` 审计、隐私与合规 | `IDENTITY-AUDIT-001..006` | `IDENTITY-SPEC-AUDIT-001..006` | 逐条语义审查 | Passed by main+independent agents | 独立 agent 已复核通过，按用户更新后的门禁规则自动进入 Task 12-F。 |
+| 12-F | Fix | `IDENTITY-AUDIT` 审计、隐私与合规 | `IDENTITY-AUDIT-001..006` | `IDENTITY-SPEC-AUDIT-001..006` | 根据 Task 12-R 发现修复 requirements/spec/必要追溯同步 | Passed by main+independent agents | 独立 agent 已复核通过，按用户更新后的门禁规则自动进入 Task 13-R。 |
+| 13-R | Review | `IDENTITY-RELEASE` 测试替身与生产环境 release gate | 无可归档 requirement item | `IDENTITY-SPEC-RELEASE-000` | 检查无基线边界是否被误写为已实现 | Passed by main+independent agents | 独立 agent 已复核通过，按用户更新后的门禁规则自动进入 Task 13-F。 |
+| 13-F | Fix | `IDENTITY-RELEASE` 测试替身与生产环境 release gate | 无可归档 requirement item | `IDENTITY-SPEC-RELEASE-000` | 根据 Task 13-R 发现修复 release boundary/spec/必要追溯同步 | Passed by main+independent agents | 独立 agent 已复核通过，本轮任务完成。 |
 
-门禁执行状态：Task 1-R、Task 2-R、Task 2-F、Task 3-R、Task 3-F、Task 4-R、Task 4-F 与 Task 5-R 已由用户放行；本轮执行 Task 5-F 修复。`spec.md` 的公共状态、输入输出与错误信号定义随对应子章节交叉审查；本轮只修复 login 代码基线 `IDENTITY-LOGIN-001..007` 和 `IDENTITY-SPEC-LOGIN-001..007` 以及必要追溯同步，不提前审查 token、me、link、logout、delete、risk、audit 或 release 后续章节。用户确认 Task 5-F 修复复审前不得进入 Task 6-R。
+门禁执行状态：Task 1-R、Task 2-R、Task 2-F、Task 3-R、Task 3-F、Task 4-R、Task 4-F、Task 5-R、Task 5-F、Task 6-R、Task 6-F、Task 7-R、Task 7-F、Task 8-R 与 Task 8-F、Task 9-R 与 Task 9-F 已由用户放行；Task 10-R、Task 10-F、Task 11-R、Task 11-F、Task 12-R、Task 12-F、Task 13-R 与 Task 13-F 已由主 agent 与独立 agent 一致放行；本轮 Product Base identity 内容契约审查/修复任务完成。`spec.md` 的公共状态、输入输出与错误信号定义已随对应子章节交叉审查；本轮未生成 AC/TC，未修改代码，未新增 release requirement traceability 行。
 
 发现：
 - 未发现阻止两份文件继续作为 Draft 模块 artifact 存在的 blocker。两份文档都能区分 `Code baseline` 和 `Target pending` OTP 行为，并多次避免把目标态 OTP 写成已实现。
@@ -544,7 +568,7 @@ Task 4-F 门禁状态：
 | --- | --- | --- |
 | Task 4-F | Confirmed by user | 用户已确认本修复复审表，并放行 Task 5-R。 |
 | Task 5-R | Confirmed by user | 用户已确认 login 子章节审查表，并放行 Task 5-F。 |
-| Task 5-F | Completed - pending user confirmation | 已执行 login 子章节修复；用户确认本修复复审前，不得执行 Task 6-R。 |
+| Task 5-F | Confirmed by user | 用户已确认 login 子章节修复复审，并放行 Task 6-R。 |
 
 ### IDENTITY-LOGIN 登录与 session 签发 5-R 逐条语义审查
 
@@ -594,7 +618,7 @@ Task 5-R 门禁状态：
 | Gate | 状态 | 下一步限制 |
 | --- | --- | --- |
 | Task 5-R | Confirmed by user | 用户已确认本审查表，并放行 Task 5-F。 |
-| Task 5-F | Completed - pending user confirmation | 已执行 login 子章节修复；用户确认本修复复审前，不得执行 Task 6-R。 |
+| Task 5-F | Confirmed by user | 用户已确认 login 子章节修复复审，并放行 Task 6-R。 |
 
 ### IDENTITY-LOGIN 登录与 session 签发 5-F 修复复审
 
@@ -656,8 +680,850 @@ Task 5-F 执行情况：
 Task 5-F 门禁状态：
 | Gate | 状态 | 下一步限制 |
 | --- | --- | --- |
-| Task 5-F | Completed - pending user confirmation | 用户确认本修复复审表前，不得执行 Task 6-R。 |
-| Task 6-R | Pending | 只允许在用户确认 Task 5-F 后开始。 |
+| Task 5-F | Confirmed by user | 用户已确认本修复复审表，并放行 Task 6-R。 |
+| Task 6-R | Confirmed by user | 用户已确认 token 子章节审查表，并放行 Task 6-F。 |
+| Task 6-F | Confirmed by user | 用户已确认 token 子章节修复复审，并放行 Task 7-R。 |
+
+### IDENTITY-TOKEN Access / refresh token 生命周期 6-R 逐条语义审查
+
+审查范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-TOKEN-001..012`
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 `IDENTITY-SPEC-TOKEN-001..012`
+- 交叉引用 Ref ID：`TOKEN-STATE-OPAQUE`、`TOKEN-STATE-SESSION-ACTIVE`、`TOKEN-IN-BEARER`、`TOKEN-IN-REFRESH`、`TOKEN-OUT-ROTATED`、`TOKEN-ERR-UNAUTHENTICATED`、`TOKEN-SECURE-RANDOM`
+- 只读上下文：`docs/product/base/identity-account-lifecycle/traceability.md` 中 `IDENTITY-TOKEN-001..012`，以及 current-code-baseline token 相关代码证据
+
+本轮结果：conditional。token 子章节可继续作为 current-code-baseline Draft 输入；没有阻止 Draft 留存的 blocker。但在生成 AC/TC、Product Base merge 或后续实现计划前，应补清 refresh user-active gate、删除重试例外、token 输出与持久化状态的分离、stateless session 的产品语义边界，并同步 traceability 中已存在的 spec ID。
+
+Requirement 审查与 6-F 修复方案：
+| Requirement item | 原始 Requirement 描述 | 修复后 Requirement 描述 | 颗粒度 | 清晰度 | 覆盖度 | 结论 | 6-F Requirement 修复方案 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `IDENTITY-TOKEN-001` | 系统必须签发服务端 opaque access token 和 refresh token。 | 登录或刷新成功时，系统必须向客户端返回服务端 opaque access token 和 refresh token；token 不承载客户端可解析身份 claims，JWT 不归档为已实现。 | Pass：单一 token pair 签发能力 | Conditional：触发条件未说明，容易和 refresh 轮换输出混淆 | Conditional：覆盖 opaque token pair；未明确非 JWT 边界在 item 内 | Suggestion | 在 6-F 中按“修复后 Requirement 描述”改写。 |
+| `IDENTITY-TOKEN-002` | 系统必须使用 `SecureRandom` 生成 token 原始字节。 | token 原始值必须由后端使用不可预测的密码学安全随机源生成；Java `SecureRandom` 是当前代码基线实现证据，不作为产品需求唯一表述。 | Conditional：安全目的单一，但写入具体 Java API | Conditional：`SecureRandom` 属于实现层术语，Requirement 应表达安全目标 | Pass：覆盖随机性要求 | Important | Requirement 改写为密码学安全随机源；Spec 可保留 current baseline 的 `SecureRandom` 引用。 |
+| `IDENTITY-TOKEN-003` | 系统必须只持久化 access token 和 refresh token 的 hash。 | 系统不得持久化 access token 或 refresh token 明文；持久化会话记录只能保存可用于匹配的 token 摘要值。 | Pass：单一持久化安全约束 | Conditional：`hash` 可接受为安全语义，但应避免写成数据库实现字段 | Pass：覆盖明文不得持久化 | Suggestion | 改为“不得持久化明文 + 只保存摘要值”，字段/算法细节留给 spec/code evidence。 |
+| `IDENTITY-TOKEN-004` | access token 默认有效期必须为 30 分钟。 | 当前代码基线下，access token 的有效期必须从签发或刷新轮换时起计算为 30 分钟。 | Pass：单一 TTL 规则 | Conditional：`默认` 未说明从何时起算，也未说明 refresh 轮换会重置 access expiry | Conditional：覆盖 TTL 数值，缺少起算点 | Suggestion | 补充“从签发或刷新轮换时起”。 |
+| `IDENTITY-TOKEN-005` | refresh token 默认有效期必须为 30 天。 | 当前代码基线下，refresh token 的有效期必须从签发或刷新轮换时起计算为 30 天。 | Pass：单一 TTL 规则 | Conditional：`默认` 未说明从何时起算，也未说明 refresh 轮换会重置 refresh expiry | Conditional：覆盖 TTL 数值，缺少起算点 | Suggestion | 补充“从签发或刷新轮换时起”。 |
+| `IDENTITY-TOKEN-006` | 受保护请求必须从 `Authorization: Bearer` header 提取 access token。 | 受保护用户请求必须携带 access token 才能认证；当前代码基线通过 Bearer token 传递，具体 header 字段形态由 API contract 承接。 | Conditional：目标是认证输入，但直接写 API header | Conditional：Requirement 越界到 API 字段形态 | Conditional：覆盖 bearer 输入；未限定是用户受保护请求，admin ops token 例外未界定 | Important | Requirement 改为产品级“受保护用户请求必须携带 access token”；header 细节留给 spec/API contract。 |
+| `IDENTITY-TOKEN-007` | access token 必须匹配 active 且未过期的 session 才能认证通过。 | 常规 access token 认证必须匹配 active 且 access 未过期的认证 session；不匹配、过期或已撤销时必须拒绝认证。 | Pass：单一 access session gate | Conditional：未显式包含 revoked / no-match 失败结果 | Conditional：覆盖 active+expiry；失败副作用不完整 | Suggestion | 补充失败分支和 revoked/no-match 边界。 |
+| `IDENTITY-TOKEN-008` | access token 认证必须要求关联用户为 `active` 状态。 | 常规 access token 认证必须要求关联用户为 `active` 状态；账号删除重试的特殊认证路径由 `IDENTITY-DELETE` 子章节承接，不作为常规用户认证通过。 | Pass：单一用户状态 gate | Conditional：当前代码存在 deletion retry 特殊路径，原文未界定例外 | Conditional：覆盖 active 用户要求；缺少删除重试边界 | Important | 在 Requirement 内明确“常规 access token 认证”与 deletion retry 例外归属。 |
+| `IDENTITY-TOKEN-009` | refresh token 必须匹配 active 且 refresh 未过期的 session 才能刷新。 | refresh token 必须匹配 active 且 refresh 未过期的 session，并且关联用户为 `active` 状态，才能刷新 token。 | Conditional：refresh session gate 单一，但遗漏用户状态 gate | Conditional：未说明 refresh 与 access 的用户状态要求一致 | Conditional：覆盖 session active + refresh expiry；遗漏关联用户 active | Important | 补充关联用户 active 前置条件。 |
+| `IDENTITY-TOKEN-010` | refresh 成功必须轮换同一 session 的 access token hash 和 refresh token hash。 | refresh 成功必须在同一认证 session 上发放新的 access token 和 refresh token，并使旧 access / refresh token 不再可用于后续认证或刷新；持久化摘要替换细节由 spec 承接。 | Conditional：同时表达客户端发放和持久化 hash 替换 | Conditional：Requirement 写入 hash 细节，且未明确旧 token 失效结果 | Conditional：覆盖轮换，但缺少旧 token 不可用这一可观察安全结果 | Important | Requirement 改写为同一 session 轮换和旧 token 失效；hash 替换放到 Spec。 |
+| `IDENTITY-TOKEN-011` | refresh token 为空、无效、过期或已被轮换后，系统必须返回未认证错误。 | refresh token 缺失、空白、无效、过期或已被轮换时，系统必须返回未认证错误，且不得刷新、轮换或创建新的 session/token。 | Pass：单一 refresh failure rule | Conditional：未说明失败后不得产生状态变化 | Conditional：覆盖错误类型；缺少失败副作用 | Suggestion | 补充 no state change / no token output。 |
+| `IDENTITY-TOKEN-012` | 后端安全配置必须使用 stateless session 策略。 | 受保护 API 认证不得依赖服务端 HTTP session 或 cookie session；用户认证状态必须由 token 与认证 session 记录共同证明。 | Conditional：安全目标单一，但写成后端配置任务 | Conditional：`stateless session 策略` 属于实现配置语言 | Conditional：覆盖无 HTTP session 依赖；未说明仍依赖服务端 auth session 记录 | Important | Requirement 改为产品/安全行为；Spec 可承接 Spring security stateless baseline。 |
+
+Spec 审查与 6-F 修复方案：
+| Spec item | 原始 Spec 描述 | 修复后 Spec 描述 | 颗粒度 | 清晰度 | 覆盖度 | 结论 | 6-F Spec 修复方案 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `IDENTITY-SPEC-TOKEN-001` | 系统必须签发 `TOKEN-STATE-OPAQUE` access token 和 refresh token。 | 登录或刷新成功时，系统必须签发 `TOKEN-STATE-OPAQUE` access token 和 refresh token，并把该 token pair 返回给客户端；JWT claims、JWT 签名校验和 JWKS 不属于当前代码基线。 | Pass：单一 token pair 输出 | Conditional：缺少触发条件和非 JWT 边界 | Conditional：覆盖 opaque pair；未说明输出给客户端 | Suggestion | 在 6-F 中按“修复后 Spec 描述”改写。 |
+| `IDENTITY-SPEC-TOKEN-002` | 系统必须使用 `TOKEN-SECURE-RANDOM` 生成 token 原始字节。 | 系统必须分别使用 `TOKEN-SECURE-RANDOM` 为 access token 和 refresh token 生成不可预测原始值；current Java baseline 使用 `SecureRandom`。 | Pass：单一随机性契约 | Conditional：未说明 access/refresh token 均独立生成 | Pass：覆盖安全随机源 | Suggestion | 补清 access/refresh 分别生成，保留 current baseline 实现引用。 |
+| `IDENTITY-SPEC-TOKEN-003` | 系统必须只持久化 access token 和 refresh token 的 hash，不得持久化 token 明文。 | 认证 session 持久化状态必须只保存 access token 和 refresh token 的摘要值；token 明文只能在签发或刷新成功响应中返回给客户端，不得写入持久化 session。 | Pass：单一持久化安全契约 | Conditional：未区分客户端输出明文和持久化明文 | Pass：覆盖明文不得持久化 | Suggestion | 补充 raw token 只在成功响应输出。 |
+| `IDENTITY-SPEC-TOKEN-004` | access token 默认有效期必须为 30 分钟。 | access token 的 `expiresAt` 必须从登录签发或 refresh 轮换时起计算为 30 分钟，并随成功响应返回。 | Pass：单一 access TTL | Conditional：起算点和响应输出关系未说明 | Conditional：覆盖 TTL；未绑定登录/刷新两个签发点 | Suggestion | 补充起算点和响应输出。 |
+| `IDENTITY-SPEC-TOKEN-005` | refresh token 默认有效期必须为 30 天。 | refresh token 的 refresh expiry 必须从登录签发或 refresh 轮换时起计算为 30 天，并用于后续 refresh eligibility 判断。 | Pass：单一 refresh TTL | Conditional：起算点和使用场景未说明 | Conditional：覆盖 TTL；未绑定刷新 eligibility | Suggestion | 补充起算点和用途。 |
+| `IDENTITY-SPEC-TOKEN-006` | 受保护请求必须从 `TOKEN-IN-BEARER` 提取 access token。 | 常规受保护用户请求必须从 `TOKEN-IN-BEARER` 提取 access token；缺失、格式不匹配或认证失败时不得建立用户认证上下文，并按受保护端点规则返回 `TOKEN-ERR-UNAUTHENTICATED`。 | Conditional：输入提取和失败输出可保留在一个 spec item | Conditional：未说明缺失/格式不匹配的失败行为，且 admin ops token 例外未界定 | Conditional：覆盖 bearer 提取；缺少异常路径 | Important | 限定常规用户请求，补充缺失/格式错误失败行为；admin ops 例外不纳入本 item。 |
+| `IDENTITY-SPEC-TOKEN-007` | access token 只有匹配 `TOKEN-STATE-SESSION-ACTIVE` 时才能认证通过，否则返回 `TOKEN-ERR-UNAUTHENTICATED`。 | access token 只有匹配 active 且 access 未过期的认证 session 时才能通过常规用户认证；未匹配、过期、已撤销或已轮换时必须返回 `TOKEN-ERR-UNAUTHENTICATED`。 | Pass：单一 access session gate | Conditional：`TOKEN-STATE-SESSION-ACTIVE` 未区分 access expiry 与 refresh expiry | Conditional：覆盖 active+unexpired；rotated/no-match 边界隐含 | Important | 拆清 access session active 语义，补充 revoked/rotated/no-match 失败。 |
+| `IDENTITY-SPEC-TOKEN-008` | access token 认证必须要求关联用户为 active 状态，否则返回 `TOKEN-ERR-UNAUTHENTICATED`。 | 常规 access token 认证必须要求关联用户为 active 状态，否则返回 `TOKEN-ERR-UNAUTHENTICATED`；账号删除重试 fallback 使用同一 access token 输入但由 `IDENTITY-SPEC-DELETE-*` 承接。 | Pass：单一用户状态 gate | Conditional：未说明 current baseline 中删除重试 fallback 的归属 | Conditional：覆盖 active 用户；缺少特殊路径边界 | Important | 补充 deletion retry fallback 边界，避免与 delete 子章节冲突。 |
+| `IDENTITY-SPEC-TOKEN-009` | `TOKEN-IN-REFRESH` 只有匹配 active 且 refresh 未过期 session 时才能刷新。 | 在 `LOGIN-FLOW-REFRESH-SCHEMA` 通过后，`TOKEN-IN-REFRESH` 只有匹配 active 且 refresh 未过期 session、且关联用户为 active 状态时才能刷新；否则返回 `TOKEN-ERR-UNAUTHENTICATED`。 | Conditional：refresh eligibility 单一，但需包含 schema gate 引用和 user gate | Conditional：未引用 login schema version gate，且遗漏关联用户 active | Conditional：覆盖 session refresh eligibility；遗漏用户状态和错误输出 | Important | 补充 schema gate 引用、关联用户 active 和失败错误。 |
+| `IDENTITY-SPEC-TOKEN-010` | refresh 成功必须产生 `TOKEN-OUT-ROTATED`，并替换同一 session 的旧 token hash。 | refresh 成功必须在同一 session 上生成新的 access token 和 refresh token，替换持久化 access / refresh token 摘要，返回新的 token pair，并使旧 access / refresh token 后续匹配失败。 | Conditional：混合输出、持久化状态和旧 token 失效，仍可作为一个 refresh success spec | Conditional：`TOKEN-OUT-ROTATED` 当前定义为 hash 输出，和客户端输出混淆 | Conditional：覆盖 hash 替换；未明确旧 token 失效和新 token pair 返回 | Important | 拆分或重定义 `TOKEN-OUT-ROTATED`，明确 client output 与 persistence side effect。 |
+| `IDENTITY-SPEC-TOKEN-011` | refresh token 为空、无效、过期或已被轮换后，系统必须返回 `TOKEN-ERR-UNAUTHENTICATED`。 | refresh token 缺失、空白、无效、过期、已撤销 session 关联或已被轮换后，系统必须返回 `TOKEN-ERR-UNAUTHENTICATED`，且不得创建 session、替换 token 摘要或返回新 token pair。 | Pass：单一 refresh failure contract | Conditional：未覆盖 revoked session 关联和 no-state-change | Conditional：覆盖常见失败；缺少失败副作用 | Suggestion | 补充 revoked/no state change。 |
+| `IDENTITY-SPEC-TOKEN-012` | 后端安全配置必须使用 stateless session 策略，不依赖服务端 HTTP session。 | 当前代码基线的受保护 API 认证必须不创建或依赖服务端 HTTP session；认证成功来自 bearer token 匹配持久化认证 session，Spring Security stateless 配置是实现证据。 | Conditional：规范了安全行为，但仍含后端配置语言 | Conditional：未说明 stateless 不等于无服务端认证 session 记录 | Conditional：覆盖无 HTTP session；需要区分 auth session 记录 | Important | Spec 保留 current baseline 配置证据，同时补清“stateless HTTP session”与 auth session 记录的差异。 |
+
+跨文档发现与 6-F 修复方案：
+| 对象 | 问题 | 影响 | 级别 | 6-F 修复方案 |
+| --- | --- | --- | --- | --- |
+| `traceability.md` token 行 | `IDENTITY-TOKEN-001..012` 的 `Spec Flow` 仍为 `TBD - 后续补齐`，但 `IDENTITY-SPEC-TOKEN-001..012` 已存在。 | 后续 AC/TC 生成可能继续引用 TBD，导致 token 链路断裂。 | Important | 在 6-F 中同步 `Spec Flow` 到 `IDENTITY-SPEC-TOKEN-001..012`；`AC` 和 `TC` 继续保留 `TBD - 后续补齐`，不伪造测试证据。 |
+| `TOKEN-OUT-ROTATED` Ref ID | 当前定义为“新 access token hash 和 refresh token hash”，但类型是输出；它把客户端输出和持久化摘要状态混在一起。 | AC/TC 可能误以为 hash 会返回给客户端，或无法判断 refresh 成功响应。 | Important | 在 6-F 中重定义为客户端可观察的新 token pair，或拆成 `TOKEN-OUT-ROTATED-TOKEN-PAIR` 与 `TOKEN-STATE-HASH-ROTATED`。 |
+| `TOKEN-STATE-SESSION-ACTIVE` Ref ID | 同一个状态被 access 认证和 refresh eligibility 共用，但 access expiry 与 refresh expiry 不是同一条件。 | 后续验收无法区分 access 过期但 refresh 仍可用的状态。 | Important | 在 6-F 中拆清 access-session-active 与 refresh-session-active，或在 spec item 内显式说明不同 expiry。 |
+| deletion retry fallback | current code baseline 允许账号删除重试路径在 deleted/deletion_requested 状态下通过特殊认证 fallback；token 子章节未界定该例外。 | `IDENTITY-TOKEN-008` 可能和删除重试需求冲突。 | Important | 在 6-F 中把 token item 限定为常规用户认证；删除重试由 `IDENTITY-DELETE` 子章节承接。 |
+
+Task 6-R 执行情况：
+- 已执行：完成 `IDENTITY-TOKEN-001..012` 和 `IDENTITY-SPEC-TOKEN-001..012` 的逐条内容契约语义审查。
+- 已执行：按 Requirement / Spec 分离格式形成 6-F 修复输入表，并在 item 后附原始描述与修复后描述。
+- 未执行：未修改 `requirements.md`、`spec.md` 或 `traceability.md` 正文；等待用户确认后再执行 Task 6-F。
+
+Task 6-R 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 6-R | Confirmed by user | 用户已确认本审查表，并放行 Task 6-F。 |
+| Task 6-F | Confirmed by user | 用户已确认 token 子章节修复复审，并放行 Task 7-R。 |
+
+### IDENTITY-TOKEN Access / refresh token 生命周期 6-F 修复复审
+
+修复范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-TOKEN-001..012`
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 token Ref ID、`TOKEN-FLOW-*` flow segment、`IDENTITY-SPEC-TOKEN-001..012`
+- Traceability：`docs/product/base/identity-account-lifecycle/traceability.md` 的 `IDENTITY-TOKEN-001..012` Spec Flow
+
+本轮结果：pass for Task 6-F scope。已按用户确认的 Requirement / Spec 分离方案修复 token 子章节；AC、TC、Product Base merge、release readiness 和代码实现不在本轮范围内。
+
+Requirement 修复复审表：
+| Requirement item | 原始 Requirement 描述 | 修复后 Requirement 描述 | 复审结论 |
+| --- | --- | --- | --- |
+| `IDENTITY-TOKEN-001` | 系统必须签发服务端 opaque access token 和 refresh token。 | 登录或刷新成功时，系统必须向客户端返回服务端 opaque access token 和 refresh token；token 不承载客户端可解析身份 claims，JWT 不归档为已实现。 | Pass：触发条件、客户端输出和非 JWT 边界已补清。 |
+| `IDENTITY-TOKEN-002` | 系统必须使用 `SecureRandom` 生成 token 原始字节。 | token 原始值必须由后端使用不可预测的密码学安全随机源生成；Java `SecureRandom` 是当前代码基线实现证据，不作为产品需求唯一表述。 | Pass：Requirement 已从具体 Java API 收回到安全目标。 |
+| `IDENTITY-TOKEN-003` | 系统必须只持久化 access token 和 refresh token 的 hash。 | 系统不得持久化 access token 或 refresh token 明文；持久化会话记录只能保存可用于匹配的 token 摘要值。 | Pass：明文禁止与摘要持久化边界已补清。 |
+| `IDENTITY-TOKEN-004` | access token 默认有效期必须为 30 分钟。 | 当前代码基线下，access token 的有效期必须从签发或刷新轮换时起计算为 30 分钟。 | Pass：TTL 起算点已补清。 |
+| `IDENTITY-TOKEN-005` | refresh token 默认有效期必须为 30 天。 | 当前代码基线下，refresh token 的有效期必须从签发或刷新轮换时起计算为 30 天。 | Pass：refresh TTL 起算点已补清。 |
+| `IDENTITY-TOKEN-006` | 受保护请求必须从 `Authorization: Bearer` header 提取 access token。 | 受保护用户请求必须携带 access token 才能认证；当前代码基线通过 Bearer token 传递，具体 header 字段形态由 API contract 承接。 | Pass：Requirement 已转为产品级认证输入，API header 细节移交 API contract。 |
+| `IDENTITY-TOKEN-007` | access token 必须匹配 active 且未过期的 session 才能认证通过。 | 常规 access token 认证必须匹配 active 且 access 未过期的认证 session；不匹配、过期或已撤销时必须拒绝认证。 | Pass：失败分支和 revoked 边界已补清。 |
+| `IDENTITY-TOKEN-008` | access token 认证必须要求关联用户为 `active` 状态。 | 常规 access token 认证必须要求关联用户为 `active` 状态；账号删除重试的特殊认证路径由 `IDENTITY-DELETE` 子章节承接，不作为常规用户认证通过。 | Pass：删除重试例外已从常规 token 认证边界中分离。 |
+| `IDENTITY-TOKEN-009` | refresh token 必须匹配 active 且 refresh 未过期的 session 才能刷新。 | refresh token 必须匹配 active 且 refresh 未过期的 session，并且关联用户为 `active` 状态，才能刷新 token。 | Pass：refresh user-active gate 已补清。 |
+| `IDENTITY-TOKEN-010` | refresh 成功必须轮换同一 session 的 access token hash 和 refresh token hash。 | refresh 成功必须在同一认证 session 上发放新的 access token 和 refresh token，并使旧 access / refresh token 不再可用于后续认证或刷新；持久化摘要替换细节由 spec 承接。 | Pass：Requirement 已表达可观察轮换结果，hash 替换移交 spec。 |
+| `IDENTITY-TOKEN-011` | refresh token 为空、无效、过期或已被轮换后，系统必须返回未认证错误。 | refresh token 缺失、空白、无效、过期或已被轮换时，系统必须返回未认证错误，且不得刷新、轮换或创建新的 session/token。 | Pass：失败副作用已补清。 |
+| `IDENTITY-TOKEN-012` | 后端安全配置必须使用 stateless session 策略。 | 受保护 API 认证不得依赖服务端 HTTP session 或 cookie session；用户认证状态必须由 token 与认证 session 记录共同证明。 | Pass：Requirement 已从后端配置语言转为认证行为边界。 |
+
+Spec 修复复审表：
+| Spec item | 原始 Spec 描述 | 修复后 Spec 描述 | 复审结论 |
+| --- | --- | --- | --- |
+| `IDENTITY-SPEC-TOKEN-001` | 系统必须签发 `TOKEN-STATE-OPAQUE` access token 和 refresh token。 | 登录或刷新成功时，系统必须签发 `TOKEN-STATE-OPAQUE` access token 和 refresh token，并把该 token pair 返回给客户端；JWT claims、JWT 签名校验和 JWKS 不属于当前代码基线。 | Pass：触发、输出和非 JWT 边界已补清。 |
+| `IDENTITY-SPEC-TOKEN-002` | 系统必须使用 `TOKEN-SECURE-RANDOM` 生成 token 原始字节。 | 系统必须分别使用 `TOKEN-SECURE-RANDOM` 为 access token 和 refresh token 生成不可预测原始值；current Java baseline 使用 `SecureRandom`。 | Pass：access / refresh 独立生成要求已补清。 |
+| `IDENTITY-SPEC-TOKEN-003` | 系统必须只持久化 access token 和 refresh token 的 hash，不得持久化 token 明文。 | 认证 session 持久化状态必须只保存 access token 和 refresh token 的摘要值；token 明文只能在签发或刷新成功响应中返回给客户端，不得写入持久化 session。 | Pass：客户端明文输出与持久化摘要状态已分离。 |
+| `IDENTITY-SPEC-TOKEN-004` | access token 默认有效期必须为 30 分钟。 | access token 的 `expiresAt` 必须从登录签发或 refresh 轮换时起计算为 30 分钟，并随成功响应返回。 | Pass：起算点和响应输出已补清。 |
+| `IDENTITY-SPEC-TOKEN-005` | refresh token 默认有效期必须为 30 天。 | refresh token 的 refresh expiry 必须从登录签发或 refresh 轮换时起计算为 30 天，并用于后续 refresh eligibility 判断。 | Pass：起算点和 refresh eligibility 用途已补清。 |
+| `IDENTITY-SPEC-TOKEN-006` | 受保护请求必须从 `TOKEN-IN-BEARER` 提取 access token。 | 常规受保护用户请求必须从 `TOKEN-IN-BEARER` 提取 access token；缺失、格式不匹配或认证失败时不得建立用户认证上下文，并按受保护端点规则返回 `TOKEN-ERR-UNAUTHENTICATED`。 | Pass：常规用户请求范围和失败副作用已补清。 |
+| `IDENTITY-SPEC-TOKEN-007` | access token 只有匹配 `TOKEN-STATE-SESSION-ACTIVE` 时才能认证通过，否则返回 `TOKEN-ERR-UNAUTHENTICATED`。 | access token 只有匹配 `TOKEN-STATE-ACCESS-SESSION-ACTIVE` 时才能通过常规用户认证；未匹配、过期、已撤销或已轮换时必须返回 `TOKEN-ERR-UNAUTHENTICATED`。 | Pass：access session active 状态已从 refresh session active 中拆清。 |
+| `IDENTITY-SPEC-TOKEN-008` | access token 认证必须要求关联用户为 active 状态，否则返回 `TOKEN-ERR-UNAUTHENTICATED`。 | 常规 access token 认证必须要求关联用户为 active 状态，否则返回 `TOKEN-ERR-UNAUTHENTICATED`；账号删除重试 fallback 使用同一 access token 输入但由 `IDENTITY-SPEC-DELETE-*` 承接。 | Pass：deletion retry fallback 已路由到 delete spec。 |
+| `IDENTITY-SPEC-TOKEN-009` | `TOKEN-IN-REFRESH` 只有匹配 active 且 refresh 未过期 session 时才能刷新。 | 在 `LOGIN-FLOW-REFRESH-SCHEMA` 通过后，`TOKEN-IN-REFRESH` 只有匹配 `TOKEN-STATE-REFRESH-SESSION-ACTIVE` 且关联用户为 active 状态时才能刷新；否则返回 `TOKEN-ERR-UNAUTHENTICATED`。 | Pass：schema gate、refresh session active 和 user-active gate 已补清。 |
+| `IDENTITY-SPEC-TOKEN-010` | refresh 成功必须产生 `TOKEN-OUT-ROTATED`，并替换同一 session 的旧 token hash。 | refresh 成功必须在同一 session 上生成新的 access token 和 refresh token，产生 `TOKEN-OUT-ROTATED-TOKEN-PAIR`，替换持久化 access / refresh token 摘要进入 `TOKEN-STATE-HASH-ROTATED`，并使旧 access / refresh token 后续匹配失败。 | Pass：客户端输出、持久化状态和旧 token 失效已拆清。 |
+| `IDENTITY-SPEC-TOKEN-011` | refresh token 为空、无效、过期或已被轮换后，系统必须返回 `TOKEN-ERR-UNAUTHENTICATED`。 | refresh token 缺失、空白、无效、过期、已撤销 session 关联或已被轮换后，系统必须返回 `TOKEN-ERR-UNAUTHENTICATED`，且不得创建 session、替换 token 摘要或返回新 token pair。 | Pass：revoked session 和 no-state-change 边界已补清。 |
+| `IDENTITY-SPEC-TOKEN-012` | 后端安全配置必须使用 stateless session 策略，不依赖服务端 HTTP session。 | 当前代码基线的受保护 API 认证必须不创建或依赖服务端 HTTP session；认证成功来自 bearer token 匹配持久化认证 session，Spring Security stateless 配置仅作为实现证据。 | Pass：stateless HTTP session 与持久化 auth session 已分离。 |
+
+Spec Ref / Flow 修复复审表：
+| 对象 | 修复内容 | 复审结论 |
+| --- | --- | --- |
+| `TOKEN-STATE-OPAQUE` | 明确 opaque token 非 JWT，客户端不得解析身份 claims。 | Pass：非目标边界清晰。 |
+| `TOKEN-STATE-ACCESS-SESSION-ACTIVE` / `TOKEN-STATE-REFRESH-SESSION-ACTIVE` | 将 access expiry 与 refresh expiry 的 session eligibility 拆成两个状态。 | Pass：后续 AC/TC 可区分 access 过期但 refresh 仍可用的场景。 |
+| `TOKEN-OUT-ROTATED-TOKEN-PAIR` / `TOKEN-STATE-HASH-ROTATED` | 将 refresh 成功的客户端输出和持久化摘要替换拆开。 | Pass：避免把 hash 误认为客户端输出。 |
+| `TOKEN-ERR-UNAUTHENTICATED` | 扩展为 token 缺失、格式不匹配、无效、过期、已撤销、已轮换或关联用户不可认证。 | Pass：失败路径更完整。 |
+| `TOKEN-FLOW-ISSUE` | 新增登录或刷新成功后的 token 签发 flow。 | Pass：不新增实现任务，只承接已确认 spec。 |
+| `TOKEN-FLOW-AUTHENTICATE-BEARER` | 新增常规受保护用户请求的 access token 认证 flow。 | Pass：明确认证上下文创建与失败边界。 |
+| `TOKEN-FLOW-REFRESH` | 新增 refresh schema gate 之后的 refresh eligibility、轮换输出和失败边界。 | Pass：refresh user-active gate 和 no-state-change 结果已进入 flow。 |
+
+Traceability 修复复审表：
+| Requirement | Spec Flow | AC | Test Case ID | 复审结论 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-TOKEN-001` | `IDENTITY-SPEC-TOKEN-001` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+| `IDENTITY-TOKEN-002` | `IDENTITY-SPEC-TOKEN-002` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+| `IDENTITY-TOKEN-003` | `IDENTITY-SPEC-TOKEN-003` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+| `IDENTITY-TOKEN-004` | `IDENTITY-SPEC-TOKEN-004` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+| `IDENTITY-TOKEN-005` | `IDENTITY-SPEC-TOKEN-005` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+| `IDENTITY-TOKEN-006` | `IDENTITY-SPEC-TOKEN-006` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+| `IDENTITY-TOKEN-007` | `IDENTITY-SPEC-TOKEN-007` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+| `IDENTITY-TOKEN-008` | `IDENTITY-SPEC-TOKEN-008` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+| `IDENTITY-TOKEN-009` | `IDENTITY-SPEC-TOKEN-009` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+| `IDENTITY-TOKEN-010` | `IDENTITY-SPEC-TOKEN-010` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+| `IDENTITY-TOKEN-011` | `IDENTITY-SPEC-TOKEN-011` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+| `IDENTITY-TOKEN-012` | `IDENTITY-SPEC-TOKEN-012` | `TBD - 后续补齐` | `TBD - 后续补齐` | Pass：Spec Flow 已同步；未伪造 AC/TC。 |
+
+Task 6-F 执行情况：
+- 已执行：按用户确认的 6-R 方案修复 token requirements、spec Ref ID、flow segment 和 spec items。
+- 已执行：同步 `traceability.md` 中 `IDENTITY-TOKEN-001..012` 的 `Spec Flow`。
+- 未执行：未生成或修改 AC/TC，未修改代码，未审查 Task 7 当前用户与 profile gate state 子章节。
+
+Task 6-F 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 6-F | Confirmed by user | 用户已确认本修复复审表，并放行 Task 7-R。 |
+| Task 7-R | Confirmed by user | 用户已确认 ME 子章节审查并放行 Task 7-F。 |
+
+### IDENTITY-ME 当前用户与 profile gate state 7-R 逐条语义审查
+
+审查范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-ME-001..008`
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 `IDENTITY-SPEC-ME-001..008`
+- 交叉引用 Ref ID：`ME-IN-AUTHENTICATED`、`ME-OUT-CURRENT-USER`、`ME-OUT-PROFILE`、`ME-IN-PROFILE-UPDATE`、`ME-ERR-UNAUTHENTICATED`、`ME-ERR-INVALID-AVATAR`、`HOME-OUT-NEXT-ACTION`
+- 只读上下文：`docs/product/base/identity-account-lifecycle/traceability.md` 中 `IDENTITY-ME-001..008`，以及 current-code-baseline 当前用户、profile update、首评和首页摘要相关代码证据
+
+本轮结果：conditional。ME 子章节可继续作为 current-code-baseline Draft 输入；没有阻止 Draft 留存的 blocker。但在生成 AC/TC、Product Base merge 或后续实现计划前，应补清 API path 与产品语义边界、ME 与 TOKEN 的认证职责分离、profile 缺失/部分更新边界、avatar ref 的空白输入行为，以及首页 next action 实际依赖 onboarding status 与当前场景状态。
+
+Requirement 审查与 7-F 修复方案：
+| Requirement item | 原始 Requirement 描述 | 修复后 Requirement 描述 | 颗粒度 | 清晰度 | 覆盖度 | 结论 | 7-F Requirement 修复方案 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `IDENTITY-ME-001` | `/user/me` 必须只允许已认证用户访问。 | 当前用户资料读取能力必须只允许通过常规 access token 认证的用户访问；未认证或认证上下文无效时必须拒绝；具体 endpoint 路径由 API contract 承接。 | Pass：单一认证访问门禁 | Conditional：Requirement 写入具体 API path，且未说明认证上下文无效的失败边界 | Conditional：覆盖已认证用户访问，但与 token 认证门禁职责有重叠 | Important | 在 7-F 中按“修复后 Requirement 描述”改写。 |
+| `IDENTITY-ME-002` | `/user/me` 必须返回当前用户 ID、display name、avatar ref、locale、account status 和 onboarding status。 | 当前用户资料读取成功时，系统必须返回当前认证用户的用户标识、display name、avatar ref、locale、account status 和 onboarding status；具体响应字段形态由 API contract 承接。 | Pass：单一 current user 输出 | Conditional：写入 API path，且未限定为当前认证用户 | Pass：覆盖当前用户核心状态 | Suggestion | 在 7-F 中按“修复后 Requirement 描述”改写。 |
+| `IDENTITY-ME-003` | `/user/me` 必须返回当前 profile 的 target level 和 daily minutes。 | 当前用户资料读取成功时，系统必须返回当前用户 profile 的 target level 和 daily minutes；若当前代码基线缺失 profile，补建或错误策略不由本 item 承诺。 | Pass：单一 profile 输出 | Conditional：写入 API path，且未说明 profile 缺失边界 | Conditional：覆盖 profile 输出，但缺少缺失 profile 的当前基线行为 | Suggestion | 在 7-F 中按“修复后 Requirement 描述”改写。 |
+| `IDENTITY-ME-004` | 当前用户访问必须要求 access token 对应 active 且未过期 session，并且关联用户为 `active` 状态。 | 当前用户资料读取必须复用 `IDENTITY-TOKEN` 的常规 access token 认证结果；认证上下文无效、session 不可认证或关联用户不可认证时必须拒绝访问。 | Conditional：认证门禁单一，但重复定义 token 生命周期规则 | Conditional：与 `IDENTITY-TOKEN-007..008` 重叠，可能造成 source of truth 分散 | Pass：覆盖 token 与 active 用户要求 | Important | 改写为复用 token 认证结果，不在 ME requirement 重定义 session/expiry 细节。 |
+| `IDENTITY-ME-005` | 用户必须能更新 display name、avatar ref、target level、daily minutes、reminder enabled 和 reminder time。 | 已认证用户必须只能更新自己的 display name、avatar ref、target level、daily minutes、reminder enabled 和 reminder time；未提供的可选字段不得被强制改写；avatar ref 允许范围由 `IDENTITY-ME-006` 承接。 | Pass：一个自助资料更新能力 | Conditional：缺少“自己”的 ownership 边界和部分更新语义 | Conditional：覆盖可更新字段；未说明字段未提供时的行为 | Important | 补清 authenticated self-update、partial update 和 avatar 边界。 |
+| `IDENTITY-ME-006` | 系统必须拒绝非内置头像引用作为 avatar ref。 | 当用户提交 avatar ref 更新时，系统必须只接受内置头像引用；空白或非内置引用必须拒绝，且不得保存该 avatar ref 更新。 | Pass：单一 avatar validation | Conditional：未说明空白输入和失败后置结果 | Conditional：覆盖非内置引用；缺少空白和 no-save 边界 | Suggestion | 补充空白输入和失败后不得保存。 |
+| `IDENTITY-ME-007` | 用户完成首评后，系统必须把 onboarding status 更新为 `complete`。 | 用户首评提交成功后，系统必须把该用户的 onboarding status 更新为 `complete`；首评未成功保存时不得推进 onboarding status。 | Pass：单一 onboarding 状态转移 | Conditional：`完成首评` 应明确为提交成功 | Conditional：覆盖状态转移；缺少失败不推进边界 | Suggestion | 补充提交成功触发和失败不推进。 |
+| `IDENTITY-ME-008` | 首页摘要必须根据 onboarding status 输出下一步动作。 | 首页摘要必须根据 onboarding status 和当前场景状态输出下一步动作：未完成首评时引导完成首评；已完成首评但无当前场景时引导选择场景；已有当前场景时引导开始练习。 | Conditional：下一步动作规则单一，但当前描述遗漏 current scenario state | Conditional：`根据 onboarding status` 不足以解释 choose/start practice 分支 | Conditional：覆盖首评前分支；遗漏已完成首评后的场景分支 | Important | 补充 current scenario state 和三个可观察 next action 分支。 |
+
+Spec 审查与 7-F 修复方案：
+| Spec item | 原始 Spec 描述 | 修复后 Spec 描述 | 颗粒度 | 清晰度 | 覆盖度 | 结论 | 7-F Spec 修复方案 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `IDENTITY-SPEC-ME-001` | `/user/me` 必须只允许 `ME-IN-AUTHENTICATED` 访问，否则返回 `ME-ERR-UNAUTHENTICATED`。 | 当前用户资料读取入口必须只允许满足 `ME-IN-AUTHENTICATED` 的常规用户访问；认证上下文缺失或无效时返回 `ME-ERR-UNAUTHENTICATED`；具体 endpoint path 由 API contract 承接。 | Pass：单一访问门禁 | Conditional：spec 可引用入口，但不应把 API path 当成唯一语义；`ME-IN-AUTHENTICATED` 定义过粗 | Conditional：覆盖未认证失败；未说明认证上下文无效 | Important | 在 7-F 中按“修复后 Spec 描述”改写，并细化 Ref ID。 |
+| `IDENTITY-SPEC-ME-002` | `/user/me` 必须返回 `ME-OUT-CURRENT-USER`。 | 当前用户资料读取成功时必须返回 `ME-OUT-CURRENT-USER`，其内容必须归属当前认证用户。 | Pass：单一 current user 输出 | Conditional：未说明输出归属当前认证用户 | Pass：覆盖 current user 输出 | Suggestion | 补充归属边界，移除 API path 作为语义主体。 |
+| `IDENTITY-SPEC-ME-003` | `/user/me` 必须返回 `ME-OUT-PROFILE`。 | 当前用户资料读取成功时必须返回 `ME-OUT-PROFILE`；current code baseline 下缺失 profile 时可返回空 profile 字段，本 item 不承诺读取时补建 profile。 | Pass：单一 profile 输出 | Conditional：未说明 profile 缺失边界 | Conditional：覆盖 profile 输出；缺少缺失 profile 行为 | Suggestion | 补清 current baseline profile 缺失行为。 |
+| `IDENTITY-SPEC-ME-004` | 当前用户访问必须要求 access token 对应 active 且未过期 session，并且关联用户为 active 状态，否则返回 `ME-ERR-UNAUTHENTICATED`。 | 当前用户资料读取必须复用 `TOKEN-FLOW-AUTHENTICATE-BEARER` 的常规用户认证结果；认证上下文不满足时返回 `ME-ERR-UNAUTHENTICATED`，不得返回 `ME-OUT-CURRENT-USER` 或 `ME-OUT-PROFILE`。 | Conditional：认证 gate 可保留，但不应重写 token session/expiry 规则 | Conditional：与 token spec 重复，source of truth 分散 | Pass：覆盖拒绝未认证访问 | Important | 改为引用 token flow，并补充失败后不得返回 ME 输出。 |
+| `IDENTITY-SPEC-ME-005` | 用户必须能提交 `ME-IN-PROFILE-UPDATE` 并保存允许更新的 profile 字段。 | 满足 `ME-IN-AUTHENTICATED` 的用户必须能提交 `ME-IN-PROFILE-UPDATE` 更新自己的 display name、avatar ref、target level、daily minutes、reminder enabled 和 reminder time；未提供的字段保持既有值。 | Conditional：一个 partial profile update contract，可保留 | Conditional：`profile 字段` 不准确，display name/avatar ref 属于 current user presentation；未说明 partial update | Conditional：覆盖可更新字段；缺少 ownership 和 no-change 行为 | Important | 明确 self-update、字段集合和未提供字段保持既有值。 |
+| `IDENTITY-SPEC-ME-006` | 当 avatar ref 不是内置头像引用时，系统必须返回 `ME-ERR-INVALID-AVATAR` 并拒绝更新。 | 当 `ME-IN-PROFILE-UPDATE` 包含空白或非内置 avatar ref 时，系统必须返回 `ME-ERR-INVALID-AVATAR`，不得保存 avatar ref 或其他依赖该输入的更新结果。 | Pass：单一 avatar validation failure | Conditional：未说明空白输入，且拒绝更新范围不清楚 | Conditional：覆盖非内置失败；缺少 blank/no-save 边界 | Suggestion | 补充 blank input 和失败后置边界。 |
+| `IDENTITY-SPEC-ME-007` | 用户完成首评后，系统必须把 onboarding status 更新为 `ONBOARDING-STATE-COMPLETE`。 | 首评提交成功并持久化后，系统必须把该用户状态更新为 `ONBOARDING-STATE-COMPLETE`；提交失败时不得产生该状态转移。 | Pass：单一 onboarding 状态转移 | Conditional：触发条件应是提交成功并持久化 | Conditional：覆盖成功转移；缺少失败不转移 | Suggestion | 补充成功持久化触发和失败边界。 |
+| `IDENTITY-SPEC-ME-008` | 首页摘要必须根据 onboarding status 输出 `HOME-OUT-NEXT-ACTION`。 | 首页摘要必须根据 onboarding status 与当前场景状态输出 `HOME-OUT-NEXT-ACTION`：未完成首评输出 complete-onboarding；已完成首评但无当前场景输出 choose-scenario；已有当前场景输出 start-practice。 | Conditional：next action 输出单一，但原描述遗漏输入状态 | Conditional：只写 onboarding status 会漏掉 current scenario branch | Conditional：覆盖首评前，遗漏选择场景和开始练习 | Important | 补充 current scenario state 与三个 next action 分支。 |
+
+跨文档发现与 7-F 修复方案：
+| 对象 | 问题 | 影响 | 级别 | 7-F 修复方案 |
+| --- | --- | --- | --- | --- |
+| `traceability.md` ME 行 | `IDENTITY-ME-001..008` 的 `Spec Flow` 仍为 `TBD - 后续补齐`，但 `IDENTITY-SPEC-ME-001..008` 已存在。 | 后续 AC/TC 生成可能继续引用 TBD，导致 ME 链路断裂。 | Important | 在 7-F 中同步 `Spec Flow` 到 `IDENTITY-SPEC-ME-001..008`；`AC` 和 `TC` 继续保留 `TBD - 后续补齐`，不伪造测试证据。 |
+| `ME-IN-AUTHENTICATED` Ref ID | 当前定义为“已认证用户上下文”，未说明它复用 token flow 的常规用户认证结果。 | ME 与 TOKEN 可能重复定义 session/expiry/user active 规则。 | Important | 在 7-F 中把 `ME-IN-AUTHENTICATED` 改为复用 `TOKEN-FLOW-AUTHENTICATE-BEARER` 的常规用户认证上下文。 |
+| `ME-IN-PROFILE-UPDATE` Ref ID | 当前定义把 display name/avatar ref 和 profile preference 字段都称为 profile update，未说明 partial update。 | AC/TC 可能错误要求所有字段每次都必须提交，或把账号展示字段误归入 profile 表语义。 | Important | 在 7-F 中定义为“当前用户可编辑资料更新输入”，区分展示字段与 profile preference，并说明未提供字段保持既有值。 |
+| `HOME-OUT-NEXT-ACTION` Ref ID | 当前定义只说根据 onboarding status 输出，但 current code baseline 还依赖当前场景状态。 | 首页摘要 AC/TC 会遗漏 choose-scenario / start-practice 分支。 | Important | 在 7-F 中补充 onboarding status + current scenario state 的 next action 决策边界。 |
+
+Task 7-R 执行情况：
+- 已执行：完成 `IDENTITY-ME-001..008` 和 `IDENTITY-SPEC-ME-001..008` 的逐条内容契约语义审查。
+- 已执行：按 Requirement / Spec 分离格式形成 7-F 修复输入表，并在 item 后附原始描述与修复后描述。
+- 未执行：未修改 `requirements.md`、`spec.md` 或 `traceability.md` 正文；等待用户确认后再执行 Task 7-F。
+
+Task 7-R 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 7-R | Confirmed by user | 用户已确认本审查表与模块边界调整方案，放行 Task 7-F。 |
+| Task 7-F | Completed - pending user confirmation | 已完成修复与复审；用户确认前不得执行 Task 8-R。 |
+
+### IDENTITY-ME 当前用户与 profile 7-F 修复复审
+
+修复范围：
+- Identity Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-ME-001..006`
+- Identity Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 `IDENTITY-SPEC-ME-001..006`
+- Identity Traceability：`docs/product/base/identity-account-lifecycle/traceability.md` 中 `IDENTITY-ME-001..006`
+- 删除出 Identity 模块：原 `IDENTITY-ME-007` / `IDENTITY-SPEC-ME-007` 首评提交后推进 onboarding status；原 `IDENTITY-ME-008` / `IDENTITY-SPEC-ME-008` 首页下一步动作
+
+本轮结果：pass。Task 7-F 已按用户修订后的模块边界方案完成：`IDENTITY-ME` 只保留当前用户资料读取与资料更新；原 `IDENTITY-ME-007` 和 `IDENTITY-ME-008` 从 Identity 模块删除，不在本模块创建任何跨模块替代 item。后续若需要承接，应由 access-onboarding / Home Summary / Learning Entry 的独立文档链路处理。
+
+Requirement 修复复审表：
+| Requirement item | 原始 Requirement 描述 | 修复后 Requirement 描述 | 修复位置 | 复审结论 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-ME-001` | `/user/me` 必须只允许已认证用户访问。 | 当前用户资料读取能力必须只允许通过常规 access token 认证的用户访问；未认证或认证上下文无效时必须拒绝；具体 endpoint 路径由 API contract 承接。 | Identity requirements `IDENTITY-ME` | Pass：移除 API path 作为需求主体，保留认证访问门禁和 API contract 边界。 |
+| `IDENTITY-ME-002` | `/user/me` 必须返回当前用户 ID、display name、avatar ref、locale、account status 和 onboarding status。 | 当前用户资料读取成功时，系统必须返回当前认证用户的用户标识、display name、avatar ref、locale、account status 和 onboarding status；具体响应字段形态由 API contract 承接。 | Identity requirements `IDENTITY-ME` | Pass：补清输出归属当前认证用户，避免字段 schema 化。 |
+| `IDENTITY-ME-003` | `/user/me` 必须返回当前 profile 的 target level 和 daily minutes。 | 当前用户资料读取成功时，系统必须返回当前用户 profile 的 target level 和 daily minutes；若当前代码基线缺失 profile，补建或错误策略不由本 item 承诺。 | Identity requirements `IDENTITY-ME` | Pass：保留 profile 输出需求，并补清缺失 profile 非承诺边界。 |
+| `IDENTITY-ME-004` | 当前用户访问必须要求 access token 对应 active 且未过期 session，并且关联用户为 `active` 状态。 | 当前用户资料读取必须复用 `IDENTITY-TOKEN` 的常规 access token 认证结果；认证上下文无效、session 不可认证或关联用户不可认证时必须拒绝访问。 | Identity requirements `IDENTITY-ME` | Pass：避免在 ME 重定义 token 生命周期细节，改为引用 token source of truth。 |
+| `IDENTITY-ME-005` | 用户必须能更新 display name、avatar ref、target level、daily minutes、reminder enabled 和 reminder time。 | 已认证用户必须只能更新自己的 display name、avatar ref、target level、daily minutes、reminder enabled 和 reminder time；未提供的可选字段不得被强制改写；avatar ref 允许范围由 `IDENTITY-ME-006` 承接。 | Identity requirements `IDENTITY-ME` | Pass：补清 self-update、partial update 和 avatar validation 边界。 |
+| `IDENTITY-ME-006` | 系统必须拒绝非内置头像引用作为 avatar ref。 | 当用户提交 avatar ref 更新时，系统必须只接受内置头像引用；空白或非内置引用必须拒绝，且不得保存该 avatar ref 更新。 | Identity requirements `IDENTITY-ME` | Pass：补清空白输入和失败后不得保存。 |
+| `IDENTITY-ME-007` | 用户完成首评后，系统必须把 onboarding status 更新为 `complete`。 | 删除出本 Identity 模块；不在本模块定义替代 requirement item。首评提交后的状态推进由 access-onboarding 独立承接。 | Identity requirements 删除 | Pass：避免把首评提交流程写入 Identity 当前用户/profile 子章节。 |
+| `IDENTITY-ME-008` | 首页摘要必须根据 onboarding status 输出下一步动作。 | 删除出本 Identity 模块；不在本模块定义替代 requirement item。首页下一步动作由 Home Summary / Learning Entry 独立承接。 | Identity requirements 删除 | Pass：避免把首页摘要编排写入 Identity 模块。 |
+
+Spec 修复复审表：
+| Spec item | 原始 Spec 描述 | 修复后 Spec 描述 | 修复位置 | 复审结论 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-SPEC-ME-001` | `/user/me` 必须只允许 `ME-IN-AUTHENTICATED` 访问，否则返回 `ME-ERR-UNAUTHENTICATED`。 | 当前用户资料读取入口必须只允许满足 `ME-IN-AUTHENTICATED` 的常规用户访问；认证上下文缺失或无效时返回 `ME-ERR-UNAUTHENTICATED`；具体 endpoint path 由 API contract 承接。 | Identity spec `IDENTITY-ME` | Pass：endpoint path 下沉到 API contract，spec 保留行为契约。 |
+| `IDENTITY-SPEC-ME-002` | `/user/me` 必须返回 `ME-OUT-CURRENT-USER`。 | 当前用户资料读取成功时必须返回 `ME-OUT-CURRENT-USER`，其内容必须归属当前认证用户。 | Identity spec `IDENTITY-ME` | Pass：补清 current user 输出归属。 |
+| `IDENTITY-SPEC-ME-003` | `/user/me` 必须返回 `ME-OUT-PROFILE`。 | 当前用户资料读取成功时必须返回 `ME-OUT-PROFILE`；current code baseline 下缺失 profile 时可返回空 profile 字段，本 item 不承诺读取时补建 profile。 | Identity spec `IDENTITY-ME` | Pass：补清 current baseline 缺失 profile 行为。 |
+| `IDENTITY-SPEC-ME-004` | 当前用户访问必须要求 access token 对应 active 且未过期 session，并且关联用户为 active 状态，否则返回 `ME-ERR-UNAUTHENTICATED`。 | 当前用户资料读取必须复用 `TOKEN-FLOW-AUTHENTICATE-BEARER` 的常规用户认证结果；认证上下文不满足时返回 `ME-ERR-UNAUTHENTICATED`，不得返回 `ME-OUT-CURRENT-USER` 或 `ME-OUT-PROFILE`。 | Identity spec `IDENTITY-ME` | Pass：ME spec 不再重复 token/session/expiry 细节，失败后置边界明确。 |
+| `IDENTITY-SPEC-ME-005` | 用户必须能提交 `ME-IN-PROFILE-UPDATE` 并保存允许更新的 profile 字段。 | 满足 `ME-IN-AUTHENTICATED` 的用户必须能提交 `ME-IN-PROFILE-UPDATE` 更新自己的 display name、avatar ref、target level、daily minutes、reminder enabled 和 reminder time；未提供的字段保持既有值。 | Identity spec `IDENTITY-ME` | Pass：补清 self-update、字段集合和 partial update。 |
+| `IDENTITY-SPEC-ME-006` | 当 avatar ref 不是内置头像引用时，系统必须返回 `ME-ERR-INVALID-AVATAR` 并拒绝更新。 | 当 `ME-IN-PROFILE-UPDATE` 包含空白或非内置 avatar ref 时，系统必须返回 `ME-ERR-INVALID-AVATAR`，不得保存 avatar ref 或其他依赖该输入的更新结果。 | Identity spec `IDENTITY-ME` | Pass：补清 blank input 和 no-save failure boundary。 |
+| `IDENTITY-SPEC-ME-007` | 用户完成首评后，系统必须把 onboarding status 更新为 `ONBOARDING-STATE-COMPLETE`。 | 删除出本 Identity 模块；不在本模块定义替代 spec item。首评提交后的状态推进由 access-onboarding 独立承接。 | Identity spec 删除 | Pass：未保留本模块替代 spec item，避免模块边界混淆。 |
+| `IDENTITY-SPEC-ME-008` | 首页摘要必须根据 onboarding status 输出 `HOME-OUT-NEXT-ACTION`。 | 删除出本 Identity 模块；不在本模块定义替代 spec item。首页下一步动作由 Home Summary / Learning Entry 独立承接。 | Identity spec 删除 | Pass：未把其他模块 flow 作为本模块修复项。 |
+
+追溯与边界复审表：
+| 对象 | 修复后状态 | 复审结论 |
+| --- | --- | --- |
+| Requirement 到 Spec 映射 | `IDENTITY-ME-001..006 -> IDENTITY-SPEC-ME-001..006` | Pass：本模块只保留 ME 当前用户/profile item。 |
+| Identity Ref ID | `ME-IN-AUTHENTICATED` 复用 token bearer flow；`ME-IN-PROFILE-UPDATE` 明确 partial update；移除 Identity 内 `ONBOARDING-GATE-*` 与 `HOME-OUT-NEXT-ACTION` | Pass：Ref ID 与模块边界一致。 |
+| Flow Segments | 新增 `ME-FLOW-READ-CURRENT`、`ME-FLOW-UPDATE-PROFILE` | Pass：ME 补齐当前用户资料读取/更新流程，不包含首评提交或首页编排。 |
+| Identity traceability | `IDENTITY-ME-001..006` 的 `Spec Flow` 已同步具体 spec ID；AC/TC 仍为 `TBD - 后续补齐`；`IDENTITY-ME-007..008` 不再作为本模块追溯行维护 | Pass：未伪造 AC、TC 或测试证据，且删除了非本模块行。 |
+| Product Base root | 本次按用户反馈撤回根 Product Base 的 Task 7-F 改动 | Pass：Task 7-F 不再改写其他功能模块或根 Product Base。 |
+
+Task 7-F 执行情况：
+- 已执行：修复 Identity `requirements.md`、`spec.md` 和 `traceability.md` 中 ME 当前用户/profile 语义。
+- 已执行：删除 Identity 模块中的首评提交后 onboarding status 推进 item，不创建本模块替代项。
+- 已执行：删除 Identity 模块中的首页下一步动作 item，不在本 Task 更新根 Product Base。
+- 未执行：未生成或修改 AC/TC，未修改代码，未审查 Task 8 身份绑定与解绑子章节。
+
+Task 7-F 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 7-F | Confirmed by user | 用户已确认本修复复审表，并放行 Task 8-R。 |
+| Task 8-R | Completed - pending user confirmation | 已执行 LINK 子章节审查；用户确认本审查表前，不得执行 Task 8-F。 |
+
+### IDENTITY-LINK 身份绑定与解绑 8-R 逐条语义审查
+
+审查范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-LINK-001..003`
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 `IDENTITY-SPEC-LINK-001..003`
+- 交叉引用 Ref ID：`LINK-STATE-INITIAL-IDENTITY`、`LINK-STATE-AUTH-IDENTITY-ACTIVE`、`LINK-IN-IDENTITY-KEY`
+- 只读上下文：`docs/product/base/identity-account-lifecycle/traceability.md` 中 `IDENTITY-LINK-001..003`，以及 `IDENTITY-ACCOUNT-002`、`IDENTITY-ACCOUNT-007`、`IDENTITY-ACCOUNT-009` 的账号创建/解析边界
+
+本轮结果：conditional。LINK 子章节可以继续作为 current-code-baseline Draft 输入；没有阻止 Draft 留存的 blocker。但在生成 AC/TC、Product Base merge 或后续实现计划前，应收窄章节标题和 item 语义到“初始登录身份绑定与身份键解析”，避免误承诺已登录二次绑定、解绑、身份状态过滤或二次验证；同时需要把与 ACCOUNT 子章节重复的账号创建语义改成明确的跨章节引用，并补充 flow segment 与 traceability Spec Flow。
+
+Requirement 审查与 8-F 修复方案：
+| Requirement item | 原始 Requirement 描述 | 修复后 Requirement 描述 | 颗粒度 | 清晰度 | 覆盖度 | 结论 | 8-F Requirement 修复方案 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `IDENTITY-LINK-001` | 新账号创建时必须绑定一个初始登录身份。 | 当新账号由账号创建流程产生时，系统必须为该账号建立一条初始登录身份绑定；该绑定必须来自本次已通过认证的身份来源与 subject；已登录用户绑定第二登录身份不由本 item 承诺。 | Conditional：初始绑定行为单一，但与 `IDENTITY-ACCOUNT-007` 重叠 | Conditional：缺少“本次已通过认证身份”的来源，容易被理解为任意初始身份 | Conditional：覆盖初始绑定，但未明确不覆盖二次绑定 | Important | 在 8-F 中补清身份来源和非二次绑定边界，并在段落中说明与 `IDENTITY-ACCOUNT-007` 的关系。 |
+| `IDENTITY-LINK-002` | 新建登录身份必须初始化为 `active` 状态。 | 初始登录身份绑定创建成功时，该登录身份必须初始化为 `active` 状态；该状态只代表当前代码基线的新建身份默认状态，不承诺已实现身份禁用、解绑或状态过滤策略。 | Pass：单一状态初始化 | Conditional：未限定为初始登录身份绑定创建成功 | Conditional：覆盖默认状态，但未排除未实现的身份状态生命周期 | Suggestion | 在 8-F 中补充触发条件和当前代码基线边界。 |
+| `IDENTITY-LINK-003` | 身份解析必须使用身份来源和身份 subject。 | 身份解析时，系统必须使用身份来源和身份 subject 组成的身份键查找绑定账号；不得只用 subject 或只用身份来源单独解析；身份状态过滤不归档为当前已实现。 | Pass：单一身份键解析规则 | Conditional：当前描述未明确 provider+subject 必须组合使用，也未说明解析结果归属账号 | Conditional：覆盖身份键输入，但未说明 miss/conflict 边界由 ACCOUNT 承接 | Important | 在 8-F 中补清组合键语义，并引用账号解析、重复身份冲突由 `IDENTITY-ACCOUNT-002` / `IDENTITY-ACCOUNT-009` 承接。 |
+
+Spec 审查与 8-F 修复方案：
+| Spec item | 原始 Spec 描述 | 修复后 Spec 描述 | 颗粒度 | 清晰度 | 覆盖度 | 结论 | 8-F Spec 修复方案 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `IDENTITY-SPEC-LINK-001` | 新账号创建时必须绑定 `LINK-STATE-INITIAL-IDENTITY`。 | 在 `IDENTITY-SPEC-ACCOUNT-003` 创建新账号后，系统必须基于本次已验证身份的 `LINK-IN-IDENTITY-KEY` 创建初始登录身份绑定，并输出 `LINK-OUT-INITIAL-AUTH-IDENTITY`；二次绑定和解绑不属于当前 code baseline。 | Conditional：一个初始绑定 flow，可保留 | Important：`LINK-STATE-INITIAL-IDENTITY` 把输出误写成 state，且缺少身份键来源 | Conditional：覆盖初始绑定，但缺少与账号创建/重复身份约束的关系 | Important | 在 8-F 中把 Ref ID 改为输出型 `LINK-OUT-INITIAL-AUTH-IDENTITY`，并新增 initial-bind flow segment。 |
+| `IDENTITY-SPEC-LINK-002` | 新建登录身份必须初始化为 `LINK-STATE-AUTH-IDENTITY-ACTIVE`。 | 初始登录身份绑定创建成功后，该登录身份必须进入 `LINK-STATE-AUTH-IDENTITY-ACTIVE`；该状态不表示身份禁用、解绑或 inactive 查询过滤已实现。 | Pass：单一状态转移 | Conditional：需明确触发为初始绑定创建成功 | Conditional：覆盖默认状态；未排除未实现状态生命周期 | Suggestion | 在 8-F 中补清触发条件和未实现身份状态生命周期边界。 |
+| `IDENTITY-SPEC-LINK-003` | 身份解析必须使用 `LINK-IN-IDENTITY-KEY`。 | 身份解析 flow 必须用 `LINK-IN-IDENTITY-KEY` 查找绑定账号；命中时进入 `IDENTITY-SPEC-ACCOUNT-002` 的账号解析结果，未命中时由账号创建 flow 决定后续处理；重复身份冲突由 `IDENTITY-SPEC-ACCOUNT-009` 承接。 | Conditional：身份键解析单一，但需要 flow 语义支撑 | Conditional：只说“使用输入”，没有写命中、未命中或冲突边界 | Conditional：覆盖 lookup 输入，缺少状态/输出/failure boundary | Important | 在 8-F 中新增 resolve-identity flow segment，并把 miss/conflict 边界交回 ACCOUNT 规格。 |
+
+跨文档发现与 8-F 修复方案：
+| 对象 | 问题 | 影响 | 级别 | 8-F 修复方案 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-LINK` 小节标题 | 标题为“身份绑定与解绑”，但当前已实现 item 只覆盖初始登录身份绑定和身份键解析；解绑明确在非归档范围。 | 读者可能误以为已登录绑定第二身份或解绑也已进入本模块代码基线。 | Important | 在 8-F 中把标题改为“初始登录身份绑定与身份键解析”，或在标题下增加当前仅覆盖初始绑定的边界句。 |
+| ACCOUNT 与 LINK 边界 | `IDENTITY-LINK-001` 与 `IDENTITY-ACCOUNT-007` 都表达新账号初始登录身份绑定。 | 下游 AC/TC 可能重复生成同一验收点，或出现 source of truth 分散。 | Important | 保留 ACCOUNT 为账号创建整体结果；LINK 专注 auth identity binding 语义，并在 LINK item 中显式引用 ACCOUNT 边界。 |
+| LINK Ref ID | `LINK-STATE-INITIAL-IDENTITY` 实际是初始登录身份绑定输出，不是生命周期状态。 | Spec/AC 可能把绑定记录输出误当状态机状态。 | Suggestion | 改为 `LINK-OUT-INITIAL-AUTH-IDENTITY` 或同等输出型 Ref ID。 |
+| `traceability.md` LINK 行 | `IDENTITY-LINK-001..003` 的 `Spec Flow` 仍为 `TBD - 后续补齐`，但 `IDENTITY-SPEC-LINK-001..003` 已存在。 | 后续 AC/TC 生成可能继续引用 TBD，导致 LINK 链路断裂。 | Important | 在 8-F 中同步 `Spec Flow` 到 `IDENTITY-SPEC-LINK-001..003`；`AC` 和 `TC` 继续保留 `TBD - 后续补齐`，不伪造测试证据。 |
+
+Task 8-R 执行情况：
+- 已执行：完成 `IDENTITY-LINK-001..003` 和 `IDENTITY-SPEC-LINK-001..003` 的逐条内容契约语义审查。
+- 已执行：按 Requirement / Spec 分离格式形成 8-F 修复输入表，并在 item 后附原始描述与修复后描述。
+- 未执行：未修改 `requirements.md`、`spec.md` 或 `traceability.md` 正文；等待用户确认后再执行 Task 8-F。
+
+Task 8-R 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 8-R | Confirmed by user | 用户已确认本审查表，并放行 Task 8-F。 |
+| Task 8-F | Completed - pending user confirmation | 已完成 LINK 子章节修复；用户确认本修复复审表前，不得执行 Task 9-R。 |
+
+### IDENTITY-LINK 初始登录身份绑定与身份键解析 8-F 修复复审
+
+修复范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-LINK-001..003`
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 `IDENTITY-SPEC-LINK-001..003`、`LINK-*` Ref ID 和 LINK flow segments
+- Traceability：`docs/product/base/identity-account-lifecycle/traceability.md` 中 `IDENTITY-LINK-001..003` 的 `Spec Flow`
+
+本轮结果：pass。Task 8-F 已按用户确认的 8-R 方案完成：LINK 子章节从“身份绑定与解绑”收窄为“初始登录身份绑定与身份键解析”；requirements/spec 明确不承诺二次绑定、解绑、身份禁用或 inactive 查询过滤；spec 增加初始绑定和身份解析 flow segment；traceability 的 LINK 行已同步具体 spec ID。
+
+Requirement 修复复审表：
+| Requirement item | 原始 Requirement 描述 | 修复后 Requirement 描述 | 修复位置 | 复审结论 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-LINK-001` | 新账号创建时必须绑定一个初始登录身份。 | 当新账号由账号创建流程产生时，系统必须为该账号建立一条初始登录身份绑定；该绑定必须来自本次已通过认证的身份来源与 subject；已登录用户绑定第二登录身份不由本 item 承诺。 | Identity requirements `IDENTITY-LINK` | Pass：补清初始绑定来源，并排除二次绑定承诺。 |
+| `IDENTITY-LINK-002` | 新建登录身份必须初始化为 `active` 状态。 | 初始登录身份绑定创建成功时，该登录身份必须初始化为 `active` 状态；该状态只代表当前代码基线的新建身份默认状态，不承诺已实现身份禁用、解绑或状态过滤策略。 | Identity requirements `IDENTITY-LINK` | Pass：补清触发条件和当前代码基线边界。 |
+| `IDENTITY-LINK-003` | 身份解析必须使用身份来源和身份 subject。 | 身份解析时，系统必须使用身份来源和身份 subject 组成的身份键查找绑定账号；不得只用 subject 或只用身份来源单独解析；身份状态过滤不归档为当前已实现。 | Identity requirements `IDENTITY-LINK` | Pass：补清 provider+subject 组合键和 inactive 过滤非目标。 |
+
+Spec 修复复审表：
+| Spec item | 原始 Spec 描述 | 修复后 Spec 描述 | 修复位置 | 复审结论 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-SPEC-LINK-001` | 新账号创建时必须绑定 `LINK-STATE-INITIAL-IDENTITY`。 | 在 `IDENTITY-SPEC-ACCOUNT-003` 创建新账号后，系统必须基于本次已验证身份的 `LINK-IN-IDENTITY-KEY` 创建初始登录身份绑定，并输出 `LINK-OUT-INITIAL-AUTH-IDENTITY`；二次绑定和解绑不属于当前 code baseline。 | Identity spec `IDENTITY-LINK` | Pass：将初始绑定从 state 误用修正为输出，并连接账号创建规格。 |
+| `IDENTITY-SPEC-LINK-002` | 新建登录身份必须初始化为 `LINK-STATE-AUTH-IDENTITY-ACTIVE`。 | 初始登录身份绑定创建成功后，该登录身份必须进入 `LINK-STATE-AUTH-IDENTITY-ACTIVE`；该状态不表示身份禁用、解绑或 inactive 查询过滤已实现。 | Identity spec `IDENTITY-LINK` | Pass：补清状态触发和非承诺生命周期。 |
+| `IDENTITY-SPEC-LINK-003` | 身份解析必须使用 `LINK-IN-IDENTITY-KEY`。 | 身份解析 flow 必须用 `LINK-IN-IDENTITY-KEY` 查找绑定账号；命中时进入 `IDENTITY-SPEC-ACCOUNT-002` 的账号解析结果，未命中时由账号创建 flow 决定后续处理；重复身份冲突由 `IDENTITY-SPEC-ACCOUNT-009` 承接。 | Identity spec `IDENTITY-LINK` | Pass：补清命中、未命中和冲突边界，并回到 ACCOUNT source of truth。 |
+
+追溯与边界复审表：
+| 对象 | 修复后状态 | 复审结论 |
+| --- | --- | --- |
+| LINK 小节标题 | `IDENTITY-LINK 初始登录身份绑定与身份键解析` | Pass：不再暗示解绑能力已实现。 |
+| LINK Ref ID | `LINK-OUT-INITIAL-AUTH-IDENTITY`、`LINK-STATE-AUTH-IDENTITY-ACTIVE`、`LINK-IN-IDENTITY-KEY` | Pass：输出、状态、输入分类已区分。 |
+| LINK Flow Segments | 新增 `LINK-FLOW-CREATE-INITIAL` 和 `LINK-FLOW-RESOLVE-IDENTITY` | Pass：补齐初始绑定和身份键解析的触发、前置、输出和失败边界。 |
+| Traceability | `IDENTITY-LINK-001..003` 的 `Spec Flow` 已同步为 `IDENTITY-SPEC-LINK-001..003`；AC/TC 保留 `TBD - 后续补齐` | Pass：未伪造 AC、TC 或测试证据。 |
+
+Task 8-F 执行情况：
+- 已执行：修复 LINK requirements 标题、三条 requirement item 和非目标边界。
+- 已执行：修复 LINK spec Ref ID、flow segments 和三条 spec item。
+- 已执行：同步 `traceability.md` 中 `IDENTITY-LINK-001..003` 的 `Spec Flow`。
+- 未执行：未生成或修改 AC/TC，未修改代码，未审查 Task 9 logout 子章节。
+
+Task 8-F 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 8-F | Confirmed by user | 用户已确认本修复复审表，并放行 Task 9-R。 |
+| Task 9-R | Completed - pending user confirmation | 已执行 LOGOUT 子章节审查；用户确认本审查表前，不得执行 Task 9-F。 |
+
+### IDENTITY-LOGOUT 退出登录 9-R 逐条语义审查
+
+审查范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-LOGOUT-001..005`
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 `IDENTITY-SPEC-LOGOUT-001..005`
+- 交叉引用 Ref ID：`LOGOUT-IN-AUTHENTICATED`、`LOGOUT-STATE-SESSION-REVOKED`、`LOGOUT-OUT-REVOKED-AT`、`LOGOUT-ERR-UNAUTHENTICATED`
+- 只读上下文：`docs/product/base/identity-account-lifecycle/traceability.md` 中 `IDENTITY-LOGOUT-001..005`，以及 `IDENTITY-TOKEN-007`、`IDENTITY-TOKEN-008` 的常规 access token 认证边界
+
+本轮结果：conditional。LOGOUT 子章节可以继续作为 current-code-baseline Draft 输入；没有阻止 Draft 留存的 blocker。但在生成 AC/TC、Product Base merge 或后续实现计划前，应补清“当前 session”来自本次认证上下文、退出只影响当前 session、找不到 current session 时不得产生状态变化、撤销成功后的状态与时间记录，以及已撤销 session 的后续认证失败应复用 TOKEN 认证边界。同时，spec 需要增加 logout flow segment，并把 traceability 的 Spec Flow 从 TBD 同步为具体 spec ID。
+
+Requirement 审查与 9-F 修复方案：
+| Requirement item | 原始 Requirement 描述 | 修复后 Requirement 描述 | 颗粒度 | 清晰度 | 覆盖度 | 结论 | 9-F Requirement 修复方案 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `IDENTITY-LOGOUT-001` | 已认证用户调用 logout 时，系统必须撤销当前 session。 | 已认证用户调用 logout 时，系统必须撤销本次认证上下文对应的当前 session；该行为只影响当前 session，不承诺退出同用户其他 session。 | Pass：单一当前会话撤销行为 | Conditional：`当前 session` 来源不够明确，未说明只影响当前 session | Conditional：覆盖当前设备/当前 session 退出，不覆盖全部设备退出 | Important | 在 9-F 中补清当前 session 来源和非全设备退出边界。 |
+| `IDENTITY-LOGOUT-002` | logout 找不到当前 session 时，系统必须返回未认证错误。 | 当 logout 请求无法解析到可撤销的当前 session 时，系统必须返回未认证错误，且不得创建、撤销或修改任何 session。 | Pass：单一失败规则 | Conditional：`找不到当前 session` 未说明后置状态 | Conditional：覆盖失败输出，但缺少 no state change 边界 | Important | 在 9-F 中补充失败后不得产生 session 状态变化。 |
+| `IDENTITY-LOGOUT-003` | session 被撤销时，系统必须把 session 状态设为 `revoked`。 | 当前 session 撤销成功时，系统必须把该 session 状态更新为 `revoked`。 | Pass：单一状态转移 | Conditional：触发条件应是当前 session 撤销成功 | Pass：覆盖 revoked 状态 | Suggestion | 在 9-F 中补清触发条件，避免被理解为所有 session。 |
+| `IDENTITY-LOGOUT-004` | session 被撤销时，系统必须记录 revoked time。 | 当前 session 撤销成功时，系统必须记录该 session 的撤销发生时间。 | Pass：单一审计/时间输出 | Conditional：`revoked time` 应表达为撤销发生时间，而不是字段名要求 | Conditional：覆盖时间记录，但不说明输出是否返回给用户 | Suggestion | 在 9-F 中改为产品语义“撤销发生时间”，不写字段实现。 |
+| `IDENTITY-LOGOUT-005` | 已撤销 session 不得继续通过 access token 认证。 | 已撤销 session 不得再通过常规 access token 认证；后续认证失败边界复用 `IDENTITY-TOKEN` 的常规 access token 认证规则。 | Pass：单一退出后安全后置条件 | Conditional：与 TOKEN 子章节有重叠，应明确复用 token source of truth | Pass：覆盖撤销后 access token 失效 | Important | 在 9-F 中改为 postcondition，并引用 `IDENTITY-TOKEN`，避免重复定义 token 认证细节。 |
+
+Spec 审查与 9-F 修复方案：
+| Spec item | 原始 Spec 描述 | 修复后 Spec 描述 | 颗粒度 | 清晰度 | 覆盖度 | 结论 | 9-F Spec 修复方案 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `IDENTITY-SPEC-LOGOUT-001` | 已认证用户调用 logout 时，系统必须撤销 `LOGOUT-IN-AUTHENTICATED` 对应的当前 session。 | 当 logout 请求满足 `LOGOUT-IN-CURRENT-SESSION` 时，系统必须撤销该当前 session；不得撤销同用户其他 session。 | Pass：单一 flow 动作 | Conditional：`LOGOUT-IN-AUTHENTICATED` 名称过泛，不如 current session 输入准确 | Conditional：覆盖撤销动作，未明确 multi-session 边界 | Important | 在 9-F 中把 Ref ID 改为 `LOGOUT-IN-CURRENT-SESSION`，并增加 logout-current flow。 |
+| `IDENTITY-SPEC-LOGOUT-002` | logout 找不到当前 session 时，系统必须返回 `LOGOUT-ERR-UNAUTHENTICATED`。 | 当 logout 请求缺少或无法解析 `LOGOUT-IN-CURRENT-SESSION` 时，系统必须返回 `LOGOUT-ERR-UNAUTHENTICATED`，不得创建、撤销或修改 session。 | Pass：单一失败输出 | Conditional：缺少 no state change 后置条件 | Conditional：覆盖错误输出，但缺少失败边界 | Important | 在 9-F 中补清失败不改变 session 状态。 |
+| `IDENTITY-SPEC-LOGOUT-003` | session 被撤销时，系统必须进入 `LOGOUT-STATE-SESSION-REVOKED`。 | 当前 session 撤销成功后，该 session 必须进入 `LOGOUT-STATE-SESSION-REVOKED`。 | Pass：单一状态转移 | Conditional：应限定为当前 session | Pass：覆盖状态转移 | Suggestion | 在 9-F 中补清当前 session 撤销成功触发。 |
+| `IDENTITY-SPEC-LOGOUT-004` | session 被撤销时，系统必须记录 `LOGOUT-OUT-REVOKED-AT`。 | 当前 session 撤销成功后，系统必须记录 `LOGOUT-OUT-REVOKED-AT` 作为该 session 的撤销发生时间。 | Pass：单一输出/记录 | Conditional：需说明是撤销发生时间 | Pass：覆盖 revoked time | Suggestion | 在 9-F 中补充时间语义。 |
+| `IDENTITY-SPEC-LOGOUT-005` | `LOGOUT-STATE-SESSION-REVOKED` 不得继续通过 access token 认证。 | `LOGOUT-STATE-SESSION-REVOKED` 对应 session 的 access token 后续必须在 `TOKEN-FLOW-AUTHENTICATE-BEARER` 中认证失败，并按 `TOKEN-ERR-UNAUTHENTICATED` 处理。 | Pass：单一安全后置条件 | Conditional：原文把状态本身当认证主体；应说明是该 session 的 access token 后续认证失败 | Pass：覆盖撤销后 token 不可用 | Important | 在 9-F 中引用 token flow 和 token error，不重新定义 token 认证细节。 |
+
+跨文档发现与 9-F 修复方案：
+| 对象 | 问题 | 影响 | 级别 | 9-F 修复方案 |
+| --- | --- | --- | --- | --- |
+| LOGOUT Flow Segment | spec 当前只有 item table，没有 logout 当前 session 的流程段。 | 后续 AC/TC 难以覆盖成功撤销、找不到 session、撤销后 token 失败的完整路径。 | Important | 在 9-F 中新增 `LOGOUT-FLOW-CURRENT-SESSION`，覆盖 trigger、precondition、state/output、failure boundary。 |
+| `LOGOUT-IN-AUTHENTICATED` Ref ID | 当前定义为“已认证用户当前 session”，名称偏认证上下文，容易与 ME/TOKEN 的通用认证输入混淆。 | LOGOUT spec 对“当前 session”的 source of truth 不够精确。 | Suggestion | 在 9-F 中改为 `LOGOUT-IN-CURRENT-SESSION`，定义为本次 logout 请求通过常规 access token 认证得到的当前 session。 |
+| LOGOUT 与 TOKEN 边界 | `IDENTITY-LOGOUT-005` 与 `IDENTITY-TOKEN-007` 均涉及撤销后 access token 认证失败。 | 如果独立生成 AC/TC，可能重复定义 token 认证细节。 | Important | LOGOUT 只定义撤销后的安全后置条件；认证细节引用 `TOKEN-FLOW-AUTHENTICATE-BEARER` / `TOKEN-ERR-UNAUTHENTICATED`。 |
+| `traceability.md` LOGOUT 行 | `IDENTITY-LOGOUT-001..005` 的 `Spec Flow` 仍为 `TBD - 后续补齐`，但 `IDENTITY-SPEC-LOGOUT-001..005` 已存在。 | 后续 AC/TC 生成可能继续引用 TBD，导致 LOGOUT 链路断裂。 | Important | 在 9-F 中同步 `Spec Flow` 到 `IDENTITY-SPEC-LOGOUT-001..005`；`AC` 和 `TC` 继续保留 `TBD - 后续补齐`，不伪造测试证据。 |
+
+Task 9-R 执行情况：
+- 已执行：完成 `IDENTITY-LOGOUT-001..005` 和 `IDENTITY-SPEC-LOGOUT-001..005` 的逐条内容契约语义审查。
+- 已执行：按 Requirement / Spec 分离格式形成 9-F 修复输入表，并在 item 后附原始描述与修复后描述。
+- 未执行：未修改 `requirements.md`、`spec.md` 或 `traceability.md` 正文；等待用户确认后再执行 Task 9-F。
+
+Task 9-R 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 9-R | Confirmed by user | 用户已确认本审查表，并放行 Task 9-F。 |
+| Task 9-F | Confirmed by user | 用户已确认 LOGOUT 修复复审，并放行 Task 10-R。 |
+
+### IDENTITY-LOGOUT 退出登录 9-F 修复复审
+
+修复范围：
+- Requirements：修复 `IDENTITY-LOGOUT-001..005` 的当前 session 来源、单 session 退出边界、失败 no state change、撤销状态和撤销时间语义。
+- Spec：修复 LOGOUT Ref ID，新增 `LOGOUT-FLOW-CURRENT-SESSION`，并修复 `IDENTITY-SPEC-LOGOUT-001..005` 的可验收行为契约。
+- Traceability：同步 `IDENTITY-LOGOUT-001..005` 的 `Spec Flow` 到 `IDENTITY-SPEC-LOGOUT-001..005`；`AC` 与 `TC` 继续保留 `TBD - 后续补齐`。
+
+Requirement 修复复审表：
+| Requirement item | 修复前 Requirement 描述 | 修复后 Requirement 描述 | 复审结论 | 状态 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-LOGOUT-001` | 已认证用户调用 logout 时，系统必须撤销当前 session。 | 已认证用户调用 logout 时，系统必须撤销本次认证上下文对应的当前 session；该行为只影响当前 session，不承诺退出同用户其他 session。 | Pass：补清当前 session 来源和非全设备退出边界，仍保持单一产品行为。 | Fixed |
+| `IDENTITY-LOGOUT-002` | logout 找不到当前 session 时，系统必须返回未认证错误。 | 当 logout 请求无法解析到可撤销的当前 session 时，系统必须返回未认证错误，且不得创建、撤销或修改任何 session。 | Pass：补清失败后不得产生 session 状态变化。 | Fixed |
+| `IDENTITY-LOGOUT-003` | session 被撤销时，系统必须把 session 状态设为 `revoked`。 | 当前 session 撤销成功时，系统必须把该 session 状态更新为 `revoked`。 | Pass：状态转移主体限定为当前 session。 | Fixed |
+| `IDENTITY-LOGOUT-004` | session 被撤销时，系统必须记录 revoked time。 | 当前 session 撤销成功时，系统必须记录该 session 的撤销发生时间。 | Pass：把字段式表述修正为产品语义。 | Fixed |
+| `IDENTITY-LOGOUT-005` | 已撤销 session 不得继续通过 access token 认证。 | 已撤销 session 不得再通过常规 access token 认证；后续认证失败边界复用 `IDENTITY-TOKEN` 的常规 access token 认证规则。 | Pass：LOGOUT 只保留退出后的安全后置条件，TOKEN 仍是认证规则 source of truth。 | Fixed |
+
+Spec 修复复审表：
+| Spec item | 修复前 Spec 描述 | 修复后 Spec 描述 | 复审结论 | 状态 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-SPEC-LOGOUT-001` | 已认证用户调用 logout 时，系统必须撤销 `LOGOUT-IN-AUTHENTICATED` 对应的当前 session。 | 当 logout 请求满足 `LOGOUT-IN-CURRENT-SESSION` 时，系统必须撤销该当前 session；不得撤销同用户其他 session。 | Pass：输入 Ref ID 更精确，明确当前 session-only 边界。 | Fixed |
+| `IDENTITY-SPEC-LOGOUT-002` | logout 找不到当前 session 时，系统必须返回 `LOGOUT-ERR-UNAUTHENTICATED`。 | 当 logout 请求缺少或无法解析 `LOGOUT-IN-CURRENT-SESSION` 时，系统必须返回 `LOGOUT-ERR-UNAUTHENTICATED`，且不得创建、撤销或修改 session。 | Pass：补齐失败输出和 no state change 后置条件。 | Fixed |
+| `IDENTITY-SPEC-LOGOUT-003` | session 被撤销时，系统必须进入 `LOGOUT-STATE-SESSION-REVOKED`。 | 当前 session 撤销成功后，该 session 必须进入 `LOGOUT-STATE-SESSION-REVOKED`。 | Pass：状态变化主体和触发条件清楚。 | Fixed |
+| `IDENTITY-SPEC-LOGOUT-004` | session 被撤销时，系统必须记录 `LOGOUT-OUT-REVOKED-AT`。 | 当前 session 撤销成功后，系统必须记录 `LOGOUT-OUT-REVOKED-AT` 作为该 session 的撤销发生时间。 | Pass：输出语义从字段名补充为撤销发生时间。 | Fixed |
+| `IDENTITY-SPEC-LOGOUT-005` | `LOGOUT-STATE-SESSION-REVOKED` 不得继续通过 access token 认证。 | `LOGOUT-STATE-SESSION-REVOKED` 对应 session 的 access token 后续必须在 `TOKEN-FLOW-AUTHENTICATE-BEARER` 中认证失败，并按 `TOKEN-ERR-UNAUTHENTICATED` 处理。 | Pass：用 TOKEN flow/error 承接后续认证失败，避免重复定义 token 认证细节。 | Fixed |
+
+Spec Ref / Flow / Traceability 复审表：
+| 对象 | 修复内容 | 复审结论 | 状态 |
+| --- | --- | --- | --- |
+| LOGOUT Ref ID | `LOGOUT-IN-AUTHENTICATED` 改为 `LOGOUT-IN-CURRENT-SESSION`，定义为本次 logout 请求通过 `TOKEN-FLOW-AUTHENTICATE-BEARER` 得到的当前 session。 | Pass：Ref ID 与 LOGOUT 的输入语义一致。 | Fixed |
+| LOGOUT Flow Segment | 新增 `LOGOUT-FLOW-CURRENT-SESSION`，覆盖 trigger、precondition、state/output 和 failure boundary。 | Pass：后续 AC/TC 可从流程段生成成功、失败和撤销后认证失败路径。 | Fixed |
+| LOGOUT 与 TOKEN 边界 | LOGOUT spec 通过 `TOKEN-FLOW-AUTHENTICATE-BEARER` 和 `TOKEN-ERR-UNAUTHENTICATED` 引用 token 认证失败。 | Pass：边界分离清楚，未把 token 认证细节复制到 LOGOUT。 | Fixed |
+| Traceability | `IDENTITY-LOGOUT-001..005` 的 `Spec Flow` 同步为 `IDENTITY-SPEC-LOGOUT-001..005`；AC/TC 保持 `TBD - 后续补齐`。 | Pass：补齐 Requirement -> Spec 链路，同时未伪造 AC、TC 或测试证据。 | Fixed |
+
+Task 9-F 执行情况：
+- 已执行：修复 LOGOUT requirements 五条 item。
+- 已执行：修复 LOGOUT spec Ref ID、补充 flow segment、修复五条 spec item。
+- 已执行：同步 `traceability.md` 中 `IDENTITY-LOGOUT-001..005` 的 `Spec Flow`。
+- 未执行：未生成或修改 AC/TC，未修改代码，未审查 Task 10 delete 子章节。
+
+Task 9-F 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 9-F | Confirmed by user | 用户已确认本修复复审表，并放行 Task 10-R。 |
+| Task 10-R | Passed by main+independent agents | 独立 agent 已复核通过，并按用户更新后的门禁规则自动进入 Task 10-F。 |
+
+### IDENTITY-DELETE 账号删除与生命周期状态 10-R 逐条语义审查
+
+审查范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-DELETE-001..020`
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 `IDENTITY-SPEC-DELETE-001..020`
+- 交叉引用 Ref ID：`DELETE-IN-AUTHENTICATED`、`DELETE-IN-IDEMPOTENCY-KEY`、`DELETE-STATE-*`、`DELETE-JOB-*`、`DELETE-CLEANUP-*`、`TOKEN-FLOW-AUTHENTICATE-BEARER`、`RISK-IN-OPS-BEARER`
+- 只读上下文：`docs/product/base/identity-account-lifecycle/traceability.md` 中 `IDENTITY-DELETE-001..020`，以及 current code evidence 中账号删除请求、重试、session 撤销、数据清理和审计写入行为。
+
+本轮结果：conditional。DELETE 子章节可以继续作为 current-code-baseline Draft 输入；没有阻止 Draft 留存的 blocker。但在生成 AC/TC、Product Base merge 或后续实现计划前，应补清删除请求、删除执行、状态查询、运维重试和删除请求重放的 flow segment；移除 requirement 中的内部 runner 和 spec 中的 API path；补充失败时不得创建 job 或改变状态的边界；明确保留的最小账号信息与 user profile 明细删除的关系；并把 traceability 的 `Spec Flow` 从 TBD 同步为具体 spec ID。
+
+Requirement 审查与 10-F 修复方案：
+| Requirement item | 原始 Requirement 描述 | 修复后 Requirement 描述 | 结论 | 10-F Requirement 修复方案 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-DELETE-001` | 已认证用户必须能发起当前账号删除请求。 | 通过常规 access token 认证并解析到当前账号的用户，必须能为该当前账号发起删除请求；系统不得允许该用户为其他账号发起删除。 | Important：已认证用户和当前账号来源可更精确。 | 补清认证上下文和 current-account-only 边界。 |
+| `IDENTITY-DELETE-002` | 账号删除请求必须要求 idempotency key 长度在 8 到 128 个字符之间。 | 当前账号删除请求和运维删除重试请求必须携带长度在 8 到 128 个字符之间的幂等键；当幂等键缺失、长度小于 8 个字符或大于 128 个字符时，系统必须拒绝请求，不得创建删除任务或重试幂等记录、不得撤销 session、不得改变账号或删除任务状态。 | Important：缺少失败后置状态，且未覆盖运维重试请求的幂等键失败边界。 | 补充幂等键无效条件、用户删除请求/运维重试请求覆盖，以及不得创建 job / retry idempotency / 改变账号或 session 状态。 |
+| `IDENTITY-DELETE-003` | 同一用户使用同一 idempotency key 重复发起删除请求时，系统必须返回已有删除 job。 | 同一用户使用同一幂等键再次发起删除请求时，系统必须返回该用户和该幂等键已经关联的删除任务，且不得创建第二个删除任务。 | Important：缺少 no duplicate job 边界。 | 补充重复请求不得创建新 job。 |
+| `IDENTITY-DELETE-004` | 系统必须只允许 `active` 或 `deletion_requested` 账号发起删除执行。 | 只有账号状态为 `active` 或 `deletion_requested` 时，系统才允许该账号进入删除执行；账号状态不是这两者时，系统必须拒绝进入删除执行。 | Suggestion：拒绝边界不显式。 | 补清非允许状态的拒绝语义。 |
+| `IDENTITY-DELETE-005` | 删除执行必须撤销该用户所有 active session。 | 删除任务进入访问撤销阶段时，系统必须撤销该账号关联用户的所有 active session；该行为不同于 logout 只撤销当前 session。 | Suggestion：与 LOGOUT 边界应显式区分。 | 补充 all sessions 边界并引用 LOGOUT 差异。 |
+| `IDENTITY-DELETE-006` | 删除执行必须调用 AI account deletion retention runner 清理该用户关联的 AI media、TTS cache ownership 和 provider metric 数据。 | 删除执行必须清理该用户关联的 AI media、TTS cache ownership 和 provider metric 数据。 | Important：Requirement 混入内部 runner 实现名。 | 删除 runner 表述，只保留产品数据清理义务。 |
+| `IDENTITY-DELETE-007` | 删除完成后，系统必须把账号状态标记为 `deleted`。 | 删除完成后，系统必须把账号生命周期状态标记为 `deleted`。 | Suggestion：可从字段式状态改为生命周期语义。 | 语义收紧为账号生命周期状态。 |
+| `IDENTITY-DELETE-008` | 删除完成后，系统必须把 display name 改为 `Deleted User`，清空 avatar ref，并把 onboarding status 标记为 `deleted`。 | 删除完成后，系统必须保留用于表示删除状态的最小账号信息：展示名为 `Deleted User`、头像引用为空、onboarding status 为 `deleted`；该最小账号信息不等同于 user profile 明细数据，profile 明细删除由 `IDENTITY-DELETE-014` 承接。 | Important：与 user profile 删除关系不清。 | 补清保留最小账号信息和 profile 明细删除边界。 |
+| `IDENTITY-DELETE-009` | 已认证用户必须能查询当前账号最新删除 job 状态。 | 通过常规 access token 认证并解析到当前账号的用户，必须能查询该当前账号最新删除任务状态；账号进入 `deleted` 后不能通过常规 access token 认证继续查询，删除请求重放场景由 `IDENTITY-DELETE-012` 承接。 | Important：当前可认证边界和删除后查询边界不清。 | 补清查询只依赖常规认证上下文，并把删除后重放交给 012。 |
+| `IDENTITY-DELETE-010` | 运维用户必须能重试 failed 删除 job。 | 通过 ops bearer token 运维认证的请求，必须能对状态为 failed 的删除任务发起重试。 | Suggestion：运维认证边界可更清晰。 | 补充 ops bearer token 运维认证前置。 |
+| `IDENTITY-DELETE-011` | 删除重试必须只允许 failed 删除 job 进入重试执行；completed job 必须返回已有结果，其他状态必须被拒绝。 | 删除重试只有在删除任务状态为 `failed`，且本次重试幂等键未关联该删除任务时，才允许启动新的重试执行；不得因 `completed`、`requested`、`access_revoked`、`deleting_learning_data`、`anonymizing_audit_refs` 或未识别任务状态启动新的重试执行；具体返回或失败结果由 Spec 重试决策表承接。 | Important：原 item 混合 failed 启动、completed 返回、重复重试、in-progress 拒绝和未知状态拒绝，颗粒度过粗。 | Requirement 收敛为“允许启动新重试执行”的业务入口规则；具体状态输出放到 Spec 决策表。 |
+| `IDENTITY-DELETE-012` | 删除重试认证必须允许携带同一 idempotency key 的 `deleted` 或 `deletion_requested` 用户重放同一个 `DELETE /user/me` 请求。 | 当请求携带的 token 对应账号状态为 `deleted` 或 `deletion_requested`，且请求幂等键与该账号已有删除任务的幂等键一致时，系统必须允许该请求重放账号删除请求并返回该已有删除任务；该例外不得用于登录、资料读取或其他受保护用户请求。 | Important：Requirement 写入 API path，且 token/删除重放边界不清。 | 移除 API path，改写为产品级删除请求重放语义。 |
+| `IDENTITY-DELETE-013` | 删除执行必须删除该用户的 auth identity 记录。 | 删除执行必须删除该用户的登录身份数据。 | Suggestion：`auth identity 记录` 偏实现/表述。 | 改为业务数据族“登录身份数据”。 |
+| `IDENTITY-DELETE-014` | 删除执行必须删除该用户的 user profile 记录。 | 删除执行必须删除该用户的 profile 明细数据；删除后保留的最小账号信息由 `IDENTITY-DELETE-008` 承接。 | Important：需避免与最小账号信息保留冲突。 | 补清 profile 明细删除和保留最小账号信息的分工。 |
+| `IDENTITY-DELETE-015` | 删除执行必须删除该用户的 onboarding assessment、learning route 和 user scenario state 记录。 | 删除执行必须删除该用户的 onboarding assessment、learning route 和 scenario state 数据。 | Suggestion：数据族可保留，但少用 record 风格。 | 改为跨域数据族清理义务。 |
+| `IDENTITY-DELETE-016` | 删除执行必须删除该用户的 practice session、practice turn 和 session summary 记录。 | 删除执行必须删除该用户的 practice session、practice turn 和 session summary 数据。 | Pass：范围清晰。 | 仅把 record 风格统一为数据清理语义。 |
+| `IDENTITY-DELETE-017` | 删除执行必须删除该用户的 training session、training turn、training recap、training planner decision、training evidence candidate 和 training metric event 记录。 | 删除执行必须删除该用户的 training session、training turn、training recap、training planner decision、training evidence candidate 和 training metric event 数据。 | Pass：范围清晰。 | 仅把 record 风格统一为数据清理语义。 |
+| `IDENTITY-DELETE-018` | 删除执行必须删除该用户的 purchase、subscription、entitlement snapshot、usage ledger、usage reservation 和关联 payment provider event 记录。 | 删除执行必须删除该用户的 purchase、subscription、entitlement snapshot、usage ledger、usage reservation 和关联 payment provider event 数据。 | Pass：范围清晰。 | 仅把 record 风格统一为数据清理语义。 |
+| `IDENTITY-DELETE-019` | 删除执行必须删除该用户的 learning evidence、learning history、mastery、review、practice queue、favorite expression 和 saved expression 记录。 | 删除执行必须删除该用户的 learning evidence、learning history、mastery、review、practice queue、favorite expression 和 saved expression 数据。 | Pass：范围清晰。 | 仅把 record 风格统一为数据清理语义。 |
+| `IDENTITY-DELETE-020` | 删除执行必须删除该用户的 goal profile、diagnostic assessment、mastery initial state、backplan、daily plan、plan item、autopilot control、goal idempotency、control idempotency、recovery decision、mastery transition decision、notification outbox、planner replay audit、progress forecast 和 outcome checkpoint 记录。 | 删除执行必须删除该用户的 goal profile、diagnostic assessment、mastery initial state、backplan、daily plan、plan item、autopilot control、goal idempotency、control idempotency、recovery decision、mastery transition decision、notification outbox、planner replay audit、progress forecast 和 outcome checkpoint 数据。 | Conditional：范围完整但术语密集，应确认这些名称是稳定领域数据族。 | 统一为数据清理语义；若这些不是稳定领域术语，后续应由 domain model 收敛命名。 |
+
+Spec 审查与 10-F 修复方案：
+| Spec item | 原始 Spec 描述 | 修复后 Spec 描述 | 结论 | 10-F Spec 修复方案 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-SPEC-DELETE-001` | `DELETE-IN-AUTHENTICATED` 必须能发起当前账号删除请求。 | 在 `DELETE-FLOW-REQUEST-CURRENT-ACCOUNT` 中，`DELETE-IN-CURRENT-ACCOUNT` 表示通过常规 access token 认证解析出的当前账号；该输入只能发起当前账号的删除请求，不得指定或影响其他账号。 | Important：输入 Ref ID 过泛，缺少 current-account-only。 | 改 Ref ID 并新增 request flow。 |
+| `IDENTITY-SPEC-DELETE-002` | 账号删除请求必须校验 `DELETE-IN-IDEMPOTENCY-KEY` 长度，非法时返回 `DELETE-ERR-IDEMPOTENCY-KEY`。 | 在 `DELETE-FLOW-REQUEST-CURRENT-ACCOUNT` 和 `DELETE-FLOW-ADMIN-RETRY` 中，当 `DELETE-IN-IDEMPOTENCY-KEY` 缺失、长度小于 8 个字符或大于 128 个字符时，系统必须返回 `DELETE-ERR-IDEMPOTENCY-KEY`，不得创建删除任务或重试幂等记录，不得启动清理执行，不得撤销 session，不得改变账号或删除任务状态。 | Important：缺少失败后置条件，未覆盖 admin retry 幂等键失败边界，且“非法”表述不清。 | 补充 no state change / no job creation / no retry idempotency，并显式列出无效条件。 |
+| `IDENTITY-SPEC-DELETE-003` | 同一用户使用同一 `DELETE-IN-IDEMPOTENCY-KEY` 重复删除时，系统必须返回 `DELETE-JOB-EXISTING`。 | 当同一用户和同一 `DELETE-IN-IDEMPOTENCY-KEY` 已有关联删除任务时，系统必须返回 `DELETE-JOB-EXISTING` 指向的该已有任务，且不得创建第二个删除任务或重复启动清理执行。 | Important：缺少重复执行边界。 | 补充 no duplicate job/execution。 |
+| `IDENTITY-SPEC-DELETE-004` | 系统只允许 `DELETE-STATE-ACTIVE` 或 `DELETE-STATE-DELETION-REQUESTED` 账号发起删除执行，否则返回 `DELETE-ERR-INVALID-STATE`。 | `DELETE-FLOW-EXECUTE` 只允许 `DELETE-STATE-ACTIVE` 或 `DELETE-STATE-DELETION-REQUESTED` 账号进入删除执行；账号状态不属于这两者时，系统必须返回 `DELETE-ERR-INVALID-STATE`，且不得启动清理执行。 | Suggestion：应挂到执行 flow。 | 补充 flow anchor 和失败后置边界。 |
+| `IDENTITY-SPEC-DELETE-005` | 删除执行必须撤销该用户所有 active session。 | `DELETE-FLOW-EXECUTE` 进入访问撤销阶段后，必须撤销该用户所有 active session；该行为不复用 LOGOUT 的 current-session-only 语义。 | Suggestion：与 LOGOUT 边界需明确。 | 补充删除执行阶段和 all-session 边界。 |
+| `IDENTITY-SPEC-DELETE-006` | 删除执行必须完成 `DELETE-CLEANUP-AI`。 | `DELETE-FLOW-EXECUTE` 必须完成 `DELETE-CLEANUP-AI`，覆盖 AI media、TTS cache ownership 和 provider metric 数据清理。 | Pass：Spec 已避免 runner 实现名，可补清覆盖内容。 | 可保留并补充覆盖内容。 |
+| `IDENTITY-SPEC-DELETE-007` | 删除完成后，账号状态必须进入 `DELETE-STATE-DELETED`。 | `DELETE-FLOW-EXECUTE` 完成 `DELETE-CLEANUP-AI`、`DELETE-CLEANUP-IDENTITY`、`DELETE-CLEANUP-LEARNING`、`DELETE-CLEANUP-COMMERCE` 和 `DELETE-CLEANUP-GOAL` 中适用于该用户的数据清理后，账号状态必须进入 `DELETE-STATE-DELETED`。 | Suggestion：触发条件应绑定清理完成。 | 补清“适用数据清理完成后”。 |
+| `IDENTITY-SPEC-DELETE-008` | 删除完成后，系统必须把 display name 改为 `Deleted User`，清空 avatar ref，并把 onboarding status 标记为 `deleted`。 | 删除完成后，保留的最小账号信息必须输出匿名化状态：display name 为 `Deleted User`、avatar ref 为空、onboarding status 为 `deleted`；profile 明细数据删除由 `DELETE-CLEANUP-IDENTITY` 承接。 | Important：保留的最小账号信息和 profile 明细删除边界不清。 | 补充 retained minimal account information 边界。 |
+| `IDENTITY-SPEC-DELETE-009` | 已认证用户必须能查询当前账号最新删除 job 状态。 | `DELETE-FLOW-QUERY-LATEST-JOB` 必须允许 `DELETE-IN-CURRENT-ACCOUNT` 查询当前账号最新删除任务状态；当该当前账号不存在任何删除任务时，系统必须返回 `DELETE-ERR-JOB-NOT-FOUND`。 | Important：缺少 query flow 和 not-found 失败。 | 新增 query flow 与 not-found Ref ID。 |
+| `IDENTITY-SPEC-DELETE-010` | 运维用户必须能重试 `DELETE-JOB-FAILED`。 | 通过 `RISK-IN-OPS-BEARER` 运维认证的请求，必须能在 `DELETE-FLOW-ADMIN-RETRY` 中对 `DELETE-JOB-FAILED` 发起重试。 | Important：缺少 ops auth source of truth。 | 引用 RISK ops auth，不复制 admin 认证细节。 |
+| `IDENTITY-SPEC-DELETE-011` | 删除重试只允许 `DELETE-JOB-FAILED` 进入重试执行；`DELETE-JOB-COMPLETED` 必须返回已有结果，其他状态返回 `DELETE-ERR-INVALID-STATE`。 | `DELETE-FLOW-ADMIN-RETRY` 必须按重试决策表处理：`DELETE-JOB-FAILED` 且无同重试幂等记录时启动新重试执行；同一删除任务和同一重试幂等键已存在时返回 `DELETE-JOB-RETRY-EXISTING` 且不启动新执行；`DELETE-JOB-COMPLETED` 返回该已完成任务；`DELETE-JOB-IN-PROGRESS` 返回 `DELETE-ERR-IN-PROGRESS`；未识别任务状态返回 `DELETE-ERR-INVALID-STATE`。 | Important：遗漏 retry idempotency 和 in-progress 失败类型；单个长句承载过多分支。 | 新增 retry flow、`DELETE-JOB-IN-PROGRESS`、`DELETE-JOB-RETRY-EXISTING`，并用决策表表达分支。 |
+| `IDENTITY-SPEC-DELETE-012` | 删除重试认证必须允许携带同一 `DELETE-IN-IDEMPOTENCY-KEY` 的 deleted 或 deletion_requested 用户重放同一个 `DELETE /user/me` 请求。 | `DELETE-FLOW-REPLAY-DELETION-REQUEST` 仅在 token 对应账号处于 `DELETE-STATE-DELETED` 或 `DELETE-STATE-DELETION-REQUESTED`、且 `DELETE-IN-IDEMPOTENCY-KEY` 与该账号已有删除任务匹配时成立；成立时系统必须返回该已有删除任务，且该认证例外不得扩展到常规 `TOKEN-FLOW-AUTHENTICATE-BEARER`。 | Important：Spec 写入 API path，且与 TOKEN 边界不清。 | 移除 API path，新增 replay flow，并明确 TOKEN source-of-truth。 |
+| `IDENTITY-SPEC-DELETE-013` | 删除执行必须删除该用户的 auth identity 记录。引用：`DELETE-CLEANUP-IDENTITY`。 | `DELETE-FLOW-EXECUTE` 必须在 `DELETE-CLEANUP-IDENTITY` 中删除该用户的登录身份数据。 | Suggestion：record 风格可收敛为数据族。 | 语义收紧为 identity cleanup 数据族。 |
+| `IDENTITY-SPEC-DELETE-014` | 删除执行必须删除该用户的 user profile 记录。引用：`DELETE-CLEANUP-IDENTITY`。 | `DELETE-FLOW-EXECUTE` 必须在 `DELETE-CLEANUP-IDENTITY` 中删除该用户的 profile 明细数据；删除后保留的最小账号信息由 `IDENTITY-SPEC-DELETE-008` 承接。 | Important：与最小账号信息保留有潜在冲突。 | 补清 identity cleanup 与最小账号信息保留的分工。 |
+| `IDENTITY-SPEC-DELETE-015` | 删除执行必须删除该用户的 onboarding assessment、learning route 和 user scenario state 记录。引用：`DELETE-CLEANUP-LEARNING`。 | `DELETE-FLOW-EXECUTE` 必须在 `DELETE-CLEANUP-LEARNING` 中删除该用户的 onboarding assessment、learning route 和 scenario state 数据。 | Pass：清理族明确。 | 挂接到 execute flow 并统一数据语义。 |
+| `IDENTITY-SPEC-DELETE-016` | 删除执行必须删除该用户的 practice session、practice turn 和 session summary 记录。引用：`DELETE-CLEANUP-LEARNING`。 | `DELETE-FLOW-EXECUTE` 必须在 `DELETE-CLEANUP-LEARNING` 中删除该用户的 practice session、practice turn 和 session summary 数据。 | Pass：清理族明确。 | 挂接到 execute flow 并统一数据语义。 |
+| `IDENTITY-SPEC-DELETE-017` | 删除执行必须删除该用户的 training session、training turn、training recap、training planner decision、training evidence candidate 和 training metric event 记录。引用：`DELETE-CLEANUP-LEARNING`。 | `DELETE-FLOW-EXECUTE` 必须在 `DELETE-CLEANUP-LEARNING` 中删除该用户的 training session、training turn、training recap、training planner decision、training evidence candidate 和 training metric event 数据。 | Pass：清理族明确。 | 挂接到 execute flow 并统一数据语义。 |
+| `IDENTITY-SPEC-DELETE-018` | 删除执行必须删除该用户的 purchase、subscription、entitlement snapshot、usage ledger、usage reservation 和关联 payment provider event 记录。引用：`DELETE-CLEANUP-COMMERCE`。 | `DELETE-FLOW-EXECUTE` 必须在 `DELETE-CLEANUP-COMMERCE` 中删除该用户的 purchase、subscription、entitlement snapshot、usage ledger、usage reservation 和关联 payment provider event 数据。 | Pass：清理族明确。 | 挂接到 execute flow 并统一数据语义。 |
+| `IDENTITY-SPEC-DELETE-019` | 删除执行必须删除该用户的 learning evidence、learning history、mastery、review、practice queue、favorite expression 和 saved expression 记录。引用：`DELETE-CLEANUP-LEARNING`。 | `DELETE-FLOW-EXECUTE` 必须在 `DELETE-CLEANUP-LEARNING` 中删除该用户的 learning evidence、learning history、mastery、review、practice queue、favorite expression 和 saved expression 数据。 | Pass：清理族明确。 | 挂接到 execute flow 并统一数据语义。 |
+| `IDENTITY-SPEC-DELETE-020` | 删除执行必须删除该用户的 goal profile、diagnostic assessment、mastery initial state、backplan、daily plan、plan item、autopilot control、goal idempotency、control idempotency、recovery decision、mastery transition decision、notification outbox、planner replay audit、progress forecast 和 outcome checkpoint 记录。引用：`DELETE-CLEANUP-GOAL`。 | `DELETE-FLOW-EXECUTE` 必须在 `DELETE-CLEANUP-GOAL` 中删除该用户的 goal profile、diagnostic assessment、mastery initial state、backplan、daily plan、plan item、autopilot control、goal idempotency、control idempotency、recovery decision、mastery transition decision、notification outbox、planner replay audit、progress forecast 和 outcome checkpoint 数据。 | Conditional：可验收但术语密集，需保持与 domain model/source of truth 一致。 | 挂接到 execute flow；术语不稳定时由 domain model 后续收敛。 |
+
+跨文档发现与 10-F 修复方案：
+| 对象 | 问题 | 影响 | 级别 | 10-F 修复方案 |
+| --- | --- | --- | --- | --- |
+| DELETE Flow Segments | spec 当前只有 item table，没有删除请求、执行、查询、运维重试和删除请求重放 flow。 | 后续 AC/TC 难以生成成功、失败、重放、重试和跨域清理路径。 | Important | 新增 `DELETE-FLOW-REQUEST-CURRENT-ACCOUNT`、`DELETE-FLOW-EXECUTE`、`DELETE-FLOW-QUERY-LATEST-JOB`、`DELETE-FLOW-ADMIN-RETRY`、`DELETE-FLOW-REPLAY-DELETION-REQUEST`。 |
+| DELETE Ref ID | `DELETE-IN-AUTHENTICATED` 过泛；缺少 query not-found、retry in-progress、retry replay 等输出/失败信号；`DELETE-IN-IDEMPOTENCY-KEY` 未说明同时适用于当前账号删除请求和运维删除重试请求。 | 输入和失败路径无法独立验收。 | Important | 改为 `DELETE-IN-CURRENT-ACCOUNT`；补充 `DELETE-JOB-IN-PROGRESS`、`DELETE-ERR-JOB-NOT-FOUND`、`DELETE-ERR-IN-PROGRESS`、`DELETE-JOB-RETRY-EXISTING`；并明确 `DELETE-IN-IDEMPOTENCY-KEY` 适用于 `DELETE-FLOW-REQUEST-CURRENT-ACCOUNT` 和 `DELETE-FLOW-ADMIN-RETRY`。 |
+| Requirement 内容边界 | `IDENTITY-DELETE-006` 命名内部 runner；`IDENTITY-DELETE-012` 写 API path。 | Requirements 混入实现/API 契约层内容。 | Important | 006 改成数据清理义务；012 改成账号删除请求重放产品语义。 |
+| DELETE 与 TOKEN/RISK 边界 | 删除请求重放和运维重试涉及认证例外和 admin 认证，但 spec 未清楚引用 source of truth。 | AC/TC 可能重复定义 token 或 admin auth。 | Important | 删除重放只定义 DELETE 例外，常规 token 仍引用 TOKEN；运维认证引用 RISK。 |
+| DELETE 与 AUDIT 边界 | 删除完成、失败、重试会写审计，但本子章节不应提前审查 AUDIT items。 | 容易把审计要求混入 DELETE 修复。 | Suggestion | 10-F 只保留删除流程和清理边界；审计事件语义留到 Task 12-R/F。 |
+| Traceability | `IDENTITY-DELETE-001..020` 的 `Spec Flow` 仍为 `TBD - 后续补齐`，但 `IDENTITY-SPEC-DELETE-001..020` 已存在。 | Requirement -> Spec 链路断裂。 | Important | 10-F 同步 `Spec Flow` 到 `IDENTITY-SPEC-DELETE-001..020`；AC/TC 继续保留 TBD。 |
+
+Task 10-R 执行情况：
+- 已执行：完成 `IDENTITY-DELETE-001..020` 和 `IDENTITY-SPEC-DELETE-001..020` 的逐条内容契约语义审查。
+- 已执行：按 Requirement / Spec 分离格式形成 10-F 修复输入表，并在 item 后附原始描述与修复后描述。
+- 10-R 阶段未执行：未修改 `requirements.md`、`spec.md` 或 `traceability.md` 正文；后续 Task 10-F 已按主 agent 与独立 agent 一致通过的方案执行。
+- 10-R 阶段未执行：未生成或修改 AC/TC，未修改代码，未审查 Task 11 risk、Task 12 audit 或 Task 13 release。
+
+Task 10-R 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 10-R | Passed by main+independent agents | 独立 agent 已复核通过，按用户更新后的门禁规则自动进入 Task 10-F。 |
+| Task 10-F | Passed by main+independent agents | 独立 agent 已确认 DELETE 修复满足颗粒度/清晰度/覆盖度，并按用户更新后的门禁规则自动进入 Task 11-R。 |
+
+### IDENTITY-DELETE 账号删除与生命周期状态 10-F 修复复审
+
+修复范围：
+- Requirements：修复 `IDENTITY-DELETE-001..020` 的认证上下文、幂等键失败、重复请求、允许状态、session 撤销、跨域数据清理、状态查询、运维重试和删除请求重放语义。
+- Spec：修复 DELETE Ref ID，新增 DELETE flow segments 和 retry decision table，并修复 `IDENTITY-SPEC-DELETE-001..020`。
+- Traceability：同步 `IDENTITY-DELETE-001..020` 的 `Spec Flow` 到 `IDENTITY-SPEC-DELETE-001..020`；`AC` 与 `TC` 继续保留 `TBD - 后续补齐`。
+- 独立审查：Task 10-R 候选方案先被独立 agent 判定不通过；主 agent 已按独立意见修正 002、011 和 DELETE Ref ID 后重新提交，独立 agent 结论为“通过，可进入 Task 10-F”。
+
+Requirement 修复复审表：
+| Requirement item | 修复前 Requirement 描述 | 修复后 Requirement 描述 | 复审结论 | 状态 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-DELETE-001` | 已认证用户必须能发起当前账号删除请求。 | 通过常规 access token 认证并解析到当前账号的用户，必须能为该当前账号发起删除请求；系统不得允许该用户为其他账号发起删除。 | Pass：当前账号来源和不得跨账号删除边界清楚。 | Fixed |
+| `IDENTITY-DELETE-002` | 账号删除请求必须要求 idempotency key 长度在 8 到 128 个字符之间。 | 当前账号删除请求和运维删除重试请求必须携带长度在 8 到 128 个字符之间的幂等键；当幂等键缺失、长度小于 8 个字符或大于 128 个字符时，系统必须拒绝请求，不得创建删除任务或重试幂等记录、不得撤销 session、不得改变账号或删除任务状态。 | Pass：显式覆盖 request/retry 两条路径和失败后置边界。 | Fixed |
+| `IDENTITY-DELETE-003` | 同一用户使用同一 idempotency key 重复发起删除请求时，系统必须返回已有删除 job。 | 同一用户使用同一幂等键再次发起删除请求时，系统必须返回该用户和该幂等键已经关联的删除任务，且不得创建第二个删除任务。 | Pass：补清不得创建重复删除任务。 | Fixed |
+| `IDENTITY-DELETE-004` | 系统必须只允许 `active` 或 `deletion_requested` 账号发起删除执行。 | 只有账号状态为 `active` 或 `deletion_requested` 时，系统才允许该账号进入删除执行；账号状态不是这两者时，系统必须拒绝进入删除执行。 | Pass：允许和拒绝状态边界清楚。 | Fixed |
+| `IDENTITY-DELETE-005` | 删除执行必须撤销该用户所有 active session。 | 删除任务进入访问撤销阶段时，系统必须撤销该账号关联用户的所有 active session；该行为不同于 logout 只撤销当前 session。 | Pass：与 LOGOUT current-session-only 语义已区分。 | Fixed |
+| `IDENTITY-DELETE-006` | 删除执行必须调用 AI account deletion retention runner 清理该用户关联的 AI media、TTS cache ownership 和 provider metric 数据。 | 删除执行必须清理该用户关联的 AI media、TTS cache ownership 和 provider metric 数据。 | Pass：移除内部 runner 实现名。 | Fixed |
+| `IDENTITY-DELETE-007` | 删除完成后，系统必须把账号状态标记为 `deleted`。 | 删除完成后，系统必须把账号生命周期状态标记为 `deleted`。 | Pass：状态语义从字段式表述收敛为生命周期状态。 | Fixed |
+| `IDENTITY-DELETE-008` | 删除完成后，系统必须把 display name 改为 `Deleted User`，清空 avatar ref，并把 onboarding status 标记为 `deleted`。 | 删除完成后，系统必须保留用于表示删除状态的最小账号信息：展示名为 `Deleted User`、头像引用为空、onboarding status 为 `deleted`；该最小账号信息不等同于 user profile 明细数据，profile 明细删除由 `IDENTITY-DELETE-014` 承接。 | Pass：最小账号信息保留与 profile 明细删除分工清楚。 | Fixed |
+| `IDENTITY-DELETE-009` | 已认证用户必须能查询当前账号最新删除 job 状态。 | 通过常规 access token 认证并解析到当前账号的用户，必须能查询该当前账号最新删除任务状态；账号进入 `deleted` 后不能通过常规 access token 认证继续查询，删除请求重放场景由 `IDENTITY-DELETE-012` 承接。 | Pass：查询认证边界和删除后重放边界已区分。 | Fixed |
+| `IDENTITY-DELETE-010` | 运维用户必须能重试 failed 删除 job。 | 通过 ops bearer token 运维认证的请求，必须能对状态为 failed 的删除任务发起重试。 | Pass：运维认证前置明确。 | Fixed |
+| `IDENTITY-DELETE-011` | 删除重试必须只允许 failed 删除 job 进入重试执行；completed job 必须返回已有结果，其他状态必须被拒绝。 | 删除重试只有在删除任务状态为 `failed`，且本次重试幂等键未关联该删除任务时，才允许启动新的重试执行；不得因 `completed`、`requested`、`access_revoked`、`deleting_learning_data`、`anonymizing_audit_refs` 或未识别任务状态启动新的重试执行；具体返回或失败结果由 Spec 重试决策表承接。 | Pass：Requirement 只保留是否允许启动新重试执行的业务入口规则。 | Fixed |
+| `IDENTITY-DELETE-012` | 删除重试认证必须允许携带同一 idempotency key 的 `deleted` 或 `deletion_requested` 用户重放同一个 `DELETE /user/me` 请求。 | 当请求携带的 token 对应账号状态为 `deleted` 或 `deletion_requested`，且请求幂等键与该账号已有删除任务的幂等键一致时，系统必须允许该请求重放账号删除请求并返回该已有删除任务；该例外不得用于登录、资料读取或其他受保护用户请求。 | Pass：移除 API path，并限定认证例外范围。 | Fixed |
+| `IDENTITY-DELETE-013..020` | 删除执行必须删除各业务域记录。 | 删除执行必须删除对应业务域数据；profile 明细删除和最小账号信息保留已拆清。 | Pass：数据清理语义统一为业务数据族，不写表实现。 | Fixed |
+
+Spec 修复复审表：
+| Spec item | 修复前 Spec 描述 | 修复后 Spec 描述 | 复审结论 | 状态 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-SPEC-DELETE-001` | `DELETE-IN-AUTHENTICATED` 必须能发起当前账号删除请求。 | 在 `DELETE-FLOW-REQUEST-CURRENT-ACCOUNT` 中，`DELETE-IN-CURRENT-ACCOUNT` 表示通过常规 access token 认证解析出的当前账号；该输入只能发起当前账号的删除请求，不得指定或影响其他账号。 | Pass：输入 Ref ID 和 current-account-only 边界清楚。 | Fixed |
+| `IDENTITY-SPEC-DELETE-002` | 账号删除请求必须校验 `DELETE-IN-IDEMPOTENCY-KEY` 长度，非法时返回 `DELETE-ERR-IDEMPOTENCY-KEY`。 | 在 `DELETE-FLOW-REQUEST-CURRENT-ACCOUNT` 和 `DELETE-FLOW-ADMIN-RETRY` 中，当 `DELETE-IN-IDEMPOTENCY-KEY` 缺失、长度小于 8 个字符或大于 128 个字符时，系统必须返回 `DELETE-ERR-IDEMPOTENCY-KEY`，不得创建删除任务或重试幂等记录，不得启动清理执行，不得撤销 session，不得改变账号或删除任务状态。 | Pass：不再使用“非法时”，且覆盖 request/admin retry 两条路径。 | Fixed |
+| `IDENTITY-SPEC-DELETE-003` | 同一用户使用同一 `DELETE-IN-IDEMPOTENCY-KEY` 重复删除时，系统必须返回 `DELETE-JOB-EXISTING`。 | 当同一用户和同一 `DELETE-IN-IDEMPOTENCY-KEY` 已有关联删除任务时，系统必须返回 `DELETE-JOB-EXISTING` 指向的该已有任务，且不得创建第二个删除任务或重复启动清理执行。 | Pass：重复请求无副作用边界已补清。 | Fixed |
+| `IDENTITY-SPEC-DELETE-004` | 系统只允许 `DELETE-STATE-ACTIVE` 或 `DELETE-STATE-DELETION-REQUESTED` 账号发起删除执行，否则返回 `DELETE-ERR-INVALID-STATE`。 | `DELETE-FLOW-EXECUTE` 只允许 `DELETE-STATE-ACTIVE` 或 `DELETE-STATE-DELETION-REQUESTED` 账号进入删除执行；账号状态不属于这两者时，系统必须返回 `DELETE-ERR-INVALID-STATE`，且不得启动清理执行。 | Pass：状态拒绝和 no cleanup 边界清楚。 | Fixed |
+| `IDENTITY-SPEC-DELETE-005..010` | 删除执行、AI 清理、deleted 状态、最小账号信息、查询、运维重试。 | 已分别挂接到 `DELETE-FLOW-EXECUTE`、`DELETE-FLOW-QUERY-LATEST-JOB` 和 `DELETE-FLOW-ADMIN-RETRY`，并引用 TOKEN/RISK source of truth。 | Pass：流程锚点和跨模块边界清楚。 | Fixed |
+| `IDENTITY-SPEC-DELETE-011` | 删除重试只允许 `DELETE-JOB-FAILED` 进入重试执行；`DELETE-JOB-COMPLETED` 必须返回已有结果，其他状态返回 `DELETE-ERR-INVALID-STATE`。 | `DELETE-FLOW-ADMIN-RETRY` 必须按重试决策表处理：failed+无同重试幂等记录启动新重试；同 job+同重试幂等键返回 `DELETE-JOB-RETRY-EXISTING`；completed 返回已完成任务；`DELETE-JOB-IN-PROGRESS` 返回 `DELETE-ERR-IN-PROGRESS`；未识别任务状态返回 `DELETE-ERR-INVALID-STATE`。 | Pass：复杂分支已从长句拆到决策表。 | Fixed |
+| `IDENTITY-SPEC-DELETE-012` | 删除重试认证必须允许携带同一 `DELETE-IN-IDEMPOTENCY-KEY` 的 deleted 或 deletion_requested 用户重放同一个 `DELETE /user/me` 请求。 | `DELETE-FLOW-REPLAY-DELETION-REQUEST` 仅在 token 对应账号处于 `DELETE-STATE-DELETED` 或 `DELETE-STATE-DELETION-REQUESTED`、且幂等键与该账号已有删除任务匹配时成立；成立时返回已有删除任务，且认证例外不得扩展到常规 token 认证。 | Pass：API path 已移除，认证例外边界清楚。 | Fixed |
+| `IDENTITY-SPEC-DELETE-013..020` | 各数据族删除并引用 cleanup Ref ID。 | 已挂接到 `DELETE-FLOW-EXECUTE` 和对应 `DELETE-CLEANUP-*` Ref ID，统一为数据清理语义。 | Pass：清理范围和 flow anchor 清楚。 | Fixed |
+
+Spec Ref / Flow / Traceability 复审表：
+| 对象 | 修复内容 | 复审结论 | 状态 |
+| --- | --- | --- | --- |
+| DELETE Ref ID | `DELETE-IN-AUTHENTICATED` 改为 `DELETE-IN-CURRENT-ACCOUNT`；新增 `DELETE-JOB-IN-PROGRESS`、`DELETE-JOB-RETRY-EXISTING`、`DELETE-ERR-JOB-NOT-FOUND`、`DELETE-ERR-IN-PROGRESS`；扩展 `DELETE-IN-IDEMPOTENCY-KEY` 到 request 与 admin retry。 | Pass：输入、状态、输出和失败信号可独立验收。 | Fixed |
+| DELETE Flow Segments | 新增 `DELETE-FLOW-REQUEST-CURRENT-ACCOUNT`、`DELETE-FLOW-EXECUTE`、`DELETE-FLOW-QUERY-LATEST-JOB`、`DELETE-FLOW-ADMIN-RETRY`、`DELETE-FLOW-REPLAY-DELETION-REQUEST`。 | Pass：覆盖删除请求、执行、查询、运维重试和重放。 | Fixed |
+| Retry Decision Table | 新增 failed、retry replay、completed、in-progress、未识别状态五类分支。 | Pass：复杂重试行为从单句拆成决策表。 | Fixed |
+| Traceability | `IDENTITY-DELETE-001..020` 的 `Spec Flow` 同步为 `IDENTITY-SPEC-DELETE-001..020`；AC/TC 保持 `TBD - 后续补齐`。 | Pass：补齐 Requirement -> Spec 链路，同时未伪造 AC、TC 或测试证据。 | Fixed |
+
+Task 10-F 执行情况：
+- 已执行：修复 DELETE requirements 二十条 item。
+- 已执行：修复 DELETE spec Ref ID、flow segments、retry decision table 和二十条 spec item。
+- 已执行：同步 `traceability.md` 中 `IDENTITY-DELETE-001..020` 的 `Spec Flow`。
+- 未执行：未生成或修改 AC/TC，未修改代码，未审查 Task 11 risk 子章节。
+
+Task 10-F 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 10-F | Passed by main+independent agents | 独立 agent 已确认修复满足颗粒度/清晰度/覆盖度。 |
+| Task 11-R | Passed by main+independent agents | 独立 agent 已确认 11-R 审查方案满足颗粒度/清晰度/覆盖度，按用户更新后的门禁规则自动进入 Task 11-F。 |
+
+### IDENTITY-RISK 风控、限流与防滥用 11-R 逐条语义审查
+
+审查范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-RISK-001..003`
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 `IDENTITY-SPEC-RISK-001..003`
+- 交叉引用 Ref ID：`RISK-IN-BEARER`、`RISK-IN-OPS-BEARER`、`RISK-OUT-UNAUTHENTICATED-JSON`、`RISK-ERR-ADMIN-FORBIDDEN`、`RISK-SEC-HASH-COMPARE`
+- 只读上下文：`BearerTokenAuthenticationFilter`、`SecurityConfig`、`TokenHasher` 的 current code evidence。
+
+本轮结果：conditional。RISK 子章节可以继续作为 current-code-baseline Draft 输入；没有阻止 Draft 留存的 blocker。但当前标题和 item 容易让读者误以为登录限流、OTP 限流、IP/device 风控或 CAPTCHA 已实现。11-F 应把本子章节收窄为“认证错误响应、ops admin 访问门禁与当前防滥用边界”，并补充 protected request / admin ops auth 的 flow segment；traceability 的 `Spec Flow` 也应从 TBD 同步为具体 spec ID。
+
+Requirement 审查与 11-F 修复方案：
+| Requirement item | 原始 Requirement 描述 | 修复后 Requirement 描述 | 结论 | 11-F Requirement 修复方案 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-RISK-001` | 无效 bearer token 访问受保护接口时，系统必须返回 JSON 格式的未认证错误。 | 受保护用户请求无法建立常规用户认证上下文时，系统必须返回 JSON 格式的未认证错误；具体 access token eligibility 由 `IDENTITY-TOKEN` 承接，公共端点不由本 item 承诺。 | Important：原文只写 invalid bearer，未覆盖缺失认证上下文和与 TOKEN source of truth 的边界。 | 改为 protected request 未认证错误响应，不重新定义 token eligibility。 |
+| `IDENTITY-RISK-002` | admin 接口必须只允许 ops bearer token 认证通过。 | admin 请求只有通过 ops bearer token 运维认证后才能进入 admin 处理；常规用户 access token 不得获得 admin 权限。 | Important：需要明确常规用户 token 与 ops token 的权限边界。 | 补清 admin-only ops auth 和普通用户不得获得 admin 权限。 |
+| `IDENTITY-RISK-003` | ops bearer token 必须以 hash 形式比较。 | ops bearer token 认证必须使用服务端保存的 token 摘要进行匹配，不得以 ops token 明文作为比较基准。 | Suggestion：`hash 形式比较` 偏实现短语，应表达安全约束和比较基准。 | 改为摘要匹配安全要求；具体算法由 code evidence/API security implementation 承接。 |
+
+Spec 审查与 11-F 修复方案：
+| Spec item | 原始 Spec 描述 | 修复后 Spec 描述 | 结论 | 11-F Spec 修复方案 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-SPEC-RISK-001` | 无效 `RISK-IN-BEARER` 访问受保护接口时，系统必须返回 `RISK-OUT-UNAUTHENTICATED-JSON`。 | 在 `RISK-FLOW-PROTECTED-UNAUTHENTICATED` 中，当受保护用户请求无法通过 `TOKEN-FLOW-AUTHENTICATE-BEARER` 建立常规用户认证上下文时，系统必须返回 `RISK-OUT-UNAUTHENTICATED-JSON`，不得进入受保护业务处理。 | Important：需要引用 TOKEN flow，并补充 no business processing 后置边界。 | 新增 protected unauthenticated flow，避免重复定义 token 认证规则。 |
+| `IDENTITY-SPEC-RISK-002` | admin 接口必须只允许 `RISK-IN-OPS-BEARER` 认证通过，否则返回 `RISK-ERR-ADMIN-FORBIDDEN`。 | 在 `RISK-FLOW-ADMIN-OPS-AUTH` 中，admin 请求只有满足 `RISK-IN-OPS-BEARER` 时才能获得 ops 权限；已建立常规用户认证上下文但不具备 ops 权限的请求访问 admin 入口时必须返回 `RISK-ERR-ADMIN-FORBIDDEN`；未建立认证上下文的 admin 请求仍按 `RISK-OUT-UNAUTHENTICATED-JSON` 处理。 | Important：原文把所有非 ops 情况都写成 forbidden，但代码基线区分 unauthenticated 与 authenticated-non-ops。 | 补充 admin flow，并拆清 unauthenticated 与 authenticated-non-ops。 |
+| `IDENTITY-SPEC-RISK-003` | ops bearer token 必须使用 `RISK-SEC-HASH-COMPARE`，不得以明文直接比较。 | `RISK-IN-OPS-BEARER` 认证必须使用 `RISK-SEC-OPS-TOKEN-DIGEST-MATCH` 与服务端保存的 ops token 摘要匹配；不得把 ops token 明文作为比较基准。 | Suggestion：Ref ID 名称应从泛化 hash compare 收敛为 ops token digest match。 | 将 `RISK-SEC-HASH-COMPARE` 改为 `RISK-SEC-OPS-TOKEN-DIGEST-MATCH`。 |
+
+跨文档发现与 11-F 修复方案：
+| 对象 | 问题 | 影响 | 级别 | 11-F 修复方案 |
+| --- | --- | --- | --- | --- |
+| RISK 小节标题 | 标题写“风控、限流与防滥用”，但当前归档 item 只覆盖认证错误、ops admin 门禁和 ops token 摘要匹配。 | 后续可能误判登录限流、OTP 限流、IP/device 风控、CAPTCHA 已实现。 | Important | 改为 `IDENTITY-RISK 认证错误、ops admin 访问门禁与当前防滥用边界`，非目标仍保留未实现风控项。 |
+| RISK Flow Segments | spec 当前只有 item table，没有 protected unauthenticated 和 admin ops auth flow。 | AC/TC 难以区分未认证、普通用户访问 admin、ops token 通过。 | Important | 新增 `RISK-FLOW-PROTECTED-UNAUTHENTICATED` 和 `RISK-FLOW-ADMIN-OPS-AUTH`。 |
+| RISK Ref ID | `RISK-ERR-ADMIN-FORBIDDEN` 当前语义过宽，容易把未认证/无效 bearer 与已认证但无 ops 权限的 admin 访问混为同一个 forbidden 分支。 | Spec 错误边界不清，AC/TC 会难以区分 unauthenticated 与 authenticated-non-ops。 | Important | 将 `RISK-ERR-ADMIN-FORBIDDEN` 收窄为“已建立常规用户认证上下文但不具备 ops 权限的请求访问 admin 入口时的安全错误”；未建立认证上下文的 admin 请求必须继续使用 `RISK-OUT-UNAUTHENTICATED-JSON`。 |
+| RISK Ref ID | `RISK-SEC-HASH-COMPARE` 过泛，未说明比较对象是 ops token 摘要。 | 安全要求可验收性不足。 | Suggestion | 改为 `RISK-SEC-OPS-TOKEN-DIGEST-MATCH`。 |
+| Traceability | `IDENTITY-RISK-001..003` 的 `Spec Flow` 仍为 `TBD - 后续补齐`，但 `IDENTITY-SPEC-RISK-001..003` 已存在。 | Requirement -> Spec 链路断裂。 | Important | 11-F 同步 `Spec Flow` 到 `IDENTITY-SPEC-RISK-001..003`；AC/TC 继续保留 TBD。 |
+
+Task 11-R 执行情况：
+- 已执行：完成 `IDENTITY-RISK-001..003` 和 `IDENTITY-SPEC-RISK-001..003` 的逐条内容契约语义审查。
+- 已执行：按 Requirement / Spec 分离格式形成 11-F 修复输入表，并在 item 后附原始描述与修复后描述。
+- 已执行：独立 agent 初次复核指出 `RISK-ERR-ADMIN-FORBIDDEN` 边界过宽；本审查表已按该意见补充 Ref ID 收窄方案，并重新提交独立复核。
+- 11-R 阶段未执行：未修改 `requirements.md`、`spec.md` 或 `traceability.md` 正文；后续 Task 11-F 已按主 agent 与独立 agent 一致通过的方案执行。
+- 未执行：未生成或修改 AC/TC，未修改代码，未审查 Task 12 audit 或 Task 13 release。
+
+Task 11-R 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 11-R | Passed by main+independent agents | 独立 agent 已确认本审查表满足颗粒度/清晰度/覆盖度，并按用户更新后的门禁规则自动进入 Task 11-F。 |
+| Task 11-F | Passed by main+independent agents | 独立 agent 已确认 RISK 修复满足颗粒度/清晰度/覆盖度，并按用户更新后的门禁规则自动进入 Task 12-R。 |
+
+### IDENTITY-RISK 认证错误、ops admin 访问门禁与当前防滥用边界 11-F 修复复审
+
+修复范围：
+- Requirements：收窄 RISK 小节标题，修复 `IDENTITY-RISK-001..003` 的认证错误、admin ops 权限和 ops token 摘要匹配语义。
+- Spec：修复 RISK Ref ID，新增 `RISK-FLOW-PROTECTED-UNAUTHENTICATED` 与 `RISK-FLOW-ADMIN-OPS-AUTH`，并修复 `IDENTITY-SPEC-RISK-001..003`。
+- Traceability：同步 `IDENTITY-RISK-001..003` 的 `Spec Flow` 到 `IDENTITY-SPEC-RISK-001..003`；`AC` 与 `TC` 继续保留 `TBD - 后续补齐`。
+- 独立审查：Task 11-R 候选方案初次被独立 agent 判定不通过；主 agent 已按独立意见收窄 `RISK-ERR-ADMIN-FORBIDDEN`，重新提交后独立 agent 结论为“通过，可进入 Task 11-F”。
+
+Requirement 修复复审表：
+| Requirement item | 修复前 Requirement 描述 | 修复后 Requirement 描述 | 复审结论 | 状态 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-RISK-001` | 无效 bearer token 访问受保护接口时，系统必须返回 JSON 格式的未认证错误。 | 受保护用户请求无法建立常规用户认证上下文时，系统必须返回 JSON 格式的未认证错误；具体 access token eligibility 由 `IDENTITY-TOKEN` 承接，公共端点不由本 item 承诺。 | Pass：触发条件从 invalid bearer 收窄/扩展为无法建立常规用户认证上下文，并把 token eligibility 交还 TOKEN。 | Fixed |
+| `IDENTITY-RISK-002` | admin 接口必须只允许 ops bearer token 认证通过。 | admin 请求只有通过 ops bearer token 运维认证后才能进入 admin 处理；常规用户 access token 不得获得 admin 权限。 | Pass：admin 入口权限边界清楚，未把常规用户认证等同于 ops 权限。 | Fixed |
+| `IDENTITY-RISK-003` | ops bearer token 必须以 hash 形式比较。 | ops bearer token 认证必须使用服务端保存的 token 摘要进行匹配，不得以 ops token 明文作为比较基准。 | Pass：从泛化 hash 表述收敛为可验收的摘要匹配安全约束。 | Fixed |
+
+Spec 修复复审表：
+| Spec item | 修复前 Spec 描述 | 修复后 Spec 描述 | 复审结论 | 状态 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-SPEC-RISK-001` | 无效 `RISK-IN-BEARER` 访问受保护接口时，系统必须返回 `RISK-OUT-UNAUTHENTICATED-JSON`。 | 在 `RISK-FLOW-PROTECTED-UNAUTHENTICATED` 中，当受保护用户请求无法通过 `TOKEN-FLOW-AUTHENTICATE-BEARER` 建立常规用户认证上下文时，系统必须返回 `RISK-OUT-UNAUTHENTICATED-JSON`，不得进入受保护业务处理。 | Pass：引用 TOKEN source of truth，并补清不得进入业务处理的后置边界。 | Fixed |
+| `IDENTITY-SPEC-RISK-002` | admin 接口必须只允许 `RISK-IN-OPS-BEARER` 认证通过，否则返回 `RISK-ERR-ADMIN-FORBIDDEN`。 | 在 `RISK-FLOW-ADMIN-OPS-AUTH` 中，admin 请求只有满足 `RISK-IN-OPS-BEARER` 并通过 `RISK-SEC-OPS-TOKEN-DIGEST-MATCH` 时才能获得 ops 权限；已建立常规用户认证上下文但不具备 ops 权限的请求访问 admin 入口时必须返回 `RISK-ERR-ADMIN-FORBIDDEN`；未建立认证上下文的 admin 请求必须返回 `RISK-OUT-UNAUTHENTICATED-JSON`。 | Pass：已区分 unauthenticated 与 authenticated-non-ops 两类失败结果。 | Fixed |
+| `IDENTITY-SPEC-RISK-003` | ops bearer token 必须使用 `RISK-SEC-HASH-COMPARE`，不得以明文直接比较。 | `RISK-IN-OPS-BEARER` 认证必须使用 `RISK-SEC-OPS-TOKEN-DIGEST-MATCH` 与服务端保存的 ops token 摘要匹配；不得把 ops token 明文作为比较基准。 | Pass：Ref ID 与安全约束均收敛到 ops token digest match。 | Fixed |
+
+Spec Ref / Flow / Traceability 复审表：
+| 对象 | 修复内容 | 复审结论 | 状态 |
+| --- | --- | --- | --- |
+| RISK 小节标题 | 从 `IDENTITY-RISK 风控、限流与防滥用` 改为 `IDENTITY-RISK 认证错误、ops admin 访问门禁与当前防滥用边界`。 | Pass：标题不再暗示登录限流、OTP 限流、IP/device 风控、CAPTCHA 已实现。 | Fixed |
+| RISK Ref ID | 收窄 `RISK-IN-BEARER`、`RISK-OUT-UNAUTHENTICATED-JSON` 和 `RISK-ERR-ADMIN-FORBIDDEN`；`RISK-SEC-HASH-COMPARE` 改为 `RISK-SEC-OPS-TOKEN-DIGEST-MATCH`。 | Pass：输入、输出、失败和安全要求都可独立验收。 | Fixed |
+| RISK Flow Segments | 新增 `RISK-FLOW-PROTECTED-UNAUTHENTICATED` 和 `RISK-FLOW-ADMIN-OPS-AUTH`。 | Pass：覆盖受保护请求未认证、ops admin 通过、已认证非 ops 被拒绝三条关键路径。 | Fixed |
+| Traceability | `IDENTITY-RISK-001..003` 的 `Spec Flow` 同步为 `IDENTITY-SPEC-RISK-001..003`；AC/TC 保持 `TBD - 后续补齐`。 | Pass：补齐 Requirement -> Spec 链路，同时未伪造 AC、TC 或测试证据。 | Fixed |
+
+Task 11-F 执行情况：
+- 已执行：修复 RISK requirements 三条 item 和小节标题。
+- 已执行：修复 RISK spec Ref ID、flow segments 和三条 spec item。
+- 已执行：同步 `traceability.md` 中 `IDENTITY-RISK-001..003` 的 `Spec Flow`。
+- 未执行：未生成或修改 AC/TC，未修改代码，未审查 Task 12 audit 或 Task 13 release。
+
+Task 11-F 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 11-F | Passed by main+independent agents | 独立 agent 已确认修复满足颗粒度/清晰度/覆盖度，并按用户更新后的门禁规则自动进入 Task 12-R。 |
+| Task 12-R | Passed by main+independent agents | 独立 agent 已确认 12-R 审查方案满足颗粒度/清晰度/覆盖度，按用户更新后的门禁规则自动进入 Task 12-F。 |
+
+### IDENTITY-AUDIT 审计、隐私与合规 12-R 逐条语义审查
+
+审查范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-AUDIT-001..006`
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 `IDENTITY-SPEC-AUDIT-001..006`
+- 交叉引用 Ref ID：`AUDIT-IN-RAW`、`AUDIT-OUT-REDACTED`、`AUDIT-SENSITIVE-PATTERN`、`AUDIT-EVENT-DELETION-COMPLETED`、`AUDIT-EVENT-DELETION-FAILED`、`AUDIT-EVENT-DELETION-RETRY`、`AUDIT-EVENT-QUERY`
+- 只读上下文：`AuditLog`、`AuditRedaction`、`AccountDeletionService`、`AdminAuditController`、`AuditLogService` 的 current code evidence。
+
+本轮结果：conditional。AUDIT 子章节可以继续作为 current-code-baseline Draft 输入；没有阻止 Draft 留存的 blocker。但当前 requirements/spec 仍偏“字段或事件名映射”，缺少审计写入、敏感信息清洗、删除事件和 ops admin 查询的 flow segment。12-F 应补充 AUDIT flow，并把“共享 audit log 查询”收敛为 ops admin 审计日志查询，避免误以为所有用户可见共享审计查询都已实现。
+
+Requirement 审查与 12-F 修复方案：
+| Requirement item | 原始 Requirement 描述 | 修复后 Requirement 描述 | 结论 | 12-F Requirement 修复方案 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-AUDIT-001` | 写入 audit log 时，系统必须清洗 target ref、request id 和 details。 | 创建或持久化审计记录时，系统必须对审计目标引用、请求标识和详情内容执行敏感信息清洗；清洗后输出必须满足 `IDENTITY-AUDIT-002` 的敏感集合与安全占位规则。 | Important：原文混用字段名但没有说明清洗结果边界；应保留业务审计语义并引用敏感集合 source of truth。 | 改为审计记录写入清洗义务，并由 `IDENTITY-AUDIT-002` 承接封闭敏感集合和安全占位。 |
+| `IDENTITY-AUDIT-002` | audit redaction 必须识别 token、secret、signature、receipt、URL 等敏感 key 或 value。 | 审计清洗必须按 current code baseline 的封闭敏感集合识别 key token：`api_key`、`audio`、`authorization`、`credential`、`idempotency`、`payload`、`provider_key`、`raw`、`receipt`、`secret`、`signature`、`signed`、`token`、`transcript`、`url`；并识别 value pattern：`signature=`、`token=`、`secret`、`api_key`、`raw_payload`、`full_transcript`、`http://`、`https://`。命中敏感 details key 时必须把 details key 输出为 `redacted_field_<index>` 且 value 输出为 `redacted`；命中敏感 details value 时必须把 value 输出为 `redacted`；敏感 target ref 必须输出 `redacted:target_ref`；敏感或空白 request id 必须输出 `unknown`。 | Important：“等”导致敏感范围不可验收；需要把当前 baseline 承诺的敏感类别和安全占位列成封闭集合。 | 删除“等”，列出 current code baseline 的 key token、value pattern 和封闭安全占位结果。 |
+| `IDENTITY-AUDIT-003` | 账号删除完成时，系统必须写入删除完成 audit event。 | 账号删除执行完成时，系统必须写入删除完成审计事件；若完成来自运维重试，审计事件必须能区分重试完成结果。 | Suggestion：当前代码区分普通删除完成与重试完成，Requirement 应表达结果语义而不是只写单一事件名。 | 补充 retry completed 作为 deletion completed 结果变体。 |
+| `IDENTITY-AUDIT-004` | 账号删除失败时，系统必须写入删除失败 audit event。 | 账号删除执行失败时，系统必须写入删除失败审计事件；若失败来自运维重试，审计事件必须能区分重试失败结果。 | Suggestion：当前代码区分普通删除失败与重试失败，Requirement 应表达失败语义变体。 | 补充 retry failed 作为 deletion failed 结果变体。 |
+| `IDENTITY-AUDIT-005` | 账号删除重试请求必须写入删除重试 audit event。 | 通过 ops 运维认证并被接受进入处理的账号删除重试请求，必须写入删除重试请求审计事件；未通过认证或未进入重试处理的请求不由本 item 承诺。 | Important：原文未说明是所有请求还是 accepted retry request；应避免承诺无效请求也写入同一事件。 | 限定触发为通过 ops 认证且被接受处理的重试请求。 |
+| `IDENTITY-AUDIT-006` | 共享 audit log 查询必须记录查询行为 audit event。 | ops admin 查询审计日志列表时，系统必须记录该查询行为的审计事件；该事件只证明 admin audit 查询被记录，不承诺普通用户可见的共享审计日志查询。 | Important：“共享 audit log 查询”边界不清，容易误解为用户侧共享查询能力。 | 改为 ops admin audit log list query，并明确不承诺普通用户共享查询。 |
+
+Spec 审查与 12-F 修复方案：
+| Spec item | 原始 Spec 描述 | 修复后 Spec 描述 | 结论 | 12-F Spec 修复方案 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-SPEC-AUDIT-001` | 写入 audit log 时，系统必须把 `AUDIT-IN-RAW` 清洗为 `AUDIT-OUT-REDACTED`。 | 在 `AUDIT-FLOW-REDACT-ON-WRITE` 中，当系统创建审计记录并接收 `AUDIT-IN-RAW` 时，必须输出 `AUDIT-OUT-REDACTED`，且持久化审计记录不得保存未清洗的 target ref、request id 或 details。 | Important：缺少 flow anchor 和 no raw persistence 后置边界。 | 新增 redaction-on-write flow，补清不得持久化未清洗内容。 |
+| `IDENTITY-SPEC-AUDIT-002` | audit redaction 必须识别 `AUDIT-SENSITIVE-PATTERN` 并避免敏感信息进入 audit 输出。 | 在 `AUDIT-FLOW-REDACT-SENSITIVE-CONTENT` 中，`AUDIT-SENSITIVE-PATTERN` 必须覆盖 key token 集合 `api_key`、`audio`、`authorization`、`credential`、`idempotency`、`payload`、`provider_key`、`raw`、`receipt`、`secret`、`signature`、`signed`、`token`、`transcript`、`url`，以及 value pattern 集合 `signature=`、`token=`、`secret`、`api_key`、`raw_payload`、`full_transcript`、`http://`、`https://`；命中 sensitive details key 时，输出 details key 必须为 `redacted_field_<index>` 且 value 为 `redacted`；命中 sensitive details value 时，value 必须为 `redacted`；命中 sensitive target ref 时必须输出 `redacted:target_ref`；命中 sensitive 或空白 request id 时必须输出 `unknown`；所有结果必须进入 `AUDIT-OUT-REDACTED`。 | Important：需要说明命中后的可观察输出、封闭敏感集合和封闭安全占位结果。 | 新增 sensitive-content flow，并补充 current baseline key/value pattern 与 replacement output。 |
+| `IDENTITY-SPEC-AUDIT-003` | 账号删除完成时，系统必须写入 `AUDIT-EVENT-DELETION-COMPLETED`。 | 在 `AUDIT-FLOW-ACCOUNT-DELETION-RESULT` 中，账号删除执行完成时必须写入 `AUDIT-EVENT-DELETION-COMPLETED`；当完成来自运维重试时，该事件必须能区分 retry completed 变体。 | Suggestion：补充 deletion result flow 和 retry completed 变体。 | 将完成事件挂到 account deletion result flow。 |
+| `IDENTITY-SPEC-AUDIT-004` | 账号删除失败时，系统必须写入 `AUDIT-EVENT-DELETION-FAILED`。 | 在 `AUDIT-FLOW-ACCOUNT-DELETION-RESULT` 中，账号删除执行失败时必须写入 `AUDIT-EVENT-DELETION-FAILED`；当失败来自运维重试时，该事件必须能区分 retry failed 变体。 | Suggestion：补充 deletion result flow 和 retry failed 变体。 | 将失败事件挂到 account deletion result flow。 |
+| `IDENTITY-SPEC-AUDIT-005` | 账号删除重试请求必须写入 `AUDIT-EVENT-DELETION-RETRY`。 | 在 `AUDIT-FLOW-ACCOUNT-DELETION-RETRY-REQUESTED` 中，通过 `RISK-FLOW-ADMIN-OPS-AUTH` 且被接受进入重试处理的删除重试请求，必须写入 `AUDIT-EVENT-DELETION-RETRY`。 | Important：需要引用 RISK ops auth source of truth，并限定 accepted retry request。 | 新增 retry-requested flow。 |
+| `IDENTITY-SPEC-AUDIT-006` | 共享 audit log 查询必须记录 `AUDIT-EVENT-QUERY`。 | 在 `AUDIT-FLOW-ADMIN-AUDIT-QUERY` 中，通过 `RISK-FLOW-ADMIN-OPS-AUTH` 的 ops admin 审计日志列表查询必须记录 `AUDIT-EVENT-QUERY`；返回的审计详情必须来自 `AUDIT-OUT-REDACTED`，不得输出未清洗 details。 | Important：需要把“共享查询”收敛为 ops admin 查询，并补清返回内容 redaction 边界。 | 新增 admin audit query flow，引用 RISK ops auth。 |
+
+跨文档发现与 12-F 修复方案：
+| 对象 | 问题 | 影响 | 级别 | 12-F 修复方案 |
+| --- | --- | --- | --- | --- |
+| AUDIT Flow Segments | spec 当前只有 item table，没有审计写入清洗、敏感内容替换、删除结果、删除重试请求和 admin 查询 flow。 | AC/TC 难以生成写入、读取、删除事件和查询审计的可观察路径。 | Important | 新增 `AUDIT-FLOW-REDACT-ON-WRITE`、`AUDIT-FLOW-REDACT-SENSITIVE-CONTENT`、`AUDIT-FLOW-ACCOUNT-DELETION-RESULT`、`AUDIT-FLOW-ACCOUNT-DELETION-RETRY-REQUESTED`、`AUDIT-FLOW-ADMIN-AUDIT-QUERY`。 |
+| AUDIT Ref ID | `AUDIT-SENSITIVE-PATTERN` 使用“等”类开放范围；候选封闭集合若遗漏 `signed`、`raw`、`payload`、`audio`、`transcript` 等 current baseline key token，也会低估当前安全清洗承诺；`AUDIT-EVENT-QUERY` 没有说明是 ops admin 查询事件。 | Ref ID 可验收性不足，容易扩大为普通用户共享审计查询或遗漏 current baseline 敏感内容。 | Important | 将 `AUDIT-SENSITIVE-PATTERN` 定义为封闭 baseline 集合：key token 为 `api_key`、`audio`、`authorization`、`credential`、`idempotency`、`payload`、`provider_key`、`raw`、`receipt`、`secret`、`signature`、`signed`、`token`、`transcript`、`url`；value pattern 为 `signature=`、`token=`、`secret`、`api_key`、`raw_payload`、`full_transcript`、`http://`、`https://`；安全占位为 sensitive details key `redacted_field_<index>` + value `redacted`、sensitive details value `redacted`、target ref `redacted:target_ref`、request id `unknown`。把 `AUDIT-EVENT-QUERY` 定义为 ops admin audit list query event。 |
+| AUDIT 与 RISK 边界 | 删除重试请求和 admin audit 查询都依赖 ops bearer 认证，但 spec 未引用 RISK source of truth。 | 容易在 AUDIT 里重复定义 admin 认证规则。 | Suggestion | 在 AUDIT flow 中引用 `RISK-FLOW-ADMIN-OPS-AUTH`，不重写 ops bearer 认证细节。 |
+| Traceability | `IDENTITY-AUDIT-001..006` 的 `Spec Flow` 仍为 `TBD - 后续补齐`，但 `IDENTITY-SPEC-AUDIT-001..006` 已存在。 | Requirement -> Spec 链路断裂。 | Important | 12-F 同步 `Spec Flow` 到 `IDENTITY-SPEC-AUDIT-001..006`；AC/TC 继续保留 TBD。 |
+
+Task 12-R 执行情况：
+- 已执行：完成 `IDENTITY-AUDIT-001..006` 和 `IDENTITY-SPEC-AUDIT-001..006` 的逐条内容契约语义审查。
+- 已执行：按 Requirement / Spec 分离格式形成 12-F 修复输入表，并在 item 后附原始描述与修复后描述。
+- 已执行：独立 agent 初次复核指出 `AUDIT-SENSITIVE-PATTERN` 封闭集合和安全占位不完整；本审查表已按该意见补齐 key token、value pattern 和固定占位输出，并重新提交独立复核。
+- 12-R 阶段未执行：未修改 `requirements.md`、`spec.md` 或 `traceability.md` 正文；等待独立 agent 复核通过后再执行 Task 12-F。
+- 未执行：未生成或修改 AC/TC，未修改代码，未审查 Task 13 release。
+
+Task 12-R 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 12-R | Passed by main+independent agents | 独立 agent 已确认本审查表满足颗粒度/清晰度/覆盖度，并按用户更新后的门禁规则自动进入 Task 12-F。 |
+| Task 12-F | Passed by main+independent agents | 独立 agent 已确认 AUDIT 修复满足颗粒度/清晰度/覆盖度，并按用户更新后的门禁规则自动进入 Task 13-R。 |
+
+### IDENTITY-AUDIT 审计、隐私与合规 12-F 修复复审
+
+修复范围：
+- Requirements：修复 `IDENTITY-AUDIT-001..006` 的审计写入清洗、封闭敏感集合、删除结果事件、删除重试请求事件和 ops admin 查询审计语义。
+- Spec：修复 AUDIT Ref ID，新增 AUDIT flow segments，并修复 `IDENTITY-SPEC-AUDIT-001..006`。
+- Traceability：同步 `IDENTITY-AUDIT-001..006` 的 `Spec Flow` 到 `IDENTITY-SPEC-AUDIT-001..006`；`AC` 与 `TC` 继续保留 `TBD - 后续补齐`。
+- 独立审查：Task 12-R 候选方案初次被独立 agent 判定不通过；主 agent 已按独立意见补齐 `AUDIT-SENSITIVE-PATTERN` 的 key token、value pattern 和固定占位输出，重新提交后独立 agent 结论为“通过，可进入 Task 12-F”。
+
+Requirement 修复复审表：
+| Requirement item | 修复前 Requirement 描述 | 修复后 Requirement 描述 | 复审结论 | 状态 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-AUDIT-001` | 写入 audit log 时，系统必须清洗 target ref、request id 和 details。 | 创建或持久化审计记录时，系统必须对审计目标引用、请求标识和详情内容执行敏感信息清洗；清洗后输出必须满足 `IDENTITY-AUDIT-002` 的敏感集合与安全占位规则。 | Pass：写入清洗义务清楚，敏感集合 source of truth 交给 002。 | Fixed |
+| `IDENTITY-AUDIT-002` | audit redaction 必须识别 token、secret、signature、receipt、URL 等敏感 key 或 value。 | 审计清洗必须按当前代码基线的封闭敏感集合识别 key token：`api_key`、`audio`、`authorization`、`credential`、`idempotency`、`payload`、`provider_key`、`raw`、`receipt`、`secret`、`signature`、`signed`、`token`、`transcript`、`url`；并识别 value pattern：`signature=`、`token=`、`secret`、`api_key`、`raw_payload`、`full_transcript`、`http://`、`https://`。命中敏感 details key 时必须把 details key 输出为 `redacted_field_<index>` 且 value 输出为 `redacted`；命中敏感 details value 时必须把 value 输出为 `redacted`；敏感 target ref 必须输出 `redacted:target_ref`；敏感或空白 request id 必须输出 `unknown`。 | Pass：去掉“等”，封闭集合和固定占位完整。 | Fixed |
+| `IDENTITY-AUDIT-003` | 账号删除完成时，系统必须写入删除完成 audit event。 | 账号删除执行完成时，系统必须写入删除完成审计事件；若完成来自运维重试，审计事件必须能区分重试完成结果。 | Pass：覆盖普通完成与重试完成变体。 | Fixed |
+| `IDENTITY-AUDIT-004` | 账号删除失败时，系统必须写入删除失败 audit event。 | 账号删除执行失败时，系统必须写入删除失败审计事件；若失败来自运维重试，审计事件必须能区分重试失败结果。 | Pass：覆盖普通失败与重试失败变体。 | Fixed |
+| `IDENTITY-AUDIT-005` | 账号删除重试请求必须写入删除重试 audit event。 | 通过 ops 运维认证并被接受进入处理的账号删除重试请求，必须写入删除重试请求审计事件；未通过认证或未进入重试处理的请求不由本 item 承诺。 | Pass：触发条件限定为 accepted retry request，未扩大到无效请求。 | Fixed |
+| `IDENTITY-AUDIT-006` | 共享 audit log 查询必须记录查询行为 audit event。 | ops admin 查询审计日志列表时，系统必须记录该查询行为的审计事件；该事件只证明 admin audit 查询被记录，不承诺普通用户可见的共享审计日志查询。 | Pass：从模糊“共享查询”收敛为 ops admin audit list query。 | Fixed |
+
+Spec 修复复审表：
+| Spec item | 修复前 Spec 描述 | 修复后 Spec 描述 | 复审结论 | 状态 |
+| --- | --- | --- | --- | --- |
+| `IDENTITY-SPEC-AUDIT-001` | 写入 audit log 时，系统必须把 `AUDIT-IN-RAW` 清洗为 `AUDIT-OUT-REDACTED`。 | 在 `AUDIT-FLOW-REDACT-ON-WRITE` 中，当系统创建审计记录并接收 `AUDIT-IN-RAW` 时，必须输出 `AUDIT-OUT-REDACTED`，且持久化审计记录不得保存未清洗的 target ref、request id 或 details。 | Pass：flow anchor 和 no raw persistence 边界清楚。 | Fixed |
+| `IDENTITY-SPEC-AUDIT-002` | audit redaction 必须识别 `AUDIT-SENSITIVE-PATTERN` 并避免敏感信息进入 audit 输出。 | 在 `AUDIT-FLOW-REDACT-SENSITIVE-CONTENT` 中，`AUDIT-SENSITIVE-PATTERN` 必须覆盖 key token 集合 `api_key`、`audio`、`authorization`、`credential`、`idempotency`、`payload`、`provider_key`、`raw`、`receipt`、`secret`、`signature`、`signed`、`token`、`transcript`、`url`，以及 value pattern 集合 `signature=`、`token=`、`secret`、`api_key`、`raw_payload`、`full_transcript`、`http://`、`https://`；命中 sensitive details key 时，输出 details key 必须为 `redacted_field_<index>` 且 value 为 `redacted`；命中 sensitive details value 时，value 必须为 `redacted`；命中 sensitive target ref 时必须输出 `redacted:target_ref`；命中 sensitive 或空白 request id 时必须输出 `unknown`；所有结果必须进入 `AUDIT-OUT-REDACTED`。 | Pass：封闭敏感集合和输出占位完整。 | Fixed |
+| `IDENTITY-SPEC-AUDIT-003` | 账号删除完成时，系统必须写入 `AUDIT-EVENT-DELETION-COMPLETED`。 | 在 `AUDIT-FLOW-ACCOUNT-DELETION-RESULT` 中，账号删除执行完成时必须写入 `AUDIT-EVENT-DELETION-COMPLETED`；当完成来自运维重试时，该事件必须能区分 retry completed 变体。 | Pass：完成事件挂到删除结果 flow，并区分 retry completed。 | Fixed |
+| `IDENTITY-SPEC-AUDIT-004` | 账号删除失败时，系统必须写入 `AUDIT-EVENT-DELETION-FAILED`。 | 在 `AUDIT-FLOW-ACCOUNT-DELETION-RESULT` 中，账号删除执行失败时必须写入 `AUDIT-EVENT-DELETION-FAILED`；当失败来自运维重试时，该事件必须能区分 retry failed 变体。 | Pass：失败事件挂到删除结果 flow，并区分 retry failed。 | Fixed |
+| `IDENTITY-SPEC-AUDIT-005` | 账号删除重试请求必须写入 `AUDIT-EVENT-DELETION-RETRY`。 | 在 `AUDIT-FLOW-ACCOUNT-DELETION-RETRY-REQUESTED` 中，通过 `RISK-FLOW-ADMIN-OPS-AUTH` 且被接受进入重试处理的删除重试请求，必须写入 `AUDIT-EVENT-DELETION-RETRY`。 | Pass：引用 RISK ops auth，不重复定义 admin 认证。 | Fixed |
+| `IDENTITY-SPEC-AUDIT-006` | 共享 audit log 查询必须记录 `AUDIT-EVENT-QUERY`。 | 在 `AUDIT-FLOW-ADMIN-AUDIT-QUERY` 中，通过 `RISK-FLOW-ADMIN-OPS-AUTH` 的 ops admin 审计日志列表查询必须记录 `AUDIT-EVENT-QUERY`；返回的审计详情必须来自 `AUDIT-OUT-REDACTED`，不得输出未清洗 details。 | Pass：admin 查询、query audit event 和读取 redaction 边界清楚。 | Fixed |
+
+Spec Ref / Flow / Traceability 复审表：
+| 对象 | 修复内容 | 复审结论 | 状态 |
+| --- | --- | --- | --- |
+| AUDIT Ref ID | `AUDIT-SENSITIVE-PATTERN` 改为封闭 key token/value pattern 集合和固定安全占位；`AUDIT-EVENT-QUERY` 收敛为 ops admin audit list query event；删除结果和重试事件 Ref ID 补清变体。 | Pass：Ref ID 不再使用开放“等”范围，事件边界清楚。 | Fixed |
+| AUDIT Flow Segments | 新增 `AUDIT-FLOW-REDACT-ON-WRITE`、`AUDIT-FLOW-REDACT-SENSITIVE-CONTENT`、`AUDIT-FLOW-ACCOUNT-DELETION-RESULT`、`AUDIT-FLOW-ACCOUNT-DELETION-RETRY-REQUESTED`、`AUDIT-FLOW-ADMIN-AUDIT-QUERY`。 | Pass：覆盖写入清洗、敏感替换、删除结果、删除重试请求和 ops admin 查询。 | Fixed |
+| Traceability | `IDENTITY-AUDIT-001..006` 的 `Spec Flow` 同步为 `IDENTITY-SPEC-AUDIT-001..006`；AC/TC 保持 `TBD - 后续补齐`。 | Pass：补齐 Requirement -> Spec 链路，同时未伪造 AC、TC 或测试证据。 | Fixed |
+
+Task 12-F 执行情况：
+- 已执行：修复 AUDIT requirements 六条 item。
+- 已执行：修复 AUDIT spec Ref ID、flow segments 和六条 spec item。
+- 已执行：同步 `traceability.md` 中 `IDENTITY-AUDIT-001..006` 的 `Spec Flow`。
+- 未执行：未生成或修改 AC/TC，未修改代码，未审查 Task 13 release。
+
+Task 12-F 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 12-F | Passed by main+independent agents | 独立 agent 已确认修复满足颗粒度/清晰度/覆盖度，并按用户更新后的门禁规则自动进入 Task 13-R。 |
+| Task 13-R | Passed by main+independent agents | 独立 agent 已确认 RELEASE 边界审查方案满足颗粒度/清晰度/覆盖度，按用户更新后的门禁规则自动进入 Task 13-F。 |
+
+### IDENTITY-RELEASE 测试替身与生产环境 release gate 13-R 逐条语义审查
+
+审查范围：
+- Requirements：`docs/product/base/identity-account-lifecycle/requirements.md` 的 `IDENTITY-RELEASE` 边界说明；当前无可归档 requirement item。
+- Spec：`docs/product/base/identity-account-lifecycle/spec.md` 的 `IDENTITY-SPEC-RELEASE-000`、`RELEASE-BOUNDARY-NO-BASELINE`、`RELEASE-TARGET-PENDING`。
+- 只读上下文：`/admin/release-health` 当前代码证据只返回通用 warning，未形成 identity 专属生产阻断。
+- Traceability：`traceability.md` 明确当前没有 `IDENTITY-RELEASE-*` 已实现 requirement 追溯行。
+
+本轮结果：conditional。当前“无可归档为已实现的 identity 专属 release gate 需求”和 `IDENTITY-SPEC-RELEASE-000` 的 `No accepted baseline` 方向正确，不应新增已实现 requirement、AC、TC 或 code evidence。但 requirements 的稳定 feature mapping 仍把“生产发布门禁”写入 `identity-account-lifecycle` 稳定模块候选边界，和稳定能力范围“不承载 identity 专属生产发布门禁实现”存在语义张力。13-F 应删除或收窄该候选边界，并移除 requirements 正文中的具体 API path 表述，避免把通用 release health warning 误读为 identity release gate。
+
+Requirement 边界审查与 13-F 修复方案：
+| Requirement / boundary item | 原始 Requirement / boundary 描述 | 修复后 Requirement / boundary 描述 | 结论 | 13-F Requirement 修复方案 |
+| --- | --- | --- | --- | --- |
+| 稳定能力范围 | 该模块不承载会员订阅、支付、学习内容、AI 练习、课程推荐、业务学习状态或 identity 专属生产发布门禁实现。 | 保持：该模块不承载 identity 专属生产发布门禁实现。 | Pass：模块非职责边界清楚。 | 不改或仅与 feature mapping 语言对齐。 |
+| 稳定 Feature 映射 / `identity-account-lifecycle` | 身份认证、账号生命周期、会话、删除、风控、审计、隐私和生产发布门禁的稳定模块候选。 | 身份认证、账号生命周期、会话、删除、风控、审计和隐私的稳定模块候选；identity 专属生产发布门禁只作为未实现的下游 DevOps/Security target boundary，不纳入当前稳定能力候选。 | Important：原文把“生产发布门禁”放入稳定模块候选，和模块非职责边界冲突。 | 从 Product Base 边界中删除“生产发布门禁”，改为未实现下游边界。 |
+| `IDENTITY-RELEASE` 小节标题 | `IDENTITY-RELEASE 测试替身与生产环境 release gate`。 | `IDENTITY-RELEASE 未实现生产发布边界`。 | Suggestion：原标题可能被误读为本模块已有 release gate 能力。 | 改标题为边界型小节，强调未实现。 |
+| `IDENTITY-RELEASE` 边界声明 | 当前无可归档为已实现的 identity 专属 release gate 需求。 | 保持：当前无可归档为已实现的 identity 专属 release gate 需求。 | Pass：没有把 target 写成 requirement item。 | 保持。 |
+| `IDENTITY-RELEASE` 未归档说明 | 当前不归档为已实现：生产环境禁用 fake OTP、生产环境禁用未校验 provider token、identity provider 配置缺失时阻断发布、identity 专属 release gate。现有 `/admin/release-health` 只是通用 warning，不是 identity 专属生产阻断。 | 当前不归档为已实现：生产环境禁用 fake OTP、生产环境禁用未校验 provider token、identity provider 配置缺失时阻断发布、identity 专属 release gate。现有通用 release health warning 只是状态提示，不是 identity 专属生产阻断。 | Important：requirements 文档写具体 API path 会混入 API contract 表述。 | 移除具体 path，保留业务/发布边界语义。 |
+
+Spec 边界审查与 13-F 修复方案：
+| Spec item / boundary | 原始 Spec 描述 | 修复后 Spec 描述 | 结论 | 13-F Spec 修复方案 |
+| --- | --- | --- | --- | --- |
+| `RELEASE-BOUNDARY-NO-BASELINE` | 当前没有 identity 专属已实现 release gate 可归档为 Product Base 代码基线。 | 当前没有 identity 专属已实现 release gate 可归档为 Product Base 代码基线；通用 release health warning 不构成 identity 专属生产阻断。 | Suggestion：可补充通用 warning 与专属阻断的边界。 | 补清通用 warning 不等于 release gate。 |
+| `RELEASE-TARGET-PENDING` | 生产禁用 fake OTP、禁用未校验 provider token、identity provider 配置阻断和 identity 专属 release gate 均仍为未实现目标。 | 保持：生产禁用 fake OTP、禁用未校验 provider token、identity provider 配置阻断和 identity 专属 release gate 均仍为未实现目标。 | Pass：未把目标态写成已实现。 | 保持。 |
+| `IDENTITY-SPEC-RELEASE-000` | 在 `RELEASE-BOUNDARY-NO-BASELINE` 下，本规格不得把 `RELEASE-TARGET-PENDING` 写成已实现行为；后续只有形成独立 requirement、spec、AC、TC、实现和 release evidence 后，才能新增 identity release gate spec item。 | 在 `RELEASE-BOUNDARY-NO-BASELINE` 下，本规格不得把 `RELEASE-TARGET-PENDING` 写成已实现行为；当前通用 release health warning 不得作为 identity 专属 release gate code evidence；后续只有形成独立 requirement、spec、AC、TC、实现和 release evidence 后，才能新增 identity release gate spec item。 | Important：Spec 可再明确当前通用 warning 不得作为 code evidence。 | 补充不得把通用 warning 当作 identity release gate 证据。 |
+| 模块影响 / Architecture / Security | opaque token、provider boundary、OTP security、audit redaction、admin bearer、release gate。 | opaque token、provider boundary、OTP security、audit redaction、admin bearer，以及未实现的 identity release gate target boundary。 | Suggestion：下游影响中 release gate 应标为 target boundary。 | 收窄为 target boundary。 |
+| 模块影响 / DevOps / Release | 生产 HTTPS、OTP provider 禁用测试替身、identity 专属 release gate。 | 生产 HTTPS、OTP provider 禁用测试替身，以及未实现的 identity 专属 release gate target boundary。 | Suggestion：避免把 release gate 当作当前已实现职责。 | 收窄为未实现 target boundary。 |
+| 必需下游契约 / Architecture-Security / DevOps | 定义 release gate 关系；目标态 OTP 和 identity provider 进入生产前，需要 release health 阻断等。 | 明确这些均为目标态下游 DevOps/Security 输出，不是当前 `Code baseline` 或 `No accepted baseline` 的实现证据。 | Suggestion：下游契约应避免误导 Product Base merge。 | 在相关下游契约文字中加入目标态/未实现边界。 |
+
+跨文档发现与 13-F 修复方案：
+| 对象 | 问题 | 影响 | 级别 | 13-F 修复方案 |
+| --- | --- | --- | --- | --- |
+| Requirements feature mapping | `identity-account-lifecycle` Product Base 边界仍包含“生产发布门禁”。 | 与稳定能力范围“不承载 identity 专属生产发布门禁实现”冲突。 | Important | 删除“生产发布门禁”，改为未实现下游 target boundary。 |
+| Requirements API path | Release 边界说明写入 `/admin/release-health` 具体 path。 | Requirements 混入 API contract 表述。 | Important | 改成“通用 release health warning”。 |
+| Spec release evidence boundary | `IDENTITY-SPEC-RELEASE-000` 未明确通用 warning 不可作为 identity release gate code evidence。 | 后续 traceability/AC 可能误把 warning 当成实现证据。 | Important | 在 boundary spec 中补充该禁止解释。 |
+| Traceability | 当前没有 `IDENTITY-RELEASE-*` 追溯行。 | 与“无已实现 requirement item”一致。 | Pass | 13-F 不新增 release requirement traceability 行；仅保持边界说明。 |
+
+Task 13-R 执行情况：
+- 已执行：完成 `IDENTITY-RELEASE` 无已实现 requirement 边界和 `IDENTITY-SPEC-RELEASE-000` 的内容契约语义审查。
+- 已执行：按 Requirement boundary / Spec boundary 分离格式形成 13-F 修复输入表，并在 item 后附原始描述与修复后描述。
+- 13-R 阶段未执行：未修改 `requirements.md`、`spec.md` 或 `traceability.md` 正文；等待独立 agent 复核通过后再执行 Task 13-F。
+- 未执行：未生成或修改 AC/TC，未修改代码，未新增 release requirement traceability 行。
+
+Task 13-R 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 13-R | Passed by main+independent agents | 独立 agent 已确认本审查表满足颗粒度/清晰度/覆盖度，并按用户更新后的门禁规则自动进入 Task 13-F。 |
+| Task 13-F | Passed by main+independent agents | 独立 agent 已确认 RELEASE 边界修复满足颗粒度/清晰度/覆盖度，本轮任务完成。 |
+
+### IDENTITY-RELEASE 未实现生产发布边界 13-F 修复复审
+
+修复范围：
+- Requirements：修复稳定 Feature 映射中的 release gate 边界，重命名 `IDENTITY-RELEASE` 小节，并移除 requirements 正文中的具体 API path 表述。
+- Spec：修复 release Ref ID、`IDENTITY-SPEC-RELEASE-000`、模块影响和必需下游契约中的 release gate target boundary 表述。
+- Traceability：保持当前没有 `IDENTITY-RELEASE-*` 已实现 requirement 追溯行；本轮未新增 release requirement、AC、TC 或 code evidence。
+- 独立审查：Task 13-R 审查方案已由独立 agent 判定通过，可进入 Task 13-F。
+
+Requirement 边界修复复审表：
+| Requirement / boundary item | 修复前 Requirement / boundary 描述 | 修复后 Requirement / boundary 描述 | 复审结论 | 状态 |
+| --- | --- | --- | --- | --- |
+| 稳定能力范围 | 该模块不承载会员订阅、支付、学习内容、AI 练习、课程推荐、业务学习状态或 identity 专属生产发布门禁实现。 | 未修改；继续声明该模块不承载 identity 专属生产发布门禁实现。 | Pass：非职责边界保持稳定。 | Fixed |
+| 稳定 Feature 映射 / `identity-account-lifecycle` | 身份认证、账号生命周期、会话、删除、风控、审计、隐私和生产发布门禁的稳定模块候选。 | 身份认证、账号生命周期、会话、删除、风控、审计和隐私的稳定模块候选；identity 专属生产发布门禁只作为未实现的下游 DevOps/Security target boundary，不纳入当前稳定能力候选。 | Pass：消除了 feature mapping 与模块非职责边界的冲突。 | Fixed |
+| `IDENTITY-RELEASE` 小节标题 | `IDENTITY-RELEASE 测试替身与生产环境 release gate`。 | `IDENTITY-RELEASE 未实现生产发布边界`。 | Pass：标题不再暗示本模块已有 release gate 能力。 | Fixed |
+| `IDENTITY-RELEASE` 边界声明 | 当前无可归档为已实现的 identity 专属 release gate 需求。 | 当前无可归档为已实现的 identity 专属 release gate 需求。 | Pass：仍未新增 requirement item。 | Fixed |
+| `IDENTITY-RELEASE` 未归档说明 | 当前不归档为已实现：生产环境禁用 fake OTP、生产环境禁用未校验 provider token、identity provider 配置缺失时阻断发布、identity 专属 release gate。现有 `/admin/release-health` 只是通用 warning，不是 identity 专属生产阻断。 | 当前不归档为已实现：生产环境禁用 fake OTP、生产环境禁用未校验 provider token、identity provider 配置缺失时阻断发布、identity 专属 release gate。现有通用 release health warning 只是状态提示，不是 identity 专属生产阻断。 | Pass：移除 API path，保留 release 边界语义。 | Fixed |
+
+Spec 边界修复复审表：
+| Spec item / boundary | 修复前 Spec 描述 | 修复后 Spec 描述 | 复审结论 | 状态 |
+| --- | --- | --- | --- | --- |
+| `RELEASE-BOUNDARY-NO-BASELINE` | 当前没有 identity 专属已实现 release gate 可归档为 Product Base 代码基线。 | 当前没有 identity 专属已实现 release gate 可归档为 Product Base 代码基线；通用 release health warning 不构成 identity 专属生产阻断。 | Pass：通用 warning 与专属阻断边界清楚。 | Fixed |
+| `RELEASE-TARGET-PENDING` | 生产禁用 fake OTP、禁用未校验 provider token、identity provider 配置阻断和 identity 专属 release gate 均仍为未实现目标。 | 未修改；仍明确上述能力均为未实现目标。 | Pass：未把目标态写成已实现。 | Fixed |
+| `IDENTITY-SPEC-RELEASE-000` | 在 `RELEASE-BOUNDARY-NO-BASELINE` 下，本规格不得把 `RELEASE-TARGET-PENDING` 写成已实现行为；后续只有形成独立 requirement、spec、AC、TC、实现和 release evidence 后，才能新增 identity release gate spec item。 | 在 `RELEASE-BOUNDARY-NO-BASELINE` 下，本规格不得把 `RELEASE-TARGET-PENDING` 写成已实现行为；当前通用 release health warning 不得作为 identity 专属 release gate code evidence；后续只有形成独立 requirement、spec、AC、TC、实现和 release evidence 后，才能新增 identity release gate spec item。 | Pass：明确通用 warning 不可作为 release gate 代码证据。 | Fixed |
+| 模块影响 / Architecture / Security | opaque token、provider boundary、OTP security、audit redaction、admin bearer、release gate。 | opaque token、provider boundary、OTP security、audit redaction、admin bearer，以及未实现的 identity release gate target boundary。 | Pass：release gate 被标为未实现 target boundary。 | Fixed |
+| 模块影响 / DevOps / Release | 生产 HTTPS、OTP provider 禁用测试替身、identity 专属 release gate。 | 生产 HTTPS、OTP provider 禁用测试替身，以及未实现的 identity 专属 release gate target boundary。 | Pass：DevOps release gate 仍是下游 target，不是当前 code baseline。 | Fixed |
+| 必需下游契约 / Architecture-Security / DevOps | 定义 release gate 关系；目标态 OTP 和 identity provider 进入生产前，需要 release health 阻断等。 | Architecture/Security 改为未实现 release gate target boundary 关系；DevOps 改为目标态 release health 阻断，且明确这些是下游 DevOps target boundary，不是当前 identity code baseline。 | Pass：下游契约不再误导为当前已实现证据。 | Fixed |
+
+Traceability / Release Boundary 复审表：
+| 对象 | 修复内容 | 复审结论 | 状态 |
+| --- | --- | --- | --- |
+| Traceability | 保持 `IDENTITY-RELEASE` 当前没有 `IDENTITY-RELEASE-*` 已实现 requirement 追溯行。 | Pass：与无已实现 requirement item 一致。 | Fixed |
+| AC / TC / Code evidence | 未生成 AC/TC，未新增 code evidence，未修改代码。 | Pass：没有把 release target boundary 伪装成已实现能力。 | Fixed |
+
+Task 13-F 执行情况：
+- 已执行：修复 requirements 中 feature mapping、release 小节标题和 release 边界说明。
+- 已执行：修复 spec 中 release Ref ID、`IDENTITY-SPEC-RELEASE-000`、模块影响和下游契约表述。
+- 未执行：未新增 release requirement item，未新增 traceability 行，未生成或修改 AC/TC，未修改代码。
+
+Task 13-F 门禁状态：
+| Gate | 状态 | 下一步限制 |
+| --- | --- | --- |
+| Task 13-F | Passed by main+independent agents | 独立 agent 已确认修复满足颗粒度/清晰度/覆盖度，本轮 Product Base identity 内容契约审查/修复任务完成。 |
 
 ## 2026-06-11 SWC 架构治理上线独立审核
 

@@ -1,7 +1,7 @@
 # Implementation Report
 
 ## Current Status
-Latest Followup-E implementation state: docs-only planning/contract evidence. Followup-E Phase 0-3 documents are present and reviewed for planning, but no Followup-E backend, Flutter, OpenAPI/generated client, AI runtime, native mic/audio bytes upload, test execution, release or Product Base implementation evidence is accepted in this state.
+当前最新实现证据：`identity-otp-production-hardening` 已补齐后端 API、DB migration、domain、core service、OpenAPI、release scripts 与 SWC allocation 的本地实现和验证记录；`IDENTITY-RELEASE-001` 已清除。商业发布仍被 `IDENTITY-RELEASE-002/003`、Apple/WeChat verifier、SMS/phone-risk/CAPTCHA/step-up/HTTPS/retention provider evidence、phone-risk country coverage、`CN` SIM-swap evidence 和 Dart/Flutter client drift closure 阻断；Followup-E 仍保持 docs-only planning/contract evidence。
 
 ## Report Format
 Each completed change should append:
@@ -14,6 +14,56 @@ Each completed change should append:
 - results
 - risks
 - follow-up
+
+## 2026-06-26 - IDENTITY-OTP-PRODUCTION-HARDENING-BACKEND-20260625
+
+变更说明:
+- 补齐 `identity-otp-production-hardening` 后端 OTP production hardening slice 的实现回写，覆盖 OTP API、risk decision、delivery throttle、audit event、retention、release guard、OpenAPI 和 DB migration 影响面。
+- 本条报告只记录已落地的后端与发布校验证据，不声明商业发布 ready，不替代 Flutter/Dart client、Apple/WeChat verifier 或外部 provider evidence。
+
+需求映射:
+- Increment：`docs/product/increments/identity-otp-production-hardening/definition.md`
+- Requirements / spec / AC / test / traceability：`docs/product/increments/identity-otp-production-hardening/requirements.md`、`spec.md`、`acceptance.md`、`test_cases.md`、`traceability.md`
+- SWC allocation：`docs/product/increments/identity-otp-production-hardening/swc_allocation.md`
+- Test report anchor：`docs/reports/test_report.md#2026-06-25---identity-otp-production-hardening-20260625`
+- Release guard：`docs/release/release_checklist.md`、`docs/release/commercial_release_runbook.md`
+
+变更文件:
+- Backend API / service / security：`backend/src/main/java/com/speakeasy/api/AuthController.java`、`backend/src/main/java/com/speakeasy/identity/AuthService.java`、`backend/src/main/java/com/speakeasy/identity/OtpService.java`、`backend/src/main/java/com/speakeasy/identity/*Otp*`
+- DB migration：`backend/src/main/resources/db/migration/V202606250032__identity_otp_persistence.sql`
+- OpenAPI contract：`docs/architecture/openapi/speakeasy-api.yaml`
+- Release scripts：`scripts/check_identity_release_guard.py`、`scripts/check_release_configuration.sh`
+- Evidence docs：`docs/product/increments/identity-otp-production-hardening/*`、`docs/reports/test_report.md`
+
+实现摘要:
+- OTP request / verify / resend flow 已接入 production guard、risk policy、throttle、attempt window、audit event 和 failure envelope 约束。
+- 数据层已补齐 OTP secret/hash、delivery attempt、audit/retention 所需 migration 与 domain 映射。
+- OpenAPI 已同步 OTP request/verify/resend 端点、错误 envelope 与 release-facing contract。
+- Release guard 已能区分已关闭的 `IDENTITY-RELEASE-001` 与仍需外部证据关闭的 `IDENTITY-RELEASE-002/003`。
+
+已记录验证:
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest='com.speakeasy.identity.Otp*Test' test` - 通过。
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest='AuthControllerTest,AuthServiceTest,AuthServicePhoneLoginProfileTest,FoundationErrorContractTest,FoundationResponseContractTest' test` - 通过。
+- `npm run lint:openapi` - 通过。
+- `npm run check:openapi-contract` - 通过。
+- `python3 test/scripts/test_identity_release_guard.py` - 通过。
+- `APP_API_BASE_URL=https://api.speakeasyapp.com ENV=production ENABLE_TEST_PHONE_LOGIN=false SPRING_PROFILES_ACTIVE=production scripts/check_release_configuration.sh` - 通过。
+- `python3 -m py_compile scripts/check_identity_release_guard.py` - 通过。
+- `python3 scripts/check_swc_allocation.py --scope changed --base-ref HEAD --include-worktree` - 通过。
+- `python3 scripts/check_document_language.py --scope changed --base-ref HEAD --include-worktree` - 通过。
+- `git diff --check` - 通过。
+
+预期未通过验证:
+- `python3 scripts/check_identity_release_guard.py` 仍应失败，用于保留商业发布 blocker。当前失败项为 `IDENTITY-RELEASE-002` provider subject hash fallback，以及 `IDENTITY-RELEASE-003` 的 SMS/risk/CAPTCHA/step-up/trusted proxy/HMAC/Apple/WeChat、phone-risk country coverage 和 `CN` SIM-swap evidence 缺口。
+
+结果:
+- 后端 OTP hardening slice 可作为 Product Base identity-account-lifecycle 的本地实现证据。
+- 商业发布、store submission、Product Base Accepted merge 和 client release parity 仍未完成，不能在 release checklist 中勾选 identity production trust blocker。
+
+后续:
+- 关闭 `IDENTITY-RELEASE-002`：移除 social provider subject hash fallback，并补齐 Apple/WeChat verifier 对 provider subject 的可信解析证据。
+- 关闭 `IDENTITY-RELEASE-003`：补齐 SMS/phone-risk/CAPTCHA/step-up/trusted proxy/HMAC provider evidence、`CN/US` phone-risk country evidence 与 `CN` SIM-swap evidence。
+- 补齐 Flutter/Dart client 对 OTP API、错误 envelope、retry/backoff 和 release drift 的实现及测试证据。
 
 ## 2026-06-10 - P0-COM-ADMIN-DATA-DELETION-RETRY-20260610
 

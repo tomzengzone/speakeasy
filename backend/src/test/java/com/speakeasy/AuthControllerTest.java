@@ -118,6 +118,21 @@ class AuthControllerTest {
   }
 
   @Test
+  void socialLoginsBindToCurrentUserAndPreserveProviderNamespace() throws Exception {
+    AuthTokens apple = loginSocial("/auth/login/apple", "shared-social-provider-token");
+    AuthTokens appleAgain = loginSocial("/auth/login/apple", "shared-social-provider-token");
+    AuthTokens wechat = loginSocial("/auth/login/wechat", "shared-social-provider-token");
+    AuthTokens wechatAgain = loginSocial("/auth/login/wechat", "shared-social-provider-token");
+
+    assertThat(appleAgain.userId()).isEqualTo(apple.userId());
+    assertThat(wechatAgain.userId()).isEqualTo(wechat.userId());
+    assertThat(wechat.userId()).isNotEqualTo(apple.userId());
+
+    assertCurrentUserMatches(apple);
+    assertCurrentUserMatches(wechat);
+  }
+
+  @Test
   void patchMeUpdatesAuthenticatedUserProfile() throws Exception {
     AuthTokens tokens = loginPhone("+8613800138001");
 
@@ -256,6 +271,39 @@ class AuthControllerTest {
         .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"));
   }
 
+  @Test
+  void socialLoginRejectsInvalidRequestContracts() throws Exception {
+    for (String path : List.of("/auth/login/apple", "/auth/login/wechat")) {
+      assertSocialLoginValidationFailure(path, """
+          {
+            "schema_version": 2,
+            "provider_token": "provider-token",
+            "terms_accepted": true
+          }
+          """);
+      assertSocialLoginValidationFailure(path, """
+          {
+            "schema_version": 1,
+            "terms_accepted": true
+          }
+          """);
+      assertSocialLoginValidationFailure(path, """
+          {
+            "schema_version": 1,
+            "provider_token": " ",
+            "terms_accepted": true
+          }
+          """);
+      assertSocialLoginValidationFailure(path, """
+          {
+            "schema_version": 1,
+            "provider_token": "provider-token",
+            "terms_accepted": false
+          }
+          """);
+    }
+  }
+
   private AuthTokens loginPhone(String phoneNumber) throws Exception {
     MvcResult result = mvc.perform(post("/auth/login/phone")
             .contentType(MediaType.APPLICATION_JSON)
@@ -278,6 +326,47 @@ class AuthControllerTest {
         JsonPath.read(body, "$.user.user_id"),
         JsonPath.read(body, "$.access_token"),
         JsonPath.read(body, "$.refresh_token"));
+  }
+
+  private AuthTokens loginSocial(String path, String providerToken) throws Exception {
+    MvcResult result = mvc.perform(post(path)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "provider_token": "%s",
+                  "terms_accepted": true
+                }
+                """.formatted(providerToken)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.schema_version").value(1))
+        .andExpect(jsonPath("$.access_token", not(blankOrNullString())))
+        .andExpect(jsonPath("$.refresh_token", not(blankOrNullString())))
+        .andExpect(jsonPath("$.user.account_status").value("active"))
+        .andReturn();
+
+    String body = result.getResponse().getContentAsString();
+    return new AuthTokens(
+        JsonPath.read(body, "$.user.user_id"),
+        JsonPath.read(body, "$.access_token"),
+        JsonPath.read(body, "$.refresh_token"));
+  }
+
+  private void assertSocialLoginValidationFailure(String path, String content) throws Exception {
+    mvc.perform(post(path)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(content))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"));
+  }
+
+  private void assertCurrentUserMatches(AuthTokens tokens) throws Exception {
+    mvc.perform(get("/user/me")
+            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.schema_version").value(1))
+        .andExpect(jsonPath("$.user.user_id").value(tokens.userId()))
+        .andExpect(jsonPath("$.user.account_status").value("active"));
   }
 
   private String bearer(String token) {

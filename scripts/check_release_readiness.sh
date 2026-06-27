@@ -18,6 +18,7 @@ run_gate() {
 }
 
 run_gate "release configuration" "$ROOT_DIR/scripts/check_release_configuration.sh"
+run_gate "identity production trust guard" python3 "$ROOT_DIR/scripts/check_identity_release_guard.py"
 run_gate "manual external evidence plan" python3 "$ROOT_DIR/scripts/check_manual_external_evidence_plan.py"
 run_gate "commercial copy contract" python3 "$ROOT_DIR/scripts/check_commercial_copy_contract.py" --strict-external
 run_gate "provider sandbox evidence" python3 "$ROOT_DIR/scripts/check_provider_sandbox_evidence.py" --strict-external

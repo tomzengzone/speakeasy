@@ -47,10 +47,12 @@ Automated gates:
 - [x] Manual external evidence plan gate script exists: `scripts/check_manual_external_evidence_plan.py`.
 - [x] TC-COM-019 provider evidence gate script exists: `scripts/check_provider_sandbox_evidence.py`.
 - [x] TC-COM-021 store submission evidence gate script exists: `scripts/check_store_submission_evidence.py`.
+- [x] Identity production trust guard 已存在：`scripts/check_identity_release_guard.py`。
 - [x] TC-COM-022 aggregate gate script exists: `scripts/check_release_readiness.sh`.
 - [x] GitHub release workflow invokes `scripts/check_release_readiness.sh` before signing/build artifacts.
 
 Required before commercial store submission:
+- [ ] Identity production trust guard passes: backend phone login consumes a verified OTP challenge before account/session issuance, Apple/WeChat login uses verified stable provider subject instead of raw credential hash, and OTP/SMS/phone-risk/CAPTCHA/step-up/HTTPS/retention/Apple/WeChat production config and evidence refs are real, including `PHONE_RISK_COVERED_COUNTRIES` coverage for every allowed OTP country and `PHONE_RISK_CN_SIM_SWAP_EVIDENCE_REF` when `CN/+86` is allowed.
 - [ ] TC-COM-015 membership page, store metadata, privacy/support copy review evidence recorded in `STORE_METADATA_EVIDENCE_REF`.
 - [ ] TC-COM-019 Apple sandbox evidence reference recorded in `APPLE_SANDBOX_EVIDENCE_REF`.
 - [ ] TC-COM-019 Google Play internal-test evidence reference recorded in `GOOGLE_PLAY_INTERNAL_EVIDENCE_REF`.

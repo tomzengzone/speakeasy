@@ -1,7 +1,7 @@
 # Identity & Account Lifecycle Spec（身份认证与账号生命周期规格）
 
 ## 状态
-Draft（草案） - 本文件把 `Identity & Account Lifecycle` Product Base 模块需求下沉为可追溯、可验收、可生成 AC/TC 的模块规格。本文同时区分当前代码基线行为和真实短信 OTP 目标态行为；目标态行为在实现、验收、测试和追溯证据补齐前不得声明为已实现或 Accepted。
+Draft（草案） - 本文件把 `Identity & Account Lifecycle` Product Base 模块需求下沉为可追溯、可验收、可生成 AC/TC 的模块规格。本文同时区分当前代码基线行为、真实短信 OTP 目标态行为、真实 Apple / WeChat provider validation 目标态行为、生产凭证门禁目标态行为和 release gate 目标态边界；目标态行为在实现、验收、测试和追溯证据补齐前不得声明为已实现或 Accepted。
 
 ## Owner
 Feature Spec Generate Skill（功能规格生成 Skill）
@@ -30,7 +30,7 @@ Feature Spec Generate Skill（功能规格生成 Skill）
 ## 规格目标与稳定能力边界
 本规格定义用户从身份证明、账号创建或解析、登录、会话签发、当前用户识别、退出登录，到账号删除、删除审计和基础认证错误的可观察行为边界。规格 item 必须能直接作为后续 acceptance criteria 和 test case 的上游输入。
 
-本规格不定义会员订阅、支付、学习内容、AI 练习、课程推荐、业务学习状态、生产短信 provider 采购方案或 identity 专属发布门禁实现。跨域数据清理只作为账号删除依赖被引用，不把被清理领域的业务规则纳入 identity 模块。
+本规格不定义会员订阅、支付、学习内容、AI 练习、课程推荐、业务学习状态、生产短信 provider 采购方案、Apple / WeChat 商务接入方案或 identity 专属发布门禁实现脚本。跨域数据清理只作为账号删除依赖被引用，不把被清理领域的业务规则纳入 identity 模块。
 
 ## Requirement 到 Spec 的映射
 | Requirement range | Spec item range | Status |
@@ -40,15 +40,18 @@ Feature Spec Generate Skill（功能规格生成 Skill）
 | IDENTITY-OTP-004..030, IDENTITY-OTP-032..037 | IDENTITY-SPEC-OTP-004..030, IDENTITY-SPEC-OTP-032..037 | Target pending |
 | OTP-TESTABILITY-001 | N/A - QA/testability input | Target QA input |
 | IDENTITY-PROVIDER-001..004 | IDENTITY-SPEC-PROVIDER-001..004 | Code baseline |
+| IDENTITY-PROVIDER-005..015 | IDENTITY-SPEC-PROVIDER-005..015 | Target pending |
 | IDENTITY-LOGIN-001..007 | IDENTITY-SPEC-LOGIN-001..007 | Code baseline |
+| IDENTITY-LOGIN-008 | IDENTITY-SPEC-LOGIN-008 | Target pending |
 | IDENTITY-TOKEN-001..012 | IDENTITY-SPEC-TOKEN-001..012 | Code baseline |
-| IDENTITY-ME-001..008 | IDENTITY-SPEC-ME-001..008 | Code baseline |
+| IDENTITY-ME-001..006 | IDENTITY-SPEC-ME-001..006 | Code baseline |
 | IDENTITY-LINK-001..003 | IDENTITY-SPEC-LINK-001..003 | Code baseline |
 | IDENTITY-LOGOUT-001..005 | IDENTITY-SPEC-LOGOUT-001..005 | Code baseline |
 | IDENTITY-DELETE-001..020 | IDENTITY-SPEC-DELETE-001..020 | Code baseline |
 | IDENTITY-RISK-001..003 | IDENTITY-SPEC-RISK-001..003 | Code baseline |
 | IDENTITY-AUDIT-001..006 | IDENTITY-SPEC-AUDIT-001..006 | Code baseline |
 | IDENTITY-RELEASE | IDENTITY-SPEC-RELEASE-000 | No accepted baseline |
+| IDENTITY-RELEASE-001..003 | IDENTITY-SPEC-RELEASE-001..003 | Release target pending |
 
 ## Specification
 
@@ -71,18 +74,29 @@ Feature Spec Generate Skill（功能规格生成 Skill）
 | PROVIDER-IN-APPLE | 输入 | Apple 登录入口请求。 |
 | PROVIDER-IN-WECHAT | 输入 | WeChat 登录入口请求。 |
 | PROVIDER-IN-TOKEN | 输入 | 当前代码基线第三方登录请求携带的非空 provider token；不表示 token 真实性、过期、签名或服务端 provider 校验已完成。 |
+| PROVIDER-IN-APPLE-IDENTITY-TOKEN | 输入 | 目标态 Apple 登录提交的 identity token；必须由后端验证签名、issuer、audience 和 expiry 后才能作为身份证明输入。 |
+| PROVIDER-IN-APPLE-NONCE | 输入 | 目标态 Apple 登录绑定的一次性 nonce；必须与本次登录 challenge 匹配且不可重放。 |
+| PROVIDER-IN-APPLE-AUTHORIZATION-CODE | 输入 | Apple 授权码；可用于平台交互或后续 Apple 流程，但不得作为稳定身份 subject。 |
+| PROVIDER-IN-WECHAT-CODE | 输入 | 目标态 WeChat 登录提交的 authorization code；必须由后端使用生产 provider 配置交换并校验成功响应。 |
+| PROVIDER-IN-WECHAT-STATE | 输入 | 目标态 WeChat 登录绑定的 `state` 或等效一次性 challenge；必须与本次登录 challenge 匹配且不可重放。 |
 | PROVIDER-SUBJECT-HASH | 输出 | 当前代码基线由 provider token hash 得到的第三方身份 subject；不表示 Apple `sub` 或 WeChat `openid` / `unionid` 已验证或使用。 |
+| PROVIDER-OUT-STABLE-SUBJECT | 输出 | 目标态 provider verifier 成功后得到的 Apple `sub`、WeChat `unionid` 或允许 fallback 的 WeChat `openid`。 |
+| PROVIDER-OUT-SUBJECT-DIGEST | 输出 | 基于 `PROVIDER-OUT-STABLE-SUBJECT` 产生的版本化、不可逆、服务端 secret 保护摘要；不得由 raw provider credential 直接 hash 得到。 |
 | PROVIDER-ERR-VALIDATION | 失败 | provider token 缺失或空白时的输入存在性失败。 |
-| LINK-STATE-INITIAL-IDENTITY | 状态 | 新账号创建时绑定的初始登录身份。 |
+| PROVIDER-ERR-INVALID-CREDENTIAL | 安全错误 | provider identity token、authorization code、签名、issuer、audience、expiry、provider 响应或 stable subject 校验失败。 |
+| PROVIDER-ERR-NONCE-MISMATCH | 安全错误 | Apple nonce 缺失、不匹配、过期或重放。 |
+| PROVIDER-ERR-STATE-MISMATCH | 安全错误 | WeChat `state` 或等效 challenge 缺失、不匹配、过期或重放。 |
+| PROVIDER-ERR-UNAVAILABLE | 失败 | provider 服务不可用、超时或生产 provider 配置不可用。 |
+| PROVIDER-ERR-SUBJECT-CONFLICT | 安全错误 | WeChat `openid` fallback 升级到 `unionid` 或 provider stable subject 解析时出现账号冲突。 |
+| LINK-OUT-INITIAL-AUTH-IDENTITY | 输出 | 新账号创建后基于本次已验证身份建立的初始登录身份绑定。 |
 | LINK-STATE-AUTH-IDENTITY-ACTIVE | 状态 | 新建登录身份默认 active。 |
-| LINK-IN-IDENTITY-KEY | 输入 | 身份来源和身份 subject。 |
-| ME-IN-AUTHENTICATED | 输入 | 已认证用户上下文。 |
-| ME-OUT-CURRENT-USER | 输出 | 当前用户 ID、display name、avatar ref、locale、account status、onboarding status。 |
-| ME-OUT-PROFILE | 输出 | 当前 profile 的 target level 和 daily minutes。 |
-| ME-IN-PROFILE-UPDATE | 输入 | display name、avatar ref、target level、daily minutes、reminder enabled、reminder time。 |
-| ME-ERR-UNAUTHENTICATED | 安全错误 | 未认证或 session/token 不满足 active 要求。 |
-| ME-ERR-INVALID-AVATAR | 失败 | 非内置头像引用。 |
-| HOME-OUT-NEXT-ACTION | 输出 | 首页摘要根据 onboarding status 输出的下一步动作。 |
+| LINK-IN-IDENTITY-KEY | 输入 | 身份来源和身份 subject 组成的身份键。 |
+| ME-IN-AUTHENTICATED | 输入 | 复用 `TOKEN-FLOW-AUTHENTICATE-BEARER` 得到的常规用户认证上下文。 |
+| ME-OUT-CURRENT-USER | 输出 | 当前认证用户的用户标识、display name、avatar ref、locale、account status、onboarding status。 |
+| ME-OUT-PROFILE | 输出 | 当前用户 profile 的 target level 和 daily minutes；current code baseline 下缺失 profile 时可为空。 |
+| ME-IN-PROFILE-UPDATE | 输入 | 当前用户可编辑资料更新输入，包含展示字段 display name、avatar ref，以及 profile preference 字段 target level、daily minutes、reminder enabled、reminder time；未提供字段保持既有值。 |
+| ME-ERR-UNAUTHENTICATED | 安全错误 | 当前用户资料读取或更新时认证上下文缺失或无效。 |
+| ME-ERR-INVALID-AVATAR | 失败 | avatar ref 为空白或非内置头像引用。 |
 
 #### 登录、会话与 Token
 | Ref ID | 类型 | 定义 |
@@ -90,22 +104,25 @@ Feature Spec Generate Skill（功能规格生成 Skill）
 | LOGIN-IN-TERMS-ACCEPTED | 输入 | 当前登录请求中用户声明已接受服务条款和隐私政策；不表示 Terms/Privacy consent 持久化已实现。 |
 | LOGIN-IN-SCHEMA-VERSION | 输入 | 登录或刷新请求携带的兼容性版本信号；具体字段形态由 API contract 承接。 |
 | LOGIN-STATE-PUBLIC-ENDPOINT | 状态 | 手机号、Apple、WeChat 登录入口不要求既有认证 session；该状态不绕过 schema version、terms、凭证或账号状态校验。 |
+| LOGIN-IN-PRODUCTION-CREDENTIAL-PROOF | 输入 | 生产目标态凭证证明：手机号登录来自已成功校验并一次性消费的 OTP challenge；Apple / WeChat 登录来自已成功校验的 provider verifier。当前代码基线的非空校验不满足该输入。 |
 | LOGIN-STATE-ACCOUNT-ACTIVE | 状态 | 可登录的 active 账号状态。 |
 | LOGIN-STATE-SESSION-ACTIVE | 输出 | 为本次解析或创建的用户创建的 active 认证 session。 |
 | LOGIN-OUT-TOKEN-PAIR | 输出 | 当前用户、access token、refresh token 和 access token 过期时间；token 生命周期由 `IDENTITY-TOKEN` spec 承接。 |
 | LOGIN-ERR-TERMS-REQUIRED | 失败 | 未接受条款时拒绝登录；失败后不得进入身份解析、账号创建或 session 签发。 |
 | LOGIN-ERR-INACTIVE-ACCOUNT | 安全错误 | 非 active 账号不得登录；失败后不得创建 session 或返回 token pair。 |
 | LOGIN-ERR-UNSUPPORTED-SCHEMA | 失败 | 不支持的 schema version；失败必须发生在认证状态变化前，且不得创建 session、签发 token 或轮换 token。 |
-| TOKEN-STATE-OPAQUE | 状态 | 服务端 opaque bearer token，非 JWT。 |
-| TOKEN-STATE-SESSION-ACTIVE | 状态 | active 且未过期的认证 session。 |
-| TOKEN-IN-BEARER | 输入 | `Authorization: Bearer` header 中的 access token。 |
-| TOKEN-IN-REFRESH | 输入 | refresh token。 |
-| TOKEN-OUT-ROTATED | 输出 | 刷新后同一 session 的新 access token hash 和 refresh token hash。 |
-| TOKEN-ERR-UNAUTHENTICATED | 安全错误 | token 缺失、无效、过期、已撤销或已轮换。 |
-| TOKEN-SECURE-RANDOM | 安全要求 | 使用 `SecureRandom` 生成 token 原始字节。 |
-| LOGOUT-IN-AUTHENTICATED | 输入 | 已认证用户当前 session。 |
+| TOKEN-STATE-OPAQUE | 状态 | 服务端 opaque bearer token，非 JWT；客户端不得从 token 解析身份 claims。 |
+| TOKEN-STATE-ACCESS-SESSION-ACTIVE | 状态 | 认证 session 处于 active，access token 摘要匹配且 access expiry 未过期。 |
+| TOKEN-STATE-REFRESH-SESSION-ACTIVE | 状态 | 认证 session 处于 active，refresh token 摘要匹配且 refresh expiry 未过期。 |
+| TOKEN-IN-BEARER | 输入 | 常规受保护用户请求携带的 Bearer access token；具体 header 字段形态由 API contract 承接。 |
+| TOKEN-IN-REFRESH | 输入 | refresh 请求携带的 refresh token。 |
+| TOKEN-OUT-ROTATED-TOKEN-PAIR | 输出 | refresh 成功后返回给客户端的新 access token、refresh token 和 access token 过期时间。 |
+| TOKEN-STATE-HASH-ROTATED | 状态 | refresh 成功后同一 session 的 access / refresh token 摘要被替换，旧 token 后续匹配失败。 |
+| TOKEN-ERR-UNAUTHENTICATED | 安全错误 | token 缺失、格式不匹配、无效、过期、已撤销、已轮换或关联用户不可认证。 |
+| TOKEN-SECURE-RANDOM | 安全要求 | 使用密码学安全随机源生成 token 原始值；current Java baseline 使用 `SecureRandom`。 |
+| LOGOUT-IN-CURRENT-SESSION | 输入 | 本次 logout 请求通过 `TOKEN-FLOW-AUTHENTICATE-BEARER` 得到的当前 session。 |
 | LOGOUT-STATE-SESSION-REVOKED | 状态 | session 已撤销。 |
-| LOGOUT-OUT-REVOKED-AT | 输出 | session revoked time。 |
+| LOGOUT-OUT-REVOKED-AT | 输出 | 当前 session 的撤销发生时间。 |
 | LOGOUT-ERR-UNAUTHENTICATED | 安全错误 | 找不到当前 session 或 session 已无法认证。 |
 
 #### OTP
@@ -138,18 +155,22 @@ Feature Spec Generate Skill（功能规格生成 Skill）
 #### 账号删除
 | Ref ID | 类型 | 定义 |
 | --- | --- | --- |
-| DELETE-IN-AUTHENTICATED | 输入 | 已认证用户当前账号。 |
-| DELETE-IN-IDEMPOTENCY-KEY | 输入 | 长度 8 到 128 个字符的幂等键。 |
+| DELETE-IN-CURRENT-ACCOUNT | 输入 | 通过 `TOKEN-FLOW-AUTHENTICATE-BEARER` 的常规 access token 认证解析出的当前账号。 |
+| DELETE-IN-IDEMPOTENCY-KEY | 输入 | 当前账号删除请求和运维删除重试请求携带的幂等键；有效长度为 8 到 128 个字符。 |
 | DELETE-STATE-ACTIVE | 状态 | 允许发起删除执行的 active 账号状态。 |
 | DELETE-STATE-DELETION-REQUESTED | 状态 | 允许发起或重放删除执行的 deletion_requested 账号状态。 |
 | DELETE-STATE-DELETED | 状态 | 删除完成后的账号状态。 |
-| DELETE-JOB-EXISTING | 输出 | 同一用户和幂等键对应的已有删除 job。 |
-| DELETE-JOB-FAILED | 状态 | 可由运维重试的 failed 删除 job。 |
-| DELETE-JOB-COMPLETED | 状态 | 已完成删除 job。 |
-| DELETE-ERR-IDEMPOTENCY-KEY | 失败 | 幂等键长度不合法。 |
+| DELETE-JOB-EXISTING | 输出 | 同一用户和幂等键已经关联的删除任务。 |
+| DELETE-JOB-FAILED | 状态 | 可由运维重试的 failed 删除任务。 |
+| DELETE-JOB-COMPLETED | 状态 | 已完成删除任务。 |
+| DELETE-JOB-IN-PROGRESS | 状态 | 删除任务处于 requested、access_revoked、deleting_learning_data 或 anonymizing_audit_refs。 |
+| DELETE-JOB-RETRY-EXISTING | 输出 | 同一删除任务和同一重试幂等键已经存在时返回的删除任务当前状态。 |
+| DELETE-ERR-IDEMPOTENCY-KEY | 失败 | 幂等键缺失、长度小于 8 个字符或大于 128 个字符。 |
 | DELETE-ERR-INVALID-STATE | 安全错误 | 账号或 job 状态不允许删除或重试。 |
+| DELETE-ERR-JOB-NOT-FOUND | 失败 | 当前账号不存在任何删除任务。 |
+| DELETE-ERR-IN-PROGRESS | 失败 | 删除任务仍在处理中，不允许启动新的重试执行。 |
 | DELETE-CLEANUP-AI | 输出 | AI media、TTS cache ownership 和 provider metric 数据清理。 |
-| DELETE-CLEANUP-IDENTITY | 输出 | auth identity 和 user profile 清理。 |
+| DELETE-CLEANUP-IDENTITY | 输出 | 登录身份数据和 profile 明细数据清理。 |
 | DELETE-CLEANUP-LEARNING | 输出 | onboarding、learning route、scenario、practice、training、learning memory 数据清理。 |
 | DELETE-CLEANUP-COMMERCE | 输出 | purchase、subscription、entitlement、usage 和 payment provider event 数据清理。 |
 | DELETE-CLEANUP-GOAL | 输出 | goal/autopilot 相关数据清理。 |
@@ -157,20 +178,23 @@ Feature Spec Generate Skill（功能规格生成 Skill）
 #### 审计、风控与 release 边界
 | Ref ID | 类型 | 定义 |
 | --- | --- | --- |
-| RISK-IN-BEARER | 输入 | 受保护接口携带的 bearer token。 |
-| RISK-IN-OPS-BEARER | 输入 | admin 接口携带的 ops bearer token。 |
-| RISK-OUT-UNAUTHENTICATED-JSON | 输出 | JSON 格式未认证错误响应。 |
-| RISK-ERR-ADMIN-FORBIDDEN | 安全错误 | 非 ops bearer token 访问 admin 接口。 |
-| RISK-SEC-HASH-COMPARE | 安全要求 | ops bearer token 以 hash 形式比较。 |
-| AUDIT-IN-RAW | 输入 | 写入 audit log 前的 target ref、request id 和 details。 |
-| AUDIT-OUT-REDACTED | 输出 | 清洗后的 audit log 字段。 |
-| AUDIT-SENSITIVE-PATTERN | 安全要求 | token、secret、signature、receipt、URL 等敏感 key 或 value。 |
-| AUDIT-EVENT-DELETION-COMPLETED | 输出 | 账号删除完成 audit event。 |
-| AUDIT-EVENT-DELETION-FAILED | 输出 | 账号删除失败 audit event。 |
-| AUDIT-EVENT-DELETION-RETRY | 输出 | 账号删除重试请求 audit event。 |
-| AUDIT-EVENT-QUERY | 输出 | 共享 audit log 查询行为 audit event。 |
-| RELEASE-BOUNDARY-NO-BASELINE | 范围边界 | 当前没有 identity 专属已实现 release gate 可归档为 Product Base 代码基线。 |
+| RISK-IN-BEARER | 输入 | 受保护用户请求携带的 bearer token；是否能建立常规用户认证上下文由 `TOKEN-FLOW-AUTHENTICATE-BEARER` 判定。 |
+| RISK-IN-OPS-BEARER | 输入 | admin 请求携带的 ops bearer token。 |
+| RISK-OUT-UNAUTHENTICATED-JSON | 输出 | 未建立常规用户认证上下文时返回的 JSON 未认证错误响应。 |
+| RISK-ERR-ADMIN-FORBIDDEN | 安全错误 | 已建立常规用户认证上下文但不具备 ops 权限的请求访问 admin 入口时的安全错误。 |
+| RISK-SEC-OPS-TOKEN-DIGEST-MATCH | 安全要求 | ops bearer token 原始值必须与服务端保存的 ops token 摘要匹配，不得使用 ops token 明文作为比较基准。 |
+| AUDIT-IN-RAW | 输入 | 审计记录创建时接收的原始目标引用、请求标识和详情内容。 |
+| AUDIT-OUT-REDACTED | 输出 | 已按 `AUDIT-SENSITIVE-PATTERN` 清洗后的审计目标引用、请求标识和详情内容。 |
+| AUDIT-SENSITIVE-PATTERN | 安全要求 | key token 封闭集合为 `api_key`、`audio`、`authorization`、`credential`、`idempotency`、`payload`、`provider_key`、`raw`、`receipt`、`secret`、`signature`、`signed`、`token`、`transcript`、`url`；value pattern 封闭集合为 `signature=`、`token=`、`secret`、`api_key`、`raw_payload`、`full_transcript`、`http://`、`https://`；安全占位为 sensitive details key `redacted_field_<index>` + value `redacted`、sensitive details value `redacted`、target ref `redacted:target_ref`、request id `unknown`。 |
+| AUDIT-EVENT-DELETION-COMPLETED | 输出 | 账号删除执行完成审计事件；必须能区分普通完成与运维重试完成。 |
+| AUDIT-EVENT-DELETION-FAILED | 输出 | 账号删除执行失败审计事件；必须能区分普通失败与运维重试失败。 |
+| AUDIT-EVENT-DELETION-RETRY | 输出 | 通过 ops 运维认证并被接受进入处理的账号删除重试请求审计事件。 |
+| AUDIT-EVENT-QUERY | 输出 | ops admin 审计日志列表查询行为审计事件。 |
+| RELEASE-BOUNDARY-NO-BASELINE | 范围边界 | 当前没有 identity 专属已实现 release gate 可归档为 Product Base 代码基线；通用 release health warning 不构成 identity 专属生产阻断。 |
 | RELEASE-TARGET-PENDING | 目标边界 | 生产禁用 fake OTP、禁用未校验 provider token、identity provider 配置阻断和 identity 专属 release gate 均仍为未实现目标。 |
+| RELEASE-ERR-IDENTITY-BACKEND-UNVERIFIED | 安全错误 | 生产发布门禁发现后端仍允许未消费 OTP challenge 登录，或仍允许 raw provider credential hash 作为 Apple / WeChat stable subject。 |
+| RELEASE-ERR-IDENTITY-PROVIDER-CONFIG | 安全错误 | 生产发布门禁发现真实 SMS、Apple 或 WeChat provider 配置缺失、使用 placeholder/native test 配置，或缺少外部证据引用。 |
+| RELEASE-OUT-IDENTITY-EVIDENCE | 输出 | 生产发布门禁要求的 identity 证据引用，包括 OTP provider、Apple verifier、WeChat verifier、配置来源、外部 provider 校验证据和执行时间。 |
 
 ### IDENTITY-ACCOUNT 账号创建与身份解析
 
@@ -263,7 +287,9 @@ Feature Spec Generate Skill（功能规格生成 Skill）
 
 ### IDENTITY-PROVIDER Apple / WeChat 第三方身份
 
-#### Spec Items
+#### 当前代码基线（已实现）
+
+##### Spec Items
 | Spec ID | Upstream Requirement | Status | Specification |
 | --- | --- | --- | --- |
 | IDENTITY-SPEC-PROVIDER-001 | IDENTITY-PROVIDER-001 | Code baseline | Current code baseline 下，Apple 登录入口必须把 `PROVIDER-IN-APPLE` 归属为 `apple` 身份来源；该 item 不表示 Apple identity token validation 或 Apple stable subject extraction 已实现。 |
@@ -271,12 +297,36 @@ Feature Spec Generate Skill（功能规格生成 Skill）
 | IDENTITY-SPEC-PROVIDER-003 | IDENTITY-PROVIDER-003 | Code baseline | Current code baseline 下，第三方登录请求必须包含非空 `PROVIDER-IN-TOKEN`；缺失或空白时返回 `PROVIDER-ERR-VALIDATION`；该 item 不表示 provider token 真实性、过期、签名或服务端校验已实现。 |
 | IDENTITY-SPEC-PROVIDER-004 | IDENTITY-PROVIDER-004 | Code baseline | Current code baseline 下，系统必须把 `PROVIDER-IN-TOKEN` 计算为 `PROVIDER-SUBJECT-HASH` 并作为第三方身份 subject；该 item 不表示 Apple `sub` 或 WeChat `openid` / `unionid` 已验证或使用。 |
 
+#### 真实 Apple / WeChat provider validation 目标态（Proposed / 待实现）
+
+##### Flow Segments
+| Flow ID | Trigger | Precondition | State transition / output | Failure boundary |
+| --- | --- | --- | --- | --- |
+| PROVIDER-FLOW-APPLE-VERIFY | 客户端提交 Apple 登录凭证。 | 请求包含 `PROVIDER-IN-APPLE-IDENTITY-TOKEN` 和 `PROVIDER-IN-APPLE-NONCE`。 | 后端验证 Apple identity token 签名、issuer、audience、expiry 和 nonce；成功后输出 Apple stable subject。 | identity token、issuer、audience、expiry、nonce 或 provider 可用性失败时，返回 provider 错误，不得进入身份解析、账号创建或 session 签发。 |
+| PROVIDER-FLOW-WECHAT-VERIFY | 客户端提交 WeChat 登录凭证。 | 请求包含 `PROVIDER-IN-WECHAT-CODE` 和 `PROVIDER-IN-WECHAT-STATE`，且生产 WeChat provider 配置可用。 | 后端交换 authorization code 并校验 provider 响应；成功后输出 WeChat stable subject。 | code、state、provider 响应、stable subject、subject conflict 或 provider 可用性失败时，返回 provider 错误，不得进入身份解析、账号创建或 session 签发。 |
+| PROVIDER-FLOW-SUBJECT-DERIVE | provider verifier 已成功校验 Apple 或 WeChat 身份。 | 存在 `PROVIDER-OUT-STABLE-SUBJECT`。 | 生成 `PROVIDER-OUT-SUBJECT-DIGEST` 或直接使用已验证 stable subject 作为身份键 subject，并进入账号解析或账号创建流程。 | 若系统将 raw provider token、Apple authorization code、Apple identity token 或 WeChat code 的 hash 作为 stable subject，或在无明确单一 WeChat app 边界时使用 `openid` fallback，必须视为生产目标态失败。 |
+
+##### Target Spec Items
+| Spec ID | Upstream Requirement | Status | Specification |
+| --- | --- | --- | --- |
+| IDENTITY-SPEC-PROVIDER-005 | IDENTITY-PROVIDER-005 | Target pending | `PROVIDER-FLOW-APPLE-VERIFY` 必须由后端校验 `PROVIDER-IN-APPLE-IDENTITY-TOKEN` 的签名、issuer、audience 和 expiry；校验通过前不得进入身份解析、账号创建或 session 签发。 |
+| IDENTITY-SPEC-PROVIDER-006 | IDENTITY-PROVIDER-006 | Target pending | `PROVIDER-FLOW-APPLE-VERIFY` 必须校验 `PROVIDER-IN-APPLE-NONCE`；nonce 缺失、不匹配、过期或重放时返回 `PROVIDER-ERR-NONCE-MISMATCH`，且不得进入身份解析、账号创建或 session 签发。 |
+| IDENTITY-SPEC-PROVIDER-007 | IDENTITY-PROVIDER-007 | Target pending | Apple stable subject 必须来自已验证 Apple `sub`，或来自基于已验证 `sub` 的版本化、不可逆、服务端 secret 保护摘要；不得使用 raw identity token、authorization code 或 provider token hash 作为 stable subject。 |
+| IDENTITY-SPEC-PROVIDER-008 | IDENTITY-PROVIDER-008 | Target pending | `PROVIDER-FLOW-WECHAT-VERIFY` 必须由后端使用生产 provider 配置交换 `PROVIDER-IN-WECHAT-CODE`，并校验 provider 响应成功后才允许进入身份解析、账号创建或 session 签发。 |
+| IDENTITY-SPEC-PROVIDER-009 | IDENTITY-PROVIDER-009 | Target pending | `PROVIDER-FLOW-WECHAT-VERIFY` 必须校验 `PROVIDER-IN-WECHAT-STATE` 或等效一次性 challenge；缺失、不匹配、过期或重放时返回 `PROVIDER-ERR-STATE-MISMATCH`，且不得进入身份解析、账号创建或 session 签发。 |
+| IDENTITY-SPEC-PROVIDER-010 | IDENTITY-PROVIDER-010 | Target pending | WeChat provider 响应包含已验证 `unionid` 时，`PROVIDER-OUT-STABLE-SUBJECT` 必须使用该 `unionid`，不得优先使用 `openid`。 |
+| IDENTITY-SPEC-PROVIDER-011 | IDENTITY-PROVIDER-011 | Target pending | Apple / WeChat provider validation 出现签名、issuer、audience、expiry、nonce、state、provider 错误响应或 stable subject 缺失时，系统必须返回 `PROVIDER-ERR-INVALID-CREDENTIAL`、`PROVIDER-ERR-NONCE-MISMATCH` 或 `PROVIDER-ERR-STATE-MISMATCH`，并在身份解析、账号创建和 session 签发前停止处理。 |
+| IDENTITY-SPEC-PROVIDER-012 | IDENTITY-PROVIDER-012 | Target pending | Apple / WeChat provider 不可用、超时或配置不可用时，系统必须返回 `PROVIDER-ERR-UNAVAILABLE`，不得创建账号、绑定身份或签发 session。 |
+| IDENTITY-SPEC-PROVIDER-013 | IDENTITY-PROVIDER-013 | Target pending | `PROVIDER-FLOW-SUBJECT-DERIVE` 在生产目标态不得把 raw provider token、Apple authorization code、Apple identity token 或 WeChat code 的 hash 作为 Apple / WeChat stable subject。 |
+| IDENTITY-SPEC-PROVIDER-014 | IDENTITY-PROVIDER-014 | Target pending | WeChat `openid` 只能在已明确单一 WeChat app 边界且 provider 响应缺少 `unionid` 时作为 `PROVIDER-OUT-STABLE-SUBJECT` fallback；缺少该边界时必须返回 `PROVIDER-ERR-INVALID-CREDENTIAL`，不得创建账号、绑定身份或签发 session。 |
+| IDENTITY-SPEC-PROVIDER-015 | IDENTITY-PROVIDER-015 | Target pending | WeChat `openid` fallback 身份后续获得已验证 `unionid` 或出现 subject conflict 时，系统必须解析到既有账号或返回 `PROVIDER-ERR-SUBJECT-CONFLICT` 并停止处理，不得重复创建账号。 |
+
 ### IDENTITY-LOGIN 登录与 session 签发
 
 #### Flow Segments
 | Flow ID | Trigger | Precondition | State transition / output | Failure boundary |
 | --- | --- | --- | --- | --- |
-| LOGIN-FLOW-AUTHENTICATE | 未认证客户端调用手机号、Apple 或 WeChat 登录入口。 | 入口为 `LOGIN-STATE-PUBLIC-ENDPOINT`。 | 系统按 schema version、terms、凭证/身份输入、账号状态顺序处理；通过后创建 `LOGIN-STATE-SESSION-ACTIVE` 并返回 `LOGIN-OUT-TOKEN-PAIR`。 | schema version、terms、凭证/身份输入或账号状态失败时，不得创建 session、发放 token 或返回 token pair。 |
+| LOGIN-FLOW-AUTHENTICATE | 未认证客户端调用手机号、Apple 或 WeChat 登录入口。 | 入口为 `LOGIN-STATE-PUBLIC-ENDPOINT`。 | 系统按 schema version、terms、凭证/身份输入、账号状态顺序处理；生产目标态还必须满足 `LOGIN-IN-PRODUCTION-CREDENTIAL-PROOF`；通过后创建 `LOGIN-STATE-SESSION-ACTIVE` 并返回 `LOGIN-OUT-TOKEN-PAIR`。 | schema version、terms、凭证/身份输入、生产可信凭证证明或账号状态失败时，不得创建 session、发放 token 或返回 token pair。 |
 | LOGIN-FLOW-REFRESH-SCHEMA | 客户端提交刷新请求。 | 请求进入 refresh token 生命周期处理前。 | schema version 支持时继续进入 `IDENTITY-SPEC-TOKEN-*` refresh 流程。 | schema version 不支持时返回 `LOGIN-ERR-UNSUPPORTED-SCHEMA`，不得刷新或轮换 token。 |
 
 #### Spec Items
@@ -289,112 +339,179 @@ Feature Spec Generate Skill（功能规格生成 Skill）
 | IDENTITY-SPEC-LOGIN-005 | IDENTITY-LOGIN-005 | Code baseline | 登录请求通过 schema version、terms、凭证和账号状态门禁后，系统必须为本次解析或创建的用户创建 `LOGIN-STATE-SESSION-ACTIVE`。 |
 | IDENTITY-SPEC-LOGIN-006 | IDENTITY-LOGIN-006 | Code baseline | 登录成功响应必须返回 `LOGIN-OUT-TOKEN-PAIR`；token 生命周期、有效期和轮换行为以 `IDENTITY-SPEC-TOKEN-*` 为 source of truth。 |
 | IDENTITY-SPEC-LOGIN-007 | IDENTITY-LOGIN-007 | Code baseline | 登录和刷新请求携带不支持的 `LOGIN-IN-SCHEMA-VERSION` 时，系统必须在认证状态变化前返回 `LOGIN-ERR-UNSUPPORTED-SCHEMA`；失败后不得创建 session、签发 token 或轮换 token；API 字段形态由 API contract 承接。 |
+| IDENTITY-SPEC-LOGIN-008 | IDENTITY-LOGIN-008 | Target pending | 生产目标态的 `LOGIN-FLOW-AUTHENTICATE` 必须在身份解析、账号创建或 session 签发前满足 `LOGIN-IN-PRODUCTION-CREDENTIAL-PROOF`：手机号登录来自已成功校验并一次性消费的 OTP challenge；Apple / WeChat 登录来自已成功校验的 provider verifier。仅校验手机号、验证码或 provider token 非空不得满足该输入。 |
 
 ### IDENTITY-TOKEN Access / refresh token 生命周期
 
-#### Spec Items
-| Spec ID | Upstream Requirement | Status | Specification |
-| --- | --- | --- | --- |
-| IDENTITY-SPEC-TOKEN-001 | IDENTITY-TOKEN-001 | Code baseline | 系统必须签发 `TOKEN-STATE-OPAQUE` access token 和 refresh token。 |
-| IDENTITY-SPEC-TOKEN-002 | IDENTITY-TOKEN-002 | Code baseline | 系统必须使用 `TOKEN-SECURE-RANDOM` 生成 token 原始字节。 |
-| IDENTITY-SPEC-TOKEN-003 | IDENTITY-TOKEN-003 | Code baseline | 系统必须只持久化 access token 和 refresh token 的 hash，不得持久化 token 明文。 |
-| IDENTITY-SPEC-TOKEN-004 | IDENTITY-TOKEN-004 | Code baseline | access token 默认有效期必须为 30 分钟。 |
-| IDENTITY-SPEC-TOKEN-005 | IDENTITY-TOKEN-005 | Code baseline | refresh token 默认有效期必须为 30 天。 |
-| IDENTITY-SPEC-TOKEN-006 | IDENTITY-TOKEN-006 | Code baseline | 受保护请求必须从 `TOKEN-IN-BEARER` 提取 access token。 |
-| IDENTITY-SPEC-TOKEN-007 | IDENTITY-TOKEN-007 | Code baseline | access token 只有匹配 `TOKEN-STATE-SESSION-ACTIVE` 时才能认证通过，否则返回 `TOKEN-ERR-UNAUTHENTICATED`。 |
-| IDENTITY-SPEC-TOKEN-008 | IDENTITY-TOKEN-008 | Code baseline | access token 认证必须要求关联用户为 active 状态，否则返回 `TOKEN-ERR-UNAUTHENTICATED`。 |
-| IDENTITY-SPEC-TOKEN-009 | IDENTITY-TOKEN-009 | Code baseline | `TOKEN-IN-REFRESH` 只有匹配 active 且 refresh 未过期 session 时才能刷新。 |
-| IDENTITY-SPEC-TOKEN-010 | IDENTITY-TOKEN-010 | Code baseline | refresh 成功必须产生 `TOKEN-OUT-ROTATED`，并替换同一 session 的旧 token hash。 |
-| IDENTITY-SPEC-TOKEN-011 | IDENTITY-TOKEN-011 | Code baseline | refresh token 为空、无效、过期或已被轮换后，系统必须返回 `TOKEN-ERR-UNAUTHENTICATED`。 |
-| IDENTITY-SPEC-TOKEN-012 | IDENTITY-TOKEN-012 | Code baseline | 后端安全配置必须使用 stateless session 策略，不依赖服务端 HTTP session。 |
-
-### IDENTITY-ME 当前用户与 profile gate state
+#### Flow Segments
+| Flow ID | Trigger | Precondition | State transition / output | Failure boundary |
+| --- | --- | --- | --- | --- |
+| TOKEN-FLOW-ISSUE | 登录或刷新流程通过前置门禁。 | 账号和会话状态满足对应登录或刷新规格。 | 系统生成 `TOKEN-STATE-OPAQUE` access token 与 refresh token，只持久化 token 摘要，并向客户端返回 token pair。 | 任一前置门禁失败时，不得创建 session、替换 token 摘要或返回 token pair。 |
+| TOKEN-FLOW-AUTHENTICATE-BEARER | 常规受保护用户请求携带 access token。 | 请求包含 `TOKEN-IN-BEARER`。 | access token 匹配 `TOKEN-STATE-ACCESS-SESSION-ACTIVE` 且关联用户 active 时，建立常规用户认证上下文。 | token 缺失、格式不匹配、无效、过期、已撤销、已轮换或关联用户不可认证时，返回 `TOKEN-ERR-UNAUTHENTICATED`，不得建立用户认证上下文。 |
+| TOKEN-FLOW-REFRESH | 客户端提交 refresh token。 | `LOGIN-FLOW-REFRESH-SCHEMA` 已通过。 | `TOKEN-IN-REFRESH` 匹配 `TOKEN-STATE-REFRESH-SESSION-ACTIVE` 且关联用户 active 时，返回 `TOKEN-OUT-ROTATED-TOKEN-PAIR` 并进入 `TOKEN-STATE-HASH-ROTATED`。 | refresh token 不满足 eligibility 或关联用户不可认证时，返回 `TOKEN-ERR-UNAUTHENTICATED`，不得创建 session、替换 token 摘要或返回新 token pair。 |
 
 #### Spec Items
 | Spec ID | Upstream Requirement | Status | Specification |
 | --- | --- | --- | --- |
-| IDENTITY-SPEC-ME-001 | IDENTITY-ME-001 | Code baseline | `/user/me` 必须只允许 `ME-IN-AUTHENTICATED` 访问，否则返回 `ME-ERR-UNAUTHENTICATED`。 |
-| IDENTITY-SPEC-ME-002 | IDENTITY-ME-002 | Code baseline | `/user/me` 必须返回 `ME-OUT-CURRENT-USER`。 |
-| IDENTITY-SPEC-ME-003 | IDENTITY-ME-003 | Code baseline | `/user/me` 必须返回 `ME-OUT-PROFILE`。 |
-| IDENTITY-SPEC-ME-004 | IDENTITY-ME-004 | Code baseline | 当前用户访问必须要求 access token 对应 active 且未过期 session，并且关联用户为 active 状态，否则返回 `ME-ERR-UNAUTHENTICATED`。 |
-| IDENTITY-SPEC-ME-005 | IDENTITY-ME-005 | Code baseline | 用户必须能提交 `ME-IN-PROFILE-UPDATE` 并保存允许更新的 profile 字段。 |
-| IDENTITY-SPEC-ME-006 | IDENTITY-ME-006 | Code baseline | 当 avatar ref 不是内置头像引用时，系统必须返回 `ME-ERR-INVALID-AVATAR` 并拒绝更新。 |
-| IDENTITY-SPEC-ME-007 | IDENTITY-ME-007 | Code baseline | 用户完成首评后，系统必须把 onboarding status 更新为 `ONBOARDING-STATE-COMPLETE`。 |
-| IDENTITY-SPEC-ME-008 | IDENTITY-ME-008 | Code baseline | 首页摘要必须根据 onboarding status 输出 `HOME-OUT-NEXT-ACTION`。 |
+| IDENTITY-SPEC-TOKEN-001 | IDENTITY-TOKEN-001 | Code baseline | 登录或刷新成功时，系统必须签发 `TOKEN-STATE-OPAQUE` access token 和 refresh token，并把该 token pair 返回给客户端；JWT claims、JWT 签名校验和 JWKS 不属于当前代码基线。 |
+| IDENTITY-SPEC-TOKEN-002 | IDENTITY-TOKEN-002 | Code baseline | 系统必须分别使用 `TOKEN-SECURE-RANDOM` 为 access token 和 refresh token 生成不可预测原始值；current Java baseline 使用 `SecureRandom`。 |
+| IDENTITY-SPEC-TOKEN-003 | IDENTITY-TOKEN-003 | Code baseline | 认证 session 持久化状态必须只保存 access token 和 refresh token 的摘要值；token 明文只能在签发或刷新成功响应中返回给客户端，不得写入持久化 session。 |
+| IDENTITY-SPEC-TOKEN-004 | IDENTITY-TOKEN-004 | Code baseline | access token 的 `expiresAt` 必须从登录签发或 refresh 轮换时起计算为 30 分钟，并随成功响应返回。 |
+| IDENTITY-SPEC-TOKEN-005 | IDENTITY-TOKEN-005 | Code baseline | refresh token 的 refresh expiry 必须从登录签发或 refresh 轮换时起计算为 30 天，并用于后续 refresh eligibility 判断。 |
+| IDENTITY-SPEC-TOKEN-006 | IDENTITY-TOKEN-006 | Code baseline | 常规受保护用户请求必须从 `TOKEN-IN-BEARER` 提取 access token；缺失、格式不匹配或认证失败时不得建立用户认证上下文，并按受保护端点规则返回 `TOKEN-ERR-UNAUTHENTICATED`。 |
+| IDENTITY-SPEC-TOKEN-007 | IDENTITY-TOKEN-007 | Code baseline | access token 只有匹配 `TOKEN-STATE-ACCESS-SESSION-ACTIVE` 时才能通过常规用户认证；未匹配、过期、已撤销或已轮换时必须返回 `TOKEN-ERR-UNAUTHENTICATED`。 |
+| IDENTITY-SPEC-TOKEN-008 | IDENTITY-TOKEN-008 | Code baseline | 常规 access token 认证必须要求关联用户为 active 状态，否则返回 `TOKEN-ERR-UNAUTHENTICATED`；账号删除重试 fallback 使用同一 access token 输入但由 `IDENTITY-SPEC-DELETE-*` 承接。 |
+| IDENTITY-SPEC-TOKEN-009 | IDENTITY-TOKEN-009 | Code baseline | 在 `LOGIN-FLOW-REFRESH-SCHEMA` 通过后，`TOKEN-IN-REFRESH` 只有匹配 `TOKEN-STATE-REFRESH-SESSION-ACTIVE` 且关联用户为 active 状态时才能刷新；否则返回 `TOKEN-ERR-UNAUTHENTICATED`。 |
+| IDENTITY-SPEC-TOKEN-010 | IDENTITY-TOKEN-010 | Code baseline | refresh 成功必须在同一 session 上生成新的 access token 和 refresh token，产生 `TOKEN-OUT-ROTATED-TOKEN-PAIR`，替换持久化 access / refresh token 摘要进入 `TOKEN-STATE-HASH-ROTATED`，并使旧 access / refresh token 后续匹配失败。 |
+| IDENTITY-SPEC-TOKEN-011 | IDENTITY-TOKEN-011 | Code baseline | refresh token 缺失、空白、无效、过期、已撤销 session 关联或已被轮换后，系统必须返回 `TOKEN-ERR-UNAUTHENTICATED`，且不得创建 session、替换 token 摘要或返回新 token pair。 |
+| IDENTITY-SPEC-TOKEN-012 | IDENTITY-TOKEN-012 | Code baseline | 当前代码基线的受保护 API 认证必须不创建或依赖服务端 HTTP session；认证成功来自 bearer token 匹配持久化认证 session，Spring Security stateless 配置仅作为实现证据。 |
 
-### IDENTITY-LINK 身份绑定与解绑
+### IDENTITY-ME 当前用户与 profile
+
+#### Flow Segments
+| Flow ID | Trigger | Precondition | State transition / output | Failure boundary |
+| --- | --- | --- | --- | --- |
+| ME-FLOW-READ-CURRENT | 已认证用户请求读取当前用户资料。 | 请求满足 `ME-IN-AUTHENTICATED`。 | 返回 `ME-OUT-CURRENT-USER` 和 `ME-OUT-PROFILE`。 | 认证上下文缺失或无效时返回 `ME-ERR-UNAUTHENTICATED`，不得返回当前用户或 profile 输出。 |
+| ME-FLOW-UPDATE-PROFILE | 已认证用户提交当前用户可编辑资料更新。 | 请求满足 `ME-IN-AUTHENTICATED`，输入满足 `ME-IN-PROFILE-UPDATE`。 | 保存允许更新的当前用户展示字段和 profile preference 字段；未提供字段保持既有值。 | 认证上下文缺失或无效时返回 `ME-ERR-UNAUTHENTICATED`；avatar ref 空白或非内置时返回 `ME-ERR-INVALID-AVATAR` 且不得保存该输入。 |
 
 #### Spec Items
 | Spec ID | Upstream Requirement | Status | Specification |
 | --- | --- | --- | --- |
-| IDENTITY-SPEC-LINK-001 | IDENTITY-LINK-001 | Code baseline | 新账号创建时必须绑定 `LINK-STATE-INITIAL-IDENTITY`。 |
-| IDENTITY-SPEC-LINK-002 | IDENTITY-LINK-002 | Code baseline | 新建登录身份必须初始化为 `LINK-STATE-AUTH-IDENTITY-ACTIVE`。 |
-| IDENTITY-SPEC-LINK-003 | IDENTITY-LINK-003 | Code baseline | 身份解析必须使用 `LINK-IN-IDENTITY-KEY`。 |
+| IDENTITY-SPEC-ME-001 | IDENTITY-ME-001 | Code baseline | 当前用户资料读取入口必须只允许满足 `ME-IN-AUTHENTICATED` 的常规用户访问；认证上下文缺失或无效时返回 `ME-ERR-UNAUTHENTICATED`；具体 endpoint path 由 API contract 承接。 |
+| IDENTITY-SPEC-ME-002 | IDENTITY-ME-002 | Code baseline | 当前用户资料读取成功时必须返回 `ME-OUT-CURRENT-USER`，其内容必须归属当前认证用户。 |
+| IDENTITY-SPEC-ME-003 | IDENTITY-ME-003 | Code baseline | 当前用户资料读取成功时必须返回 `ME-OUT-PROFILE`；current code baseline 下缺失 profile 时可返回空 profile 字段，本 item 不承诺读取时补建 profile。 |
+| IDENTITY-SPEC-ME-004 | IDENTITY-ME-004 | Code baseline | 当前用户资料读取必须复用 `TOKEN-FLOW-AUTHENTICATE-BEARER` 的常规用户认证结果；认证上下文不满足时返回 `ME-ERR-UNAUTHENTICATED`，不得返回 `ME-OUT-CURRENT-USER` 或 `ME-OUT-PROFILE`。 |
+| IDENTITY-SPEC-ME-005 | IDENTITY-ME-005 | Code baseline | 满足 `ME-IN-AUTHENTICATED` 的用户必须能提交 `ME-IN-PROFILE-UPDATE` 更新自己的 display name、avatar ref、target level、daily minutes、reminder enabled 和 reminder time；未提供的字段保持既有值。 |
+| IDENTITY-SPEC-ME-006 | IDENTITY-ME-006 | Code baseline | 当 `ME-IN-PROFILE-UPDATE` 包含空白或非内置 avatar ref 时，系统必须返回 `ME-ERR-INVALID-AVATAR`，不得保存 avatar ref 或其他依赖该输入的更新结果。 |
+
+### IDENTITY-LINK 初始登录身份绑定与身份键解析
+
+#### Flow Segments
+| Flow ID | Trigger | Precondition | State transition / output | Failure boundary |
+| --- | --- | --- | --- | --- |
+| LINK-FLOW-CREATE-INITIAL | 账号创建流程需要为新账号建立初始登录身份绑定。 | `IDENTITY-SPEC-ACCOUNT-003` 已创建新账号，且本次已验证身份存在 `LINK-IN-IDENTITY-KEY`。 | 创建 `LINK-OUT-INITIAL-AUTH-IDENTITY`，并使登录身份进入 `LINK-STATE-AUTH-IDENTITY-ACTIVE`。 | 身份键缺失、账号未创建或重复身份冲突时，不得创建初始登录身份绑定；重复身份冲突由 `IDENTITY-SPEC-ACCOUNT-009` 承接。 |
+| LINK-FLOW-RESOLVE-IDENTITY | 登录或账号解析流程需要根据登录身份查找账号。 | 输入为 `LINK-IN-IDENTITY-KEY`。 | 命中绑定时进入 `IDENTITY-SPEC-ACCOUNT-002` 的账号解析结果；未命中时由账号创建流程决定后续处理。 | 不得只用 subject 或只用身份来源单独解析；身份状态过滤不属于当前 code baseline。 |
+
+#### Spec Items
+| Spec ID | Upstream Requirement | Status | Specification |
+| --- | --- | --- | --- |
+| IDENTITY-SPEC-LINK-001 | IDENTITY-LINK-001 | Code baseline | 在 `IDENTITY-SPEC-ACCOUNT-003` 创建新账号后，系统必须基于本次已验证身份的 `LINK-IN-IDENTITY-KEY` 创建初始登录身份绑定，并输出 `LINK-OUT-INITIAL-AUTH-IDENTITY`；二次绑定和解绑不属于当前 code baseline。 |
+| IDENTITY-SPEC-LINK-002 | IDENTITY-LINK-002 | Code baseline | 初始登录身份绑定创建成功后，该登录身份必须进入 `LINK-STATE-AUTH-IDENTITY-ACTIVE`；该状态不表示身份禁用、解绑或 inactive 查询过滤已实现。 |
+| IDENTITY-SPEC-LINK-003 | IDENTITY-LINK-003 | Code baseline | 身份解析 flow 必须用 `LINK-IN-IDENTITY-KEY` 查找绑定账号；命中时进入 `IDENTITY-SPEC-ACCOUNT-002` 的账号解析结果，未命中时由账号创建 flow 决定后续处理；重复身份冲突由 `IDENTITY-SPEC-ACCOUNT-009` 承接。 |
 
 ### IDENTITY-LOGOUT 退出登录
 
+#### Flow Segments
+| Flow ID | Trigger | Precondition | State transition / output | Failure boundary |
+| --- | --- | --- | --- | --- |
+| LOGOUT-FLOW-CURRENT-SESSION | 已认证用户发起 logout。 | logout 请求满足 `LOGOUT-IN-CURRENT-SESSION`。 | 系统仅撤销该当前 session，使其进入 `LOGOUT-STATE-SESSION-REVOKED`，并记录 `LOGOUT-OUT-REVOKED-AT`。 | 请求缺少或无法解析当前 session 时，返回 `LOGOUT-ERR-UNAUTHENTICATED`，不得创建、撤销或修改任何 session；已撤销 session 的 access token 后续在 `TOKEN-FLOW-AUTHENTICATE-BEARER` 中按 `TOKEN-ERR-UNAUTHENTICATED` 处理。 |
+
 #### Spec Items
 | Spec ID | Upstream Requirement | Status | Specification |
 | --- | --- | --- | --- |
-| IDENTITY-SPEC-LOGOUT-001 | IDENTITY-LOGOUT-001 | Code baseline | 已认证用户调用 logout 时，系统必须撤销 `LOGOUT-IN-AUTHENTICATED` 对应的当前 session。 |
-| IDENTITY-SPEC-LOGOUT-002 | IDENTITY-LOGOUT-002 | Code baseline | logout 找不到当前 session 时，系统必须返回 `LOGOUT-ERR-UNAUTHENTICATED`。 |
-| IDENTITY-SPEC-LOGOUT-003 | IDENTITY-LOGOUT-003 | Code baseline | session 被撤销时，系统必须进入 `LOGOUT-STATE-SESSION-REVOKED`。 |
-| IDENTITY-SPEC-LOGOUT-004 | IDENTITY-LOGOUT-004 | Code baseline | session 被撤销时，系统必须记录 `LOGOUT-OUT-REVOKED-AT`。 |
-| IDENTITY-SPEC-LOGOUT-005 | IDENTITY-LOGOUT-005 | Code baseline | `LOGOUT-STATE-SESSION-REVOKED` 不得继续通过 access token 认证。 |
+| IDENTITY-SPEC-LOGOUT-001 | IDENTITY-LOGOUT-001 | Code baseline | 当 logout 请求满足 `LOGOUT-IN-CURRENT-SESSION` 时，系统必须撤销该当前 session；不得撤销同用户其他 session。 |
+| IDENTITY-SPEC-LOGOUT-002 | IDENTITY-LOGOUT-002 | Code baseline | 当 logout 请求缺少或无法解析 `LOGOUT-IN-CURRENT-SESSION` 时，系统必须返回 `LOGOUT-ERR-UNAUTHENTICATED`，且不得创建、撤销或修改 session。 |
+| IDENTITY-SPEC-LOGOUT-003 | IDENTITY-LOGOUT-003 | Code baseline | 当前 session 撤销成功后，该 session 必须进入 `LOGOUT-STATE-SESSION-REVOKED`。 |
+| IDENTITY-SPEC-LOGOUT-004 | IDENTITY-LOGOUT-004 | Code baseline | 当前 session 撤销成功后，系统必须记录 `LOGOUT-OUT-REVOKED-AT` 作为该 session 的撤销发生时间。 |
+| IDENTITY-SPEC-LOGOUT-005 | IDENTITY-LOGOUT-005 | Code baseline | `LOGOUT-STATE-SESSION-REVOKED` 对应 session 的 access token 后续必须在 `TOKEN-FLOW-AUTHENTICATE-BEARER` 中认证失败，并按 `TOKEN-ERR-UNAUTHENTICATED` 处理。 |
 
 ### IDENTITY-DELETE 账号删除与生命周期状态
 
-#### Spec Items
-| Spec ID | Upstream Requirement | Status | Specification |
-| --- | --- | --- | --- |
-| IDENTITY-SPEC-DELETE-001 | IDENTITY-DELETE-001 | Code baseline | `DELETE-IN-AUTHENTICATED` 必须能发起当前账号删除请求。 |
-| IDENTITY-SPEC-DELETE-002 | IDENTITY-DELETE-002 | Code baseline | 账号删除请求必须校验 `DELETE-IN-IDEMPOTENCY-KEY` 长度，非法时返回 `DELETE-ERR-IDEMPOTENCY-KEY`。 |
-| IDENTITY-SPEC-DELETE-003 | IDENTITY-DELETE-003 | Code baseline | 同一用户使用同一 `DELETE-IN-IDEMPOTENCY-KEY` 重复删除时，系统必须返回 `DELETE-JOB-EXISTING`。 |
-| IDENTITY-SPEC-DELETE-004 | IDENTITY-DELETE-004 | Code baseline | 系统只允许 `DELETE-STATE-ACTIVE` 或 `DELETE-STATE-DELETION-REQUESTED` 账号发起删除执行，否则返回 `DELETE-ERR-INVALID-STATE`。 |
-| IDENTITY-SPEC-DELETE-005 | IDENTITY-DELETE-005 | Code baseline | 删除执行必须撤销该用户所有 active session。 |
-| IDENTITY-SPEC-DELETE-006 | IDENTITY-DELETE-006 | Code baseline | 删除执行必须完成 `DELETE-CLEANUP-AI`。 |
-| IDENTITY-SPEC-DELETE-007 | IDENTITY-DELETE-007 | Code baseline | 删除完成后，账号状态必须进入 `DELETE-STATE-DELETED`。 |
-| IDENTITY-SPEC-DELETE-008 | IDENTITY-DELETE-008 | Code baseline | 删除完成后，系统必须把 display name 改为 `Deleted User`，清空 avatar ref，并把 onboarding status 标记为 `deleted`。 |
-| IDENTITY-SPEC-DELETE-009 | IDENTITY-DELETE-009 | Code baseline | 已认证用户必须能查询当前账号最新删除 job 状态。 |
-| IDENTITY-SPEC-DELETE-010 | IDENTITY-DELETE-010 | Code baseline | 运维用户必须能重试 `DELETE-JOB-FAILED`。 |
-| IDENTITY-SPEC-DELETE-011 | IDENTITY-DELETE-011 | Code baseline | 删除重试只允许 `DELETE-JOB-FAILED` 进入重试执行；`DELETE-JOB-COMPLETED` 必须返回已有结果，其他状态返回 `DELETE-ERR-INVALID-STATE`。 |
-| IDENTITY-SPEC-DELETE-012 | IDENTITY-DELETE-012 | Code baseline | 删除重试认证必须允许携带同一 `DELETE-IN-IDEMPOTENCY-KEY` 的 deleted 或 deletion_requested 用户重放同一个 `DELETE /user/me` 请求。 |
-| IDENTITY-SPEC-DELETE-013 | IDENTITY-DELETE-013 | Code baseline | 删除执行必须删除该用户的 auth identity 记录。引用：`DELETE-CLEANUP-IDENTITY`。 |
-| IDENTITY-SPEC-DELETE-014 | IDENTITY-DELETE-014 | Code baseline | 删除执行必须删除该用户的 user profile 记录。引用：`DELETE-CLEANUP-IDENTITY`。 |
-| IDENTITY-SPEC-DELETE-015 | IDENTITY-DELETE-015 | Code baseline | 删除执行必须删除该用户的 onboarding assessment、learning route 和 user scenario state 记录。引用：`DELETE-CLEANUP-LEARNING`。 |
-| IDENTITY-SPEC-DELETE-016 | IDENTITY-DELETE-016 | Code baseline | 删除执行必须删除该用户的 practice session、practice turn 和 session summary 记录。引用：`DELETE-CLEANUP-LEARNING`。 |
-| IDENTITY-SPEC-DELETE-017 | IDENTITY-DELETE-017 | Code baseline | 删除执行必须删除该用户的 training session、training turn、training recap、training planner decision、training evidence candidate 和 training metric event 记录。引用：`DELETE-CLEANUP-LEARNING`。 |
-| IDENTITY-SPEC-DELETE-018 | IDENTITY-DELETE-018 | Code baseline | 删除执行必须删除该用户的 purchase、subscription、entitlement snapshot、usage ledger、usage reservation 和关联 payment provider event 记录。引用：`DELETE-CLEANUP-COMMERCE`。 |
-| IDENTITY-SPEC-DELETE-019 | IDENTITY-DELETE-019 | Code baseline | 删除执行必须删除该用户的 learning evidence、learning history、mastery、review、practice queue、favorite expression 和 saved expression 记录。引用：`DELETE-CLEANUP-LEARNING`。 |
-| IDENTITY-SPEC-DELETE-020 | IDENTITY-DELETE-020 | Code baseline | 删除执行必须删除该用户的 goal profile、diagnostic assessment、mastery initial state、backplan、daily plan、plan item、autopilot control、goal idempotency、control idempotency、recovery decision、mastery transition decision、notification outbox、planner replay audit、progress forecast 和 outcome checkpoint 记录。引用：`DELETE-CLEANUP-GOAL`。 |
+#### Flow Segments
+| Flow ID | Trigger | Precondition | State transition / output | Failure boundary |
+| --- | --- | --- | --- | --- |
+| DELETE-FLOW-REQUEST-CURRENT-ACCOUNT | 当前账号用户发起账号删除请求。 | 请求满足 `DELETE-IN-CURRENT-ACCOUNT`，且携带有效 `DELETE-IN-IDEMPOTENCY-KEY`。 | 若同一用户和同一幂等键已有删除任务，返回 `DELETE-JOB-EXISTING`；否则创建删除任务并进入 `DELETE-FLOW-EXECUTE`。 | `DELETE-IN-IDEMPOTENCY-KEY` 缺失、长度小于 8 个字符或大于 128 个字符时，返回 `DELETE-ERR-IDEMPOTENCY-KEY`，不得创建删除任务、撤销 session 或改变账号状态。 |
+| DELETE-FLOW-EXECUTE | 删除任务开始执行。 | 账号状态为 `DELETE-STATE-ACTIVE` 或 `DELETE-STATE-DELETION-REQUESTED`。 | 系统撤销该用户所有 active session，完成 `DELETE-CLEANUP-AI`、`DELETE-CLEANUP-IDENTITY`、`DELETE-CLEANUP-LEARNING`、`DELETE-CLEANUP-COMMERCE` 和 `DELETE-CLEANUP-GOAL` 中适用于该用户的数据清理，并使账号进入 `DELETE-STATE-DELETED`。 | 账号状态不属于 `DELETE-STATE-ACTIVE` 或 `DELETE-STATE-DELETION-REQUESTED` 时，返回 `DELETE-ERR-INVALID-STATE`，不得启动清理执行。 |
+| DELETE-FLOW-QUERY-LATEST-JOB | 当前账号用户查询删除任务状态。 | 请求满足 `DELETE-IN-CURRENT-ACCOUNT`。 | 返回当前账号最新删除任务状态。 | 当前账号不存在任何删除任务时，返回 `DELETE-ERR-JOB-NOT-FOUND`。 |
+| DELETE-FLOW-ADMIN-RETRY | 运维用户发起删除任务重试。 | 请求通过 `RISK-IN-OPS-BEARER` 运维认证，并携带有效 `DELETE-IN-IDEMPOTENCY-KEY`。 | 按重试决策表处理 failed、completed、in-progress 和 replay 分支。 | `DELETE-IN-IDEMPOTENCY-KEY` 缺失、长度小于 8 个字符或大于 128 个字符时，返回 `DELETE-ERR-IDEMPOTENCY-KEY`，不得创建重试幂等记录、启动清理执行、撤销 session 或改变账号/删除任务状态。 |
+| DELETE-FLOW-REPLAY-DELETION-REQUEST | 删除中的账号或已删除账号重放账号删除请求。 | token 对应账号处于 `DELETE-STATE-DELETED` 或 `DELETE-STATE-DELETION-REQUESTED`，且 `DELETE-IN-IDEMPOTENCY-KEY` 与该账号已有删除任务匹配。 | 返回该已有删除任务。 | 该认证例外不得扩展到常规 `TOKEN-FLOW-AUTHENTICATE-BEARER`，也不得用于登录、资料读取或其他受保护用户请求。 |
 
-### IDENTITY-RISK 风控、限流与防滥用
+#### Retry Decision Table
+| 条件 | 结果 |
+| --- | --- |
+| `DELETE-JOB-FAILED` 且同一删除任务和同一重试幂等键尚未存在 | 启动新的重试执行。 |
+| 同一删除任务和同一重试幂等键已经存在 | 返回 `DELETE-JOB-RETRY-EXISTING`，不得启动新的重试执行。 |
+| `DELETE-JOB-COMPLETED` | 返回该已完成任务，不得启动新的重试执行。 |
+| `DELETE-JOB-IN-PROGRESS` | 返回 `DELETE-ERR-IN-PROGRESS`，不得启动新的重试执行。 |
+| 未识别任务状态 | 返回 `DELETE-ERR-INVALID-STATE`，不得启动新的重试执行。 |
 
 #### Spec Items
 | Spec ID | Upstream Requirement | Status | Specification |
 | --- | --- | --- | --- |
-| IDENTITY-SPEC-RISK-001 | IDENTITY-RISK-001 | Code baseline | 无效 `RISK-IN-BEARER` 访问受保护接口时，系统必须返回 `RISK-OUT-UNAUTHENTICATED-JSON`。 |
-| IDENTITY-SPEC-RISK-002 | IDENTITY-RISK-002 | Code baseline | admin 接口必须只允许 `RISK-IN-OPS-BEARER` 认证通过，否则返回 `RISK-ERR-ADMIN-FORBIDDEN`。 |
-| IDENTITY-SPEC-RISK-003 | IDENTITY-RISK-003 | Code baseline | ops bearer token 必须使用 `RISK-SEC-HASH-COMPARE`，不得以明文直接比较。 |
+| IDENTITY-SPEC-DELETE-001 | IDENTITY-DELETE-001 | Code baseline | 在 `DELETE-FLOW-REQUEST-CURRENT-ACCOUNT` 中，`DELETE-IN-CURRENT-ACCOUNT` 表示通过常规 access token 认证解析出的当前账号；该输入只能发起当前账号的删除请求，不得指定或影响其他账号。 |
+| IDENTITY-SPEC-DELETE-002 | IDENTITY-DELETE-002 | Code baseline | 在 `DELETE-FLOW-REQUEST-CURRENT-ACCOUNT` 和 `DELETE-FLOW-ADMIN-RETRY` 中，当 `DELETE-IN-IDEMPOTENCY-KEY` 缺失、长度小于 8 个字符或大于 128 个字符时，系统必须返回 `DELETE-ERR-IDEMPOTENCY-KEY`，不得创建删除任务或重试幂等记录，不得启动清理执行，不得撤销 session，不得改变账号或删除任务状态。 |
+| IDENTITY-SPEC-DELETE-003 | IDENTITY-DELETE-003 | Code baseline | 当同一用户和同一 `DELETE-IN-IDEMPOTENCY-KEY` 已有关联删除任务时，系统必须返回 `DELETE-JOB-EXISTING` 指向的该已有任务，且不得创建第二个删除任务或重复启动清理执行。 |
+| IDENTITY-SPEC-DELETE-004 | IDENTITY-DELETE-004 | Code baseline | `DELETE-FLOW-EXECUTE` 只允许 `DELETE-STATE-ACTIVE` 或 `DELETE-STATE-DELETION-REQUESTED` 账号进入删除执行；账号状态不属于这两者时，系统必须返回 `DELETE-ERR-INVALID-STATE`，且不得启动清理执行。 |
+| IDENTITY-SPEC-DELETE-005 | IDENTITY-DELETE-005 | Code baseline | `DELETE-FLOW-EXECUTE` 进入访问撤销阶段后，必须撤销该用户所有 active session；该行为不复用 LOGOUT 的 current-session-only 语义。 |
+| IDENTITY-SPEC-DELETE-006 | IDENTITY-DELETE-006 | Code baseline | `DELETE-FLOW-EXECUTE` 必须完成 `DELETE-CLEANUP-AI`，覆盖 AI media、TTS cache ownership 和 provider metric 数据清理。 |
+| IDENTITY-SPEC-DELETE-007 | IDENTITY-DELETE-007 | Code baseline | `DELETE-FLOW-EXECUTE` 完成 `DELETE-CLEANUP-AI`、`DELETE-CLEANUP-IDENTITY`、`DELETE-CLEANUP-LEARNING`、`DELETE-CLEANUP-COMMERCE` 和 `DELETE-CLEANUP-GOAL` 中适用于该用户的数据清理后，账号状态必须进入 `DELETE-STATE-DELETED`。 |
+| IDENTITY-SPEC-DELETE-008 | IDENTITY-DELETE-008 | Code baseline | 删除完成后，保留的最小账号信息必须输出匿名化状态：display name 为 `Deleted User`、avatar ref 为空、onboarding status 为 `deleted`；profile 明细数据删除由 `DELETE-CLEANUP-IDENTITY` 承接。 |
+| IDENTITY-SPEC-DELETE-009 | IDENTITY-DELETE-009 | Code baseline | `DELETE-FLOW-QUERY-LATEST-JOB` 必须允许 `DELETE-IN-CURRENT-ACCOUNT` 查询当前账号最新删除任务状态；当该当前账号不存在任何删除任务时，系统必须返回 `DELETE-ERR-JOB-NOT-FOUND`。 |
+| IDENTITY-SPEC-DELETE-010 | IDENTITY-DELETE-010 | Code baseline | 通过 `RISK-IN-OPS-BEARER` 运维认证的请求，必须能在 `DELETE-FLOW-ADMIN-RETRY` 中对 `DELETE-JOB-FAILED` 发起重试。 |
+| IDENTITY-SPEC-DELETE-011 | IDENTITY-DELETE-011 | Code baseline | `DELETE-FLOW-ADMIN-RETRY` 必须按重试决策表处理：`DELETE-JOB-FAILED` 且无同重试幂等记录时启动新重试执行；同一删除任务和同一重试幂等键已存在时返回 `DELETE-JOB-RETRY-EXISTING` 且不启动新执行；`DELETE-JOB-COMPLETED` 返回该已完成任务；`DELETE-JOB-IN-PROGRESS` 返回 `DELETE-ERR-IN-PROGRESS`；未识别任务状态返回 `DELETE-ERR-INVALID-STATE`。 |
+| IDENTITY-SPEC-DELETE-012 | IDENTITY-DELETE-012 | Code baseline | `DELETE-FLOW-REPLAY-DELETION-REQUEST` 仅在 token 对应账号处于 `DELETE-STATE-DELETED` 或 `DELETE-STATE-DELETION-REQUESTED`、且 `DELETE-IN-IDEMPOTENCY-KEY` 与该账号已有删除任务匹配时成立；成立时系统必须返回该已有删除任务，且该认证例外不得扩展到常规 `TOKEN-FLOW-AUTHENTICATE-BEARER`。 |
+| IDENTITY-SPEC-DELETE-013 | IDENTITY-DELETE-013 | Code baseline | `DELETE-FLOW-EXECUTE` 必须在 `DELETE-CLEANUP-IDENTITY` 中删除该用户的登录身份数据。 |
+| IDENTITY-SPEC-DELETE-014 | IDENTITY-DELETE-014 | Code baseline | `DELETE-FLOW-EXECUTE` 必须在 `DELETE-CLEANUP-IDENTITY` 中删除该用户的 profile 明细数据；删除后保留的最小账号信息由 `IDENTITY-SPEC-DELETE-008` 承接。 |
+| IDENTITY-SPEC-DELETE-015 | IDENTITY-DELETE-015 | Code baseline | `DELETE-FLOW-EXECUTE` 必须在 `DELETE-CLEANUP-LEARNING` 中删除该用户的 onboarding assessment、learning route 和 scenario state 数据。 |
+| IDENTITY-SPEC-DELETE-016 | IDENTITY-DELETE-016 | Code baseline | `DELETE-FLOW-EXECUTE` 必须在 `DELETE-CLEANUP-LEARNING` 中删除该用户的 practice session、practice turn 和 session summary 数据。 |
+| IDENTITY-SPEC-DELETE-017 | IDENTITY-DELETE-017 | Code baseline | `DELETE-FLOW-EXECUTE` 必须在 `DELETE-CLEANUP-LEARNING` 中删除该用户的 training session、training turn、training recap、training planner decision、training evidence candidate 和 training metric event 数据。 |
+| IDENTITY-SPEC-DELETE-018 | IDENTITY-DELETE-018 | Code baseline | `DELETE-FLOW-EXECUTE` 必须在 `DELETE-CLEANUP-COMMERCE` 中删除该用户的 purchase、subscription、entitlement snapshot、usage ledger、usage reservation 和关联 payment provider event 数据。 |
+| IDENTITY-SPEC-DELETE-019 | IDENTITY-DELETE-019 | Code baseline | `DELETE-FLOW-EXECUTE` 必须在 `DELETE-CLEANUP-LEARNING` 中删除该用户的 learning evidence、learning history、mastery、review、practice queue、favorite expression 和 saved expression 数据。 |
+| IDENTITY-SPEC-DELETE-020 | IDENTITY-DELETE-020 | Code baseline | `DELETE-FLOW-EXECUTE` 必须在 `DELETE-CLEANUP-GOAL` 中删除该用户的 goal profile、diagnostic assessment、mastery initial state、backplan、daily plan、plan item、autopilot control、goal idempotency、control idempotency、recovery decision、mastery transition decision、notification outbox、planner replay audit、progress forecast 和 outcome checkpoint 数据。 |
+
+### IDENTITY-RISK 认证错误、ops admin 访问门禁与当前防滥用边界
+
+#### Flow Segments
+| Flow ID | Trigger | Precondition | State transition / output | Failure boundary |
+| --- | --- | --- | --- | --- |
+| RISK-FLOW-PROTECTED-UNAUTHENTICATED | 受保护用户请求进入认证检查。 | 请求需要常规用户认证，且无法通过 `TOKEN-FLOW-AUTHENTICATE-BEARER` 建立常规用户认证上下文。 | 返回 `RISK-OUT-UNAUTHENTICATED-JSON`。 | 不得进入受保护业务处理；公共端点不由本 flow 承诺。 |
+| RISK-FLOW-ADMIN-OPS-AUTH | admin 请求进入权限检查。 | 请求目标为 admin 处理。 | `RISK-IN-OPS-BEARER` 通过 `RISK-SEC-OPS-TOKEN-DIGEST-MATCH` 时获得 ops 权限并可进入 admin 处理。 | 未建立认证上下文的 admin 请求返回 `RISK-OUT-UNAUTHENTICATED-JSON`；已建立常规用户认证上下文但无 ops 权限时返回 `RISK-ERR-ADMIN-FORBIDDEN`。 |
+
+#### Spec Items
+| Spec ID | Upstream Requirement | Status | Specification |
+| --- | --- | --- | --- |
+| IDENTITY-SPEC-RISK-001 | IDENTITY-RISK-001 | Code baseline | 在 `RISK-FLOW-PROTECTED-UNAUTHENTICATED` 中，当受保护用户请求无法通过 `TOKEN-FLOW-AUTHENTICATE-BEARER` 建立常规用户认证上下文时，系统必须返回 `RISK-OUT-UNAUTHENTICATED-JSON`，不得进入受保护业务处理。 |
+| IDENTITY-SPEC-RISK-002 | IDENTITY-RISK-002 | Code baseline | 在 `RISK-FLOW-ADMIN-OPS-AUTH` 中，admin 请求只有满足 `RISK-IN-OPS-BEARER` 并通过 `RISK-SEC-OPS-TOKEN-DIGEST-MATCH` 时才能获得 ops 权限；已建立常规用户认证上下文但不具备 ops 权限的请求访问 admin 入口时必须返回 `RISK-ERR-ADMIN-FORBIDDEN`；未建立认证上下文的 admin 请求必须返回 `RISK-OUT-UNAUTHENTICATED-JSON`。 |
+| IDENTITY-SPEC-RISK-003 | IDENTITY-RISK-003 | Code baseline | `RISK-IN-OPS-BEARER` 认证必须使用 `RISK-SEC-OPS-TOKEN-DIGEST-MATCH` 与服务端保存的 ops token 摘要匹配；不得把 ops token 明文作为比较基准。 |
 
 ### IDENTITY-AUDIT 审计、隐私与合规
 
-#### Spec Items
-| Spec ID | Upstream Requirement | Status | Specification |
-| --- | --- | --- | --- |
-| IDENTITY-SPEC-AUDIT-001 | IDENTITY-AUDIT-001 | Code baseline | 写入 audit log 时，系统必须把 `AUDIT-IN-RAW` 清洗为 `AUDIT-OUT-REDACTED`。 |
-| IDENTITY-SPEC-AUDIT-002 | IDENTITY-AUDIT-002 | Code baseline | audit redaction 必须识别 `AUDIT-SENSITIVE-PATTERN` 并避免敏感信息进入 audit 输出。 |
-| IDENTITY-SPEC-AUDIT-003 | IDENTITY-AUDIT-003 | Code baseline | 账号删除完成时，系统必须写入 `AUDIT-EVENT-DELETION-COMPLETED`。 |
-| IDENTITY-SPEC-AUDIT-004 | IDENTITY-AUDIT-004 | Code baseline | 账号删除失败时，系统必须写入 `AUDIT-EVENT-DELETION-FAILED`。 |
-| IDENTITY-SPEC-AUDIT-005 | IDENTITY-AUDIT-005 | Code baseline | 账号删除重试请求必须写入 `AUDIT-EVENT-DELETION-RETRY`。 |
-| IDENTITY-SPEC-AUDIT-006 | IDENTITY-AUDIT-006 | Code baseline | 共享 audit log 查询必须记录 `AUDIT-EVENT-QUERY`。 |
-
-### IDENTITY-RELEASE 测试替身与生产环境 release gate
+#### Flow Segments
+| Flow ID | Trigger | Precondition | State transition / output | Failure boundary |
+| --- | --- | --- | --- | --- |
+| AUDIT-FLOW-REDACT-ON-WRITE | 系统创建审计记录。 | 输入包含 `AUDIT-IN-RAW`。 | 系统必须输出 `AUDIT-OUT-REDACTED` 并只持久化清洗后的审计目标引用、请求标识和详情内容。 | 不得持久化未清洗的 target ref、request id 或 details。 |
+| AUDIT-FLOW-REDACT-SENSITIVE-CONTENT | 审计清洗处理目标引用、请求标识或详情内容。 | 输入可按 `AUDIT-SENSITIVE-PATTERN` 判定是否敏感。 | 命中 sensitive details key 时，输出 details key 必须为 `redacted_field_<index>` 且 value 为 `redacted`；命中 sensitive details value 时，value 必须为 `redacted`；命中 sensitive target ref 时必须输出 `redacted:target_ref`；命中 sensitive 或空白 request id 时必须输出 `unknown`。 | 未命中且非空内容可作为清洗后输出；不得输出命中的敏感原文。 |
+| AUDIT-FLOW-ACCOUNT-DELETION-RESULT | 账号删除执行完成或失败。 | 删除执行已产生完成或失败结果。 | 完成时写入 `AUDIT-EVENT-DELETION-COMPLETED`；失败时写入 `AUDIT-EVENT-DELETION-FAILED`。 | 来自运维重试的完成或失败必须能与普通删除完成或失败区分；事件内容仍必须经过 `AUDIT-FLOW-REDACT-ON-WRITE`。 |
+| AUDIT-FLOW-ACCOUNT-DELETION-RETRY-REQUESTED | 账号删除重试请求被接受进入处理。 | 请求已通过 `RISK-FLOW-ADMIN-OPS-AUTH`，且删除重试请求被接受进入处理。 | 写入 `AUDIT-EVENT-DELETION-RETRY`。 | 未通过 ops 认证或未进入重试处理的请求不由本 flow 承诺写入该事件。 |
+| AUDIT-FLOW-ADMIN-AUDIT-QUERY | ops admin 查询审计日志列表。 | 请求已通过 `RISK-FLOW-ADMIN-OPS-AUTH`。 | 返回的审计详情必须来自 `AUDIT-OUT-REDACTED`，并写入 `AUDIT-EVENT-QUERY`。 | 未通过 ops 认证的请求由 RISK 处理；不得输出未清洗 details。 |
 
 #### Spec Items
 | Spec ID | Upstream Requirement | Status | Specification |
 | --- | --- | --- | --- |
-| IDENTITY-SPEC-RELEASE-000 | N/A - 当前无可归档 requirement item | No accepted baseline | 在 `RELEASE-BOUNDARY-NO-BASELINE` 下，本规格不得把 `RELEASE-TARGET-PENDING` 写成已实现行为；后续只有形成独立 requirement、spec、AC、TC、实现和 release evidence 后，才能新增 identity release gate spec item。 |
+| IDENTITY-SPEC-AUDIT-001 | IDENTITY-AUDIT-001 | Code baseline | 在 `AUDIT-FLOW-REDACT-ON-WRITE` 中，当系统创建审计记录并接收 `AUDIT-IN-RAW` 时，必须输出 `AUDIT-OUT-REDACTED`，且持久化审计记录不得保存未清洗的 target ref、request id 或 details。 |
+| IDENTITY-SPEC-AUDIT-002 | IDENTITY-AUDIT-002 | Code baseline | 在 `AUDIT-FLOW-REDACT-SENSITIVE-CONTENT` 中，`AUDIT-SENSITIVE-PATTERN` 必须覆盖 key token 集合 `api_key`、`audio`、`authorization`、`credential`、`idempotency`、`payload`、`provider_key`、`raw`、`receipt`、`secret`、`signature`、`signed`、`token`、`transcript`、`url`，以及 value pattern 集合 `signature=`、`token=`、`secret`、`api_key`、`raw_payload`、`full_transcript`、`http://`、`https://`；命中 sensitive details key 时，输出 details key 必须为 `redacted_field_<index>` 且 value 为 `redacted`；命中 sensitive details value 时，value 必须为 `redacted`；命中 sensitive target ref 时必须输出 `redacted:target_ref`；命中 sensitive 或空白 request id 时必须输出 `unknown`；所有结果必须进入 `AUDIT-OUT-REDACTED`。 |
+| IDENTITY-SPEC-AUDIT-003 | IDENTITY-AUDIT-003 | Code baseline | 在 `AUDIT-FLOW-ACCOUNT-DELETION-RESULT` 中，账号删除执行完成时必须写入 `AUDIT-EVENT-DELETION-COMPLETED`；当完成来自运维重试时，该事件必须能区分 retry completed 变体。 |
+| IDENTITY-SPEC-AUDIT-004 | IDENTITY-AUDIT-004 | Code baseline | 在 `AUDIT-FLOW-ACCOUNT-DELETION-RESULT` 中，账号删除执行失败时必须写入 `AUDIT-EVENT-DELETION-FAILED`；当失败来自运维重试时，该事件必须能区分 retry failed 变体。 |
+| IDENTITY-SPEC-AUDIT-005 | IDENTITY-AUDIT-005 | Code baseline | 在 `AUDIT-FLOW-ACCOUNT-DELETION-RETRY-REQUESTED` 中，通过 `RISK-FLOW-ADMIN-OPS-AUTH` 且被接受进入重试处理的删除重试请求，必须写入 `AUDIT-EVENT-DELETION-RETRY`。 |
+| IDENTITY-SPEC-AUDIT-006 | IDENTITY-AUDIT-006 | Code baseline | 在 `AUDIT-FLOW-ADMIN-AUDIT-QUERY` 中，通过 `RISK-FLOW-ADMIN-OPS-AUTH` 的 ops admin 审计日志列表查询必须记录 `AUDIT-EVENT-QUERY`；返回的审计详情必须来自 `AUDIT-OUT-REDACTED`，不得输出未清洗 details。 |
+
+### IDENTITY-RELEASE 未实现生产发布边界
+
+#### 当前无已实现 release gate baseline
+
+##### Spec Items
+| Spec ID | Upstream Requirement | Status | Specification |
+| --- | --- | --- | --- |
+| IDENTITY-SPEC-RELEASE-000 | N/A - 当前无可归档已实现 requirement item | No accepted baseline | 在 `RELEASE-BOUNDARY-NO-BASELINE` 下，本规格不得把 `RELEASE-TARGET-PENDING` 写成已实现行为；当前通用 release health warning 不得作为 identity 专属 release gate code evidence；新增 release target spec items 只能表示待实现发布边界，不能表示 release gate 已实现。 |
+
+#### Release / DevOps target boundary（Proposed / 待实现）
+
+##### Target Spec Items
+| Spec ID | Upstream Requirement | Status | Specification |
+| --- | --- | --- | --- |
+| IDENTITY-SPEC-RELEASE-001 | IDENTITY-RELEASE-001 | Release target pending | 生产发布门禁必须在发现后端仍允许未消费 OTP challenge 完成手机号登录、账号创建或 session 签发时返回 `RELEASE-ERR-IDENTITY-BACKEND-UNVERIFIED`，并阻断商业发布通过。 |
+| IDENTITY-SPEC-RELEASE-002 | IDENTITY-RELEASE-002 | Release target pending | 生产发布门禁必须在发现后端仍把 raw provider token、Apple authorization code、Apple identity token 或 WeChat code 的 hash 作为 Apple / WeChat stable subject 时返回 `RELEASE-ERR-IDENTITY-BACKEND-UNVERIFIED`，并阻断商业发布通过。 |
+| IDENTITY-SPEC-RELEASE-003 | IDENTITY-RELEASE-003 | Release target pending | 生产发布门禁必须要求真实 SMS、Apple 和 WeChat provider 配置以及 `RELEASE-OUT-IDENTITY-EVIDENCE`；配置或证据缺失、使用 placeholder/native test 配置时必须返回 `RELEASE-ERR-IDENTITY-PROVIDER-CONFIG`，且不得声明商业发布通过。 |
 
 ## 模块影响与 owner agent
 | 能力域 | 影响范围 | Owner agent / skill |
@@ -403,10 +520,10 @@ Feature Spec Generate Skill（功能规格生成 Skill）
 | Requirements | `identity-account-lifecycle/requirements.md` 的需求 item 维护 | Requirement Development Agent |
 | Feature spec | 本文件的模块规格、状态、输入输出、失败路径、非目标和下游契约影响 | Feature Spec Generate Skill |
 | Domain model | UserAccount、AuthIdentity、AuthSession、OtpChallenge、AccountDeletionJob、AuditLog 等生命周期对象 | Domain Schema Agent / `domain-model-generate` |
-| API contract | auth、user/me、logout、refresh、account deletion、admin audit、目标态 OTP endpoints | Backend Agent / `api-contract-generate` |
-| Architecture / Security | opaque token、provider boundary、OTP security、audit redaction、admin bearer、release gate | System Architect Agent |
-| QA | AC/TC、覆盖矩阵、当前代码基线和目标态 OTP 的测试分层 | QA Agent / `acceptance-criteria-generate` / `test-case-generate` |
-| DevOps / Release | 生产 HTTPS、OTP provider 禁用测试替身、identity 专属 release gate | DevOps Agent |
+| API contract | auth、user/me、logout、refresh、account deletion、admin audit、目标态 OTP endpoints、Apple / WeChat provider validation request semantics | Backend Agent / `api-contract-generate` |
+| Architecture / Security | opaque token、provider boundary、OTP security、audit redaction、admin bearer，以及未实现的 identity release gate target boundary | System Architect Agent |
+| QA | AC/TC、覆盖矩阵、当前代码基线、目标态 OTP、目标态 provider validation 和 release target boundary 的测试分层 | QA Agent / `acceptance-criteria-generate` / `test-case-generate` |
+| DevOps / Release | 生产 HTTPS、OTP provider 禁用测试替身，以及未实现的 identity 专属 release gate target boundary | DevOps Agent |
 | Traceability | Requirement -> Spec -> AC -> TC -> Evidence 链路 | `document-traceability-check` |
 
 ## 必需下游契约
@@ -414,9 +531,9 @@ Feature Spec Generate Skill（功能规格生成 Skill）
 | --- | --- |
 | Domain | 定义 `UserAccount`、`AuthIdentity`、`AuthSession`、`OtpChallenge`、OTP attempt/lock、AccountDeletionJob、AuditLog 的实体、状态、生命周期和保留边界。 |
 | API | 定义登录、refresh、logout、`/user/me`、profile update、account deletion、admin deletion retry、admin audit query、目标态 OTP send/verify 的 request、response、typed error 和兼容性。 |
-| Architecture / Security | 定义 opaque token 策略、hash 存储、provider token boundary、OTP CSPRNG/HMAC、rate limit/risk/CAPTCHA、audit redaction、admin bearer、安全错误响应和 release gate 关系。 |
+| Architecture / Security | 定义 opaque token 策略、hash 存储、provider token baseline boundary、Apple / WeChat verifier、stable subject derivation、OTP CSPRNG/HMAC、rate limit/risk/CAPTCHA、audit redaction、admin bearer、安全错误响应和未实现 release gate target boundary 关系。 |
 | QA | 以本规格为直接上游生成 acceptance criteria 和 test cases；每个 spec item 至少映射到一个 AC 或明确例外。 |
-| DevOps | 目标态 OTP 和 identity provider 进入生产前，需要生产配置、HTTPS enforcement、测试 provider 禁用、secret 管理、release health 阻断和回滚验证。 |
+| DevOps | 目标态 OTP 和 identity provider 进入生产前，需要生产配置、HTTPS enforcement、测试 provider 禁用、secret 管理、真实 SMS/Apple/WeChat provider evidence、目标态 release health 阻断和回滚验证；这些是下游 DevOps target boundary，不是当前 identity code baseline。 |
 
 ## 非目标
 - 不声明当前身份认证模块已达到商业化发布就绪。
@@ -429,13 +546,13 @@ Feature Spec Generate Skill（功能规格生成 Skill）
 
 ## 验收覆盖期望
 - 每条 `Code baseline` spec item 后续必须至少映射到一个可观察 AC 和一个 TC，或记录明确例外。
-- 每条 `Target pending` spec item 后续必须至少映射到一个目标态 AC 和一个目标态 TC，但在代码实现前不得声明 code evidence traced。
-- `IDENTITY-SPEC-RELEASE-000` 只作为边界 spec，不要求生成已实现 AC；后续新增 release gate requirement 后必须替换为具体 spec item。
+- 每条 `Target pending` 或 `Release target pending` spec item 后续必须至少映射到一个目标态 AC 和一个目标态 TC，但在代码实现前不得声明 code evidence traced。
+- `IDENTITY-SPEC-RELEASE-000` 只作为当前无已实现 release gate 的边界 spec，不要求生成已实现 AC；`IDENTITY-SPEC-RELEASE-001..003` 是待实现发布门禁目标，必须在实现前维持 pending 状态。
 - AC 必须验证用户或系统可观察结果，不得以类名、函数名、数据库字段或具体测试实现作为通过条件。
-- traceability 更新时必须把 `docs/product/base/identity-account-lifecycle/traceability.md` 中的 `Spec Flow` / `Spec Item` 从 `TBD - 后续补齐` 替换为本文件的具体 spec ID。
+- traceability 更新时必须保持 `docs/product/base/identity-account-lifecycle/traceability.md` 中的 `Spec Flow` / `Spec Item` 与本文件的具体 spec ID 一致，并补齐对应 `AC`、`TC` 和测试证据。
 
 ## Rollout / merge-back 规则
 - 本文件为 Draft 模块规格；生成本文件不等于 Product Base 总规格已接受更新。
-- 后续必须依次补齐 `acceptance.md`、测试用例、traceability 的 Spec/AC/TC 映射、测试证据、实现报告或质量报告。
+- 后续必须依次补齐 `acceptance.md`、测试用例、traceability 中与具体 spec ID 对应的 AC/TC 映射、测试证据、实现报告或质量报告。
 - Product Base 根目录 `docs/product/base/spec.md` 只有在实现、验收、追溯、测试和报告证据完整或例外已记录后，才能由 Product Manager 批准合并。
-- 目标态 OTP 进入实现前必须先补齐 Domain、API、Architecture/Security、QA 和 DevOps 契约；实现中发现缺失契约字段时必须停止并先更新对应契约。
+- 目标态 OTP、Apple / WeChat provider validation、生产凭证门禁和 identity release gate 进入实现前必须先补齐 Domain、API、Architecture/Security、QA 和 DevOps 契约；实现中发现缺失契约字段时必须停止并先更新对应契约。

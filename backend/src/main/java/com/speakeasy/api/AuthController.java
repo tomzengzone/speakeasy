@@ -1,10 +1,14 @@
 package com.speakeasy.api;
 
+import com.speakeasy.common.ApiException;
 import com.speakeasy.common.SchemaResponse;
 import com.speakeasy.identity.AuthService;
 import com.speakeasy.identity.IdentityService;
+import com.speakeasy.identity.OtpRequestContext;
+import com.speakeasy.identity.OtpService;
 import com.speakeasy.ops.AccountDeletionService;
 import com.speakeasy.security.CurrentUser;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
@@ -12,6 +16,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -28,18 +33,51 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class AuthController {
   private final AuthService authService;
+  private final OtpService otpService;
   private final IdentityService identityService;
   private final AccountDeletionService accountDeletionService;
 
-  public AuthController(AuthService authService, IdentityService identityService, AccountDeletionService accountDeletionService) {
+  public AuthController(
+      AuthService authService,
+      OtpService otpService,
+      IdentityService identityService,
+      AccountDeletionService accountDeletionService) {
     this.authService = authService;
+    this.otpService = otpService;
     this.identityService = identityService;
     this.accountDeletionService = accountDeletionService;
   }
 
+  @PostMapping("/auth/otp/send")
+  public OtpSendResponse sendOtp(@Valid @RequestBody OtpSendRequest request, HttpServletRequest servletRequest) {
+    return OtpSendResponse.from(otpService.sendOtp(new OtpService.SendOtpCommand(
+        request.phoneNumber(),
+        Boolean.TRUE.equals(request.termsAccepted()),
+        request.consentVersion(),
+        request.captchaToken(),
+        requestContext(servletRequest, request.deviceId(), request.installId()))));
+  }
+
+  @PostMapping("/auth/otp/step-up")
+  public OtpStepUpResponse submitOtpStepUp(@Valid @RequestBody OtpStepUpRequest request, HttpServletRequest servletRequest) {
+    return OtpStepUpResponse.from(otpService.submitStepUp(
+        parseUuid(request.challengeId(), "challenge_id"),
+        request.stepUpToken(),
+        requestContext(servletRequest, null, null)));
+  }
+
   @PostMapping("/auth/login/phone")
-  public AuthSessionResponse loginPhone(@Valid @RequestBody PhoneLoginRequest request) {
-    return AuthSessionResponse.from(authService.loginPhone(request.phoneNumber(), request.verificationCode(), request.termsAccepted()));
+  public AuthSessionResponse loginPhone(@Valid @RequestBody PhoneLoginRequest request, HttpServletRequest servletRequest) {
+    if (request.schemaVersion() == 1) {
+      return AuthSessionResponse.from(authService.loginPhone(request.phoneNumber(), request.verificationCode(), request.termsAccepted()));
+    }
+    UUID challengeId = parseUuid(request.challengeId(), "challenge_id");
+    return AuthSessionResponse.from(authService.loginPhone(
+        challengeId,
+        request.phoneNumber(),
+        request.verificationCode(),
+        request.termsAccepted(),
+        requestContext(servletRequest, request.deviceId(), request.installId())));
   }
 
   @PostMapping("/auth/login/apple")
@@ -96,11 +134,28 @@ public class AuthController {
     return AccountDeletionJobResponse.from(1, accountDeletionService.latestDeletionJob(currentUser.userId()));
   }
 
+  public record OtpSendRequest(
+      @NotNull @Min(2) @Max(2) Integer schemaVersion,
+      @NotBlank @Size(min = 3, max = 32) String phoneNumber,
+      @NotNull Boolean termsAccepted,
+      @NotBlank @Size(max = 64) String consentVersion,
+      @Size(min = 8, max = 4096) String captchaToken,
+      @Size(min = 1, max = 128) String deviceId,
+      @Size(min = 1, max = 128) String installId) {}
+
+  public record OtpStepUpRequest(
+      @NotNull @Min(2) @Max(2) Integer schemaVersion,
+      @NotBlank @Size(min = 16, max = 160) String challengeId,
+      @NotBlank @Size(min = 8, max = 4096) String stepUpToken) {}
+
   public record PhoneLoginRequest(
-      @NotNull @Min(1) @Max(1) Integer schemaVersion,
-      @NotBlank String phoneNumber,
-      @NotBlank String verificationCode,
-      @NotNull @AssertTrue Boolean termsAccepted) {}
+      @NotNull @Min(1) @Max(2) Integer schemaVersion,
+      @Size(min = 16, max = 160) String challengeId,
+      @NotBlank @Size(min = 3, max = 32) String phoneNumber,
+      @NotBlank @Pattern(regexp = "^[0-9]{6,10}$") String verificationCode,
+      @NotNull @AssertTrue Boolean termsAccepted,
+      @Size(min = 1, max = 128) String deviceId,
+      @Size(min = 1, max = 128) String installId) {}
 
   public record SocialLoginRequest(
       @NotNull @Min(1) @Max(1) Integer schemaVersion,
@@ -128,6 +183,30 @@ public class AuthController {
           result.accessToken(),
           result.refreshToken(),
           result.expiresAt());
+    }
+  }
+
+  public record OtpSendResponse(
+      int schemaVersion,
+      UUID challengeId,
+      Instant expiresAt,
+      long resendAfterSeconds,
+      String riskDecision,
+      String stepUpStatus) implements SchemaResponse {
+    static OtpSendResponse from(OtpService.SendOtpResult result) {
+      return new OtpSendResponse(
+          2,
+          result.challengeId(),
+          result.expiresAt(),
+          result.resendAfterSeconds(),
+          result.riskDecision(),
+          result.stepUpStatus());
+    }
+  }
+
+  public record OtpStepUpResponse(int schemaVersion, UUID challengeId, String stepUpStatus) implements SchemaResponse {
+    static OtpStepUpResponse from(OtpService.StepUpResult result) {
+      return new OtpStepUpResponse(2, result.challengeId(), result.stepUpStatus());
     }
   }
 
@@ -167,6 +246,32 @@ public class AuthController {
           user.getAccountStatus(),
           user.getOnboardingStatus());
     }
+  }
+
+  private UUID parseUuid(String value, String field) {
+    if (value == null || value.isBlank()) {
+      throw validation(field + " is required.");
+    }
+    try {
+      return UUID.fromString(value.trim());
+    } catch (IllegalArgumentException exception) {
+      throw validation(field + " is invalid.");
+    }
+  }
+
+  private OtpRequestContext requestContext(HttpServletRequest request, String deviceId, String installId) {
+    String requestId = request.getHeader("X-Request-Id");
+    return new OtpRequestContext(
+        requestId == null || requestId.isBlank() ? "unknown" : requestId,
+        request.getRemoteAddr(),
+        request.isSecure(),
+        request.getHeader("X-Forwarded-Proto"),
+        deviceId,
+        installId);
+  }
+
+  private ApiException validation(String message) {
+    return new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", message);
   }
 
 }

@@ -19,6 +19,21 @@ api_base_url="${APP_API_BASE_URL:-${API_BASE_URL:-}}"
 env_name="${ENV:-}"
 test_phone_login="${ENABLE_TEST_PHONE_LOGIN:-false}"
 test_phone_login_normalized="$(printf '%s' "$test_phone_login" | tr '[:upper:]' '[:lower:]')"
+spring_profiles_active="${SPRING_PROFILES_ACTIVE:-}"
+spring_profiles_include="${SPRING_PROFILES_INCLUDE:-}"
+
+contains_spring_profile() {
+  local profiles="$1"
+  local target="$2"
+  local normalized
+  normalized="$(printf '%s' "$profiles" | tr ',;' '  ' | tr '[:upper:]' '[:lower:]')"
+  for profile in $normalized; do
+    if [[ "$profile" == "$target" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
 
 if [[ -z "$api_base_url" ]]; then
   fail "APP_API_BASE_URL or API_BASE_URL is required"
@@ -34,6 +49,10 @@ fi
 
 if [[ "$test_phone_login_normalized" == "true" ]]; then
   fail "ENABLE_TEST_PHONE_LOGIN must not be true for release"
+fi
+
+if contains_spring_profile "$spring_profiles_active" "test" || contains_spring_profile "$spring_profiles_include" "test"; then
+  fail "Spring test profile must not be active or included for release"
 fi
 
 require_file "lib/config/payment_config.dart"

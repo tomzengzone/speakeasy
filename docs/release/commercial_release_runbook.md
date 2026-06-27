@@ -14,6 +14,7 @@
 | Gate | 命令 | 阻断条件 | TC |
 | --- | --- | --- | --- |
 | Release configuration | `scripts/check_release_configuration.sh` | 生产 API 缺失或非 HTTPS、测试登录开启、订阅商品 ID 缺失、旧支付接口仍被客户端引用 | TC-COM-011 |
+| Identity production trust guard | `python3 scripts/check_identity_release_guard.py` | 手机号登录未在账号/session 签发前消费 OTP challenge、Apple/WeChat 登录仍以 raw credential hash 作为 stable subject、真实 OTP/SMS/phone-risk/CAPTCHA/step-up/HTTPS/retention/Apple/WeChat provider 配置或外部证据 ref 缺失 | IDENTITY-RELEASE-001..003 |
 | Manual external evidence plan | `python3 scripts/check_manual_external_evidence_plan.py` | 剩余人工/外部 blocker 缺少逐步执行脚本、预期结果、实际结果字段或独立审查要求 | TC-COM-012、TC-COM-015、TC-COM-019、TC-COM-021、TC-COM-022 |
 | Commercial copy contract | `python3 scripts/check_commercial_copy_contract.py --strict-external` | 会员页/应用内 upsell 承诺未映射到已实现权益、仍承诺未上线能力、商店/隐私/支持外部证据缺失 | TC-COM-015、TC-COM-016 |
 | Provider sandbox evidence | `python3 scripts/check_provider_sandbox_evidence.py --strict-external` | Apple sandbox 或 Google Play internal test 证据引用缺失，或 TC-COM-019 场景矩阵不完整 | TC-COM-019 |
@@ -28,6 +29,24 @@
 | `APP_API_BASE_URL` / `API_BASE_URL` | release secret | HTTPS 生产 API，不得为 example/local 地址 |
 | `ENV` | release env | 必须为 `production` |
 | `ENABLE_TEST_PHONE_LOGIN` | release env | 必须为 `false` 或未启用 |
+| `SMS_PROVIDER_CONFIG_REF` | release var | 指向真实生产 SMS provider 配置；不得为 fake/mock/dev/staging/native/test/sandbox |
+| `PHONE_RISK_PROVIDER_CONFIG_REF` | release var | 指向真实生产 phone-risk/SIM-swap provider 配置；不得为 fake/mock/dev/staging/native/test/sandbox |
+| `CAPTCHA_PROVIDER_CONFIG_REF` | release var | 指向真实生产 CAPTCHA provider 配置；不得为 fake/mock/dev/staging/native/test/sandbox |
+| `STEP_UP_PROVIDER_CONFIG_REF` | release var | 指向真实生产 step-up provider 配置；不得为 fake/mock/dev/staging/native/test/sandbox |
+| `TRUSTED_PROXY_CONFIG_REF` | release var | 指向生产 trusted proxy/HTTPS header 配置 |
+| `OTP_HMAC_SECRET_REF` | release var | 指向生产 OTP HMAC secret/pepper，不得使用源码默认值 |
+| `APPLE_PROVIDER_CONFIG_REF` | release var | 指向真实 Apple provider verifier 配置；不得为 fake/mock/dev/staging/native/test/sandbox |
+| `WECHAT_PROVIDER_CONFIG_REF` | release var | 指向真实 WeChat provider verifier 配置；不得为 fake/mock/dev/staging/native/test/sandbox |
+| `SMS_PROVIDER_EVIDENCE_REF` | release var | 指向真实 SMS provider 发送、回执或等价外部证据 |
+| `PHONE_RISK_PROVIDER_EVIDENCE_REF` | release var | 指向真实 phone-risk/SIM-swap provider allow/block/step-up、timeout/fail-closed 和国家覆盖证据 |
+| `PHONE_RISK_COVERED_COUNTRIES` | release var | ISO-3166 alpha-2 列表，必须覆盖所有 `SPEAKEASY_OTP_ALLOWED_COUNTRIES` |
+| `PHONE_RISK_CN_SIM_SWAP_EVIDENCE_REF` | release var | 当 `CN/+86` OTP 被允许时，指向 `+86` SIM-swap/号码转移覆盖证据 |
+| `CAPTCHA_PROVIDER_EVIDENCE_REF` | release var | 指向 CAPTCHA 服务端 token verification 成功/失败证据 |
+| `STEP_UP_PROVIDER_EVIDENCE_REF` | release var | 指向 step-up enrolled/not-enrolled/block/pass 证据 |
+| `HTTPS_ENFORCEMENT_EVIDENCE_REF` | release var | 指向 OTP send/login/step-up 非 HTTPS 拒绝和 trusted proxy 证据 |
+| `OTP_RETENTION_EVIDENCE_REF` | release var | 指向 OTP challenge/hash 过期 24 小时内删除或失效的运行证据 |
+| `APPLE_PROVIDER_VERIFIER_EVIDENCE_REF` | release var | 指向 Apple identity token verifier 的签名、issuer、audience、expiry、nonce 和 stable subject 外部证据 |
+| `WECHAT_PROVIDER_VERIFIER_EVIDENCE_REF` | release var | 指向 WeChat code exchange、state 校验、unionid/openid subject 边界和冲突处理外部证据 |
 | `WECHAT_APP_ID` | release secret | 必须为真实微信开放平台 AppID |
 | `WECHAT_UNIVERSAL_LINK` | release secret | 必须为 HTTPS 且已在微信开放平台和 Associated Domains 配置 |
 | `SENTRY_DSN` | release secret | 必须存在，并完成 dSYM / ProGuard mapping 上传流程 |
@@ -61,21 +80,23 @@
 2. 运行 `python3 scripts/check_manual_external_evidence_plan.py`，确认人工清单仍覆盖所有剩余 blocker。
 3. 按 `tests/commercial/manual_external_evidence_checklist.md` 执行 TC-COM-012、TC-COM-015、TC-COM-019、TC-COM-021、TC-COM-022 的人工步骤，并回填 evidence refs。
 4. 运行 `scripts/check_release_configuration.sh`。
-5. 运行 `python3 scripts/check_commercial_copy_contract.py --strict-external`。
-6. 运行 `python3 scripts/check_provider_sandbox_evidence.py --strict-external`。
-7. 若本次 release 打开 paid AI voice 或真实 DashScope provider，按 `tests/commercial/ai_external_release_evidence_checklist.md` 执行四类 AI 外部证据场景，并运行 `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external` 和 `python3 scripts/check_ai_external_release_evidence.py --strict-external`。
-8. 运行 `python3 scripts/check_store_submission_evidence.py --strict-external`。
-9. 运行 `scripts/check_social_login_release_config.sh`。
-10. 运行 `scripts/check_release_readiness.sh`。
-11. 在 tag release 前确认 provider evidence、store metadata evidence、reviewer account、privacy/support URL 均已登记。
-12. 触发 `.github/workflows/release.yml` tag workflow。
-13. 上传或确认 dSYM / ProGuard mapping，记录 artifact、commit、tag、证据链接。
-14. 完成 rollback rehearsal 或发布负责人审批，并记录 `ROLLBACK_REHEARSAL_REF`。
-15. 若本次 release 打开 paid AI voice 或真实 DashScope provider，确认 `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`、`AI_MEDIA_STORAGE_EVIDENCE_REF`、`AI_COST_DASHBOARD_EVIDENCE_REF` 和 `AI_RETENTION_POLICY_EVIDENCE_REF` 均已登记，并且 `commercial-ai-provider-hardening` traceability 不存在 open release blocker。
+5. 运行 `python3 scripts/check_identity_release_guard.py`；该 gate 只有在真实 OTP challenge 消费、Apple/WeChat provider verifier、stable subject derivation 和对应生产 refs 都具备后才能通过。
+6. 运行 `python3 scripts/check_commercial_copy_contract.py --strict-external`。
+7. 运行 `python3 scripts/check_provider_sandbox_evidence.py --strict-external`。
+8. 若本次 release 打开 paid AI voice 或真实 DashScope provider，按 `tests/commercial/ai_external_release_evidence_checklist.md` 执行四类 AI 外部证据场景，并运行 `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external` 和 `python3 scripts/check_ai_external_release_evidence.py --strict-external`。
+9. 运行 `python3 scripts/check_store_submission_evidence.py --strict-external`。
+10. 运行 `scripts/check_social_login_release_config.sh`。
+11. 运行 `scripts/check_release_readiness.sh`。
+12. 在 tag release 前确认 provider evidence、store metadata evidence、reviewer account、privacy/support URL 均已登记。
+13. 触发 `.github/workflows/release.yml` tag workflow。
+14. 上传或确认 dSYM / ProGuard mapping，记录 artifact、commit、tag、证据链接。
+15. 完成 rollback rehearsal 或发布负责人审批，并记录 `ROLLBACK_REHEARSAL_REF`。
+16. 若本次 release 打开 paid AI voice 或真实 DashScope provider，确认 `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`、`AI_MEDIA_STORAGE_EVIDENCE_REF`、`AI_COST_DASHBOARD_EVIDENCE_REF` 和 `AI_RETENTION_POLICY_EVIDENCE_REF` 均已登记，并且 `commercial-ai-provider-hardening` traceability 不存在 open release blocker。
 
 ## 禁止事项
 - 不得把 DashScope、OpenAI、Apple、Google、WeChat、Sentry 或签名密钥写入仓库。
 - 不得用本地 deterministic provider 测试替代 TC-COM-019。
 - 不得用 fake transport、deterministic provider、进程内 TTS cache 或手工 signed URL 替代 `commercial-ai-provider-hardening` 的生产媒体、缓存、真实 provider 和数据策略证据。
 - 不得在 `ENABLE_TEST_PHONE_LOGIN=true` 或 `ENV!=production` 时发布商店版本。
+- 不得在 `scripts/check_identity_release_guard.py` 仍阻断 `IDENTITY-RELEASE-001..003` 时声明商业发布通过。
 - 不得在会员页或商店元数据中承诺尚未上线的离线包、专属报告或其他未交付权益。

@@ -78,7 +78,7 @@ class FoundationErrorContractTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content("""
                 {
-                  "schema_version": 2,
+                  "schema_version": 3,
                   "phone_number": "+8613800138020",
                   "verification_code": "123456",
                   "terms_accepted": true
