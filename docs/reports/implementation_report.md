@@ -2811,7 +2811,7 @@ Requirement mapping:
 Files changed:
 - New increment docs: `docs/product/increments/commercial-ai-provider-hardening/definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`.
 - New external evidence matrix: `tests/commercial/ai_provider_sandbox_matrix.md`.
-- Updated planning/source docs: `docs/process/change_request.md`, `docs/product/roadmap.md`, `docs/product/stages/p0-commercial-readiness.md`, `docs/product/development_status.md`, `docs/product/feature_registry.md`, `docs/product/feature_backlog.md`, `docs/COMMERCIAL_LAUNCH_TODO.md`.
+- Updated planning/source docs: `docs/process/change_request.md`, `docs/product/roadmap.md`, `docs/product/stages/p0-commercial-readiness.md`, `docs/product/development_status.md`, `docs/product/feature_registry.md`, `docs/COMMERCIAL_LAUNCH_TODO.md`.
 - Updated related increment docs: `docs/product/increments/commercial-subscription-readiness/*`, `docs/product/increments/p0-1-expression-automation-training/test_cases.md`, `docs/product/increments/p0-1-expression-automation-training/traceability.md`.
 - Updated architecture/release docs: `docs/architecture/system_overview.md`, `docs/architecture/api_contract.md`, `docs/architecture/data_flow.md`, `docs/architecture/security_design.md`, `docs/release/commercial_release_runbook.md`, `docs/release/release_checklist.md`, `docs/release/version_log.md`, `tests/commercial/manual_external_evidence_checklist.md`.
 
@@ -3007,7 +3007,7 @@ Follow-up:
 
 ## 2026-05-24 - Product object baseline and PM gate alignment
 
-Change request: extract the current APP baseline and stable feature map from legacy `mvp-learning-loop-*` documents, then align Product Manager, Development Orchestrator, and PM brief with the product object gates.
+Change request: align the current APP baseline and stable feature map with Product Base, feature registry, and product object gates.
 
 Files changed:
 - Added `docs/product/feature_registry.md`.
@@ -3020,8 +3020,8 @@ Files changed:
 - Added `docs/reports/product_manager_overall_change_review.md`.
 
 Requirement mapping:
-- `mvp-learning-loop-requirements.md` is retained as legacy baseline source.
-- `mvp-learning-loop-spec.md` is retained as legacy P0.1 spec source.
+- 旧扁平 feature 需求工件已移除；Product Base requirements 承载稳定需求。
+- 旧扁平 feature 规格工件已移除；P0.1 increment spec 承载阶段规格。
 - Current APP baseline is now represented by `docs/product/baselines/current-mvp.md`.
 - Stable APP capabilities are now represented by `docs/product/feature_registry.md`.
 - P0.1 and P0.2 are represented as stages, with P0.1 active increment defined separately.
@@ -3037,7 +3037,7 @@ Tests added or updated:
 
 Risks:
 - P0.1 increment requirements/spec/acceptance/traceability still need to be generated or migrated from the legacy spec.
-- Legacy flat docs remain as compatibility sources until a controlled migration updates downstream references.
+- 旧 feature 目录引用已清理，后续文档链以 Product Base 和 increment artifacts 为准。
 
 Follow-up:
 - Generate `docs/product/increments/p0-1-expression-automation-training/requirements.md`.

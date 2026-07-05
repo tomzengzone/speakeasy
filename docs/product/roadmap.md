@@ -134,8 +134,8 @@ Canonical scope：
 - PM 审查更新后的 P0.1 traceability、test report 和 quality report，决定是否把已接受稳定能力 merge back 到 Product Base。
 - 若继续做体验差异化，只覆盖 P0.1 session 内训练体验，不扩展到 P0.2 跨天调度、P1 笔记本/评分产品化、P1/P2 内容体系或完整商业订阅 UI。
 
-Legacy source：
-- `docs/product/features/mvp-learning-loop-spec.md` 仅作为 P0.1 legacy spec source，P0.1 标准增量工件已迁移生成到 `docs/product/increments/p0-1-expression-automation-training/`。
+P0.1 标准增量工件：
+- `docs/product/increments/p0-1-expression-automation-training/`
 
 ## Next: P0.2 目标驱动自动带练与跨 session 记忆引擎
 目标：让用户不只是“不用决定今天练什么”，而是可以输入短期目标，例如 IELTS/TOEFL 口语目标分、商务英语口语能力、截止日期、每日可投入时间和强度偏好；系统诊断真实水平，倒排周计划/日计划/每次训练内容，并自动带用户完成训练、复习和复测，持续更新达标预测。

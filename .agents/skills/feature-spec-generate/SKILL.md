@@ -23,7 +23,7 @@ Create a feature-level contract that connects requirements, architecture impact,
 - Approved increment definition and increment requirements for new product work.
 - Covered Stage Scope Item IDs from the active stage and increment definition for new product work.
 - Product Base requirements in `docs/product/base/requirements.md` when consolidating or updating accepted stable product behavior.
-- Stable feature requirement only when updating a long-lived feature contract.
+- Stable feature metadata from `docs/product/feature_registry.md` when long-lived capability boundary context is needed.
 - Relevant architecture and domain docs.
 - Current MVP scope and Definition of Done.
 
@@ -31,10 +31,9 @@ Create a feature-level contract that connects requirements, architecture impact,
 - Feature goal, user flow, inputs, outputs, states, and dependencies.
 - Increment spec in `docs/product/increments/<increment-id>/spec.md` for new stage-bound delivery work.
 - Product Base spec in `docs/product/base/spec.md` for accepted stable product behavior.
-- Legacy feature spec in `docs/product/features/<feature-slug>-spec.md` only for existing flat artifacts until migration.
 - API, data, UI, AI, and test impact sections.
 - Non-goals and rollout notes.
-- Traceable references that allow acceptance criteria to use the approved feature spec as direct upstream input.
+- Traceable references that allow acceptance criteria to use the approved Product Base or increment spec as direct upstream input.
 - Preserved Stage Scope Item ID references for every increment spec section that refines committed stage scope.
 
 ## 文档语言
@@ -42,11 +41,12 @@ Create a feature-level contract that connects requirements, architecture impact,
 - App 内用户可见文案按产品本地化要求处理；持久化的产品、流程、架构、领域、AI runtime、报告、测试计划、需求和设计文档默认使用中文。
 
 ## 文档路径约定
-- 功能规格默认写入 `docs/product/features/<feature-slug>-spec.md`。
-- 输入需求优先读取 `docs/product/features/<feature-slug>-requirements.md`，必要时补读 `docs/product/user_stories.md`、`docs/product/mvp_scope.md` 和 `docs/process/change_request.md`。
-- 后续 P0 或新增功能的验收标准必须以已批准 feature spec 为直接输入；因此 feature spec 必须保留需求、用户故事、范围边界和非目标的可追溯引用。
+- 新阶段交付规格默认写入 `docs/product/increments/<increment-id>/spec.md`。
+- 已接受稳定行为规格写入 `docs/product/base/spec.md`。
+- 输入需求优先读取 `docs/product/increments/<increment-id>/requirements.md` 或 `docs/product/base/requirements.md`，必要时补读 `docs/product/user_stories.md`、`docs/product/feature_registry.md` 和 `docs/process/change_request.md`。
+- 后续 P0 或新增功能的验收标准必须以已批准 Product Base 或 increment spec 为直接输入；因此 spec 必须保留需求、用户故事、范围边界和非目标的可追溯引用。
 - 若规格影响架构、领域、API、AI runtime 或 UX，只记录影响范围；具体契约分别交由对应 skill 更新到 `docs/architecture/`、`docs/domain/`、`docs/ai_runtime/`、`docs/ux/`。
-- 发现范围扩展时更新 `docs/process/change_request.md`，不要把变更决策埋进 feature spec。
+- 发现范围扩展时更新 `docs/process/change_request.md`，不要把变更决策埋进 spec。
 
 ## Product Object Rules
 - For new product work, generate an increment spec at `docs/product/increments/<increment-id>/spec.md`.
@@ -54,7 +54,7 @@ Create a feature-level contract that connects requirements, architecture impact,
 - Do not generate a feature spec named after a stage, priority window, roadmap horizon, MVP baseline, or increment id.
 - The spec must cite its upstream increment definition, increment requirements, active stage, primary feature, and affected features.
 - The spec must cite the `Covered Stage Scope Items` from the increment definition and preserve those IDs in relevant flows, states, dependencies, and non-goals.
-- Stable feature contracts live under `docs/product/features/<feature-slug>/`; they describe long-lived capability boundaries and must not absorb stage delivery plans.
+- Stable feature metadata lives in `docs/product/feature_registry.md` as slug, boundary, owner, and related stage/increment; it must not absorb stage delivery plans.
 - If architecture, domain, API, AI runtime, or UX contracts are needed, record the required contract outputs but do not inline those contracts into the increment spec.
 - If no approved increment definition exists, or if the increment definition lacks `Covered Stage Scope Items` for committed stage work, block spec generation and return the missing upstream artifact.
 

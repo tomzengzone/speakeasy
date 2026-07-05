@@ -307,16 +307,14 @@ AM docs/process/workflow.md
 AM docs/product/acceptance_criteria.md
 A  docs/product/baselines/current-mvp.md
 AM docs/product/development_status.md
-AM docs/product/feature_backlog.md
 AM docs/product/feature_registry.md
-AM docs/product/features/mvp-learning-loop-requirements.md
-AM docs/product/features/mvp-learning-loop-spec.md
+D  旧扁平 feature 需求工件已移除
+D  旧扁平 feature 规格工件已移除
 A  docs/product/increments/p0-1-expression-automation-training/acceptance.md
 A  docs/product/increments/p0-1-expression-automation-training/definition.md
 A  docs/product/increments/p0-1-expression-automation-training/requirements.md
 A  docs/product/increments/p0-1-expression-automation-training/spec.md
 A  docs/product/increments/p0-1-expression-automation-training/traceability.md
-A  docs/product/mvp_scope.md
 AM docs/product/roadmap.md
 A  docs/product/stages/p0-1-expression-automation.md
 A  docs/product/stages/p0-2-training-memory.md

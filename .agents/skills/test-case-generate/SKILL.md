@@ -9,7 +9,7 @@ description: Use when acceptance criteria or bug fixes need concrete unit, integ
 Turn acceptance criteria into a balanced, executable test plan before or during implementation.
 
 ## When to Use
-- A feature spec has acceptance criteria and is ready for implementation or QA planning.
+- A Product Base or increment spec has acceptance criteria and is ready for implementation or QA planning.
 - A bug fix needs a regression test.
 - A change affects API, UI, data, or AI output contracts.
 
@@ -21,8 +21,7 @@ Turn acceptance criteria into a balanced, executable test plan before or during 
 ## Inputs
 - Increment acceptance criteria and increment spec for new product work.
 - Product Base acceptance/spec/traceability when validating accepted stable behavior.
-- Feature spec only for legacy flat feature artifacts or stable feature contract work.
-- Legacy global traceability `docs/product/traceability_matrix.md` only when verifying existing flat artifacts or migration/audit compatibility after Product Base exists.
+- Stable feature metadata from `docs/product/feature_registry.md` when capability boundary context is needed.
 - API contract, screen spec, or prompt contract.
 - Existing test conventions.
 
@@ -48,8 +47,7 @@ Turn acceptance criteria into a balanced, executable test plan before or during 
 - 后端 Maven/Spring Boot 测试写入 `backend/src/test/java/`。
 - 跨服务或仓库级测试写入 `tests/`；后端专属跨项目测试可写入 `tests/backend/`。
 - AI eval 用例写入 `docs/ai_runtime/ai_eval_cases.md`，AI schema 测试代码写入项目约定的测试目录。
-- 输入优先读取 `docs/product/base/acceptance.md` 或 `docs/product/increments/<increment-id>/acceptance.md`，并结合相关 feature spec、API 契约、screen spec 和 prompt contract。
-- `docs/product/acceptance_criteria.md` 和 `docs/product/traceability_matrix.md` 是 legacy/global compatibility source；Product Base 建立后不得作为默认测试证据写回目标。
+- 输入优先读取 `docs/product/base/acceptance.md` 或 `docs/product/increments/<increment-id>/acceptance.md`，并结合相关 Product Base / increment spec、API 契约、screen spec 和 prompt contract。
 - 测试阶段只验证和补充 Test Evidence；不得重新定义 FR、AC 或需求覆盖关系。缺少强制追溯矩阵时，回到 `acceptance-criteria-generate` 或 `document-traceability-check`。
 
 ## Product Object Rules
@@ -58,7 +56,7 @@ Turn acceptance criteria into a balanced, executable test plan before or during 
 - Test plans validate existing ACs; they must not invent requirements or expand stage scope.
 - For committed increment implementation, AC-to-TC mapping is a pre-implementation gate; do not route implementation while approved ACs lack stable TC IDs or explicit allowed exceptions.
 - Test case IDs are assigned in the owning increment test case library and remain stable for the lifetime of that increment; retired IDs are kept with status `retired` and replacement or retirement reason.
-- Increment-specific test evidence belongs with the increment traceability record; global traceability is used only as an index or migration bridge.
+- Increment-specific test evidence belongs with the increment traceability record.
 - Product Base test evidence belongs in `docs/product/base/traceability.md` or `docs/reports/test_report.md`.
 - QA may update traceability Test Evidence after execution; traceability check may review the same evidence chain before completion.
 - If increment AC is missing, return to `acceptance-criteria-generate` before generating tests.

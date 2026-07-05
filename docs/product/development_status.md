@@ -63,15 +63,13 @@ Product Manager Agent
 - Commercial AI provider hardening acceptance：`docs/product/increments/commercial-ai-provider-hardening/acceptance.md`
 - Commercial AI provider hardening test cases：`docs/product/increments/commercial-ai-provider-hardening/test_cases.md`
 - Commercial AI provider hardening traceability：`docs/product/increments/commercial-ai-provider-hardening/traceability.md`
-- Legacy MVP requirements source：`docs/product/features/mvp-learning-loop-requirements.md`
-- Legacy acceptance source：`docs/product/acceptance_criteria.md`
-- Legacy traceability source：`docs/product/traceability_matrix.md`
-- Legacy P0.1 spec source：`docs/product/features/mvp-learning-loop-spec.md`
+- Product Base：`docs/product/base/`
+- P0.1 increment：`docs/product/increments/p0-1-expression-automation-training/`
 
 ## Product Base 状态
-- `docs/product/base/` 是当前产品总需求库 source of truth，记录已实现、已验收或已接受的稳定能力。
+- `docs/product/base/` 是当前产品总需求库，记录已实现、已验收或已接受的稳定能力。
 - Product Base 不是冻结 baseline；未来需要冻结时，应从 Product Base 生成 `docs/product/baselines/<baseline-id>/`。
-- 旧全局 MVP 文档已标记为 legacy/source 或历史参考，不再作为后续稳定需求的写回位置。
+- 新增稳定需求默认写入 Product Base；阶段交付默认写入对应 increment。
 - MVP backend stage 已完成当前 committed stage work；它没有改变 Product Base 用户范围，而是补齐后端/API/数据库、客户端集成、测试、发布证据和本地系统 E2E 证据。
 - `mvp-system-e2e-validation` 已验证 TC-MVP-E2E-001 到 TC-MVP-E2E-010；其中真实支付 provider 只作为 manual/external gate 保留，不作为本地自动化通过项。
 - P0 `commercial-subscription-readiness` 是商业软件功能补齐和付费发布阻塞 stage；完成实现、验收、追溯、测试、发布和外部门禁后，才允许 Product Manager 批准商业发布口径。
@@ -133,7 +131,7 @@ Product Manager Agent
 3. Product Manager 将 P0.1 收紧为 session 内训练接管，而不只是训练回合增强。
 4. `docs/process/change_request.md` 已修正 P0.1/P0.2 边界，避免把 L0-L5、跨天复现和长期记忆调度误写入 P0.1。
 5. Product Manager 已建立 `docs/product/feature_registry.md`、`docs/product/base/`、P0.1/P0.2 stage scope 和 P0.1 increment definition。
-6. Product Manager 已从 legacy P0.1 spec source 提炼并生成 P0.1 标准增量工件：requirements、spec、acceptance criteria 和 traceability。
+6. Product Manager 已建立 P0.1 标准增量工件：requirements、spec、acceptance criteria 和 traceability。
 7. Development Orchestrator 下一步应确认下游门禁：domain model、AI runtime schema、dialogue state machine、screen spec、architecture/module boundary 和测试用例。
 8. P0.1 完成实现、验收、追溯、测试和报告后，应将已接受稳定能力 merge back 到 `docs/product/base/`，而不是写回旧 legacy 文档。
 9. Product Manager 已接受 `CR-20260524-001 商业化订阅上线准备`，并新增 `commercial-subscription` feature、`p0-commercial-readiness` stage 和 `commercial-subscription-readiness` increment definition。

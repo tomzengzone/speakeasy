@@ -4,9 +4,9 @@
 Draft - 用于治理 feature、stage、increment、baseline、change request 和 artifact 的职责边界。
 
 ## 背景
-当前项目已经具备 roadmap、feature backlog、MVP scope、change request、feature requirements、feature spec、acceptance criteria 和 traceability matrix，但这些文档把“APP 稳定功能结构”和“开发阶段/交付增量”混在了一起。
+当前项目已经具备 roadmap、change request、Product Base、stage、increment、acceptance criteria 和 traceability matrix，但历史文档曾把“APP 稳定功能结构”和“开发阶段/交付增量”混在了一起。
 
-典型问题是 `mvp-learning-loop-requirements.md` 实际描述当前 MVP 稳定能力，却位于 feature requirements 路径下；P0.1 表达自动化训练闭环是一个开发阶段增量，却被直接写成 `mvp-learning-loop-spec.md`。这类问题不能靠单次重命名解决，必须补齐产品对象治理规则。
+典型问题是稳定 Product Base、阶段目标和增量交付切片曾共享旧 feature 文档路径。当前决策是清理并删除旧 feature 目录引用，后续产品工作只使用 Product Base、stage、increment、baseline、change request 和 feature registry 的对象化路径。
 
 ## 治理目标
 - Feature 代表 APP 长期稳定功能域，不代表开发阶段。
@@ -56,19 +56,18 @@ idea/change intake
 | 5 | Product Object Governance Change Agent | Product Object Governance Check Agent | requirement/spec/acceptance 生成类 skill | 生成类 skill 不再默认把 stage 当 feature |
 | 6 | Product Object Governance Check Agent | Product Manager Agent | 检查结果和后续迁移建议 | 无非预期迁移，skill 校验通过，遗留风险明确 |
 
-## 当前不做
-- 不在本轮直接删除或移动 `mvp-learning-loop-requirements.md`。
-- 不在本轮直接删除或移动 `mvp-learning-loop-spec.md`。
-- 不在本轮改动 Flutter 业务代码。
-- 不在本轮生成 P0.1 的完整 acceptance/domain/API/AI/UX 契约。
-- 不在治理规则稳定前大规模迁移 traceability matrix。
+## 当前决策
+- 清理活跃产品/流程文档中的旧 feature 目录引用。
+- Product Base 文件作为需求初版/稳定 Product Base，不记录旧 feature 文档来源。
+- `docs/product/feature_registry.md` 只登记 stable feature slug、边界、owner、关联 stage/increment，不分配 feature 文档目录。
+- 旧 feature 目录实体删除留到后续独立步骤；本步骤不删除实体文件。
+- 不改动 Flutter 业务代码。
 
 ## 迁移建议
-规则落地后，再单独发起文档迁移 increment：
-- 将当前 MVP 稳定能力迁移到 `docs/product/base/` 活需求库；需要冻结版本时再从 Product Base 生成 baseline 快照。
-- 将 P0.1 表达自动化训练闭环迁移到 increment 路径。
-- 建立 `docs/product/feature_registry.md`，把训练 Agent、语音场景模拟、表达练习、学习记忆、评分、笔记本、场景库等登记为稳定 feature。
-- 更新 roadmap、development status、change request 和 traceability matrix 的引用。
+规则落地后，再单独发起实体清理步骤：
+- 删除旧 feature 目录实体文件。
+- 保持 Product Base、stage、increment、change request 和 feature registry 的对象化路径。
+- 更新仍指向旧 feature 目录的非活跃历史引用时，必须确认不会改写历史报告事实。
 
 ## 完成标准
 - workflow 明确区分 feature、stage、increment、baseline 和 artifact。

@@ -21,7 +21,6 @@
 - `docs/product/base/`
 - `docs/product/stages/`
 - `docs/product/increments/`
-- `docs/product/traceability_matrix.md`
 - `docs/domain/`
 - `docs/architecture/`
 - `docs/ai_runtime/`
@@ -58,7 +57,7 @@
 
 ## Maintenance Notes
 - workflow 变化时同步更新 Traceability Model。
-- Product Base traceability lives at `docs/product/base/traceability.md`; global traceability remains a legacy or index path after migration.
+- Product Base traceability lives at `docs/product/base/traceability.md`; increment traceability lives at `docs/product/increments/<increment-id>/traceability.md`.
 - Definition of Done 变化时同步更新检查规则。
 - 当追溯矩阵字段、AC 来源规则或测试阶段职责变化时，同步更新 acceptance-criteria-generate 和 test-case-generate。
 - 当 Stage Scope Item ID 或 stage-to-increment coverage 规则变化时，同步更新 Product Manager agent、workflow、requirement-refine、feature-spec-generate 和 acceptance-criteria-generate。

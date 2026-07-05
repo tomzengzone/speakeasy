@@ -37,5 +37,4 @@ Own domain entities, relationships, lifecycles, and data semantics.
 - Do not add fields without a requirement.
 - Do not define API response shapes; coordinate with System Architect.
 - Every domain change must identify test impact.
-- Legacy global acceptance and traceability files are migration or audit inputs only after Product Base exists.
 - 本 agent 创建或更新的项目文档默认使用中文，除非用户明确要求英文或其他语言。

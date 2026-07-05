@@ -11,7 +11,7 @@ description: Use when a project document needs a content boundary, required sect
 ## When to Use
 - 需要定义某类文档的必需章节或模板。
 - 需要判断文档内容是否越界，例如需求文档写了 API schema。
-- 需要区分 vision、requirements、feature spec、acceptance criteria、domain model、API contract、prompt contract、screen spec、report 的职责边界。
+- 需要区分 vision、requirements、Product Base / increment spec、acceptance criteria、domain model、API contract、prompt contract、screen spec、report 的职责边界。
 - 需要审查文档是否缺少假设、非目标、验收检查、状态或决策字段。
 - 需要借鉴 Diataxis、Good Docs 等成熟文档内容分类方法。
 
@@ -23,15 +23,11 @@ description: Use when a project document needs a content boundary, required sect
 
 ## Inputs
 - `docs/product/vision.md`
-- `docs/product/mvp_scope.md`
 - `docs/product/base/requirements.md`
 - `docs/product/base/spec.md`
 - `docs/product/base/acceptance.md`
 - `docs/product/base/traceability.md`
 - `docs/product/user_stories.md`
-- `docs/product/acceptance_criteria.md`
-- `docs/product/traceability_matrix.md`
-- `docs/product/features/*.md`
 - `docs/architecture/*.md`
 - `docs/domain/*.md`
 - `docs/ai_runtime/*.md`
@@ -57,26 +53,19 @@ description: Use when a project document needs a content boundary, required sect
 
 ## 内容契约基线
 - `docs/product/vision.md`：写 App 定位、目标用户、核心承诺、产品原则和长期非目标；不写具体状态机、接口、页面和实现计划。
-- `docs/product/mvp_scope.md`：写 MVP 目标、范围内、范围外、成功标准和范围控制规则；不写详细接口、页面布局或 prompt schema。
-- `docs/product/feature_registry.md`：写 APP 稳定功能域、feature slug、owner、长期边界、当前状态和关联 stages/increments；不写阶段计划细节、实现任务或测试证据。
-- `docs/product/base/requirements.md`：写已接受稳定产品行为的 FR、用户目标、用户路径、成功标准、非目标、假设和来源；不写阶段计划、API schema、prompt schema、UI 布局或代码实现。
+- `docs/product/feature_registry.md`：写稳定业务 capability、`Capability ID`、`Capability slug`、`Capability name`、业务边界、非职责、owner、一级 `Sub-capability ID`、相邻能力、downstream prefix 和 `Legacy Mapping`；不写需求正文、spec、AC、TC、实现任务、测试证据或发布证据。
+- `docs/product/base/requirements.md`：写已接受稳定产品行为的 FR、用户目标、用户路径、成功标准、非目标、假设和来源；广义模块 requirements 必须引用 V2 `Capability ID` / `Sub-capability ID`，并按模块功能需求边界、一级子功能章节和三列需求 item 表组织；不得继续以 V1 slug 作为主结构；不写阶段计划、API schema、prompt schema、UI 布局或代码实现。
 - `docs/product/base/spec.md`：写已接受稳定产品行为的用户流程、状态、输入输出、失败路径、模块影响和测试期望；不写代码实现或产品优先级决策。
 - `docs/product/base/acceptance.md`：写已接受稳定产品行为的可观察 pass/fail 行为；不写类名、函数名、数据库字段或测试实现。
 - `docs/product/base/traceability.md`：写 Product Base 的 `Requirement -> AC -> Test Case ID -> Code Evidence -> Test Evidence -> Status`；不新增需求，不替代验收标准。
 - `docs/product/baselines/<baseline-slug>.md`：写当前已实现能力快照、事实来源、代码/资产证据、回归边界和不承诺项；不写未来新增需求或未批准计划。
 - `docs/product/stages/<stage-id>.md`：写阶段目标、入口条件、出口条件、纳入/排除的 increments，并用稳定 Stage Scope Item ID 表表达阶段范围；不写 API schema、UI 布局、prompt schema 或代码实现。
-- `docs/product/features/<feature-slug>/README.md`：写稳定 feature 的定义、用户价值、长期边界、owner 和相关 increments；不写阶段交付细节。
-- `docs/product/features/<feature-slug>/requirements.md`：写该稳定 feature 的长期能力需求、用户路径和非目标；不写某个阶段的具体交付任务。
-- `docs/product/increments/<increment-id>/definition.md`：写 active stage、covered/excluded Stage Scope Item IDs、primary feature、affected features、scope、non-goals、upstream decision 和 required artifacts；不写验收用例或实现计划。
-- `docs/product/increments/<increment-id>/requirements.md`：写本次增量的用户目标、用户路径、成功标准、非目标、假设和开放问题；不写 API 字段、prompt schema、UI 布局或代码实现。
+- `docs/product/increments/<increment-id>/definition.md`：写 active stage、covered/excluded Stage Scope Item IDs、primary capability、primary sub-capability、affected capabilities、affected sub-capabilities、scope、non-goals、upstream decision 和 required artifacts；stage scope 不得替代 V2 `Capability ID` / `Sub-capability ID`；不写验收用例或实现计划。
+- `docs/product/increments/<increment-id>/requirements.md`：写本次增量的用户目标、用户路径、成功标准、非目标、假设和开放问题；广义模块 requirements 必须引用 V2 `Capability ID` / `Sub-capability ID`，并按模块功能需求边界、一级子功能章节和三列需求 item 表组织；不得继续以 V1 slug 作为主结构；不写 API 字段、prompt schema、UI 布局或代码实现。
 - `docs/product/increments/<increment-id>/spec.md`：写本次增量的状态、输入输出、状态、依赖、失败路径、模块影响和测试映射；不写代码实现或产品优先级决策。
 - `docs/product/increments/<increment-id>/acceptance.md`：写本次增量可观察 pass/fail 行为；不写类名、函数名、数据库字段或测试实现。
 - `docs/product/increments/<increment-id>/traceability.md`：写本次增量的 `Requirement -> AC -> Test Case ID -> Contract -> Code Evidence -> Test Evidence -> Status`；不新增需求或替代验收标准。
 - `docs/product/increments/<increment-id>/swc_allocation.md`：写本次增量的 Existing Implementation Baseline、Delta From Existing Baseline、`Stage Scope ID -> FR -> Spec -> AC -> FE SWC -> BE SWC -> API/OpenAPI -> Domain Entity -> DB Table/Migration -> Provider/AI Boundary -> TC` 分配、SWC 间数据流、复用要求和禁止重复实现边界；不新增需求、不改验收标准、不复制 OpenAPI schema、不定义领域实体语义、不写代码实现。
-- `docs/product/features/<feature-slug>-requirements.md`：写假设、目标、用户路径、入口、涉及数据、成功标准、非目标、开放问题；不写实现细节。
-- `docs/product/features/<feature-slug>-spec.md`：写功能规格、状态、输入输出、依赖、失败情况、模块影响和测试映射；不写代码实现。
-- `docs/product/acceptance_criteria.md`：写可通过/失败判断的用户可观察行为；不写类名、函数名或数据库字段。
-- `docs/product/traceability_matrix.md`：写 `FR -> User Story -> AC -> Test Case ID -> Code Evidence -> Test Evidence -> Status`，用于证明需求覆盖完整性；不新增需求、不替代验收标准、不把 100% 覆盖表述为代码行覆盖率或线上零缺陷保证。
 - `docs/architecture/software_component_architecture.md`：写全局 SWC 架构基准，包括系统级职责分配、SWC 拓扑、稳定 `SWC-FLOW-*`、canonical SWC-to-SWC sequence、局部变更参考基准和历史迁移说明；不复制 SWC Catalog 的完整组件字段表、不替代增量 `swc_allocation.md`、不定义 Domain Schema 或 OpenAPI schema。
 - `docs/architecture/swc_catalog.md`：写稳定 SWC 目录，包括 SWC ID、layer、code path、职责、非职责、provided/required interfaces、数据所有权、持久化所有权、测试责任、必须复用和禁止绕过；不复制 Domain Schema、OpenAPI request/response schema、prompt schema、UX layout 或实现报告。
 - `docs/domain/<domain>_model.md`：写实体、关系、生命周期、状态机和约束；不写 API response 或 UI 布局。
@@ -85,6 +74,19 @@ description: Use when a project document needs a content boundary, required sect
 - `docs/ux/screen_spec.md`：写页面目标、组件、状态、交互、加载、空态、错误和成功状态；不写产品战略或后端实现。
 - `docs/reports/implementation_report.md`：写实际完成范围、文件、验证、风险和后续；不补写需求或替代验收标准。
 - `docs/reports/quality_report.md`：写审查发现、风险、阻塞项和质量结论；不新增产品范围。
+
+## Requirements 文档通用内容契约
+Requirements 文档面向产品、规格、验收和架构下游读者，必须呈现产品需求结果，而不是 agent 执行过程。广义模块需求文档必须包含：
+
+- 模块功能需求边界：说明该模块负责的产品能力、不负责的相邻能力、主要入口或前置条件、产出结果，以及和相邻模块的交接关系。
+- V2 能力引用：广义模块 requirements 必须引用 `docs/product/feature_registry.md` 中的 `Capability ID` 和适用 `Sub-capability ID`；V1 slug 只能出现在独立 legacy mapping 或历史追溯说明中，不得作为主结构、模块标题或新需求 ID。
+- 一级子功能章节：每个一级子功能独立成章，章节标题使用业务功能名和稳定序号，不使用 `Step 1`、`Step 2` 等过程标题。
+- 产品级功能需求边界：每个一级子功能必须说明它拥有的可观察产品能力、排除的相邻能力、入口或前置条件、结果状态，以及和其他一级子功能的交接。
+- 详细需求 item 表：每个一级子功能下的主需求表只能包含 `需求ID`、`需求项`、`需求描述` 三列。
+- 需求追溯映射：当需要 Stage Scope ID、来源 increment、Spec ID、AC ID、状态或后续证据字段时，必须放在独立追溯表中，不得加入主需求 item 表。
+- 非目标、开放问题和下游交接备注：必须和需求 item 分开表达。
+
+Requirements 文档不得把 `Step 1`、`Step 2`、思考过程、推理过程、执行计划或 agent 自检过程作为正文结构。两步法只属于 requirement-refine 和 Requirement Development 的执行方法。
 
 ## Process
 1. 判断目标文档类型和主要读者。
@@ -97,10 +99,15 @@ description: Use when a project document needs a content boundary, required sect
 
 ## Red Flags
 - 需求文档写 API 字段、数据库表或 UI 布局。
-- feature spec 补写产品愿景，导致产品级 source of truth 分散。
+- 需求文档把内部执行方法写成 `Step 1`、`Step 2` 等过程章节。
+- 广义模块需求没有模块功能需求边界。
+- 一级子功能没有产品级功能需求边界。
+- 主需求 item 表包含除 `需求ID`、`需求项`、`需求描述` 以外的追溯、规格、验收、API、数据库、UI 或测试字段。
+- 一个需求 item 同时描述多个一级子功能的行为。
+- spec artifact 补写产品愿景，导致产品级 source of truth 分散。
 - 验收标准描述实现方式而不是可观察行为。
 - 追溯矩阵缺少 FR、AC、Test Case ID、Code Evidence 或 Test Evidence，或把缺测试项写成已覆盖而没有人工验收/外部服务依赖/暂不可自动化说明。
-- 把测试报告、feature spec 或验收标准正文当作追溯矩阵 source of truth。
+- 把测试报告、spec artifact 或验收标准正文当作追溯矩阵 source of truth。
 - 实现报告补写需求或跳过缺失的验收标准。
 - Prompt 契约允许 LLM 直接更新持久状态。
 - SWC allocation 写成实现计划或代码任务清单，却没有 FR/AC 到 SWC/API/domain/DB/test 的分配。
@@ -115,6 +122,9 @@ description: Use when a project document needs a content boundary, required sect
 - 文档没有混入不属于该阶段的下游实现细节。
 - 上游输入和下游输出明确。
 - 内容完整性可以被审查者独立判断。
+- 广义模块 requirements 文档包含模块功能需求边界、一级子功能章节、每个一级子功能的产品级功能需求边界、三列需求 item 表、独立追溯映射、非目标、开放问题和下游交接备注。
+- Requirements 文档没有 `Step 1`、`Step 2` 等过程标题。
+- 每个主需求 item 表只包含 `需求ID`、`需求项`、`需求描述`。
 - 验收标准和追溯矩阵职责分离：前者定义可观察通过/失败行为，后者记录覆盖链路和证据状态。
 - 若修改 skill，`python scripts/validate_agent_skills.py` 通过。
 

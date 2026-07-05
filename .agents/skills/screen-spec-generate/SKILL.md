@@ -20,7 +20,7 @@ Make UI work predictable by defining user goals, components, states, and accepta
 
 ## Inputs
 - Increment spec, API contract, and UX guidelines for new product work.
-- Feature spec only for legacy flat feature artifacts or stable feature contract work.
+- Product Base spec or feature registry boundary when validating accepted stable behavior.
 - Current app navigation and state-management conventions.
 - Acceptance criteria.
 
@@ -39,7 +39,7 @@ Make UI work predictable by defining user goals, components, states, and accepta
 - 用户流程写入 `docs/ux/user_flow.md`。
 - 可用性检查项写入 `docs/ux/usability_checklist.md`。
 - 文案规则写入 `docs/ux/copywriting_guideline.md`。
-- 输入优先读取 `docs/product/base/spec.md`、`docs/product/base/acceptance.md`、`docs/product/increments/<increment-id>/spec.md`、`docs/product/increments/<increment-id>/acceptance.md`、`docs/architecture/api_contract.md` 和 `docs/ai_runtime/llm_output_schema.md`；`docs/product/acceptance_criteria.md` 仅作显式 legacy compatibility、migration 或 audit 输入。
+- 输入优先读取 `docs/product/base/spec.md`、`docs/product/base/acceptance.md`、`docs/product/increments/<increment-id>/spec.md`、`docs/product/increments/<increment-id>/acceptance.md`、`docs/architecture/api_contract.md` 和 `docs/ai_runtime/llm_output_schema.md`。
 
 ## Product Object Rules
 - For new product work, start from `docs/product/increments/<increment-id>/spec.md` and `docs/product/increments/<increment-id>/acceptance.md`.

@@ -11,7 +11,7 @@ Convert requirements into behavior-oriented pass/fail checks that QA and impleme
 ## When to Use
 - Current MVP Product Base consolidation needs acceptance criteria from implemented behavior, requirements, MVP scope, and user stories.
 - An approved P0 or new-feature spec needs acceptance criteria or acceptance-to-test planning.
-- An accepted change request has an approved feature spec and must be evaluated for done-ness.
+- An accepted change request has an approved Product Base or increment spec and must be evaluated for done-ness.
 
 ## When NOT to Use
 - The task is a design exploration with no committed feature.
@@ -22,7 +22,7 @@ Convert requirements into behavior-oriented pass/fail checks that QA and impleme
 - Approved increment spec for new product work.
 - Covered Stage Scope Item IDs and increment requirements for new increment work.
 - Product Base spec in `docs/product/base/spec.md` when consolidating or updating accepted stable product behavior.
-- Approved feature spec only for legacy flat feature artifacts or stable feature contract work.
+- Stable feature metadata from `docs/product/feature_registry.md` when needed for product capability boundary context.
 - User story or change request only as upstream context, not as the direct P0 AC source.
 - Product constraints and non-goals.
 - Known platform limitations.
@@ -33,7 +33,6 @@ Convert requirements into behavior-oriented pass/fail checks that QA and impleme
 - Increment acceptance criteria in `docs/product/increments/<increment-id>/acceptance.md` for new product work.
 - Product Base acceptance criteria in `docs/product/base/acceptance.md` for accepted stable product behavior.
 - Product Base traceability in `docs/product/base/traceability.md` for accepted stable product behavior.
-- Legacy global acceptance index in `docs/product/acceptance_criteria.md` only for explicit migration, compatibility, or audit tasks; do not write it as the current acceptance source after Product Base exists.
 - Negative and edge-case criteria where relevant.
 - Traceability notes to tests and docs.
 - Required traceability mapping for new increment work: `Stage Scope ID -> Increment ID -> FR -> Spec section/state -> AC -> Test Case ID -> Contract Evidence -> Code Evidence -> Test Evidence -> Release Evidence -> Status`.
@@ -46,12 +45,10 @@ Convert requirements into behavior-oriented pass/fail checks that QA and impleme
 ## 文档路径约定
 - Product Base 验收标准写入 `docs/product/base/acceptance.md`。
 - 新增 increment 验收标准写入 `docs/product/increments/<increment-id>/acceptance.md`。
-- 功能级验收标准较大时，可写入 `docs/product/features/<feature-slug>-acceptance.md`；Product Base 建立后，只在显式 legacy compatibility/index 任务中更新 `docs/product/acceptance_criteria.md`。
 - Product Base 强制追溯矩阵写入或更新 `docs/product/base/traceability.md`；increment 追溯矩阵写入或更新 `docs/product/increments/<increment-id>/traceability.md`。
-- `docs/product/acceptance_criteria.md` 和 `docs/product/traceability_matrix.md` 是 legacy/global compatibility source；Product Base 建立后不得作为默认写回目标。
-- 当前 MVP 代码基线固化时，验收标准可以基于 `docs/product/features/<feature-slug>-requirements.md`、`docs/product/mvp_scope.md`、`docs/product/user_stories.md` 和实际前端代码证据。
-- 后续 P0 或新增功能进入标准 workflow 后，验收标准必须以已批准的 `docs/product/features/<feature-slug>-spec.md` 为直接输入，并反向追溯到需求文档、用户故事和范围边界。
-- 输入优先读取已批准的 `docs/product/features/<feature-slug>-spec.md`；MVP 反向固化任务才读取需求、scope、user stories 和代码证据作为并列来源。
+- 当前 MVP 代码基线固化时，验收标准可以基于 `docs/product/base/requirements.md`、`docs/product/user_stories.md` 和实际前端代码证据。
+- 后续 P0 或新增功能进入标准 workflow 后，验收标准必须以已批准的 `docs/product/increments/<increment-id>/spec.md` 或 `docs/product/base/spec.md` 为直接输入，并反向追溯到需求文档、用户故事和范围边界。
+- 输入优先读取已批准的 Product Base 或 increment spec；MVP 反向固化任务才读取需求、scope、user stories 和代码证据作为并列来源。
 - 测试映射只记录计划；稳定 TC ID 和实际测试用例库由 `test-case-generate` 写入 `docs/product/increments/<increment-id>/test_cases.md`，并在实现前补齐 AC-to-TC gate。
 
 ## Product Object Rules
@@ -59,14 +56,14 @@ Convert requirements into behavior-oriented pass/fail checks that QA and impleme
 - For accepted stable product behavior, generate or update AC from `docs/product/base/spec.md` and write to `docs/product/base/acceptance.md`.
 - Output new increment AC to `docs/product/increments/<increment-id>/acceptance.md`.
 - Update `docs/product/base/traceability.md` for Product Base traceability.
-- Update `docs/product/increments/<increment-id>/traceability.md` for increment traceability; use global traceability only as an index or migration bridge.
+- Update `docs/product/increments/<increment-id>/traceability.md` for increment traceability.
 - Do not generate AC directly from a stage goal, feature registry entry, user story, or baseline note unless this is explicitly a `product-base-consolidation` or `baseline-consolidation` task.
 - Do not generate increment AC when the spec or requirements have dropped the covered Stage Scope Item IDs required by the increment definition.
 - Do not use stage names, priority windows, or increment ids as feature slugs.
 - If the approved increment spec is missing, block AC generation and return the missing upstream artifact.
 
 ## Process
-1. Determine the source mode: Product Base consolidation, baseline snapshot consolidation, new increment workflow, or legacy flat feature workflow.
+1. Determine the source mode: Product Base consolidation, baseline snapshot consolidation, or new increment workflow.
 2. For new increment workflow, reject AC generation until an approved increment spec exists.
 3. Write criteria from the user's observable perspective.
 4. Cover success, failure, empty, loading, permission, and duplicate states as applicable.
@@ -82,11 +79,11 @@ Convert requirements into behavior-oriented pass/fail checks that QA and impleme
 - Criteria cannot be verified locally or through a test.
 - Only the happy path is covered.
 - Criteria conflict with MVP scope.
-- P0 or new-feature criteria are generated from user stories alone while an approved feature spec is missing.
+- P0 or new-feature criteria are generated from user stories alone while an approved Product Base or increment spec is missing.
 - Traceability matrix fields for FR, AC, Test Case ID, Code Evidence, or Test Evidence are empty without a pending status or explicit exception.
 - A test plan is treated as the source of requirement coverage rather than downstream evidence.
 - Criteria are generated from stage scope or roadmap text instead of an approved increment spec.
-- The output path mixes global acceptance index content with increment-specific pass/fail criteria.
+- The output path mixes Product Base acceptance content with increment-specific pass/fail criteria.
 - The traceability matrix lacks Stage Scope ID or Increment ID columns for new increment work.
 - 100% traceability is claimed while required Stage Scope Item IDs are uncovered, unmapped to FRs, or only referenced in prose.
 

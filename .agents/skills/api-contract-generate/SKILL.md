@@ -20,7 +20,7 @@ Define stable API contracts before implementation so clients, tests, and service
 
 ## Inputs
 - Increment spec and domain model for new product work.
-- Feature spec only for legacy flat feature artifacts or stable feature contract work.
+- Product Base spec or feature registry boundary when validating accepted stable behavior.
 - Existing docs/architecture/api_contract.md.
 - Existing `docs/architecture/openapi/speakeasy-api.yaml` when present.
 - Security and compatibility requirements.
@@ -40,7 +40,7 @@ Define stable API contracts before implementation so clients, tests, and service
 - API 契约总览写入 `docs/architecture/api_contract.md`，用于记录 API family、契约范围、产品对象追溯、统一错误模型、版本策略、兼容性和 OpenAPI 生成边界。
 - 机器可执行 OpenAPI source of truth 写入 `docs/architecture/openapi/speakeasy-api.yaml`，用于记录 paths、components、request/response schema、examples 和 OpenAPI lint 输入。
 - `docs/architecture/api_contract.md` 不得复制完整 OpenAPI schema；`docs/architecture/openapi/speakeasy-api.yaml` 不得承载产品优先级、roadmap 决策或未批准 future-stage endpoint。
-- 输入优先读取 `docs/product/features/<feature-slug>-spec.md`、`docs/domain/domain_schema.md` 和相关 `docs/domain/<domain>_model.md`。
+- 输入优先读取 `docs/product/increments/<increment-id>/spec.md` 或 `docs/product/base/spec.md`、`docs/domain/domain_schema.md` 和相关 `docs/domain/<domain>_model.md`。
 - 若 API 变更影响模块边界或数据流，同步更新 `docs/architecture/module_boundary.md` 或 `docs/architecture/data_flow.md`。
 - 重大兼容性或架构取舍写入 `docs/architecture/adr/<id>-<slug>.md`。
 

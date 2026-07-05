@@ -15,7 +15,7 @@ Executed partial（部分已执行） - P0.1 core Training Agent（核心训练 
 - 当前稳定能力已记录在 `docs/product/base/requirements.md`、`docs/product/base/spec.md`、`docs/product/base/acceptance.md` 和 `docs/product/base/traceability.md`。
 - 稳定 feature 已登记在 `docs/product/feature_registry.md`。
 - P0.1 change request 已 accepted：`docs/process/change_request.md`。
-- legacy P0.1 spec 可作为迁移来源：`docs/product/features/mvp-learning-loop-spec.md`。
+- P0.1 标准增量工件已建立在 `docs/product/increments/p0-1-expression-automation-training/`。
 
 ## 阶段范围
 - 以 `job_interview` 和 `onboarding_introduction` 两个官方场景验证。

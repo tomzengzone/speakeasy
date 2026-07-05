@@ -20,7 +20,7 @@ Keep domain concepts stable before database, API, AI runtime, or UI work depends
 
 ## Inputs
 - Increment spec and acceptance criteria for new product work.
-- Feature spec only for legacy flat feature artifacts or stable feature contract work.
+- Product Base spec/acceptance or feature registry boundary when validating accepted stable behavior.
 - Existing docs/domain/ files.
 - Architecture module boundaries and API contract.
 
@@ -38,7 +38,7 @@ Keep domain concepts stable before database, API, AI runtime, or UI work depends
 - 领域总览写入 `docs/domain/domain_schema.md`。
 - 实体关系写入 `docs/domain/entity_relationship.md`。
 - 专项领域模型写入 `docs/domain/<domain>_model.md`，例如 `scene_model.md`、`expression_model.md`、`review_model.md`。
-- 输入优先读取 `docs/product/base/spec.md`、`docs/product/base/acceptance.md`、`docs/product/increments/<increment-id>/spec.md`、`docs/product/increments/<increment-id>/acceptance.md` 和 `docs/architecture/system_overview.md`；`docs/product/acceptance_criteria.md` 仅作显式 legacy compatibility、migration 或 audit 输入。
+- 输入优先读取 `docs/product/base/spec.md`、`docs/product/base/acceptance.md`、`docs/product/increments/<increment-id>/spec.md`、`docs/product/increments/<increment-id>/acceptance.md` 和 `docs/architecture/system_overview.md`。
 - 涉及持久化或跨模块状态变更时，确认 `docs/process/change_request.md` 是否已有对应记录。
 
 ## Product Object Rules
@@ -48,7 +48,7 @@ Keep domain concepts stable before database, API, AI runtime, or UI work depends
 - If domain work changes a long-lived product concept, update the stable feature reference as well as the increment traceability note.
 
 ## Process
-1. Identify nouns, actions, and state transitions from the increment or feature spec.
+1. Identify nouns, actions, and state transitions from the Product Base or increment spec.
 2. Separate domain concepts from transport DTOs and UI view models.
 3. Define IDs, ownership, uniqueness, timestamps, and audit needs.
 4. Describe lifecycle states and allowed transitions.

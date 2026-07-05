@@ -1,6 +1,6 @@
 ---
 name: document-traceability-check
-description: Use when project documentation needs a workflow traceability audit across requirements, feature specs, acceptance criteria, domain/API/AI/UX contracts, tests, implementation reports, quality reports, or release notes. Do not use for deciding document paths or defining document templates.
+description: Use when project documentation needs a workflow traceability audit across requirements, Product Base/increment specs, acceptance criteria, domain/API/AI/UX contracts, tests, implementation reports, quality reports, or release notes. Do not use for deciding document paths or defining document templates.
 ---
 
 # Document Traceability Check
@@ -27,7 +27,6 @@ description: Use when project documentation needs a workflow traceability audit 
 - `docs/process/definition_of_done.md`
 - `docs/process/change_request.md`
 - `docs/product/vision.md`
-- `docs/product/mvp_scope.md`
 - `docs/product/base/requirements.md`
 - `docs/product/base/spec.md`
 - `docs/product/base/acceptance.md`
@@ -35,9 +34,6 @@ description: Use when project documentation needs a workflow traceability audit 
 - `docs/product/stages/`
 - `docs/product/increments/`
 - `docs/product/user_stories.md`
-- `docs/product/acceptance_criteria.md`
-- `docs/product/traceability_matrix.md`
-- `docs/product/features/*.md`
 - `docs/domain/*.md`
 - `docs/architecture/*.md`
 - `docs/architecture/software_component_architecture.md`
@@ -70,16 +66,13 @@ description: Use when project documentation needs a workflow traceability audit 
 
 ```text
 docs/product/vision.md
-docs/product/mvp_scope.md
-  -> docs/product/base/requirements.md
+docs/product/base/requirements.md
   -> docs/product/base/spec.md
   -> docs/product/base/acceptance.md
   -> docs/product/base/traceability.md
-  -> docs/product/features/<feature-slug>-requirements.md
   -> docs/process/change_request.md
-  -> docs/product/features/<feature-slug>-spec.md
-  -> docs/product/acceptance_criteria.md
-  -> docs/product/traceability_matrix.md
+  -> docs/product/increments/<increment-id>/requirements.md
+  -> docs/product/increments/<increment-id>/spec.md
   -> docs/domain/<domain>_model.md
   -> docs/architecture/api_contract.md
   -> docs/architecture/software_component_architecture.md
@@ -153,8 +146,8 @@ Increment Test Evidence review must verify:
 16. 若修改 skill 或质量标准，运行 `python scripts/validate_agent_skills.py`。
 
 ## Red Flags
-- P0 或新增功能代码实现存在，但没有 feature spec 或验收标准；当前 MVP 反向固化任务必须显式标记为代码基线例外。
-- P0 或新增功能存在 AC，但没有已批准 feature spec 作为直接上游。
+- P0 或新增功能代码实现存在，但没有已批准 Product Base / increment spec 或验收标准；当前 MVP 反向固化任务必须显式标记为代码基线例外。
+- P0 或新增功能存在 AC，但没有已批准 Product Base / increment spec 作为直接上游。
 - acceptance criteria 和 requirements 之间没有强制追溯矩阵。
 - 需求仍是 proposed，但下游已经按 accepted 实现。
 - acceptance criteria 没有对应测试或测试报告说明。

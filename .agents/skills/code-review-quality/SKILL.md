@@ -35,7 +35,7 @@ Provide a review gate that finds concrete defects and quality risks before a cha
 ## 文档路径约定
 - 代码审查结果默认在最终回复中给出。
 - 用户要求持久化或 release 需要留痕时，写入 `docs/reports/quality_report.md`。
-- 输入优先读取变更 diff、`docs/product/base/acceptance.md`、`docs/product/base/traceability.md`、`docs/product/increments/<increment-id>/acceptance.md`、`docs/product/increments/<increment-id>/traceability.md`、架构契约、测试结果和 `docs/reports/implementation_report.md`；`docs/product/acceptance_criteria.md` 仅作显式 legacy compatibility、migration 或 audit 输入。
+- 输入优先读取变更 diff、`docs/product/base/acceptance.md`、`docs/product/base/traceability.md`、`docs/product/increments/<increment-id>/acceptance.md`、`docs/product/increments/<increment-id>/traceability.md`、架构契约、测试结果和 `docs/reports/implementation_report.md`。
 - 不直接修改产品需求或契约文档；发现缺口时列为阻塞项或后续动作。
 
 ## Process

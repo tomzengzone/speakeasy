@@ -9,7 +9,6 @@ Implementation-review ready - 作为 P0.1 acceptance criteria 的直接上游输
 - Product Base: `docs/product/base/requirements.md`, `docs/product/base/spec.md`, `docs/product/base/acceptance.md`, `docs/product/base/traceability.md`
 - Feature registry: `docs/product/feature_registry.md`
 - Change request: `docs/process/change_request.md`
-- Legacy source: `docs/product/features/mvp-learning-loop-spec.md`
 
 ## Product Object
 - Active stage: P0.1 表达自动化训练闭环

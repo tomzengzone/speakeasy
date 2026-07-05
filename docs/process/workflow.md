@@ -6,7 +6,7 @@ user request
 -> Product Manager intake
 -> product classification
 -> optional issue-management tracking when repository issue tracking is needed
--> feature registry / stage scope check
+-> V2 capability registry / stage scope check
 -> increment definition
 -> roadmap / development status update
 -> PM execution brief
@@ -16,7 +16,7 @@ Product Manager is the unified user-facing entry point. It decides the active st
 
 ## Product Object Model
 ```text
-Feature = long-lived product capability
+Capability = long-lived product capability registered by V2 Capability ID / Sub-capability ID
 Product Base = living source of truth for accepted product requirements, specs, acceptance, and traceability
 Stage = delivery horizon or priority window
 Stage Scope Item = stable, ID-addressable capability or obligation committed, deferred, or marked not applicable inside a stage
@@ -27,7 +27,7 @@ Change Request = decision record for scope change
 Artifact = requirements, spec, acceptance, contracts, tests, reports, release evidence
 ```
 
-Feature and stage are separate axes. A feature is not a stage, and a stage is not a feature. The Product Base is the living product requirement library. Requirements, specs, acceptance criteria, and traceability for accepted stable behavior live in `docs/product/base/`. Increment artifacts live in `docs/product/increments/<increment-id>/` until they are done and approved to merge back into Product Base. Increment test case libraries live at `docs/product/increments/<increment-id>/test_cases.md` and are the source of truth for AC-to-TC design before implementation. Baselines under `docs/product/baselines/` are frozen snapshots and must not replace Product Base.
+Capability 和 stage 是两条独立轴线；capability 不是 stage，stage 也不是 capability。`Capability ID` 与 `Sub-capability ID` 来自 V2 registry `docs/product/feature_registry.md`；`Stage Scope ID` 描述阶段交付承诺，不得替代 capability ID。Product Base 是活的产品需求库。已接受稳定行为的 requirements、specs、acceptance criteria 和 traceability 位于 `docs/product/base/`。Increment artifacts 在完成并被批准 merge back into Product Base 前，位于 `docs/product/increments/<increment-id>/`。Increment test case library 位于 `docs/product/increments/<increment-id>/test_cases.md`，是 implementation 开始前 AC-to-TC design 的 source of truth。`docs/product/baselines/` 下的 baselines 是冻结快照，不得替代 Product Base。
 
 ## Execution Layer
 ```text
@@ -40,7 +40,7 @@ Development Orchestrator is the internal execution dispatcher. It does not decid
 ```text
 idea/change intake
 -> product classification
--> feature registry / stage scope check
+-> V2 capability registry / stage scope check
 -> increment definition
 -> requirement development
 -> increment spec
@@ -62,7 +62,7 @@ Requirement Development 负责 scoped feature/change 的 requirement quality。D
 
 ## Required Gates
 1. Product classification 完成前，不创建 feature/increment document。
-2. Feature registry 和 stage scope 确认前，不创建 requirements/spec/acceptance artifact。
+2. V2 capability registry 和 stage scope 确认前，不创建 requirements/spec/acceptance artifact。
 3. 没有稳定 Stage Scope Item ID，且每个 required item 没有 increment coverage decision 时，committed stage work 不得推进。
 4. Increment spec 完成前，不开始 implementation。
 5. Approved AC 尚未映射到 `docs/product/increments/<increment-id>/test_cases.md` 中的稳定 TC ID 或明确例外前，不开始 implementation。
@@ -102,7 +102,7 @@ Every incoming request must be classified before requirements or specs are creat
 - `experiment`: investigates feasibility and produces findings, not delivery commitment.
 - `scope-change`: changes accepted scope and requires `docs/process/change_request.md`.
 
-The classification must identify the primary feature when one exists, affected features when multiple capabilities are touched, active stage, expected increment, and whether a change request is required.
+分类必须识别 primary `Capability ID` / `Sub-capability ID`；当触碰多个 capability 时，还必须识别 affected `Capability ID` / `Sub-capability ID` values、active stage、expected increment，以及是否需要 change request。
 
 ## Issue Tracking Boundary
 Issue tracking is optional and must happen after Product Manager classification when it would help coordinate bugs, follow-ups, release blockers, workflow changes, implementation slices, pull requests, or evidence links.
@@ -116,8 +116,8 @@ Before requirement development starts, the active increment must state:
 - increment id and name
 - active stage
 - covered Stage Scope Item IDs
-- primary feature
-- affected features
+- primary `Capability ID` / `Sub-capability ID`
+- affected `Capability ID` / `Sub-capability ID` values
 - scope and non-goals
 - upstream decision source
 - required downstream artifacts

@@ -49,5 +49,4 @@ Implement backend services from API contract and domain schema.
 - Do not store provider secrets in client-facing code.
 - Every endpoint must have tests or a documented exception.
 - Every error response must follow shared error schema.
-- After Product Base exists, do not use `docs/product/acceptance_criteria.md` as the default upstream source; use the owning Product Base or increment acceptance and traceability files.
 - 本 agent 创建或更新的项目文档默认使用中文，除非用户明确要求英文或其他语言。

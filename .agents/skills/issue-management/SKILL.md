@@ -27,7 +27,6 @@ Structure repository issues as tracking containers for the local product and dev
 - `docs/process/workflow.md`
 - `docs/product/development_status.md`
 - `docs/product/feature_registry.md`
-- `docs/product/feature_backlog.md`
 - `docs/product/stages/<stage-id>.md`
 - `docs/product/increments/<increment-id>/definition.md`
 - `docs/product/increments/<increment-id>/requirements.md`
@@ -49,7 +48,7 @@ Structure repository issues as tracking containers for the local product and dev
 
 ## 文档路径约定
 - This skill does not create new product source-of-truth paths.
-- Product decisions remain in `docs/product/development_status.md`, `docs/product/feature_registry.md`, `docs/product/feature_backlog.md`, `docs/product/stages/`, `docs/product/base/`, and `docs/product/increments/`.
+- Product decisions remain in `docs/product/development_status.md`, `docs/product/feature_registry.md`, `docs/product/stages/`, `docs/product/base/`, and `docs/product/increments/`.
 - Execution and validation evidence remain in `docs/reports/implementation_report.md`, `docs/reports/test_report.md`, and `docs/reports/quality_report.md`.
 - Issue templates, if added later, belong under `.github/ISSUE_TEMPLATE/` and require a separate workflow/governance change.
 - Persistent updates to workflow rules belong in `docs/process/workflow.md`; do not update workflow rules from this skill unless the user explicitly asks for a governance change.

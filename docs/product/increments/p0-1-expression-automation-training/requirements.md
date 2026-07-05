@@ -1,7 +1,7 @@
 # P0.1 Increment Requirements：表达自动化训练 Agent
 
 ## 状态
-Implementation-review ready - 从 legacy P0.1 spec 迁移生成，作为本 increment 的标准 requirements；2026-06-04 P0.1 Product Base/production-hardening local implementation review passed，仍归属本 P0.1 stage 和 `p0-1-expression-automation-training` increment；PM Product Base merge approval and P0 commercial / paid AI external gates remain separate。
+Implementation-review ready - 本 increment 的标准 requirements；2026-06-04 P0.1 Product Base/production-hardening local implementation review passed，仍归属本 P0.1 stage 和 `p0-1-expression-automation-training` increment；PM Product Base merge approval and P0 commercial / paid AI external gates remain separate。
 
 ## Product Object
 - Classification: `feature-increment`
@@ -10,12 +10,11 @@ Implementation-review ready - 从 legacy P0.1 spec 迁移生成，作为本 incr
 - Primary feature: `expression-automation-training`
 - Affected features: `voice-scenario-practice`, `official-scenario-library`, `listening-shadowing`, `expression-practice-queue`, `learning-memory-review`, `scoring-feedback`
 
-## 上游来源
+## 关联文档
 - `docs/product/increments/p0-1-expression-automation-training/definition.md`
 - Product Base：`docs/product/base/requirements.md`、`docs/product/base/spec.md`、`docs/product/base/acceptance.md`、`docs/product/base/traceability.md`
 - `docs/product/feature_registry.md`
 - `docs/process/change_request.md`
-- Legacy source: `docs/product/features/mvp-learning-loop-spec.md`
 
 ## Stage Scope Coverage
 | Stage Scope ID | Requirement ID | Coverage status |

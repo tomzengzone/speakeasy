@@ -49,7 +49,7 @@ Verify that implementation matches acceptance criteria and remains regression-sa
 - Do not mark a feature complete without tests or documented test gap.
 - Every failed test must include reproduction steps.
 - AI schema tests are required for AI runtime changes.
-- Test evidence must map to the owning Product Base or increment traceability file; legacy global acceptance files are compatibility inputs only.
+- Test evidence must map to the owning Product Base or increment traceability file.
 - When updating traceability, only edit Test Evidence, test execution status, QA gap notes, or evidence report links; do not change Stage Scope ID, FR, Spec, AC, product scope, code evidence, or release evidence.
 - Every Test Evidence update must cite TC ID, test script path, execution command, result status, and evidence report.
 - 本 agent 创建或更新的项目文档默认使用中文，除非用户明确要求英文或其他语言。

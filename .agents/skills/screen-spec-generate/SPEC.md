@@ -17,8 +17,7 @@ This project-local skill applies to development workflow assets in this reposito
 - `docs/product/base/traceability.md`
 - `docs/product/increments/<increment-id>/spec.md`
 - `docs/product/increments/<increment-id>/acceptance.md`
-- `docs/product/features/<feature-slug>-spec.md`
-- Legacy `docs/product/acceptance_criteria.md` only for explicit compatibility, migration, or audit tasks after Product Base exists.
+- `docs/product/feature_registry.md`
 - `docs/architecture/api_contract.md`
 - `docs/ai_runtime/llm_output_schema.md`
 - Existing `docs/ux/` guidance.
@@ -31,7 +30,6 @@ This project-local skill applies to development workflow assets in this reposito
 
 ## Product Object Outputs
 - Screen specs cite the owning increment or stable feature.
-- Legacy feature spec input remains valid only for existing flat artifacts until migration.
 
 ## Quality Bar
 - A developer can implement the page without inventing states.

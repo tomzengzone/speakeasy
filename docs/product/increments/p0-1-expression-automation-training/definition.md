@@ -24,7 +24,6 @@ Implementation-review ready - active increment definition with production-harden
 - `docs/process/change_request.md`：`CR-20260523-001 表达自动化训练 Agent`
 - Product Base：`docs/product/base/requirements.md`、`docs/product/base/spec.md`、`docs/product/base/acceptance.md`、`docs/product/base/traceability.md`
 - `docs/product/feature_registry.md`
-- `docs/product/features/mvp-learning-loop-spec.md`：legacy P0.1 spec source，已作为本 increment requirements/spec/acceptance/traceability 的迁移来源。
 
 ## Scope
 - 在两个现有官方场景中，把现有语音场景模拟升级为训练型 Agent。

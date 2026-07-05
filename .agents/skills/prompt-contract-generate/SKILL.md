@@ -20,7 +20,7 @@ Make AI runtime behavior constrained, testable, and safe for frontend rendering.
 
 ## Inputs
 - Increment spec, domain model, and UI rendering needs for new product work.
-- Feature spec only for legacy flat feature artifacts or stable feature contract work.
+- Product Base spec or feature registry boundary when validating accepted stable behavior.
 - Existing docs/ai_runtime/ contracts.
 - Safety, fallback, and cost constraints.
 
@@ -40,7 +40,7 @@ Make AI runtime behavior constrained, testable, and safe for frontend rendering.
 - fallback 行为写入 `docs/ai_runtime/fallback_strategy.md`。
 - AI 评测用例写入 `docs/ai_runtime/ai_eval_cases.md`。
 - 对话状态机写入 `docs/ai_runtime/dialogue_state_machine.md`。
-- 输入优先读取 `docs/product/features/<feature-slug>-spec.md`、`docs/domain/scene_model.md` 或相关领域模型，以及 `docs/architecture/api_contract.md`。
+- 输入优先读取 `docs/product/increments/<increment-id>/spec.md` 或 `docs/product/base/spec.md`、`docs/domain/scene_model.md` 或相关领域模型，以及 `docs/architecture/api_contract.md`。
 
 ## Product Object Rules
 - For new product work, start from `docs/product/increments/<increment-id>/spec.md` and cite the owning increment in prompt, schema, fallback, and eval updates.

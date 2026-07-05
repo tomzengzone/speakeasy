@@ -18,7 +18,6 @@ This project-local skill applies to development tracking around repository issue
 - `docs/process/workflow.md`
 - `docs/product/development_status.md`
 - `docs/product/feature_registry.md`
-- `docs/product/feature_backlog.md`
 - `docs/product/stages/<stage-id>.md`
 - `docs/product/increments/<increment-id>/`
 - `docs/reports/implementation_report.md`

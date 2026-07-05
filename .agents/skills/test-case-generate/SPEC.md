@@ -7,7 +7,7 @@ Turn acceptance criteria into a balanced, executable test plan before or during 
 This project-local skill applies to development workflow assets in this repository. It supports the Codex software engineering pipeline and must not silently expand product scope or bypass the project Definition of Done.
 
 ## Trigger Context
-- A feature spec has acceptance criteria and is ready for implementation or QA planning.
+- A Product Base or increment spec has acceptance criteria and is ready for implementation or QA planning.
 - A bug fix needs a regression test.
 - A change affects API, UI, data, or AI output contracts.
 
@@ -18,9 +18,7 @@ This project-local skill applies to development workflow assets in this reposito
 - `docs/product/increments/<increment-id>/acceptance.md`
 - `docs/product/increments/<increment-id>/spec.md`
 - `docs/product/increments/<increment-id>/traceability.md`
-- Legacy global acceptance `docs/product/acceptance_criteria.md` only as migration, compatibility, or audit input after Product Base exists.
-- Legacy global traceability `docs/product/traceability_matrix.md` only as migration, compatibility, or audit input after Product Base exists.
-- `docs/product/features/<feature-slug>-spec.md`
+- `docs/product/feature_registry.md`
 - `docs/architecture/api_contract.md`
 - `docs/ux/screen_spec.md`
 - `docs/ai_runtime/prompt_contract.md`
@@ -37,7 +35,6 @@ This project-local skill applies to development workflow assets in this reposito
 - Product Base 追溯矩阵测试证据状态：`docs/product/base/traceability.md` 或 `docs/reports/test_report.md`。
 - Increment 追溯矩阵测试证据状态：`docs/product/increments/<increment-id>/traceability.md` 或 `docs/reports/test_report.md`。
 - Test Evidence updates must cite TC ID, test script path, execution command, result status, and evidence report.
-- Legacy 全局验收标准和追溯矩阵只可在显式 migration、compatibility 或 audit 任务中更新，不作为默认 Test Evidence 写回目标。
 
 ## Product Object Outputs
 - Test evidence cites the owning increment or stable feature.
@@ -45,7 +42,6 @@ This project-local skill applies to development workflow assets in this reposito
 - Each test case carries Stage Scope ID, FR, Spec, AC, Traceability Row, Gap, test layer, automation status, test script path, execution command, result status, and evidence report.
 - Product Base evidence belongs in `docs/product/base/traceability.md` or `docs/reports/test_report.md`.
 - Increment-specific evidence belongs in the increment traceability record.
-- Legacy global traceability remains valid only for existing flat artifacts until migration.
 
 ## Quality Bar
 - Every criterion is covered or explicitly deferred with reason.

@@ -26,7 +26,6 @@ Own the project-local Codex development pipeline from approved scope to release 
 - User request when Product Manager is not explicitly available
 - `docs/product/roadmap.md`
 - `docs/product/development_status.md`
-- `docs/product/mvp_scope.md`
 - `docs/product/base/`
 - `docs/product/feature_registry.md`
 - `docs/product/baselines/`

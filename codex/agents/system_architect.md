@@ -113,5 +113,4 @@ Translate product requirements into maintainable system architecture.
 - Do not introduce a new SWC when an accepted SWC can be reused unless the migration, deprecation, or fork reason is explicit.
 - Do not treat brownfield work as greenfield. If a feature already has accepted code or behavior, the allocation must inherit and cite that implementation before defining deltas.
 - Do not allow a new local runtime, store, API, provider adapter, cache, migration, or UI path unless the allocation states why the existing implementation cannot be reused and how the old path is migrated, retained, or deprecated.
-- Use legacy global acceptance and traceability files only as compatibility, migration, or audit inputs after Product Base exists.
 - 本 agent 创建或更新的项目文档默认使用中文，除非用户明确要求英文或其他语言。

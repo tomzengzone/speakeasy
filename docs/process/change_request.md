@@ -140,7 +140,7 @@ Product Manager 接受该变更为后续产品路线，但分阶段落地：
 
 P0.1 标准起始工件：`docs/product/increments/p0-1-expression-automation-training/definition.md`。
 
-Legacy P0.1 spec source：`docs/product/features/mvp-learning-loop-spec.md`，已迁移或提炼到：
+P0.1 标准增量工件：
 - `docs/product/increments/p0-1-expression-automation-training/requirements.md`
 - `docs/product/increments/p0-1-expression-automation-training/spec.md`
 - `docs/product/increments/p0-1-expression-automation-training/acceptance.md`
