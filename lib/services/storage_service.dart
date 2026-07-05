@@ -35,28 +35,48 @@ class StorageService {
   late final Box<dynamic> _box;
   bool _initialized = false;
 
-  Future<void> init({String? hivePath}) async {
+  Future<void> init({
+    String? hivePath,
+    String? hiveNamespace,
+    bool migrateFromSharedPreferences = true,
+  }) async {
     if (_initialized) {
       return;
     }
     final String resolvedHivePath = hivePath == null || hivePath.trim().isEmpty
-        ? await _resolveDefaultHivePath()
+        ? await _resolveDefaultHivePath(hiveNamespace: hiveNamespace)
         : hivePath.trim();
     Hive.init(resolvedHivePath);
     _box = await Hive.openBox<dynamic>(_boxName);
-    await _migrateFromSharedPreferences();
+    if (migrateFromSharedPreferences) {
+      await _migrateFromSharedPreferences();
+    } else {
+      await _box.put(_migrationVersionKey, _migrationVersion);
+    }
     _initialized = true;
   }
 
-  Future<String> _resolveDefaultHivePath() async {
+  Future<String> _resolveDefaultHivePath({String? hiveNamespace}) async {
     final String home = io.Platform.environment['HOME'] ?? '';
-    final io.Directory directory = home.trim().isNotEmpty
+    final String namespace = _safePathSegment(hiveNamespace);
+    final io.Directory baseDirectory = home.trim().isNotEmpty
         ? io.Directory('$home/Library/Application Support/speakeasy/hive')
         : io.Directory('${io.Directory.systemTemp.path}/speakeasy_hive');
+    final io.Directory directory = namespace.isEmpty
+        ? baseDirectory
+        : io.Directory('${baseDirectory.path}/$namespace');
     if (!await directory.exists()) {
       await directory.create(recursive: true);
     }
     return directory.path;
+  }
+
+  String _safePathSegment(String? value) {
+    final String raw = (value ?? '').trim();
+    if (raw.isEmpty) {
+      return '';
+    }
+    return raw.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
   }
 
   Future<void> saveObject<T>(

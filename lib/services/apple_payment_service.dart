@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import 'package:speakeasy/config/payment_config.dart';
+import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
 import 'package:speakeasy/services/api_client.dart';
 import 'payment_service.dart';
 
@@ -16,14 +17,22 @@ class ApplePaymentService implements PaymentService {
   Future<PaymentResult> purchasePlan(String planId) async {
     await _ensureStoreAvailable();
 
+    final String appAccountToken = await ApiClient.currentUserId();
     final ProductDetails product = await _loadProduct(planId);
     final Completer<PaymentResult> completer = Completer<PaymentResult>();
     final StreamSubscription<List<PurchaseDetails>> subscription =
-        _listenToFlow(completer: completer, expectedPlanId: planId);
+        _listenToFlow(
+          completer: completer,
+          expectedPlanId: planId,
+          appAccountToken: appAccountToken,
+        );
 
     try {
       final bool started = await _inAppPurchase.buyNonConsumable(
-        purchaseParam: PurchaseParam(productDetails: product),
+        purchaseParam: PurchaseParam(
+          productDetails: product,
+          applicationUserName: appAccountToken,
+        ),
       );
       if (!started) {
         return PaymentResult(
@@ -50,23 +59,63 @@ class ApplePaymentService implements PaymentService {
 
   @override
   Future<PaymentResult> restorePurchases() async {
-    return _runRestoreFlow(
+    final PaymentResult storeResult = await _runRestoreFlow(
       emptyResult: const PaymentResult(
         success: false,
         status: PaymentStatus.inactive,
         message: '未找到可恢复的购买记录',
       ),
     );
+    if (storeResult.success) {
+      return storeResult;
+    }
+
+    final Map<String, dynamic> response = await ApiClient.restoreSubscription(
+      platform: 'apple',
+    );
+    final CommercialEntitlementProjection entitlement =
+        CommercialEntitlementProjection.fromJson(
+          _asMap(response['entitlement']),
+        );
+    if (!entitlement.isFreshActivePaid(now: DateTime.now())) {
+      return PaymentResult(
+        success: false,
+        status: PaymentStatus.inactive,
+        entitlement: entitlement,
+        message: '未找到可恢复的购买记录',
+        rawData: response,
+      );
+    }
+    return PaymentResult(
+      success: true,
+      status: PaymentStatus.restored,
+      entitlement: entitlement,
+      message: '已恢复有效订阅',
+      rawData: response,
+    );
   }
 
   @override
   Future<PaymentResult> checkSubscriptionStatus() async {
-    return _runRestoreFlow(
-      emptyResult: const PaymentResult(
+    final Map<String, dynamic> entitlementData =
+        await ApiClient.refreshEntitlements();
+    final CommercialEntitlementProjection entitlement =
+        CommercialEntitlementProjection.fromJson(entitlementData);
+    if (!entitlement.isFreshActivePaid(now: DateTime.now())) {
+      return PaymentResult(
         success: false,
         status: PaymentStatus.inactive,
+        entitlement: entitlement,
         message: '当前没有有效订阅',
-      ),
+        rawData: entitlementData,
+      );
+    }
+    return PaymentResult(
+      success: true,
+      status: PaymentStatus.success,
+      entitlement: entitlement,
+      message: '订阅有效',
+      rawData: entitlementData,
     );
   }
 
@@ -75,9 +124,10 @@ class ApplePaymentService implements PaymentService {
   }) async {
     await _ensureStoreAvailable();
 
+    final String appAccountToken = await ApiClient.currentUserId();
     final Completer<PaymentResult> completer = Completer<PaymentResult>();
     final StreamSubscription<List<PurchaseDetails>> subscription =
-        _listenToFlow(completer: completer);
+        _listenToFlow(completer: completer, appAccountToken: appAccountToken);
 
     try {
       await _inAppPurchase.restorePurchases();
@@ -92,6 +142,7 @@ class ApplePaymentService implements PaymentService {
 
   StreamSubscription<List<PurchaseDetails>> _listenToFlow({
     required Completer<PaymentResult> completer,
+    required String appAccountToken,
     String? expectedPlanId,
   }) {
     return _inAppPurchase.purchaseStream.listen(
@@ -101,6 +152,7 @@ class ApplePaymentService implements PaymentService {
             purchases,
             completer: completer,
             expectedPlanId: expectedPlanId,
+            appAccountToken: appAccountToken,
           ),
         );
       },
@@ -122,6 +174,7 @@ class ApplePaymentService implements PaymentService {
   Future<void> _handlePurchaseUpdates(
     List<PurchaseDetails> purchases, {
     required Completer<PaymentResult> completer,
+    required String appAccountToken,
     String? expectedPlanId,
   }) async {
     if (purchases.isEmpty) {
@@ -139,6 +192,7 @@ class ApplePaymentService implements PaymentService {
       final PaymentResult result = await _buildResultForPurchase(
         purchase,
         matchedPlanId: matchedPlanId,
+        appAccountToken: appAccountToken,
       );
       if (!completer.isCompleted) {
         completer.complete(result);
@@ -150,6 +204,7 @@ class ApplePaymentService implements PaymentService {
   Future<PaymentResult> _buildResultForPurchase(
     PurchaseDetails purchase, {
     required String? matchedPlanId,
+    required String appAccountToken,
   }) async {
     try {
       switch (purchase.status) {
@@ -179,15 +234,20 @@ class ApplePaymentService implements PaymentService {
           );
         case PurchaseStatus.purchased:
         case PurchaseStatus.restored:
-          final bool verified = await _validateReceipt(purchase);
-          if (!verified) {
+          final _AppleEntitlementVerification? verification =
+              await _verifyReceipt(purchase, appAccountToken: appAccountToken);
+          if (verification == null || !verification.isUsable) {
             return PaymentResult(
               success: false,
               status: PaymentStatus.error,
               planId: matchedPlanId,
+              entitlement: verification?.entitlement,
               productId: purchase.productID,
               errorMessage: '收据校验失败，请稍后重试',
-              rawData: _rawPurchaseData(purchase),
+              rawData: _paymentRawData(
+                purchase,
+                backendResponse: verification?.rawData,
+              ),
             );
           }
           return PaymentResult(
@@ -196,12 +256,16 @@ class ApplePaymentService implements PaymentService {
                 ? PaymentStatus.restored
                 : PaymentStatus.success,
             planId: matchedPlanId,
+            entitlement: verification.entitlement,
             productId: purchase.productID,
             transactionId: purchase.purchaseID,
             message: purchase.status == PurchaseStatus.restored
                 ? '已恢复有效订阅'
                 : '购买成功',
-            rawData: _rawPurchaseData(purchase),
+            rawData: _paymentRawData(
+              purchase,
+              backendResponse: verification.rawData,
+            ),
           );
       }
     } finally {
@@ -233,29 +297,34 @@ class ApplePaymentService implements PaymentService {
     return response.productDetails.first;
   }
 
-  Future<bool> _validateReceipt(PurchaseDetails purchase) async {
-    final String receipt = purchase.verificationData.serverVerificationData
-        .trim();
-    if (receipt.isEmpty) {
-      return false;
+  Future<_AppleEntitlementVerification?> _verifyReceipt(
+    PurchaseDetails purchase, {
+    required String appAccountToken,
+  }) async {
+    final String transactionId = (purchase.purchaseID ?? '').trim();
+    if (transactionId.isEmpty || appAccountToken.trim().isEmpty) {
+      return null;
     }
 
-    final Map<String, dynamic> data = await ApiClient.verifyAppleReceipt(
+    final Map<String, dynamic> data = await ApiClient.verifyAppleSubscription(
       productId: purchase.productID,
-      transactionId: purchase.purchaseID,
-      serverVerificationData: receipt,
-      localVerificationData: purchase.verificationData.localVerificationData,
+      transactionId: transactionId,
+      originalTransactionId: transactionId,
+      appAccountToken: appAccountToken,
     );
-    final String verifiedProductId =
-        (data['productId'] as String? ?? data['productID'] as String? ?? '')
+    final String verificationStatus =
+        (data['verification_status'] as String? ??
+                data['verificationStatus'] as String? ??
+                '')
             .trim();
-    final bool productMatches =
-        verifiedProductId.isEmpty || verifiedProductId == purchase.productID;
-    final bool active =
-        data['active'] == true ||
-        data['valid'] == true ||
-        data['entitlementActive'] == true;
-    return productMatches && active;
+    final Map<String, dynamic> entitlement = _asMap(data['entitlement']);
+    final CommercialEntitlementProjection projection =
+        CommercialEntitlementProjection.fromJson(entitlement);
+    return _AppleEntitlementVerification(
+      verified: verificationStatus == 'verified',
+      entitlement: projection,
+      rawData: data,
+    );
   }
 
   String _errorMessageFromPurchase(PurchaseDetails purchase) {
@@ -273,4 +342,42 @@ class ApplePaymentService implements PaymentService {
       'source': purchase.verificationData.source,
     };
   }
+
+  Map<String, dynamic> _paymentRawData(
+    PurchaseDetails purchase, {
+    Map<String, dynamic>? backendResponse,
+  }) {
+    final Map<String, dynamic> data = <String, dynamic>{
+      'purchase': _rawPurchaseData(purchase),
+    };
+    if (backendResponse != null) {
+      data['backend'] = backendResponse;
+    }
+    return data;
+  }
+
+  Map<String, dynamic> _asMap(Object? value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    if (value is Map) {
+      return value.cast<String, dynamic>();
+    }
+    return <String, dynamic>{};
+  }
+}
+
+class _AppleEntitlementVerification {
+  const _AppleEntitlementVerification({
+    required this.verified,
+    required this.entitlement,
+    required this.rawData,
+  });
+
+  final bool verified;
+  final CommercialEntitlementProjection entitlement;
+  final Map<String, dynamic> rawData;
+
+  bool get isUsable =>
+      verified && entitlement.isFreshActivePaid(now: DateTime.now());
 }

@@ -29,6 +29,38 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cross-cutting boundary check
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_REF="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_REF="${{ github.event.before }}"
+          fi
+          python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref "$BASE_REF"
+
+      - name: SWC allocation gate
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_REF="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_REF="${{ github.event.before }}"
+          fi
+          python3 scripts/check_swc_allocation.py --scope changed --base-ref "$BASE_REF"
+
+      - name: Document language gate
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_REF="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_REF="${{ github.event.before }}"
+          fi
+          python3 scripts/check_document_language.py --scope changed --base-ref "$BASE_REF"
 
       - name: Set up Java
         uses: actions/setup-java@v4

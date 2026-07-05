@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import 'package:speakeasy/application/contracts/app_repository.dart';
@@ -128,41 +126,6 @@ class DemoAppRepository implements AppRepository {
   }
 
   @override
-  Future<PronunciationScore> scorePronunciation({
-    required String audioPath,
-    required String expectedText,
-  }) async {
-    try {
-      final Map<String, dynamic> score = await ApiClient.scoreAudio(
-        File(audioPath),
-        expectedText,
-      );
-      return PronunciationScore(
-        overall: (score['overall'] as num?)?.toInt() ?? 0,
-        accuracy: (score['accuracy'] as num?)?.toInt(),
-        fluency: (score['fluency'] as num?)?.toInt(),
-        completeness: (score['completeness'] as num?)?.toInt(),
-        grammar: (score['grammar'] as num?)?.toInt(),
-      );
-    } catch (error, stackTrace) {
-      ErrorHandler.handleError(
-        error,
-        stackTrace: stackTrace,
-        context: 'Pronunciation scoring request failed',
-      );
-    }
-
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-    final int base = 68 + (expectedText.length % 28);
-    return PronunciationScore(
-      overall: base,
-      accuracy: base + 4 > 100 ? 100 : base + 4,
-      fluency: base - 6 < 0 ? 0 : base - 6,
-      completeness: base + 2 > 100 ? 100 : base + 2,
-    );
-  }
-
-  @override
   Future<SceneFeedback> generateSceneFeedback({
     required SceneDraft draft,
     required List<SceneHistoryTurn> history,
@@ -189,21 +152,7 @@ class DemoAppRepository implements AppRepository {
         ('🧭', '给出具体时间点', '模糊的"稍后""很快"远不如"今晚 6 点前"有说服力，时间承诺让对方更有安全感。'),
         ('🗣️', '减少解释腔', '连续使用 because 会显得在辩解，拆成两句先担责再给方案会更自然。'),
       ],
-      turnReviews: voiceTurns
-          .map(
-            (SceneFeedbackVoiceTurn turn) => SceneFeedbackTurnReview(
-              turnIndex: turn.turnIndex,
-              originalText: turn.text,
-              pronunciationScore: 78,
-              pronunciationComment: '整体可懂度不错，注意重音和尾音再更清楚一点。',
-              grammarComment: '语法基本通顺，但句子还可以再更紧凑。',
-              expressionComment: '意思表达到了，不过可以更像真实商务沟通。',
-              betterExpression:
-                  'Let me give you the key update first, then I will explain the cause and next step.',
-              betterExpressionTranslation: '我先给你关键更新，再说明原因和下一步。',
-            ),
-          )
-          .toList(growable: false),
+      turnReviews: const <SceneFeedbackTurnReview>[],
     );
   }
 

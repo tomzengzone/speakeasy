@@ -4,12 +4,21 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:speakeasy/config/app_config.dart';
+import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
+import 'package:speakeasy/features/commercial/commercial_scenario_gate.dart';
+import 'package:speakeasy/features/goal_autopilot/goal_autopilot_adapter.dart';
+import 'package:speakeasy/features/goal_autopilot/goal_autopilot_models.dart';
+import 'package:speakeasy/features/goal_autopilot/goal_autopilot_panel.dart';
+import 'package:speakeasy/features/goal_autopilot/goal_progress_surface.dart';
 import 'package:speakeasy/features/interview/expression_daily_queue_coordinator.dart';
 import 'package:speakeasy/features/interview/interview_engine.dart';
 import 'package:speakeasy/features/interview/interview_expression_learning_page.dart';
 import 'package:speakeasy/features/interview/interview_models.dart';
 import 'package:speakeasy/features/interview/interview_practice_page.dart';
 import 'package:speakeasy/features/interview/interview_scene_listening_page.dart';
+import 'package:speakeasy/features/training/training_backend_adapter.dart';
+import 'package:speakeasy/features/training/training_session_loop_page.dart';
 import 'package:speakeasy/features/interview/interview_wiki_store.dart';
 import 'package:speakeasy/models/app_models.dart';
 import 'package:speakeasy/models/learning_stats_model.dart';
@@ -45,6 +54,7 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
       const ExpressionDailyQueueCoordinator();
   String _dailyExpressionQueueSignature = '';
   Future<List<ExpressionDailyQueueItem>>? _dailyExpressionQueueFuture;
+  Future<GoalProgressProjection?>? _goalProgressProjectionFuture;
 
   @override
   void initState() {
@@ -575,11 +585,17 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
     String? targetLevel,
     String? initialNodeId,
   }) async {
+    final String resolvedTargetLevel =
+        targetLevel ?? status.selectedTargetLevel;
+    if (!_canAccessSceneTargetLevel(resolvedTargetLevel)) {
+      _showCommercialScenarioGate();
+      return;
+    }
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (BuildContext context) => InterviewPracticePage(
           sceneId: status.entry.id,
-          targetLevel: targetLevel ?? status.selectedTargetLevel,
+          targetLevel: resolvedTargetLevel,
           initialNodeId: initialNodeId ?? '',
         ),
       ),
@@ -594,11 +610,17 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
     _InterviewSceneHomeStatus status, {
     String? targetLevel,
   }) async {
+    final String resolvedTargetLevel =
+        targetLevel ?? status.selectedTargetLevel;
+    if (!_canAccessSceneTargetLevel(resolvedTargetLevel)) {
+      _showCommercialScenarioGate();
+      return;
+    }
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (BuildContext context) => InterviewSceneListeningPage(
           sceneId: status.entry.id,
-          targetLevel: targetLevel ?? status.selectedTargetLevel,
+          targetLevel: resolvedTargetLevel,
           coverUrl: _sceneCoverUrl(status.entry.id),
         ),
       ),
@@ -610,6 +632,10 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
     String targetLevel, {
     String initialTaskType = '',
   }) async {
+    if (!_canAccessSceneTargetLevel(targetLevel)) {
+      _showCommercialScenarioGate();
+      return;
+    }
     final InterviewExpressionLearningResult? result =
         await Navigator.of(context).push(
           MaterialPageRoute<InterviewExpressionLearningResult>(
@@ -637,10 +663,42 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
     }
   }
 
+  Future<void> _openTrainingLoop(_InterviewSceneHomeStatus status) async {
+    if (!_canAccessSceneTargetLevel(status.selectedTargetLevel)) {
+      _showCommercialScenarioGate();
+      return;
+    }
+    if (!AppConfig.enableBackendTraining) {
+      _showTrainingBackendUnavailable();
+      return;
+    }
+    await _addLearningScene(status, setActive: true);
+    if (!mounted) {
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => TrainingSessionLoopPage(
+          sceneId: status.entry.id,
+          levelCode: status.selectedTargetLevel,
+          backendAdapter: const TrainingBackendAdapter(),
+        ),
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    unawaited(_loadInterviewSceneStatuses());
+  }
+
   Future<void> _practiceExpressionInSceneById(
     _InterviewSceneHomeStatus status,
     String nodeId,
   ) async {
+    if (!_canAccessSceneTargetLevel(status.selectedTargetLevel)) {
+      _showCommercialScenarioGate();
+      return;
+    }
     await _addLearningScene(status, setActive: true);
     await _openInterviewScene(
       status,
@@ -655,6 +713,9 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
         builder: (BuildContext context) => _HomeSceneIntroPage(
           status: status,
           isJoined: _selectedLearningSceneIds.contains(status.entry.id),
+          entitlementProjection: AppSessionScope.of(
+            context,
+          ).entitlementProjection,
           onSelectLevel: (String targetLevel) async {
             await _selectInterviewSceneLevel(status, targetLevel);
           },
@@ -688,6 +749,10 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
     _InterviewSceneHomeStatus status,
     String targetLevel,
   ) async {
+    if (!_canAccessSceneTargetLevel(targetLevel)) {
+      _showCommercialScenarioGate();
+      return;
+    }
     await InterviewWikiStore(
       sceneId: status.entry.id,
     ).saveSelectedTargetLevel(targetLevel);
@@ -695,6 +760,25 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
       return;
     }
     await _loadInterviewSceneStatuses();
+  }
+
+  bool _canAccessSceneTargetLevel(String targetLevel) {
+    return CommercialScenarioGate.canAccess(
+      targetLevel: targetLevel,
+      entitlement: AppSessionScope.of(context).entitlementProjection,
+    );
+  }
+
+  void _showCommercialScenarioGate() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(CommercialScenarioGate.lockedMessage)),
+    );
+  }
+
+  void _showTrainingBackendUnavailable() {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('训练服务暂不可用，请稍后再试')));
   }
 
   Future<void> _persistLearningSceneSelection({
@@ -911,6 +995,7 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
         ),
         Expanded(
           child: ListView(
+            key: const ValueKey<String>('home_learn_scroll'),
             padding: const EdgeInsets.fromLTRB(14, 34, 14, 100),
             children: [
               const _ActiveLearningSceneSectionHeader(),
@@ -928,6 +1013,8 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
                   ),
                 ),
                 onOpenScene: (status) => unawaited(_openInterviewScene(status)),
+                onOpenTrainingLoop: (status) =>
+                    unawaited(_openTrainingLoop(status)),
                 onWarmupExpressions: (status) => unawaited(
                   _openExpressionWarmupDeck(
                     status,
@@ -939,6 +1026,11 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
                     unawaited(_removeLearningScene(status)),
                 onPageChanged: (status) =>
                     unawaited(_setActiveLearningScene(status)),
+              ),
+              const SizedBox(height: 16),
+              GoalAutopilotPanel(
+                onRuntimeUnavailableProjection:
+                    _replaceGoalProjectionWithRuntimeGate,
               ),
               const SizedBox(height: 16),
               _HomeSceneCategoryModule(
@@ -1014,31 +1106,40 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
                 ),
               );
             }
-            return InterviewExpressionWarmupDeckView(
-              sceneId: queueItems.first.sceneId,
-              targetLevel: queueItems.first.targetLevel,
-              quickWarmup: false,
-              maxCards: 24,
-              showHeader: false,
-              queueItems: queueItems,
-              onRefreshQueue: () =>
-                  _refreshDailyExpressionQueue(trainingStatuses),
-              onPracticeQueueItem: (ExpressionDailyQueueItem item) {
-                final _InterviewSceneHomeStatus? status = _statusBySceneId(
-                  item.sceneId,
-                );
-                if (status == null) {
-                  return;
-                }
-                unawaited(
-                  _practiceExpressionInSceneById(
-                    status,
-                    item.variantOfNodeId.isNotEmpty
-                        ? item.variantOfNodeId
-                        : item.nodeId,
-                  ),
-                );
-              },
+            return FutureBuilder<GoalProgressProjection?>(
+              future: _goalProjectionFuture(),
+              builder:
+                  (
+                    BuildContext context,
+                    AsyncSnapshot<GoalProgressProjection?> projectionSnapshot,
+                  ) {
+                    return InterviewExpressionWarmupDeckView(
+                      sceneId: queueItems.first.sceneId,
+                      targetLevel: queueItems.first.targetLevel,
+                      quickWarmup: false,
+                      maxCards: 24,
+                      showHeader: false,
+                      queueItems: queueItems,
+                      goalProjection: projectionSnapshot.data,
+                      onRefreshQueue: () =>
+                          _refreshDailyExpressionQueue(trainingStatuses),
+                      onPracticeQueueItem: (ExpressionDailyQueueItem item) {
+                        final _InterviewSceneHomeStatus? status =
+                            _statusBySceneId(item.sceneId);
+                        if (status == null) {
+                          return;
+                        }
+                        unawaited(
+                          _practiceExpressionInSceneById(
+                            status,
+                            item.variantOfNodeId.isNotEmpty
+                                ? item.variantOfNodeId
+                                : item.nodeId,
+                          ),
+                        );
+                      },
+                    );
+                  },
             );
           },
     );
@@ -1096,6 +1197,24 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
       });
     }
     await nextFuture;
+  }
+
+  Future<GoalProgressProjection?> _goalProjectionFuture() {
+    return _goalProgressProjectionFuture ??= const GoalAutopilotAdapter()
+        .loadRuntimeGateProjection();
+  }
+
+  void _replaceGoalProjectionWithRuntimeGate(
+    GoalProgressProjection? projection,
+  ) {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _goalProgressProjectionFuture = Future<GoalProgressProjection?>.value(
+        projection,
+      );
+    });
   }
 
   _InterviewSceneHomeStatus? _statusBySceneId(String sceneId) {
@@ -1205,48 +1324,67 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
             ),
           ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
-              children: [
-                if (_searchController.text.trim().isEmpty)
-                  _SearchPlaceholder(
-                    icon: Icons.search_rounded,
-                    title: '输入关键词搜索场景',
-                  )
-                else if (_searchSceneStatuses.isEmpty)
-                  _SearchPlaceholder(emoji: '🔍', title: l10n.noResultsFound)
-                else ...[
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 12),
-                    child: Text(
-                      l10n.foundResults(_searchSceneStatuses.length),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: textSecondary,
-                      ),
-                    ),
-                  ),
-                  ..._searchSceneStatuses.map(
-                    (_InterviewSceneHomeStatus status) => Padding(
-                      padding: const EdgeInsets.only(bottom: 14),
-                      child: _WikiSceneTile(
-                        status: status,
-                        imageHeight: 150,
-                        onSelectLevel: (String targetLevel) => unawaited(
-                          _selectInterviewSceneLevel(status, targetLevel),
-                        ),
-                        onTap: () {
-                          setState(() {
-                            _searchExpanded = false;
-                            _searchController.clear();
-                          });
-                          unawaited(_openHomeSceneIntro(status));
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ],
+            child: FutureBuilder<GoalProgressProjection?>(
+              future: _goalProjectionFuture(),
+              builder:
+                  (
+                    BuildContext context,
+                    AsyncSnapshot<GoalProgressProjection?> projectionSnapshot,
+                  ) {
+                    final GoalProgressProjection? projection =
+                        projectionSnapshot.data;
+                    return ListView(
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
+                      children: [
+                        if (_searchController.text.trim().isEmpty)
+                          _SearchPlaceholder(
+                            icon: Icons.search_rounded,
+                            title: '输入关键词搜索场景',
+                          )
+                        else if (_searchSceneStatuses.isEmpty)
+                          _SearchPlaceholder(
+                            emoji: '🔍',
+                            title: l10n.noResultsFound,
+                          )
+                        else ...[
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4, bottom: 12),
+                            child: Text(
+                              l10n.foundResults(_searchSceneStatuses.length),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: textSecondary,
+                              ),
+                            ),
+                          ),
+                          ..._searchSceneStatuses.map(
+                            (_InterviewSceneHomeStatus status) => Padding(
+                              padding: const EdgeInsets.only(bottom: 14),
+                              child: _WikiSceneTile(
+                                status: status,
+                                imageHeight: 150,
+                                goalProjection: projection,
+                                onSelectLevel: (String targetLevel) =>
+                                    unawaited(
+                                      _selectInterviewSceneLevel(
+                                        status,
+                                        targetLevel,
+                                      ),
+                                    ),
+                                onTap: () {
+                                  setState(() {
+                                    _searchExpanded = false;
+                                    _searchController.clear();
+                                  });
+                                  unawaited(_openHomeSceneIntro(status));
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
             ),
           ),
         ],
@@ -1408,6 +1546,7 @@ class _ActiveLearningSceneCarousel extends StatelessWidget {
     required this.selectedSceneIds,
     required this.onListenScene,
     required this.onOpenScene,
+    required this.onOpenTrainingLoop,
     required this.onWarmupExpressions,
     required this.onRemoveScene,
     required this.onPageChanged,
@@ -1420,6 +1559,7 @@ class _ActiveLearningSceneCarousel extends StatelessWidget {
   final List<String> selectedSceneIds;
   final ValueChanged<_InterviewSceneHomeStatus> onListenScene;
   final ValueChanged<_InterviewSceneHomeStatus> onOpenScene;
+  final ValueChanged<_InterviewSceneHomeStatus> onOpenTrainingLoop;
   final ValueChanged<_InterviewSceneHomeStatus> onWarmupExpressions;
   final ValueChanged<_InterviewSceneHomeStatus> onRemoveScene;
   final ValueChanged<_InterviewSceneHomeStatus> onPageChanged;
@@ -1513,6 +1653,7 @@ class _ActiveLearningSceneCarousel extends StatelessWidget {
                 status: status,
                 onListenScene: onListenScene,
                 onOpenScene: onOpenScene,
+                onOpenTrainingLoop: onOpenTrainingLoop,
                 onWarmupExpressions: onWarmupExpressions,
                 onRemoveScene: isUserSelected
                     ? () => unawaited(_confirmRemoveScene(context, status))
@@ -1535,6 +1676,7 @@ class _ActiveLearningSceneHero extends StatelessWidget {
     required this.status,
     required this.onListenScene,
     required this.onOpenScene,
+    required this.onOpenTrainingLoop,
     required this.onWarmupExpressions,
     required this.onRemoveScene,
   });
@@ -1542,6 +1684,7 @@ class _ActiveLearningSceneHero extends StatelessWidget {
   final _InterviewSceneHomeStatus? status;
   final ValueChanged<_InterviewSceneHomeStatus> onListenScene;
   final ValueChanged<_InterviewSceneHomeStatus> onOpenScene;
+  final ValueChanged<_InterviewSceneHomeStatus> onOpenTrainingLoop;
   final ValueChanged<_InterviewSceneHomeStatus> onWarmupExpressions;
   final VoidCallback? onRemoveScene;
 
@@ -1705,6 +1848,7 @@ class _ActiveLearningSceneHero extends StatelessWidget {
               status: current,
               onListenScene: () => onListenScene(current),
               onOpenScene: () => onOpenScene(current),
+              onOpenTrainingLoop: () => onOpenTrainingLoop(current),
               onWarmupExpressions: () => onWarmupExpressions(current),
             ),
           ),
@@ -1790,12 +1934,14 @@ class _HeroNextStepPanel extends StatelessWidget {
     required this.status,
     required this.onListenScene,
     required this.onOpenScene,
+    required this.onOpenTrainingLoop,
     required this.onWarmupExpressions,
   });
 
   final _InterviewSceneHomeStatus status;
   final VoidCallback onListenScene;
   final VoidCallback onOpenScene;
+  final VoidCallback onOpenTrainingLoop;
   final VoidCallback onWarmupExpressions;
 
   List<String> get _coachChips {
@@ -1896,14 +2042,25 @@ class _HeroNextStepPanel extends StatelessWidget {
               children: [
                 Expanded(
                   child: _HeroBottomAction(
+                    key: const ValueKey<String>('home_hero_listen_button'),
                     icon: Icons.local_fire_department_rounded,
                     label: '开始热身',
                     onPressed: onListenScene,
                   ),
                 ),
-                const SizedBox(width: 9),
+                const SizedBox(width: 8),
                 Expanded(
                   child: _HeroBottomAction(
+                    key: const ValueKey<String>('home_hero_training_button'),
+                    icon: Icons.record_voice_over_rounded,
+                    label: '训练闭环',
+                    onPressed: onOpenTrainingLoop,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _HeroBottomAction(
+                    key: const ValueKey<String>('home_hero_practice_button'),
                     icon: Icons.play_arrow_rounded,
                     label: '开始模拟',
                     onPressed: onOpenScene,
@@ -1921,6 +2078,7 @@ class _HeroNextStepPanel extends StatelessWidget {
 
 class _HeroBottomAction extends StatelessWidget {
   const _HeroBottomAction({
+    super.key,
     required this.icon,
     required this.label,
     required this.onPressed,
@@ -2301,6 +2459,9 @@ class _HomeSceneCategoryModule extends StatelessWidget {
               final bool selected = selectedSceneIds.contains(status.entry.id);
               final bool active = activeSceneId == status.entry.id;
               return _HomeSceneGridCard(
+                key: ValueKey<String>(
+                  'home_scene_grid_card_${status.entry.id}',
+                ),
                 status: status,
                 selected: selected,
                 active: active,
@@ -2370,6 +2531,7 @@ class _HomeSceneCategoryRail extends StatelessWidget {
 
 class _HomeSceneGridCard extends StatelessWidget {
   const _HomeSceneGridCard({
+    super.key,
     required this.status,
     required this.selected,
     required this.active,
@@ -2461,6 +2623,9 @@ class _HomeSceneGridCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         _HomeSceneJoinButton(
+                          key: ValueKey<String>(
+                            'home_scene_join_${status.entry.id}',
+                          ),
                           selected: selected,
                           completed: status.isCompleted,
                           onPressed: onJoin,
@@ -2480,6 +2645,7 @@ class _HomeSceneGridCard extends StatelessWidget {
 
 class _HomeSceneJoinButton extends StatelessWidget {
   const _HomeSceneJoinButton({
+    super.key,
     required this.selected,
     required this.completed,
     required this.onPressed,
@@ -2536,12 +2702,14 @@ class _HomeSceneIntroPage extends StatefulWidget {
   const _HomeSceneIntroPage({
     required this.status,
     required this.isJoined,
+    required this.entitlementProjection,
     required this.onSelectLevel,
     required this.onJoinLearning,
   });
 
   final _InterviewSceneHomeStatus status;
   final bool isJoined;
+  final CommercialEntitlementProjection entitlementProjection;
   final Future<void> Function(String targetLevel) onSelectLevel;
   final Future<void> Function(String targetLevel) onJoinLearning;
 
@@ -2591,12 +2759,30 @@ class _HomeSceneIntroPageState extends State<_HomeSceneIntroPage> {
     if (targetLevel == _selectedTargetLevel) {
       return;
     }
+    if (!CommercialScenarioGate.canAccess(
+      targetLevel: targetLevel,
+      entitlement: widget.entitlementProjection,
+    )) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(CommercialScenarioGate.lockedMessage)),
+      );
+      return;
+    }
     setState(() => _selectedTargetLevel = targetLevel);
     unawaited(widget.onSelectLevel(targetLevel));
   }
 
   Future<void> _joinLearning() async {
     if (_joiningLearning || _joined) {
+      return;
+    }
+    if (!CommercialScenarioGate.canAccess(
+      targetLevel: _selectedTargetLevel,
+      entitlement: widget.entitlementProjection,
+    )) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(CommercialScenarioGate.lockedMessage)),
+      );
       return;
     }
     setState(() => _joiningLearning = true);
@@ -2658,6 +2844,7 @@ class _HomeSceneIntroPageState extends State<_HomeSceneIntroPage> {
                     options: status.levelOptions,
                     selectedTargetLevel: _selectedTargetLevel,
                     selectedLabel: selectedLevelLabel,
+                    entitlementProjection: widget.entitlementProjection,
                     onChanged: _selectTargetLevel,
                   ),
                 ],
@@ -2845,6 +3032,9 @@ class _HomeSceneIntroPageState extends State<_HomeSceneIntroPage> {
                     width: double.infinity,
                     height: 50,
                     child: FilledButton.icon(
+                      key: const ValueKey<String>(
+                        'home_scene_intro_join_button',
+                      ),
                       onPressed: (_joiningLearning || _joined)
                           ? null
                           : _joinLearning,
@@ -2965,12 +3155,14 @@ class _HomeSceneIntroLevelMenu extends StatelessWidget {
     required this.options,
     required this.selectedTargetLevel,
     required this.selectedLabel,
+    required this.entitlementProjection,
     required this.onChanged,
   });
 
   final List<_InterviewSceneLevelOption> options;
   final String selectedTargetLevel;
   final String selectedLabel;
+  final CommercialEntitlementProjection entitlementProjection;
   final ValueChanged<String> onChanged;
 
   @override
@@ -2990,17 +3182,26 @@ class _HomeSceneIntroLevelMenu extends StatelessWidget {
       tooltip: '选择等级',
       onSelected: onChanged,
       itemBuilder: (BuildContext context) => options
-          .map(
-            (_InterviewSceneLevelOption option) => PopupMenuItem<String>(
+          .map((_InterviewSceneLevelOption option) {
+            final bool locked = !CommercialScenarioGate.canAccess(
+              targetLevel: option.targetLevel,
+              entitlement: entitlementProjection,
+            );
+            return PopupMenuItem<String>(
               value: option.targetLevel,
+              enabled: !locked,
               child: Row(
                 children: [
                   Icon(
-                    option.targetLevel == selectedTargetLevel
+                    locked
+                        ? Icons.lock_outline_rounded
+                        : option.targetLevel == selectedTargetLevel
                         ? Icons.check_circle_rounded
                         : Icons.circle_outlined,
                     size: 17,
-                    color: option.targetLevel == selectedTargetLevel
+                    color: locked
+                        ? const Color(0xFFA0622A)
+                        : option.targetLevel == selectedTargetLevel
                         ? darkGreen
                         : textTertiary,
                   ),
@@ -3013,25 +3214,32 @@ class _HomeSceneIntroLevelMenu extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w900,
-                        color: option.targetLevel == selectedTargetLevel
+                        color: locked
+                            ? textTertiary
+                            : option.targetLevel == selectedTargetLevel
                             ? darkGreen
                             : textPrimary,
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Text(
-                    '${option.expressionCount}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: textSecondary,
+                  if (locked)
+                    const _SceneLibraryBadge(
+                      label: CommercialScenarioGate.lockedBadge,
+                    )
+                  else
+                    Text(
+                      '${option.expressionCount}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: textSecondary,
+                      ),
                     ),
-                  ),
                 ],
               ),
-            ),
-          )
+            );
+          })
           .toList(growable: false),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
@@ -4113,12 +4321,14 @@ class _WikiSceneTile extends StatelessWidget {
     required this.imageHeight,
     required this.onTap,
     required this.onSelectLevel,
+    this.goalProjection,
   });
 
   final _InterviewSceneHomeStatus status;
   final double imageHeight;
   final VoidCallback onTap;
   final ValueChanged<String> onSelectLevel;
+  final GoalProgressProjection? goalProjection;
 
   @override
   Widget build(BuildContext context) {
@@ -4230,6 +4440,12 @@ class _WikiSceneTile extends StatelessWidget {
                     value:
                         '已掌握 ${status.masteredExpressionCount} · 薄弱 ${status.weakExpressionCount} · 素材 ${status.personalMaterialCount}',
                   ),
+                  if (goalProjection != null &&
+                      goalProjection!.fragmentFor(GoalProgressSurface.wiki) !=
+                          null) ...[
+                    const SizedBox(height: 9),
+                    GoalProgressWikiSurface(projection: goalProjection!),
+                  ],
                   const SizedBox(height: 9),
                   Container(
                     width: double.infinity,
@@ -5958,6 +6174,7 @@ class _BottomBar extends StatelessWidget {
               final bool active = currentIndex == index;
               return Expanded(
                 child: GestureDetector(
+                  key: ValueKey<String>('home_bottom_tab_$index'),
                   onTap: () => onChanged(index),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

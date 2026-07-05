@@ -1,0 +1,520 @@
+{
+  "schema_version": 1,
+  "suite_id": "TC-P01-014",
+  "owning_increment": "p0-1-expression-automation-training",
+  "description": "Executable P0.1 TrainingFeedbackCandidate AI eval cases.",
+  "cases": [
+    {
+      "id": "AI-EVAL-P01-001",
+      "input": {
+        "scene_id": "job_interview",
+        "action_chain_step": "opening",
+        "micro_action": "SayOne",
+        "hint_level": "sentence_frame",
+        "learner_turn": "I am happy to talk about my background for this job."
+      },
+      "planner_next_action": "continue",
+      "candidate": {
+        "schema_version": 1,
+        "output_type": "training_feedback_candidate",
+        "scene_id": "job_interview",
+        "action_chain_step": "opening",
+        "micro_action": "SayOne",
+        "hint_level": "sentence_frame",
+        "completion_signal": {
+          "status": "met",
+          "confidence": 0.86,
+          "reason_code": "target_meaning_covered"
+        },
+        "task_signal": {
+          "status": "met",
+          "confidence": 0.84,
+          "missing_piece": ""
+        },
+        "pronunciation_signal": {
+          "status": "available",
+          "summary": "Clear enough for this step.",
+          "source": "server_side_adapter"
+        },
+        "feedback_card": {
+          "summary": "You covered the opening intent; make it sound more natural.",
+          "main_issue_type": "naturalness",
+          "better_expression": "I am excited to discuss how my experience fits this role.",
+          "explanation_cn": "Use a more interview-fit opening without changing the meaning."
+        },
+        "recommended_next_action": {
+          "type": "continue",
+          "micro_action": "SayOne",
+          "prompt": "Continue to the next micro-action."
+        },
+        "pressure_prompt_candidate": {
+          "enabled": false,
+          "prompt": "",
+          "success_condition": ""
+        },
+        "learning_evidence_candidates": [
+          {
+            "status": "candidate",
+            "evidence_type": "weak_expression",
+            "target_expression_id": "job_interview_l1_opening_excited",
+            "confidence": 0.74,
+            "rule_input": "Learner covered the opening intent with a sentence-frame hint."
+          }
+        ],
+        "recoverable_error": null
+      },
+      "expected": {
+        "valid": true,
+        "completion_status_in": ["met", "partial"],
+        "task_status_in": ["met"],
+        "main_issue_type_in": ["naturalness"],
+        "next_action_type_in": ["continue"],
+        "pronunciation_available": true,
+        "evidence_count_min": 1,
+        "all_evidence_status": "candidate",
+        "forbidden_output_fields_absent": true
+      }
+    },
+    {
+      "id": "AI-EVAL-P01-002",
+      "input": {
+        "scene_id": "job_interview",
+        "action_chain_step": "confirm_next_step",
+        "micro_action": "ChooseOne",
+        "hint_level": "options",
+        "learner_turn": "Choose a closing option that does not confirm the next step."
+      },
+      "planner_next_action": "raise_hint",
+      "candidate": {
+        "schema_version": 1,
+        "output_type": "training_feedback_candidate",
+        "scene_id": "job_interview",
+        "action_chain_step": "confirm_next_step",
+        "micro_action": "ChooseOne",
+        "hint_level": "options",
+        "completion_signal": {
+          "status": "partial",
+          "confidence": 0.62,
+          "reason_code": "closing_intent_incomplete"
+        },
+        "task_signal": {
+          "status": "not_met",
+          "confidence": 0.68,
+          "missing_piece": "confirm_next_step"
+        },
+        "pronunciation_signal": {
+          "status": "unavailable",
+          "summary": "",
+          "source": ""
+        },
+        "feedback_card": {
+          "summary": "The selected option does not confirm the next step.",
+          "main_issue_type": "missing_intent",
+          "better_expression": "Please let me know if there is anything else I can provide.",
+          "explanation_cn": "This closing confirms follow-up and keeps the interview moving."
+        },
+        "recommended_next_action": {
+          "type": "raise_hint",
+          "micro_action": "ChooseOne",
+          "prompt": "Choose the option that asks about next steps."
+        },
+        "pressure_prompt_candidate": {
+          "enabled": false,
+          "prompt": "",
+          "success_condition": ""
+        },
+        "learning_evidence_candidates": [],
+        "recoverable_error": null
+      },
+      "expected": {
+        "valid": true,
+        "completion_status_in": ["partial", "not_met"],
+        "task_status_in": ["not_met"],
+        "main_issue_type_in": ["missing_intent"],
+        "next_action_type_in": ["retry", "raise_hint"],
+        "pronunciation_available": false,
+        "pressure_prompt_enabled": false,
+        "evidence_count_max": 0,
+        "forbidden_output_fields_absent": true
+      }
+    },
+    {
+      "id": "AI-EVAL-P01-003",
+      "input": {
+        "scene_id": "job_interview",
+        "action_chain_step": "express_view",
+        "micro_action": "ShadowOne",
+        "hint_level": "chunk_shadowing",
+        "learner_turn": "Transcript is acceptable but pronunciation score is unavailable."
+      },
+      "planner_next_action": "continue",
+      "candidate": {
+        "schema_version": 1,
+        "output_type": "training_feedback_candidate",
+        "scene_id": "job_interview",
+        "action_chain_step": "express_view",
+        "micro_action": "ShadowOne",
+        "hint_level": "chunk_shadowing",
+        "completion_signal": {
+          "status": "met",
+          "confidence": 0.78,
+          "reason_code": "transcript_acceptable"
+        },
+        "task_signal": {
+          "status": "met",
+          "confidence": 0.76,
+          "missing_piece": ""
+        },
+        "pronunciation_signal": {
+          "status": "unavailable",
+          "summary": "Score unavailable; transcript is still usable.",
+          "source": ""
+        },
+        "feedback_card": {
+          "summary": "The transcript covers the target meaning.",
+          "main_issue_type": "none",
+          "better_expression": "I believe this role matches my experience.",
+          "explanation_cn": "Pronunciation score is unavailable, so do not fail this turn solely for scoring."
+        },
+        "recommended_next_action": {
+          "type": "continue",
+          "micro_action": "ShadowOne",
+          "prompt": "Continue without pronunciation penalty."
+        },
+        "pressure_prompt_candidate": {
+          "enabled": false,
+          "prompt": "",
+          "success_condition": ""
+        },
+        "learning_evidence_candidates": [
+          {
+            "status": "candidate",
+            "evidence_type": "weak_expression",
+            "target_expression_id": "job_interview_l1_view_match",
+            "confidence": 0.71,
+            "rule_input": "Learner transcript was acceptable while pronunciation score was unavailable."
+          }
+        ],
+        "recoverable_error": null
+      },
+      "expected": {
+        "valid": true,
+        "completion_status_in": ["met"],
+        "task_status_in": ["met"],
+        "main_issue_type_in": ["none"],
+        "next_action_type_in": ["continue"],
+        "pronunciation_available": false,
+        "evidence_count_min": 1,
+        "all_evidence_status": "candidate",
+        "forbidden_output_fields_absent": true
+      }
+    },
+    {
+      "id": "AI-EVAL-P01-004",
+      "input": {
+        "scene_id": "job_interview",
+        "action_chain_step": "opening",
+        "micro_action": "SayOne",
+        "hint_level": "sentence_frame",
+        "asr_status": "failed",
+        "audio_ref": "signed-media-ref-redacted"
+      },
+      "planner_next_action": "text_fallback",
+      "candidate": {
+        "schema_version": 1,
+        "output_type": "training_feedback_candidate",
+        "scene_id": "job_interview",
+        "action_chain_step": "opening",
+        "micro_action": "SayOne",
+        "hint_level": "sentence_frame",
+        "completion_signal": {
+          "status": "unknown",
+          "confidence": 0.0,
+          "reason_code": "asr_unavailable"
+        },
+        "task_signal": {
+          "status": "unknown",
+          "confidence": 0.0,
+          "missing_piece": "transcript"
+        },
+        "pronunciation_signal": {
+          "status": "unavailable",
+          "summary": "",
+          "source": ""
+        },
+        "feedback_card": {
+          "summary": "ASR is unavailable; use text fallback instead of judging the learner.",
+          "main_issue_type": "asr_uncertain",
+          "better_expression": "I am excited to discuss my background.",
+          "explanation_cn": "ASR failure is recoverable and must not be treated as learner failure."
+        },
+        "recommended_next_action": {
+          "type": "text_fallback",
+          "micro_action": "SayOne",
+          "prompt": "Type your answer to continue."
+        },
+        "pressure_prompt_candidate": {
+          "enabled": false,
+          "prompt": "",
+          "success_condition": ""
+        },
+        "learning_evidence_candidates": [],
+        "recoverable_error": {
+          "code": "ASR_UNAVAILABLE",
+          "message": "ASR produced no transcript.",
+          "retryable": true
+        }
+      },
+      "expected": {
+        "valid": true,
+        "completion_status_in": ["unknown"],
+        "task_status_in": ["unknown"],
+        "main_issue_type_in": ["asr_uncertain"],
+        "next_action_type_in": ["retry", "text_fallback"],
+        "pronunciation_available": false,
+        "recoverable_error": true,
+        "evidence_count_max": 0,
+        "forbidden_output_fields_absent": true
+      }
+    },
+    {
+      "id": "AI-EVAL-P01-005",
+      "input": {
+        "scene_id": "job_interview",
+        "action_chain_step": "respond_follow_up",
+        "micro_action": "ContinueUnderPrompt",
+        "hint_level": "none",
+        "recent_attempt_summary": "Two consecutive successful turns allow pressure check."
+      },
+      "planner_next_action": "pressure_check",
+      "candidate": {
+        "schema_version": 1,
+        "output_type": "training_feedback_candidate",
+        "scene_id": "job_interview",
+        "action_chain_step": "respond_follow_up",
+        "micro_action": "ContinueUnderPrompt",
+        "hint_level": "none",
+        "completion_signal": {
+          "status": "met",
+          "confidence": 0.83,
+          "reason_code": "follow_up_answer_covered"
+        },
+        "task_signal": {
+          "status": "met",
+          "confidence": 0.81,
+          "missing_piece": ""
+        },
+        "pronunciation_signal": {
+          "status": "available",
+          "summary": "Clear enough.",
+          "source": "server_side_adapter"
+        },
+        "feedback_card": {
+          "summary": "You answered the follow-up and can handle one pressure prompt.",
+          "main_issue_type": "none",
+          "better_expression": "A concrete example would make it stronger.",
+          "explanation_cn": "The pressure prompt must stay in the current interview scenario."
+        },
+        "recommended_next_action": {
+          "type": "pressure_check",
+          "micro_action": "ContinueUnderPrompt",
+          "prompt": "Answer one follow-up in the same interview context."
+        },
+        "pressure_prompt_candidate": {
+          "enabled": true,
+          "prompt": "Could you give one concrete example from your last project?",
+          "success_condition": "Learner adds one relevant project example."
+        },
+        "learning_evidence_candidates": [
+          {
+            "status": "candidate",
+            "evidence_type": "weak_expression",
+            "target_expression_id": "job_interview_l1_follow_up_example",
+            "confidence": 0.75,
+            "rule_input": "Learner handled follow-up context before pressure check."
+          }
+        ],
+        "recoverable_error": null
+      },
+      "expected": {
+        "valid": true,
+        "completion_status_in": ["met"],
+        "task_status_in": ["met"],
+        "main_issue_type_in": ["none"],
+        "next_action_type_in": ["pressure_check"],
+        "pressure_prompt_enabled": true,
+        "pronunciation_available": true,
+        "evidence_count_min": 1,
+        "all_evidence_status": "candidate",
+        "forbidden_output_fields_absent": true
+      }
+    },
+    {
+      "id": "AI-EVAL-P01-006",
+      "input": {
+        "scene_id": "job_interview",
+        "action_chain_step": "opening",
+        "micro_action": "SayOne",
+        "hint_level": "none",
+        "provider_behavior": "attempts_final_mastery_and_cross_day_schedule"
+      },
+      "planner_next_action": "continue",
+      "candidate": {
+        "schema_version": 1,
+        "output_type": "training_feedback_candidate",
+        "scene_id": "job_interview",
+        "action_chain_step": "opening",
+        "micro_action": "SayOne",
+        "hint_level": "none",
+        "completion_signal": {
+          "status": "met",
+          "confidence": 0.93,
+          "reason_code": "overclaimed_mastery"
+        },
+        "task_signal": {
+          "status": "met",
+          "confidence": 0.91,
+          "missing_piece": ""
+        },
+        "pronunciation_signal": {
+          "status": "available",
+          "summary": "Clear.",
+          "source": "server_side_adapter"
+        },
+        "feedback_card": {
+          "summary": "The model tried to overclaim mastery.",
+          "main_issue_type": "none",
+          "better_expression": "I am excited to discuss the role.",
+          "explanation_cn": "This output must be rejected because it writes final state."
+        },
+        "recommended_next_action": {
+          "type": "continue",
+          "micro_action": "SayOne",
+          "prompt": "Continue."
+        },
+        "pressure_prompt_candidate": {
+          "enabled": false,
+          "prompt": "",
+          "success_condition": ""
+        },
+        "learning_evidence_candidates": [],
+        "mastered": true,
+        "review_scheduled": "tomorrow",
+        "recoverable_error": null
+      },
+      "fallback_candidate": {
+        "schema_version": 1,
+        "output_type": "training_feedback_candidate",
+        "scene_id": "job_interview",
+        "action_chain_step": "opening",
+        "micro_action": "SayOne",
+        "hint_level": "none",
+        "completion_signal": {
+          "status": "unknown",
+          "confidence": 0.0,
+          "reason_code": "schema_rejected"
+        },
+        "task_signal": {
+          "status": "unknown",
+          "confidence": 0.0,
+          "missing_piece": "provider_schema"
+        },
+        "pronunciation_signal": {
+          "status": "unavailable",
+          "summary": "",
+          "source": ""
+        },
+        "feedback_card": {
+          "summary": "The provider response was rejected and the turn remains recoverable.",
+          "main_issue_type": "asr_uncertain",
+          "better_expression": "Try again with the current prompt.",
+          "explanation_cn": "Fallback remains candidate-only and does not write mastery or review state."
+        },
+        "recommended_next_action": {
+          "type": "fallback",
+          "micro_action": "SayOne",
+          "prompt": "Try again with the current prompt."
+        },
+        "pressure_prompt_candidate": {
+          "enabled": false,
+          "prompt": "",
+          "success_condition": ""
+        },
+        "learning_evidence_candidates": [],
+        "recoverable_error": {
+          "code": "SCHEMA_REJECTED",
+          "message": "Provider output attempted final-state write.",
+          "retryable": true
+        }
+      },
+      "expected": {
+        "valid": false,
+        "errors_contain": ["feedback candidate contains final mastery or billing field"],
+        "fallback_valid": true,
+        "fallback_next_action_type_in": ["fallback"],
+        "fallback_recoverable_error": true,
+        "forbidden_output_fields_absent": false
+      }
+    },
+    {
+      "id": "AI-EVAL-P01-007",
+      "input": {
+        "scene_id": "custom_sales_pitch",
+        "action_chain_step": "invented_step",
+        "micro_action": "InventOne",
+        "hint_level": "none",
+        "provider_behavior": "tries_to_create_scene_and_target_expression"
+      },
+      "planner_next_action": "continue",
+      "candidate": {
+        "schema_version": 1,
+        "output_type": "training_feedback_candidate",
+        "scene_id": "custom_sales_pitch",
+        "action_chain_step": "invented_step",
+        "micro_action": "InventOne",
+        "hint_level": "none",
+        "completion_signal": {
+          "status": "partial",
+          "confidence": 0.5,
+          "reason_code": "invented_target"
+        },
+        "task_signal": {
+          "status": "partial",
+          "confidence": 0.5,
+          "missing_piece": "unsupported_scene"
+        },
+        "pronunciation_signal": {
+          "status": "unavailable",
+          "summary": "",
+          "source": ""
+        },
+        "feedback_card": {
+          "summary": "This output tries to create an unsupported scene.",
+          "main_issue_type": "off_topic",
+          "better_expression": "Stay in the selected official scene.",
+          "explanation_cn": "The model cannot create scenes, target expressions or action chain steps."
+        },
+        "recommended_next_action": {
+          "type": "continue",
+          "micro_action": "InventOne",
+          "prompt": "Continue in the invented scene."
+        },
+        "pressure_prompt_candidate": {
+          "enabled": false,
+          "prompt": "",
+          "success_condition": ""
+        },
+        "learning_evidence_candidates": [],
+        "recoverable_error": null
+      },
+      "expected": {
+        "valid": false,
+        "errors_contain": [
+          "action_chain_step is not allowed",
+          "micro_action is not allowed"
+        ],
+        "forbidden_output_fields_absent": true
+      }
+    }
+  ]
+}

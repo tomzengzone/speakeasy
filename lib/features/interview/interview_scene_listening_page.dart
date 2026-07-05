@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -8,8 +7,6 @@ import 'package:speakeasy/config/app_config.dart';
 import 'package:speakeasy/features/interview/interview_engine.dart';
 import 'package:speakeasy/features/interview/interview_scene_dialogue_builder.dart';
 import 'package:speakeasy/features/interview/interview_models.dart';
-import 'package:speakeasy/services/api_client.dart';
-import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/services/audio_service.dart';
 
 enum _ListeningPracticeMode { listening, shadowing }
@@ -490,26 +487,14 @@ class _InterviewSceneListeningPageState
       if (path == null || path.trim().isEmpty) {
         throw Exception('没有录到有效语音');
       }
-      final String transcript = await ApiClient.transcribeAudio(
-        File(path),
-        hintText: turn.text,
-        repairMode: 'background',
-      );
       if (!mounted || ticket != _shadowTicket) {
         return;
       }
-      final String cleanedTranscript = transcript.trim().isEmpty
-          ? '没有识别到清晰内容'
-          : transcript.trim();
-      final int completenessScore = _shadowCompletenessScore(
-        expectedText: turn.text,
-        transcript: cleanedTranscript,
-      );
       final _ShadowTurnResult result = _ShadowTurnResult(
-        transcript: cleanedTranscript,
-        completenessScore: completenessScore,
+        transcript: '语音识别暂未接入可信上传',
+        completenessScore: 0,
         audioPath: path,
-        scoringPronunciation: true,
+        scoringPronunciation: false,
       );
       setState(() {
         _shadowResults = <String, _ShadowTurnResult>{
@@ -517,13 +502,6 @@ class _InterviewSceneListeningPageState
           turn.id: result,
         };
       });
-      unawaited(
-        _scoreShadowTurnInBackground(
-          turnId: turn.id,
-          audioPath: path,
-          expectedText: turn.text,
-        ),
-      );
       await Future<void>.delayed(const Duration(milliseconds: 620));
       if (!mounted || ticket != _shadowTicket) {
         return;
@@ -543,49 +521,6 @@ class _InterviewSceneListeningPageState
         _shadowRecordStopper = null;
       }
     }
-  }
-
-  Future<void> _scoreShadowTurnInBackground({
-    required String turnId,
-    required String audioPath,
-    required String expectedText,
-  }) async {
-    if (!mounted) {
-      return;
-    }
-    PronunciationScore? pronunciation;
-    try {
-      pronunciation = await AppSessionScope.of(context)
-          .scorePronunciation(audioPath: audioPath, expectedText: expectedText)
-          .timeout(const Duration(seconds: 18));
-    } catch (_) {
-      pronunciation = null;
-    }
-    if (!mounted) {
-      return;
-    }
-    final _ShadowTurnResult? existing = _shadowResults[turnId];
-    if (existing == null) {
-      return;
-    }
-    final _ShadowTurnResult updated = pronunciation == null
-        ? existing.copyWith(scoringPronunciation: false)
-        : existing.copyWith(
-            pronunciationScore: pronunciation.overall.clamp(0, 100).toInt(),
-            accuracyScore: pronunciation.accuracy?.clamp(0, 100).toInt(),
-            fluencyScore: pronunciation.fluency?.clamp(0, 100).toInt(),
-            completenessScore:
-                pronunciation.completeness?.clamp(0, 100).toInt() ??
-                existing.completenessScore,
-            source: pronunciation.source,
-            scoringPronunciation: false,
-          );
-    setState(() {
-      _shadowResults = <String, _ShadowTurnResult>{
-        ..._shadowResults,
-        turnId: updated,
-      };
-    });
   }
 
   Future<void> _cancelShadowRecording() async {
@@ -1565,6 +1500,7 @@ class _ListeningPlaybackBar extends StatelessWidget {
                     Transform.translate(
                       offset: const Offset(128, 0),
                       child: _PracticeModeButton(
+                        key: const ValueKey<String>('listening_mode_toggle'),
                         mode: mode,
                         onPressed: onToggleMode,
                       ),
@@ -1716,7 +1652,11 @@ class _LoopModeButton extends StatelessWidget {
 }
 
 class _PracticeModeButton extends StatelessWidget {
-  const _PracticeModeButton({required this.mode, required this.onPressed});
+  const _PracticeModeButton({
+    super.key,
+    required this.mode,
+    required this.onPressed,
+  });
 
   final _ListeningPracticeMode mode;
   final VoidCallback onPressed;
@@ -1861,49 +1801,6 @@ String _formatPlaybackTime(Duration duration) {
   return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 }
 
-int _shadowCompletenessScore({
-  required String expectedText,
-  required String transcript,
-}) {
-  final List<String> expectedTokens = _shadowTextTokens(expectedText);
-  final List<String> actualTokens = _shadowTextTokens(transcript);
-  if (expectedTokens.isEmpty || actualTokens.isEmpty) {
-    return 0;
-  }
-  final int lcs = _shadowTokenLcsLength(expectedTokens, actualTokens);
-  final double orderCoverage = lcs / expectedTokens.length;
-  final Set<String> actualSet = actualTokens.toSet();
-  final int matched = expectedTokens
-      .where((String token) => actualSet.contains(token))
-      .length;
-  final double looseCoverage = matched / expectedTokens.length;
-  final double score = math.max(orderCoverage, looseCoverage * 0.86) * 100;
-  return score.round().clamp(0, 100).toInt();
-}
-
-List<String> _shadowTextTokens(String text) {
-  return RegExp(r"[a-z]+(?:'[a-z]+)?|\d+|[\u4e00-\u9fff]")
-      .allMatches(text.toLowerCase())
-      .map((RegExpMatch match) => match.group(0) ?? '')
-      .where((String value) => value.isNotEmpty)
-      .toList(growable: false);
-}
-
-int _shadowTokenLcsLength(List<String> a, List<String> b) {
-  final List<List<int>> dp = List<List<int>>.generate(
-    a.length + 1,
-    (_) => List<int>.filled(b.length + 1, 0),
-  );
-  for (int i = 1; i <= a.length; i += 1) {
-    for (int j = 1; j <= b.length; j += 1) {
-      dp[i][j] = a[i - 1] == b[j - 1]
-          ? dp[i - 1][j - 1] + 1
-          : math.max(dp[i - 1][j], dp[i][j - 1]);
-    }
-  }
-  return dp[a.length][b.length];
-}
-
 Color _shadowScoreColor(int? score) {
   if (score == null) {
     return _listeningMuted;
@@ -1919,10 +1816,7 @@ Color _shadowScoreColor(int? score) {
 
 String _shadowScoreSourceLabel(String source) {
   final String normalized = source.trim().toLowerCase();
-  if (normalized.contains('ali') || normalized.contains('singsound')) {
-    return '口语评测';
-  }
-  if (normalized.contains('backend')) {
+  if (normalized.contains('backend') || normalized.contains('server')) {
     return '后端评分';
   }
   return '语音评分';

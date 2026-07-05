@@ -1,0 +1,4283 @@
+# Implementation Report
+
+## Current Status
+Latest Followup-E implementation state: docs-only planning/contract evidence. Followup-E Phase 0-3 documents are present and reviewed for planning, but no Followup-E backend, Flutter, OpenAPI/generated client, AI runtime, native mic/audio bytes upload, test execution, release or Product Base implementation evidence is accepted in this state.
+
+## Report Format
+Each completed change should append:
+- date
+- feature or change request
+- files changed
+- requirement mapping
+- tests added or updated
+- commands run
+- results
+- risks
+- follow-up
+
+## 2026-06-10 - P0-COM-ADMIN-DATA-DELETION-RETRY-20260610
+
+Change request:
+- Close the `POST /admin/data-deletion/{job_id}/retry` implementation-level contract gap. OpenAPI already promised OPS retry for failed account deletion jobs, but the backend had no controller mapping or retry state machine.
+
+Requirement mapping:
+- Increment: `docs/product/increments/commercial-subscription-readiness/`.
+- Chain: COM-SI-006/011 -> FR-COM-008/011 -> COM-SPEC-006/011 -> AC-COM-010/013 -> COM-TR-006/011 -> TC-COM-025.
+- Architecture boundary: implement the existing Admin/Ops deletion recovery contract by reusing `AccountDeletionService`, `AccountDeletionJob`, `AuditLog`, `AiRetentionService`, Spring Security `/admin/**` OPS bearer auth, Flyway and OpenAPI/generated-client drift gates.
+
+Files changed:
+- Backend API: `backend/src/main/java/com/speakeasy/api/AdminDataDeletionController.java`, `AccountDeletionJobResponse.java`, `AuthController.java`.
+- Backend ops domain/service: `backend/src/main/java/com/speakeasy/ops/AccountDeletionService.java`, `AccountDeletionRetentionRunner.java`, `AccountDeletionJob.java`, `AccountDeletionJobRepository.java`, `AccountDeletionRetryIdempotency.java`, `AccountDeletionRetryIdempotencyRepository.java`.
+- Persistence: `backend/src/main/resources/db/migration/V202606100002__admin_data_deletion_retry_idempotency.sql`.
+- Tests: `backend/src/test/java/com/speakeasy/AdminDataDeletionControllerTest.java`, `AdminDataDeletionRetryFailureTest.java`, `BackendIntegrationTestSupport.java`, `CommercialAbuseControlTest.java`, `ProviderGatewaySecurityContractTest.java`.
+- API/generated boundary: `docs/architecture/api_contract.md`, `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/openapi/dart-client-drift-manifest.json`, `lib/generated/api/.openapi-sha256`, `lib/generated/api/speakeasy_api.dart`.
+- Traceability/reports: commercial subscription `test_cases.md`, `traceability.md`, `docs/reports/test_report.md`, `docs/reports/implementation_report.md`.
+
+Implementation summary:
+- Added `AdminDataDeletionController#retryDeletionJob` for `POST /admin/data-deletion/{job_id}/retry`.
+- Extracted shared `AccountDeletionJobResponse` so user-side and admin-side deletion APIs return the same OpenAPI schema.
+- Added explicit deletion job state transitions through `access_revoked`, `deleting_learning_data`, `anonymizing_audit_refs`, `completed` and `failed`.
+- Added `AccountDeletionService#retryDeletionJob` with `Idempotency-Key` enforcement, deletion-job row lock, completed no-op, in-progress `DELETE_IN_PROGRESS`, failed-only execution and redacted retry audit events.
+- Added `account_deletion_retry_idempotency` to prevent duplicate retry work for the same `deletion_job_id + Idempotency-Key`.
+- Kept deletion cleanup centralized in `AccountDeletionService`; retry reuses existing AI retention cleanup, user data purge, session revocation and audit logging.
+- Added `AccountDeletionRetentionRunner` as a narrow `REQUIRES_NEW` transaction boundary around the existing `AiRetentionService#runAccountDeletion` call so AI retention rollback cannot roll back deletion-job failed status, retry idempotency or retry failure audit records.
+- Replaced the retry failure test mock with a real `AiRetentionService` path and a test-only failing `AiMediaStorageService`, proving production-style AI retention failures persist the failed retry state.
+- Updated OpenAPI to include the retry idempotency header, 401/403/404/409/422 responses and `retry_count` in `AccountDeletionJobResponse`.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminDataDeletionControllerTest,AdminDataDeletionRetryFailureTest,AccountDeletionControllerTest,AccountDeletionSessionInvalidationTest,AccountDeletionLearningDataTest,AccountDeletionFailureAuditTest,CommercialAccountDeletionProcessorTest,AiAccountDeletionMediaCleanupTest,AiRetentionPolicyTest,AdminAuditControllerTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CommercialAbuseControlTest test` - passed after pinning the test to the existing deterministic AI provider pattern.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProviderGatewaySecurityContractTest test` - passed after pinning the test to the existing deterministic AI provider pattern.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
+- `npm run check:api-contract` - passed; OpenAPI contract gate reported 87 paths and 93 operations; Dart drift passed with OpenAPI hash `464464b9346a28422831e56e8f5ba42118ebb0a6005d981e4381bee52fce4e30`.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed for 30 changed files.
+- `git diff --check` - passed.
+
+Result:
+- `POST /admin/data-deletion/{job_id}/retry` is now implemented behind existing OPS bearer admin security.
+- Failed deletion jobs can be retried through the same deletion processor and cleanup path; duplicate retry keys are idempotent; completed jobs are no-op; in-progress jobs fail closed.
+- TC-COM-025 is added and passed, closing the local admin deletion retry contract gap for FR-COM-008/011 and AC-COM-010/013.
+- P0 commercial release readiness remains blocked by external/native/store/release evidence gates, not by this local admin data deletion retry endpoint.
+
+Residual risk:
+- The retry runs synchronously; production queueing, alerting, WORM audit storage and external privacy evidence remain release/ops scope.
+- TC-COM-012/015/019/021/022 external/native/store/release gates still block commercial release readiness.
+
+Follow-up:
+- Keep TC-COM-025 in the required suite for future account deletion, admin ops, privacy compliance or audit changes.
+
+## 2026-06-10 - P0-COM-ADMIN-AUDIT-ENDPOINT-20260610
+
+Change request:
+- Close the `GET /admin/audit` implementation-level contract gap. OpenAPI already promised Admin audit logs for compliance, release health and operation tracing, but the backend had no controller mapping.
+
+Requirement mapping:
+- Increment: `docs/product/increments/commercial-subscription-readiness/`.
+- Chain: COM-SI-011/012 -> FR-COM-011/012 -> COM-SPEC-011/012 -> AC-COM-013/014 -> COM-TR-011/012 -> TC-COM-024.
+- Architecture boundary: implement the existing Admin/Ops audit contract by reusing `AuditLog`, `AuditLogRepository`, Spring Security `/admin/**` OPS bearer auth, `SchemaResponse`, Flyway and OpenAPI/generated-client drift gates.
+
+Files changed:
+- Backend API: `backend/src/main/java/com/speakeasy/api/AdminAuditController.java`.
+- Backend domain/query: `backend/src/main/java/com/speakeasy/ops/AuditLogService.java`, `AuditLog.java`, `AuditLogRepository.java`.
+- Persistence: `backend/src/main/resources/db/migration/V202606100001__admin_audit_query_indexes.sql`.
+- Tests: `backend/src/test/java/com/speakeasy/AdminAuditControllerTest.java`.
+- API/generated boundary: `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/openapi/dart-client-drift-manifest.json`, `lib/generated/api/.openapi-sha256`, `lib/generated/api/speakeasy_api.dart`, `docs/architecture/api_contract.md`.
+- Traceability/reports: commercial subscription `test_cases.md`, `traceability.md`, `docs/product/development_status.md`, `docs/reports/test_report.md`, `docs/reports/implementation_report.md`.
+
+Implementation summary:
+- Added `AdminAuditController#listAuditEvents` for `GET /admin/audit`.
+- Added `AuditLogService` with bounded page size, opaque cursor keyset pagination, exact event/actor/target filters and time-window filters.
+- Added safe audit event projection with `actor_type`, `event_type`, `target_ref`, `request_id`, `created_at` and `redacted_details`; `actor_id` is intentionally not returned.
+- Added redaction hardening for JSON and legacy text audit details so tokens, raw payloads, transcripts, receipt-like values, signed URLs and media URLs are not leaked through the admin API.
+- Added self-audit behavior: each successful audit read writes `admin_audit_events_listed` with redacted metadata.
+- Added query indexes for created/id, actor/created and target/created lookup patterns.
+- Updated OpenAPI parameters, response schemas, examples, `401/403/422` errors and generated Dart drift pins.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminAuditControllerTest test` - passed.
+- `npm run check:api-contract` - passed; OpenAPI contract gate reported 87 paths and 93 operations.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `defb6aad8bbf84fe39aa3c2982137c7560145ae63d729d30d9d02b9aa70e5a4d`.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminAuditControllerTest,CommercialFoundationControllerTest,AiProviderEvidenceControllerTest,AiCostDashboardTest,AiRetentionPolicyTest,AccountDeletionFailureAuditTest test` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
+
+Result:
+- `GET /admin/audit` is now implemented behind existing OPS bearer admin security, with pagination, filters, redaction, self-audit and OpenAPI/generated-client alignment.
+- TC-COM-024 is added and passed, closing the local admin audit contract gap for FR-COM-011/012 and AC-COM-013/014.
+- P0 commercial release readiness remains blocked by external/native/store/release evidence gates, not by this local admin audit endpoint.
+
+Residual risk:
+- The endpoint lists local persisted audit events only; it does not provide SIEM export, immutable WORM retention, external audit warehouse integration or production operational evidence.
+- TC-COM-012/015/019/021/022 external/native/store/release gates still block commercial release readiness.
+
+Follow-up:
+- Keep TC-COM-024 in the required suite for future admin audit contract, audit schema, redaction or security changes.
+
+## 2026-06-09 - P02-FOLLOWUP-B-XCB-003-REMINDER-ELIGIBILITY-ENDPOINT-20260609
+
+Change request:
+- Close XCB-003 for Followup-B `POST /goal-autopilot/reminders/eligibility` by adding the missing backend controller/service entry, request validation, runtime gate, commercial gates, OpenAPI/generated client sync and endpoint-level TC evidence.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`.
+- Chain: P02-SI-010 -> P02-FUB-WP-003/004 -> P02-FUB-FR-003/004 -> P02-FUB-SPEC-003/004 -> AC-P02-FUB-003/004 -> P02-FUB-TR-003/004 -> TC-P02-FUB-018.
+- Architecture/process boundary: `docs/process/cross_cutting_boundary_registry.md` XCB-003; `docs/architecture/api_contract.md` P02-FUB-API-002.
+
+Files changed:
+- Backend: `GoalAutopilotController`, `GoalAutopilotService`.
+- Tests: `GoalAutopilotControllerTest`, `GoalAutopilotRuntimeGateTest`.
+- API/generated boundary: `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/openapi/dart-client-drift-manifest.json`, `lib/generated/api/.openapi-sha256`, `lib/generated/api/speakeasy_api.dart`.
+- Traceability and gate docs: Followup-B `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`, `docs/architecture/api_contract.md`, `scripts/check_p0_2_followup_b_traceability.py`, `docs/reports/test_report.md`, `docs/reports/quality_report.md`.
+
+Implementation summary:
+- Added `GoalAutopilotController#evaluateReminderEligibility` for `POST /goal-autopilot/reminders/eligibility`.
+- Added `GoalAutopilotService#evaluateReminderEligibility`, reusing `NotificationEligibilityPolicy` and enforcing `requireMutationAllowed(userId, "reminder_eligibility", requestId)` before evaluation.
+- Validated `plan_item_id`, `reminder_slot` and `platform_permission`; malformed UUIDs return `422`, wrong-owner/nonexistent plan items return `404`, inactive/stale plan candidates return `409`, and missing or `unknown` platform permission fails closed as `permission_denied`.
+- Parsed `current_time` inside the service so malformed date-time input returns endpoint-contract `422` instead of JSON binding `400`.
+- Replaced hardcoded eligibility commercial facts with entitlement/quota/cost-derived gates mapped to `entitlement_blocked` or `quota_exhausted`.
+- Blocks `recovery_required` daily plans as `stale_plan` before reminder eligibility, so reminders cannot become eligible while recovery replan is pending.
+- Kept endpoint evaluation as a precheck boundary: successful evaluations write only low-sensitivity `notification_eligibility` metrics and do not create outbox, completion, failure, refusal or missed-day evidence.
+- Updated OpenAPI request/response schema, examples, endpoint `404`, generated Dart hash pin and Followup-B traceability to route the closure through TC-P02-FUB-018.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fub018ReminderEligibilityEndpointEvaluatesRequestBoundary+tcP02Fub018ReminderEligibilityCommercialAndPlanOwnershipGates+tcP02Fub018ReminderEligibilityMissingPlanDoesNotReturnEligibleWithoutItem+tcP02Fub018ReminderEligibilityRecoveryRequiredDoesNotReturnEligible,GoalAutopilotRuntimeGateTest#tcP02Fud002KillSwitchHidesExistingProjectionAndFailsClosed test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,GoalAutopilotRuntimeGateTest,NotificationEligibilityPolicyTest,GoalAutopilotQuotaDowngradeTest test` - passed.
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `npm run check:api-contract` - passed without OpenAPI warnings; OpenAPI hash `ae03bd46812ddd684bb70fbcb3f927b759c1e70529d1bdd68c0ada18a1aff587`.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `ae03bd46812ddd684bb70fbcb3f927b759c1e70529d1bdd68c0ada18a1aff587`.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 95.7%, backend branch 81.1% and Flutter line 89.2%.
+- `python3 -m py_compile scripts/check_p0_2_followup_b_traceability.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `python3 scripts/check_p0_2_followup_b_traceability.py` - passed after report synchronization.
+
+Result:
+- TC-P02-FUB-018 passed and now proves endpoint request validation, malformed `current_time` 422, quiet-hours decision, permission fail-closed behavior, entitlement/quota mapping, plan-item ownership/current-plan errors, recovery-required stale-plan blocking, runtime kill-switch blocking, metric write and no outbox writes.
+- XCB-003 is closed for this endpoint: backend implementation, OpenAPI source, generated Dart hash pin, API contract and Followup-B traceability are synchronized.
+- Independent review initially found recovery-required eligibility and malformed `current_time` contract gaps; both were fixed and the targeted plus broad regression commands above passed.
+
+Residual risk:
+- Full all-suite backend/Flutter regression, live notification provider, external production scheduler/send evidence, commercial release and Product Base merge gates were not run. This change closes the local endpoint boundary only.
+- Followup-B remains not release-ready and Product Base merge is not approved.
+
+Follow-up:
+- Keep TC-P02-FUB-018 in the required suite for future Followup-B notification eligibility endpoint, OpenAPI or generated-client changes.
+
+## 2026-06-09 - MVP-PRACTICE-AUDIO-REF-BOUNDARY-20260609
+
+Change request:
+- Enforce XCB-001 for Product Base Practice turns: any submitted `audio_ref` must be an authenticated-user-owned trusted media reference before Practice persists a turn, generates coach feedback or calls provider code.
+
+Requirement mapping:
+- Increment: `docs/product/increments/mvp-backend-practice-ai/`.
+- Chain: MVP-SI-008 -> MVP-BE-FR-008 -> MVP-BE-SPEC-008 -> AC-MVP-BE-008 -> MVP-BE-TR-008 -> TC-MVP-BE-047/048.
+- Architecture/process boundary: `docs/process/cross_cutting_boundary_registry.md` XCB-001 and XCB-002; `docs/architecture/api_contract.md` MVP Backend Practice/AI contract note.
+
+Files changed:
+- Backend: `AiMediaReferenceService`, `AiProviderPolicyService`, `AiGatewayService`, `PracticeService`.
+- Tests: `PracticeTurnControllerTest`, `ProductionAsrMediaRefTest`, `ProviderGatewayFailureTest`.
+- API/generated boundary: `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/openapi/dart-client-drift-manifest.json`, `lib/generated/api/.openapi-sha256`, `lib/generated/api/speakeasy_api.dart`.
+- Traceability docs: Practice requirements/spec/acceptance/test_cases/traceability, `docs/architecture/api_contract.md`, `docs/reports/test_report.md`, `docs/reports/quality_report.md`.
+
+Implementation summary:
+- Added owner-aware media inspection in `AiMediaReferenceService`, returning `media_not_found` for wrong-owner `media://audio/{id}` refs.
+- Added a forced backend-media trusted audio-ref validation path in `AiProviderPolicyService` and exposed it through `AiGatewayService.validateTrustedAudioRef`.
+- Updated `PracticeService.submitTurn` so any non-empty `audio_ref` is validated before idempotency replay, turn persistence, coach feedback or provider calls.
+- Narrowed OpenAPI client-facing audio-ref request schemas and examples to authenticated-user-owned trusted `media://audio/{uuid}` refs.
+- Added TC-MVP-BE-047 and TC-MVP-BE-048 to the Practice test case library and traceability matrix.
+- Updated the provider-unavailable Practice failure test to use a validated trusted media ref instead of the retired `audio://provider_unavailable` fixture.
+- Independent review initially found the owner-check gap; this increment now includes the owner-aware code/test closure.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=PracticeTurnControllerTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProductionAsrMediaRefTest,MediaUploadReferenceServiceTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=TrainingMediaAiPipelineTest test` - passed.
+- `flutter test test/features/training/training_backend_pipeline_test.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProviderGatewaySecurityContractTest,ProviderGatewayControllerTest,ProviderGatewayFailureTest,ProviderGatewayAuthorizationTest,UsageQuotaGateTest test` - passed after stale fixture correction.
+- `npm run check:api-contract` - passed with OpenAPI hash `7e603dd0bec9879ee2d21516e86fb84e2e652102f677506a59255544befa76f5`.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `7e603dd0bec9879ee2d21516e86fb84e2e652102f677506a59255544befa76f5`.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope full` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
+- `python3 -m py_compile scripts/check_cross_cutting_boundaries.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- TC-MVP-BE-047 passed and now proves transcript + invalid local-path `audio_ref` fails closed without persistence, feedback or provider invocation.
+- TC-MVP-BE-048 passed and now proves wrong-owner validated `media://audio/...` refs fail closed for Practice and `/ai/transcribe` before provider invocation.
+- MVP-BE-TR-008 now carries API, architecture, code and TC evidence for the Practice `audio_ref` invalid-ref and owner-boundary negative paths.
+
+Residual risk:
+- Full all-suite backend/Flutter regression, live provider, external object-storage and release-readiness tests were not run because this validation targets XCB-001/XCB-002 boundary, contract and traceability regressions.
+
+Follow-up:
+- Keep TC-MVP-BE-047 and TC-MVP-BE-048 in the required suite for future XCB-001/XCB-002 changes touching Practice turn input.
+
+## 2026-06-07 - P02-FOLLOWUP-E-DOCS-ONLY-PLANNING-RECLASSIFICATION
+
+Change request:
+- Reclassify Followup-E documentation from implementation evidence back to planning/contract evidence.
+- Scope: documents and reports only; no backend, Flutter, generated client or script implementation evidence is accepted by this report.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/`.
+- AC/TC: AC-P02-FUE-000..010 and TC-P02-FUE-000..026 remain planned.
+
+Files changed:
+- Followup-E increment documents and cross-report status documents only.
+
+Implementation summary:
+- Replaced backend/Flutter slice completion claims with planning/contract wording.
+- Preserved the requirement that Followup-E reuse existing MVP/P0.1 recording capability where practical instead of duplicating mic functionality.
+- Preserved release, paid AI external evidence and Product Base merge blockers.
+
+Validation:
+- Followup-E executable implementation validation is not claimed in this report.
+- Text and diff hygiene checks must be recorded separately for this docs-only reclassification.
+
+Result:
+- Followup-E is planning/contract evidence only.
+- No Followup-E implementation slice is locally complete in this docs-only state.
+
+Residual risk:
+- Local uncommitted Followup-E code may still exist in the working tree, but it is not accepted evidence here.
+- Any future implementation claim must be reintroduced only after intentional execution, tests, reports and independent review.
+
+Follow-up:
+- Decide whether to rollback local Followup-E code changes or restart a narrower implementation slice from this planning baseline.
+
+## 2026-06-07 - P02-FOLLOWUP-C-S007-CHECKER-HASH-SYNC-20260607
+
+Change request:
+- Repair the Followup-C S007 traceability checker regression found during A/B/C/D upstream-downstream review.
+- Replace the stale generated-artifact assertion against the historical S007 OpenAPI hash with current manifest/marker/registry consistency validation.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`.
+- Existing FR/Spec/AC/TC: P02-FUC-FR-007, P02-FUC-SPEC-007, AC-P02-FUC-007, TC-P02-FUC-021 and TC-P02-FUC-022.
+- Traceability row: P02-FUC-TR-007; this change keeps the S007 dedicated checker repeatable after later valid OpenAPI changes.
+
+Files changed:
+- Checker: `scripts/check_p0_2_followup_c_traceability.py`.
+- Reports/status: `docs/reports/implementation_report.md`, `docs/reports/test_report.md`, `docs/reports/quality_report.md` and `docs/product/development_status.md`.
+- No production backend, Flutter, OpenAPI or generated Dart API shape changed.
+
+Implementation summary:
+- Renamed the S007 hash constant to `S007_HISTORICAL_OPENAPI_SHA` for historical report-evidence checks only.
+- Added JSON parsing and SHA-256 format validation for `docs/architecture/openapi/dart-client-drift-manifest.json`.
+- The checker now verifies the current `openapi_sha256` from the manifest matches `lib/generated/api/.openapi-sha256` and is present in `lib/generated/api/speakeasy_api.dart`.
+- The nullable cleanup contract remains enforced for `ProgressForecast.eta_range`.
+
+Validation:
+- `python3 -m py_compile scripts/check_p0_2_followup_c_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_c_traceability.py` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 95.7%, backend branch 81.1% and Flutter line 90.9%.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `fa2f5c368a83abbc6e24b182046af875b25856ce3af9756a861ff66794b464eb`.
+- `npm run check:api-contract` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_b_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_d_traceability.py` - passed.
+- `python3 scripts/check_p0_2_followup_d_final_review.py` - passed with release/Product Base blockers preserved.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- TC-P02-FUC-021/022 are repeatable again for the current OpenAPI/generated Dart artifact state.
+- Followup-C S007 keeps historical nullable-cleanup evidence while accepting later valid OpenAPI hash updates.
+
+Residual risk:
+- This fixes the local checker regression only; it does not approve release readiness, Product Base merge or external production evidence.
+
+Follow-up:
+- None for the checker regression after validation and independent review gates passed.
+
+## 2026-06-07 - P02-FOLLOWUP-D-S011-FINAL-REVIEW-20260607
+
+Change request:
+- Strictly execute Followup-D S011 final Product Base/release review for P02-FUD-FR-011 / P02-FUD-SPEC-011 / AC-P02-FUD-011 / TC-P02-FUD-020..021.
+- Explicit non-goal: do not approve commercial release, paid AI external evidence, native/store/payment release evidence or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`.
+- FR/Spec/AC/TC: P02-FUD-FR-011, P02-FUD-SPEC-011, AC-P02-FUD-011, TC-P02-FUD-020 and TC-P02-FUD-021.
+- Traceability row: P02-FUD-TR-011; gap closed locally for S011 final review: P02-FUD-GAP-011.
+
+Files changed:
+- S011 checker: `scripts/check_p0_2_followup_d_final_review.py`.
+- S010 checker compatibility update: `scripts/check_p0_2_followup_d_traceability.py`.
+- Release evidence docs: `docs/release/release_checklist.md` and `docs/release/rollback_plan.md`.
+- Followup-D evidence chain: `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md` and `traceability.md`.
+- Reports and status: `docs/reports/test_report.md`, `docs/reports/implementation_report.md`, `docs/reports/quality_report.md` and `docs/product/development_status.md`.
+- No production backend, Flutter or API shape changed in S011.
+
+Implementation summary:
+- Added a deterministic S011 final-review checker that validates TC-P02-FUD-020/021 rows, P02-FUD-TR-011 closure terms, report IDs, release checklist blockers, rollback final-review command coverage and forbidden release/Product Base claims.
+- Updated Followup-D docs so S011 final report sync, Product Base/release/paid AI state separation, strict release expected-blocker preservation and dual independent review are recorded as local evidence.
+- Updated release checklist so local S001-S011 final review is visible while Product Base merge approval, commercial external evidence, paid AI external evidence and strict release readiness remain blocked.
+- Preserved release safety: strict `scripts/check_release_readiness.sh` still fails on missing native social login release evidence, so local S011 final review cannot be mistaken for commercial release approval.
+
+Validation:
+- `python3 -m py_compile scripts/check_p0_2_followup_d_final_review.py scripts/check_p0_2_followup_d_traceability.py` - passed.
+- `npm run check:api-contract` - passed.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `fa2f5c368a83abbc6e24b182046af875b25856ce3af9756a861ff66794b464eb`.
+- `bash -n scripts/check_release_readiness.sh` - passed.
+- `scripts/check_release_readiness.sh --env-only` with fixture production/evidence variables - passed.
+- Strict `scripts/check_release_readiness.sh` with the same fixture variables - strict release readiness failed as expected on iOS WeChat placeholder URL scheme and missing Sign in with Apple entitlement.
+- `python3 scripts/check_p0_2_followup_d_traceability.py` - passed after report synchronization.
+- `python3 scripts/check_p0_2_followup_d_final_review.py` - passed after report synchronization.
+- `python3 scripts/project_agent_runner.py validate` - passed after report synchronization.
+- `git diff --check` - passed after report synchronization.
+
+Result:
+- TC-P02-FUD-020/021 passed locally for S011 final Product Base/release review execution with blockers preserved.
+- P02-FUD-GAP-011 is closed locally for final review evidence.
+- Followup-D is not release-ready; S011 does not approve paid AI external evidence, commercial release, native/store/payment evidence or Product Base merge.
+
+Residual risk:
+- Strict release readiness remains blocked until native social login evidence, external release evidence and Product Manager release governance are closed.
+- Product Base merge approval remains pending and must be handled by an explicit PM/release governance decision outside S011.
+
+Follow-up:
+- Continue with external/native/store/payment/paid AI evidence closure or Product Base merge governance only through a new owning request/gate.
+
+## 2026-06-07 - P02-FOLLOWUP-D-S010-DRIFT-GATES-20260607
+
+Change request:
+- Strictly execute Followup-D S010 contract, traceability and release drift gates for P02-FUD-FR-010 / P02-FUD-SPEC-010 / AC-P02-FUD-010 / TC-P02-FUD-018..019.
+- Explicit S010 non-goal at S010 close: do not implement the then-open S011 final Product Base/release approval, close paid AI external evidence, close native/store/payment release evidence or approve Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`.
+- FR/Spec/AC/TC: P02-FUD-FR-010, P02-FUD-SPEC-010, AC-P02-FUD-010, TC-P02-FUD-018 and TC-P02-FUD-019.
+- Traceability row: P02-FUD-TR-010; gap closed locally for S010 drift gates: P02-FUD-GAP-010.
+
+Files changed:
+- S010 checker: `scripts/check_p0_2_followup_d_traceability.py`.
+- Release evidence docs: `docs/release/release_checklist.md` and `docs/release/rollback_plan.md`.
+- Followup-D evidence chain: `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md` and `traceability.md`.
+- Reports and status: `docs/reports/test_report.md`, `docs/reports/implementation_report.md`, `docs/reports/quality_report.md` and `docs/product/development_status.md`.
+- No production backend, Flutter or API shape changed in S010.
+
+Implementation summary:
+- Added a deterministic S010 checker that validates required Followup-D files, TC-P02-FUD-018/019 rows, traceability closure terms, report IDs, release checklist/rollback terms, OpenAPI/generated Dart hash representation and forbidden release/completion claims.
+- Updated release checklist and rollback plan so S001-S010 local evidence is visible while S011, external/native/store/payment evidence and strict release readiness remain blocked.
+- Updated Followup-D requirement/spec/AC/TC/traceability documents so P02-FUD-FR-010, P02-FUD-SPEC-010, AC-P02-FUD-010 and P02-FUD-TR-010 point to the S010 checker, API drift gates and release readiness fixture evidence.
+- Preserved release safety: strict `scripts/check_release_readiness.sh` still fails on missing native social login release evidence, so local S010 drift closure cannot be mistaken for commercial release approval.
+
+Validation:
+- `python3 -m py_compile scripts/check_p0_2_followup_d_traceability.py` - passed.
+- `npm run check:api-contract` - passed.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `fa2f5c368a83abbc6e24b182046af875b25856ce3af9756a861ff66794b464eb`.
+- `bash -n scripts/check_release_readiness.sh` - passed.
+- `scripts/check_release_readiness.sh --env-only` with fixture production/evidence variables - passed.
+- Strict `scripts/check_release_readiness.sh` with the same fixture variables - strict release readiness failed as expected on iOS WeChat placeholder URL scheme and missing Sign in with Apple entitlement.
+- `python3 scripts/check_p0_2_followup_d_traceability.py` - passed after report synchronization.
+- `python3 scripts/project_agent_runner.py validate` - passed after report synchronization.
+- `git diff --check` - passed after report synchronization.
+
+Result:
+- TC-P02-FUD-018/019 passed locally for S010 contract, traceability and release drift gates.
+- P02-FUD-GAP-010 is closed locally for drift gates.
+- Followup-D is not release-ready; S010 did not approve the then-open S011 final review, paid AI external evidence, commercial release, native/store/payment evidence or Product Base merge.
+
+Residual risk:
+- At S010 close, S011 final Product Base/release review remained open; current S011 evidence is recorded above.
+- Strict release readiness remains blocked until native social login evidence, external release evidence and Product Manager release governance are closed.
+
+Follow-up:
+- Next implementation slice is P02-FUD-S011 final Product Base/release review, if explicitly requested.
+
+## 2026-06-07 - P02-FOLLOWUP-D-S009-TELEMETRY-20260607
+
+Change request:
+- Strictly execute Followup-D S009 telemetry health/error/funnel metrics for P02-FUD-FR-009 / P02-FUD-SPEC-009 / AC-P02-FUD-009 / TC-P02-FUD-016..017.
+- Explicit S009 non-goal at S009 close: do not implement the then-open S010/S011 drift/release gates, final Product Base/release approval, paid AI external evidence or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`.
+- FR/Spec/AC/TC: P02-FUD-FR-009, P02-FUD-SPEC-009, AC-P02-FUD-009, TC-P02-FUD-016 and TC-P02-FUD-017.
+- Traceability row: P02-FUD-TR-009; gap closed locally for S009 telemetry: P02-FUD-GAP-009.
+
+Files changed:
+- Backend telemetry persistence: `GoalAutopilotMetricEvent`, `GoalAutopilotMetricEventRepository`, `GoalAutopilotTelemetryService` and migration `V202606070001__p0_2_followup_d_goal_autopilot_telemetry.sql`.
+- Backend wiring: `GoalAutopilotService`, `GoalAutopilotRuntimeGate`, `AccountDeletionService` and `BackendIntegrationTestSupport`.
+- Tests and checks: `GoalAutopilotTelemetryTest`, `GoalAutopilotDataExportRetentionTest` and `scripts/check_p0_2_followup_d_telemetry_redaction.py`.
+- Domain and evidence docs: `docs/domain/domain_schema.md`, Followup-D `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`, plus `docs/reports/test_report.md`, `docs/reports/implementation_report.md`, `docs/reports/quality_report.md` and `docs/product/development_status.md`.
+
+Implementation summary:
+- Added service-owned `goal_autopilot_metric_events` persistence with redacted user hash, event type, status, stable reason code, source path and safe refs only.
+- Wired S009 metric recording into goal intake, diagnostic assessment, plan generation, control update, next action, action completion, checkpoint, projection read, quota errors, provider fallback and runtime kill-switch/feature-disabled paths.
+- Kept telemetry non-blocking: telemetry write failure is swallowed after a redacted fallback audit attempt, so user-facing P0.2 paths continue.
+- Extended data governance so export metadata includes `goal_autopilot_metric_events` as a redacted family and account deletion removes metric rows by redacted user hash.
+- Added a dedicated redaction/source coverage checker for migration/entity/service/test tokens.
+
+Validation:
+- `python3 -m py_compile scripts/check_p0_2_followup_d_telemetry_redaction.py` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotTelemetryTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotDataExportRetentionTest test` - passed.
+- `python3 scripts/check_p0_2_followup_d_telemetry_redaction.py` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotTelemetryTest,GoalAutopilotDataExportRetentionTest,GoalAutopilotCostTelemetryTest,GoalAutopilotQuotaDowngradeTest,GoalAutopilotRuntimeGateTest test` - passed.
+- Backend JaCoCo goal-autopilot suite including S009 tests and prior S001-S008 regressions - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 95.7%, backend branch 81.1% and Flutter line 90.9%.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest test` - passed.
+
+Result:
+- TC-P02-FUD-016/017 passed locally for redacted telemetry health/error/funnel metrics, blocked reason codes, non-blocking fallback audit and redaction/source coverage.
+- P02-FUD-GAP-009 is closed locally for telemetry.
+- Followup-D remains incomplete; S009 does not approve release drift gates, paid AI external evidence, commercial release or Product Base merge.
+
+Residual risk:
+- At S009 close, S010/S011 contract/release drift gates and final Product Base/release review remained open; current S010 evidence is recorded above.
+- S009 metrics are local deterministic backend evidence only; live external provider/payment/store/native evidence remains outside this slice.
+
+Follow-up:
+- Next implementation slice is P02-FUD-S010 contract, traceability and release drift gates.
+
+## 2026-06-07 - P02-FOLLOWUP-D-S008-CONSENT-PRIVACY-UX-20260607
+
+Change request:
+- Strictly execute Followup-D S008 consent/privacy UX for P02-FUD-FR-008 / P02-FUD-SPEC-008 / AC-P02-FUD-008 / TC-P02-FUD-015.
+- Explicit non-goal: do not implement S009-S011 telemetry, drift/release gates, final Product Base/release approval, paid AI external evidence or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`.
+- FR/Spec/AC/TC: P02-FUD-FR-008, P02-FUD-SPEC-008, AC-P02-FUD-008 and TC-P02-FUD-015.
+- Traceability row: P02-FUD-TR-008; gap closed locally for S008 consent/privacy UX: P02-FUD-GAP-008.
+
+Files changed:
+- Flutter UI: `lib/features/goal_autopilot/goal_autopilot_panel.dart`.
+- Flutter tests: `test/features/goal_autopilot/goal_autopilot_consent_privacy_widget_test.dart`.
+- Copy contract: `scripts/check_commercial_copy_contract.py`.
+- UX and evidence docs: `docs/ux/screen_spec.md`, Followup-D `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`, plus `docs/reports/test_report.md`, `docs/reports/implementation_report.md`, `docs/reports/quality_report.md` and `docs/product/development_status.md`.
+
+Implementation summary:
+- Added a Goal Autopilot privacy/consent surface that renders existing backend facts: notification consent, reminder eligibility, projection state and downgrade reason.
+- Added release-safe copy for P0.2 data-use, export/delete/retention boundaries and sensitive payload omission; the copy does not claim guaranteed achievement, official-score equivalence, unlimited AI/checkpoints, release approval or Product Base merge.
+- Preserved existing action ergonomics by placing the privacy section after primary controls, then regression-tested the full `test/features/goal_autopilot` suite.
+- Extended `check_commercial_copy_contract.py` so S008 privacy copy and prohibited promise checks are automated.
+- Updated `docs/ux/screen_spec.md` with the S008 screen contract and source-of-truth boundary.
+
+Validation:
+- `flutter test test/features/goal_autopilot/goal_autopilot_consent_privacy_widget_test.dart` - passed.
+- `flutter test test/features/goal_autopilot` - passed.
+- `flutter test --coverage test/features/goal_autopilot` - passed.
+- `flutter analyze lib/features/goal_autopilot/goal_autopilot_panel.dart test/features/goal_autopilot/goal_autopilot_consent_privacy_widget_test.dart` - passed.
+- `python3 scripts/check_commercial_copy_contract.py` - passed; release blockers for missing external store/privacy/support evidence remain reported by the script.
+- `python3 scripts/check_p0_2_goal_autopilot_frontend_source_of_truth.py` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.0%, backend branch 81.2% and Flutter line 90.9%.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check -- <S008 changed files and reports>` - passed.
+
+Result:
+- TC-P02-FUD-015 passed locally for privacy copy visibility, backend consent/reminder/projection state rendering, notification consent withdrawal blocking reminder prompts and stale privacy state cleanup.
+- P02-FUD-GAP-008 is closed locally for consent/privacy UX.
+- Followup-D remains incomplete; S008 does not approve telemetry readiness, release drift gates, paid AI external evidence, commercial release or Product Base merge.
+
+Residual risk:
+- S009-S011 telemetry, drift/release gates and final Product Base/release review remain open.
+- External store/privacy/support evidence refs are still missing and remain release blockers.
+
+Follow-up:
+- Next implementation slice is P02-FUD-S009 telemetry health/error/funnel metrics.
+
+## 2026-06-07 - P02-FOLLOWUP-D-S007-DATA-GOVERNANCE-20260607
+
+Change request:
+- Strictly execute Followup-D S007 data export, retention and deletion backend evidence for P02-FUD-FR-007 / P02-FUD-SPEC-007 / AC-P02-FUD-007 / TC-P02-FUD-013..014.
+- Explicit non-goal: do not implement S008-S011 consent UX, telemetry, release drift, release approval, paid AI external evidence or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`.
+- FR/Spec/AC/TC: P02-FUD-FR-007, P02-FUD-SPEC-007, AC-P02-FUD-007, TC-P02-FUD-013 and TC-P02-FUD-014.
+- Traceability row: P02-FUD-TR-007; gap closed locally for S007 data governance: P02-FUD-GAP-007.
+
+Files changed:
+- Backend data governance: `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`, `backend/src/main/java/com/speakeasy/ops/AccountDeletionService.java`, `backend/src/main/java/com/speakeasy/ai/AiCostMetricsService.java`.
+- Repository/query support: `GoalProfileRepository`, `GoalDiagnosticAssessmentRepository`, `GoalBackplanRepository`, `GoalDailyPlanRepository`, `GoalPlanItemRepository`, `GoalOutcomeCheckpointRepository`, `GoalProgressForecastRepository`, `GoalRecoveryPlanDecisionRepository`, `UsageReservationRepository`, `AiProviderInvocationMetricRepository`.
+- Entity/test support: `backend/src/main/java/com/speakeasy/goal/GoalMasteryInitialState.java`, `backend/src/test/java/com/speakeasy/goal/GoalAutopilotDataExportRetentionTest.java`, `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`.
+- Evidence docs: Followup-D `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`, plus `docs/reports/test_report.md`, `docs/reports/implementation_report.md`, `docs/reports/quality_report.md` and `docs/product/development_status.md`.
+
+Implementation summary:
+- Added `GoalAutopilotService.exportGoalAutopilotDataGovernance(UUID userId)` returning redacted export metadata for P0.2 data families, retention rules, deletion tables, retained audit tables, omitted sensitive fields and a redacted user hash.
+- Added repository lookups needed to enumerate user-owned goal/autopilot/progress/usage/cost data families without exporting raw transcript, audio ref, notification payload, provider payload or raw idempotency keys.
+- Extended account deletion evidence by explicitly cleaning goal-autopilot control/idempotency rows and recording `p0_2_goal_autopilot_data=deleted_or_anonymized` in redacted audit details.
+- Added S007 integration tests covering redacted export/retention behavior and account deletion cleanup across P0.2 tables.
+- Stabilized `GoalAutopilotControllerTest#tcP02Fuc002CheckpointTaskLibrary` to use the Spring `Clock` for its overdue fixture, matching business date calculations.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotDataExportRetentionTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotDataExportRetentionTest,AccountDeletionLearningDataTest,GoalAutopilotUsageReservationTest,UsageReservationLifecycleTest,GoalAutopilotCostTelemetryTest,GoalAutopilotQuotaDowngradeTest,GoalAutopilotControllerTest,GoalAutopilotReplayFixtureTest test` - passed.
+- Backend JaCoCo goal-autopilot suite with S007 tests and prior S001-S006 regressions - passed.
+- `npm run check:api-contract` - passed with OpenAPI hash `fa2f5c368a83abbc6e24b182046af875b25856ce3af9756a861ff66794b464eb`.
+- `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- `flutter analyze` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_frontend_source_of_truth.py` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.0%, backend branch 81.2% and Flutter line 90.5%.
+
+Result:
+- TC-P02-FUD-013 and TC-P02-FUD-014 passed locally for redacted export, retention rule coverage, sensitive payload omission/hash boundary, account deletion cleanup and redacted audit proof.
+- P02-FUD-GAP-007 is closed locally for S007 data governance backend evidence.
+- Followup-D remains incomplete; S007 does not approve release readiness, paid AI external evidence, consent UX, telemetry, commercial release or Product Base merge.
+
+Residual risk:
+- S008-S011 consent/privacy UX, telemetry, contract/release drift and final Product Base/release review remain open.
+- S007 is local deterministic/backend evidence only. It does not prove live external paid AI or commercial release evidence.
+
+Follow-up:
+- Next implementation slice is P02-FUD-S008 consent and privacy UX alignment.
+
+## 2026-06-06 - P02-FOLLOWUP-D-S006-QUOTA-DOWNGRADE-20260606
+
+Change request:
+- Strictly execute Followup-D S006 quota exhausted downgrade for P02-FUD-FR-006 / P02-FUD-SPEC-006 / AC-P02-FUD-006 / TC-P02-FUD-011..012.
+- Explicit non-goal: do not implement S007-S011 data governance, consent UX, telemetry, release drift, release approval, paid AI external evidence or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`.
+- FR/Spec/AC/TC: P02-FUD-FR-006, P02-FUD-SPEC-006, AC-P02-FUD-006, TC-P02-FUD-011 and TC-P02-FUD-012.
+- Traceability row: P02-FUD-TR-006; gap closed locally for S006 quota downgrade: P02-FUD-GAP-006.
+
+Files changed:
+- Backend policy/service: `backend/src/main/java/com/speakeasy/goal/GoalAutopilotEntitlementPolicy.java`, `backend/src/main/java/com/speakeasy/goal/CheckpointCadencePolicy.java`, `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`.
+- Backend tests: `backend/src/test/java/com/speakeasy/goal/GoalAutopilotQuotaDowngradeTest.java`, `backend/src/test/java/com/speakeasy/goal/GoalAutopilotEntitlementPolicyTest.java`, `backend/src/test/java/com/speakeasy/goal/CheckpointCadencePolicyTest.java`, `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`, `backend/src/test/java/com/speakeasy/goal/GoalAutopilotReplayFixtureTest.java`.
+- Flutter UI/tests: `lib/features/goal_autopilot/goal_autopilot_panel.dart`, `test/features/goal_autopilot/goal_autopilot_quota_downgrade_widget_test.dart`.
+- API/generated contract: `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/openapi/dart-client-drift-manifest.json`, `lib/generated/api/.openapi-sha256`, `lib/generated/api/speakeasy_api.dart`.
+- Evidence docs: Followup-D `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`, plus `docs/reports/test_report.md`, `docs/reports/implementation_report.md`, `docs/reports/quality_report.md` and `docs/product/development_status.md`.
+
+Implementation summary:
+- Split quota and cost limits into stable backend reasons `quota_exhausted` and `cost_budget_limited`, and normalized blocked entitlement surfaces to `entitlement_required` while preserving raw source entitlement reason in error details or `entitlement_depth`.
+- Added full-depth downgrade handling in forecast, projection, plan generation, checkpoint task and checkpoint submission paths so quota/cost/entitlement blocks remove precise ETA, full checkpoint and high-depth/premium controls.
+- Added usage-ledger exhaustion fallback for projection/forecast reads after a full-depth quota has already been consumed, without creating new plan/checkpoint writes.
+- Updated Flutter panel behavior so backend full-depth downgrade projection hides stale action, plan generation, plan metrics and checkpoint controls instead of replaying old summary state.
+- Updated OpenAPI stable reason enums and generated Dart hash to `fa2f5c368a83abbc6e24b182046af875b25856ce3af9756a861ff66794b464eb`.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotQuotaDowngradeTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotQuotaDowngradeTest,GoalAutopilotEntitlementPolicyTest,CheckpointCadencePolicyTest,GoalAutopilotControllerTest,GoalAutopilotUsageReservationTest,GoalAutopilotCostTelemetryTest test` - passed after fixing time-dependent quiet-hours test fixtures.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotReplayFixtureTest test` - passed after fixing a time-dependent replay fixture.
+- Backend JaCoCo goal-autopilot suite with S006 tests and prior S001-S005 regressions - passed.
+- `flutter test test/features/goal_autopilot/goal_autopilot_quota_downgrade_widget_test.dart` - passed.
+- `flutter test test/features/goal_autopilot` - passed.
+- `flutter analyze` - passed.
+- `npm run check:api-contract` - passed with OpenAPI hash `fa2f5c368a83abbc6e24b182046af875b25856ce3af9756a861ff66794b464eb`.
+- `npm run check:dart-client-drift` - passed.
+- `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 95.9%, backend branch 81.2% and Flutter line 90.5%.
+- `python3 scripts/check_p0_2_goal_autopilot_frontend_source_of_truth.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Result:
+- TC-P02-FUD-011 and TC-P02-FUD-012 passed locally for quota exhausted, entitlement blocked and cost budget limited downgrade propagation.
+- P02-FUD-GAP-006 is closed locally for stable backend downgrade reason and stale full-depth cache cleanup.
+- Followup-D remains incomplete; S006 does not approve release readiness, paid AI external evidence, data governance, telemetry, commercial release or Product Base merge.
+
+Residual risk:
+- S007-S011 data governance, consent/privacy UX, telemetry, contract/release drift and final Product Base/release review remain open.
+- S006 uses deterministic local quota/entitlement/cost evidence. It does not prove live paid AI provider behavior or external commercial launch evidence.
+
+Follow-up:
+- Next implementation slice is P02-FUD-S007 export, retention and deletion backend evidence.
+
+## 2026-06-06 - P02-FOLLOWUP-D-S005-COST-TELEMETRY-AI-FALLBACK-20260606
+
+Change request:
+- Strictly execute Followup-D S005 cost telemetry and AI fallback for P02-FUD-FR-005 / P02-FUD-SPEC-005 / AC-P02-FUD-005 / TC-P02-FUD-009..010.
+- Explicit non-goal: do not implement S006-S011 quota downgrade surfaces, data governance, consent UX, telemetry, release drift, release approval, paid AI external evidence or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`.
+- FR/Spec/AC/TC: P02-FUD-FR-005, P02-FUD-SPEC-005, AC-P02-FUD-005, TC-P02-FUD-009 and TC-P02-FUD-010.
+- Traceability row: P02-FUD-TR-005; gap closed locally for S005 cost telemetry/AI fallback: P02-FUD-GAP-005.
+
+Files changed:
+- Backend cost telemetry/API: `backend/src/main/java/com/speakeasy/ai/AiCostMetricsService.java`, `backend/src/main/java/com/speakeasy/api/AiOpsController.java`.
+- Goal autopilot wiring and AI guards: `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`, `backend/src/main/java/com/speakeasy/goal/ForecastExplanationCandidateValidator.java`, `backend/src/main/java/com/speakeasy/goal/MasteryTransitionExplanationValidator.java`.
+- Backend tests: `backend/src/test/java/com/speakeasy/goal/GoalAutopilotCostTelemetryTest.java`, `backend/src/test/java/com/speakeasy/goal/GoalAutopilotAiGuardrailTest.java`, `backend/src/test/java/com/speakeasy/AiCostDashboardTest.java`.
+- AI/runtime contract: `docs/ai_runtime/ai_eval_cases.md`, `docs/ai_runtime/llm_output_schema.md`, `docs/ai_runtime/prompt_contract.md`, `docs/ai_runtime/fallback_strategy.md`.
+- API/generated contract: `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/openapi/dart-client-drift-manifest.json`, `lib/generated/api/.openapi-sha256`, `lib/generated/api/speakeasy_api.dart`.
+- Evidence docs: Followup-D `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`, plus `docs/reports/test_report.md`, `docs/reports/implementation_report.md`, `docs/reports/quality_report.md` and `docs/product/development_status.md`.
+
+Implementation summary:
+- Added `AiCostMetricsService.recordDeterministicNoProvider` and made invocation/rejection metric writes use `REQUIRES_NEW`, so policy rejection and quota rejection evidence survives the rejected business transaction.
+- Added fallback reason to the AI cost dashboard aggregation and `AiCostMetric` API response; OpenAPI and generated Dart hash are synced to `3196a97f38da3d2f01044cbeab242fa3a78c449ff4bb92fa4ccce549fc96686c`.
+- Wired goal-autopilot plan/checkpoint paths to record deterministic no-provider metrics on full-depth deterministic success and rejected metrics on entitlement/provider-candidate/quota/no-charge paths, without raw transcript, raw user id or entitlement-fact creation.
+- Extended forecast and mastery candidate validators plus AI runtime docs to reject entitlement/quota/final mastery/release/Product Base persistent fields.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotCostTelemetryTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotAiGuardrailTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ForecastExplanationSchemaTest,MasteryTransitionPolicyTest,GoalAutopilotAiGuardrailTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiCostDashboardTest,GoalAutopilotCostTelemetryTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiCostDashboardTest,GoalAutopilotCostTelemetryTest,GoalAutopilotAiGuardrailTest test` - passed after adding the dashboard `fallback_reason` API assertion.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotCostTelemetryTest,GoalAutopilotAiGuardrailTest,GoalAutopilotUsageReservationTest,UsageQuotaGateTest,UsageReservationLifecycleTest,GoalAutopilotEntitlementPolicyTest,CheckpointCadencePolicyTest,GoalAutopilotControllerTest test` - passed.
+- Backend JaCoCo goal-autopilot suite with S005 tests and prior S001-S004 regressions - passed.
+- `npm run check:api-contract` - passed with 87 paths, 93 operations, 42 request examples, 88 success examples, 113 error examples and OpenAPI hash `3196a97f38da3d2f01044cbeab242fa3a78c449ff4bb92fa4ccce549fc96686c`.
+- `flutter analyze` - passed.
+- `flutter test test/services/api_client_contract_test.dart` - passed.
+- `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.1%, backend branch 81.3% and Flutter line 90.5%.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- TC-P02-FUD-009 and TC-P02-FUD-010 passed locally for sanitized cost metrics, deterministic no-provider evidence, policy rejection evidence, no entitlement fact creation and AI forbidden persistent-field rejection.
+- P02-FUD-GAP-005 is closed locally for S005 cost telemetry/AI fallback.
+- Followup-D remains incomplete; S005 does not approve release readiness, paid AI external evidence, quota downgrade surfaces, data governance or Product Base merge.
+
+Residual risk:
+- S006-S011 quota downgrade, data governance, consent UX, telemetry, drift gates and final release/Product Base review remain open.
+- S005 records deterministic/no-provider and policy-rejection evidence only. It does not prove live paid AI provider behavior or close external AI evidence gates.
+
+Follow-up:
+- Next implementation slice is P02-FUD-S006 quota exhausted downgrade.
+
+## 2026-06-06 - P02-FOLLOWUP-D-S004-USAGE-RESERVATION-QUOTA-20260606
+
+Change request:
+- Strictly execute Followup-D S004 usage reservation and quota for P02-FUD-FR-004 / P02-FUD-SPEC-004 / AC-P02-FUD-004 / TC-P02-FUD-007..008.
+- Explicit non-goal: do not implement S005-S011 cost telemetry, AI fallback, quota downgrade surfaces, data governance, consent UX, telemetry, release drift, release approval, paid AI external evidence or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`.
+- FR/Spec/AC/TC: P02-FUD-FR-004, P02-FUD-SPEC-004, AC-P02-FUD-004, TC-P02-FUD-007 and TC-P02-FUD-008.
+- Traceability row: P02-FUD-TR-004; gap closed locally for S004 usage reservation/quota: P02-FUD-GAP-004.
+
+Files changed:
+- Backend usage lifecycle and API DTOs: `backend/src/main/java/com/speakeasy/usage/UsageReservation.java`, `backend/src/main/java/com/speakeasy/usage/UsageService.java`, `backend/src/main/java/com/speakeasy/api/CommercialFoundationController.java`, `backend/src/main/resources/db/migration/V202606060001__p0_2_followup_d_usage_reservation_trace.sql`.
+- Goal autopilot wiring: `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`.
+- Backend tests: `backend/src/test/java/com/speakeasy/goal/GoalAutopilotUsageReservationTest.java`, `backend/src/test/java/com/speakeasy/UsageReservationLifecycleTest.java`.
+- API/generated contract: `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/openapi/dart-client-drift-manifest.json`, `lib/generated/api/.openapi-sha256`, `lib/generated/api/speakeasy_api.dart`.
+- Evidence docs: Followup-D `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`, plus `docs/reports/test_report.md`, `docs/reports/implementation_report.md`, `docs/reports/quality_report.md` and `docs/product/development_status.md`.
+
+Implementation summary:
+- Added usage reservation source tracing and provider event refs through migration, entity fields, API DTOs and OpenAPI `UsageReservation` contract. Raw idempotency keys are not returned; API responses expose a redacted `idempotency_key_ref`.
+- Updated `UsageService.reserve` idempotency matching so same key + different usage family, amount or source ref returns typed `IDEMPOTENCY_CONFLICT`; quota exhaustion still returns typed `USAGE_LIMIT_EXCEEDED` without reserving.
+- Wired full-depth goal autopilot plan generation to reserve `ai` usage before deterministic plan writes, commit exactly once on success, avoid duplicate commit on idempotent retry and conflict before writes when the same request id carries a different payload.
+- Wired full-depth checkpoint submission to reserve `scoring` usage, commit accepted recorded checkpoints and release failed/skipped/low-confidence checkpoint paths. Limited/free depth does not create reservations.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotUsageReservationTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=UsageQuotaGateTest,UsageReservationLifecycleTest test` - passed.
+- `npm run check:api-contract` - passed with OpenAPI hash `38dd8133c0551dc019eaf56fe8ccde3016db5f3180f9f578e85714ba5aae61b2`.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,GoalAutopilotRuntimeGateTest,GoalAutopilotEntitlementPolicyTest,GoalAutopilotUsageReservationTest,UsageQuotaGateTest,UsageReservationLifecycleTest,GoalProgressProjectionDataGovernanceTest,GoalProgressProjectionServiceTest,ProgressForecastPolicyTest,CheckpointCadencePolicyTest,GoalAutopilotControlPerformanceTest,NotificationOutboxReplayTest,MissedDayRecoveryPlannerTest,GoalAutopilotReplayFixtureTest,NotificationEligibilityPolicyTest,MemoryCurveReplayTest,MasteryTransitionPolicyTest,GoalProgressProjectionPerformanceTest,ForecastExplanationSchemaTest,CheckpointReplayAuditTest,GoalAutopilotRecoveryControllerTest,MemoryCurvePolicyTest,NotificationOutboxServiceTest org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.0%, backend branch 81.1% and Flutter line 90.5%.
+- `flutter analyze` - passed.
+- `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- TC-P02-FUD-007 and TC-P02-FUD-008 passed locally for usage reserve/commit/release, quota blocked before plan writes, idempotent retry and idempotency conflict behavior.
+- P02-FUD-GAP-004 is closed locally for S004 usage reservation/quota/idempotency.
+- Followup-D remains incomplete; S004 does not approve release readiness, paid AI external evidence, cost telemetry, quota downgrade surfaces or Product Base merge.
+
+Residual risk:
+- S005-S011 cost telemetry, AI fallback, quota downgrade, data governance, consent UX, telemetry, drift gates and final release/Product Base review remain open.
+- Current S004 evidence is deterministic backend evidence. Live provider unavailable/cost evidence is still S005 scope; S004 records no-charge behavior through validation-before-reservation, quota-blocked-before-write, limited-depth no-reservation and failed checkpoint release paths.
+
+Follow-up:
+- Next implementation slice is P02-FUD-S005 cost telemetry and AI fallback.
+
+## 2026-06-06 - P02-FOLLOWUP-D-S003-ENTITLEMENT-DEPTH-20260606
+
+Change request:
+- Strictly execute Followup-D S003 entitlement/free-paid depth policy for P02-FUD-FR-003 / P02-FUD-SPEC-003 / AC-P02-FUD-003 / TC-P02-FUD-005..006.
+- Explicit non-goal: do not implement S004-S011 usage/quota, cost telemetry, quota downgrade, data governance, consent, telemetry, release drift, release approval, paid AI external evidence or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`.
+- FR/Spec/AC/TC: P02-FUD-FR-003, P02-FUD-SPEC-003, AC-P02-FUD-003, TC-P02-FUD-005 and TC-P02-FUD-006.
+- Traceability row: P02-FUD-TR-003; gap closed locally for S003 entitlement depth: P02-FUD-GAP-003.
+
+Files changed:
+- Backend entitlement depth policy and wiring: `backend/src/main/java/com/speakeasy/goal/GoalAutopilotEntitlementPolicy.java`, `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`, `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`.
+- Backend tests: `backend/src/test/java/com/speakeasy/goal/GoalAutopilotEntitlementPolicyTest.java`, `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`.
+- API/generated contract: `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/openapi/dart-client-drift-manifest.json`, `lib/generated/api/.openapi-sha256`, `lib/generated/api/speakeasy_api.dart`.
+- Flutter display: `lib/features/goal_autopilot/goal_autopilot_models.dart`, `lib/features/goal_autopilot/goal_autopilot_panel.dart`, `test/features/goal_autopilot/goal_autopilot_adapter_test.dart`.
+- Evidence docs: Followup-D `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`, plus `docs/reports/test_report.md`, `docs/reports/implementation_report.md`, `docs/reports/quality_report.md` and `docs/product/development_status.md`.
+
+Implementation summary:
+- Added `GoalAutopilotEntitlementPolicy` with explicit full/limited/blocked depth decisions for active paid, free/default, expired, grace, revoked/refunded/unknown, support override and quota/cost-limited states; blocked status takes precedence over expired timestamps for revoked/refunded/unknown snapshots.
+- Wired `GoalAutopilotService` to read server-side commerce entitlement snapshots, expose `entitlement_depth` in summary/plan/forecast/checkpoint responses, block revoked/refunded/unknown full plan/checkpoint paths, suppress precise forecast ETA for blocked entitlement depth and downgrade free checkpoint depth.
+- Updated OpenAPI `GoalEntitlementDepth` response contract and generated Dart hash pins to `9269bc0c15413f57377629ee3c142fb41d4180518c5f93e81cbfadfcc59a7bd3`.
+- Updated Flutter model/panel to render backend-provided entitlement limitation and disable generate-plan UI only when the backend depth state is `blocked`, without local entitlement inference.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotEntitlementPolicyTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fud003EntitlementDepthIsServerOwned test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotEntitlementPolicyTest,CheckpointCadencePolicyTest,GoalAutopilotControllerTest test` - passed.
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter test test/features/goal_autopilot` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_frontend_source_of_truth.py` - passed.
+- `npm run check:api-contract` - passed with generated Dart hash `9269bc0c15413f57377629ee3c142fb41d4180518c5f93e81cbfadfcc59a7bd3`.
+- `flutter analyze` - passed.
+- `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- Backend JaCoCo goal-autopilot suite with `GoalAutopilotEntitlementPolicyTest` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.1%, backend branch 81.0% and Flutter line 90.5%.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- TC-P02-FUD-005 and TC-P02-FUD-006 passed locally for entitlement/free-paid depth behavior.
+- P02-FUD-GAP-003 is closed locally for server-owned depth policy, API contract and Flutter display.
+- Followup-D remains incomplete; S003 does not approve release readiness, paid AI external evidence or Product Base merge.
+
+Residual risk:
+- S004-S011 usage/quota, cost telemetry, quota downgrade, data governance, consent UX, telemetry, drift gates and final release/Product Base review remain open.
+- S003 uses existing local quota fields only to decide full-depth eligibility; dedicated usage reservation/quota lifecycle is still S004/S006 scope.
+
+Follow-up:
+- Next implementation slice is P02-FUD-S004 usage reservation and quota.
+
+## 2026-06-06 - P02-FOLLOWUP-D-S002-FLUTTER-RUNTIME-ROLLBACK-20260606
+
+Change request:
+- Strictly execute Followup-D S002 Flutter runtime rollback for P02-FUD-FR-002 / P02-FUD-SPEC-002 / AC-P02-FUD-002 / TC-P02-FUD-003..004.
+- Explicit non-goal: do not implement S003-S011 entitlement, quota, usage, cost, data governance, consent, telemetry, release drift, release approval, paid AI external evidence or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`.
+- FR/Spec/AC/TC: P02-FUD-FR-002, P02-FUD-SPEC-002, AC-P02-FUD-002, TC-P02-FUD-003 and TC-P02-FUD-004.
+- Traceability row: P02-FUD-TR-002; gap closed locally for S002 Flutter rollback: P02-FUD-GAP-002.
+
+Files changed:
+- Flutter runtime gate: `lib/features/goal_autopilot/goal_autopilot_adapter.dart`, `lib/features/goal_autopilot/goal_autopilot_models.dart`, `lib/features/goal_autopilot/goal_autopilot_panel.dart`, `lib/pages/home_page.dart`.
+- Tests and source-of-truth guard: `test/features/goal_autopilot/goal_autopilot_runtime_gate_widget_test.dart`, `scripts/check_p0_2_goal_autopilot_frontend_source_of_truth.py`.
+- Evidence docs: Followup-D `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`, plus `docs/reports/test_report.md`, `docs/reports/implementation_report.md`, `docs/reports/quality_report.md` and `docs/product/development_status.md`.
+
+Implementation summary:
+- Added a Flutter runtime gate projection path that converts backend runtime-disabled/kill-switch/5xx unavailable states into an unavailable projection without goal, action, forecast, checkpoint or source refs.
+- Added runtime-unavailable view/control model factories that preserve product-internal claim guards and block executable action state.
+- Updated `GoalAutopilotPanel` to render a dedicated unavailable state before edit/create/explore branches, hiding goal creation, plan, action completion, checkpoint and reminder controls.
+- Updated Home projection handling to use the runtime gate projection and replace its cached projection when the panel receives a runtime-unavailable projection.
+- Added TC-P02-FUD-003 widget coverage and TC-P02-FUD-004 source-of-truth guard for no local fallback, backend unavailable handling and stale projection cleanup.
+
+Validation:
+- `flutter test test/features/goal_autopilot/goal_autopilot_runtime_gate_widget_test.dart` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_frontend_source_of_truth.py` - passed.
+- `flutter test test/features/goal_autopilot` - passed.
+- `flutter analyze` - passed.
+- `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- `npm run check:api-contract` - passed; generated Dart hash remains `0918bcf90cbc08198be7273e07fd18aa0471e06ba32f9cee21185105814780b2`.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.1%, backend branch 80.9% and Flutter line 90.3%.
+
+Result:
+- TC-P02-FUD-003 and TC-P02-FUD-004 passed locally for Flutter entry/surface rollback behavior.
+- P02-FUD-GAP-002 is closed locally for disabled entry, unavailable backend, cached projection replacement and frontend no-local-fallback guard.
+- Followup-D remains incomplete; S002 does not approve release readiness, paid AI external evidence or Product Base merge.
+
+Residual risk:
+- S003-S011 entitlement, quota, usage, cost, data governance, consent, telemetry, release drift and final review remain open.
+- S002 relies on S001 backend runtime/projection semantics for authoritative disabled and kill-switch states; any future backend reason-code changes must rerun TC-P02-FUD-003/004.
+
+Follow-up:
+- Next implementation slice is P02-FUD-S003 entitlement/free-paid depth gate.
+
+## 2026-06-06 - P02-FOLLOWUP-D-S001-RUNTIME-GATE-20260606
+
+Change request:
+- Strictly execute Followup-D S001 backend runtime gate for P02-FUD-FR-001 / P02-FUD-SPEC-001 / AC-P02-FUD-001 / TC-P02-FUD-001..002.
+- Explicit non-goal at S001 close: do not implement S002 Flutter rollback, S003-S011 commercial/data/ops gates, release approval, paid AI external evidence or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`.
+- FR/Spec/AC/TC: P02-FUD-FR-001, P02-FUD-SPEC-001, AC-P02-FUD-001, TC-P02-FUD-001 and TC-P02-FUD-002.
+- Traceability row: P02-FUD-TR-001; gap closed locally for S001 backend runtime gate: P02-FUD-GAP-001.
+
+Files changed:
+- Backend runtime policy: `backend/src/main/java/com/speakeasy/goal/GoalAutopilotRuntimeGate.java`, `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`, `backend/src/main/resources/application.yml`.
+- Backend tests: `backend/src/test/java/com/speakeasy/goal/GoalAutopilotRuntimeGateTest.java`.
+- API contract and generated hash pins: `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/openapi/dart-client-drift-manifest.json`, `lib/generated/api/.openapi-sha256`, `lib/generated/api/speakeasy_api.dart`.
+- Evidence docs: Followup-D `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`, plus `docs/reports/test_report.md`, `docs/reports/implementation_report.md` and `docs/reports/quality_report.md`.
+
+Implementation summary:
+- Added `GoalAutopilotRuntimeGate` with dynamic environment-backed runtime feature flag and kill-switch decisions.
+- Guarded goal-autopilot mutations before writes: goal create/update, control update/pause/resume, plan generate, recovery replan, item-policy decisions, action complete and checkpoint submit.
+- Persisted blocked mutation audit rows through a new transaction so rollback of the API mutation does not erase the audit evidence.
+- Guarded read paths that would expose stale backend-owned conclusions, and downgraded progress projection/control responses to disabled or unavailable states without ETA, goal-complete, checkpoint conclusion or source refs.
+- Added default runtime configuration in `application.yml` and OpenAPI 503 contract coverage for gated endpoints.
+- Synced generated Dart OpenAPI hash pins to `0918bcf90cbc08198be7273e07fd18aa0471e06ba32f9cee21185105814780b2`.
+
+Validation:
+- `python3 scripts/project_agent_runner.py validate` - passed before implementation routing.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotRuntimeGateTest test` - passed after the audit transaction correction.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,GoalAutopilotRuntimeGateTest test` - passed.
+- `npm run check:api-contract` - passed with generated Dart hash `0918bcf90cbc08198be7273e07fd18aa0471e06ba32f9cee21185105814780b2`.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,GoalAutopilotRuntimeGateTest,GoalProgressProjectionDataGovernanceTest,GoalProgressProjectionServiceTest,ProgressForecastPolicyTest,CheckpointCadencePolicyTest,GoalAutopilotControlPerformanceTest,NotificationOutboxReplayTest,MissedDayRecoveryPlannerTest,GoalAutopilotReplayFixtureTest,NotificationEligibilityPolicyTest,MemoryCurveReplayTest,MasteryTransitionPolicyTest,GoalProgressProjectionPerformanceTest,ForecastExplanationSchemaTest,CheckpointReplayAuditTest,GoalAutopilotRecoveryControllerTest,MemoryCurvePolicyTest,NotificationOutboxServiceTest org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.1%, backend branch 80.9% and Flutter line 90.1%.
+- `python3 scripts/project_agent_runner.py validate` - passed after report synchronization.
+- `git diff --check -- backend/src/main/java/com/speakeasy/goal/GoalAutopilotRuntimeGate.java backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java backend/src/main/resources/application.yml backend/src/test/java/com/speakeasy/goal/GoalAutopilotRuntimeGateTest.java docs/architecture/openapi/speakeasy-api.yaml docs/architecture/openapi/dart-client-drift-manifest.json lib/generated/api/.openapi-sha256 lib/generated/api/speakeasy_api.dart` - passed before report synchronization.
+- `git diff --check` - passed after report synchronization.
+
+Result:
+- TC-P02-FUD-001 and TC-P02-FUD-002 passed locally for backend/API runtime gate behavior.
+- P02-FUD-GAP-001 is closed locally for backend feature flag, kill switch, fail-closed mutation behavior, safe projection downgrade and audit evidence.
+- Followup-D remains incomplete; S001 does not approve release readiness, paid AI external evidence or Product Base merge.
+
+Residual risk:
+- At S001 close, S002 Flutter entry/surface rollback was still required to prove user-visible disabled/kill-switch handling and stale cache cleanup; current S002 evidence is recorded above.
+- S003-S011 entitlement, quota, usage, cost, data governance, consent, telemetry, drift gates and final review remain open.
+- Runtime-disabled read endpoints intentionally fail closed or downgrade; downstream clients must consume S002 rollback behavior before this is considered user-surface complete.
+
+Follow-up:
+- Next implementation slice at S001 close was P02-FUD-S002 Flutter entry and surface rollback gate; current S002 evidence is recorded above.
+
+## 2026-06-06 - P02-FOLLOWUP-D-S000-DOCUMENT-CHAIN-20260606
+
+Change request:
+- Strictly execute Followup-D S000 before any Followup-D code implementation.
+- Identify the release-gate hardening scope and split Followup-D into small implementation slices that can support full software landing.
+- Explicit non-goal: do not implement S001-S011 code, approve release readiness, approve Product Base merge, or claim paid AI external evidence.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`.
+- FR/Spec/AC/TC: P02-FUD-FR-000, P02-FUD-SPEC-000, AC-P02-FUD-000 and TC-P02-FUD-000.
+- Traceability row: P02-FUD-TR-000; S001-S011 routed through P02-FUD-FR-001..011, P02-FUD-SPEC-001..011, AC-P02-FUD-001..011 and TC-P02-FUD-001..021.
+
+Files changed:
+- `docs/product/increments/p0-2-followup-d-release-gate-hardening/definition.md`
+- `docs/product/increments/p0-2-followup-d-release-gate-hardening/requirements.md`
+- `docs/product/increments/p0-2-followup-d-release-gate-hardening/spec.md`
+- `docs/product/increments/p0-2-followup-d-release-gate-hardening/acceptance.md`
+- `docs/product/increments/p0-2-followup-d-release-gate-hardening/test_cases.md`
+- `docs/product/increments/p0-2-followup-d-release-gate-hardening/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Expanded Followup-D from scaffold into a full requirement/spec/acceptance/test/traceability chain.
+- Split Followup-D into S000-S011: docs routing, backend runtime gate, Flutter rollback, entitlement depth, usage reservation, cost telemetry, quota downgrade, data governance, consent UX, telemetry, drift gates and final Product Base/release review.
+- Added explicit Stage Scope P02-SI-001..013 detail coverage so later implementation does not rely on ambiguous range-only routing.
+- Preserved release boundaries: S000 is documentation readiness only; S001-S011 are planned; release approval, paid AI external evidence and Product Base merge remain blocked.
+
+Validation:
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check -- docs/product/increments/p0-2-followup-d-release-gate-hardening docs/reports/test_report.md docs/reports/implementation_report.md docs/reports/quality_report.md` - passed.
+
+Result:
+- TC-P02-FUD-000 is passed for S000 documentation-chain validation.
+- Followup-D is ready to route S001 implementation after user approval.
+- No production backend, Flutter, API, generated-client or AI runtime code changed in S000.
+
+Residual risk:
+- S001-S011 implementation, tests and independent reviews are still open.
+- Followup-D is not release-ready; Product Base merge and commercial release remain unapproved.
+
+Follow-up:
+- Next implementation slice is P02-FUD-S001 backend feature flag, kill switch and fail-closed mutation gate.
+
+## 2026-06-06 - P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606
+
+Change request:
+- Fix the six Redocly nullable `$ref` warnings reported by `npm run check:api-contract` after S007, and update the full OpenAPI/generated-client/report chain.
+- Explicit non-goal: do not change backend runtime behavior, Flutter runtime behavior, response payload semantics, Followup-D release/commercial/data/ops gates, release approval or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`.
+- FR/Spec/AC/TC: P02-FUC-FR-007, P02-FUC-SPEC-007, AC-P02-FUC-007 and TC-P02-FUC-022 report/contract hygiene.
+- Traceability row: P02-FUC-TR-007; supporting S001 forecast contract syntax from P02-FUC-FR-001 remains payload-compatible.
+
+Files changed:
+- `docs/architecture/openapi/speakeasy-api.yaml`
+- `docs/architecture/openapi/dart-client-drift-manifest.json`
+- `lib/generated/api/.openapi-sha256`
+- `lib/generated/api/speakeasy_api.dart`
+- `scripts/check_p0_2_followup_c_traceability.py`
+- `docs/architecture/api_contract.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/test_cases.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/traceability.md`
+- `docs/product/development_status.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Changed `ProgressForecast.eta_range` from `$ref` plus nullable sibling to OpenAPI 3.0.3-compatible `type: object`, `nullable: true`, `allOf` reference form.
+- Synced generated Dart OpenAPI hash pins to `d8b492b07c98e948caf0b5912744f05fa6dcd4b76f97f0ece04dc9778df7da0f`.
+- Extended the Followup-C S007 traceability checker to assert the nullable cleanup shape and generated hash pins.
+- Updated reports and traceability so the prior six Redocly warnings are no longer recorded as current residual risk.
+
+Validation:
+- `npm run lint:openapi` - passed with no nullable `$ref` warnings.
+- `npm run check:api-contract` - passed with 87 paths, 93 operations, 42 request examples, 88 success examples and 112 error examples.
+- `npm run check:dart-client-drift` - passed with OpenAPI hash `d8b492b07c98e948caf0b5912744f05fa6dcd4b76f97f0ece04dc9778df7da0f`.
+- `flutter analyze` - passed.
+- `flutter test test/services/api_client_contract_test.dart` - passed.
+- `python3 scripts/check_p0_2_followup_c_traceability.py` - passed with nullable cleanup and generated hash assertions.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.0%, backend branch 80.9% and Flutter line 90.1%.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- The six repeated Redocly nullable `$ref` warnings are fixed.
+- No endpoint, operation count, request/response example count or payload semantic change was introduced.
+- Followup-C is locally complete for S001-S007. Followup-C is not release-ready and Product Base merge is not approved.
+
+Residual risk:
+- Followup-D commercial/release/data/ops gates remain open.
+- Product Base merge still requires Product Manager approval and governance review.
+
+## 2026-06-06 - P02-FOLLOWUP-C-S007-QUALITY-GATES-20260606
+
+Change request:
+- Strictly execute Followup-C S007 automated test, performance, coverage, traceability script and final review gates for P02-FUC-FR-007 / P02-FUC-SPEC-007 / AC-P02-FUC-007 / TC-P02-FUC-020..022.
+- Explicit non-goal: do not claim Followup-D release/commercial/data/ops gates, release approval, paid AI/provider evidence or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`.
+- FR/Spec/AC/TC: P02-FUC-FR-007, P02-FUC-SPEC-007, AC-P02-FUC-007, TC-P02-FUC-020, TC-P02-FUC-021 and TC-P02-FUC-022.
+- Traceability row: P02-FUC-TR-007; gaps closed locally: P02-FUC-GAP-007, P02-FUC-GAP-008 and P02-FUC-GAP-009.
+
+Files changed:
+- `backend/src/test/java/com/speakeasy/goal/GoalProgressProjectionPerformanceTest.java`
+- `test/features/goal_autopilot/goal_progress_surface_performance_test.dart`
+- `scripts/check_p0_2_followup_c_traceability.py`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/definition.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/requirements.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/spec.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/acceptance.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/test_cases.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/traceability.md`
+- `docs/product/development_status.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added backend performance coverage for Followup-C forecast, checkpoint task, checkpoint submit and progress projection paths.
+- Added Flutter adapter/widget performance coverage for Home, expression queue and personal Wiki projection propagation.
+- Added a dedicated Followup-C traceability checker that validates TC-P02-FUC-020..022 rows, traceability closure, report evidence and release/Product Base non-claims.
+- Updated Followup-C docs/reports so S007 local evidence is explicit and Followup-D/release/Product Base boundaries remain gated.
+- No production backend, Flutter or API code changed.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionPerformanceTest test` - passed.
+- `flutter test test/features/goal_autopilot/goal_progress_surface_performance_test.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.0%, backend branch 80.9% and Flutter line 90.1%.
+- `python3 scripts/check_p0_2_followup_c_traceability.py` - passed after S007 evidence synchronization.
+- `flutter analyze` - passed.
+- `npm run check:dart-client-drift` - passed with unchanged OpenAPI hash `bed8ebbbe2d9fed907b7411fca512912f1302fbb73427e7783b4f7ae2d0678f8`.
+- `npm run check:api-contract` - passed. Historical note: Redocly reported six nullable `$ref` warnings at S007 close; this was later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- TC-P02-FUC-020, TC-P02-FUC-021 and TC-P02-FUC-022 are passed locally for S007 quality gates.
+- P02-FUC-GAP-007, P02-FUC-GAP-008 and P02-FUC-GAP-009 are closed locally.
+- Followup-C is locally complete for S001-S007. Followup-C is not release-ready and Product Base merge is not approved.
+
+Residual risk:
+- Followup-D commercial/release/data/ops gates remain open.
+- No live AI provider, paid AI evidence, store/payment evidence or production release evidence was generated by S007.
+- Product Base merge still requires Product Manager approval and governance review.
+
+## 2026-06-06 - P02-FOLLOWUP-C-S006-SURFACE-DOWNGRADE-20260606
+
+Change request:
+- Strictly execute Followup-C S006 surface deletion/unavailable downgrade implementation for P02-FUC-FR-006 / P02-FUC-SPEC-006 / AC-P02-FUC-006 / TC-P02-FUC-017..019.
+- Explicit non-goal: do not claim S007 performance/final traceability, Followup-C completion, release approval or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`.
+- FR/Spec/AC/TC: P02-FUC-FR-006, P02-FUC-SPEC-006, AC-P02-FUC-006, TC-P02-FUC-017, TC-P02-FUC-018 and TC-P02-FUC-019.
+- Traceability row: P02-FUC-TR-006; gap closed locally: P02-FUC-GAP-006.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalProgressForecastRepository.java`
+- `backend/src/test/java/com/speakeasy/goal/GoalProgressProjectionDataGovernanceTest.java`
+- `backend/src/test/java/com/speakeasy/AccountDeletionLearningDataTest.java`
+- `lib/features/goal_autopilot/goal_progress_surface.dart`
+- `test/features/goal_autopilot/goal_progress_projection_fixtures.dart`
+- `test/features/goal_autopilot/goal_progress_downgrade_widget_test.dart`
+- `docs/ux/screen_spec.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/definition.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/requirements.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/spec.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/acceptance.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/test_cases.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/traceability.md`
+- `docs/product/development_status.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Updated backend projection surface fragments so ineligible downgrade states clear `next_action_ref`, `forecast_ref`, `checkpoint_ref` and `safe_fields` rather than carrying stale refs into Home/Queue/Wiki.
+- Kept eligible downgrade states such as `partial_goal_limited` and `low_confidence` traceable to backend `downgrade_reason` while still blocking precise ETA and completion claims.
+- Added backend data-governance integration tests for unavailable, missing forecast, unsupported, stale plan, control-blocked, partial and low-confidence projection behavior.
+- Added account deletion integration coverage proving projection-owned goal progress data is purged and old authenticated reads no longer expose deleted progress.
+- Added Flutter downgrade fixtures and widget tests proving Home, expression queue and Wiki replace cached ready progress with backend downgrade state and remove stale sensitive copy.
+- Updated Followup-C docs/reports so S006 local evidence is explicit and S007 remains gated.
+
+Validation:
+- `flutter test test/features/goal_autopilot/goal_progress_downgrade_widget_test.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionDataGovernanceTest test` - passed after repository access, user-scoped fixture cleanup and transaction corrections.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AccountDeletionLearningDataTest#tcP02Fuc006GoalProgressProjectionPurgedOnDeletion test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionDataGovernanceTest,AccountDeletionLearningDataTest#tcP02Fuc006GoalProgressProjectionPurgedOnDeletion test` - passed.
+- `flutter test test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionServiceTest,GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned,GoalProgressProjectionDataGovernanceTest,AccountDeletionLearningDataTest#tcP02Fuc006GoalProgressProjectionPurgedOnDeletion test` - passed.
+- `flutter analyze` - passed.
+- `npm run check:dart-client-drift` - passed.
+- `npm run check:api-contract` - passed. Historical note: the six nullable `$ref` warnings were later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- TC-P02-FUC-017, TC-P02-FUC-018 and TC-P02-FUC-019 are passed locally for S006 surface deletion/unavailable downgrade.
+- P02-FUC-GAP-006 is closed locally for backend downgrade minimization, account deletion purge and cached Flutter stale projection cleanup.
+- Followup-C is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- S007 p95 performance, changed-code coverage gate and final traceability script remain open.
+- No live AI provider output is enabled by this slice; downgrade decisions remain deterministic and backend-owned.
+- API/OpenAPI shape did not change in S006, so future contract changes still require full drift evidence.
+
+## 2026-06-06 - P02-FOLLOWUP-C-S005-SURFACE-PROPAGATION-20260606
+
+Change request:
+- Strictly execute Followup-C S005 Home/Queue/Wiki surface propagation implementation for P02-FUC-FR-005 / P02-FUC-SPEC-005 / AC-P02-FUC-005 / TC-P02-FUC-013..016.
+- Explicit non-goal: do not claim S006 deletion/unavailable downgrade, S007 performance/final traceability, Followup-C completion, release approval or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`.
+- FR/Spec/AC/TC: P02-FUC-FR-005, P02-FUC-SPEC-005, AC-P02-FUC-005, TC-P02-FUC-013, TC-P02-FUC-014, TC-P02-FUC-015 and TC-P02-FUC-016.
+- Traceability row: P02-FUC-TR-005; gap closed locally: P02-FUC-GAP-005.
+
+Files changed:
+- `lib/features/goal_autopilot/goal_autopilot_adapter.dart`
+- `lib/features/goal_autopilot/goal_autopilot_models.dart`
+- `lib/features/goal_autopilot/goal_autopilot_panel.dart`
+- `lib/features/goal_autopilot/goal_progress_surface.dart`
+- `lib/features/interview/interview_expression_learning_page.dart`
+- `lib/pages/home_page.dart`
+- `lib/services/api_client.dart`
+- `test/features/goal_autopilot/goal_progress_projection_fixtures.dart`
+- `test/features/goal_autopilot/goal_progress_home_surface_test.dart`
+- `test/features/goal_autopilot/goal_progress_queue_surface_test.dart`
+- `test/features/goal_autopilot/goal_progress_wiki_surface_test.dart`
+- `test/features/goal_autopilot/goal_progress_surface_source_of_truth_test.dart`
+- `docs/ux/screen_spec.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/definition.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/requirements.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/spec.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/acceptance.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/test_cases.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/traceability.md`
+- `docs/product/development_status.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added Flutter `GoalProgressProjection` parsing and adapter methods for loading the S004 backend projection endpoint without changing API shape.
+- Added reusable Home, Queue and Wiki projection surface widgets that render only the fragment fields allowed by backend `safe_fields`.
+- Updated Home goal autopilot summary to prefer projection-owned Home facts and suppress legacy summary gap/ETA output when projection exists.
+- Passed projection data into expression queue warmup UI and personal Wiki tiles without changing `ExpressionDailyQueueCoordinator` ranking/sorting behavior.
+- Added source-of-truth tests proving Home/Queue/Wiki consume projection widgets, queue projection data does not reorder the queue locally, and surface widgets do not reference target score, target ability, ETA or goal-completion fields.
+- Restricted optional projection fallback to legacy missing-payload `FormatException` only, so real API failures are not silently hidden as absent projection data.
+- Updated Followup-C docs/reports so S005 local evidence is explicit and S006/S007 remain gated.
+
+Validation:
+- `flutter test test/features/goal_autopilot/goal_progress_home_surface_test.dart test/features/goal_autopilot/goal_progress_queue_surface_test.dart test/features/goal_autopilot/goal_progress_wiki_surface_test.dart test/features/goal_autopilot/goal_progress_surface_source_of_truth_test.dart` - passed.
+- `flutter test test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
+- `flutter test test/services/api_client_contract_test.dart` - passed.
+- `flutter analyze` - passed.
+- `npm run check:dart-client-drift` - passed.
+- `npm run check:api-contract` - passed. Historical note: the six nullable `$ref` warnings were later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- TC-P02-FUC-013, TC-P02-FUC-014, TC-P02-FUC-015 and TC-P02-FUC-016 are passed locally for S005 Home/Queue/Wiki surface propagation.
+- P02-FUC-GAP-005 is closed locally for all three product surfaces consuming backend projection facts without local final-state recomputation.
+- Followup-C is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- S006 deletion/unavailable/unsupported/low-confidence downgrade and cached stale projection cleanup remain open.
+- S007 p95 performance, changed-code coverage gate and final traceability script remain open.
+- No live AI provider output is enabled by this slice; projection surface copy remains deterministic and backend-owned.
+
+## 2026-06-06 - P02-FOLLOWUP-C-S004-PROGRESS-PROJECTION-20260606
+
+Change request:
+- Strictly execute Followup-C S004 backend goal-progress projection implementation for P02-FUC-FR-004 / P02-FUC-SPEC-004 / AC-P02-FUC-004 / TC-P02-FUC-010..012.
+- Explicit non-goal: do not claim S005 Home/Queue/Wiki propagation, S006 downgrade/deletion handling, S007 performance/final traceability, Followup-C completion, release approval or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`.
+- FR/Spec/AC/TC: P02-FUC-FR-004, P02-FUC-SPEC-004, AC-P02-FUC-004, TC-P02-FUC-010, TC-P02-FUC-011 and TC-P02-FUC-012.
+- Traceability row: P02-FUC-TR-004; gap closed locally: P02-FUC-GAP-004.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`
+- `backend/src/test/java/com/speakeasy/goal/GoalProgressProjectionServiceTest.java`
+- `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`
+- `docs/domain/domain_schema.md`
+- `docs/architecture/api_contract.md`
+- `docs/architecture/openapi/speakeasy-api.yaml`
+- `docs/architecture/openapi/dart-client-drift-manifest.json`
+- `lib/generated/api/.openapi-sha256`
+- `lib/generated/api/speakeasy_api.dart`
+- `docs/ai_runtime/llm_output_schema.md`
+- `docs/ai_runtime/prompt_contract.md`
+- `docs/ux/screen_spec.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/definition.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/requirements.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/spec.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/acceptance.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/test_cases.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added `GET /goal-autopilot/progress-projection` as the S004 backend-owned safe goal-progress projection endpoint.
+- Added deterministic `GoalProgressProjectionView` assembly from active goal, autopilot control/policy state, next action, forecast and latest checkpoint facts.
+- Added projection states and downgrade reasons for ready, limited, unavailable, deleted, unsupported, low-confidence, stale-plan and control-blocked style outputs.
+- Added safe fragments for goal, next action, forecast progress, latest checkpoint and Home/Queue/Wiki surface eligibility/safe fields.
+- Added source refs for goal revision, control, plan item, forecast and checkpoint without returning raw diagnostic transcript/audio, sensitive target ability/score, raw checkpoint payloads or provider payloads.
+- Added unavailable/no-active-goal projection behavior so missing data returns a safe downgraded projection instead of stale goal progress.
+- Updated domain/API/OpenAPI/generated Dart drift artifacts, AI runtime and UX docs so projection state/surface eligibility/downgrade/source refs remain deterministic backend-owned facts.
+- Updated Followup-C test cases, traceability and reports so S004 evidence is explicit and S005-S007 remain gated.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionServiceTest,GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned test` - failed once because a new assertion expected checkpoint risk code after replan while existing forecast policy returned `forecast_supported`; assertion was corrected to assert checkpoint conclusion through `latest_checkpoint.reason_code`, then rerun passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionServiceTest,GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalProgressProjectionServiceTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned test` - passed.
+- `npm run check:api-contract` - passed; OpenAPI/Dart drift SHA is `bed8ebbbe2d9fed907b7411fca512912f1302fbb73427e7783b4f7ae2d0678f8`.
+- `npm run check:dart-client-drift` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Result:
+- TC-P02-FUC-010, TC-P02-FUC-011 and TC-P02-FUC-012 are passed locally for S004 backend goal-progress projection.
+- P02-FUC-GAP-004 is closed locally for backend-owned projection source-of-truth, safe fragments, source refs, unavailable downgrade and redaction.
+- Followup-C is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- S005 Home/Queue/Wiki Flutter surface propagation, S006 deletion/unavailable downgrade across surfaces and S007 p95 performance/final traceability remain open.
+- No Flutter surface behavior changed in S004; UI source-of-truth migration remains deferred to S005.
+- No live AI provider projection path is enabled by this slice; future provider explanations must remain candidate-only and must not set projection facts.
+
+## 2026-06-05 - P02-FOLLOWUP-C-S003-CHECKPOINT-PLAN-UPDATE-20260605
+
+Change request:
+- Strictly execute Followup-C S003 checkpoint-to-plan update implementation for P02-FUC-FR-003 / P02-FUC-SPEC-003 / AC-P02-FUC-003 / TC-P02-FUC-007..009.
+- Explicit non-goal: do not claim S004-S007 backend projection, Home/Queue/Wiki propagation, downgrade/deletion handling, final performance/traceability gates, release approval or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`.
+- FR/Spec/AC/TC: P02-FUC-FR-003, P02-FUC-SPEC-003, AC-P02-FUC-003, TC-P02-FUC-007, TC-P02-FUC-008 and TC-P02-FUC-009.
+- Traceability row: P02-FUC-TR-003; gap closed locally: P02-FUC-GAP-003.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`
+- `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`
+- `backend/src/test/java/com/speakeasy/goal/CheckpointReplayAuditTest.java`
+- `docs/domain/domain_schema.md`
+- `docs/architecture/api_contract.md`
+- `docs/architecture/openapi/speakeasy-api.yaml`
+- `docs/architecture/openapi/dart-client-drift-manifest.json`
+- `lib/generated/api/.openapi-sha256`
+- `lib/generated/api/speakeasy_api.dart`
+- `docs/ai_runtime/llm_output_schema.md`
+- `docs/ai_runtime/prompt_contract.md`
+- `docs/ux/screen_spec.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/definition.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/requirements.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/spec.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/acceptance.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/test_cases.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/traceability.md`
+- `docs/product/development_status.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Extended `POST /goal-autopilot/checkpoints` so optional `result_status=recorded|failed|skipped` is validated server-side; omitted status remains recorded, while low confidence is still derived from checkpoint evidence quality.
+- Added deterministic S003 checkpoint result mapping for `recorded`, `low_confidence`, `failed` and `skipped` with reason codes `checkpoint_updated_gap`, `low_confidence`, `checkpoint_failed` and `checkpoint_skipped`.
+- Added checkpoint plan signal evaluation under rule version `fuc-checkpoint-plan-v1`, including `checkpoint_replan`, `recovery_replan`, `stale_plan/control_blocked` and `none` branches.
+- Preserved Followup-B control/recovery ownership: paused autopilot rejects checkpoint submit before persistence, recovery-required plans return recovery replan, and control-blocked/missing-plan cases do not silently advance next action.
+- Added `checkpoint_plan_update` replay audit rows with source checkpoint ref, redacted input snapshot hash, output hash, replay hash, expected decision, reason code and rule version. Raw transcript/audio values are hashed or omitted from API output.
+- Extended checkpoint response DTOs and OpenAPI schemas so `OutcomeCheckpoint` includes plan signal/reason and `PlanUpdateSignal` can include source checkpoint id, rule version, input snapshot hash and replay audit id.
+- Updated domain/API/OpenAPI/generated Dart drift artifacts, AI runtime and UX docs to keep checkpoint-to-plan status/signal/replay facts backend-owned.
+- Updated Followup-C test cases, traceability and reports so S003 evidence is explicit and S004-S007 remain gated.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc003CheckpointUpdatesForecastAndPlanSignal test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CheckpointReplayAuditTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc003CheckpointRespectsControlAndRecoveryState test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc003CheckpointFailedSkippedAndBlockedBranches test` - failed once on an intentionally accepted no-plan fixture because the transcript was too short and produced `low_confidence`; fixture was expanded, then rerun passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,CheckpointReplayAuditTest test` - passed.
+- `npm run check:api-contract` - passed; OpenAPI/Dart drift SHA is `226c6d86a691489c8c3cfeba8aa0735aae52aef12ce7d5d561cb46a56ce52860`.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,CheckpointReplayAuditTest org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- Changed backend source coverage: line 98.4%, branch 92.0%.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- TC-P02-FUC-007, TC-P02-FUC-008 and TC-P02-FUC-009 are passed locally for S003 checkpoint-to-plan update.
+- P02-FUC-GAP-003 is closed locally for replayable checkpoint-to-plan semantics, no false completion, replay/audit evidence and control/recovery compatibility.
+- Followup-C is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- S004 backend-owned goal-progress projection, S005 Home/Queue/Wiki propagation, S006 downgrade/deletion handling and S007 performance/final traceability remain open.
+- No Flutter surface behavior changed in S003; surface source-of-truth and downgrade UI evidence remain deferred to S005/S006.
+- No live AI provider checkpoint feedback path is enabled by this slice; future provider explanations must remain candidate-only and rerun S003 plus AI schema/eval gates as applicable.
+
+## 2026-06-05 - P02-FOLLOWUP-C-S002-CHECKPOINT-TASK-LIBRARY-20260605
+
+Change request:
+- Strictly execute Followup-C S002 checkpoint cadence and task-library implementation for P02-FUC-FR-002 / P02-FUC-SPEC-002 / AC-P02-FUC-002 / TC-P02-FUC-004..006.
+- Explicit non-goal: do not claim S003-S007 checkpoint-to-plan, projection, surface propagation, downgrade, performance, coverage, release approval or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`.
+- FR/Spec/AC/TC: P02-FUC-FR-002, P02-FUC-SPEC-002, AC-P02-FUC-002, TC-P02-FUC-004, TC-P02-FUC-005 and TC-P02-FUC-006.
+- Traceability row: P02-FUC-TR-002; gap closed locally: P02-FUC-GAP-002.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/CheckpointCadencePolicy.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`
+- `backend/src/test/java/com/speakeasy/goal/CheckpointCadencePolicyTest.java`
+- `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`
+- `docs/domain/domain_schema.md`
+- `docs/architecture/api_contract.md`
+- `docs/architecture/openapi/speakeasy-api.yaml`
+- `docs/architecture/openapi/dart-client-drift-manifest.json`
+- `lib/generated/api/.openapi-sha256`
+- `lib/generated/api/speakeasy_api.dart`
+- `docs/ai_runtime/llm_output_schema.md`
+- `docs/ai_runtime/prompt_contract.md`
+- `docs/ux/screen_spec.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/definition.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/requirements.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/spec.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/acceptance.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/test_cases.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/traceability.md`
+- `docs/product/development_status.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added `CheckpointCadencePolicy` with rule version `fuc-checkpoint-task-v1` to derive `CheckpointDue`, `CheckpointNotDue`, `CheckpointLimited` and `CheckpointUnavailable` from goal type, support status, content coverage, latest backplan/checkpoint dates and entitlement/quota/cost fallback inputs.
+- Added deterministic task definitions for supported speaking and business goals, including task type, cadence, prompt ref, estimated duration, required evidence, product-internal rubric ref, limitation reason, AI depth and no-official-score scoring boundary.
+- Added `GET /goal-autopilot/checkpoints/task` as the server-owned checkpoint task decision endpoint.
+- Updated checkpoint submission to reject unsupported active goals and task types outside the server-owned task library.
+- Fixed an independent-review contract risk by omitting null checkpoint task fields from the task-decision DTO and asserting no `task` property is serialized when no task is available.
+- Updated OpenAPI/API/domain/AI/UX contracts and generated Dart path registry for the new checkpoint task boundary.
+- Updated Followup-C docs, traceability and reports so S002 evidence is explicit and S003-S007 remain gated.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CheckpointCadencePolicyTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc002CheckpointTaskLibrary test` - passed.
+- `npm run check:api-contract` - passed; OpenAPI/Dart drift SHA is `3bacdd487b700676793dd2a2c4629d330079cf34dbf2f1e35f9ed46f8f166351`.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CheckpointCadencePolicyTest,ProgressForecastPolicyTest,ForecastExplanationSchemaTest,GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard+tcP02Fuc002CheckpointTaskLibrary+tcP02AutoCheckpoint001CheckpointUpdatesForecastAndStalesPlan test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 95.7%, backend branch 80.8%, Flutter line 90.9%.
+- `flutter analyze lib/generated/api/speakeasy_api.dart` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- TC-P02-FUC-004, TC-P02-FUC-005 and TC-P02-FUC-006 are passed locally for S002 checkpoint cadence/task library.
+- P02-FUC-GAP-002 is closed for weekly/biweekly cadence, due-now/overdue/not-due decisions, goal-type task matching, partial/unsupported limitation and cost fallback.
+- Followup-C is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- S003 checkpoint-to-plan update, S004 backend-owned projection, S005 Home/Queue/Wiki propagation, S006 downgrade/deletion handling and S007 performance/coverage/final traceability remain open.
+- No Flutter surface behavior changed in S002; surface propagation remains deferred to S005.
+- No live AI provider task selection is enabled by this slice; future provider-assisted checkpoint feedback must preserve backend-owned task selection and rerun S002/S003 tests as applicable.
+
+## 2026-06-05 - P02-FOLLOWUP-C-S001-FORECAST-HARDENING-20260605
+
+Change request:
+- Strictly execute Followup-C S001 forecast hardening for P02-FUC-FR-001 / P02-FUC-SPEC-001 / AC-P02-FUC-001 / TC-P02-FUC-001..003.
+- Explicit non-goal: do not claim S002-S007 checkpoint, surface propagation, downgrade, performance, coverage, release approval or Product Base merge.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`.
+- FR/Spec/AC/TC: P02-FUC-FR-001, P02-FUC-SPEC-001, AC-P02-FUC-001, TC-P02-FUC-001, TC-P02-FUC-002 and TC-P02-FUC-003.
+- Traceability row: P02-FUC-TR-001; gap closed locally: P02-FUC-GAP-001.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/ProgressForecastPolicy.java`
+- `backend/src/main/java/com/speakeasy/goal/ForecastExplanationCandidateValidator.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalProgressForecast.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`
+- `backend/src/main/resources/db/migration/V202606050004__p0_2_followup_c_forecast_hardening.sql`
+- `backend/src/test/java/com/speakeasy/goal/ProgressForecastPolicyTest.java`
+- `backend/src/test/java/com/speakeasy/goal/ForecastExplanationSchemaTest.java`
+- `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`
+- `docs/domain/domain_schema.md`
+- `docs/architecture/api_contract.md`
+- `docs/architecture/openapi/speakeasy-api.yaml`
+- `docs/architecture/openapi/dart-client-drift-manifest.json`
+- `lib/generated/api/.openapi-sha256`
+- `lib/generated/api/speakeasy_api.dart`
+- `docs/ai_runtime/llm_output_schema.md`
+- `docs/ai_runtime/fallback_strategy.md`
+- `docs/ai_runtime/ai_eval_cases.md`
+- `docs/ai_runtime/prompt_contract.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/definition.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/requirements.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/spec.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/acceptance.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/test_cases.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added `ProgressForecastPolicy` with rule version `fuc-forecast-v1` to derive `forecast_state`, source goal revision, ETA range/unavailable reason, confidence band, risk level/reason code, deterministic explanation key/source, fallback reason and claim-guard state from server-owned goal/plan/checkpoint facts.
+- Independent review follow-up moved `stale_plan` ahead of checkpoint/completed event reasons, so a stale plan always returns conservative forecast state, suppresses ETA and keeps completion claims closed.
+- Extended `GoalProgressForecast` and migration `V202606050004__p0_2_followup_c_forecast_hardening.sql` so the hardened forecast metadata is persisted and read through the existing forecast repository path.
+- Updated `GoalAutopilotService` and `GoalAutopilotController` so `/goal-autopilot/goals` and `GET /goal-autopilot/forecast` expose S001 fields without allowing client writes to deterministic forecast state.
+- Added `ForecastExplanationCandidateValidator` and AI runtime documentation for future provider candidate-only explanations; deterministic no-provider fallback is the only executed S001 AI path and does not mutate persistent forecast state.
+- Updated domain/API/OpenAPI/generated Dart drift artifacts and Followup-C documentation/traceability so S001 evidence is explicit and S002-S007 remain gated.
+
+Validation:
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProgressForecastPolicyTest,ForecastExplanationSchemaTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard test` - failed once on H2 migration syntax, then passed after splitting the migration into one-column `ALTER TABLE` statements.
+- `npm run check:api-contract` - passed; OpenAPI/Dart drift SHA is `617ce817ef055efb851641a1664211238229d9ed365e01711244da15a75c621c`.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProgressForecastPolicyTest,GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard,ForecastExplanationSchemaTest test` - passed as formal S001 TC run after stale-plan fix.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - failed once after the stale-plan policy fix because an older checkpoint regression still expected checkpoint reason copy under stale plan; test assertion was updated to expect `stale_plan`, no ETA and closed claim guard.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - passed after regression expectation update.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 95.8%, backend branch 80.6%, Flutter line 90.9%.
+- `flutter analyze lib/generated/api/speakeasy_api.dart` - passed.
+- `git diff --check` - passed.
+
+Result:
+- TC-P02-FUC-001, TC-P02-FUC-002 and TC-P02-FUC-003 are passed locally for S001 forecast hardening.
+- P02-FUC-GAP-001 is closed for forecast state metadata, ETA/risk reasoning, deterministic explanation fallback, provider candidate-only guardrails and no official-score/guaranteed-outcome claim.
+- Stale plan is now a blocking forecast reason across checkpoint/completed event sources, matching AC-P02-FUC-001 downgrade safety.
+- Followup-C is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- S002 checkpoint cadence/task library, S003 checkpoint-to-plan update, S004 backend-owned projection, S005 Home/Queue/Wiki propagation, S006 downgrade/deletion handling and S007 performance/coverage/final traceability remain open.
+- No Flutter surface behavior changed in S001; surface propagation is intentionally deferred to S005.
+- No live AI provider explanation path is enabled by this slice; future provider integration must preserve the candidate-only boundary and rerun schema/eval tests.
+
+## 2026-06-05 - P02-FOLLOWUP-B-S006-REPLAY-PERFORMANCE-TRACEABILITY-20260605
+
+Change request:
+- Strictly execute Followup-B S006 replay/performance/coverage/traceability closure for P02-FUB-FR-008 / AC-P02-FUB-008 / TC-P02-FUB-015, TC-P02-FUB-016 and TC-P02-FUB-017.
+- Explicit non-goal: do not claim release approval, Product Base merge approval, Followup-C/D completion or commercial release readiness.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`.
+- FR/Spec/AC/TC: P02-FUB-FR-008, P02-FUB-SPEC-008, AC-P02-FUB-008, TC-P02-FUB-015, TC-P02-FUB-016 and TC-P02-FUB-017.
+- Traceability rows: P02-FUB-TR-008 and P02-FUB-TR-009.
+
+Files changed:
+- `backend/src/test/java/com/speakeasy/goal/GoalAutopilotReplayFixtureTest.java`
+- `backend/src/test/java/com/speakeasy/goal/GoalAutopilotControlPerformanceTest.java`
+- `backend/src/test/java/com/speakeasy/goal/MemoryCurvePolicyTest.java`
+- `backend/src/test/java/com/speakeasy/goal/MissedDayRecoveryPlannerTest.java`
+- `backend/src/test/java/com/speakeasy/goal/MasteryTransitionPolicyTest.java`
+- `scripts/check_p0_2_followup_b_traceability.py`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/definition.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/requirements.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/spec.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/acceptance.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/test_cases.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/traceability.md`
+- `docs/product/development_status.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added `GoalAutopilotReplayFixtureTest.java` as TC-P02-FUB-015 replay fixture coverage for FUB-FIX-001..008, checking expected decision, reason code, output state, rule version and hash evidence where replay audits exist.
+- Added `GoalAutopilotControlPerformanceTest.java` as TC-P02-FUB-016 p95 budget coverage for FUB-FIX-009 control, control command, notification eligibility, outbox, recovery, memory, mastery and replay verification paths.
+- Added `scripts/check_p0_2_followup_b_traceability.py` as TC-P02-FUB-017 dedicated Followup-B traceability gate.
+- Added test-only branch coverage cases in `MemoryCurvePolicyTest`, `MissedDayRecoveryPlannerTest` and `MasteryTransitionPolicyTest` so the current broad P0.2 coverage gate passes against the refreshed JaCoCo report.
+- No production backend or Flutter code changed.
+
+Validation:
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `npm run check:api-contract` - passed.
+- `git diff --check` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotReplayFixtureTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControlPerformanceTest test` - passed.
+- `python3 -m py_compile scripts/check_p0_2_followup_b_traceability.py` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MemoryCurvePolicyTest,MissedDayRecoveryPlannerTest,MasteryTransitionPolicyTest test` - passed after coverage-support test additions.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 95.9%, backend branch 81.4%, Flutter line 90.9%.
+
+Result:
+- TC-P02-FUB-015, TC-P02-FUB-016 and TC-P02-FUB-017 are passed for S006 replay/performance/coverage/traceability.
+- P02-FUB-GAP-008, P02-FUB-GAP-009 and P02-FUB-GAP-010 are closed for local S006 implementation evidence.
+- Followup-B is not release-ready.
+
+Residual risk:
+- Product Base merge is not approved.
+- S006 is local replay/performance/traceability closure; it does not provide external release/store/commercial evidence or Followup-C/D completion.
+- No production backend or Flutter code changed in this S006 slice; future production code changes must rerun the relevant coverage and contract gates.
+
+## 2026-06-05 - P02-FOLLOWUP-B-S005-MASTERY-TRANSITION-20260605
+
+Change request:
+- Strictly execute Followup-B S005 L0-L5 mastery transition and AI candidate-only explanation guardrails for AC-P02-FUB-007 / TC-P02-FUB-013/014 / FUB-FIX-007.
+- Explicit non-goal: do not claim global replay fixture closure, p95 performance closure, dedicated Followup-B traceability script closure, Product Base merge, release approval or Followup-B completion.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`.
+- FR/Spec/AC/TC: P02-FUB-FR-007, P02-FUB-SPEC-007, AC-P02-FUB-007, TC-P02-FUB-013 and TC-P02-FUB-014.
+- Traceability row: P02-FUB-TR-007.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/MasteryTransitionPolicy.java`
+- `backend/src/main/java/com/speakeasy/goal/MasteryTransitionExplanationValidator.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalMasteryTransitionDecision.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalMasteryTransitionDecisionRepository.java`
+- `backend/src/main/resources/db/migration/V202606050003__p0_2_followup_b_mastery_transition.sql`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`
+- `backend/src/main/java/com/speakeasy/ops/AccountDeletionService.java`
+- `backend/src/test/java/com/speakeasy/goal/MasteryTransitionPolicyTest.java`
+- `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/definition.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/requirements.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/spec.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/acceptance.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/test_cases.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/traceability.md`
+- `docs/product/development_status.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added `MasteryTransitionPolicy` with rule version `fub-mastery-v1`, one-level promotion cap, L0->L5 confidence thresholds, hold outcomes for low confidence, insufficient evidence, partial/unsupported goal, fatigue protection and contradiction, and demotion outcomes for retrieval/repeated/checkpoint regression.
+- Added `MasteryTransitionExplanationValidator` to accept only candidate explanations that echo deterministic decisions and reject forbidden persistent fields such as final mastery, review schedule, notification schedule, recovery mode, goal completion, entitlement/quota/billing state and official-score claims.
+- Added durable `goal_mastery_transition_decisions` with input snapshot hash, evidence refs, reason code, rule version, unique idempotency key and account-deletion cleanup.
+- Wired action completion and checkpoint submission to produce deterministic mastery transition decisions and `mastery_transition` replay audit rows; `GET /goal-autopilot/mastery-transitions` exposes a read-only projection.
+- Updated control data governance export to report implementation through S005 mastery and include mastery transition retention/deletion metadata.
+- Independent S005 review fixed replay output hashing to exclude random `transition_id`, so the audit output hash is based on deterministic transition state.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MasteryTransitionPolicyTest test` - failed first as the required S005 policy and AI validator classes did not exist; this was the expected red step.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MasteryTransitionPolicyTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - passed after updating S005 governance expectations.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest,AccountDeletionLearningDataTest test` - passed.
+- Independent review found the `mastery_transition` replay output hash included random `transition_id`; fixed by hashing deterministic output fields only and adding idempotent duplicate-transition assertions.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MasteryTransitionPolicyTest,GoalAutopilotControllerTest test` - passed after the replay hash fix.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MasteryTransitionPolicyTest,GoalAutopilotControllerTest,FoundationMigrationTest,AccountDeletionLearningDataTest test` - passed.
+- `npm run check:api-contract` - passed.
+- `npm run check:dart-client-drift` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter line 90.9%.
+- `git diff --check` - passed.
+
+Result:
+- TC-P02-FUB-013 and TC-P02-FUB-014 are passed for S005 mastery transition and AI forbidden persistent-field rejection.
+- P02-FUB-GAP-007 is closed for evidence-driven one-level promotion, hold/demotion behavior, persistent transition audit, account-deletion cleanup and AI candidate-only explanation validation.
+- Followup-B is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- At S005 close, global Followup-B replay fixtures, p95 performance budgets and dedicated Followup-B traceability script still needed S006 closure under TC-P02-FUB-015..017; S006 above later closed those local gates. Product Base merge and release approval remain separate and are not approved.
+- S005 writes transition decision history and audit evidence; it does not introduce a user-facing mastery UI or official-score/certification claim.
+- No Flutter UI changed in this slice; Flutter layer is N/A for S005 changed-code coverage.
+
+## 2026-06-05 - P02-FOLLOWUP-B-S004-ITEM-MEMORY-20260605
+
+Change request:
+- Strictly execute Followup-B S004 item-level MemoryCurvePolicy for AC-P02-FUB-006 / TC-P02-FUB-011/012 / FUB-FIX-006.
+- Explicit non-goal: do not claim L0-L5 mastery transition, global replay fixture closure, performance closure, Product Base merge, release approval or Followup-B completion.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`.
+- FR/Spec/AC/TC: P02-FUB-FR-006, P02-FUB-SPEC-006, AC-P02-FUB-006, TC-P02-FUB-011 and TC-P02-FUB-012.
+- Traceability row: P02-FUB-TR-006.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/MemoryCurvePolicy.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`
+- `backend/src/test/java/com/speakeasy/goal/MemoryCurvePolicyTest.java`
+- `backend/src/test/java/com/speakeasy/goal/MemoryCurveReplayTest.java`
+- `docs/architecture/openapi/speakeasy-api.yaml`
+- `docs/architecture/openapi/dart-client-drift-manifest.json`
+- `lib/generated/api/.openapi-sha256`
+- `lib/generated/api/speakeasy_api.dart`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/definition.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/requirements.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/spec.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/acceptance.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/test_cases.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added `MemoryCurvePolicy` with deterministic item-level decisions for forgetting-risk thresholds, retrieval success/failure, recent repeated failure override, overlearning cap, interleaving cap, daily budget defer, paused/control-blocked handling and default L0-L5 review intervals.
+- Implemented `POST /goal-autopilot/item-policy/decisions` through `GoalAutopilotService` and `GoalAutopilotController`, returning `MemoryItemPolicyState` projections and writing `item_policy` replay audit rows to the existing `goal_planner_replay_audits` table.
+- Fixed memory replay determinism by using day-level policy evaluation time and including it in the input snapshot; audit creation time remains a real timestamp and is excluded from replay hash.
+- Updated OpenAPI `ItemPolicyDecisionRequest` with optional detailed `MemoryItemPolicyInput` evidence fields while preserving existing `item_refs` fallback; synced generated Dart OpenAPI hash artifacts.
+- Added backend unit and integration tests for TC-P02-FUB-011/012 and updated traceability/test evidence.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MemoryCurvePolicyTest,MemoryCurveReplayTest test` - failed once because `next_due_at` used sub-day `Instant.now`, causing replay output hash drift; fixed before close.
+- Independent S004 review also corrected `review_not_due.next_due_at` to preserve the existing due date from `last_reviewed_at + default interval` instead of recalculating it from the evaluation day; the unit test now asserts that not-due default interval output.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MemoryCurvePolicyTest,MemoryCurveReplayTest test` - passed.
+- `npm run check:api-contract` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MemoryCurvePolicyTest,MemoryCurveReplayTest,GoalAutopilotControllerTest,GoalAutopilotRecoveryControllerTest test` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter line 90.9%.
+- `git diff --check` - passed.
+
+Result:
+- TC-P02-FUB-011 and TC-P02-FUB-012 are passed for S004 item-level MemoryCurvePolicy.
+- P02-FUB-GAP-006 is closed for item-level memory due decisions, overlearning/interleaving/budget caps, paused/control-blocked handling and memory replay determinism.
+- Followup-B is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- L0-L5 mastery transition, global Followup-B replay fixture, performance budgets, coverage evidence, dedicated Followup-B traceability script and final independent QA remain open.
+- Item-level memory p95 performance for 500 items is not closed in this slice; it remains part of TC-P02-FUB-016.
+- No Flutter UI or AI runtime behavior changed; those layers are N/A for this slice.
+
+## 2026-06-05 - P02-FOLLOWUP-B-S003-MISSED-DAY-RECOVERY-20260605
+
+Change request:
+- Strictly execute Followup-B S003 missed-day recovery planner for TC-P02-FUB-009/010.
+- Explicit non-goal: do not claim item-level memory, mastery transition, global replay fixture closure, performance closure, Product Base merge, release approval or Followup-B completion.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`.
+- FR/Spec/AC/TC: P02-FUB-FR-005, P02-FUB-SPEC-005, AC-P02-FUB-005, TC-P02-FUB-009 and TC-P02-FUB-010.
+- Traceability row: P02-FUB-TR-005.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/MissedDayRecoveryPlanner.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalRecoveryPlanDecision.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalRecoveryPlanDecisionRepository.java`
+- `backend/src/main/resources/db/migration/V202606050002__p0_2_followup_b_recovery_planner.sql`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalPlanItem.java`
+- `backend/src/main/java/com/speakeasy/ops/AccountDeletionService.java`
+- `backend/src/test/java/com/speakeasy/BackendIntegrationTestSupport.java`
+- `backend/src/test/java/com/speakeasy/goal/MissedDayRecoveryPlannerTest.java`
+- `backend/src/test/java/com/speakeasy/goal/GoalAutopilotRecoveryControllerTest.java`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/test_cases.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added `MissedDayRecoveryPlanner` with deterministic recovery mode selection for hard safety/feasibility override, user policy preference, `balanced` defer/compress/replace tie-breaker, daily budget cap and no overdue stacking.
+- Added durable `goal_recovery_plan_decisions` persistence with idempotency key, input snapshot hash, affected item refs, rule version and account-deletion cleanup.
+- Implemented `POST /goal-autopilot/recovery/replan` through existing OpenAPI/API contract, returning `RecoveryPlanDecision`, replacement `DailyTrainingPlan` and `recovery_replan` signal.
+- Recovery application marks the source daily/backplan stale, creates a new bounded recovery daily plan with one active recovery block and writes `missed_day_recovery` replay audit hashes.
+- Control data governance export now reports implementation through S003 recovery and includes `goal_recovery_plan_decisions` in retention/deletion evidence.
+- Added backend unit and integration tests for TC-P02-FUB-009/010 and updated traceability/test evidence.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MissedDayRecoveryPlannerTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotRecoveryControllerTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fub002ControlDataGovernanceAndValidationAreServerSide test` - passed after S003 governance status-marker fix.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MissedDayRecoveryPlannerTest,GoalAutopilotRecoveryControllerTest,GoalAutopilotControllerTest,NotificationEligibilityPolicyTest,NotificationOutboxServiceTest,NotificationOutboxReplayTest test` - passed.
+- `npm run check:api-contract` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter line 90.9%.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository jacoco:report` - failed because the project does not configure a resolvable `jacoco` Maven plugin prefix; coverage evidence above came from the existing project coverage script.
+
+Result:
+- TC-P02-FUB-009 and TC-P02-FUB-010 are passed for S003 missed-day recovery planner.
+- P02-FUB-GAP-005 is closed for deterministic recovery planner implementation, no-overdue-stacking daily plan replacement, decision persistence, idempotent replay and recovery replay audit.
+- Followup-B is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- Item-level memory, L0-L5 mastery transition, global Followup-B replay fixture, performance budgets, dedicated Followup-B traceability script and final independent QA remain open.
+- Recovery p95 performance is not closed in this slice; it remains part of TC-P02-FUB-016.
+- No Flutter UI or AI runtime behavior changed; those layers are N/A for this slice.
+
+## 2026-06-05 - P02-FOLLOWUP-B-S002-B-NOTIFICATION-OUTBOX-20260605
+
+Change request:
+- Strictly execute S002-B notification outbox lifecycle and replay for TC-P02-FUB-007/008.
+- Explicit non-goal: do not claim external notification platform delivery, release approval, Product Base merge or Followup-B completion.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`.
+- FR/Spec/AC/TC: P02-FUB-FR-004, P02-FUB-SPEC-004, AC-P02-FUB-004, TC-P02-FUB-007 and TC-P02-FUB-008.
+- Traceability row: P02-FUB-TR-004.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/NotificationOutboxRecord.java`
+- `backend/src/main/java/com/speakeasy/goal/NotificationOutboxRecordRepository.java`
+- `backend/src/main/java/com/speakeasy/goal/NotificationOutboxService.java`
+- `backend/src/main/java/com/speakeasy/goal/PlannerReplayAudit.java`
+- `backend/src/main/java/com/speakeasy/goal/PlannerReplayAuditRepository.java`
+- `backend/src/main/resources/db/migration/V202606050001__p0_2_followup_b_notification_outbox.sql`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`
+- `backend/src/main/java/com/speakeasy/ops/AccountDeletionService.java`
+- `backend/src/test/java/com/speakeasy/BackendIntegrationTestSupport.java`
+- `backend/src/test/java/com/speakeasy/FoundationMigrationTest.java`
+- `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`
+- `backend/src/test/java/com/speakeasy/goal/NotificationOutboxServiceTest.java`
+- `backend/src/test/java/com/speakeasy/goal/NotificationOutboxReplayTest.java`
+- `docs/architecture/openapi/speakeasy-api.yaml`
+- `docs/architecture/openapi/dart-client-drift-manifest.json`
+- `lib/generated/api/.openapi-sha256`
+- `lib/generated/api/speakeasy_api.dart`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/acceptance.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/definition.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/test_cases.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/traceability.md`
+- `docs/product/development_status.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added durable `goal_notification_outbox_records` and `goal_planner_replay_audits` tables with JPA entities/repositories and account-deletion cleanup.
+- Added `NotificationOutboxService` with stable dedupe key, hashed input/payload projection, lifecycle transitions for `pending`, `scheduled`, `blocked`, `cancelled`, `failed`, `expired` and `sent`, cancel/reschedule and retry/failure recovery.
+- Added replay audit writes for outbox state changes with deterministic input/output/replay hashes and `notification_outbox` decision family.
+- Added `/goal-autopilot/reminders/outbox` and `/goal-autopilot/replay-audits` list endpoints and synced OpenAPI/example/generated Dart drift hash artifacts.
+- Extended governance export, foundation migration and account-deletion tests to include outbox and replay audit tables.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=NotificationOutboxServiceTest,NotificationOutboxReplayTest test` - red step failed before implementation with missing outbox service, repository and replay audit classes.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=NotificationOutboxServiceTest,NotificationOutboxReplayTest,NotificationEligibilityPolicyTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fub007OutboxAndReplayApisExposeRedactedProjection test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - passed after updating stale S002-A governance expectations.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest,AccountDeletionLearningDataTest,TrainingAccountDeletionRetentionTest test` - passed.
+- `npm run check:api-contract` - passed after OpenAPI/example/hash sync.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `flutter analyze lib/generated/api/speakeasy_api.dart` - passed.
+
+Result:
+- TC-P02-FUB-007 and TC-P02-FUB-008 are passed for S002-B notification outbox lifecycle/replay.
+- P02-FUB-GAP-004 is closed for outbox lifecycle, redacted projection, replay audit and deletion cleanup.
+- Followup-B is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- Missed-day recovery, item-level memory, mastery transition, global replay fixtures, performance, coverage and final independent QA remain open.
+- External platform notification delivery/release evidence is outside this local outbox lifecycle slice and remains unclaimed.
+
+## 2026-06-05 - P02-FOLLOWUP-B-S002-A-NOTIFICATION-ELIGIBILITY-20260605
+
+Change request:
+- Strictly execute S002-A Notification Eligibility Policy for TC-P02-FUB-005/006 only.
+- Explicit non-goal: do not implement notification outbox lifecycle, scheduler send/cancel/retry/dedupe or replay records.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`.
+- FR/Spec/AC/TC: P02-FUB-FR-003, P02-FUB-SPEC-003, AC-P02-FUB-003, TC-P02-FUB-005 and TC-P02-FUB-006.
+- Traceability row: P02-FUB-TR-003.
+- Boundary: S002-A eligibility policy only; scheduler/outbox remains P02-FUB-TR-004 / TC-P02-FUB-007/008.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/NotificationEligibilityPolicy.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/test/java/com/speakeasy/goal/NotificationEligibilityPolicyTest.java`
+- `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`
+- `docs/architecture/openapi/speakeasy-api.yaml`
+- `docs/architecture/openapi/dart-client-drift-manifest.json`
+- `lib/generated/api/.openapi-sha256`
+- `lib/generated/api/speakeasy_api.dart`
+- `test/features/goal_autopilot/goal_autopilot_adapter_test.dart`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/definition.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/test_cases.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/traceability.md`
+- `docs/product/development_status.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added `NotificationEligibilityPolicy` as a deterministic backend policy for reason precedence and quiet-hours evaluation.
+- Routed `GoalAutopilotService` reminder eligibility decisions through the policy and kept generic `blocked_by_policy` below concrete unsupported/partial/stale/missing reasons.
+- Fixed stale-plan detection so a stale downstream plan is surfaced as `stale_plan` instead of being collapsed into `missing_plan`.
+- Added TC-P02-FUB-005 backend unit coverage for reason precedence, consent, permission, entitlement, quota, stale/missing-plan and quiet-hours same-day/cross-midnight/start=end behavior.
+- Added TC-P02-FUB-006 Flutter widget coverage for quiet-hours and notification blocked reason rendering without sending `completeAction`.
+- Added `blocked_by_policy` to the OpenAPI `NotificationEligibilityDecision.reason_code` enum and synced generated Dart drift hash artifacts.
+
+Validation:
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=NotificationEligibilityPolicyTest test` - passed.
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart --name "Followup-B shows quiet-hours and notification blocked reasons without treating them as completion"` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - passed after fixing integration precedence and updating the stale-plan regression assertion.
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `npm run check:openapi-contract` - passed.
+- `npm run check:dart-client-drift` - passed.
+
+Result:
+- TC-P02-FUB-005 and TC-P02-FUB-006 are passed for S002-A notification eligibility policy.
+- P02-FUB-GAP-003 is closed for eligibility policy and UI reason display.
+- Followup-B is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- Notification scheduler/outbox lifecycle, outbox data governance/replay, missed-day recovery, item-level memory, mastery transition, replay, performance, coverage and final independent QA remain open.
+
+## 2026-06-05 - P02-FOLLOWUP-B-TC002-CONTROL-GOVERNANCE-20260605
+
+Change request:
+- Strictly close TC-P02-FUB-002 under the project development/test workflow for the routed Followup-B control slice.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`.
+- FR/Spec/AC/TC: P02-FUB-FR-001, P02-FUB-SPEC-001, AC-P02-FUB-001, TC-P02-FUB-002.
+- Traceability row: P02-FUB-TR-001.
+- Boundary: current S001 control/idempotency/audit governance only; notification outbox governance remains P02-FUB-TR-004 / TC-P02-FUB-007/008.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotControl.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotControlIdempotency.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotControlIdempotencyRepository.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotControlRepository.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/spec.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/acceptance.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/test_cases.md`
+- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/traceability.md`
+- `docs/product/development_status.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added repository queries and entity getters needed to inspect user-owned control and idempotency records by user.
+- Added `GoalAutopilotService#exportControlDataGovernance(UUID)` as an internal read-only governance boundary returning exported control records, redacted idempotency metadata, retention rules, deletion tables and explicit notification-outbox status.
+- Extended TC-P02-FUB-002 to prove invalid input remains server-validated, valid control data is included in the governance snapshot, idempotency/audit sensitive details are redacted and account deletion purges current control/idempotency data.
+- No OpenAPI/generated Dart client change was required because no new external API route was added.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fub002ControlDataGovernanceAndValidationAreServerSide test` - red step failed before implementation with missing `exportControlDataGovernance(UUID)`.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fub002ControlDataGovernanceAndValidationAreServerSide test` - passed after implementation.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest,AccountDeletionLearningDataTest,TrainingAccountDeletionRetentionTest test` - passed.
+
+Result:
+- TC-P02-FUB-002 is passed for current S001 control data governance.
+- P02-FUB-GAP-001 is closed for current S001 control source and governance scope.
+- Followup-B is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- Notification scheduler/outbox data governance, missed-day recovery, item-level memory, mastery transition, replay, performance, coverage and final independent QA remain open.
+
+## 2026-06-04 - P02-FOLLOWUP-B-FRONTEND-CONTROL-BINDING-20260604
+
+Change request:
+- Implement the Development Orchestrator-routed Followup-B frontend slice only: bind Flutter Goal Autopilot UI to server-owned `UserAutopilotControl` state and mutation responses.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`.
+- FR/Spec/AC/TC: P02-FUB-FR-002, P02-FUB-SPEC-002, AC-P02-FUB-002, TC-P02-FUB-004.
+- Supporting contract boundary: frontend must render server control state and must not locally override active, paused, blocked or reminder eligibility decisions.
+
+Files changed:
+- `lib/features/goal_autopilot/goal_autopilot_models.dart`
+- `lib/features/goal_autopilot/goal_autopilot_adapter.dart`
+- `lib/features/goal_autopilot/goal_autopilot_panel.dart`
+- `lib/services/api_client.dart`
+- `test/features/goal_autopilot/goal_autopilot_adapter_test.dart`
+- `docs/reports/implementation_report.md`
+
+Implementation summary:
+- Added frontend models for `UserAutopilotControl`, `AutopilotControlResponse` and reminder eligibility decisions.
+- Added adapter and API client methods for read, update, pause and resume control endpoints with Idempotency-Key headers.
+- Updated `GoalAutopilotPanel` to load summary plus server control state, render active/paused/blocked control state and reminder eligibility reason, and update UI directly from pause/resume/update-control responses.
+- Added widget coverage proving Flutter hides executable action UI while server control is paused and does not locally override server-provided reminder eligibility.
+
+Validation:
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart --name "Followup-B renders server control state and does not override pause or eligibility"` - passed.
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter analyze lib/features/goal_autopilot/goal_autopilot_adapter.dart lib/features/goal_autopilot/goal_autopilot_models.dart lib/features/goal_autopilot/goal_autopilot_panel.dart lib/services/api_client.dart test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+
+Result:
+- Followup-B Flutter control binding slice is implemented and target-test passing for TC-P02-FUB-004.
+- Followup-B is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- Notification scheduler/outbox, missed-day recovery, memory/mastery integration, AI runtime integration, dedicated Followup-B traceability script, full coverage evidence, performance evidence, test report execution evidence and final independent QA remain open.
+
+## 2026-06-04 - P02-FOLLOWUP-B-BACKEND-CONTROL-SLICE-20260604
+
+Change request:
+- Implement the first Development Orchestrator-routed Followup-B backend slice only: server-owned `UserAutopilotControl` and pause/resume-control foundation.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`.
+- FR/Spec/AC/TC at the time of this earlier slice: P02-FUB-FR-001, P02-FUB-FR-002, P02-FUB-FR-003; P02-FUB-SPEC-001, P02-FUB-SPEC-002, P02-FUB-SPEC-003; AC-P02-FUB-001, AC-P02-FUB-002, AC-P02-FUB-003; TC-P02-FUB-001, TC-P02-FUB-003 and the backend validation/deletion-cleanup subset of TC-P02-FUB-002. The full TC-P02-FUB-002 control data-governance closure is recorded in the 2026-06-05 section above.
+- Historical note: this earlier backend slice had only partial TC-P02-FUB-017 support through backend executable checks; the dedicated Followup-B traceability script was later created and passed in S006.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotControl.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotControlIdempotency.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotControlIdempotencyRepository.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotControlRepository.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`
+- `backend/src/main/resources/db/migration/V202606040002__p0_2_followup_b_autopilot_control.sql`
+- `backend/src/test/java/com/speakeasy/BackendIntegrationTestSupport.java`
+- `backend/src/test/java/com/speakeasy/FoundationMigrationTest.java`
+- `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`
+- `docs/reports/implementation_report.md`
+
+Implementation summary:
+- Added a server-owned `goal_autopilot_controls` table and JPA model separate from `goal_profiles`.
+- Added authenticated control endpoints for read, settings update, pause and resume.
+- Added backend validation for quiet hours, timezone, intensity override and missed-day policy.
+- Added pause/resume behavior that suppresses next-action advancement and reminder eligibility without mutating planner items.
+- Added Idempotency-Key replay storage for update, pause and resume so same-key replay returns the stored control result without duplicate audit or notification impact.
+- Added state-level no-op handling for repeated resume after the control is already active.
+- Added account-deletion cleanup coverage for the new control and control replay tables.
+
+Validation:
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest test` - passed.
+- `git diff --check -- backend docs/reports/implementation_report.md` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `npm run check:api-contract` - passed.
+- Independent QA/quality final review agent - passed with no blocking findings.
+
+Result:
+- Followup-B backend control slice was implemented and target-test passing for TC-P02-FUB-001, TC-P02-FUB-003 and the backend validation/deletion-cleanup subset of TC-P02-FUB-002 at that time. The current status is TC-P02-FUB-002 passed for S001 control data governance.
+- Historical note: TC-P02-FUB-002 full control data-governance closure was still open in this earlier backend slice. It is superseded by `P02-FOLLOWUP-B-TC002-CONTROL-GOVERNANCE-20260605` above.
+- Followup-B is not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- At this earlier backend slice, Flutter controls, notification scheduler integration, missed-day recovery, memory queue hardening, AI runtime integration, dedicated Followup-B traceability script, full coverage evidence, performance evidence, test report execution evidence and final independent QA were still later-slice work; S001 frontend binding and S002..S006 sections above later closed the local Followup-B implementation gates.
+
+## 2026-06-04 - P02-FOLLOWUP-B-PRE-IMPLEMENTATION-REPORTING-GATE-20260604
+
+Superseded status note:
+- This section records the earlier pre-implementation reporting gate. It is superseded for control-slice implementation status by `P02-FOLLOWUP-B-BACKEND-CONTROL-SLICE-20260604` and `P02-FOLLOWUP-B-FRONTEND-CONTROL-BINDING-20260604` above. It remains valid for the still-open scheduler/outbox, recovery, memory/mastery, replay/performance/coverage and final QA gates.
+
+Change request:
+- Reconcile Followup-B reporting/status after requirements/spec/acceptance/test_cases/traceability, Domain, API/OpenAPI/generated client sync, AI runtime, UX, PM status and Test Case Development mapping gates completed.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`.
+- FR/Spec/AC/TC: P02-FUB-FR-001..008, P02-FUB-SPEC-001..008, AC-P02-FUB-001..008, TC-P02-FUB-001..017.
+- Traceability rows: P02-FUB-TR-001..009.
+- Policy gates: P02-PG-001 through P02-PG-005.
+
+Files changed:
+- Current reporting/status gate note: `docs/reports/quality_report.md` and this report.
+- Prior independently checked upstream context: `docs/reports/test_report.md`, `docs/product/development_status.md`, and Followup-B `definition.md` / `test_cases.md`.
+- No backend, Flutter, AI runtime code, test script, generated client, OpenAPI, UX, domain or release file was changed by this reporting gate note.
+
+Implementation summary:
+- Recorded that Followup-B is documentation/contract-ready for implementation routing only.
+- Recorded at that time that TC-P02-FUB-017 still needed `scripts/check_p0_2_followup_b_traceability.py` or an approved implementation equivalent; S006 above later created and ran that script.
+- Preserved the blocker that executable tests, coverage, performance evidence, implementation evidence and final quality review are still required.
+
+Validation:
+- `git diff --check -- docs/reports/quality_report.md docs/reports/implementation_report.md` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `npm run check:api-contract` - passed.
+- Followup-B PM status reconciliation independent checker - passed.
+- Followup-B Test Case Development reconciliation independent checker - passed.
+
+Result:
+- Reporting/status gate was reconciled for implementation routing review at that time.
+- Historical note: Followup-B was not implemented in this pre-implementation step. Later control backend/frontend slices are partially implemented and target-test passing, but Followup-B remains not complete, not release-ready and not Product Base-ready.
+
+Residual risk:
+- Backend/Flutter/AI runtime implementation, executable tests, dedicated Followup-B traceability script or approved implementation equivalent, coverage, performance evidence, test report execution evidence and final quality review remain open.
+- Development Orchestrator must still route the smallest legal implementation slice before code changes.
+
+## 2026-06-04 - P02-FOLLOWUP-A-NO-GOAL-EXPLORE-MODE-20260604
+
+Change request:
+- Implement the Followup-A FR-009 product boundary: users who browse or try practice without setting a goal must not silently create GoalProfile, DiagnosticAssessment, forecast, plan, autopilot or memory schedule facts.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening/`.
+- FR/Spec/AC/TC: P02-FUA-FR-009, P02-FUA-SPEC-009, AC-P02-FUA-009, TC-P02-FUA-014..016.
+- Traceability row: P02-FUA-TR-009.
+- Policy gates: P02-PG-001, P02-PG-002, P02-PG-003 and P02-PG-005.
+
+Files changed:
+- Flutter implementation: `lib/features/goal_autopilot/goal_autopilot_panel.dart`.
+- Flutter tests: `test/features/goal_autopilot/goal_autopilot_adapter_test.dart`.
+- Traceability gate: `scripts/check_p0_2_goal_autopilot_traceability.py`.
+- Followup-A docs/reports: `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`, plus `docs/reports/test_report.md`, `docs/reports/quality_report.md` and this report.
+
+Implementation summary:
+- Added `No active goal` empty state with `Set a goal`, `Explore practice` and `Try a sample drill`.
+- Changed no-active-goal behavior so the editable GoalProfile form opens only after explicit `Set a goal`.
+- Added a local sample drill Explore Mode that renders ordinary practice feedback without calling goal-autopilot create, plan, action, checkpoint, forecast or memory operations.
+- Strengthened widget tests and traceability checks to ensure no production no-goal browsing path calls `createDefaultGoal()`.
+
+Validation:
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter analyze lib/features/goal_autopilot lib/services/api_client.dart lib/pages/home_page.dart test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter test --coverage test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest,GoalAutopilotPerformanceTest test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.3%, backend branch 88.6% and Flutter feature line 90.9%.
+- `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check -- <Followup-A FR-009 changed files>` - passed.
+- Followup-A FR-009 touched-file whitespace audit - passed.
+
+Result:
+- Followup-A FR-009 is locally implemented and test-passing.
+- Requirements -> spec -> acceptance -> test cases -> code -> tests -> coverage -> traceability are linked for P02-FUA-FR-009.
+- No backend/API/domain contract change was required.
+
+Residual risk:
+- Followup-A implements only the no-goal boundary and sample drill entry, not a full Explore Practice content library or recommender.
+- Followup-B full completion remains open: pause/resume has a routed control-slice implementation, but notification scheduling, missed-day recovery, memory queue hardening, replay/performance/coverage and final QA remain open.
+- Followup-C Queue/Wiki propagation and checkpoint/forecast surface hardening remain open.
+- Followup-D commercial entitlement/cost telemetry, data export/retention UI, rollout flags and Product Base approval remain open.
+
+## 2026-06-04 - P02-FOLLOWUP-A-GOAL-INTAKE-DIAGNOSTIC-HARDENING-20260604
+
+Change request:
+- Implement Followup-A after completing requirements/spec/acceptance/test_cases/traceability.
+- Close the known P0.2 gaps: fixed default GoalProfile UI, hard-coded diagnostic samples and incomplete support/claim/revision UI states.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening/`.
+- FR/Spec/AC/TC: P02-FUA-FR-001..008, P02-FUA-SPEC-001..008, AC-P02-FUA-001..008, TC-P02-FUA-001..013.
+- Traceability rows: P02-FUA-TR-001..008.
+- Policy gates: P02-PG-001 through P02-PG-005.
+
+Files changed:
+- Flutter implementation: `lib/features/goal_autopilot/goal_autopilot_adapter.dart`, `lib/features/goal_autopilot/goal_autopilot_models.dart`, `lib/features/goal_autopilot/goal_autopilot_panel.dart`.
+- Flutter tests: `test/features/goal_autopilot/goal_autopilot_adapter_test.dart`.
+- Traceability gate: `scripts/check_p0_2_goal_autopilot_traceability.py`.
+- Followup-A docs/reports: `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`, plus `docs/reports/test_report.md`, `docs/reports/quality_report.md` and this report.
+
+Implementation summary:
+- Replaced the production fixed default goal setup path with an editable GoalProfile form covering goal type, target score/ability, deadline, daily minutes, intensity and three diagnostic sample fields.
+- Added typed `GoalDiagnosticSampleInput` and updated adapter payload generation to use user-entered samples, filter empty samples and avoid fake `audio_ref`.
+- Expanded `GoalAutopilotSummary` parsing for target ability, daily minutes, intensity, revision, support decision, diagnostic status/sample count, claim guard, ETA/risk fields and plan/action statuses.
+- Updated summary UI to render supported/partial/unsupported states, limitation copy, product-internal claim guard copy, revision, sample count and stale/replan recovery.
+- Strengthened traceability script so Followup-A docs, code and tests are part of the automated P0.2 traceability gate.
+
+Validation:
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter analyze lib/features/goal_autopilot lib/services/api_client.dart lib/pages/home_page.dart test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter test --coverage test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest,GoalAutopilotPerformanceTest test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.3%, backend branch 88.6% and Flutter feature line 90.5%.
+- `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- Followup-A is locally implemented and test-passing for its scoped feature set.
+- Requirements -> spec -> acceptance -> test cases -> code -> tests -> coverage -> traceability are linked for P02-FUA-FR-001..008.
+- No backend/API/domain contract change was required.
+
+Residual risk:
+- Followup-B full completion remains open: pause/resume has a routed control-slice implementation, but notification scheduling, missed-day recovery, memory queue hardening, replay/performance/coverage and final QA remain open.
+- Followup-C Queue/Wiki propagation and checkpoint/forecast surface hardening remain open.
+- Followup-D commercial entitlement/cost telemetry, data export/retention UI, rollout flags and Product Base approval remain open.
+
+## 2026-06-04 - P02-GOAL-AUTOPILOT-LOCAL-IMPLEMENTATION-20260604
+
+Change request:
+- Enter P0.2 code development and testing under the project's requirements/spec/AC/TC/traceability workflow.
+- Keep each implemented feature traceable back to the three P0.2 increments and record independent review findings after the work.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-2-training-memory.md`.
+- Increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy`, `p0-2-autopilot-progress-checkpoint`.
+- Requirement chains: GoalProfile, DiagnosticAssessment, GoalBackplan, AutopilotTraining, MemoryCurvePolicy, ProgressForecast and OutcomeCheckpoint.
+- Policy gates: P02-PG-001 through P02-PG-005.
+
+Files changed:
+- Contracts: `docs/domain/domain_schema.md`, `docs/architecture/api_contract.md`, `docs/architecture/openapi/speakeasy-api.yaml`, `docs/ai_runtime/llm_output_schema.md`, `docs/ux/screen_spec.md`.
+- Generated/API drift guard: `lib/generated/api/speakeasy_api.dart`, `lib/generated/api/.openapi-sha256`, `docs/architecture/openapi/dart-client-drift-manifest.json`, `scripts/check_openapi_contract.py`.
+- Backend: `backend/src/main/java/com/speakeasy/goal/`, `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`, `backend/src/main/resources/db/migration/V202606040001__p0_2_goal_autopilot.sql`, account deletion and integration-test cleanup support.
+- Flutter: `lib/features/goal_autopilot/`, `lib/services/api_client.dart`, `lib/pages/home_page.dart`.
+- Tests and gates: `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`, `backend/src/test/java/com/speakeasy/GoalAutopilotPerformanceTest.java`, `backend/src/test/java/com/speakeasy/FoundationMigrationTest.java`, `test/features/goal_autopilot/goal_autopilot_adapter_test.dart`, `scripts/check_p0_2_goal_autopilot_coverage.py`, `scripts/check_p0_2_goal_autopilot_traceability.py`.
+- Traceability and reports: P0.2 increment `test_cases.md`/`traceability.md` files plus this report, `docs/reports/test_report.md` and `docs/reports/quality_report.md`.
+
+Implementation summary:
+- Added a deterministic backend source of truth for goal intake, supported-goal decision, diagnostic facts, L0-L5 mastery seed, weekly/daily backplan, memory policy, next action, complete/skip/defer recovery, progress forecast and checkpoint update.
+- Added persistent P0.2 goal tables and account deletion cleanup for goal-autopilot facts.
+- Added OpenAPI operations for the Goal Autopilot API family and synced generated Dart path constants.
+- Added a compact Flutter Home learn-tab panel and API adapter for starting the default goal-autopilot flow, loading the next action and submitting checkpoints.
+- Kept paid AI and official-score-equivalence behavior out of the implementation; AI runtime schemas remain candidate-only until provider-backed evaluation is separately approved.
+
+Validation:
+- `npm run check:api-contract` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest,GoalAutopilotPerformanceTest test` - passed.
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `flutter analyze lib/features/goal_autopilot lib/services/api_client.dart lib/pages/home_page.dart test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest,GoalAutopilotPerformanceTest test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
+- `flutter test --coverage test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.3%, backend branch 88.6% and Flutter feature line 82.1%.
+- `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
+
+Result:
+- Local P0.2 deterministic implementation slice is code-complete and test-passing for its implemented scope.
+- Requirements -> code -> tests -> coverage traceability is documented for the implemented slice across the three increment traceability files and test-case evidence addenda.
+- The full P0.2 release gate is not complete because several product/commercial runtime gates remain open.
+
+Residual risk:
+- The user-facing GoalProfile UI is currently a compact default-goal starter, not the full editable intake experience.
+- Pause/resume endpoint behavior, production notification scheduling, Queue/Wiki progress surfaces, broader checkpoint content, paid AI cost/entitlement telemetry and Product Base approval remain open follow-ups.
+
+## 2026-06-04 - P02-DOWNSTREAM-TRACEABILITY-20260604 P0.2 Downstream Documentation
+
+Change request:
+- Push P02-PG-001 through P02-PG-005 into the three P0.2 increments' requirements/spec/acceptance/test_cases/traceability.
+- Ensure P0.2 stage scope is fully represented in downstream docs and planned tests, including software performance and >=80% code coverage gates.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-2-training-memory.md`.
+- Primary feature: `goal-driven-learning-autopilot`.
+- Increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy`, `p0-2-autopilot-progress-checkpoint`.
+- Stage Scope: P02-SI-001 through P02-SI-013.
+- Policy Gates: P02-PG-001 through P02-PG-005.
+
+Files changed:
+- Stage/status roadmap: `docs/product/stages/p0-2-training-memory.md`, `docs/product/roadmap.md`, `docs/product/development_status.md`.
+- Diagnostic increment docs: `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md` under `docs/product/increments/p0-2-goal-diagnostic-foundation/`.
+- Backplan/memory increment docs: `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md` under `docs/product/increments/p0-2-goal-backplan-memory-policy/`.
+- Autopilot/progress/checkpoint increment docs: `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md` under `docs/product/increments/p0-2-autopilot-progress-checkpoint/`.
+- Reports: `docs/reports/test_report.md`, `docs/reports/quality_report.md`, `docs/reports/implementation_report.md`.
+
+Implementation summary:
+- Generated downstream documentation for all three P0.2 increments.
+- Added stable FR/Spec/AC/TC/Traceability IDs for GoalProfile, DiagnosticAssessment, GoalBackplan, MemoryCurvePolicy, AutopilotTraining, ProgressForecast and OutcomeCheckpoint.
+- Added planned performance test cases and >=80% changed-code line/branch coverage gates to each increment.
+- Recorded that these are planned tests only; no P0.2 code or executed evidence exists yet.
+
+Validation:
+- `p02-diagnostic-chain=passed`.
+- `p02-plan-chain=passed`.
+- `p02-auto-chain=passed`.
+- `p02-stage-scope-traceability=passed`.
+- `p02-policy-gate-downstream=passed`.
+- `p02-ac-tc-trace-prefixes=passed`.
+- `git diff --check -- <P0.2 downstream docs and reports>` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Result:
+- P0.2 has 100% planned documentation traceability across Stage Scope -> Increment -> FR -> Spec -> AC -> TC -> Traceability.
+- No code implementation, runtime performance result, code coverage result or release status changed.
+
+Residual risk:
+- Domain/API/AI/UX contracts are still missing.
+- Implementation remains blocked until code, automated tests, performance evidence, >=80% coverage reports and executed traceability evidence are produced.
+
+## 2026-06-04 - P02-POLICY-GATE-COMMERCIAL-PRODUCT-REVIEW-20260604 P0.2 Policy Gate Update
+
+Change request:
+- From product-engineering and commercial-software perspectives, close the seven P0.2 landing defects using five cross-cutting policy gates.
+- Write the policy gates into the P0.2 stage entry conditions and the three planned increments' Required Downstream Artifacts.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-2-training-memory.md`.
+- Primary feature: `goal-driven-learning-autopilot`.
+- Active planned increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy`, `p0-2-autopilot-progress-checkpoint`.
+- Policy Gates: P02-PG-001 through P02-PG-005.
+
+Files changed:
+- Stage policy gates and defect closure matrix: `docs/product/stages/p0-2-training-memory.md`.
+- Increment downstream artifact obligations: `docs/product/increments/p0-2-goal-diagnostic-foundation/definition.md`, `docs/product/increments/p0-2-goal-backplan-memory-policy/definition.md`, `docs/product/increments/p0-2-autopilot-progress-checkpoint/definition.md`.
+- Reports: `docs/reports/test_report.md`, `docs/reports/quality_report.md`, `docs/reports/implementation_report.md`.
+
+Implementation summary:
+- Added P02-PG-001 GoalAchievementPolicy, P02-PG-002 SupportedGoalMatrix, P02-PG-003 AutopilotControlPolicy, P02-PG-004 CommercialEntitlementAndCostPolicy and P02-PG-005 DataGovernancePolicy.
+- Mapped the seven reviewed defects to those policy gates and required every applicable downstream increment to inherit them before implementation.
+- Kept all outcomes at planning-gate status; no functional P0.2 behavior was implemented.
+
+Validation:
+- P02 policy gate ID audit - passed.
+- P02 seven-defect closure audit - passed at planning-gate level.
+- `git diff --check -- <P0.2 policy gate docs and reports>` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Result:
+- P0.2 now has explicit product-engineering and commercial-software gates for achievement claims, diagnosis reliability, content support, autopilot control, planner feasibility, entitlement/cost and data governance.
+- No code implementation or functional test status changed.
+
+Residual risk:
+- The gates must still be converted into requirements/spec/acceptance/test_cases/traceability and domain/API/AI/UX contracts in the next workflow steps.
+
+## 2026-06-04 - P02-SUPERSEDED-MEMORY-ARTIFACT-REMOVAL-20260604 Superseded P0.2 Artifact Removal
+
+Change request:
+- Remove the old single memory-planner P0.2 artifact after it was absorbed by the goal-driven P0.2 replanning.
+- Update related documents so future development links only to the new P0.2 planned increments.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-2-training-memory.md`.
+- Primary feature: `goal-driven-learning-autopilot`.
+- Active planned increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy`, `p0-2-autopilot-progress-checkpoint`.
+- Stage Scope: P02-SI-001 through P02-SI-013 after replanning.
+
+Files changed:
+- Removed superseded artifact directory under `docs/product/increments/`.
+- Updated source-of-truth links in `docs/product/stages/p0-2-training-memory.md`, `docs/product/roadmap.md`, `docs/product/feature_registry.md`, `docs/product/development_status.md` and `docs/product/increments/p0-2-goal-backplan-memory-policy/definition.md`.
+- Updated audit/status reports in `docs/reports/test_report.md`, `docs/reports/quality_report.md` and `docs/reports/implementation_report.md`.
+
+Implementation summary:
+- Deleted the old single memory-planner docs so they cannot be mistaken for an implementation-ready increment.
+- Preserved P02-SI-001..006 as stage-scope obligations and routed them through the goal-driven planned increments.
+- Converted the earlier memory-planner audit into superseded historical context, not active evidence.
+
+Validation:
+- Superseded artifact reference audit - passed after active links were removed.
+- Directory removal check - passed.
+- `git diff --check -- <P0.2 supersession docs>` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Result:
+- Active P0.2 source of truth is now the stage plan plus three goal-driven planned increment definitions.
+- No code implementation or functional test status changed.
+
+Residual risk:
+- The three new planned increments still need full downstream docs and independent traceability review before implementation.
+
+## 2026-06-04 - P02-GOAL-DRIVEN-STAGE-REPLAN-20260604 P0.2 Goal-Driven Stage Replanning
+
+Change request:
+- Review the whole roadmap and stage plan from the user perspective of reaching a short-term learning goal without relying on self-discipline.
+- Replan how GoalProfile, DiagnosticAssessment, GoalBackplan, AutopilotTraining, MemoryCurvePolicy, ProgressForecast and OutcomeCheckpoint should land in stages.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-2-training-memory.md`.
+- Primary feature: `goal-driven-learning-autopilot`.
+- Planned increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy`, `p0-2-autopilot-progress-checkpoint`.
+- Stage Scope: P02-SI-001 through P02-SI-013 after replanning.
+
+Files changed:
+- Roadmap/status/registry: `docs/product/roadmap.md`, `docs/product/development_status.md`, `docs/product/feature_registry.md`.
+- Stage plan: `docs/product/stages/p0-2-training-memory.md`.
+- PM increment definitions: `docs/product/increments/p0-2-goal-diagnostic-foundation/definition.md`, `docs/product/increments/p0-2-goal-backplan-memory-policy/definition.md`, `docs/product/increments/p0-2-autopilot-progress-checkpoint/definition.md`.
+- Superseded P0.2 partial artifact boundary: earlier single memory-planner artifact removed by the later supersession cleanup.
+- Reports: `docs/reports/quality_report.md`, `docs/reports/implementation_report.md`.
+
+Implementation summary:
+- Added the long-lived feature `goal-driven-learning-autopilot`.
+- Reframed P0.2 from a memory scheduling stage into a goal-driven autopilot stage.
+- Split the user goal chain into three planned increments so target setup/diagnosis comes before backplanning/memory policy, and automatic execution/progress forecasting comes after both.
+- Marked the existing cross-session memory increment as a partial design source rather than complete P0.2 implementation input.
+
+Validation:
+- P0.2 goal-driven stage audit - passed with no missing P02-SI-001..013 or requirement-chain terms.
+- `git diff --check -- <P0.2 stage replanning docs>` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Result:
+- Roadmap and stage plan now cover all seven user goal-driven requirement chains at PM planning level.
+- No code implementation or functional test status changed.
+
+Residual risk:
+- The new planned increments need full downstream docs and independent traceability review before implementation.
+- Earlier P02-SI-001..006 intent must be regenerated inside the new planned increment structure.
+
+## 2026-06-04 - P02-DOCUMENTATION-DESIGN-TRACEABILITY-20260604 P0.2 Documentation Increment
+
+Change request:
+- Start P0.2 stage development through the PM/documentation workflow first.
+- Ensure P0.2 features fully land in downstream requirements, specs, acceptance criteria, test cases and traceability before implementation.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-2-training-memory.md`.
+- Increment: superseded historical memory-planner artifact.
+- Stage Scope: P02-SI-001 through P02-SI-006.
+- Requirements: P02-FR-001 through P02-FR-010.
+- Specs: P02-SPEC-001 through P02-SPEC-010.
+- Acceptance: AC-P02-001 through AC-P02-010.
+- Test cases: TC-P02-001 through TC-P02-014.
+- Traceability: P02-TR-001 through P02-TR-010.
+
+Files changed:
+- Product planning: `docs/product/roadmap.md`, `docs/product/stages/p0-2-training-memory.md`, `docs/product/feature_registry.md`, `docs/product/development_status.md`.
+- P0.2 historical memory-planner docs: `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`; removed by the later supersession cleanup.
+- Reports: `docs/reports/test_report.md`, `docs/reports/quality_report.md`, `docs/reports/implementation_report.md`.
+
+Implementation summary:
+- Created an early P0.2 memory-planner design artifact; this was later superseded and removed after goal-driven replanning.
+- Converted P02-SI-001 through P02-SI-006 into full downstream FR/Spec/AC/TC/Traceability coverage.
+- Kept all functional P0.2 tests as planned and all code evidence as not started.
+- Recorded open gates for domain model, API/OpenAPI, AI runtime schema, UX/screen spec, implementation/tests and scope guard.
+
+Validation:
+- P02 documentation ID coverage audit - passed with no missing IDs and no forbidden implementation/release claims.
+- `git diff --check -- <P0.2 documentation paths>` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- P02 traceability `rg` audit - passed.
+
+Result:
+- P0.2 requirement/design/test documentation is ready for the next workflow step.
+- TC-P02-014 documentation traceability audit passed.
+- TC-P02-001 through TC-P02-013 remain planned until implementation and contracts exist.
+
+Residual risk:
+- This work does not implement P0.2 behavior.
+- Implementation remains blocked by P02-GAP-001 through P02-GAP-006.
+- Commercial release, paid AI voice, Product Base merge and P1/P2 expansion remain outside this increment.
+
+## 2026-06-04 - P01-PRODUCT-BASE-IMPLEMENTATION-REVIEW-20260604 Implementation Review And API Drift Sync
+
+Change request:
+- Enter the code-change / implementation-review stage for P0.1 Product Base/Production Hardening.
+- Preserve the approved P0.1 scope and keep commercial release / paid AI external evidence blockers outside this local Product Base review.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-1-expression-automation-training/`.
+- Requirements: `P01-FR-012` through `P01-FR-017`.
+- Specs: `P01-SPEC-013` through `P01-SPEC-018`.
+- Acceptance: `AC-P01-014` through `AC-P01-019`.
+- Tests: `TC-P01-021` through `TC-P01-031`, with frontend regression coverage for `TC-P01-001` through `TC-P01-013`.
+- Traceability: `P01-TR-013` through `P01-TR-018`.
+
+Files changed:
+- API drift pins: `docs/architecture/openapi/dart-client-drift-manifest.json`, `lib/generated/api/.openapi-sha256`, `lib/generated/api/speakeasy_api.dart`.
+- Traceability/report closure: `docs/product/increments/p0-1-expression-automation-training/traceability.md`, `docs/reports/test_report.md`, `docs/reports/quality_report.md`, `docs/reports/implementation_report.md`.
+- Requirement/design/test documentation corrections from the workflow steps remain in `definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `docs/ux/screen_spec.md`, `docs/architecture/data_flow.md` and `docs/product/development_status.md`.
+
+Implementation summary:
+- No new Training business behavior was added in this review step.
+- The generated Dart OpenAPI boundary was stale after the latest OpenAPI state. The manifest, `.openapi-sha256` marker and `SpeakeasyApiContract.openApiSha256` now match the current OpenAPI hash.
+- Existing backend and Flutter Training implementation was reviewed against the P0.1 Product Base requirements, ACs, TCs and traceability rows.
+
+Validation:
+- `cd backend && mvn -q -DskipTests compile` - passed.
+- `cd backend && mvn -q -Dtest=TrainingSessionControllerTest,TrainingTurnIdempotencyTest,TrainingSessionAuthorizationTest,TrainingEvidenceRuleTraceTest,TrainingAccountDeletionRetentionTest,TrainingContentVersioningTest,TrainingMediaAiPipelineTest,TrainingPlannerReplayTest,TrainingObservabilityTest test` - passed.
+- `npm run check:api-contract` - passed after syncing generated Dart drift pins to OpenAPI hash `4880e61f8dae8673c13eb2aff5c66e690de70e67663bae45608f57206502fcbf`.
+- `python3 scripts/check_p0_1_training_frontend_source_of_truth.py` - passed.
+- `python3 scripts/check_p0_1_training_rollout_readiness.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `flutter test test/features/training/training_entry_test.dart test/features/training/training_backend_only_loop_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter analyze lib/config/app_config.dart lib/services/api_client.dart lib/features/training/training_backend_adapter.dart lib/features/training/training_session_loop_page.dart lib/pages/home_page.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter test integration_test/p0_1_training_loop_test.dart` - passed.
+
+Result:
+- P0.1 Product Base/Production Hardening implementation review is locally green.
+- API contract drift is closed for the generated Dart OpenAPI boundary.
+- `P01-FR-012..017 -> P01-SPEC-013..018 -> AC-P01-014..019 -> TC-P01-021..031 -> P01-TR-013..018` remains bidirectionally traceable.
+
+Residual risk:
+- This review is not commercial release approval. Paid AI voice, store release, external provider/media/cost/retention evidence and PM Product Base merge approval remain separate gates.
+
+## 2026-06-03 - P01-TRAINING-NAMING-MIGRATION-20260603 Training Bounded-Context Naming Migration
+
+Change request:
+- Rename Flutter Training production code and tests from the historical `interview_training_*` namespace to the bounded-context `training_*` namespace.
+- Keep behavior unchanged while updating documents, tests and source-of-truth guards.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-1-expression-automation.md`.
+- Increment: `docs/product/increments/p0-1-expression-automation-training/`.
+- Architecture contract: `docs/architecture/module_boundary.md` now owns Training frontend under `lib/features/training/` and `test/features/training/`.
+- Tests: existing `TC-P01-001` through `TC-P01-013`, `TC-P01-021` through `TC-P01-031` keep their IDs; script paths are renamed.
+
+Files changed:
+- Production namespace: `lib/features/training/training_contract.dart`, `training_backend_adapter.dart`, `training_session_loop_page.dart`, `training_session_view.dart`.
+- Test namespace: `test/features/training/training_*_test.dart` and `training_test_helpers.dart`.
+- Imports and class names: `TrainingBackendAdapter`, `TrainingSessionLoopPage`, `TrainingSessionView`, `TrainingSessionState`, `TrainingPlannerDecision`, `TrainingFeedbackCandidate`.
+- Guards/docs: `scripts/check_p0_1_training_frontend_source_of_truth.py`, `scripts/check_p0_1_training_rollout_readiness.py`, architecture/increment/report/release docs.
+
+Implementation summary:
+- `interview` remains a scenario/content namespace only; Training UI/adapter/contract no longer live under `lib/features/interview/`.
+- No `TrainingAgent` production file was introduced. The legacy `lib/features/interview/interview_training_agent.dart` deletion remains in force, and `lib/features/training/training_agent.dart` is now explicitly forbidden.
+- UI test keys were renamed from `interview_training_*` to `training_*`.
+
+Validation:
+- `python3 scripts/check_p0_1_training_frontend_source_of_truth.py` - passed.
+- `python3 scripts/check_p0_1_training_rollout_readiness.py` - passed.
+- `flutter test test/features/training/training_entry_test.dart test/features/training/training_backend_only_loop_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter test integration_test/p0_1_training_loop_test.dart` - passed.
+- `flutter analyze lib/features/training/training_contract.dart lib/features/training/training_backend_adapter.dart lib/features/training/training_session_view.dart lib/features/training/training_session_loop_page.dart lib/pages/home_page.dart test/features/training/training_entry_test.dart test/features/training/training_backend_only_loop_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_test_helpers.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart scripts/check_ai_eval_cases.dart` - passed.
+- `flutter analyze integration_test/p0_1_training_loop_test.dart` - passed.
+- `dart run scripts/check_ai_eval_cases.dart` - passed: 7 cases.
+
+Result:
+- Naming migration is complete for executable Flutter Training code/tests and current P0.1 evidence docs.
+- Training behavior remains backend-only; this change is a namespace/architecture cleanup.
+
+Residual risk:
+- Historical report sections may still mention legacy files as past evidence. Current source-of-truth docs and executable code use the Training bounded-context namespace.
+
+## 2026-06-03 - P01-TRAINING-BACKEND-ONLY-FRONTEND-SOT-20260603 Backend-Only Flutter Source Of Truth
+
+Change request:
+- Enforce the product decision that when backend Training is disabled or unavailable, the training entry is blocked or shows backend unavailable, and never falls back to a Flutter Training state machine.
+- Keep all work in the current P0.1 stage/increment and preserve bidirectional requirement-design-test traceability.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-1-expression-automation.md`.
+- Increment: `docs/product/increments/p0-1-expression-automation-training/`.
+- Requirements/spec/acceptance: `P01-FR-001` through `P01-FR-010`, `P01-FR-012`, `P01-FR-015`, `P01-FR-017`; `P01-SPEC-001` through `P01-SPEC-011`, `P01-SPEC-013`, `P01-SPEC-016`, `P01-SPEC-018`; `AC-P01-001` through `AC-P01-012`, `AC-P01-014`, `AC-P01-017`, `AC-P01-019`.
+- Tests: `TC-P01-001` through `TC-P01-013`, `TC-P01-029`, `TC-P01-030`, `TC-P01-031`.
+- Traceability: `P01-TR-001` through `P01-TR-011`, `P01-TR-013`, `P01-TR-016`, `P01-TR-018`; gaps `P01-GAP-006`, `P01-GAP-007`, `P01-GAP-009`, `P01-GAP-012`, `P01-GAP-014`.
+
+Files changed:
+- Deleted legacy production fallback: `lib/features/interview/interview_training_agent.dart`; no replacement `lib/features/training/training_agent.dart` exists.
+- Added backend-only Flutter contract: `lib/features/training/training_contract.dart`.
+- Updated Flutter product entry and route: `lib/pages/home_page.dart`, `lib/features/training/training_session_loop_page.dart`, `lib/features/training/training_session_view.dart`, `lib/features/training/training_backend_adapter.dart`.
+- Updated tests: `test/features/training/training_entry_test.dart`, `test/features/training/training_backend_only_loop_test.dart`, `test/features/training/training_text_fallback_test.dart`, `test/features/training/training_recoverable_failure_test.dart`, `test/features/training/training_feedback_schema_test.dart`, `test/features/training/training_voice_flow_test.dart`, `test/features/training/training_test_helpers.dart`, `integration_test/p0_1_training_loop_test.dart`.
+- Added static guard: `scripts/check_p0_1_training_frontend_source_of_truth.py`.
+- Docs/reports updated: P0.1 requirements/spec/acceptance/test cases/traceability, architecture/domain/API boundary docs, release checklist, test report and quality report.
+
+Implementation summary:
+- Removed the Flutter local Training Agent/state machine from the production path.
+- `TrainingSessionLoopPage` now requires a backend adapter, starts sessions through backend Training API, refreshes/hints/submits/completes through backend only, and renders backend unavailable on start failure.
+- Home training entry now blocks with service-unavailable UI when `ENABLE_BACKEND_TRAINING=false`; it no longer navigates to a local draft session.
+- Voice failure no longer fabricates transcript, feedback, planner state or evidence; missing trusted `audio_ref` produces a recoverable state and text fallback submits to backend `submitTurn`.
+- Added a source-of-truth guard script that fails if the retired agent file or forbidden local fallback patterns return.
+
+Validation:
+- `python3 scripts/check_p0_1_training_frontend_source_of_truth.py` - passed.
+- `flutter test test/features/training/training_entry_test.dart test/features/training/training_backend_only_loop_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter test integration_test/p0_1_training_loop_test.dart` - passed; TC-P01-031 now uses a self-contained HomePage/local-session fixture and does not require `API_BASE_URL`.
+- `flutter analyze lib/features/training/training_contract.dart lib/features/training/training_backend_adapter.dart lib/features/training/training_session_view.dart lib/features/training/training_session_loop_page.dart lib/pages/home_page.dart test/features/training/training_entry_test.dart test/features/training/training_backend_only_loop_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_test_helpers.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter analyze integration_test/p0_1_training_loop_test.dart` - passed.
+- `dart format ...` for the changed Flutter/test files - completed.
+
+Result:
+- Production training entry is backend-only. Backend disabled/unavailable no longer falls back to a Flutter state machine.
+- Traceability and tests now include the explicit backend-only frontend source-of-truth cases TC-P01-029 through TC-P01-031.
+
+Residual risk:
+- The backend-only source-of-truth evidence is covered by widget tests, direct integration and static guard.
+- Paid AI voice, commercial release and external provider/media evidence remain governed by P0 strict gates.
+
+## 2026-06-03 - P01-TRAINING-PRODUCT-BASE-HARDENING-20260603 Backend/Flutter Production Hardening
+
+Change request:
+- Complete backend and Flutter production code for the 2026-06-03 P0.1 commercial software remediation batch.
+- Keep all work in the current P0.1 stage/increment and preserve 100% requirements-design-test-traceability.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-1-expression-automation.md`.
+- Increment: `docs/product/increments/p0-1-expression-automation-training/`.
+- Requirements: `P01-FR-012`, `P01-FR-013`, `P01-FR-014`, `P01-FR-015`, `P01-FR-016`, `P01-FR-017`.
+- Specs: `P01-SPEC-013` through `P01-SPEC-018`.
+- Acceptance: `AC-P01-014` through `AC-P01-019`.
+- Tests: `TC-P01-021` through `TC-P01-031`.
+- Traceability: `P01-TR-013` through `P01-TR-018`; gaps `P01-GAP-009` through `P01-GAP-014` closed locally.
+
+Files changed:
+- Backend Training API/source-of-truth: `TrainingController`, `TrainingService`, `TrainingPlannerService`, Training entities/repositories, migration `V202606030001__p0_1_training_source_of_truth.sql`.
+- Backend integrations: `AiGatewayService.coachTraining`, `LearningEvidence` rule trace fields, `LearningMemoryService.createEvidenceWithRuleTrace`, `AccountDeletionService` training cleanup.
+- Flutter production adapter and entry gate: `TrainingBackendAdapter`, Training API methods in `ApiClient`, `ENABLE_BACKEND_TRAINING` config flag, backend-only page adapter, disabled-entry block and frontend source-of-truth guard.
+- Tests: `TrainingSessionControllerTest`, `TrainingTurnIdempotencyTest`, `TrainingSessionAuthorizationTest`, `TrainingEvidenceRuleTraceTest`, `TrainingAccountDeletionRetentionTest`, `TrainingContentVersioningTest`, `TrainingMediaAiPipelineTest`, `TrainingPlannerReplayTest`, `TrainingObservabilityTest`, and three Flutter adapter tests.
+- Rollout gate: `scripts/check_p0_1_training_rollout_readiness.py`.
+- Docs: P0.1 spec/test_cases/traceability, API/domain/release reports updated from planned/open to implemented/local executed.
+
+Implementation summary:
+- Added authenticated backend Training sessions/turns with server-owned state, reviewed content mapping, idempotency replay/conflict and user ownership.
+- Added rule-traced evidence write-back into LearningMemory and account deletion cleanup for Training data.
+- Added trusted media/AI pipeline for Training turns through existing AI Gateway ASR/scoring/LLM paths.
+- Added deterministic planner service with versioned decisions, audit rows and replay-friendly snapshots.
+- Added redacted Training metrics, rollout readiness script and frontend source-of-truth guard.
+- Added Flutter backend adapter and API client methods; the previous local-first route is retired from the product training entry. Production mode is enabled only through `ENABLE_BACKEND_TRAINING` and backend Training availability.
+
+Validation:
+- `cd backend && mvn -q -DskipTests compile` - passed.
+- `cd backend && mvn -q -Dtest=TrainingSessionControllerTest,TrainingTurnIdempotencyTest,TrainingSessionAuthorizationTest,TrainingEvidenceRuleTraceTest,TrainingAccountDeletionRetentionTest,TrainingContentVersioningTest,TrainingMediaAiPipelineTest,TrainingPlannerReplayTest,TrainingObservabilityTest test` - passed.
+- `cd backend && mvn -q test` - passed; full backend regression passed after adding Training user-data cascade cleanup semantics.
+- `flutter test test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `flutter analyze lib/config/app_config.dart lib/services/api_client.dart lib/features/training/training_backend_adapter.dart lib/features/training/training_session_loop_page.dart lib/pages/home_page.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
+- `python3 scripts/check_p0_1_training_rollout_readiness.py` - passed.
+- `npm run check:api-contract` - passed in the original batch; 2026-06-04 revalidation passed after generated Dart drift pins were synced to current OpenAPI hash `4880e61f8dae8673c13eb2aff5c66e690de70e67663bae45608f57206502fcbf`.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Result:
+- P01-FR-012 through P01-FR-017 are implemented with local automated evidence.
+- P01-GAP-009 through P01-GAP-014 are closed locally for P0.1 Product Base/production hardening.
+
+Residual risk:
+- This is not commercial release approval. Paid AI voice and store release still require P0 commercial and external AI/media/cost/retention evidence.
+- Superseded by 2026-06-04 implementation review: generated Dart OpenAPI drift pins are now synced to the current OpenAPI hash.
+
+## 2026-06-03 - P01-PRODUCTION-HARDENING-DOCS-20260603 P0.1 Commercial Software Remediation Design
+
+Change request:
+- Convert the six identified P0.1 commercial software risks and seven execution steps into a complete remediation plan and design.
+- Follow the project development workflow, update requirements/design/test/traceability/release documents, and do not create a new stage.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-1-expression-automation.md`.
+- Increment: `docs/product/increments/p0-1-expression-automation-training/`.
+- New requirements/spec/acceptance/test/traceability: `P01-FR-012` through `P01-FR-017`, `P01-SPEC-013` through `P01-SPEC-018`, `AC-P01-014` through `AC-P01-019`, `TC-P01-021` through `TC-P01-031`, `P01-TR-013` through `P01-TR-018`.
+- New blocker register: `P01-GAP-009` through `P01-GAP-014`.
+
+Files changed:
+- P0.1 increment docs: definition, requirements, spec, acceptance, test cases and traceability.
+- Architecture/domain docs: API contract, module boundary, data flow and training domain model.
+- Governance/release docs: P0.1 stage scope, development status and release checklist.
+- Reports: implementation report, test report and quality report.
+
+Implementation summary:
+- Kept the work inside the existing P0.1 stage and `p0-1-expression-automation-training` increment.
+- Added a backend Training API/source-of-truth design, evidence rule trace and data governance, versioned content mapping, real media/AI pipeline integration, planner audit/replay, metrics/rollout gates and QA/governance sync.
+- Clarified that TC-P01-013/014 local passed evidence remains valid but cannot be read as Product Base merge, production training readiness or commercial release approval.
+- Added explicit Product Base/production blockers to release checklist so the top-level checklist cannot override detailed P0.1 blocked sections.
+
+Validation:
+- `rg -n "P01-FR-012|P01-SPEC-013|AC-P01-014|TC-P01-021|P01-TR-013|P01-GAP-009|P01-HARDEN-001|Product Base/production" ...` - passed; new IDs appear across increment, architecture, domain, stage, development status and release docs.
+- `npm run check:api-contract` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check -- <changed docs>` - passed.
+
+Result:
+- Documentation/design remediation is complete for the current workflow step.
+- Implementation remains planned: backend/source-of-truth, evidence governance, content mapping, media/AI pipeline, planner audit and rollout gates still require TC-P01-021 through TC-P01-028 execution.
+
+Residual risk:
+- No backend or Flutter production Training implementation was added in this documentation batch.
+- P0.1 still cannot be promoted to Product Base stable capability or production training mode until the new planned test cases pass or blockers are explicitly accepted.
+- Commercial release and paid AI voice remain governed by the P0 commercial and commercial AI provider gates.
+
+## 2026-06-03 - P0-AI-OSS-STORAGE-20260603 Aliyun OSS Media Storage Implementation
+
+Change request:
+- Put the object-storage plan into the existing `commercial-ai-provider-hardening` stage, preserve 100% requirement-to-test traceability, implement the backend storage path and complete local tests.
+- Do not create a new stage and do not claim release-candidate external evidence without Aliyun credentials.
+
+Requirement mapping:
+- Increment: `commercial-ai-provider-hardening`.
+- Stage Scope: `COM-SI-013`, with release evidence dependency on `COM-SI-017`.
+- Requirement/spec/acceptance: `FR-COM-AI-001`, `COM-AI-SPEC-001`, `AC-COM-AI-001`.
+- Test cases: `TC-COM-AI-001`, `TC-COM-AI-002`, `TC-COM-AI-008`.
+- Traceability row: `COM-AI-TR-001`.
+
+Files changed:
+- Backend storage implementation: `AiMediaStorageService`, `LocalAiMediaStorageService`, `AliyunOssMediaStorageService`, `AiMediaStorageConfiguration`.
+- Backend media flow updates: `AiMediaUploadService`, `AiMediaReferenceService`, `AiRetentionService`, `AiMediaAsset`, `AiMediaProperties`, `MediaController`, `application.yml`, `application-test.yml`, `pom.xml`.
+- Tests: `MediaUploadReferenceServiceTest`, `AiMediaStorageServiceTest`, `AiCostDashboardTest` test-provider isolation.
+- Product/architecture docs: requirements, spec, acceptance, OpenAPI, API contract, domain schema, security design, data flow, test cases, traceability and external evidence checklist.
+
+Implementation summary:
+- Added a storage abstraction with local fallback and Aliyun OSS implementation.
+- Media upload creation now returns backend-owned canonical `object_ref`, upload URL and required upload headers; complete rejects forged `object_ref`.
+- ASR provider access resolves validated `media://audio/{media_id}` assets into backend-signed provider read URLs instead of trusting client URLs.
+- Retention/account deletion calls the storage adapter delete hook before marking media deleted.
+- Local tests cover OSS canonical `oss://bucket/key`, signed PUT/GET URL generation, KMS/SSE header propagation, delete key derivation and forged object_ref rejection.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MediaUploadReferenceServiceTest,AiMediaStorageServiceTest,ProductionAsrMediaRefTest,PersistentTtsCacheTest,AiCostDashboardTest,AiRetentionPolicyTest,AiAccountDeletionMediaCleanupTest,DashScopeProviderGatewayIntegrationTest,DashScopeProviderGatewayTest,CommercialFoundationControllerTest,AccountDeletionLearningDataTest,FoundationMigrationTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
+- `npm run check:api-contract` - passed after updating the generated Dart OpenAPI hash marker and drift manifest.
+- `python3 scripts/check_ai_external_release_evidence.py` - passed with expected release blockers.
+- `python3 scripts/check_ai_external_release_evidence.py --strict-external` - failed as expected because the four external refs are not set.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+
+Result:
+- `COM-AI-GAP-001` is closed for local backend adapter implementation and automated regression coverage.
+- `AI_MEDIA_STORAGE_EVIDENCE_REF` is still not closed because no staging/release Aliyun account, bucket, KMS policy or lifecycle evidence was supplied in this local environment.
+
+Residual risk:
+- Real OSS upload, provider read access, URL expiry and object deletion must still be executed in staging/release candidate and reviewed before paid AI release.
+
+## 2026-06-03 - P0-AI-EXTERNAL-GATE-20260603 Paid AI External Evidence Gate
+
+Change request:
+- Close the remaining paid AI release evidence planning/gate gaps without falsely marking external evidence as passed.
+- Follow the project workflow: preserve AC-to-TC traceability, add executable gates, run validation, and record independent review for each of the four evidence scopes.
+
+Requirement mapping:
+- Increment: `commercial-ai-provider-hardening`.
+- Stage Scope: `COM-SI-013`, `COM-SI-015`, `COM-SI-016`, `COM-SI-017`.
+- Acceptance: `AC-COM-AI-001`, `AC-COM-AI-003`, `AC-COM-AI-004`, `AC-COM-AI-005`.
+- Test cases: `TC-COM-AI-001`, `TC-COM-AI-002`, `TC-COM-AI-004`, `TC-COM-AI-005`, `TC-COM-AI-006`, `TC-COM-AI-007`.
+- Traceability rows: `COM-AI-TR-001`, `COM-AI-TR-003`, `COM-AI-TR-004`, `COM-AI-TR-005`.
+
+Files changed:
+- Added `tests/commercial/ai_external_release_evidence_checklist.md`.
+- Added `scripts/check_ai_external_release_evidence.py`.
+- Updated `scripts/check_release_readiness.sh` to run the paid AI external evidence gate.
+- Updated `docs/product/increments/commercial-ai-provider-hardening/definition.md`, `test_cases.md` and `traceability.md`.
+- Updated `docs/product/development_status.md`, `docs/release/commercial_release_runbook.md` and `docs/release/release_checklist.md`.
+- Updated implementation/test/quality reports.
+
+Implementation summary:
+- Defined external evidence scenarios for DashScope LLM/ASR/TTS, object storage signed media refs, AI cost dashboard/unit economics, and retention/deletion proof.
+- Added a strict script that validates the checklist contract and requires `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF` for paid AI release.
+- The script rejects placeholder refs and repo/local paths such as `docs/`, `tests/`, `build/` and `file://` in strict mode.
+- Connected the gate to the aggregate release readiness script and product/release traceability documents.
+
+Validation:
+- `python3 scripts/check_ai_external_release_evidence.py` - passed and reported all four missing refs as release blockers.
+- `python3 scripts/check_ai_external_release_evidence.py --strict-external` - failed as expected because the four external refs are not set.
+- `python3 -m py_compile scripts/check_ai_external_release_evidence.py scripts/check_ai_provider_sandbox_evidence.py scripts/check_manual_external_evidence_plan.py` - passed.
+- `bash -n scripts/check_release_readiness.sh` - passed.
+- `python3 scripts/check_ai_provider_sandbox_evidence.py` - passed with expected DashScope release blocker.
+- `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external` - failed as expected without `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`.
+- `python3 scripts/check_manual_external_evidence_plan.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- Fixture `scripts/check_release_readiness.sh --env-only` with dummy external refs and release env - passed; this validates gate wiring only, not real external evidence.
+- `git diff --check` - passed.
+
+Result:
+- Strategy/gate closure complete for all four paid AI open items.
+- Not release-closed: no real external evidence package or external reviewer approval was supplied in this local environment.
+
+Residual risk:
+- Paid AI voice and real DashScope provider release remain blocked until all four evidence refs point to real, reviewed, external evidence packages and strict gates pass in the target release environment.
+
+## 2026-06-03 - P0-P01-BLOCKER-CLOSURE-20260603 Local Blocker Closure And External Gate Revalidation
+
+Change request:
+- Execute in order: TC-P01-013, TC-P01-014, TC-COM-AI-004 evidence preparation, then TC-COM-012/015/019/021/022 commercial external gates.
+- Follow local development workflow and perform an independent review after each step.
+
+Requirement mapping:
+- P0.1 increment: `docs/product/increments/p0-1-expression-automation-training/`.
+- Commercial subscription readiness: `docs/product/increments/commercial-subscription-readiness/`.
+- Commercial AI provider hardening: `docs/product/increments/commercial-ai-provider-hardening/`.
+- Release gates: `docs/release/commercial_release_runbook.md`, `docs/release/release_checklist.md`.
+
+Files changed:
+- TC-P01-013 route integration: `lib/features/training/training_session_loop_page.dart`, `lib/pages/home_page.dart`, `integration_test/p0_1_training_loop_test.dart`, `scripts/run_mvp_system_e2e.sh`.
+- TC-P01-014 executable validator: `scripts/check_ai_eval_cases.dart`, `tests/ai_runtime/p0_1_ai_eval_cases.json`, `docs/ai_runtime/ai_eval_cases.md`, plus runtime guard hardening in `lib/features/training/training_agent.dart` and regression coverage in `test/features/training/training_feedback_schema_test.dart`.
+- TC-COM-AI-004 evidence prep: `scripts/run_dashscope_sandbox_matrix.py` and generated sanitized local report under `build/reports/`.
+- Reports and PM/traceability documents updated in this section and downstream product docs.
+
+Implementation summary:
+- Added a dedicated P0.1 training route host that wraps the existing Training Agent/session view, wires it from the home hero, exercises voice-first ASR failure fallback, feedback, pressure/continue and recap without writing final mastery, entitlement or billing state.
+- Added a stable `p0-1-training-loop` suite to the system E2E runner so the integration test uses isolated backend, HOME and Hive namespace.
+- Converted P0.1 AI eval cases into a machine-readable fixture and a Dart validator that calls the runtime `TrainingFeedbackCandidate` schema validator.
+- Hardened runtime schema validation to reject prohibited final-state fields anywhere in an LLM feedback candidate, not only inside learning evidence candidates.
+- Added a sanitized DashScope evidence-prep matrix script. It records hashes, status, latency, model and cost buckets, but not API keys, raw signed URLs, full transcripts or raw provider payloads.
+
+Validation:
+- `./scripts/run_mvp_system_e2e.sh --suite p0-1-training-loop` - passed.
+- `dart run scripts/check_ai_eval_cases.dart` - passed.
+- `flutter test test/features/training/training_feedback_schema_test.dart` - passed.
+- Relevant `flutter analyze` commands for TC-P01-013 and TC-P01-014 files - passed.
+- `python3 scripts/run_dashscope_sandbox_matrix.py` - passed and wrote `build/reports/dashscope-sandbox-20260602T223557Z-3359fcc82fafa457.json`.
+- `python3 -m py_compile scripts/run_dashscope_sandbox_matrix.py` - passed.
+- Commercial non-strict gates - passed: manual evidence plan, copy contract, provider sandbox matrix, AI provider matrix and store submission matrix.
+- Commercial strict gates - failed as expected on missing external/native/store/release evidence refs and release production env.
+- `git diff --check` and `python3 scripts/project_agent_runner.py validate` - passed.
+- Sanitized report review found no API key, Bearer token, raw URL or raw provider reference.
+
+Result:
+- Close locally: TC-P01-013 and TC-P01-014.
+- Prepared but not release-closed: TC-COM-AI-004. Controlled live sanitized matrix exists, but `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` and independent external review remain required.
+- Keep release-blocked: TC-COM-012, TC-COM-015, TC-COM-019, TC-COM-021 and TC-COM-022.
+
+Residual risk:
+- The TC-P01-013 route host is local-first and does not introduce backend persistence or final mastery writes.
+- The DashScope matrix report is a local evidence-prep artifact; it must not be used as the external evidence ref by itself.
+- Commercial release still lacks production social-login config, Apple/Google sandbox/internal evidence, store metadata/reviewer/privacy/support evidence, signing/Sentry/symbol/rollback evidence and production API/env configuration.
+
+Follow-up:
+- Supply and independently review external evidence refs, then rerun strict commercial release gates.
+- After PM review, update any Product Base merge-back decision for P0.1 based on the now-passing TC-P01-013/014 evidence.
+
+## 2026-06-02 - P0-P01-BLOCKER-RETEST-20260602 Blocker Retest, E2E Fixes And PM Status Update
+
+Change request:
+- Recheck prior P0/P0.1 blocker items, rerun related tests and E2E suites, decide which blockers can close, update related documents and PM status, then perform independent review.
+
+Requirement mapping:
+- P0.1 increment: `docs/product/increments/p0-1-expression-automation-training/`.
+- P0 commercial subscription increment: `docs/product/increments/commercial-subscription-readiness/`.
+- P0 commercial AI provider increment: `docs/product/increments/commercial-ai-provider-hardening/`.
+- MVP system E2E validation: `docs/product/increments/mvp-system-e2e-validation/`.
+
+Files changed:
+- `scripts/run_mvp_system_e2e.sh`: passes an OPS bearer token to protected `/admin/release-health` readiness checks and defaults E2E backend provider to deterministic, isolating local E2E from shell-level `SPEAKEASY_AI_PROVIDER=dashscope`.
+- `integration_test/mvp_system_membership_boundary_test.dart`: scrolls to `membership_restore_purchases_button` before asserting it, preserving the restore-entry assertion without assuming same-viewport layout.
+- `backend/src/main/java/com/speakeasy/ops/AuditLog.java`: exposes `eventType` for precise audit assertions.
+- `backend/src/test/java/com/speakeasy/CommercialAccountDeletionProcessorTest.java`: verifies idempotency by counting `account_deletion_completed` audit events instead of assuming only one audit row exists after AI retention cleanup also records audit evidence.
+- Updated reports and PM/product status documents listed in this section.
+
+Implementation summary:
+- Closed test-environment blockers rather than weakening product gates: protected OPS health now uses an E2E token, E2E provider selection is deterministic by default, and membership E2E scrolls to the restore button before assertion.
+- Corrected a stale commercial account-deletion test assumption introduced by additional AI retention audit logging.
+- Revalidated DashScope credentials with a sanitized direct probe. LLM, TTS and ASR controlled live sanity passed; signed audio URLs, task ids, raw transcripts and secrets were not written to docs.
+
+Validation:
+- P0.1 Flutter training core suite - passed.
+- Commercial/backend deterministic suites for AI provider hardening and subscription readiness - passed.
+- Commercial Flutter widget/integration suites - passed.
+- `npm run check:api-contract` - passed.
+- MVP system E2E suites `smoke`, `scene-catalog`, `learning-memory`, `practice-feedback`, `profile-settings`, `membership-boundary` and `commercial-boundary` - passed.
+- Non-strict external evidence gates - passed and reported expected missing evidence refs.
+- Sanitized DashScope LLM/TTS/ASR controlled live probe - passed with `http=200` for all submitted calls and ASR final status `SUCCEEDED`.
+
+Result:
+- Close: stale `invalid_api_key` DashScope credential blocker, stale `CommercialAccountDeletionProcessorTest` audit-count blocker, E2E release-health auth blocker, E2E provider contamination blocker and membership restore-button viewport assumption.
+- Superseded 2026-06-03: TC-P01-013 and TC-P01-014 are locally closed. Keep open: TC-COM-012 native social-login strict evidence, TC-COM-015 external copy/store/privacy/support evidence, TC-COM-019 Apple/Google provider evidence, TC-COM-021 store/reviewer/privacy/support evidence, TC-COM-022 strict release evidence and TC-COM-AI-004 strict external evidence ref.
+
+Residual risk:
+- Controlled DashScope sanity proves credential validity and basic LLM/TTS/ASR reachability only; it does not replace full matrix evidence, cost review or independent external evidence refs.
+- E2E logs retain non-blocking `/user/stats` and macOS notification warnings.
+
+Follow-up:
+- Superseded 2026-06-03: TC-P01-013 and TC-P01-014 are implemented and passed; PM should review updated traceability before marking P0.1 completion.
+- Collect external/native/store/release evidence refs and rerun strict release gates before commercial release approval.
+
+## 2026-06-02 - P0-AI-EXT-RECHECK-001 External Evidence Recheck And TTS Cache Multi-Owner Closure
+
+Change request:
+- Execute the five remaining P0-AI residual-risk items in order: real DashScope sandbox, object storage upload/read/expiry/delete evidence, cost dashboard/budget alert evidence, retention/privacy deletion proof and TTS cache multi-tenant policy review.
+- Keep each item independently reviewed and do not declare release readiness without required external evidence refs.
+
+Requirement mapping:
+- Increment: `docs/product/increments/commercial-ai-provider-hardening/`.
+- Stage Scope: COM-SI-013 through COM-SI-017.
+- Requirements: FR-COM-AI-001 through FR-COM-AI-005.
+- Test cases: TC-COM-AI-001 through TC-COM-AI-007.
+- Traceability rows: COM-AI-TR-001 through COM-AI-TR-005.
+
+Files changed:
+- Added TTS cache multi-owner persistence: `AiTtsCacheOwner.java`, `AiTtsCacheOwnerRepository.java`, `V202606020001__commercial_ai_tts_cache_owners.sql`.
+- Updated deletion behavior: `AiRetentionService.java`, `AiTtsCacheEntry.java`.
+- Updated regression coverage: `BackendIntegrationTestSupport.java`, `AiAccountDeletionMediaCleanupTest.java`.
+- Updated domain/traceability/reports: `docs/domain/domain_schema.md`, `docs/domain/entity_relationship.md`, `docs/product/increments/commercial-ai-provider-hardening/spec.md`, `test_cases.md`, `traceability.md`, `docs/reports/test_report.md`, `docs/reports/quality_report.md`, `docs/reports/implementation_report.md`.
+
+Implementation summary:
+- An earlier DashScope controlled probe in this workstream returned `invalid_api_key` / `InvalidApiKey`; `P0-P01-BLOCKER-RETEST-20260602` superseded that symptom with a valid controlled live LLM/TTS/ASR sanity pass. TC-COM-AI-004 still lacks the required external evidence ref.
+- Object storage, cost dashboard and retention release evidence were revalidated locally but remain blocked for production evidence because no real bucket/CDN/KMS, PM/Ops alert destination or approved retention evidence refs are configured in this environment.
+- TTS cache policy decision: persistent cache now records one `TtsCacheOwner` per `(cache_id, owner_hash)`. Account deletion removes the deleting user's owner ref; shared cache stays active while other owners remain; the final owner deletion marks the cache entry deleted. Legacy `owner_hash` remains only as a fallback for old rows and is cleared when it matches the deleting user.
+
+Validation:
+- Earlier sanitized inline DashScope probe returned 401 invalid API key; later retest passed LLM/TTS/ASR controlled live sanity. Strict evidence ref remains missing.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MediaUploadReferenceServiceTest,ProductionAsrMediaRefTest,AiRetentionPolicyTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiCostDashboardTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiRetentionPolicyTest,AiAccountDeletionMediaCleanupTest,AccountDeletionLearningDataTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiAccountDeletionMediaCleanupTest,AiRetentionPolicyTest,PersistentTtsCacheTest,AiCostDashboardTest,FoundationMigrationTest test` - passed.
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=PostgresFoundationMigrationTest test` - passed.
+
+Result:
+- Local TTS cache first-owner cleanup risk is closed by multi-owner refs and regression tests.
+- Local media upload/ref, cost dashboard and retention gates remain passed after the change.
+- Paid AI voice release is still not ready because `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF` are still missing.
+
+Residual risk:
+- The full LLM/ASR/TTS matrix, cost/format/fallback evidence and independent review must run before `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` can be supplied.
+- Real object storage upload/read/lifecycle deletion and CDN/KMS evidence remain external.
+- Production PM/Ops budget thresholds, alert destinations and dashboard evidence remain external.
+- Approved privacy/retention policy evidence and real object-store deletion proof remain external.
+
+Follow-up:
+- Supply valid provider/storage/Ops/Security evidence refs and rerun strict `scripts/check_release_readiness.sh`.
+- Include the new TTS cache owner refs in production retention runbooks and privacy review.
+
+## 2026-06-01 - P0-AI-REPORT-001 Commercial AI Provider Hardening Evidence Summary
+
+Change request:
+- Execute `CR-20260601-002` / `commercial-ai-provider-hardening` work packages in order after first committing and pushing the pre-existing local worktree snapshot to GitHub.
+- Initial snapshot commit was pushed to branch `snapshot-all-local-changes-2026-05-27` as `094355b chore: snapshot local commercial readiness work`.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-commercial-readiness.md`.
+- Increment: `docs/product/increments/commercial-ai-provider-hardening/`.
+- Stage Scope: COM-SI-013 through COM-SI-017.
+- Requirements: FR-COM-AI-001 through FR-COM-AI-005.
+- Test cases: TC-COM-AI-001 through TC-COM-AI-007.
+- Traceability rows: COM-AI-TR-001 through COM-AI-TR-005.
+
+Files changed:
+- Architecture/API/security/domain: `docs/architecture/api_contract.md`, `docs/architecture/data_flow.md`, `docs/architecture/module_boundary.md`, `docs/architecture/security_design.md`, `docs/domain/domain_schema.md`, `docs/domain/entity_relationship.md`, `docs/architecture/adr/0006-commercial-ai-provider-media-cache-ops.md`, OpenAPI and generated Dart client hash/client files.
+- Backend media/cache/ops/security: AI media upload/ref resolution, persistent TTS cache, cost metric aggregation, AI retention jobs, account deletion AI cleanup, OPS controller and Flyway migrations `V202606010001` through `V202606010004`.
+- Tests: `MediaUploadReferenceServiceTest`, `ProductionAsrMediaRefTest`, `PersistentTtsCacheTest`, `AiCostDashboardTest`, `AiRetentionPolicyTest`, `AiAccountDeletionMediaCleanupTest` plus DashScope/account deletion regressions.
+- Release gates and evidence docs: `scripts/check_ai_provider_sandbox_evidence.py`, `scripts/check_manual_external_evidence_plan.py`, `scripts/check_release_readiness.sh`, `tests/commercial/ai_provider_sandbox_matrix.md`, `tests/commercial/manual_external_evidence_checklist.md`, `docs/reports/test_report.md`, `docs/reports/quality_report.md`.
+
+Implementation summary:
+- `P0-AI-ARCH-001`: Added architecture/API/security contracts for media upload/signing, TTS persistent cache metadata, provider evidence, cost metrics and retention jobs.
+- `P0-AI-BE-001`: Implemented backend-owned media upload/signing metadata, trusted `media://audio/{media_id}` refs and production ASR rejection of local/unsigned/unvalidated media refs before provider calls.
+- `P0-AI-BE-002`: Implemented persistent TTS cache entries with normalized cache key, expiry, hit/miss metadata and delete hook.
+- `P0-AI-QA-001`: Added DashScope AI sandbox evidence matrix and strict gate; non-strict gate passes structurally while strict mode remains blocked without `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`.
+- `P0-AI-OPS-001`: Implemented OPS-only AI cost dashboard with user hash, plan, provider/model/capability/status/cache hit/cost aggregation, budget warning/exceeded and provider anomaly status.
+- `P0-AI-SEC-001`: Implemented AI retention jobs, expired media/cache deletion, account deletion AI media/cache/metric cleanup and redacted retention evidence refs.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MediaUploadReferenceServiceTest,ProductionAsrMediaRefTest,PersistentTtsCacheTest,AiCostDashboardTest,AiRetentionPolicyTest,AiAccountDeletionMediaCleanupTest,DashScopeProviderGatewayIntegrationTest,DashScopeProviderGatewayTest,CommercialFoundationControllerTest,AccountDeletionLearningDataTest test` - passed.
+- `python3 scripts/check_ai_provider_sandbox_evidence.py` - passed with expected missing DashScope evidence blocker reported.
+- `python3 scripts/check_manual_external_evidence_plan.py` - passed.
+- `python3 -m py_compile scripts/check_ai_provider_sandbox_evidence.py scripts/check_manual_external_evidence_plan.py scripts/check_provider_sandbox_evidence.py scripts/check_store_submission_evidence.py scripts/check_commercial_copy_contract.py` - passed.
+- `bash -n scripts/check_release_readiness.sh` - passed.
+- `git diff --check` - passed.
+- `npm run lint:openapi` - passed.
+- `npm run check:api-contract` - failed inside the filesystem sandbox because `uv` panicked while accessing macOS system configuration; rerun outside the sandbox passed.
+
+Result:
+- Local implementation and regression coverage passed for TC-COM-AI-001, TC-COM-AI-002, TC-COM-AI-003, TC-COM-AI-005, TC-COM-AI-006 and TC-COM-AI-007.
+- Superseded 2026-06-03: TC-COM-AI-004 now has structural gate evidence and a sanitized controlled-live evidence-prep report, but strict release is still not closed because `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` and independent external review have not been supplied.
+- `scripts/check_release_readiness.sh` now requires `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, `AI_MEDIA_STORAGE_EVIDENCE_REF`, `AI_COST_DASHBOARD_EVIDENCE_REF` and `AI_RETENTION_POLICY_EVIDENCE_REF` in strict release mode.
+
+Residual risk:
+- Superseded 2026-06-03: controlled-live LLM/TTS/ASR evidence-prep was executed locally with sanitized output; strict external evidence packaging and independent review remain open.
+- Object-store bucket/KMS/CDN lifecycle and external deletion evidence are still external release work.
+- Production budget thresholds and alert destinations need PM/Ops evidence.
+- TTS cache ownership is first-owner based for local cleanup; shared-cache multi-owner policy needs review before broad multi-tenant production use.
+
+Follow-up:
+- Supply and independently review the four external AI evidence refs before declaring paid AI voice release readiness.
+- Run strict `scripts/check_release_readiness.sh` in release CI with production/native/store/provider evidence refs.
+- Review multi-owner TTS cache deletion policy before enabling broad production cache reuse.
+
+## 2026-06-01 - P0.1 Backend AI Provider Gateway Implementation
+
+Change request:
+- Execute `CR-20260601-001`: do not switch to the old `speakeasy_backend_export` backend; instead, reference its DashScope strategy and implement the current Spring Boot backend AI Gateway boundary.
+- Cover LLM/TTS/ASR design obligations 1-5 and commercial software obligations 1-5 at the current local executable boundary.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-1-expression-automation-training/`.
+- Requirement: P01-FR-011.
+- Spec: P01-SPEC-012.
+- Acceptance: AC-P01-013.
+- Test cases: TC-P01-015 through TC-P01-020.
+- Traceability row: P01-TR-012.
+
+Files changed:
+- Backend provider implementation: `backend/src/main/java/com/speakeasy/ai/DashScopeAiProviderGateway.java`, `DashScopeAiProperties.java`, `DashScopeHttpTransport.java`, `JavaDashScopeHttpTransport.java`.
+- Backend gateway/commercial policy: `backend/src/main/java/com/speakeasy/ai/AiGatewayService.java`, `AiProviderPolicyService.java`, `AiMediaProperties.java`, `AiMediaReferenceService.java`, `AiProviderTelemetry.java`, `LoggingAiProviderTelemetry.java`, `backend/src/main/java/com/speakeasy/commerce/EntitlementGateService.java`, `backend/src/main/java/com/speakeasy/usage/UsageService.java`, `backend/src/main/java/com/speakeasy/ops/AuditLog.java`, `backend/src/main/resources/application.yml`.
+- Backend tests: `backend/src/test/java/com/speakeasy/DashScopeProviderGatewayTest.java`, `DashScopeProviderGatewayIntegrationTest.java`, `ProviderGatewaySecurityContractTest.java`.
+- Traceability/evidence docs: P0.1 requirements/spec/acceptance/test_cases/traceability, architecture/API/AI runtime docs, this report and `docs/reports/test_report.md`.
+
+Implementation summary:
+- Added config-selected DashScope provider adapter behind the existing `AiProviderGateway`; deterministic provider remains default for local/test unless `speakeasy.ai.provider=dashscope`.
+- Added DashScope-compatible LLM coach request, strict JSON parsing, strict schema validator, banned final-mastery/entitlement field fallback, Paraformer-style ASR async submit/polling, DashScope TTS call and in-process TTS cache keyed by text/model/voice.
+- Added backend-signed media metadata validation so DashScope ASR does not trust client-controlled query parameters and rejects unsigned HTTP refs before provider calls.
+- Added `AiProviderPolicyService` to derive free/pro/enterprise policy from backend entitlement plan and cap text length, signed audio duration and signed audio size before provider calls.
+- Preserved existing `UsageService.reserveProviderCall` reservation/commit/release flow for AI/asr/tts/scoring frequency and quota control.
+- Added sanitized provider telemetry for provider, model, usage family, status, latency, fallback reason, policy tier, token estimate, audio duration and estimated cost bucket.
+- Changed AI usage source refs to hashed media refs so signed media URLs are not persisted in audit details.
+- Hardened client boundary so Flutter cannot submit provider secrets or provider tier facts.
+
+Validation:
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=DashScopeProviderGatewayTest,DashScopeProviderGatewayIntegrationTest,ProviderGatewaySecurityContractTest,ProviderGatewayControllerTest,ProviderGatewayFailureTest,FeedbackFailureHandlingTest,CommercialAbuseControlTest,UsageQuotaGateTest test` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
+- `npm run lint:openapi` - passed.
+- `PYTHONPATH=.uv-cache/archive-v0/6TiI4tLkyvVElUd4WZMLn/lib/python3.11/site-packages python3 scripts/check_openapi_contract.py` - passed.
+- `PYTHONPATH=.uv-cache/archive-v0/6TiI4tLkyvVElUd4WZMLn/lib/python3.11/site-packages python3 scripts/check_openapi_dart_drift.py` - passed.
+- `npm run check:api-contract` - blocked by local `uv run --with PyYAML` runtime panic after OpenAPI lint passed; direct subchecks passed.
+
+Result:
+- TC-P01-015 through TC-P01-020 are passed at the local fake-provider boundary.
+- P01-GAP-008 is Partial, not Closed: DashScope adapter, signed media metadata guard, in-process TTS cache, strict LLM schema fallback, telemetry, tier policy, hashed media audit and no-secret contracts are implemented; live DashScope evidence, backend/object-storage media upload lifecycle and persistent TTS media cache remain pending.
+
+Residual risk:
+- No live DashScope request was executed in this local slice.
+- ASR currently requires an already provider-accessible `audio_ref` with backend-signed metadata; Flutter upload to backend/object storage and lifecycle cleanup are downstream.
+- TTS cache is in-process and not durable across restarts or multi-instance deployments.
+- Production retention/deletion evidence remains a release gate.
+
+Follow-up:
+- Add backend/object-storage media upload lifecycle before production ASR release.
+- Add persistent TTS media cache or object-storage-backed media refs before commercial scale.
+- Execute live provider smoke tests with vault-managed DashScope credentials and evidence refs.
+
+## 2026-06-01 - P0 Commercial AI Provider Hardening Planning
+
+Change request:
+- Execute `CR-20260601-002`: promote the five AI provider production hardening items into a P0 commercial release-blocking increment instead of leaving them as loose roadmap notes.
+
+Requirement mapping:
+- Stage: `docs/product/stages/p0-commercial-readiness.md`.
+- Increment: `docs/product/increments/commercial-ai-provider-hardening/`.
+- Stage Scope: COM-SI-013 through COM-SI-017.
+- Requirements: FR-COM-AI-001 through FR-COM-AI-005.
+- Spec: COM-AI-SPEC-001 through COM-AI-SPEC-005.
+- Acceptance: AC-COM-AI-001 through AC-COM-AI-005.
+- Test cases: TC-COM-AI-001 through TC-COM-AI-007.
+- Traceability rows: COM-AI-TR-001 through COM-AI-TR-005.
+
+Files changed:
+- New increment docs: `docs/product/increments/commercial-ai-provider-hardening/definition.md`, `requirements.md`, `spec.md`, `acceptance.md`, `test_cases.md`, `traceability.md`.
+- New external evidence matrix: `tests/commercial/ai_provider_sandbox_matrix.md`.
+- Updated planning/source docs: `docs/process/change_request.md`, `docs/product/roadmap.md`, `docs/product/stages/p0-commercial-readiness.md`, `docs/product/development_status.md`, `docs/product/feature_registry.md`, `docs/COMMERCIAL_LAUNCH_TODO.md`.
+- Updated related increment docs: `docs/product/increments/commercial-subscription-readiness/*`, `docs/product/increments/p0-1-expression-automation-training/test_cases.md`, `docs/product/increments/p0-1-expression-automation-training/traceability.md`.
+- Updated architecture/release docs: `docs/architecture/system_overview.md`, `docs/architecture/api_contract.md`, `docs/architecture/data_flow.md`, `docs/architecture/security_design.md`, `docs/release/commercial_release_runbook.md`, `docs/release/release_checklist.md`, `docs/release/version_log.md`, `tests/commercial/manual_external_evidence_checklist.md`.
+
+Implementation summary:
+- Added a separate `commercial-ai-provider-hardening` increment so the existing `commercial-subscription-readiness` increment remains scoped to subscription, entitlement, account, usage gating and release evidence.
+- Planned each optimization item at P0/P1 boundaries: P0 minimum gates for production paid AI voice, P1 for deeper cache/CDN/provider analytics optimization.
+- Established 100% planning traceability for the five items at the documentation level: Stage Scope -> FR -> Spec -> AC -> TC -> traceability row/gap.
+- Updated release docs to require DashScope evidence refs, object-storage evidence, cost dashboard evidence and AI retention policy evidence before paid AI voice or real DashScope release.
+
+Validation:
+- `python3 scripts/check_manual_external_evidence_plan.py` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed.
+- `python3 scripts/check_provider_sandbox_evidence.py` - passed with existing Apple/Google external evidence blockers reported.
+
+Result:
+- Documentation planning and traceability are established.
+- No backend, Flutter, migration or OpenAPI implementation was added for this new increment.
+- COM-AI-GAP-001 through COM-AI-GAP-005 remain Open until implementation, tests, live evidence and independent review are supplied.
+
+Residual risk:
+- The current system still lacks production object-storage upload, persistent TTS cache, real DashScope evidence, AI cost dashboard and AI data retention/deletion execution.
+- `P01-GAP-008` remains Partial, not Closed.
+
+## 2026-06-01 - P0.1 Training Agent Core Implementation
+
+Change request:
+- Complete P0.1 prerequisite gates first, then implement the Training Agent core without treating current P0 test blockers as release blockers for this slice.
+- Keep deterministic planner rules as the source of truth; AI output remains candidate-only.
+
+Requirement mapping:
+- Increment: `docs/product/increments/p0-1-expression-automation-training/`.
+- Stage Scope: P01-SI-001 through P01-SI-011.
+- Acceptance: AC-P01-001 through AC-P01-012.
+- Test cases: TC-P01-001 through TC-P01-014; TC-P01-001 through TC-P01-012 executed in this slice.
+- Traceability rows: P01-TR-001 through P01-TR-011.
+
+Files changed:
+- Added `lib/features/training/training_agent.dart`.
+- Added `lib/features/training/training_session_view.dart`.
+- Added P0.1 tests under `test/features/training/training_*.dart`.
+- Added `docs/product/increments/p0-1-expression-automation-training/test_cases.md`.
+- Updated P0.1 Domain, AI Runtime, UX, Architecture, traceability, test report and this implementation report.
+
+Implementation summary:
+- Added a local-first deterministic Training Agent for supported official scenes `job_interview` and `onboarding_introduction`.
+- Added fixed action chain fallback, single active micro-action state, hint ladder transitions, retry/model-then-retry, score-unavailable continuation, ASR text fallback, pressure check, recoverable failure and recap generation.
+- Added `TrainingFeedbackCandidate` schema validation that rejects unsupported scenes, invalid next actions, unsafe recoverable-error signals, final mastery writes and billing/entitlement fields.
+- Added a lightweight training session view surface for unsupported, ready, hint, voice controls, text fallback, feedback, pressure, recoverable error and recap states.
+- Kept production route integration and end-to-end loop outside this slice; no backend API, migration or provider call was added.
+
+Validation:
+- `dart format ...` on new P0.1 code/tests - passed.
+- `flutter test test/features/training/training_entry_test.dart test/features/training/training_planner_test.dart test/features/training/training_hint_ladder_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_pressure_check_test.dart test/features/training/training_evidence_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_scope_boundary_test.dart` - passed after one local compile fix.
+- Same P0.1 `flutter test` command rerun after independent review corrections for blank scene ids and malformed schema field types - passed.
+- `flutter analyze lib/features/training/training_agent.dart lib/features/training/training_session_view.dart test/features/training/training_entry_test.dart test/features/training/training_planner_test.dart test/features/training/training_hint_ladder_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_pressure_check_test.dart test/features/training/training_evidence_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_scope_boundary_test.dart` - passed with no issues.
+- `git diff --check` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Result:
+- P0.1 gates are ready and Training Agent core implementation is in place with automated evidence for TC-P01-001 through TC-P01-012.
+- Superseded 2026-06-03: P01-GAP-006 and P01-GAP-007 are locally closed by TC-P01-013 route integration and TC-P01-014 executable AI eval evidence.
+
+Residual risk:
+- Superseded 2026-06-03: `TrainingSessionView` is now wired through the dedicated P0.1 training route and homepage active-learning entry; `interview_practice_page.dart` remains outside this local blocker scope.
+- Full audio recording, ASR/TTS/LLM/scoring provider behavior is not covered by this deterministic slice.
+- Local-first recap/evidence filtering exists, but server/wiki/home write-back integration is pending.
+
+Follow-up:
+- Completed locally 2026-06-03: wire the Training Agent into a dedicated P0.1 route.
+- Completed locally 2026-06-03: add `integration_test/p0_1_training_loop_test.dart` for TC-P01-013.
+- Completed locally 2026-06-03: convert `docs/ai_runtime/ai_eval_cases.md` into runnable AI eval/schema evidence for TC-P01-014.
+
+## 2026-05-29 - P0-COM-MANUAL-EVIDENCE-PLAN-001 Manual External Evidence Plan
+
+Change request:
+- Expand the remaining external provider/store/native/release blockers into detailed manual test steps and acceptance result fields.
+- Preserve release blocking behavior until real external evidence is supplied.
+
+Requirement mapping:
+- Stage Scope: COM-SI-005, COM-SI-009, COM-SI-011, COM-SI-012.
+- Requirements: FR-COM-005, FR-COM-009, FR-COM-011, FR-COM-012.
+- Acceptance: AC-COM-009, AC-COM-011, AC-COM-013, AC-COM-014.
+- Test cases: TC-COM-012, TC-COM-015, TC-COM-019, TC-COM-021, TC-COM-022.
+- Traceability rows: COM-TR-005, COM-TR-009, COM-TR-011, COM-TR-012.
+
+Files changed:
+- `tests/commercial/manual_external_evidence_checklist.md`
+- `scripts/check_manual_external_evidence_plan.py`
+- `scripts/check_release_readiness.sh`
+- `tests/commercial/provider_sandbox_matrix.md`
+- `tests/commercial/store_submission_matrix.md`
+- `docs/release/commercial_release_runbook.md`
+- `docs/release/release_checklist.md`
+- `docs/product/increments/commercial-subscription-readiness/test_cases.md`
+- `docs/product/increments/commercial-subscription-readiness/traceability.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/test_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added a manual external evidence checklist with explicit execution steps, expected results, actual result fields, evidence refs and reviewer fields for TC-COM-012, TC-COM-015, TC-COM-019, TC-COM-021 and TC-COM-022.
+- Covered Apple sandbox and Google Play internal purchase, restore, refund/revoke, expiry, grace-period and account-switch scenarios.
+- Covered store metadata, subscription products/terms, privacy/Data safety, privacy/support URLs and reviewer account review.
+- Covered native WeChat/Apple Sign In configuration, real device smoke checks, signing, symbol upload, rollback rehearsal and strict release readiness.
+- Added `scripts/check_manual_external_evidence_plan.py` and wired it into `scripts/check_release_readiness.sh` as a structural gate.
+- Updated release runbook, checklist, test cases and traceability to cite the manual checklist without marking external evidence as passed.
+
+Validation:
+- `python3 scripts/check_manual_external_evidence_plan.py` - passed.
+- `python3 scripts/check_commercial_copy_contract.py` - passed with expected external copy blockers reported.
+- `python3 scripts/check_provider_sandbox_evidence.py` - passed with expected provider evidence blockers reported.
+- `python3 scripts/check_store_submission_evidence.py` - passed with expected store evidence blockers reported.
+- `python3 -m py_compile scripts/check_manual_external_evidence_plan.py scripts/check_provider_sandbox_evidence.py scripts/check_store_submission_evidence.py scripts/check_commercial_copy_contract.py` - passed.
+- `bash -n scripts/check_release_readiness.sh` - passed.
+- Fixture `scripts/check_release_readiness.sh --env-only` with production API, social-login env, provider/store/reviewer/symbol/rollback evidence refs, privacy URL, support URL, Sentry and Android signing vars - passed.
+- Same fixture `scripts/check_release_readiness.sh` in strict mode - failed as expected because iOS still contains the placeholder WeChat URL scheme and lacks the Apple Sign In entitlement.
+
+Result:
+- Manual execution readiness is improved: each remaining external/native blocker now has step-by-step instructions and result fields.
+- No external blocker is closed by this change; execution remains pending.
+
+Residual risk:
+- Real Apple sandbox, Google Play internal test, App Store Connect, Play Console, public privacy/support URLs, reviewer credentials, native iOS social-login configuration, signing/symbol and rollback evidence still require external accounts and human execution.
+- PM must not treat this as release approval until the checklist is filled, evidence refs are supplied and strict release gate passes.
+
+## 2026-05-23 - Project-local skill standardization
+
+Change request: migrate project-local development skills from the deprecated flat `codex/skills` layout to standardized `.agents/skills/<skill>/SKILL.md` and `SPEC.md` directories, add quality-loop skills, and add local validation.
+
+Files changed:
+- Added `.agents/skills/` with 11 skills: 8 migrated core development skills and 3 quality-loop skills.
+- Removed deprecated `codex/skills/`.
+- Added `docs/process/skill_quality_standard.md`.
+- Added `scripts/validate_agent_skills.py`.
+- Updated this implementation report.
+
+Requirement mapping:
+- Supports the project-internal Codex development workflow for requirement clarification, feature specs, API contracts, domain models, screen specs, prompt contracts, test cases, skill quality checks, implementation reports, and code review quality.
+- Enforces required skill sections: When to Use, When NOT to Use, Red Flags, Verification, and Common Rationalizations.
+- Adds a lightweight quality gate before introducing or changing project skills.
+
+Validation:
+- Command: `python scripts/validate_agent_skills.py`
+- Result: passed.
+
+Tests added or updated:
+- Added local structural validator for `.agents/skills`.
+- No application runtime tests were run because this change only affects development workflow assets.
+
+Risks:
+- The validator currently checks structure and basic trigger quality only; it does not yet perform semantic quality scoring.
+- Future external skill vendoring must add attribution and license files inside the affected skill directory.
+
+Follow-up:
+- Consider integrating a stronger validator or CI job after the process stabilizes.
+- Add semantic checks for duplicate trigger scopes and weak verification language if skill count grows.
+
+## 2026-05-24 - Product object governance remediation
+
+Change request: separate product objects from delivery stages so feature registry, stage scope, increment requirements, contracts, tests, and reports have clear boundaries.
+
+Files changed:
+- Added `docs/process/product_object_governance_remediation.md`.
+- Added `codex/agents/product_object_governance_change.md`.
+- Added `codex/agents/product_object_governance_check.md`.
+- Updated `docs/process/workflow.md`.
+- Updated `docs/process/skill_quality_standard.md`.
+- Updated document governance skills under `.agents/skills/document-*`.
+- Updated generation, contract, test, and report skills under `.agents/skills/`.
+- Added `docs/reports/product_object_governance_check_report.md`.
+
+Requirement mapping:
+- Defines Feature, Stage, Increment, Baseline, Change Request, and Artifact as separate product objects.
+- Adds classification and increment-definition gates before requirements/spec/acceptance/contracts.
+- Requires new product work to bind downstream contracts, tests, and reports to an owning increment or stable feature.
+
+Validation:
+- Command: `python scripts/validate_agent_skills.py`
+- Result: passed.
+- Additional `rg` checks confirmed the object rules, path rules, and workflow gates are present.
+
+Tests added or updated:
+- No application runtime tests were run because this change only affects process, agent, and skill governance assets.
+
+Risks:
+- Existing flat product artifacts are still not migrated.
+- The new object-based paths must be used in the next product planning increment to prove the workflow end to end.
+
+Follow-up:
+- Create or migrate `docs/product/feature_registry.md`, stage scope docs, and increment docs in a separate controlled migration.
+- Run the governance check agent after each migration step and update traceability references.
+
+## 2026-05-24 - Product object baseline and PM gate alignment
+
+Change request: align the current APP baseline and stable feature map with Product Base, feature registry, and product object gates.
+
+Files changed:
+- Added `docs/product/feature_registry.md`.
+- Added `docs/product/baselines/current-mvp.md`.
+- Added `docs/product/stages/p0-1-expression-automation.md`.
+- Added `docs/product/stages/p0-2-training-memory.md`.
+- Added `docs/product/increments/p0-1-expression-automation-training/definition.md`.
+- Updated `docs/product/roadmap.md`, `docs/product/development_status.md`, and `docs/process/change_request.md`.
+- Updated `codex/agents/product_manager.md`, `codex/agents/development_orchestrator.md`, and `codex/templates/pm_orchestrator_brief.template.md`.
+- Added `docs/reports/product_manager_overall_change_review.md`.
+
+Requirement mapping:
+- 旧扁平 feature 需求工件已移除；Product Base requirements 承载稳定需求。
+- 旧扁平 feature 规格工件已移除；P0.1 increment spec 承载阶段规格。
+- Current APP baseline is now represented by `docs/product/baselines/current-mvp.md`.
+- Stable APP capabilities are now represented by `docs/product/feature_registry.md`.
+- P0.1 and P0.2 are represented as stages, with P0.1 active increment defined separately.
+
+Validation:
+- Command: `python scripts/validate_agent_skills.py`
+- Result: passed.
+- Additional `rg` checks confirmed product object fields and gates are present.
+- Application source directories showed no changes.
+
+Tests added or updated:
+- No application runtime tests were run because this change only affects product governance, documentation, agent definitions, and templates.
+
+Risks:
+- P0.1 increment requirements/spec/acceptance/traceability still need to be generated or migrated from the legacy spec.
+- 旧 feature 目录引用已清理，后续文档链以 Product Base 和 increment artifacts 为准。
+
+Follow-up:
+- Generate `docs/product/increments/p0-1-expression-automation-training/requirements.md`.
+- Migrate or regenerate P0.1 spec under the increment directory.
+- Generate P0.1 acceptance and traceability before implementation planning.
+
+## 2026-05-24 - P0.1 increment artifact migration
+
+Change request: migrate the P0.1 expression automation training requirements/spec/acceptance/traceability from the legacy feature spec source into the active increment directory.
+
+Files changed:
+- Added `docs/product/increments/p0-1-expression-automation-training/requirements.md`.
+- Added `docs/product/increments/p0-1-expression-automation-training/spec.md`.
+- Added `docs/product/increments/p0-1-expression-automation-training/acceptance.md`.
+- Added `docs/product/increments/p0-1-expression-automation-training/traceability.md`.
+- Updated `docs/product/development_status.md`, `docs/product/roadmap.md`, `docs/process/change_request.md`, and `docs/reports/product_manager_overall_change_review.md`.
+
+Requirement mapping:
+- Covers P0.1 official scene entry, action chain, micro-action flow, session planner, hint ladder, voice-first/text-fallback path, immediate feedback, in-session pressure check, learning evidence write-back, and recoverable failure handling.
+- Preserves P0.1 non-goals: no third official scene, no arbitrary scene generation, no cross-session/cross-day scheduling, no full L0-L5 mastery ladder, no full notebook, no full scoring productization, and no commercial gating dependency.
+
+Validation:
+- Command: `python scripts/validate_agent_skills.py`
+- Result: passed.
+- Additional `rg` checks confirmed the P01-FR and AC-P01 traceability chain is present.
+- Application source directories showed no changes.
+
+Tests added or updated:
+- No application runtime tests were run because this change only migrates product increment artifacts and status/report documents.
+
+Risks:
+- Domain model, AI runtime prompt/schema, UX screen spec, architecture/module boundary, and test cases are still planned downstream artifacts.
+- The generated traceability matrix is pre-implementation and intentionally marks code/test evidence as planned.
+
+Follow-up:
+- Generate or update P0.1 domain, AI runtime, UX, architecture, and test artifacts before code implementation.
+
+## 2026-05-26 - PB-P0-BE-001A Product Base server-backed foundation and P0 commercial DB foundation
+
+Change request: implement the first backend/database slice after Product Manager and Development Orchestrator routing confirmed that Product Base and P0 commercial requirements/spec/acceptance/domain/OpenAPI gates exist, while backend and database implementation were missing.
+
+Owning product objects:
+- Stable feature source: `docs/product/base/requirements.md`, `docs/product/base/spec.md`, `docs/product/base/acceptance.md`, `docs/product/base/traceability.md`.
+- Active increment: `docs/product/increments/commercial-subscription-readiness/`.
+- Architecture/domain source: `docs/domain/domain_schema.md`, `docs/architecture/openapi/speakeasy-api.yaml`.
+
+Files changed:
+- Added backend skeleton: `backend/pom.xml`, `backend/src/main/java/com/speakeasy/SpeakEasyBackendApplication.java`, `backend/src/main/resources/application.yml`.
+- Added Flyway baseline: `backend/src/main/resources/db/migration/V202605260001__pb_p0_foundation.sql`.
+- Added Product Base entities and repositories under `backend/src/main/java/com/speakeasy/identity/` and `backend/src/main/java/com/speakeasy/content/`.
+- Added P0 commercial, usage, and ops entities/repositories under `backend/src/main/java/com/speakeasy/commerce/`, `backend/src/main/java/com/speakeasy/usage/`, and `backend/src/main/java/com/speakeasy/ops/`.
+- Added minimal API/service surface: `backend/src/main/java/com/speakeasy/api/CommercialFoundationController.java`, `backend/src/main/java/com/speakeasy/commerce/CommercialFoundationService.java`, `backend/src/main/java/com/speakeasy/common/SchemaResponse.java`, `backend/src/main/java/com/speakeasy/config/ClockConfig.java`.
+- Added backend tests: `backend/src/test/java/com/speakeasy/FoundationMigrationTest.java`, `backend/src/test/java/com/speakeasy/PostgresFoundationMigrationTest.java`, `backend/src/test/java/com/speakeasy/CommercialFoundationControllerTest.java`, `backend/src/test/resources/application-test.yml`.
+- Updated repository hygiene: `.gitignore` ignores `backend/target/`.
+
+Requirement mapping:
+- Product Base FR-001, FR-010 and domain `User`/`AuthIdentity` are represented by `user_accounts`, `auth_identities`, `UserAccount`, `AuthIdentity`, and the `/user/me` deletion foundation.
+- Product Base FR-002 is represented by `user_profiles`, `onboarding_assessments`, `learning_routes`, `UserProfile`, `OnboardingAssessment`, and `LearningRoute`.
+- Product Base FR-003, FR-005, FR-006, FR-008 are represented by `scenarios`, `scenario_versions`, `scenario_levels`, `target_expressions`, and the matching content entities.
+- P0 FR-COM-001, FR-COM-006, FR-COM-007, FR-COM-009 are represented by `subscription_plans`, `subscriptions`, `entitlement_snapshots`, `/subscription/plans`, and `/entitlements`.
+- P0 FR-COM-002, FR-COM-003, FR-COM-005 are represented by `purchases`, `payment_provider_events`, and subscription state foundation only; real Apple/Google verification remains a documented non-goal for this slice.
+- P0 FR-COM-008 is represented by `account_deletion_jobs` and `DELETE /user/me`.
+- P0 FR-COM-010 / AC-COM-012 is represented by `usage_ledgers`, `usage_reservations`, and `GET /usage/summary`.
+- P0 FR-COM-011, FR-COM-012 are represented by `audit_logs` and `GET /admin/release-health` returning `warn` until provider/release gates are implemented.
+
+Tests added or updated:
+- `FoundationMigrationTest` verifies the PB/P0 foundation migration creates all required tables.
+- `PostgresFoundationMigrationTest` runs the same Flyway baseline against a real `postgres:15` Testcontainers database.
+- `CommercialFoundationControllerTest` verifies OpenAPI-shaped response envelopes for `/subscription/plans`, `/entitlements`, `/usage/summary`, `/user/me`, and `/admin/release-health`.
+- Test setup validates repository persistence across the foundation entities used by the API slice.
+
+Commands run:
+- `python scripts/project_agent_runner.py validate` - passed before implementation.
+- `python scripts/project_agent_runner.py packet development_orchestrator --task ...` - generated routing packet.
+- `python scripts/project_agent_runner.py packet backend --task ...` - generated backend execution packet.
+- `mvn test` in `backend/` - initially blocked by sandboxed dependency download; rerun with approved network access.
+- `mvn test` in `backend/` - first real run found a test cleanup foreign-key issue; fixed by deleting `AccountDeletionJob` rows before `UserAccount` rows.
+- `mvn test` in `backend/` - after DTO contract hardening, found one stale test assertion for `DELETE /user/me`; fixed the test to assert the OpenAPI top-level `deletion_job_id`, `status`, and `requested_at` fields.
+- `docker version` - initially showed Docker daemon unavailable; after Docker Desktop was started, Docker server 29.0.1 became reachable.
+- `mvn test -Dtest=PostgresFoundationMigrationTest` - first attempt exposed Spring Boot-managed Testcontainers 1.19.8 incompatibility with Docker Engine 29; fixed by pinning Testcontainers 2.0.5 modules and adding `flyway-database-postgresql`.
+- `mvn test -Dtest=PostgresFoundationMigrationTest` - passed against PostgreSQL 15.17 via Testcontainers.
+- `mvn test` in `backend/` - passed, 7 tests, 0 failures, 0 errors.
+- `npm.cmd run check:api-contract` - passed, 47 paths, 51 operations, 26 request examples, 47 success examples, 54 error examples; Dart client pre-generation drift gate passed.
+
+Results:
+- Backend skeleton builds under Maven with Java 17.
+- Flyway migration runs under the backend test profile and creates the Product Base and P0 commercial foundation tables.
+- Flyway baseline is now validated against both H2 PostgreSQL compatibility and a real PostgreSQL 15 Testcontainers database.
+- Minimal commercial readiness API surface is aligned to existing OpenAPI paths for the implemented endpoints and now uses explicit response DTOs instead of serializing JPA entities as public API contracts.
+- Real provider verification, generated Dart client integration, Flutter membership integration, P0.1 training flow implementation, and production secrets are not implemented in this slice.
+
+Risks:
+- The API surface is intentionally a foundation/stub for commercial readiness; Apple/Google verification, webhook processing, usage reservation transitions, authorization, and security hardening remain follow-up implementation slices.
+- Product Base traceability source files were not edited in this backend slice; merge-back to Product Base traceability should be performed only after PM/document-governance approval.
+
+Follow-up:
+- Route the next backend slice for provider verification, webhook idempotency, entitlement refresh, and usage reserve/commit/release only after PM/Development Orchestrator narrows the scope.
+- Run QA and Product Object Governance Check against this implementation/report evidence before declaring the increment ready for downstream frontend/generated-client work.
+
+## 2026-05-27 - PB-P0-BE-001B Auth/Security + User Identity Boundary
+
+变更请求：在 PB-P0-BE-001A 后端/数据库基础上实现第一批最小认证与当前用户边界，使 Product Base 用户身份和 P0 commercial entitlement/usage/account deletion 接口不再依赖生产路径的 `X-User-Id` 替身。
+
+Owning product objects:
+- Stable feature source: `docs/product/base/requirements.md`, `docs/product/base/spec.md`, `docs/product/base/acceptance.md`, `docs/product/base/traceability.md`.
+- Active increment: `docs/product/increments/commercial-subscription-readiness/`.
+- Contract/security source: `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/api_contract.md`, `docs/architecture/security_design.md`, `docs/domain/domain_schema.md`.
+
+Files changed:
+- Updated `backend/pom.xml` to add Spring Security.
+- Added `backend/src/main/resources/db/migration/V202605270001__auth_sessions.sql` for opaque access/refresh session storage.
+- Added security boundary under `backend/src/main/java/com/speakeasy/security/`: bearer token filter, current-user principal, token hashing, and stateless security config.
+- Added shared API error support under `backend/src/main/java/com/speakeasy/common/`: `ErrorResponse`, `ApiException`, and `ApiExceptionHandler`.
+- Added auth/session/profile repositories and entities under `backend/src/main/java/com/speakeasy/identity/`.
+- Added `AuthService`, `IdentityService`, and `AuthController` for `/auth/login/phone`, `/auth/login/apple`, `/auth/login/wechat`, `/auth/refresh`, `/auth/logout`, and `GET/PATCH/DELETE /user/me`.
+- Updated `CommercialFoundationController` so `/entitlements` and `/usage/summary` read the authenticated principal instead of `X-User-Id`.
+- Updated backend tests: `AuthControllerTest`, `AuthServiceTest`, `CommercialFoundationControllerTest`, `FoundationMigrationTest`, and `PostgresFoundationMigrationTest`.
+
+Requirement mapping:
+- Product Base FR-001 / Flow-002: minimal measurable login, refresh, logout, and bearer-token boundary now exist.
+- Product Base FR-010 / AC-011: `GET/PATCH/DELETE /user/me` now bind to the authenticated user; account deletion creates a deletion job and revokes active sessions.
+- P0 FR-COM-004 / AC-COM-008: production path no longer relies on demo `X-User-Id` identity substitution for protected user/commercial endpoints.
+- P0 FR-COM-001, FR-COM-006, FR-COM-007: `/entitlements` uses the authenticated user for entitlement lookup and default free snapshot fallback.
+- P0 FR-COM-010 / AC-COM-012: `/usage/summary` uses the authenticated user for usage summary lookup.
+
+Tests added or updated:
+- `AuthControllerTest` covers unauthenticated `GET /user/me`, phone login, current-user binding while ignoring `X-User-Id`, profile patch, refresh-token rotation, logout, and revoked-token rejection.
+- `AuthServiceTest` covers login session creation, refresh rotation, access token invalidation after refresh, logout revocation, and missing-terms rejection.
+- `CommercialFoundationControllerTest` now authenticates with a bearer token, proves `X-User-Id` is ignored, verifies `/entitlements`, `/usage/summary`, and `DELETE /user/me`, and checks unauthenticated entitlement access.
+- Migration tests now require `auth_sessions` in both H2 and PostgreSQL Testcontainers validation.
+
+Commands run:
+- `python scripts/project_agent_runner.py validate` - passed.
+- `npm.cmd run check:api-contract` - passed before implementation.
+- `python scripts/project_agent_runner.py packet development_orchestrator --task ...` - generated routing packet.
+- `python scripts/project_agent_runner.py packet backend --task ...` - generated backend execution packet.
+- `mvn.cmd -q -DskipTests compile` in `backend/` - initially blocked by sandboxed Maven dependency resolution, then passed with approved Maven access.
+- `mvn.cmd -q "-Dtest=AuthServiceTest,AuthControllerTest,CommercialFoundationControllerTest,FoundationMigrationTest" test` - first run found an expired seeded test token; fixed by using a current timestamp, then passed.
+- Tool-backed QA returned pass and identified low-cost coverage gaps for additional unauthenticated paths, invalid refresh token, and unsupported `schema_version`; fixed in the same slice.
+- `mvn.cmd test` in `backend/` - passed after QA gap fixes, 19 tests, 0 failures, 0 errors.
+- `npm.cmd run check:api-contract` - passed after implementation; OpenAPI lint, contract gate, and Dart pre-client drift gate remain green.
+
+Results:
+- Spring Security stateless bearer-token baseline is active.
+- Access/refresh tokens are opaque server-side sessions, stored as hashes in `auth_sessions`.
+- `/auth/login/*`, `/auth/refresh`, and `/auth/logout` have minimal testable implementations or provider substitutes without real Apple/WeChat verification.
+- `GET/PATCH/DELETE /user/me`, `/entitlements`, and `/usage/summary` bind to authenticated user identity.
+- Shared error responses are JSON-shaped with OpenAPI error codes for authentication and validation failures.
+- Runtime request validation rejects unsupported `schema_version` values for the implemented auth/user request DTOs.
+
+Risks:
+- Login provider implementations are substitutes only; real Apple/WeChat verification remains downstream.
+- Tokens are opaque random bearer tokens, not signed JWTs; this is acceptable for the current server-side session boundary but must be revisited if horizontal stateless auth is required.
+- Account deletion still creates the job and revokes sessions only; full deletion processor, anonymization, audit hardening, and release health gates remain in P0-COM-BE-005.
+- Usage reserve/commit/release and entitlement refresh/gating remain in P0-COM-BE-002.
+
+Follow-up:
+- Route PB-BE-002 only after QA and checker pass this slice.
+- Keep Apple/Google verify/restore, webhooks/refund/expiry downgrade, account deletion processor, generated Dart client, and Flutter integration in their later named batches.
+
+## 2026-05-29 - mvp-backend-foundation-auth Gap Closure
+
+变更请求：按 PM -> Development Orchestrator 路由只关闭 `mvp-backend-foundation-auth` 的 backend foundation/auth gap，不进入 onboarding/content 或其他后续 increment。
+
+Owning product objects:
+- Stage: `docs/product/stages/mvp-backend-foundation.md`
+- Increment: `docs/product/increments/mvp-backend-foundation-auth/`
+- Covered Stage Scope Items: MVP-SI-001, MVP-SI-002
+- Requirements / acceptance: MVP-BE-FR-001, MVP-BE-FR-002, AC-MVP-BE-001, AC-MVP-BE-002
+- Traceability rows: MVP-BE-TR-001, MVP-BE-TR-002
+
+Files changed:
+- Added response/error/session lifecycle coverage: `backend/src/test/java/com/speakeasy/FoundationResponseContractTest.java`, `backend/src/test/java/com/speakeasy/FoundationErrorContractTest.java`, `backend/src/test/java/com/speakeasy/AuthSessionLifecycleTest.java`.
+- Updated backend error handling: `backend/src/main/java/com/speakeasy/common/ApiExceptionHandler.java`.
+- Hardened PostgreSQL-compatible migration validation fallback: `backend/src/test/java/com/speakeasy/PostgresFoundationMigrationTest.java`.
+- Added Mockito test runtime config: `backend/src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker`.
+- Updated contract tooling reproducibility and local cache hygiene: `.gitignore`, `package.json`, `docs/architecture/openapi/dart-client-drift-manifest.json`.
+- Updated traceability and report evidence: `docs/product/increments/mvp-backend-foundation-auth/test_cases.md`, `docs/product/increments/mvp-backend-foundation-auth/traceability.md`, `docs/reports/implementation_report.md`, `docs/reports/test_report.md`, `docs/reports/quality_report.md`.
+
+Requirement mapping:
+- MVP-SI-001 / MVP-BE-FR-001 / AC-MVP-BE-001 is covered by TC-MVP-BE-001, TC-MVP-BE-002, and TC-MVP-BE-003 for migrations, OpenAPI-shaped DTO responses, and shared error contracts.
+- MVP-SI-002 / MVP-BE-FR-002 / AC-MVP-BE-002 is covered by TC-MVP-BE-004, TC-MVP-BE-005, and TC-MVP-BE-006 for auth/current-user behavior, session lifecycle, OpenAPI drift, and Flutter auth service compatibility.
+- No onboarding/content, practice/AI, learning/memory, generated Dart client, or commercial subscription expansion was implemented in this increment.
+
+Tests added or updated:
+- `FoundationResponseContractTest` verifies implemented controllers do not expose raw persistence shapes.
+- `FoundationErrorContractTest` verifies validation, malformed JSON, and unauthenticated failures use the shared error schema and do not expose stack traces.
+- `AuthSessionLifecycleTest` verifies expired token rejection, refresh rotation, and user-wide session revocation.
+- `PostgresFoundationMigrationTest` now validates against Docker when available or a local PostgreSQL binary fallback when Docker is unavailable.
+
+Commands run:
+- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/project_agent_runner.py packet development_orchestrator --task ...` - generated the scoped routing packet.
+- `python3 scripts/project_agent_runner.py packet backend --task ...` - generated the backend execution packet.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository "-Dtest=FoundationMigrationTest,PostgresFoundationMigrationTest,FoundationResponseContractTest,FoundationErrorContractTest,AuthControllerTest,AuthServiceTest,AuthSessionLifecycleTest" test` from `backend/` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` from `backend/` - passed.
+- `npm run check:api-contract` from repository root - passed after updating tooling to use `uv run --with PyYAML` and refreshing the pre-client OpenAPI hash.
+- `flutter test test/services/auth_service_test.dart` from repository root - passed.
+
+Results:
+- MVP-BE-GAP-001 and MVP-BE-GAP-002 are closed in `docs/product/increments/mvp-backend-foundation-auth/traceability.md`.
+- TC-MVP-BE-001 through TC-MVP-BE-006 are automated, executed, and recorded in `docs/product/increments/mvp-backend-foundation-auth/test_cases.md`.
+- API contract gate remains in `pre_client_generation_gate` mode; no generated Dart client was introduced.
+
+Risks:
+- `PostgresFoundationMigrationTest` can still skip on machines that have neither Docker nor local PostgreSQL binaries; this machine validated with the local PostgreSQL fallback.
+- Real Apple/WeChat provider verification remains out of scope for this foundation/auth increment.
+- The generated Dart client remains a later client/QA increment, guarded here only by pre-client drift checks.
+
+Follow-up:
+- Run independent QA / Product Object Governance Check before routing the next increment.
+- After checker pass, Development Orchestrator may route the next increment in sequence: onboarding/content.
+
+## 2026-05-29 - mvp-backend-onboarding-content Gap Closure
+
+变更请求：按 PM -> Development Orchestrator 路由只关闭 `mvp-backend-onboarding-content`，覆盖 onboarding assessment、official scenario content、user scenario state 和 home summary，不进入 practice/AI、learning/memory、commercial membership、generated client 或 release increment。
+
+Owning product objects:
+- Stage: `docs/product/stages/mvp-backend-foundation.md`
+- Increment: `docs/product/increments/mvp-backend-onboarding-content/`
+- Covered Stage Scope Items: MVP-SI-003, MVP-SI-004, MVP-SI-005
+- Requirements / acceptance: MVP-BE-FR-003, MVP-BE-FR-004, MVP-BE-FR-005; AC-MVP-BE-003, AC-MVP-BE-004, AC-MVP-BE-005
+- Traceability rows: MVP-BE-TR-003, MVP-BE-TR-004, MVP-BE-TR-005
+
+Files changed:
+- Added backend API/service surface: `backend/src/main/java/com/speakeasy/api/OnboardingContentController.java`, `backend/src/main/java/com/speakeasy/content/OnboardingContentService.java`.
+- Added onboarding/content persistence support: `UserScenarioState`, scenario content repositories, onboarding assessment and learning route repositories, and the Flyway seed migration `V202605290001__onboarding_content_seed.sql`.
+- Updated existing entities with read/update methods needed by the service: `Scenario`, `ScenarioVersion`, `ScenarioLevel`, `TargetExpression`, `OnboardingAssessment`, `LearningRoute`, and `UserAccount`.
+- Extended OpenAPI/domain contracts for user scenario state and home summary: `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/api_contract.md`, `docs/domain/domain_schema.md`, and `docs/domain/entity_relationship.md`.
+- Added onboarding/content tests: `OnboardingAssessmentControllerTest`, `LearningRouteMappingTest`, `OnboardingRouteResponseContractTest`, `ScenarioCatalogControllerTest`, `ScenarioContentControllerTest`, `ScenarioSeedVersioningTest`, `UserScenarioStateControllerTest`, and `HomeSummaryControllerTest`.
+- Added shared backend test cleanup support and updated older auth/foundation/commercial tests so the new onboarding foreign keys do not break full-suite isolation.
+- Updated increment traceability and report evidence: `docs/product/increments/mvp-backend-onboarding-content/test_cases.md`, `docs/product/increments/mvp-backend-onboarding-content/traceability.md`, `docs/reports/test_report.md`, and `docs/reports/quality_report.md`.
+
+Requirement mapping:
+- MVP-SI-003 / MVP-BE-FR-003 / AC-MVP-BE-003 is covered by TC-MVP-BE-007, TC-MVP-BE-008, and TC-MVP-BE-009 for onboarding validation, learning route mapping, and OpenAPI-shaped route responses.
+- MVP-SI-004 / MVP-BE-FR-004 / AC-MVP-BE-004 is covered by TC-MVP-BE-010, TC-MVP-BE-011, and TC-MVP-BE-012 for official scenario catalog, detail/level content, seed/version boundaries, and Product Base scope limitation.
+- MVP-SI-005 / MVP-BE-FR-005 / AC-MVP-BE-005 is covered by TC-MVP-BE-013, TC-MVP-BE-014, and TC-MVP-BE-015 for join/remove/current state, home summary, and Flutter coordinator compatibility.
+
+Commands run:
+- `python3 scripts/project_agent_runner.py packet development_orchestrator --task ...` - generated the scoped routing packet.
+- `python3 scripts/project_agent_runner.py packet backend --task ...` - generated the backend execution packet.
+- `python3 scripts/project_agent_runner.py packet qa --task ...` - generated the QA verification packet.
+- `python3 scripts/project_agent_runner.py packet product_object_governance_check --task ...` - generated the independent checker packet.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` from `backend/` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository "-Dtest=OnboardingAssessmentControllerTest,LearningRouteMappingTest,OnboardingRouteResponseContractTest,ScenarioCatalogControllerTest,ScenarioContentControllerTest,ScenarioSeedVersioningTest,UserScenarioStateControllerTest,HomeSummaryControllerTest" test` from `backend/` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` from `backend/` - passed.
+- `npm run check:api-contract` from repository root - passed after OpenAPI examples and Dart pre-client drift hash were updated.
+- `flutter test test/application/home_cards_coordinator_test.dart test/application/scene_setup_coordinator_test.dart` from repository root - passed.
+- `git diff --check` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Results:
+- MVP-BE-GAP-003 and MVP-BE-GAP-004 are closed in `docs/product/increments/mvp-backend-onboarding-content/traceability.md`.
+- TC-MVP-BE-007 through TC-MVP-BE-015 are automated, executed, and recorded in `docs/product/increments/mvp-backend-onboarding-content/test_cases.md`.
+- Official Product Base scenarios are seeded and versioned for `job_interview` and `onboarding_introduction`, with L1/L2/L3 target expressions.
+- Onboarding assessment now creates deterministic learning routes and scenario state for supported Product Base directions; daily service returns an explicit no-scenario route.
+- Home summary now reads backend user scenario state and exposes stable default states for review, weakness, and unfinished-session data that are not yet implemented.
+
+Risks:
+- Generated Dart client and real Flutter service wiring remain a later client/QA increment; this increment keeps the contract in pre-client drift mode.
+- Home summary intentionally reports default `not_available` / `none` values for review, weakness, and unfinished-session inputs until the learning/memory and practice increments provide those data sources.
+- Scenario seed content is MVP seed data, not a CMS or content operations pipeline.
+
+Follow-up:
+- Route `mvp-backend-practice-ai` only after independent QA / Product Object Governance Check passes this increment.
+
+## 2026-05-29 - mvp-backend-practice-ai Gap Closure
+
+变更请求：按 PM -> Development Orchestrator 路由只关闭 `mvp-backend-practice-ai`，覆盖 provider gateway、practice session lifecycle、turn persistence、coach feedback、recoverable failure 和 summary candidate，不进入 learning-memory accepted evidence、commercial membership、generated Dart client、release 或 P0.1 planner。
+
+Owning product objects:
+- Stage: `docs/product/stages/mvp-backend-foundation.md`
+- Increment: `docs/product/increments/mvp-backend-practice-ai/`
+- Covered Stage Scope Items: MVP-SI-006, MVP-SI-008, MVP-SI-009
+- Requirements / acceptance: MVP-BE-FR-006, MVP-BE-FR-008, MVP-BE-FR-009; AC-MVP-BE-006, AC-MVP-BE-008, AC-MVP-BE-009
+- Traceability rows: MVP-BE-TR-006, MVP-BE-TR-008, MVP-BE-TR-009
+
+Files changed:
+- Added practice persistence migration: `backend/src/main/resources/db/migration/V202605290002__practice_ai_sessions.sql`.
+- Added practice domain code under `backend/src/main/java/com/speakeasy/practice/`: session, turn, feedback, summary entities/repositories and `PracticeService`.
+- Added AI gateway code under `backend/src/main/java/com/speakeasy/ai/`: `AiProviderGateway`, deterministic server-side adapter, and `AiGatewayService`.
+- Added API controllers: `backend/src/main/java/com/speakeasy/api/PracticeController.java` and `AiGatewayController.java`.
+- Updated backend Jackson config to reject unknown JSON request fields so provider secrets cannot be smuggled into gateway DTOs.
+- Updated home summary unfinished-session state to read backend practice sessions.
+- Updated OpenAPI/API/domain/AI runtime contracts: `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/api_contract.md`, `docs/domain/domain_schema.md`, `docs/domain/entity_relationship.md`, and `docs/ai_runtime/*`.
+- Added tests TC-MVP-BE-016 through TC-MVP-BE-025 under `backend/src/test/java/com/speakeasy/`. Current supplement: TC-MVP-BE-047 and TC-MVP-BE-048 were added on 2026-06-09 for the Practice trusted `audio_ref` negative paths.
+
+Requirement mapping:
+- MVP-SI-006 / MVP-BE-FR-006 / AC-MVP-BE-006 is covered by TC-MVP-BE-016 through TC-MVP-BE-019 for provider secret rejection, mock provider success, provider failure fallback, and auth/session mismatch blocking.
+- MVP-SI-008 / MVP-BE-FR-008 / AC-MVP-BE-008 is covered by TC-MVP-BE-020 through TC-MVP-BE-023 for start/resume/get/turn/complete/recovery and idempotent turn replay, plus TC-MVP-BE-047/048 for Practice transcript + invalid or wrong-owner `audio_ref` fail-closed behavior.
+- MVP-SI-009 / MVP-BE-FR-009 / AC-MVP-BE-009 is covered by TC-MVP-BE-024 and TC-MVP-BE-025 for structured coach feedback, score signal source/availability, playback failure, invalid provider output fallback, and candidate-only evidence.
+
+Commands run:
+- `python3 scripts/project_agent_runner.py packet development_orchestrator --task ...` - generated the scoped routing packet.
+- `python3 scripts/project_agent_runner.py packet backend --task ...` - generated the backend execution packet.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` from `backend/` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository "-Dtest=ProviderGatewaySecurityContractTest,ProviderGatewayControllerTest,ProviderGatewayFailureTest,ProviderGatewayAuthorizationTest,PracticeSessionLifecycleTest,PracticeTurnControllerTest,PracticeSessionCompletionTest,PracticeSessionRecoveryTest,CoachFeedbackContractTest,FeedbackFailureHandlingTest" test` from `backend/` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` from `backend/` - passed.
+- `npm run check:api-contract` from repository root - passed with OpenAPI lint, contract examples, and Dart pre-client drift hash `e81fb612e399777241c2ab6cd2d965f972e9762cf76aaea76c94b5f71f18259c`.
+
+Results:
+- MVP-BE-GAP-005 and MVP-BE-GAP-007 are closed in `docs/product/increments/mvp-backend-practice-ai/traceability.md`.
+- TC-MVP-BE-016 through TC-MVP-BE-025 are automated, executed, and recorded in `docs/product/increments/mvp-backend-practice-ai/test_cases.md`.
+- Practice sessions can start/resume/get/submit turns/complete and no completed session is returned as active recovery.
+- Provider gateway behavior is server-side only; unknown request fields such as `provider_secret` fail before provider invocation.
+- Feedback and score signals are structured and candidate-only; no final mastery, accepted learning evidence, billing, or release state is written by this increment.
+
+Risks:
+- Provider adapters are deterministic local substitutes for MVP contract testing; real provider credentials, retries, latency budgets, and usage reservation accounting remain downstream work.
+- `SessionSummary` returns learning-memory candidate input only; accepted evidence, review scheduling, mastery, and history remain in `mvp-backend-learning-memory`.
+- Generated Dart client and production Flutter service wiring remain later client/QA work.
+
+Follow-up:
+- Route `mvp-backend-learning-memory` only after independent QA / Product Object Governance Check passes this increment.
+
+## 2026-05-29 - mvp-backend-learning-memory Gap Closure
+
+变更请求：按 PM -> Development Orchestrator 路由只关闭 `mvp-backend-learning-memory`，覆盖推荐表达队列、表达任务完成、收藏、learning evidence、mastery、review、personal wiki 和 history，不进入 commercial membership、generated Dart client、release 或 P0.2 长期训练规划。
+
+Owning product objects:
+- Stage: `docs/product/stages/mvp-backend-foundation.md`
+- Increment: `docs/product/increments/mvp-backend-learning-memory/`
+- Covered Stage Scope Items: MVP-SI-007, MVP-SI-010
+- Requirements / acceptance: MVP-BE-FR-007, MVP-BE-FR-010; AC-MVP-BE-007, AC-MVP-BE-010
+- Traceability rows: MVP-BE-TR-007, MVP-BE-TR-010
+
+Files changed:
+- Added learning/memory persistence migration: `backend/src/main/resources/db/migration/V202605290003__learning_memory.sql`.
+- Added learning domain code under `backend/src/main/java/com/speakeasy/learning/`: queue, attempt, favorite, evidence, mastery, review, saved expression and history entities/repositories plus `LearningMemoryService`.
+- Added API controller `backend/src/main/java/com/speakeasy/api/LearningMemoryController.java`.
+- Updated migration tests and backend integration cleanup for the new learning tables.
+- Updated OpenAPI/API/domain contracts: `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/api_contract.md`, `docs/domain/domain_schema.md`, `docs/domain/entity_relationship.md`, and `docs/architecture/openapi/dart-client-drift-manifest.json`.
+- Added tests TC-MVP-BE-026 through TC-MVP-BE-032 under `backend/src/test/java/com/speakeasy/`.
+
+Requirement mapping:
+- MVP-SI-007 / MVP-BE-FR-007 / AC-MVP-BE-007 is covered by TC-MVP-BE-026 through TC-MVP-BE-029 for empty queue state, queue priority/dedupe, task progress/evidence/mastery link, and favorite idempotency/delete.
+- MVP-SI-010 / MVP-BE-FR-010 / AC-MVP-BE-010 is covered by TC-MVP-BE-030 through TC-MVP-BE-032 for rejected low-confidence evidence, accepted evidence projections, personal wiki/history visibility, and history deletion.
+
+Commands run:
+- `python3 scripts/project_agent_runner.py packet development_orchestrator --task ...` - generated the scoped routing packet.
+- `python3 scripts/project_agent_runner.py packet backend --task ...` - generated the backend execution packet.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -DskipTests compile` from `backend/` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository "-Dtest=ExpressionQueueControllerTest,ExpressionQueueOrderingTest,ExpressionTaskProgressTest,FavoriteExpressionControllerTest,LearningEvidenceValidationTest,LearningEvidenceProjectionTest,LearningHistoryWikiControllerTest" test` from `backend/` - passed.
+- `npm run check:api-contract` from repository root - passed with OpenAPI lint, contract examples, and Dart pre-client drift hash `d677224d822630f0ca30bdcdd55b8c0793b778b7e8e8a65dbfa58f38be15886e`.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` from `backend/` - passed after adjusting learning evidence projection FKs to `ON DELETE SET NULL`.
+- `git diff --check` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Results:
+- MVP-BE-GAP-006 is closed in `docs/product/increments/mvp-backend-learning-memory/traceability.md`.
+- TC-MVP-BE-026 through TC-MVP-BE-032 are automated, executed, and recorded in `docs/product/increments/mvp-backend-learning-memory/test_cases.md`.
+- Learning queue, favorite, evidence, mastery, review, personal wiki, and history now have backend-owned persistence and API contracts.
+
+Risks:
+- Review scheduling is MVP immediate-due behavior, not the deferred P0.2 cross-day planner or full L0-L5 mastery ladder.
+- Generated Dart client and production Flutter service wiring remain later client/QA work; this increment keeps the contract in pre-client drift mode.
+
+Follow-up:
+- Route `mvp-backend-membership-boundary` only after independent QA / Product Object Governance Check passes this increment.
+
+## 2026-05-29 - mvp-backend-membership-boundary Gap Closure
+
+变更请求：按 PM -> Development Orchestrator 路由只关闭 `mvp-backend-membership-boundary`，覆盖账号删除、Product Base 学习数据处理、MVP membership/report/placeholder boundary，不进入完整商业订阅、真实支付、generated Dart client 或 release increment。
+
+Owning product objects:
+- Stage: `docs/product/stages/mvp-backend-foundation.md`
+- Increment: `docs/product/increments/mvp-backend-membership-boundary/`
+- Covered Stage Scope Items: MVP-SI-011, MVP-SI-012
+- Requirements / acceptance: MVP-BE-FR-011, MVP-BE-FR-012; AC-MVP-BE-011, AC-MVP-BE-012
+- Traceability rows: MVP-BE-TR-011, MVP-BE-TR-012
+
+Files changed:
+- Added account deletion orchestration: `backend/src/main/java/com/speakeasy/ops/AccountDeletionService.java`, account deletion job failure/completion helpers, audit constructor, user deleted marker, and latest-job repository query.
+- Updated API surface: `backend/src/main/java/com/speakeasy/api/AuthController.java` for `DELETE /user/me` idempotency and `GET /user/deletion-status`; `backend/src/main/java/com/speakeasy/api/MembershipBoundaryController.java` for membership, Android billing, report, offline content, and achievements boundary states.
+- Added backend tests TC-MVP-BE-033 through TC-MVP-BE-038 under `backend/src/test/java/com/speakeasy/`.
+- Updated OpenAPI/API/domain contracts and drift manifest: `docs/architecture/openapi/speakeasy-api.yaml`, `docs/architecture/openapi/dart-client-drift-manifest.json`, `docs/architecture/api_contract.md`, `docs/domain/domain_schema.md`, and `docs/domain/entity_relationship.md`.
+- Updated increment traceability and report evidence: `docs/product/increments/mvp-backend-membership-boundary/test_cases.md`, `docs/product/increments/mvp-backend-membership-boundary/traceability.md`, `docs/reports/test_report.md`, and `docs/reports/quality_report.md`.
+
+Requirement mapping:
+- MVP-SI-011 / MVP-BE-FR-011 / AC-MVP-BE-011 is covered by TC-MVP-BE-033 through TC-MVP-BE-036 for deletion completion, session invalidation, Product Base learning/practice/profile data cleanup, failure status visibility, and audit evidence.
+- MVP-SI-012 / MVP-BE-FR-012 / AC-MVP-BE-012 is covered by TC-MVP-BE-037 and TC-MVP-BE-038 for MVP membership boundary, Android billing platform-limited responses, and explicit report/offline/achievement placeholders.
+
+Commands run:
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository "-Dtest=AccountDeletionControllerTest,AccountDeletionSessionInvalidationTest,AccountDeletionLearningDataTest,AccountDeletionFailureAuditTest,MvpMembershipBoundaryControllerTest,MvpReportPlaceholderControllerTest" test` from `backend/` - passed.
+- `npm run check:api-contract` from repository root - passed: 62 paths, 67 operations, 29 request examples, 62 success examples, 74 error examples; Dart pre-client drift hash `506282ac758a37269df95e12ca6752de9c201eb162fd4cc0e227b13c287ab082`.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` from `backend/` - passed.
+- `git diff --check` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Results:
+- MVP-BE-GAP-008 and MVP-BE-GAP-009 are closed in `docs/product/increments/mvp-backend-membership-boundary/traceability.md`.
+- Account deletion now revokes sessions, clears user-owned Product Base learning/practice/profile state, marks the account deleted, completes a deletion job, and writes redacted audit evidence.
+- Membership, Android purchase/restore, learning report, offline content, and achievements endpoints return explicit MVP boundary/placeholder facts without claiming full commercial readiness.
+
+Risks:
+- Complete commercial subscription, real Android/iOS payment provider verification, webhook handling, entitlement gating, paid reports, offline packages, and achievements remain outside this increment.
+- Account deletion performs synchronous local DB cleanup for MVP scope; production retention policies for raw media/transcript object stores still need their owning DevOps/Security increment.
+
+Follow-up:
+- Route `mvp-backend-client-qa-release` only after independent QA / Product Object Governance Check passes this increment.
+
+## 2026-05-29 - mvp-backend-client-qa-release Gap Closure
+
+变更请求：按第六个顺序 increment 关闭 `mvp-backend-client-qa-release`，覆盖 OpenAPI/Dart client drift、Flutter active-flow evidence、全量 QA 和 release evidence，不新增 Product Base 范围外后端能力。
+
+Owning product objects:
+- Stage: `docs/product/stages/mvp-backend-foundation.md`
+- Increment: `docs/product/increments/mvp-backend-client-qa-release/`
+- Covered Stage Scope Items: MVP-SI-013, MVP-SI-014
+- Requirements / acceptance: MVP-BE-FR-013, MVP-BE-FR-014; AC-MVP-BE-013, AC-MVP-BE-014
+- Traceability rows: MVP-BE-TR-013, MVP-BE-TR-014
+
+Files changed:
+- Added generated OpenAPI Dart boundary: `lib/generated/api/.openapi-sha256`, `lib/generated/api/speakeasy_api.dart`.
+- Upgraded Dart drift gate: `scripts/check_openapi_dart_drift.py` now verifies generated Dart files include all OpenAPI path templates and checks handwritten ApiClient exceptions.
+- Updated Flutter API client: `lib/services/api_client.dart` now routes active auth/current-user/account-delete/AI gateway MVP calls through `SpeakeasyApiPaths`, uses OpenAPI snake_case request fields, and removes migrated legacy paths.
+- Added Flutter contract tests: `test/services/api_client_contract_test.dart`.
+- Updated API/release/stage evidence: `docs/architecture/api_contract.md`, `docs/architecture/openapi/dart-client-drift-manifest.json`, `docs/product/stages/mvp-backend-foundation.md`, `docs/product/increments/mvp-backend-client-qa-release/test_cases.md`, `docs/product/increments/mvp-backend-client-qa-release/traceability.md`, `docs/release/release_checklist.md`, `docs/release/version_log.md`, and `docs/release/rollback_plan.md`.
+
+Requirement mapping:
+- MVP-SI-013 / MVP-BE-FR-013 / AC-MVP-BE-013 is covered by TC-MVP-BE-039 through TC-MVP-BE-042 for OpenAPI lint/contract, generated Dart drift, Flutter active API drift tests, and documented handwritten-client exceptions.
+- MVP-SI-014 / MVP-BE-FR-014 / AC-MVP-BE-014 is covered by TC-MVP-BE-043 through TC-MVP-BE-046 for stage traceability, full backend regression, full Flutter regression, release checklist, version log, rollback plan, and Product Object Governance evidence.
+
+Commands run:
+- `npm run check:api-contract` from repository root - passed: OpenAPI contract gate passed with 62 paths, 67 operations, 29 request examples, 62 success examples, 74 error examples; Dart client drift gate passed in `generated_client_drift` mode with hash `506282ac758a37269df95e12ca6752de9c201eb162fd4cc0e227b13c287ab082`.
+- `flutter test test/services/api_client_contract_test.dart test/services/auth_service_test.dart test/application/scene_voice_session_lifecycle_coordinator_test.dart test/application/home_cards_coordinator_test.dart` - passed.
+- `rg -n "MVP-SI-" docs/product/stages/mvp-backend-foundation.md docs/product/increments/mvp-backend-*` - passed and returned stage/increment traceability evidence.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` from `backend/` - passed.
+- `flutter test` - passed, 173 tests.
+- `git diff --check` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Results:
+- MVP-BE-GAP-010 and MVP-BE-GAP-011 are closed in `docs/product/increments/mvp-backend-client-qa-release/traceability.md`.
+- `docs/product/stages/mvp-backend-foundation.md` now marks MVP-SI-001 through MVP-SI-014 as Done or Done with documented exceptions.
+- API contract gate is no longer pre-client-only; it validates committed generated Dart boundary files and handwritten exception drift.
+- Release status is ready with documented exceptions, recorded in `docs/release/release_checklist.md`.
+
+Risks:
+- The generated Dart boundary is a project-local path/contract registry, not a full `dart-dio` model client. The drift gate enforces hash/path coverage and exception tracking; full DTO codegen can still replace it later.
+- Legacy stats, freeform scene, role-memory, grammar-score, oral-assessment auth, and payment verify paths remain explicitly documented exceptions until their owning increments migrate them or retire them.
+- Production payment provider readiness, external object-store deletion/retention, paid reports, offline packages, and achievements remain out of scope for this stage release.
+
+Follow-up:
+- Future commercial/provider/content expansion must open separate owning increments; this stage should not be used as implicit approval for P0/P0.1/P0.2/P1/P2 expansion.
+
+## 2026-05-29 - mvp-system-e2e-validation Deep System Regression
+
+变更请求：按“1/2/3 分步执行并独立审核”的要求，补齐 TC-MVP-E2E-006 到 TC-MVP-E2E-010，使 Product Base AC-001 到 AC-013 在本地电脑端形成 Flutter macOS + Spring Boot + 真实 PostgreSQL 的系统 E2E 执行证据；真实支付 provider 保留 manual/external gate。
+
+Owning product objects:
+- Stage: `docs/product/stages/mvp-backend-foundation.md`
+- Increment: `docs/product/increments/mvp-system-e2e-validation/`
+- Covered Stage Scope Item: MVP-SI-014
+- Requirements / acceptance: MVP-E2E-FR-001 through MVP-E2E-FR-004; AC-MVP-E2E-001 through AC-MVP-E2E-004
+- Traceability rows: MVP-E2E-TR-001 through MVP-E2E-TR-004
+
+Files changed:
+- Added system E2E increment artifacts under `docs/product/increments/mvp-system-e2e-validation/`.
+- Added `scripts/run_mvp_system_e2e.sh` to start isolated PostgreSQL, backend, and Flutter macOS integration test; added `scripts/check_mvp_system_e2e_coverage.py` for Product Base AC/TC traceability auditing.
+- Added `integration_test/mvp_system_smoke_test.dart`, `integration_test/mvp_system_scene_catalog_test.dart`, `integration_test/mvp_system_learning_memory_test.dart`, `integration_test/mvp_system_practice_feedback_test.dart`, `integration_test/mvp_system_profile_settings_test.dart`, `integration_test/mvp_system_membership_boundary_test.dart`, and shared helpers in `integration_test/support/mvp_e2e_test_helpers.dart`.
+- Added stable Flutter UI keys across login/onboarding, home, listening warmup, profile/settings, favorites, feature placeholders, edit profile, and membership pages.
+- Added E2E-safe Hive isolation switches in `lib/core/bootstrap/app_bootstrapper.dart` and `lib/services/storage_service.dart`; added E2E error-hook disabling in `lib/main.dart`.
+- Fixed client/session integration bugs in `lib/services/api_client.dart`, `lib/application/session/session_profile_coordinator.dart`, and `lib/services/app_session.dart` so profile patch and onboarding assessment persistence match backend contracts.
+- Updated macOS test runtime settings and dependency metadata: `macos/Podfile`, `macos/Runner.xcodeproj/project.pbxproj`, `macos/Runner/DebugProfile.entitlements`, `pubspec.yaml`, and `pubspec.lock`.
+- Updated roadmap/stage/report evidence for the new system E2E gate.
+
+Requirement mapping:
+- MVP-E2E-FR-001 / AC-MVP-E2E-001 is covered by TC-MVP-E2E-001 and `scripts/run_mvp_system_e2e.sh`.
+- MVP-E2E-FR-002 / AC-MVP-E2E-002 is covered by TC-MVP-E2E-002 and TC-MVP-E2E-003 through `integration_test/mvp_system_smoke_test.dart`.
+- MVP-E2E-FR-003 / AC-MVP-E2E-003 is covered by TC-MVP-E2E-004 and TC-MVP-E2E-006 through TC-MVP-E2E-010 through traceability audit plus deep E2E suites.
+- MVP-E2E-FR-004 / AC-MVP-E2E-004 is covered by TC-MVP-E2E-005 through required TC evidence fields and report updates.
+
+Commands run:
+- Step 1 independent audit: TC library field/Product Base AC audit - passed, 10 TC rows and 13 Product Base AC rows checked.
+- Step 2 independent audit: requirement/spec/acceptance/traceability chain audit - passed after correcting explicit Spec/FR/TR references.
+- Step 3 system smoke: `scripts/run_mvp_system_e2e.sh` - passed against local PostgreSQL + backend + Flutter macOS.
+- Step 3 deep regression: `scripts/run_mvp_system_e2e.sh --suite scene-catalog` - passed.
+- Step 3 deep regression: `scripts/run_mvp_system_e2e.sh --suite learning-memory` - passed.
+- Step 3 deep regression: `scripts/run_mvp_system_e2e.sh --suite practice-feedback` - passed.
+- Step 3 deep regression: `scripts/run_mvp_system_e2e.sh --suite profile-settings` - passed.
+- Step 3 deep regression: `scripts/run_mvp_system_e2e.sh --suite membership-boundary` - passed.
+- Step 3 coverage audit: `python3 scripts/check_mvp_system_e2e_coverage.py` - passed.
+- Regression/governance: `flutter test` - passed, 173 tests; `env JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` from `backend/` - passed; `python3 scripts/project_agent_runner.py validate` - passed; `git diff --check` - passed.
+
+Results:
+- MVP-E2E-GAP-001 through MVP-E2E-GAP-004 are closed.
+- TC-MVP-E2E-001 through TC-MVP-E2E-005 are automated and passed on 2026-05-29.
+- MVP-E2E-GAP-005 through MVP-E2E-GAP-007 are closed by TC-MVP-E2E-006 through TC-MVP-E2E-009.
+- TC-MVP-E2E-010 passed local membership boundary UI automation; GAP-008 remains an accepted external/manual payment provider exception.
+- TC-MVP-E2E-006 through TC-MVP-E2E-010 are automated and passed on 2026-05-29, except the real payment provider sub-scope explicitly marked manual/external.
+- The local system gate no longer depends on Docker; it uses installed local PostgreSQL tooling.
+
+Risks:
+- `/user/stats` refresh still logs a non-blocking failure in E2E and should be handled by a future stats/client compatibility cleanup.
+- macOS notification initialization still logs a soft failure in E2E because local macOS notification settings are not configured.
+- TC-MVP-E2E-008 uses deterministic backend provider assertions; real mobile audio permissions, real ASR/TTS/LLM provider quality, and provider SLA remain external/manual gates.
+- Real payment provider purchase/restore/webhook/refund completion remains outside this local E2E gate and must stay a release/provider gate.
+
+Follow-up:
+- Keep TC-MVP-E2E-001 through TC-MVP-E2E-010 as the required local MVP system E2E gate; add future suites only through stable TC IDs and explicit provider exceptions.
+
+## 2026-05-29 - P0-COM-BE-001 Commercial Foundation Hardening
+
+变更请求：按 PM 1-7 顺序计划执行第 1 步 `P0-COM-BE-001`，只覆盖商业 foundation hardening，不进入权益/用量 gating、Apple/Google provider verify/webhook、Flutter 商业 UI、DevOps release gate 或商业发布判断。
+
+Owning product objects:
+- Stage: `docs/product/stages/p0-commercial-readiness.md`
+- Increment: `docs/product/increments/commercial-subscription-readiness/`
+- Work package: `P0-COM-BE-001`
+- Covered Stage Scope Items: COM-SI-001, COM-SI-004, COM-SI-005, COM-SI-006, COM-SI-012
+- Main traceability rows affected: COM-TR-004, COM-TR-005, COM-TR-006, COM-TR-012
+
+Files changed:
+- Hardened backend auth/ops boundary: `backend/src/main/java/com/speakeasy/security/BearerTokenAuthenticationFilter.java`, `backend/src/main/java/com/speakeasy/security/SecurityConfig.java`, and `backend/src/test/resources/application-test.yml`.
+- Added account deletion idempotency persistence: `backend/src/main/resources/db/migration/V202605290004__commercial_foundation_hardening.sql`, `AccountDeletionJob`, `AccountDeletionJobRepository`, `AccountDeletionService`, and `AuthService`.
+- Added/updated backend tests: `CommercialAccountDeletionProcessorTest` and `CommercialFoundationControllerTest`.
+
+Results:
+- `/admin/release-health` now requires an ops bearer token; normal user bearer tokens receive `FORBIDDEN`.
+- Account deletion stores the idempotency key and returns the same completed job on retry even after the original session was revoked.
+- Existing entitlement/usage read foundation remains token-owned and ignores spoofed `X-User-Id`.
+- No provider verify/webhook adapter, entitlement gating, usage reservation, Flutter UI, or release script was implemented in this step.
+
+Commands run:
+- `python3 scripts/project_agent_runner.py packet development_orchestrator --task ...P0-COM-BE-001...` - generated scoped route.
+- `python3 scripts/project_agent_runner.py packet backend --task ...P0-COM-BE-001...` - generated backend specialist packet.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CommercialFoundationControllerTest,CommercialAccountDeletionProcessorTest,AccountDeletionControllerTest,AccountDeletionSessionInvalidationTest,AccountDeletionLearningDataTest,AccountDeletionFailureAuditTest test` from `backend/` - passed.
+
+Risks:
+- This closes only backend foundation hardening. Commercial release readiness remains blocked by entitlement/usage gating, provider sandbox/internal evidence, Flutter commercial UI, release config, and QA execution.
+- Admin OpenAPI documents `opsBearerAuth`; the implementation now enforces it for release health, but broader admin endpoints still belong to later release/ops work packages.
+
+Follow-up:
+- Route `P0-COM-BE-002` only after independent review passes this step.
+
+## 2026-05-29 - P0-COM-BE-002 Entitlement And Usage Gating
+
+变更请求：按 PM 1-7 顺序计划执行第 2 步 `P0-COM-BE-002`，只覆盖服务端权益与用量 gating，不进入 Apple/Google provider verify/webhook、Flutter 商业 UI、DevOps release gate 或商业发布判断。
+
+Owning product objects:
+- Stage: `docs/product/stages/p0-commercial-readiness.md`
+- Increment: `docs/product/increments/commercial-subscription-readiness/`
+- Work package: `P0-COM-BE-002`
+- Covered Stage Scope Items: COM-SI-001, COM-SI-007, COM-SI-008, COM-SI-010
+- Main traceability rows affected: COM-TR-001, COM-TR-007, COM-TR-008, COM-TR-010
+
+Files changed:
+- Added entitlement gating service: `backend/src/main/java/com/speakeasy/commerce/EntitlementGateService.java`.
+- Added usage lifecycle service and repository: `UsageService`, `UsageReservationRepository`, and lifecycle methods on `UsageLedger` / `UsageReservation`.
+- Wired API endpoints: `POST /entitlements/refresh`, `POST /usage/reserve`, `POST /usage/commit`, and `POST /usage/release` in `CommercialFoundationController`.
+- Wired backend gating into scenario L3 access and practice session start via `OnboardingContentService` and `PracticeService`.
+- Wired high-cost AI/ASR/TTS/scoring calls through usage reserve/commit/release in `AiGatewayService` and `AiGatewayController`.
+- Added backend tests: `EntitlementGateServiceTest`, `UsageQuotaGateTest`, `UsageReservationLifecycleTest`, and `CommercialAbuseControlTest`.
+
+Results:
+- Free users are blocked from paid L3 scenario content; users with active pro entitlement can start the same scenario level.
+- Usage reservations are idempotent, tied to a ledger period, and can be committed or released.
+- Exhausted quota returns `USAGE_LIMIT_EXCEEDED` before provider invocation.
+- AI gateway provider calls now reserve usage before invocation and commit/release usage based on provider result or exception.
+- No Apple/Google receipt verification, webhook handling, Flutter UI, or release script was implemented in this step.
+
+Commands run:
+- `python3 scripts/project_agent_runner.py packet development_orchestrator --task ...P0-COM-BE-002...` - generated scoped route.
+- `python3 scripts/project_agent_runner.py packet backend --task ...P0-COM-BE-002...` - generated backend specialist packet.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=EntitlementGateServiceTest,UsageQuotaGateTest,UsageReservationLifecycleTest,CommercialAbuseControlTest,ProviderGatewayControllerTest,ProviderGatewayAuthorizationTest test` from `backend/` - failed once because `AiGatewayService.coach` still used a read-only transaction while writing usage reservations.
+- Same command after changing `coach` to a write transaction - passed.
+
+Risks:
+- Gating fixture currently uses L3 scenario level as paid content to avoid breaking existing MVP L1 flows. Full commercial packaging rules still need frontend UX and product copy evidence.
+- Usage limits come from entitlement quota JSON and default free limits; provider-backed paid entitlement creation is still deferred to `P0-COM-BE-003`.
+
+Follow-up:
+- Route `P0-COM-BE-003` only after independent review passes this step.
+
+## 2026-05-29 - P0-COM-BE-003 Payment Provider Boundary
+
+变更请求：按 PM 1-7 顺序计划执行第 3 步 `P0-COM-BE-003`，只覆盖 Apple/Google provider verify/restore/webhook 的服务端边界和确定性 fixture 测试，不进入 Flutter 商业 UI、DevOps release gate，也不声明真实商店 sandbox/internal test 通过。
+
+Owning product objects:
+- Stage: `docs/product/stages/p0-commercial-readiness.md`
+- Increment: `docs/product/increments/commercial-subscription-readiness/`
+- Work package: `P0-COM-BE-003`
+- Covered Stage Scope Items: COM-SI-002, COM-SI-003
+- Main test cases affected: TC-COM-001 through TC-COM-006
+
+Files changed:
+- Added payment provider service boundary: `backend/src/main/java/com/speakeasy/commerce/PaymentProviderService.java`.
+- Added commerce repositories and entity lifecycle helpers: `PurchaseRepository`, `SubscriptionRepository`, `PaymentProviderEventRepository`, `Purchase`, `Subscription`, `PaymentProviderEvent`, `EntitlementSnapshot`, and `SubscriptionPlanRepository`.
+- Added provider API endpoints in `CommercialFoundationController`: Apple verify, Google verify, restore, Apple webhook, and Google webhook.
+- Updated security/config for webhook signature entry: `SecurityConfig.java` and `application-test.yml`.
+- Updated account deletion cleanup to remove provider events linked to a user subscription.
+- Added backend tests: `AppleSubscriptionVerificationTest`, `GoogleSubscriptionVerificationTest`, `SubscriptionCredentialValidationTest`, `SubscriptionRestoreTest`, `SubscriptionRestoreEmptyTest`, and `PaymentProviderEventDowngradeTest`.
+
+Results:
+- Apple verification grants a server-owned pro entitlement only when the app account token matches the authenticated user and the product is saleable.
+- Google verification grants a server-owned pro entitlement for a valid deterministic purchase token and saleable product.
+- Invalid provider credentials or user/product mismatch return typed `INVALID_RECEIPT` and do not grant entitlement.
+- Restore returns `restored` when an active provider subscription exists and typed `empty` when none exists.
+- Provider webhook events require server-side signature, are idempotent by provider event id, and refund/revoke/expire events downgrade subscription and entitlement.
+
+Commands run:
+- `python3 scripts/project_agent_runner.py packet development_orchestrator --task ...P0-COM-BE-003...` - generated scoped route.
+- `python3 scripts/project_agent_runner.py packet backend --task ...P0-COM-BE-003...` - generated backend specialist packet.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AppleSubscriptionVerificationTest,GoogleSubscriptionVerificationTest,SubscriptionCredentialValidationTest,SubscriptionRestoreTest,SubscriptionRestoreEmptyTest,PaymentProviderEventDowngradeTest test` from `backend/` - passed.
+
+Risks:
+- The provider adapter is deterministic and local; it proves server boundary behavior, not real App Store / Google Play sandbox behavior.
+- Real provider credentials, App Store Server API / Google Play Developer API connectivity, webhook signing keys, store products, and provider SLA evidence remain external/release blockers.
+
+Follow-up:
+- Route `P0-COM-FE-001` only after independent review passes this step.
+
+## 2026-05-29 - P0-COM-FE-001 Flutter Commercial Subscription Integration
+
+变更请求：按 PM 1-7 顺序计划执行第 4 步 `P0-COM-FE-001`，只覆盖 Flutter 端订阅购买/恢复/权益刷新边界、降级提示、商业文案收敛和账号删除本地清理，不进入 DevOps release gate 或真实商店 sandbox/internal test 结论。
+
+Owning product objects:
+- Stage: `docs/product/stages/p0-commercial-readiness.md`
+- Increment: `docs/product/increments/commercial-subscription-readiness/`
+- Work package: `P0-COM-FE-001`
+- Covered Stage Scope Items: COM-SI-001, COM-SI-002, COM-SI-003, COM-SI-006, COM-SI-007, COM-SI-009
+- Main test cases affected: TC-COM-007, TC-COM-014, TC-COM-023
+
+Files changed:
+- Rewired handwritten client boundary in `lib/services/api_client.dart` from legacy Apple receipt endpoint to `SpeakeasyApiPaths.subscriptionsAppleVerify`, `subscriptionsGoogleVerify`, `subscriptionsRestore`, and `entitlementsRefresh`; added stable idempotency keys for provider verification/restore and same-attempt account deletion retry.
+- Updated store payment services: `lib/services/apple_payment_service.dart` now sends App Store purchases through server-owned Apple subscription verification with app account token; `lib/services/android_payment_service.dart` now uses Google Play purchase stream plus server-owned Google verification, restore, and entitlement refresh; `lib/services/app_session.dart` instantiates the Android payment service without a const constructor.
+- Updated `lib/pages/membership_page.dart` to remove unshipped paid promises such as offline package/report wording and add a free entitlement downgrade banner.
+- Updated generated-client drift metadata by removing the old `/payments/apple/verify-receipt` handwritten exception.
+- Added Flutter tests: `test/features/commercial/entitlement_downgrade_widget_test.dart` and `test/features/commercial/account_deletion_cleanup_test.dart`; updated `test/services/api_client_contract_test.dart`.
+- Hardened legacy backend test setup cleanup in auth/foundation tests so new commercial provider/usage tables do not leave foreign-key residue across full test runs.
+
+Results:
+- Apple and Google purchase success paths now require server verification before local membership state is updated.
+- Restore/status checks use server-owned subscription restore and entitlement refresh boundaries.
+- Membership UI shows free entitlement state and avoids promising unimplemented paid benefits.
+- Account deletion client keeps the same idempotency key during a failed same-attempt retry, matching the backend deletion retry hardening from Step 1.
+- Old client dependency on `/payments/apple/verify-receipt` is removed from source and drift exceptions.
+
+Commands run:
+- `python3 scripts/project_agent_runner.py packet development_orchestrator --task ...P0-COM-FE-001...` - generated scoped route.
+- `python3 scripts/project_agent_runner.py packet frontend --task ...P0-COM-FE-001...` - generated frontend specialist packet.
+- `dart format lib/services/api_client.dart lib/services/apple_payment_service.dart lib/services/android_payment_service.dart lib/services/app_session.dart lib/pages/membership_page.dart test/services/api_client_contract_test.dart test/features/commercial/entitlement_downgrade_widget_test.dart test/features/commercial/account_deletion_cleanup_test.dart` - passed.
+- `flutter analyze lib/services/app_session.dart lib/services/api_client.dart lib/services/apple_payment_service.dart lib/services/android_payment_service.dart lib/pages/membership_page.dart test/features/commercial/entitlement_downgrade_widget_test.dart test/features/commercial/account_deletion_cleanup_test.dart test/services/api_client_contract_test.dart` - passed.
+- `flutter test test/features/commercial/entitlement_downgrade_widget_test.dart test/features/commercial/account_deletion_cleanup_test.dart test/services/api_client_contract_test.dart` - passed.
+- `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CommercialFoundationControllerTest,FoundationErrorContractTest,FoundationResponseContractTest,AuthControllerTest,AuthServiceTest,AuthSessionLifecycleTest test` from `backend/` - passed.
+- `git diff --check` - passed before report update.
+- `python3 scripts/project_agent_runner.py validate` - passed before report update.
+
+Review corrections made before approval:
+- Replaced timestamp-based provider idempotency keys with stable keys derived from Apple transaction id, Google purchase token, and restore platform.
+- Reused the same account deletion idempotency key for failed same-attempt client retry.
+- Replaced Android hardcoded “not connected” purchase behavior with Google Play purchase-stream verification via the backend.
+- Removed a test-only platform-channel initialization issue by injecting an unsupported payment service into the account deletion unit test.
+
+Risks:
+- Real App Store sandbox and Google Play internal-track purchasing, refunds, expiry, grace period, and account-switch evidence remain external/manual gates under TC-COM-019.
+- Apple `original_transaction_id` is still derived from the purchase transaction id because the current Flutter plugin surface used here does not expose a separate original transaction id in the tested path; real provider sandbox validation must confirm whether a richer StoreKit field is required.
+- Production saleable product IDs must be aligned between App Store Connect / Play Console and backend `subscription_plans` before release.
+
+Follow-up:
+- Route `P0-COM-REL-001` only after this Step 4 independent review passes.
+
+## 2026-05-29 - P0-COM-REL-001 Commercial Release Readiness Gate
+
+变更请求：按 PM 1-7 顺序计划执行第 5 步 `P0-COM-REL-001`，只覆盖发布配置检查、社交登录/支付配置检查、release readiness gate、rollback/runbook 文档和 release workflow 阻断，不声明真实 Apple sandbox / Google Play internal test 已通过。
+
+Owning product objects:
+- Stage: `docs/product/stages/p0-commercial-readiness.md`
+- Increment: `docs/product/increments/commercial-subscription-readiness/`
+- Work package: `P0-COM-REL-001`
+- Covered Stage Scope Items: COM-SI-004, COM-SI-005, COM-SI-011, COM-SI-012
+- Main test cases affected: TC-COM-011, TC-COM-012, TC-COM-019, TC-COM-021, TC-COM-022
+
+Files changed:
+- Added release gates: `scripts/check_release_configuration.sh`, `scripts/check_social_login_release_config.sh`, and `scripts/check_release_readiness.sh`.
+- Updated release workflow: `.github/workflows/release.yml` now runs `scripts/check_release_readiness.sh` before signing/build artifact creation and requires production API, signing, social-login, provider/store, symbol, and rollback evidence env.
+- Added release runbook: `docs/release/commercial_release_runbook.md`.
+- Updated release checklist, rollback plan, and version log: `docs/release/release_checklist.md`, `docs/release/rollback_plan.md`, and `docs/release/version_log.md`.
+
+Results:
+- TC-COM-011 release configuration gate checks production HTTPS API, `ENV=production`, disabled test login, subscription product IDs, generated commercial API constants, and removal of legacy Apple receipt endpoint.
+- TC-COM-012 social-login gate checks WeChat env values and, in strict mode, blocks placeholder iOS URL scheme and missing Apple Sign In entitlement.
+- TC-COM-022 aggregate release gate checks the two preflight scripts plus signing secrets, Sentry DSN, provider evidence refs, store metadata/reviewer evidence refs, symbol upload evidence, rollback rehearsal evidence, privacy/support URLs, and release docs.
+- The current repository is intentionally not marked commercial release ready: strict readiness fails because iOS Info.plist still contains `wx0000000000000000` and Apple Sign In entitlement is not present.
+
+Commands run:
+- `python3 scripts/project_agent_runner.py packet development_orchestrator --task ...P0-COM-REL-001...` - generated scoped route.
+- `python3 scripts/project_agent_runner.py packet devops --task ...P0-COM-REL-001...` - generated DevOps specialist packet.
+- `bash -n scripts/check_release_configuration.sh scripts/check_social_login_release_config.sh scripts/check_release_readiness.sh` - passed.
+- `APP_API_BASE_URL=https://api.speakeasyapp.com ENV=production ENABLE_TEST_PHONE_LOGIN=false scripts/check_release_configuration.sh` - passed.
+- `WECHAT_APP_ID=wx1234567890abcdef WECHAT_UNIVERSAL_LINK=https://app.speakeasyapp.com/app/ scripts/check_social_login_release_config.sh --env-only` - passed.
+- Fixture readiness command with production API, social-login env, Sentry, Android signing, Apple/Google provider evidence refs, store metadata ref, reviewer account ref, symbol upload ref, rollback rehearsal ref, privacy URL, and support URL using `scripts/check_release_readiness.sh --env-only` - passed.
+- Same fixture readiness command in strict mode using `scripts/check_release_readiness.sh` - failed as expected because native iOS WeChat URL scheme and Apple Sign In entitlement are not production configured.
+- `git diff --check` - passed before report update.
+- `python3 scripts/project_agent_runner.py validate` - passed before report update.
+
+Risks:
+- Current strict commercial release readiness is blocked by native iOS social-login configuration and external provider/store evidence; this is an expected blocker, not a hidden pass.
+- The scripts verify evidence references and configuration shape; they do not perform real App Store / Play Console API calls or upload symbols themselves.
+- Release workflow is configured to fail until the required GitHub secrets/vars and native project configuration are supplied.
+
+Follow-up:
+- Route `P0-COM-QA-002` to execute/update the full TC-COM evidence matrix, including planned/manual/external blockers, only after this Step 5 independent review passes.
+
+## 2026-05-29 - P0-COM-REPORT-001 Final Commercial Readiness Summary
+
+变更请求：按 PM 1-7 顺序计划执行第 7 步 `P0-COM-REPORT-001`，汇总 Steps 1-6 的实现、测试、发布门禁、追溯状态和剩余 blocker。本文不把当前状态声明为 commercial release ready。
+
+Owning product objects:
+- Stage: `docs/product/stages/p0-commercial-readiness.md`
+- Increment: `docs/product/increments/commercial-subscription-readiness/`
+- Work package: `P0-COM-REPORT-001`
+- Coverage: COM-SI-001 through COM-SI-012, FR-COM-001 through FR-COM-012, AC-COM-001 through AC-COM-014, TC-COM-001 through TC-COM-023
+
+Summary:
+- Step 1 `P0-COM-BE-001`: backend commercial foundation hardening passed independent review.
+- Step 2 `P0-COM-BE-002`: entitlement/usage gating passed independent review.
+- Step 3 `P0-COM-BE-003`: deterministic Apple/Google provider boundary passed independent review; real provider evidence remains external.
+- Step 4 `P0-COM-FE-001`: Flutter subscription integration, downgrade UI, copy tightening, and account deletion cleanup passed independent review.
+- Step 5 `P0-COM-REL-001`: release configuration scripts, workflow gate, runbook, checklist, rollback and version log passed independent review; strict release remains blocked.
+- Step 6 `P0-COM-QA-002`: automated tests and traceability evidence passed scoped QA review; blockers remain explicit.
+
+Traceability result:
+- FR-COM-001 through FR-COM-012 all map to accepted AC IDs and TC-COM IDs.
+- AC-COM-001 through AC-COM-014 all map to TC-COM IDs.
+- TC-COM-001 through TC-COM-009, TC-COM-011 through TC-COM-014, TC-COM-017, TC-COM-018, TC-COM-022 fixture mode, and TC-COM-023 have passed automated or fixture evidence.
+- TC-COM-010 is closed by `P0-COM-SCENARIO-GATE-001`; TC-COM-016 is closed by `P0-COM-COPY-001`; TC-COM-020 is closed by `P0-COM-PROVIDER-EVIDENCE-001`; TC-COM-015 external evidence, TC-COM-019 external evidence, and TC-COM-021 external evidence remain blocked/manual/external/planned.
+- Strict TC-COM-012 and strict TC-COM-022 remain blocked by native iOS social-login configuration and external evidence refs.
+
+Validation evidence:
+- Backend commercial Maven test set passed.
+- Flutter commercial/API contract tests passed.
+- OpenAPI contract gate passed outside sandbox after sandbox `uv` panic.
+- Release readiness fixture gate passed; strict release readiness failed as expected on native iOS social-login blockers.
+- `git diff --check` and `python3 scripts/project_agent_runner.py validate` passed after each completed step.
+
+Release readiness decision:
+- Not release ready.
+- Current work establishes implementation and QA evidence for the local/backend/frontend/release-gate boundaries, but commercial store submission remains blocked by:
+  - TC-COM-010 paid scenario-package list/detail/training consistency.
+  - TC-COM-015 manual commercial copy/store/privacy screenshot review.
+  - TC-COM-016 commercial copy contract automation.
+  - TC-COM-019 Apple sandbox and Google Play internal-track evidence.
+  - TC-COM-020 commercial boundary integration E2E. Closed later by `P0-COM-PROVIDER-EVIDENCE-001`.
+  - TC-COM-021 store metadata, privacy/support URL, subscription terms and reviewer account evidence.
+  - Strict TC-COM-012/022 native iOS WeChat URL scheme and Apple Sign In entitlement evidence.
+
+Follow-up:
+- PM should treat the next action as blocker closure, not release approval.
+- Recommended next route: split remaining blockers into `P0-COM-SCENARIO-GATE-001`, `P0-COM-COPY-001`, `P0-COM-PROVIDER-EVIDENCE-001`, and `P0-COM-STORE-001` or equivalent PM-approved work packages.
+
+## 2026-05-29 - P0-COM-SCENARIO-GATE-001 Scenario Gate Blocker Closure
+
+Change request:
+- Close the clearest product/code consistency blocker first: TC-COM-010 paid scenario-package list/detail/training consistency.
+- Scope is limited to L3 paid scenario gating in Flutter. Commercial copy, provider sandbox evidence, store materials, and release approval remain out of scope.
+
+Requirement mapping:
+- Stage Scope: COM-SI-008.
+- Requirement: FR-COM-007 official scenario-library gating.
+- Spec: COM-SPEC-008.
+- Acceptance: AC-COM-007.
+- Test case: TC-COM-010.
+- Traceability row: COM-TR-008.
+
+Files changed:
+- `lib/features/commercial/commercial_scenario_gate.dart`
+- `lib/features/interview/interview_practice_page.dart`
+- `lib/pages/home_page.dart`
+- `test/features/commercial/scenario_gating_consistency_test.dart`
+- `test/features/interview/interview_practice_page_widget_test.dart`
+- `docs/product/increments/commercial-subscription-readiness/test_cases.md`
+- `docs/product/increments/commercial-subscription-readiness/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added shared `CommercialScenarioGate` policy for L3 paid scenario normalization, entitlement decisions, lock label, and lock message.
+- Applied the same gate to `HomePage` scenario entry paths, `InterviewPracticePage` direct training bootstrap, and scene map target-level switching.
+- Added L3 lock state to the scene map dropdown for free users while preserving Pro access.
+- Added deterministic widget coverage for free-user lock and Pro-user unlock behavior across scene navigation and training entry.
+
+Validation:
+- `flutter test test/features/commercial/scenario_gating_consistency_test.dart --plain-name "免费用户训练入口" --timeout 30s` - passed.
+- `flutter test test/features/commercial/scenario_gating_consistency_test.dart` - passed.
+- `flutter test test/features/commercial/scenario_gating_consistency_test.dart test/features/interview/interview_practice_page_widget_test.dart` - passed.
+- `flutter analyze lib/features/commercial/commercial_scenario_gate.dart lib/features/interview/interview_practice_page.dart lib/pages/home_page.dart test/features/commercial/scenario_gating_consistency_test.dart test/features/interview/interview_practice_page_widget_test.dart` - passed.
+- `python3 scripts/project_agent_runner.py validate` - passed.
+
+Result:
+- TC-COM-010 is closed for the in-app L3 paid scenario fixture.
+- AC-COM-007 is no longer blocked by scenario list/detail/training inconsistency.
+
+Residual risk:
+- Commercial copy is now closed locally by `P0-COM-COPY-001`; TC-COM-020 commercial boundary E2E is closed by `P0-COM-PROVIDER-EVIDENCE-001`; provider sandbox/internal evidence, store metadata evidence, and strict native release configuration remain open.
+- TC-COM-020 is now closed by `P0-COM-PROVIDER-EVIDENCE-001`; remaining blockers move forward as `P0-COM-STORE-001` plus external provider/store evidence.
+
+## 2026-05-29 - P0-COM-COPY-001 Commercial Copy Blocker Closure
+
+Change request:
+- Close the local commercial copy consistency blocker after scenario gating.
+- Scope is limited to TC-COM-015 in-repo copy review and TC-COM-016 copy contract automation.
+- Real App Store Connect / Play Console screenshots, privacy/support pages, provider evidence, and release approval remain out of scope.
+
+Requirement mapping:
+- Stage Scope: COM-SI-009.
+- Requirement: FR-COM-009 commercial copy consistency.
+- Spec: COM-SPEC-009.
+- Acceptance: AC-COM-011.
+- Test cases: TC-COM-015, TC-COM-016.
+- Traceability row: COM-TR-009.
+
+Files changed:
+- `lib/pages/profile_page.dart`
+- `scripts/check_commercial_copy_contract.py`
+- `scripts/check_release_readiness.sh`
+- `docs/release/release_checklist.md`
+- `docs/release/commercial_release_runbook.md`
+- `docs/product/increments/commercial-subscription-readiness/test_cases.md`
+- `docs/product/increments/commercial-subscription-readiness/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Replaced the profile upsell claim from “无限场景练习” to shipped benefits: L3 高级场景、完整句型库 and 更高 AI 练习额度.
+- Added `scripts/check_commercial_copy_contract.py` to verify membership benefits, payment plan/product mapping, profile upsell copy, and release copy gate documentation.
+- The copy contract prints missing `STORE_METADATA_EVIDENCE_REF`, `PRIVACY_URL`, and `SUPPORT_URL` as release blockers in default mode, and fails them in `--strict-external` mode.
+- Added the copy contract to `scripts/check_release_readiness.sh` so commercial release cannot bypass TC-COM-015/TC-COM-016.
+- Updated release checklist and runbook to preserve copy review and external evidence gates.
+
+Validation:
+- `python3 scripts/check_commercial_copy_contract.py` - passed with external evidence blockers reported.
+- Fixture `scripts/check_release_readiness.sh --env-only` with production API, social-login env, provider/store/reviewer/symbol/rollback evidence refs, privacy URL, support URL, Sentry, and Android signing vars - passed.
+- `flutter test test/features/commercial/entitlement_downgrade_widget_test.dart` - passed.
+- `flutter analyze lib/pages/profile_page.dart lib/pages/membership_page.dart test/features/commercial/entitlement_downgrade_widget_test.dart` - passed.
+- `bash -n scripts/check_release_readiness.sh` - passed.
+
+Result:
+- TC-COM-016 is closed.
+- TC-COM-015 is closed for in-repo membership/profile/release copy review, but remains external-blocked for store metadata, privacy, and support evidence.
+
+Residual risk:
+- This work does not verify real store screenshots, App Store / Play Console metadata, privacy declarations, or support pages.
+- TC-COM-020 is now closed by `P0-COM-PROVIDER-EVIDENCE-001`; remaining blockers move forward as `P0-COM-STORE-001` plus external provider/store evidence.
+
+## 2026-05-29 - P0-COM-PROVIDER-EVIDENCE-001 Provider Evidence Gate
+
+Change request:
+- Establish the TC-COM-019 evidence gate without pretending local deterministic tests are real Apple/Google provider execution.
+- Close local TC-COM-020 non-payment commercial boundary coverage where possible.
+
+Requirement mapping:
+- Stage Scope: COM-SI-011.
+- Requirement: FR-COM-011 commercial boundary testing.
+- Spec: COM-SPEC-011.
+- Acceptance: AC-COM-013.
+- Test cases: TC-COM-019, TC-COM-020.
+- Traceability row: COM-TR-011.
+
+Files changed:
+- `tests/commercial/provider_sandbox_matrix.md`
+- `scripts/check_provider_sandbox_evidence.py`
+- `scripts/check_release_readiness.sh`
+- `integration_test/commercial_boundary_test.dart`
+- `scripts/run_mvp_system_e2e.sh`
+- `docs/release/release_checklist.md`
+- `docs/release/commercial_release_runbook.md`
+- `docs/product/increments/commercial-subscription-readiness/test_cases.md`
+- `docs/product/increments/commercial-subscription-readiness/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added TC-COM-019 provider sandbox matrix covering Apple sandbox and Google Play internal purchase, restore, refund/revoke, expiry, grace period, and account-switch scenarios.
+- Added `scripts/check_provider_sandbox_evidence.py` to validate matrix coverage and require `APPLE_SANDBOX_EVIDENCE_REF` / `GOOGLE_PLAY_INTERNAL_EVIDENCE_REF` in strict mode.
+- Added provider evidence script to aggregate release readiness.
+- Added `integration_test/commercial_boundary_test.dart` for local non-payment commercial boundary coverage.
+- Added `commercial-boundary` suite routing to `scripts/run_mvp_system_e2e.sh`.
+
+Validation:
+- `python3 scripts/check_provider_sandbox_evidence.py` - passed with external provider evidence blockers reported.
+- `python3 -m py_compile scripts/check_provider_sandbox_evidence.py scripts/check_commercial_copy_contract.py` - passed.
+- `bash -n scripts/run_mvp_system_e2e.sh scripts/check_release_readiness.sh` - passed.
+- `flutter test integration_test/commercial_boundary_test.dart` - passed.
+- Fixture `scripts/check_release_readiness.sh --env-only` with production API, social-login env, provider/store/reviewer/symbol/rollback evidence refs, privacy URL, support URL, Sentry, and Android signing vars - passed.
+
+Result:
+- TC-COM-019 is evidence-gate ready but remains external-blocked.
+- TC-COM-020 is closed for local non-payment commercial boundary coverage.
+
+Residual risk:
+- Real Apple sandbox and Google Play internal-track testing still require external accounts, store console state, provider events, screenshots/logs, and evidence refs.
+- Remaining blockers move forward as `P0-COM-STORE-001` plus TC-COM-015 external copy evidence, TC-COM-019 external provider evidence, TC-COM-021 store evidence, and strict TC-COM-012/022 native/release evidence.
+
+## 2026-05-29 - P0-COM-STORE-001 Store Evidence Gate
+
+Change request:
+- Establish TC-COM-021 store submission evidence matrix and release gate.
+- Rerun env-only and strict release readiness without declaring release approval.
+
+Requirement mapping:
+- Stage Scope: COM-SI-012.
+- Requirement: FR-COM-012 release gate.
+- Spec: COM-SPEC-012.
+- Acceptance: AC-COM-014.
+- Test cases: TC-COM-021, TC-COM-022.
+- Traceability row: COM-TR-012.
+
+Files changed:
+- `tests/commercial/store_submission_matrix.md`
+- `scripts/check_store_submission_evidence.py`
+- `scripts/check_release_readiness.sh`
+- `docs/release/release_checklist.md`
+- `docs/release/commercial_release_runbook.md`
+- `docs/product/increments/commercial-subscription-readiness/test_cases.md`
+- `docs/product/increments/commercial-subscription-readiness/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+- `docs/reports/quality_report.md`
+
+Implementation summary:
+- Added TC-COM-021 store submission matrix for App Store metadata, Play Console metadata, subscription products/terms, privacy labels/Data safety, privacy URL, support URL, and reviewer account evidence.
+- Added `scripts/check_store_submission_evidence.py` to validate matrix coverage and require `STORE_METADATA_EVIDENCE_REF`, `REVIEWER_ACCOUNT_REF`, `PRIVACY_URL`, and `SUPPORT_URL` in strict mode.
+- Added store submission evidence script to aggregate release readiness.
+- Updated release checklist and runbook to preserve the store evidence gate.
+
+Validation:
+- `python3 scripts/check_store_submission_evidence.py` - passed with external store evidence blockers reported.
+- `python3 -m py_compile scripts/check_store_submission_evidence.py scripts/check_provider_sandbox_evidence.py scripts/check_commercial_copy_contract.py` - passed.
+- `bash -n scripts/check_release_readiness.sh scripts/run_mvp_system_e2e.sh` - passed.
+- Fixture `scripts/check_release_readiness.sh --env-only` with production API, social-login env, provider/store/reviewer/symbol/rollback evidence refs, privacy URL, support URL, Sentry, and Android signing vars - passed.
+- Same fixture `scripts/check_release_readiness.sh` in strict mode - failed as expected because iOS still contains the placeholder WeChat URL scheme and lacks the Apple Sign In entitlement.
+
+Result:
+- TC-COM-021 is evidence-gate ready but remains external-blocked.
+- TC-COM-022 env-only fixture remains passed; strict mode remains blocked by native iOS social-login configuration.
+
+Residual risk:
+- Real store console metadata, reviewer account, public privacy/support URLs, signing/symbol/rollback evidence, iOS WeChat URL scheme, and Apple Sign In entitlement still require external/native configuration.
+- Remaining blockers are TC-COM-015 external copy/store evidence, TC-COM-019 external provider evidence, TC-COM-021 external store evidence, and strict TC-COM-012/022 native/release evidence.
+
+## 2026-06-07 - Issue Management Skill Workflow Integration
+
+Change request:
+- Add a project-local issue management skill without external tracker branding in the skill name.
+- Link issue tracking into the local workflow as an optional Product Manager post-classification step.
+
+Requirement mapping:
+- Process governance asset: `docs/process/workflow.md`.
+- Skill governance asset: `.agents/skills/issue-management/SKILL.md` and `.agents/skills/issue-management/SPEC.md`.
+- No product increment, application feature, or release scope was changed.
+
+Files changed:
+- `.agents/skills/issue-management/SKILL.md`
+- `.agents/skills/issue-management/SPEC.md`
+- `docs/process/workflow.md`
+- `docs/reports/implementation_report.md`
+
+Implementation summary:
+- Added `issue-management` as a project-local skill for issue title/body drafting, triage fields, label/status suggestions, branch or pull request link text, and source-of-truth links.
+- Defined strict boundaries so issues remain tracking containers and do not replace Product Manager classification, Product Base, increment artifacts, AC-to-TC mapping, reports, or release evidence.
+- Updated the workflow to make issue tracking optional after Product Manager classification when repository issue tracking is useful.
+
+Validation:
+- `python scripts/validate_agent_skills.py` - passed.
+- `$env:PYTHONUTF8='1'; python C:\Users\Administrator\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents/skills/issue-management` - passed.
+- `python scripts/project_agent_runner.py validate` - passed.
+- `git diff --check` - passed, with Windows line-ending warnings for `docs/process/workflow.md` and `docs/reports/implementation_report.md`.
+
+Result:
+- `issue-management` is available as a local skill and is connected to the workflow as an optional tracking step.
+- No independent Issue Manager agent was created.
+
+Residual risk:
+- Issue templates, automation, and a dedicated issue manager agent remain intentionally deferred until issue volume or team coordination needs justify them.
+
+## 2026-06-09 - P0-AI Provider Evidence Endpoint Implementation
+
+Change request:
+- Close the implementation-level OpenAPI gap for `GET /admin/ai/provider-evidence`.
+- Preserve commercial AI external evidence blockers and avoid claiming paid AI voice release readiness.
+
+Requirement mapping:
+- Stage Scope: COM-SI-015.
+- Requirement: FR-COM-AI-003.
+- Spec: COM-AI-SPEC-003.
+- Acceptance: AC-COM-AI-003.
+- Test case: TC-COM-AI-004.
+- Traceability row: COM-AI-TR-003.
+- Gap: COM-AI-GAP-003.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/ai/AiProviderSandboxRun.java`
+- `backend/src/main/java/com/speakeasy/ai/AiProviderSandboxRunRepository.java`
+- `backend/src/main/java/com/speakeasy/ai/AiProviderEvidenceService.java`
+- `backend/src/main/java/com/speakeasy/api/AiOpsController.java`
+- `backend/src/main/resources/db/migration/V202606080001__commercial_ai_provider_sandbox_runs.sql`
+- `backend/src/test/java/com/speakeasy/BackendIntegrationTestSupport.java`
+- `backend/src/test/java/com/speakeasy/AiProviderEvidenceControllerTest.java`
+- `docs/product/increments/commercial-ai-provider-hardening/test_cases.md`
+- `docs/product/increments/commercial-ai-provider-hardening/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+
+Implementation summary:
+- Added `AiProviderSandboxRun` as the local backend fact source for reviewed or pending DashScope sandbox / controlled-live provider evidence metadata.
+- Added `AiProviderEvidenceService` to read evidence rows, preserve contract-safe `status` and `reviewed_status`, sort results deterministically and redact sensitive evidence references before API output.
+- Added `GET /admin/ai/provider-evidence` to the existing `AiOpsController`, reusing the existing `/admin/**` OPS bearer security boundary.
+- Added Flyway migration `V202606080001__commercial_ai_provider_sandbox_runs.sql` for `ai_provider_sandbox_runs`.
+- Added endpoint-level integration tests for empty evidence, OPS-only authorization, approved/pending/blocked rows, stable sorting and sensitive data non-disclosure.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AiProviderEvidenceControllerTest,AiCostDashboardTest,AiRetentionPolicyTest test` - passed.
+- `python3 scripts/check_ai_provider_sandbox_evidence.py` - passed with the expected `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` release blocker reported.
+- `python3 scripts/check_ai_external_release_evidence.py` - passed with expected DashScope、media storage、cost dashboard and retention evidence blockers reported.
+- `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external` - failed as expected because `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF` is not supplied.
+- `npm run check:api-contract` - passed.
+- `git diff --check` - passed.
+
+Result:
+- `GET /admin/ai/provider-evidence` now has backend Controller/service/entity/migration/test evidence aligned with the existing implementation-level OpenAPI contract.
+- `TC-COM-AI-004` now includes local backend endpoint evidence in addition to the existing structural gate and controlled-live evidence-prep evidence.
+
+Residual risk:
+- This does not close `COM-AI-GAP-003`.
+- Strict paid AI voice release still requires `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`, externally reviewed full DashScope LLM/ASR/TTS matrix evidence, `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external`, and aggregate paid AI external evidence gates.
+
+## 2026-06-10 - Product Base Profile Avatar XCB-003 Implementation
+
+Change request:
+- Remove the hidden Flutter avatar upload API path and route built-in avatar selection through the existing Product Base profile boundary.
+- Keep the current product scope limited to built-in avatar references; do not create a new `/user/me/avatar` endpoint or reuse the audio media upload pipeline for image/avatar behavior.
+
+Requirement mapping:
+- Product Base requirement: `FR-010`.
+- Spec flow: `Flow-010`.
+- Acceptance: `AC-011`.
+- Architecture boundary: `docs/process/cross_cutting_boundary_registry.md` `XCB-003`.
+- API contract: `docs/architecture/api_contract.md` and `docs/architecture/openapi/speakeasy-api.yaml`.
+- Test cases: `TC-PB-FR010-001`, `TC-PB-FR010-002`, `TC-PB-FR010-003`.
+- Traceability row: `docs/product/base/traceability.md` FR-010 and Product Base FR-010 Avatar Regression Test Case Library.
+
+Files changed for this scope:
+- `docs/architecture/api_contract.md`
+- `docs/architecture/openapi/speakeasy-api.yaml`
+- `docs/architecture/openapi/dart-client-drift-manifest.json`
+- `lib/generated/api/speakeasy_api.dart`
+- `lib/generated/api/.openapi-sha256`
+- `backend/src/main/java/com/speakeasy/api/AuthController.java`
+- `backend/src/main/java/com/speakeasy/identity/IdentityService.java`
+- `backend/src/main/java/com/speakeasy/identity/UserAccount.java`
+- `lib/services/api_client.dart`
+- `lib/services/app_session.dart`
+- `backend/src/test/java/com/speakeasy/AuthControllerTest.java`
+- `test/application/session_profile_coordinator_test.dart`
+- `test/services/api_client_contract_test.dart`
+- `test/services/app_session_profile_avatar_sync_test.dart`
+- `docs/product/base/traceability.md`
+- `docs/reports/test_report.md`
+- `docs/reports/implementation_report.md`
+
+Implementation summary:
+- Added `avatar_ref` to `UpdateUserProfileRequest` and constrained both request and response schema to the six shipped built-in avatar asset paths.
+- Documented the Product Base identity/profile contract so `PATCH /user/me` is the only current profile update boundary for display name, preferences and built-in avatar selection.
+- Updated the backend profile update flow to pass `avatar_ref` through `AuthController` into `IdentityService`, validate it against the built-in avatar set and persist it on `UserAccount`.
+- Removed the hidden Flutter `uploadAvatar` multipart path and blocked `/user/me/avatar` regressions in the API client contract test.
+- Updated Flutter profile sync so `AppSession.updateProfile` sends `display_name` and `avatar_ref` through the existing profile patch flow, while `ApiClient._updateProfilePayload` maps `avatarUrl`, `avatarRef` and `avatar_ref` to the canonical `avatar_ref` wire field.
+- Deprecated the public `AppSession.updateAvatar` compatibility entry point and made it delegate to `updateProfile`, so future callers cannot bypass the `/user/me` profile patch boundary.
+- Normalized unsupported legacy avatar URLs in `AppSession` to the default built-in avatar ref before display or sync, preventing old remote URLs from being sent as `avatar_ref`.
+- Added Product Base FR-010 avatar regression test cases and linked their passed evidence back to the test report.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AuthControllerTest test` - passed.
+- `flutter test test/application/session_profile_coordinator_test.dart test/services/app_session_profile_avatar_sync_test.dart test/services/api_client_contract_test.dart` - passed.
+- `npm run check:api-contract && npm run check:dart-client-drift` - passed with OpenAPI hash `63618e40eaec4877be5a6927433b52da57cd487fb3e855dcc12b727b8a21d359`.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope full` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --include-worktree --base-ref HEAD` - passed.
+- `flutter analyze lib/services/api_client.dart lib/services/app_session.dart test/application/session_profile_coordinator_test.dart test/services/app_session_profile_avatar_sync_test.dart test/services/api_client_contract_test.dart` - passed.
+- `git diff --check` - passed.
+
+Result:
+- XCB-003 for Product Base profile avatar now uses the generated `/user/me` boundary instead of a hidden hard-coded Flutter API path.
+- Built-in avatar selection is covered by backend integration tests, Flutter unit/contract tests, OpenAPI/generated drift gates, cross-cutting boundary checks, test report evidence and Product Base traceability.
+
+Residual risk:
+- Current contract intentionally supports built-in avatar asset refs only. Remote avatar URLs and user-uploaded images require a future formal media/image API contract.
+- The worktree contained unrelated pre-existing changes outside XCB-003; this report does not classify, revert or claim those changes as part of the avatar fix.
+
+## 2026-06-11 - P02 XCB005 Goal Autopilot Fact Boundary Implementation
+
+Report ID:
+- `P02-XCB005-GOAL-AUTOPILOT-FACT-BOUNDARIES-20260611`
+
+Change request:
+- Close XCB-005 fact-provenance gaps for Goal Autopilot goal intake and checkpoint submission without duplicating existing Media upload, AI Gateway, control idempotency, data export or account deletion mechanisms.
+
+Requirement mapping:
+- Followup-A: `P02-FUA-FR-004`, `P02-FUA-FR-005`, `P02-FUA-FR-008`; `AC-P02-FUA-004`, `AC-P02-FUA-005`, `AC-P02-FUA-008`; `TC-P02-FUA-017`, `TC-P02-FUA-018`, `TC-P02-FUA-019`; `P02-FUA-TR-010`, `P02-FUA-TR-011`.
+- Followup-C: `P02-FUC-FR-003`; `AC-P02-FUC-003`; `TC-P02-FUC-023`; `P02-FUC-TR-003`.
+- Cross-cutting registry: `XCB-001`, `XCB-002`, `XCB-005`, `XCB-006`.
+
+Files changed:
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotService.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotGoalIdempotency.java`
+- `backend/src/main/java/com/speakeasy/goal/GoalAutopilotGoalIdempotencyRepository.java`
+- `backend/src/main/java/com/speakeasy/api/GoalAutopilotController.java`
+- `backend/src/main/java/com/speakeasy/identity/UserAccountRepository.java`
+- `backend/src/main/java/com/speakeasy/ops/AccountDeletionService.java`
+- `backend/src/main/resources/db/migration/V202606110001__p0_2_xcb005_goal_autopilot_fact_boundaries.sql`
+- `backend/src/test/java/com/speakeasy/GoalAutopilotControllerTest.java`
+- `backend/src/test/java/com/speakeasy/FoundationMigrationTest.java`
+- `backend/src/test/java/com/speakeasy/goal/GoalAutopilotDataExportRetentionTest.java`
+- `backend/src/test/java/com/speakeasy/goal/GoalAutopilotTelemetryTest.java`
+- `lib/features/goal_autopilot/goal_autopilot_adapter.dart`
+- `lib/services/api_client.dart`
+- `test/features/goal_autopilot/goal_autopilot_adapter_test.dart`
+- `docs/architecture/api_contract.md`
+- `docs/architecture/openapi/speakeasy-api.yaml`
+- `docs/architecture/openapi/dart-client-drift-manifest.json`
+- `lib/generated/api/speakeasy_api.dart`
+- `lib/generated/api/.openapi-sha256`
+- `docs/process/cross_cutting_boundary_registry.md`
+- `docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening/acceptance.md`
+- `docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening/test_cases.md`
+- `docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening/traceability.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/acceptance.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/test_cases.md`
+- `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/traceability.md`
+- `scripts/check_p0_2_goal_autopilot_traceability.py`
+- `scripts/check_p0_2_followup_c_traceability.py`
+
+Implementation summary:
+- Reused `AiGatewayService.validateTrustedAudioRef` through `GoalAutopilotService.validateDiagnosticAudioRefs` and `GoalAutopilotService.validateCheckpointAudioRef` for goal diagnostic and checkpoint `audio_ref` validation. No new media validation service or Followup-E-specific upload pipeline was introduced.
+- Added goal-create idempotency as a dedicated replay table, mirroring the existing control idempotency pattern but scoped to goal intake, with request hash, response replay and conflict behavior.
+- Added a user-row pessimistic lock through `UserAccountRepository.findByIdForUpdate` so create/revise operations serialize on the existing user identity boundary.
+- Added `Idempotency-Key` as a required `POST /goal-autopilot/goals` API contract and propagated it from Flutter `GoalAutopilotAdapter` through `ApiClient.createGoalAutopilotGoal`.
+- Added `goal_profiles.user_id` uniqueness after a migration-time prune step that keeps the service-canonical active/latest profile and deletes non-canonical duplicate rows.
+- Extended account deletion and data export to include goal-create idempotency metadata with raw replay response JSON redacted.
+- Updated OpenAPI generated-client hash to `44739a588708eb47e82707680c0ab0dbada178530abe12a4c7525750f8e35cd5`.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,GoalAutopilotDataExportRetentionTest,GoalAutopilotTelemetryTest,FoundationMigrationTest test` - passed.
+- `flutter test test/features/goal_autopilot/goal_autopilot_adapter_test.dart` - passed.
+- `npm run check:dart-client-drift` - passed.
+
+Result:
+- XCB-005 goal intake and checkpoint fact boundaries are locally implemented and traceable from AC to code to TC evidence.
+- The implementation uses existing Media/AI Gateway, control-style idempotency, account deletion, export and telemetry patterns instead of parallel mechanisms.
+
+Residual risk:
+- Migration prune is intentionally upgrade-safe for uniqueness but destructive for non-canonical duplicate goal chains. If production data must preserve duplicate-chain audit history, run a backup/archive step before applying `V202606110001__p0_2_xcb005_goal_autopilot_fact_boundaries.sql`.
+- Missing-header behavior currently returns Spring `400` because `Idempotency-Key` is a required controller header. The service-level validation remains available for non-controller callers; changing this to a JSON `422` would be a contract refinement, not a blocker for the current OpenAPI required-header contract.
+
+## 2026-06-11 - XCB006 Data Lifecycle Boundary Hardening
+
+Report ID:
+- `XCB006-DATA-LIFECYCLE-BOUNDARY-HARDENING-20260611`
+
+Change request:
+- Fix XCB-006 data lifecycle boundary gaps without creating a parallel data-governance mechanism, and preserve bidirectional traceability from requirement to architecture, code and tests.
+
+Requirement mapping:
+- Cross-cutting registry: `docs/process/cross_cutting_boundary_registry.md` `XCB-006`.
+- Commercial admin audit: `FR-COM-011`, `FR-COM-012`, `AC-COM-013`, `AC-COM-014`, `TC-COM-024`, `COM-TR-011`, `COM-TR-012`.
+- Commercial AI retention: `FR-COM-AI-005`, `AC-COM-AI-005`, `TC-COM-AI-006`, `COM-AI-TR-005`.
+- Domain/architecture references: `docs/domain/domain_schema.md` `AuditLog`, `RetentionPolicy`, `AiRetentionJob`; `docs/domain/entity_relationship.md` account deletion/audit and retention job relationships; `docs/architecture/backend_db_foundation_contract.md` audit/retention persistence boundary; `docs/architecture/api_contract.md` `/admin/audit` and `/admin/ai/retention-jobs`.
+
+Files changed:
+- `docs/process/cross_cutting_boundary_registry.md`
+- `scripts/check_cross_cutting_boundaries.py`
+- `test/scripts/test_cross_cutting_boundaries.py`
+- `backend/src/main/java/com/speakeasy/ops/AuditRedaction.java`
+- `backend/src/main/java/com/speakeasy/ops/AuditLog.java`
+- `backend/src/main/java/com/speakeasy/ops/AuditLogService.java`
+- `backend/src/main/java/com/speakeasy/ai/AiRetentionService.java`
+- `backend/src/test/java/com/speakeasy/AdminAuditControllerTest.java`
+- `backend/src/test/java/com/speakeasy/AiRetentionPolicyTest.java`
+- `docs/product/increments/commercial-subscription-readiness/test_cases.md`
+- `docs/product/increments/commercial-subscription-readiness/traceability.md`
+- `docs/product/increments/commercial-ai-provider-hardening/test_cases.md`
+- `docs/product/increments/commercial-ai-provider-hardening/traceability.md`
+- `docs/reports/test_report.md`
+
+Implementation summary:
+- Added executable XCB-006 governance rules requiring new sensitive migration tables to prove deletion, export and retention coverage or an explicit XCB-006 exception.
+- Extended the cross-cutting boundary checker so changed-scope scans include staged and untracked files, detect sensitive table names/fields in migrations, and ignore test fixtures for production sensitive-payload checks.
+- Introduced `AuditRedaction` as the shared audit redaction boundary used by `AuditLog` write-side persistence and `AuditLogService` read-side projection, eliminating duplicate redaction rules.
+- Hardened audit redaction for nested JSON, legacy text, embedded URLs, sensitive request ids and sensitive target refs while preserving safe aggregate counts such as `media_deleted_count` and `provider_payload_redacted_count`.
+- Changed `AiRetentionService` audit details from Java `Map.toString()` output to JSON evidence so DB records and `/admin/audit` can expose safe lifecycle proof without raw media, transcript, provider payload or signed URL leakage.
+- Updated product test-case and traceability rows so `TC-COM-024` and `TC-COM-AI-006` point to the new XCB-006 evidence report.
+
+Validation:
+- `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminAuditControllerTest,AiRetentionPolicyTest test` - passed.
+- `python3 -m unittest test.scripts.test_cross_cutting_boundaries` - passed.
+- `python3 -m py_compile scripts/check_cross_cutting_boundaries.py` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
+
+Result:
+- XCB-006 now has executable changed-scope enforcement for newly introduced sensitive persistence tables.
+- Audit write and read paths share one redaction component and no longer drift on safe aggregate count handling.
+- AI retention evidence remains queryable as safe aggregate proof in DB and `/admin/audit` while sensitive media/provider payload details stay redacted.
+
+Residual risk:
+- The migration checker is regex-based and targets ordinary SQL migration files; nonstandard SQL generation still needs architecture/security review.
+- This closes local lifecycle and audit boundary hardening only. External paid-AI release evidence gates remain blocked until production retention policy and storage lifecycle evidence refs are supplied.
+
+## 2026-06-11 - XCB006 Structured Exception Gate Follow-up
+
+Report ID:
+- `XCB006-STRUCTURED-EXCEPTION-GATE-20260611`
+
+Change request:
+- Remove the wide XCB-006 `planned exception` bypass and require machine-checkable exception declarations for retained-redacted, legacy and not-applicable cases.
+
+Implementation summary:
+- Removed ordinary `planned exception` from the XCB-006 migration exception allow path.
+- Added structured exception parsing in `scripts/check_cross_cutting_boundaries.py`, with exception type anchored to the exact lowercase `XCB-006 <type> exception:` declaration head instead of scanning rationale text; space-separated and case-variant aliases such as `retained redacted`, `not applicable`, `Retained-Redacted`, `LEGACY` and `NOT-APPLICABLE` are rejected.
+- Required exception declarations to include `table`, `owner`, `safe_fields`, `redacted_fields`, `omitted_fields`, `retention_trigger`, `deletion_behavior`, `export_behavior` and `rationale`.
+- Added strict rationale checks for `legacy exception` and `not-applicable exception`.
+- Blocked sensitive fields from `safe_fields`, including snake_case, kebab-case and camelCase compound names and bare user-subject identifiers such as `raw_audio`, `rawAudio`, `refresh_token_hash`, `refreshTokenHash`, `upload_signed_url`, `uploadSignedUrl`, `user_email`, `userEmail`, `actor`, `account`, `member`, `customer`, `learner`, `profile`, `actor_id`, `actorId`, `account_identifier`, `member-key`, `customerRef`, `learnerUuid`, `profile-name`, `targetRef`, `target-ref`, `redactedDetails` and `redacted-details`.
+- Rejected duplicate structured exception fields so later values cannot override an unsafe earlier `safe_fields` or `table` declaration.
+- Rejected duplicate structured exception fields, including empty-value duplicates such as `table=; table=...`, so later values cannot override an unsafe or empty earlier declaration.
+- Restricted `legacy exception` and `not-applicable exception` rationale checks to the `rationale` field itself, rejected negated or false-assignment phrases such as `not_pre_existing`, `pre_existing=false`, `migration_compatibility=false` and `not_user_owned=false`, and enforced exact bare `not-applicable` field values as `redacted_fields=none`, `omitted_fields=none`, `deletion_behavior=not_user_owned` and `export_behavior=not_in_user_export`.
+- Rejected placeholder governance wording such as `tbd`, `planned`, `later`, `review_later`, `plannedReview`, `pendingReview`, `temporary-export` or `temporary` across all required structured exception fields.
+- Updated the XCB-006 registry with the required single-line exception templates and clarified that `planned exception` is only planning text, not release evidence.
+
+Validation:
+- `python3 -m unittest test.scripts.test_cross_cutting_boundaries` - passed, 59 tests.
+- `python3 -m py_compile scripts/check_cross_cutting_boundaries.py` - passed.
+- `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
+- `git diff --check` - passed.
+
+Result:
+- New sensitive migration tables can no longer pass XCB-006 by citing a broad planned exception, including planned-exception lines whose rationale mentions retained-redacted evidence.
+- Only structured retained-redacted, legacy or not-applicable exceptions can substitute for deletion/export/retention code coverage.
+- Structured exception declarations cannot pass with sensitive safe fields, duplicate keys, non-actionable placeholders, negated rationale phrases, invalid `not-applicable` field values or rationale tokens hidden outside the `rationale` field.
+
+Residual risk:
+- Exception validation remains line-oriented by design so changed-scope checks are deterministic; long-form rationale can still live in docs, but the machine gate requires the compact structured line.

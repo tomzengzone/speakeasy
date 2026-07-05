@@ -7,7 +7,7 @@ Turn acceptance criteria into a balanced, executable test plan before or during 
 This project-local skill applies to development workflow assets in this repository. It supports the Codex software engineering pipeline and must not silently expand product scope or bypass the project Definition of Done.
 
 ## Trigger Context
-- A feature spec has acceptance criteria and is ready for implementation or QA planning.
+- A Product Base or increment spec has acceptance criteria and is ready for implementation or QA planning.
 - A bug fix needs a regression test.
 - A change affects API, UI, data, or AI output contracts.
 
@@ -18,29 +18,30 @@ This project-local skill applies to development workflow assets in this reposito
 - `docs/product/increments/<increment-id>/acceptance.md`
 - `docs/product/increments/<increment-id>/spec.md`
 - `docs/product/increments/<increment-id>/traceability.md`
-- Legacy global acceptance `docs/product/acceptance_criteria.md` only as migration, compatibility, or audit input after Product Base exists.
-- Legacy global traceability `docs/product/traceability_matrix.md` only as migration, compatibility, or audit input after Product Base exists.
-- `docs/product/features/<feature-slug>-spec.md`
+- `docs/product/feature_registry.md`
 - `docs/architecture/api_contract.md`
 - `docs/ux/screen_spec.md`
 - `docs/ai_runtime/prompt_contract.md`
-- Existing test conventions under `test/` and `tests/`.
+- Existing test conventions under `test/`, `backend/src/test/java/`, and `tests/`.
 
 ## Outputs
-- 测试计划或测试映射：`docs/reports/test_report.md`，并引用 owning acceptance 文件。
+- 增量测试用例库：`docs/product/increments/<increment-id>/test_cases.md`，并引用 owning acceptance 文件。
+- 测试执行结果和测试报告：`docs/reports/test_report.md`。
 - Flutter/Dart 测试代码：`test/`。
-- 后端或跨服务测试代码：`tests/`。
+- 后端 Maven/Spring Boot 测试代码：`backend/src/test/java/`。
+- 跨服务或仓库级测试代码：`tests/`。
 - AI eval 用例：`docs/ai_runtime/ai_eval_cases.md`。
 - 覆盖缺口：`docs/reports/test_report.md`。
 - Product Base 追溯矩阵测试证据状态：`docs/product/base/traceability.md` 或 `docs/reports/test_report.md`。
 - Increment 追溯矩阵测试证据状态：`docs/product/increments/<increment-id>/traceability.md` 或 `docs/reports/test_report.md`。
-- Legacy 全局验收标准和追溯矩阵只可在显式 migration、compatibility 或 audit 任务中更新，不作为默认 Test Evidence 写回目标。
+- Test Evidence updates must cite TC ID, test script path, execution command, result status, and evidence report.
 
 ## Product Object Outputs
 - Test evidence cites the owning increment or stable feature.
+- Stable test case IDs are assigned in the owning increment test case library using `TC-<scope-prefix>-<NNN>`; MVP backend uses `TC-MVP-BE-001`, `TC-MVP-BE-002`, and so on.
+- Each test case carries Stage Scope ID, FR, Spec, AC, Traceability Row, Gap, test layer, automation status, test script path, execution command, result status, and evidence report.
 - Product Base evidence belongs in `docs/product/base/traceability.md` or `docs/reports/test_report.md`.
 - Increment-specific evidence belongs in the increment traceability record.
-- Legacy global traceability remains valid only for existing flat artifacts until migration.
 
 ## Quality Bar
 - Every criterion is covered or explicitly deferred with reason.
@@ -50,6 +51,10 @@ This project-local skill applies to development workflow assets in this reposito
 - Documentation outputs and executable test outputs are separated by path.
 - Test-case generation maps AC to tests or explicit exceptions; it does not define FR, AC, or requirement coverage.
 - Test generation validates approved ACs and does not create feature, stage, or increment scope.
+- Committed increment implementation is blocked until every approved AC maps to stable TC IDs or explicit allowed exceptions in the owning increment test case library.
+- Published TC IDs are immutable: do not renumber, reuse, or assign an existing ID to a different behavior; retire with replacement or reason when needed.
+- Required test case fields must be populated or carry an explicit `N/A - <reason>`; blank traceability, script, command, result, or evidence fields are blockers.
+- Traceability Test Evidence updates must preserve upstream Stage Scope, FR, Spec, and AC fields; only evidence/status/gap fields may change during QA evidence updates.
 - Every AC has Test Evidence or one of the allowed exceptions: 人工验收, 外部服务依赖, 暂不可自动化.
 - Missing Test Evidence is a completion blocker until recorded in the test report or traceability matrix.
 

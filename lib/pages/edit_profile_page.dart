@@ -83,6 +83,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
         actions: [
           TextButton(
+            key: const ValueKey<String>('edit_profile_save_button'),
             onPressed: _saving ? null : _save,
             child: _saving
                 ? const SizedBox(
@@ -179,6 +180,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           ),
           const SizedBox(height: 10),
           TextField(
+            key: const ValueKey<String>('edit_profile_nickname_input'),
             controller: nameController,
             maxLength: 20,
             decoration: InputDecoration(

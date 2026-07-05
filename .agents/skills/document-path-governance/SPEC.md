@@ -28,10 +28,11 @@
 - 更新后的 skill 输入输出路径。
 - 更新后的 agent Allowed Paths。
 - 必要时写入 `docs/reports/quality_report.md` 的路径审查摘要。
+- 全局 SWC 架构基准路径为 `docs/architecture/software_component_architecture.md`；它记录完整 SWC 拓扑、稳定 `SWC-FLOW-*` 和局部变更参考基准。
 - API 契约总览路径为 `docs/architecture/api_contract.md`；机器可执行 OpenAPI source-of-truth 路径为 `docs/architecture/openapi/speakeasy-api.yaml`。
 - Product Base paths are `docs/product/base/requirements.md`, `docs/product/base/spec.md`, `docs/product/base/acceptance.md`, and `docs/product/base/traceability.md`.
+- Increment test case libraries use `docs/product/increments/<increment-id>/test_cases.md` and remain the canonical AC-to-TC design artifact before implementation starts.
 - Baseline snapshot paths use `docs/product/baselines/<baseline-slug>/` or `docs/product/baselines/<baseline-slug>.md` for legacy single-file snapshots.
-- Legacy global acceptance and traceability paths remain compatibility sources only after Product Base exists.
 
 ## Quality Bar
 - 每类文档只有一个默认 source of truth。
@@ -41,7 +42,8 @@
 - skill 的 `SKILL.md` 与 `SPEC.md` 路径说明一致。
 - 不为了单次任务引入长期目录。
 - API contract overview and OpenAPI YAML have distinct ownership: the overview records scope, traceability, versioning, error semantics, and compatibility policy; the YAML owns paths, components, request/response schemas, examples, and machine lint.
-- 需求覆盖矩阵不分散到验收标准、测试报告或 feature spec 中作为新的 source of truth；这些文档只能引用矩阵或补充证据。
+- Global SWC architecture baseline, SWC catalog, and increment SWC allocation have distinct ownership: baseline records topology and reusable Flow IDs, catalog records component inventory, allocation records increment-specific FR/AC mapping.
+- 需求覆盖矩阵不分散到验收标准、测试报告或增量规格中作为新的 source of truth；这些文档只能引用矩阵或补充证据。
 
 ## Maintenance Notes
 - 修改路径约定后同步检查所有生成类 skill。

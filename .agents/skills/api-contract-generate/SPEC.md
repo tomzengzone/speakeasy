@@ -13,7 +13,8 @@ This project-local skill applies to development workflow assets in this reposito
 
 ## Inputs
 - `docs/product/increments/<increment-id>/spec.md`
-- `docs/product/features/<feature-slug>-spec.md`
+- `docs/product/base/spec.md`
+- `docs/product/feature_registry.md`
 - `docs/domain/domain_schema.md`
 - Relevant `docs/domain/<domain>_model.md`
 - Existing `docs/architecture/api_contract.md`
@@ -29,7 +30,6 @@ This project-local skill applies to development workflow assets in this reposito
 
 ## Product Object Outputs
 - API contract updates cite the owning increment or stable feature.
-- Legacy feature spec input remains valid only for existing flat artifacts until migration.
 
 ## Quality Bar
 - Client and server can be implemented independently from the contract.

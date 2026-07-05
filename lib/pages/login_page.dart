@@ -395,6 +395,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         const SizedBox(height: 22),
         _MethodButton(
+          key: const ValueKey<String>('login_phone_method'),
           icon: Icons.phone_iphone_rounded,
           title: l10n.phoneLogin,
           subtitle: l10n.phoneLoginSubtitle,
@@ -416,6 +417,7 @@ class _LoginPageState extends State<LoginPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             GestureDetector(
+              key: const ValueKey<String>('login_agreement_checkbox'),
               onTap: widget.isLoading
                   ? null
                   : () => setState(() => _agreeTerms = !_agreeTerms),
@@ -508,6 +510,7 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 16),
         ],
         _InputBlock(
+          fieldKey: const ValueKey<String>('login_phone_input'),
           controller: _phoneController,
           hint: l10n.enterPhoneNumber,
           icon: Icons.phone_iphone_rounded,
@@ -554,6 +557,7 @@ class _LoginPageState extends State<LoginPage> {
         if (AppConfig.enableTestPhoneLogin) ...[
           const SizedBox(height: 12),
           OutlinedButton(
+            key: const ValueKey<String>('login_test_phone_submit'),
             onPressed: widget.isLoading ? null : _submitTestPhoneLogin,
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(52),
@@ -845,6 +849,7 @@ class _AppleSignInButton extends StatelessWidget {
 
 class _MethodButton extends StatelessWidget {
   const _MethodButton({
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -943,6 +948,7 @@ class _AgreementLink extends StatelessWidget {
 
 class _InputBlock extends StatelessWidget {
   const _InputBlock({
+    this.fieldKey,
     required this.controller,
     required this.hint,
     required this.icon,
@@ -951,6 +957,7 @@ class _InputBlock extends StatelessWidget {
     this.trailing,
   });
 
+  final Key? fieldKey;
   final TextEditingController controller;
   final String hint;
   final IconData icon;
@@ -968,6 +975,7 @@ class _InputBlock extends StatelessWidget {
         border: Border.all(color: const Color(0xFFE6E0D8)),
       ),
       child: TextField(
+        key: fieldKey,
         controller: controller,
         keyboardType: keyboardType,
         obscureText: obscureText,

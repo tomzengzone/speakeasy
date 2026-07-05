@@ -21,7 +21,7 @@ Create an auditable record that connects the completed change to requirements, t
 ## Inputs
 - Git status and changed file list.
 - Increment reference for new product work.
-- Requirement or feature spec reference for legacy flat artifacts or stable feature contract work.
+- Product Base or increment requirement/spec reference.
 - Commands run and results.
 - Known risks and follow-up items.
 
@@ -37,7 +37,7 @@ Create an auditable record that connects the completed change to requirements, t
 
 ## 文档路径约定
 - 实现报告写入 `docs/reports/implementation_report.md`。
-- 输入优先读取本次需求或 feature spec、`git status`、变更文件清单、实际运行命令和结果。
+- 输入优先读取本次 Product Base / increment requirement 或 spec、`git status`、变更文件清单、实际运行命令和结果。
 - 测试结果摘要可引用 `docs/reports/test_report.md`，质量风险可引用 `docs/reports/quality_report.md`。
 - 不在实现报告中替代需求、契约或验收标准；缺失时回到对应 workflow 阶段补文档。
 

@@ -1,0 +1,10 @@
+ALTER TABLE goal_progress_forecasts ADD COLUMN source_goal_revision INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE goal_progress_forecasts ADD COLUMN forecast_state VARCHAR(40) NOT NULL DEFAULT 'ready';
+ALTER TABLE goal_progress_forecasts ADD COLUMN eta_range_start DATE;
+ALTER TABLE goal_progress_forecasts ADD COLUMN eta_range_end DATE;
+ALTER TABLE goal_progress_forecasts ADD COLUMN eta_unavailable_reason VARCHAR(120);
+ALTER TABLE goal_progress_forecasts ADD COLUMN risk_reason_code VARCHAR(120) NOT NULL DEFAULT 'checkpoint_evidence_missing';
+ALTER TABLE goal_progress_forecasts ADD COLUMN explanation_key VARCHAR(120) NOT NULL DEFAULT 'checkpoint_evidence_missing';
+ALTER TABLE goal_progress_forecasts ADD COLUMN explanation_source VARCHAR(80) NOT NULL DEFAULT 'deterministic_policy';
+ALTER TABLE goal_progress_forecasts ADD COLUMN ai_explanation_unavailable_reason VARCHAR(120) NOT NULL DEFAULT 'deterministic_no_provider_path';
+ALTER TABLE goal_progress_forecasts ADD COLUMN rule_version VARCHAR(80) NOT NULL DEFAULT 'fuc-forecast-v1';

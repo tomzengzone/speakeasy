@@ -17,8 +17,7 @@ This project-local skill applies to development workflow assets in this reposito
 - `docs/product/base/spec.md`
 - `docs/product/base/acceptance.md`
 - `docs/product/base/traceability.md`
-- `docs/product/features/<feature-slug>-spec.md`
-- Legacy `docs/product/acceptance_criteria.md` only for explicit compatibility, migration, or audit tasks after Product Base exists.
+- `docs/product/feature_registry.md`
 - Existing `docs/domain/` files.
 - `docs/architecture/system_overview.md`
 - `docs/architecture/module_boundary.md`
@@ -31,7 +30,6 @@ This project-local skill applies to development workflow assets in this reposito
 
 ## Product Object Outputs
 - Domain updates cite the owning increment or stable feature.
-- Legacy feature spec input remains valid only for existing flat artifacts until migration.
 
 ## Quality Bar
 - Each entity has an owner and lifecycle.

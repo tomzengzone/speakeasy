@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import 'package:speakeasy/application/contracts/app_repository.dart';
@@ -8,7 +6,6 @@ import 'package:speakeasy/domain/scene/scene_models.dart';
 import 'package:speakeasy/infrastructure/repositories/demo_app_repository.dart';
 import 'package:speakeasy/services/api_client.dart';
 import 'package:speakeasy/models/app_models.dart';
-import 'package:speakeasy/services/oral_assessment_service.dart';
 import 'package:speakeasy/utils/error_handler.dart';
 
 class _ParsedSceneReply {
@@ -36,10 +33,6 @@ class OpenAiAppRepository implements AppRepository {
   final String apiKey;
   static const int _maxFeedbackHistoryTurns = 8;
   static const int _maxFeedbackVoiceTurns = 3;
-  static final Map<String, PronunciationScore> _pronunciationScoreCache =
-      <String, PronunciationScore>{};
-  static final Map<String, Future<PronunciationScore?>> _scoreInFlight =
-      <String, Future<PronunciationScore?>>{};
 
   List<String> _sceneHintsFromDynamic(dynamic value) {
     if (value is! List) {
@@ -229,72 +222,6 @@ class OpenAiAppRepository implements AppRepository {
   }
 
   @override
-  Future<PronunciationScore> scorePronunciation({
-    required String audioPath,
-    required String expectedText,
-  }) async {
-    final PronunciationScore? localScore =
-        await OralAssessmentService.scorePronunciation(
-          audioPath: audioPath,
-          expectedText: expectedText,
-        );
-    if (localScore != null) {
-      return localScore;
-    }
-
-    try {
-      final Map<String, dynamic> score = await ApiClient.scoreAudio(
-        File(audioPath),
-        expectedText,
-      );
-      return _scoreFromJson(score);
-    } catch (error, stackTrace) {
-      ErrorHandler.handleError(
-        error,
-        stackTrace: stackTrace,
-        context: 'Pronunciation scoring via backend failed',
-      );
-      rethrow;
-    }
-  }
-
-  Future<PronunciationScore?> _scorePronunciationCached({
-    required String audioPath,
-    required String expectedText,
-  }) async {
-    final String cacheKey = '$audioPath|$expectedText';
-    final PronunciationScore? cached = _pronunciationScoreCache[cacheKey];
-    if (cached != null) {
-      return cached;
-    }
-    final Future<PronunciationScore?>? inFlight = _scoreInFlight[cacheKey];
-    if (inFlight != null) {
-      return inFlight;
-    }
-
-    final Future<PronunciationScore?> future = () async {
-      try {
-        if (!File(audioPath).existsSync()) {
-          return null;
-        }
-        final PronunciationScore score = await scorePronunciation(
-          audioPath: audioPath,
-          expectedText: expectedText,
-        );
-        _pronunciationScoreCache[cacheKey] = score;
-        return score;
-      } catch (_) {
-        return null;
-      } finally {
-        _scoreInFlight.remove(cacheKey);
-      }
-    }();
-
-    _scoreInFlight[cacheKey] = future;
-    return future;
-  }
-
-  @override
   Future<SceneFeedback> generateSceneFeedback({
     required SceneDraft draft,
     required List<SceneHistoryTurn> history,
@@ -339,45 +266,7 @@ class OpenAiAppRepository implements AppRepository {
           )
           .toList(growable: false);
 
-      final Future<List<Map<String, dynamic>>> scoreFuture =
-          Future.wait(
-            limitedVoiceTurns.map((SceneFeedbackVoiceTurn turn) async {
-              final String text = turn.text.trim();
-              if (text.isEmpty) {
-                return null;
-              }
-              PronunciationScore? score;
-              final String? audioPath = turn.audioPath?.trim();
-              if (audioPath != null && audioPath.isNotEmpty) {
-                score = await _scorePronunciationCached(
-                  audioPath: audioPath,
-                  expectedText: text,
-                );
-              }
-              return <String, dynamic>{
-                'turnIndex': turn.turnIndex,
-                'text': text,
-                if (score != null)
-                  'pronunciation': <String, dynamic>{
-                    'overall': score.overall,
-                    if (score.accuracy != null) 'accuracy': score.accuracy,
-                    if (score.fluency != null) 'fluency': score.fluency,
-                    if (score.completeness != null)
-                      'completeness': score.completeness,
-                    if (score.grammar != null) 'grammar': score.grammar,
-                  },
-              };
-            }),
-          ).then(
-            (List<Map<String, dynamic>?> turns) =>
-                turns.whereType<Map<String, dynamic>>().toList(growable: false),
-          );
-
-      final List<Map<String, dynamic>> voiceTurnPayload = await scoreFuture
-          .timeout(
-            const Duration(seconds: 15),
-            onTimeout: () => baseVoiceTurnPayload,
-          );
+      final List<Map<String, dynamic>> voiceTurnPayload = baseVoiceTurnPayload;
       final Map<String, dynamic> res = await ApiClient.generateFeedback(
         title: draft.title,
         goal: draft.goal,
@@ -387,10 +276,7 @@ class OpenAiAppRepository implements AppRepository {
       );
 
       if (res['code'] == 0 && res['data'] != null) {
-        return _feedbackFromJson(
-          res['data'] as Map<String, dynamic>,
-          scoredVoiceTurns: voiceTurnPayload,
-        );
+        return _feedbackFromJson(res['data'] as Map<String, dynamic>);
       }
     } catch (error, stackTrace) {
       ErrorHandler.handleError(
@@ -404,33 +290,22 @@ class OpenAiAppRepository implements AppRepository {
     throw Exception('反馈生成失败');
   }
 
-  static SceneFeedback _feedbackFromJson(
-    Map<String, dynamic> j, {
-    List<Map<String, dynamic>> scoredVoiceTurns =
-        const <Map<String, dynamic>>[],
-  }) {
+  static SceneFeedback _feedbackFromJson(Map<String, dynamic> j) {
     final List<Map<String, dynamic>> turnReviewMaps =
         (j['turnReviews'] as List<dynamic>? ?? const <dynamic>[])
             .whereType<Map>()
             .map((Map item) => item.cast<String, dynamic>())
             .toList(growable: false);
-    final Map<int, Map<String, dynamic>> scoredVoiceTurnMap =
-        <int, Map<String, dynamic>>{
-          for (final Map<String, dynamic> turn in scoredVoiceTurns)
-            (turn['turnIndex'] as num?)?.toInt() ?? -1: turn,
-        }..remove(-1);
     final List<SceneFeedbackTurnReview> turnReviews = turnReviewMaps
         .map((Map<String, dynamic> item) {
           final int turnIndex = (item['turnIndex'] as num?)?.toInt() ?? 0;
-          final Map<String, dynamic>? scoredTurn =
-              scoredVoiceTurnMap[turnIndex];
-          final Map<String, dynamic>? pronunciation =
-              scoredTurn?['pronunciation'] as Map<String, dynamic>?;
           return SceneFeedbackTurnReview(
             turnIndex: turnIndex,
             originalText: (item['originalText'] as String? ?? '').trim(),
             pronunciationScore:
-                (pronunciation?['overall'] as num?)?.toInt() ?? 0,
+                (item['pronunciationScore'] as num?)?.toInt() ??
+                (item['pronunciation_score'] as num?)?.toInt() ??
+                0,
             pronunciationComment:
                 (item['pronunciationComment'] as String? ?? '').trim(),
             grammarComment: (item['grammarComment'] as String? ?? '').trim(),
@@ -444,30 +319,7 @@ class OpenAiAppRepository implements AppRepository {
         })
         .where((SceneFeedbackTurnReview item) => item.originalText.isNotEmpty)
         .toList(growable: false);
-    final List<SceneFeedbackTurnReview> resolvedTurnReviews =
-        turnReviews.isNotEmpty
-        ? turnReviews
-        : scoredVoiceTurns
-              .map((Map<String, dynamic> item) {
-                final int turnIndex = (item['turnIndex'] as num?)?.toInt() ?? 0;
-                final Map<String, dynamic>? pronunciation =
-                    item['pronunciation'] as Map<String, dynamic>?;
-                return SceneFeedbackTurnReview(
-                  turnIndex: turnIndex,
-                  originalText: (item['text'] as String? ?? '').trim(),
-                  pronunciationScore:
-                      (pronunciation?['overall'] as num?)?.toInt() ?? 0,
-                  pronunciationComment: '发音整体可懂，继续把重音和连读练得更稳定。',
-                  grammarComment: '语法基本成立，但还可以更简洁。',
-                  expressionComment: '表达能传达意思，不过自然度还能再提升。',
-                  betterExpression: (item['text'] as String? ?? '').trim(),
-                  betterExpressionTranslation: null,
-                );
-              })
-              .where(
-                (SceneFeedbackTurnReview item) => item.originalText.isNotEmpty,
-              )
-              .toList(growable: false);
+    final List<SceneFeedbackTurnReview> resolvedTurnReviews = turnReviews;
     return SceneFeedback(
       overallScore: (j['overallScore'] as num?)?.toInt() ?? 70,
       headline: (j['headline'] as String?) ?? '表现不错！',
@@ -510,17 +362,4 @@ class OpenAiAppRepository implements AppRepository {
       turnReviews: resolvedTurnReviews,
     );
   }
-}
-
-PronunciationScore _scoreFromJson(Map<String, dynamic> score) {
-  final String source =
-      (score['provider'] as String? ?? score['source'] as String? ?? '').trim();
-  return PronunciationScore(
-    overall: (score['overall'] as num?)?.toInt() ?? 0,
-    accuracy: (score['accuracy'] as num?)?.toInt(),
-    fluency: (score['fluency'] as num?)?.toInt(),
-    completeness: (score['completeness'] as num?)?.toInt(),
-    grammar: (score['grammar'] as num?)?.toInt(),
-    source: source.isEmpty ? 'backend_score' : source,
-  );
 }

@@ -52,9 +52,7 @@ void main() {
     );
   });
 
-  test('resolvePreparedTurn 会持久化音频并返回 planner 动作', () async {
-    final _FakeSceneVoiceUserTurnAudioGateway gateway =
-        _FakeSceneVoiceUserTurnAudioGateway()..audioPath = '/tmp/user.wav';
+  test('resolvePreparedTurn does not persist local WAV and returns planner action', () {
     final PreparedSceneVoiceUserTurn prepared = coordinator
         .prepareUserFinalTurn(
           text: 'i need help',
@@ -64,19 +62,14 @@ void main() {
           pendingVoiceMessageDuration: 3,
         )!;
 
-    final ResolvedSceneVoiceUserTurn resolved = await coordinator
-        .resolvePreparedTurn(preparedTurn: prepared, audioGateway: gateway);
+    final ResolvedSceneVoiceUserTurn resolved = coordinator
+        .resolvePreparedTurn(preparedTurn: prepared);
 
     expect(resolved.normalizedText, 'I need help');
-    expect(resolved.audioPath, '/tmp/user.wav');
     expect(resolved.action, SceneVoiceUserTurnAction.sendViaPlanner);
-    expect(gateway.persistCallCount, 1);
   });
 
-  test('resolvePreparedTurn 在持久化失败时回退为 null audioPath', () async {
-    final _FakeSceneVoiceUserTurnAudioGateway gateway =
-        _FakeSceneVoiceUserTurnAudioGateway()
-          ..error = StateError('persist failed');
+  test('resolvePreparedTurn no longer depends on audio persistence failures', () {
     final PreparedSceneVoiceUserTurn prepared = coordinator
         .prepareUserFinalTurn(
           text: 'hello',
@@ -86,30 +79,9 @@ void main() {
           pendingVoiceMessageDuration: 3,
         )!;
 
-    final ResolvedSceneVoiceUserTurn resolved = await coordinator
-        .resolvePreparedTurn(preparedTurn: prepared, audioGateway: gateway);
+    final ResolvedSceneVoiceUserTurn resolved = coordinator
+        .resolvePreparedTurn(preparedTurn: prepared);
 
-    expect(resolved.audioPath, isNull);
     expect(resolved.action, SceneVoiceUserTurnAction.appendLocalMessage);
   });
-}
-
-class _FakeSceneVoiceUserTurnAudioGateway
-    implements SceneVoiceUserTurnAudioGateway {
-  String? audioPath;
-  Object? error;
-  int persistCallCount = 0;
-
-  @override
-  Future<String?> persistChunksAsWav(
-    List<Uint8List> chunks, {
-    required int sampleRate,
-    required String prefix,
-  }) async {
-    persistCallCount++;
-    if (error != null) {
-      throw error!;
-    }
-    return audioPath;
-  }
 }

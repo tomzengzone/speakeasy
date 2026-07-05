@@ -111,20 +111,29 @@ void main() {
   test('syncUserPatch 在存在 token 时返回后端用户数据', () async {
     when(() => remoteApi.getToken()).thenAnswer((_) async => 'jwt-token');
     when(
-      () => remoteApi.updateMe(<String, dynamic>{'nickname': '新昵称'}),
+      () => remoteApi.updateMe(<String, dynamic>{
+        'display_name': '新昵称',
+        'avatar_ref': 'assets/images/avatars/default_avatar_2.png',
+      }),
     ).thenAnswer(
       (_) async => <String, dynamic>{
         'code': 0,
-        'data': <String, dynamic>{'nickname': '远端昵称'},
+        'data': <String, dynamic>{
+          'nickname': '远端昵称',
+          'avatarUrl': 'assets/images/avatars/default_avatar_2.png',
+        },
       },
     );
 
-    final Map<String, dynamic>? data = await coordinator.syncUserPatch(
-      <String, dynamic>{'nickname': '新昵称'},
-    );
+    final Map<String, dynamic>? data = await coordinator
+        .syncUserPatch(<String, dynamic>{
+          'display_name': '新昵称',
+          'avatar_ref': 'assets/images/avatars/default_avatar_2.png',
+        });
 
     expect(data, isNotNull);
     expect(data!['nickname'], '远端昵称');
+    expect(data['avatarUrl'], 'assets/images/avatars/default_avatar_2.png');
   });
 
   test('clearSessionData 会清理本地资料与 token', () async {

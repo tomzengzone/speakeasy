@@ -18,26 +18,26 @@ This project-local skill applies to development workflow assets in this reposito
 - `docs/product/stages/<stage-id>.md`
 - `docs/product/increments/<increment-id>/definition.md`
 - `docs/product/increments/<increment-id>/requirements.md`
-- `docs/product/features/<feature-slug>-requirements.md`
-- `docs/product/features/<feature-slug>/requirements.md`
+- `docs/product/base/requirements.md`
+- `docs/product/feature_registry.md`
 - `docs/product/user_stories.md`
-- `docs/product/mvp_scope.md`
 - `docs/process/change_request.md`
 - Relevant architecture and domain docs when they already exist.
 - `docs/process/definition_of_done.md`
 
 ## Outputs
-- 功能规格：`docs/product/features/<feature-slug>-spec.md`。
-- API、数据、UI、AI、测试影响说明：写入同一 feature spec 的影响段。
-- 供验收标准使用的上游追溯引用：写入同一 feature spec。
+- Product Base 规格：`docs/product/base/spec.md`。
+- Increment 规格：`docs/product/increments/<increment-id>/spec.md`。
+- API、数据、UI、AI、测试影响说明：写入同一 Product Base 或 increment spec 的影响段。
+- 供验收标准使用的上游追溯引用：写入同一 Product Base 或 increment spec。
 - 范围扩展记录：必要时更新 `docs/process/change_request.md`。
 - 不直接写入架构、领域、AI runtime 或 UX 契约；仅标记后续对应文档需求。
 
 ## Product Object Outputs
 - Product Base spec for accepted stable behavior: `docs/product/base/spec.md`.
 - New increment spec: `docs/product/increments/<increment-id>/spec.md`.
-- Stable feature contract update when explicitly requested: `docs/product/features/<feature-slug>/README.md`.
-- Legacy feature spec: `docs/product/features/<feature-slug>-spec.md` only for existing flat artifacts until migration.
+- Stage Scope Item ID references preserved in increment spec flows, states, dependencies, and non-goals.
+- Stable feature metadata reference: `docs/product/feature_registry.md`.
 - Required downstream contract list for architecture, domain, API, AI runtime, UX, and tests.
 
 ## Quality Bar
@@ -45,13 +45,14 @@ This project-local skill applies to development workflow assets in this reposito
 - Every module impact has an owner Agent.
 - Every criterion maps to a QA item.
 - Non-goals prevent obvious scope creep.
-- Output path follows `docs/product/features/<feature-slug>-spec.md`.
-- For P0 or new features, the approved feature spec is the direct upstream source for acceptance criteria.
-- The feature spec preserves traceability to requirements, user stories, MVP/P0 scope, and non-goals.
-- Requirement coverage completeness is established later by acceptance criteria and the traceability matrix, not by the feature spec alone.
+- Output path follows `docs/product/base/spec.md` or `docs/product/increments/<increment-id>/spec.md`.
+- For P0 or new features, the approved Product Base or increment spec is the direct upstream source for acceptance criteria.
+- The spec preserves traceability to requirements, user stories, MVP/P0 scope, and non-goals.
+- Requirement coverage completeness is established later by acceptance criteria and the traceability matrix, not by the spec alone.
 - For new product work, output path follows `docs/product/increments/<increment-id>/spec.md`.
-- The spec cites active stage, primary feature, affected features, increment definition, and increment requirements.
+- The spec cites active stage, covered Stage Scope Item IDs, primary feature, affected features, increment definition, and increment requirements.
 - Stage goals and stable feature boundaries are referenced but not rewritten as the increment spec.
+- New behavior in the spec must be traceable to a Stage Scope Item ID, an increment requirement, or a Product Manager-approved change request.
 
 ## Maintenance Notes
 - Keep SKILL.md concise enough for runtime use.

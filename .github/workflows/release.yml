@@ -16,9 +16,23 @@ env:
   FLUTTER_VERSION: "3.x"
   JAVA_VERSION: "17"
   APP_API_BASE_URL: ${{ secrets.APP_API_BASE_URL }}
+  ENV: production
+  ENABLE_TEST_PHONE_LOGIN: "false"
   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
   WECHAT_APP_ID: ${{ secrets.WECHAT_APP_ID }}
   WECHAT_UNIVERSAL_LINK: ${{ secrets.WECHAT_UNIVERSAL_LINK }}
+  ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+  ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+  ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+  ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+  APPLE_SANDBOX_EVIDENCE_REF: ${{ vars.APPLE_SANDBOX_EVIDENCE_REF }}
+  GOOGLE_PLAY_INTERNAL_EVIDENCE_REF: ${{ vars.GOOGLE_PLAY_INTERNAL_EVIDENCE_REF }}
+  STORE_METADATA_EVIDENCE_REF: ${{ vars.STORE_METADATA_EVIDENCE_REF }}
+  REVIEWER_ACCOUNT_REF: ${{ vars.REVIEWER_ACCOUNT_REF }}
+  SYMBOL_UPLOAD_EVIDENCE_REF: ${{ vars.SYMBOL_UPLOAD_EVIDENCE_REF }}
+  ROLLBACK_REHEARSAL_REF: ${{ vars.ROLLBACK_REHEARSAL_REF }}
+  PRIVACY_URL: ${{ vars.PRIVACY_URL }}
+  SUPPORT_URL: ${{ vars.SUPPORT_URL }}
 
 jobs:
   build-release:
@@ -60,19 +74,22 @@ jobs:
       # - ANDROID_KEY_ALIAS: key alias
       # - ANDROID_KEY_PASSWORD: key password
 
+      - name: Commercial release readiness gate
+        run: scripts/check_release_readiness.sh
+
       - name: Configure Android signing
         shell: bash
         run: |
-          if [[ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]]; then
+          if [[ -z "$ANDROID_KEYSTORE_BASE64" ]]; then
             echo "ANDROID_KEYSTORE_BASE64 is required for release builds" >&2
             exit 1
           fi
-          printf '%s' "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
           cat <<EOF > android/key.properties
-          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
           storeFile=upload-keystore.jks
-          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
           EOF
 
       - name: Install dependencies

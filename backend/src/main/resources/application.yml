@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: speakeasy-backend
+  datasource:
+    url: ${SPEAKEASY_DB_URL:jdbc:postgresql://localhost:5432/speakeasy}
+    username: ${SPEAKEASY_DB_USERNAME:speakeasy}
+    password: ${SPEAKEASY_DB_PASSWORD:speakeasy}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    deserialization:
+      fail-on-unknown-properties: true
+
+server:
+  servlet:
+    context-path: /v1
+
+speakeasy:
+  goal-autopilot:
+    runtime:
+      enabled: ${SPEAKEASY_GOAL_AUTOPILOT_RUNTIME_ENABLED:true}
+      kill-switch:
+        enabled: ${SPEAKEASY_GOAL_AUTOPILOT_KILL_SWITCH_ENABLED:false}
+        reason: ${SPEAKEASY_GOAL_AUTOPILOT_KILL_SWITCH_REASON:operator_disabled}
+  ai:
+    provider: ${SPEAKEASY_AI_PROVIDER:deterministic}
+    media:
+      metadata-signing-key: ${SPEAKEASY_MEDIA_METADATA_SIGNING_KEY:}
+      allow-unsigned-head-metadata: ${SPEAKEASY_MEDIA_ALLOW_UNSIGNED_HEAD_METADATA:false}
+      duration-header: ${SPEAKEASY_MEDIA_DURATION_HEADER:X-Speakeasy-Audio-Duration-Seconds}
+      metadata-timeout: ${SPEAKEASY_MEDIA_METADATA_TIMEOUT:5s}
+      public-base-url: ${SPEAKEASY_MEDIA_PUBLIC_BASE_URL:https://media.speakeasy.local/audio}
+      upload-base-url: ${SPEAKEASY_MEDIA_UPLOAD_BASE_URL:https://upload.speakeasy.local/audio}
+      upload-ttl: ${SPEAKEASY_MEDIA_UPLOAD_TTL:15m}
+      provider-read-ttl: ${SPEAKEASY_MEDIA_PROVIDER_READ_TTL:10m}
+      tts-cache-ttl: ${SPEAKEASY_TTS_CACHE_TTL:7d}
+      max-upload-bytes: ${SPEAKEASY_MEDIA_MAX_UPLOAD_BYTES:10000000}
+      max-upload-duration-seconds: ${SPEAKEASY_MEDIA_MAX_UPLOAD_DURATION_SECONDS:120}
+      storage-provider: ${SPEAKEASY_MEDIA_STORAGE_PROVIDER:local}
+      oss-endpoint: ${ALIYUN_OSS_ENDPOINT:}
+      oss-bucket: ${ALIYUN_OSS_BUCKET:}
+      oss-access-key-id: ${ALIYUN_OSS_ACCESS_KEY_ID:}
+      oss-access-key-secret: ${ALIYUN_OSS_ACCESS_KEY_SECRET:}
+      oss-object-prefix: ${ALIYUN_OSS_OBJECT_PREFIX:audio/uploads}
+      oss-server-side-encryption: ${ALIYUN_OSS_SERVER_SIDE_ENCRYPTION:}
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:}
+      compatible-base-url: ${DASHSCOPE_COMPATIBLE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+      api-base-url: ${DASHSCOPE_API_BASE_URL:https://dashscope.aliyuncs.com/api/v1}
+      llm-model: ${DASHSCOPE_LLM_MODEL:qwen-plus}
+      tts-url: ${DASHSCOPE_TTS_URL:https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation}
+      tts-model: ${DASHSCOPE_TTS_MODEL:qwen3-tts-flash}
+      tts-voice: ${DASHSCOPE_TTS_VOICE:Cherry}
+      asr-model: ${DASHSCOPE_ASR_MODEL:paraformer-v2}
+      max-text-chars: ${DASHSCOPE_MAX_TEXT_CHARS:1200}
+      max-asr-duration-seconds: ${DASHSCOPE_MAX_ASR_DURATION_SECONDS:120}
+      max-asr-bytes: ${DASHSCOPE_MAX_ASR_BYTES:10000000}
+      asr-poll-attempts: ${DASHSCOPE_ASR_POLL_ATTEMPTS:6}
+      request-timeout: ${DASHSCOPE_REQUEST_TIMEOUT:20s}

@@ -1,0 +1,218 @@
+package com.speakeasy;
+
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.blankOrNullString;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.jayway.jsonpath.JsonPath;
+import com.speakeasy.ai.AiMediaAssetRepository;
+import com.speakeasy.ai.AiProviderInvocationMetricRepository;
+import com.speakeasy.ai.AiProviderSandboxRunRepository;
+import com.speakeasy.ai.AiRetentionJobRepository;
+import com.speakeasy.ai.AiTtsCacheEntryRepository;
+import com.speakeasy.ai.AiTtsCacheOwnerRepository;
+import com.speakeasy.commerce.EntitlementSnapshotRepository;
+import com.speakeasy.commerce.PaymentProviderEventRepository;
+import com.speakeasy.commerce.PurchaseRepository;
+import com.speakeasy.commerce.SubscriptionRepository;
+import com.speakeasy.commerce.SubscriptionPlanRepository;
+import com.speakeasy.content.UserScenarioStateRepository;
+import com.speakeasy.goal.GoalBackplanRepository;
+import com.speakeasy.goal.GoalAutopilotControlIdempotencyRepository;
+import com.speakeasy.goal.GoalAutopilotControlRepository;
+import com.speakeasy.goal.GoalDailyPlanRepository;
+import com.speakeasy.goal.GoalDiagnosticAssessmentRepository;
+import com.speakeasy.goal.GoalAutopilotMetricEventRepository;
+import com.speakeasy.goal.GoalMasteryInitialStateRepository;
+import com.speakeasy.goal.GoalOutcomeCheckpointRepository;
+import com.speakeasy.goal.GoalPlanItemRepository;
+import com.speakeasy.goal.GoalProfileRepository;
+import com.speakeasy.goal.GoalProgressForecastRepository;
+import com.speakeasy.goal.GoalRecoveryPlanDecisionRepository;
+import com.speakeasy.goal.NotificationOutboxRecordRepository;
+import com.speakeasy.goal.PlannerReplayAuditRepository;
+import com.speakeasy.identity.AuthIdentityRepository;
+import com.speakeasy.identity.AuthSessionRepository;
+import com.speakeasy.identity.LearningRouteRepository;
+import com.speakeasy.identity.OnboardingAssessmentRepository;
+import com.speakeasy.identity.UserAccountRepository;
+import com.speakeasy.identity.UserProfileRepository;
+import com.speakeasy.learning.ExpressionPracticeAttemptRepository;
+import com.speakeasy.learning.FavoriteExpressionRepository;
+import com.speakeasy.learning.LearningEvidenceRepository;
+import com.speakeasy.learning.LearningHistoryEntryRepository;
+import com.speakeasy.learning.MasteryRecordRepository;
+import com.speakeasy.learning.PracticeQueueItemRepository;
+import com.speakeasy.learning.ReviewItemRepository;
+import com.speakeasy.learning.SavedExpressionRepository;
+import com.speakeasy.ops.AccountDeletionJobRepository;
+import com.speakeasy.ops.AccountDeletionRetryIdempotencyRepository;
+import com.speakeasy.ops.AuditLogRepository;
+import com.speakeasy.practice.CoachFeedbackRepository;
+import com.speakeasy.practice.PracticeSessionRepository;
+import com.speakeasy.practice.PracticeTurnRepository;
+import com.speakeasy.practice.SessionSummaryRepository;
+import com.speakeasy.training.TrainingEvidenceCandidateRepository;
+import com.speakeasy.training.TrainingContentMappingRepository;
+import com.speakeasy.training.TrainingMetricEventRepository;
+import com.speakeasy.training.TrainingPlannerDecisionRepository;
+import com.speakeasy.training.TrainingRecapRepository;
+import com.speakeasy.training.TrainingSessionRepository;
+import com.speakeasy.training.TrainingTurnRepository;
+import com.speakeasy.usage.UsageLedgerRepository;
+import com.speakeasy.usage.UsageReservationRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+
+public abstract class BackendIntegrationTestSupport {
+  @Autowired protected MockMvc mvc;
+  @Autowired AccountDeletionJobRepository deletionJobs;
+  @Autowired AccountDeletionRetryIdempotencyRepository deletionRetryIdempotency;
+  @Autowired AuditLogRepository auditLogs;
+  @Autowired UserScenarioStateRepository userScenarioStates;
+  @Autowired LearningRouteRepository routes;
+  @Autowired OnboardingAssessmentRepository assessments;
+  @Autowired AuthSessionRepository sessions;
+  @Autowired CoachFeedbackRepository coachFeedbacks;
+  @Autowired SessionSummaryRepository sessionSummaries;
+  @Autowired PracticeTurnRepository practiceTurns;
+  @Autowired PracticeSessionRepository practiceSessions;
+  @Autowired ExpressionPracticeAttemptRepository expressionAttempts;
+  @Autowired PracticeQueueItemRepository practiceQueueItems;
+  @Autowired FavoriteExpressionRepository favoriteExpressions;
+  @Autowired LearningEvidenceRepository learningEvidences;
+  @Autowired MasteryRecordRepository masteryRecords;
+  @Autowired ReviewItemRepository reviewItems;
+  @Autowired SavedExpressionRepository savedExpressions;
+  @Autowired LearningHistoryEntryRepository learningHistoryEntries;
+  @Autowired AuthIdentityRepository identities;
+  @Autowired UserProfileRepository profiles;
+  @Autowired EntitlementSnapshotRepository entitlements;
+  @Autowired PaymentProviderEventRepository providerEvents;
+  @Autowired SubscriptionRepository subscriptions;
+  @Autowired PurchaseRepository purchases;
+  @Autowired UsageReservationRepository usageReservations;
+  @Autowired UsageLedgerRepository ledgers;
+  @Autowired SubscriptionPlanRepository plans;
+  @Autowired UserAccountRepository users;
+  @Autowired AiMediaAssetRepository mediaAssets;
+  @Autowired AiTtsCacheEntryRepository ttsCacheEntries;
+  @Autowired AiTtsCacheOwnerRepository ttsCacheOwners;
+  @Autowired AiProviderInvocationMetricRepository aiProviderMetrics;
+  @Autowired AiProviderSandboxRunRepository aiProviderSandboxRuns;
+  @Autowired AiRetentionJobRepository aiRetentionJobs;
+  @Autowired TrainingContentMappingRepository trainingContentMappings;
+  @Autowired TrainingMetricEventRepository trainingMetrics;
+  @Autowired TrainingEvidenceCandidateRepository trainingEvidenceCandidates;
+  @Autowired TrainingPlannerDecisionRepository trainingPlannerDecisions;
+  @Autowired TrainingTurnRepository trainingTurns;
+  @Autowired TrainingRecapRepository trainingRecaps;
+  @Autowired TrainingSessionRepository trainingSessions;
+  @Autowired GoalOutcomeCheckpointRepository goalCheckpoints;
+  @Autowired GoalProgressForecastRepository goalForecasts;
+  @Autowired GoalPlanItemRepository goalPlanItems;
+  @Autowired GoalDailyPlanRepository goalDailyPlans;
+  @Autowired GoalBackplanRepository goalBackplans;
+  @Autowired GoalMasteryInitialStateRepository goalMasteryInitialStates;
+  @Autowired GoalDiagnosticAssessmentRepository goalDiagnostics;
+  @Autowired GoalAutopilotMetricEventRepository goalAutopilotMetrics;
+  @Autowired GoalProfileRepository goalProfiles;
+  @Autowired GoalAutopilotControlIdempotencyRepository goalAutopilotControlIdempotency;
+  @Autowired GoalAutopilotControlRepository goalAutopilotControls;
+  @Autowired GoalRecoveryPlanDecisionRepository goalRecoveryPlanDecisions;
+  @Autowired NotificationOutboxRecordRepository goalNotificationOutboxRecords;
+  @Autowired PlannerReplayAuditRepository goalPlannerReplayAudits;
+
+  @BeforeEach
+  void cleanUserData() {
+    deletionRetryIdempotency.deleteAll();
+    deletionJobs.deleteAll();
+    aiRetentionJobs.deleteAll();
+    aiProviderSandboxRuns.deleteAll();
+    aiProviderMetrics.deleteAll();
+    ttsCacheOwners.deleteAll();
+    ttsCacheEntries.deleteAll();
+    mediaAssets.deleteAll();
+    auditLogs.deleteAll();
+    trainingMetrics.deleteAll();
+    trainingEvidenceCandidates.deleteAll();
+    trainingPlannerDecisions.deleteAll();
+    trainingTurns.deleteAll();
+    trainingRecaps.deleteAll();
+    trainingSessions.deleteAll();
+    goalCheckpoints.deleteAll();
+    goalForecasts.deleteAll();
+    goalAutopilotMetrics.deleteAll();
+    goalPlannerReplayAudits.deleteAll();
+    goalNotificationOutboxRecords.deleteAll();
+    goalRecoveryPlanDecisions.deleteAll();
+    goalPlanItems.deleteAll();
+    goalDailyPlans.deleteAll();
+    goalBackplans.deleteAll();
+    goalAutopilotControlIdempotency.deleteAll();
+    goalAutopilotControls.deleteAll();
+    goalMasteryInitialStates.deleteAll();
+    goalDiagnostics.deleteAll();
+    goalProfiles.deleteAll();
+    expressionAttempts.deleteAll();
+    favoriteExpressions.deleteAll();
+    practiceQueueItems.deleteAll();
+    reviewItems.deleteAll();
+    savedExpressions.deleteAll();
+    masteryRecords.deleteAll();
+    learningHistoryEntries.deleteAll();
+    learningEvidences.deleteAll();
+    coachFeedbacks.deleteAll();
+    sessionSummaries.deleteAll();
+    practiceTurns.deleteAll();
+    practiceSessions.deleteAll();
+    userScenarioStates.deleteAll();
+    routes.deleteAll();
+    assessments.deleteAll();
+    sessions.deleteAll();
+    identities.deleteAll();
+    profiles.deleteAll();
+    entitlements.deleteAll();
+    providerEvents.deleteAll();
+    subscriptions.deleteAll();
+    purchases.deleteAll();
+    usageReservations.deleteAll();
+    ledgers.deleteAll();
+    plans.deleteAll();
+    users.deleteAll();
+  }
+
+  protected AuthTokens loginPhone(String phoneNumber) throws Exception {
+    MvcResult result = mvc.perform(post("/auth/login/phone")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "phone_number": "%s",
+                  "verification_code": "123456",
+                  "terms_accepted": true
+                }
+                """.formatted(phoneNumber)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.schema_version").value(1))
+        .andExpect(jsonPath("$.access_token", not(blankOrNullString())))
+        .andReturn();
+
+    String body = result.getResponse().getContentAsString();
+    return new AuthTokens(
+        JsonPath.read(body, "$.user.user_id"),
+        JsonPath.read(body, "$.access_token"),
+        JsonPath.read(body, "$.refresh_token"));
+  }
+
+  protected String bearer(String token) {
+    return "Bearer " + token;
+  }
+
+  protected record AuthTokens(String userId, String accessToken, String refreshToken) {}
+}
