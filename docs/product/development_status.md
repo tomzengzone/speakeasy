@@ -23,7 +23,7 @@ Product Manager Agent
 - Product Base spec：`docs/product/base/spec.md`
 - Product Base acceptance：`docs/product/base/acceptance.md`
 - Product Base traceability：`docs/product/base/traceability.md`
-- Feature registry：`docs/product/feature_registry.md`
+- V2 Capability registry：`docs/product/feature_registry.md`
 - Validated MVP backend stage：`docs/product/stages/mvp-backend-foundation.md`
 - MVP backend foundation/auth increment：`docs/product/increments/mvp-backend-foundation-auth/definition.md`
 - MVP backend onboarding/content increment：`docs/product/increments/mvp-backend-onboarding-content/definition.md`
@@ -73,7 +73,7 @@ Product Manager Agent
 - MVP backend stage 已完成当前 committed stage work；它没有改变 Product Base 用户范围，而是补齐后端/API/数据库、客户端集成、测试、发布证据和本地系统 E2E 证据。
 - `mvp-system-e2e-validation` 已验证 TC-MVP-E2E-001 到 TC-MVP-E2E-010；其中真实支付 provider 只作为 manual/external gate 保留，不作为本地自动化通过项。
 - P0 `commercial-subscription-readiness` 是商业软件功能补齐和付费发布阻塞 stage；完成实现、验收、追溯、测试、发布和外部门禁后，才允许 Product Manager 批准商业发布口径。
-- P0.1 `expression-automation-training` 是 next value-experience stage；完成实现、验收、追溯、测试和报告后，才允许由 Product Manager 批准 merge back 到 Product Base。
+- P0.1 `p0-1-expression-automation-training` increment 是 next value-experience delivery slice；完成实现、验收、追溯、测试和报告后，才允许由 Product Manager 批准 merge back 到 Product Base。
 - 2026-06-03 复测结论：P0.1 TC-P01-013/014 本地关闭；P0.1 Product Base/production hardening TC-P01-021 through TC-P01-031 已有本地 passed evidence，可作为设计确认后的 Product Base 合入复核输入；TC-COM-AI-004 controlled-live evidence-prep 报告已生成；所有 strict external/native/store/release evidence blockers 仍不得关闭。
 - 后续每个多步骤产品、需求、工作流或文档治理任务，每一步完成后必须由独立 checker agent 审查是否符合预期、是否偏离、是否存在非预期变更。
 
@@ -186,7 +186,7 @@ Product Manager Agent
 本次规划请求属于 product direction / planning request，产品对象模式为 `feature-increment` 和 release-readiness planning。PM 已以 `docs/product/roadmap.md`、`docs/product/feature_registry.md`、`docs/product/stages/p0-commercial-readiness.md`、`docs/product/stages/p0-1-expression-automation.md`、三个活跃 increment definition、`docs/reports/test_report.md` 和 `docs/reports/quality_report.md` 为输入，先判断当前事实，再制定后续开发顺序。
 
 执行步骤：
-1. 确认 Product Base、feature registry、active stages 和 increment coverage。
+1. 确认 Product Base、V2 Capability registry、active stages 和 increment coverage。
 2. 区分本地已关闭项、商业发布外部门禁、paid AI voice 外部门禁和 P0.1 价值体验合入复核。
 3. 只在 PM 拥有的产品状态和 increment definition 中记录计划，不新增详细需求、测试用例或实现任务细节。
 4. 将下一步交给 Development Orchestrator 路由，但要求每一步完成后进入独立 checker 审查。
@@ -227,13 +227,13 @@ Product Manager Agent
 5. `P0-AI-QA-002`：rerun `python3 scripts/check_ai_provider_sandbox_evidence.py --strict-external`、`python3 scripts/check_ai_external_release_evidence.py --strict-external` 和 aggregate release gates；若 strict evidence 缺失，继续保持 paid AI voice blocked。
 
 ### Next - P0.1 Product Base 合入复核
-目标：在不扩大 P0.1 范围的前提下，判断 `expression-automation-training` 的本地训练闭环是否可以作为稳定能力合入 Product Base。
+目标：在不扩大 P0.1 范围的前提下，判断 `p0-1-expression-automation-training` increment 的本地训练闭环是否可以作为稳定能力合入 Product Base。
 
 优先批次：
 1. `P01-PM-ACCEPT-001`：PM 复核 P0.1 traceability、test report、quality report，确认 TC-P01-013/014 已关闭且 P0.1 非目标边界仍有效。
 2. `P01-GOV-001`：Product Object Governance Check 独立复核 P01-SI-001 到 P01-SI-011 是否仍由 `p0-1-expression-automation-training` 完整覆盖。
 3. `P01-BASE-001`：若复核通过，只把已验证的 session 内训练能力合入 `docs/product/base/`；不得合入 P0.2 跨天调度、P1 笔记本/评分产品化或商业权益 gating。
-4. `P01-REG-001`：更新 feature registry 中 `expression-automation-training` 的状态，并保留 paid AI voice release residual 指向 `commercial-ai-provider-hardening`。
+4. `P01-REG-001`：仅核验归属 increment 已批准的 V2 Primary Capability / Affected Capabilities 分类，并保留 paid AI voice release residual 指向 `commercial-ai-provider-hardening`；不得从 registry 推导行为或更新交付状态。
 
 ### Next - P0.2 Followup-B 后续实现路由
 - P0.2 目标驱动自动带练：原始三个 increment 已完成 requirements/spec/acceptance/test_cases/traceability 和本地 deterministic slice evidence；Followup-A 已完成本地实现审核；Followup-B 已完成 requirements/spec/acceptance/test_cases、traceability、Domain、API/OpenAPI/generated client sync、AI runtime 和 UX 合同审核，并已完成 backend/frontend UserAutopilotControl control slice、S002-A notification eligibility policy、S002-B notification outbox lifecycle/replay、S003 missed-day recovery planner、S004 item-level MemoryCurvePolicy、S005 mastery transition 与 S006 replay/performance/coverage/traceability gates 的本地执行证据回写。Followup-C 已完成 S000 document chain、S001 forecast hardening、S002 checkpoint task library、S003 checkpoint-to-plan update、S004 backend projection、S005 Home/Queue/Wiki surfaces、S006 downgrade/data governance 和 S007 performance/final traceability 本地证据；Followup-C is locally complete for S001-S007。Followup-C is not release-ready and Product Base merge is not approved。Followup-D S000 文档链、S001 backend/API runtime gate、S002 Flutter rollback、S003 entitlement depth、S004 usage reservation/quota、S005 cost telemetry/AI fallback、S006 quota downgrade、S007 data governance、S008 consent/privacy UX、S009 telemetry、S010 drift gates 和 S011 final review 已本地通过；Followup-D is not release-ready and Product Base merge is not approved。

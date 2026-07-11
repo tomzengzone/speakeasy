@@ -7,8 +7,10 @@
 - 分类：`frontend-architecture-refactor`
 - Increment：`scenario-practice-runtime-migration`
 - Active stage：`docs/product/stages/p0-1-expression-automation.md`
-- 主 feature：`voice-scenario-practice`
-- 受影响 feature：`voice-scenario-practice`, `official-scenario-library`, `listening-shadowing`, `expression-practice-queue`, `learning-memory-review`, `scoring-feedback`
+- Capability classification：`behavior-preserving architecture support`
+- Primary Capability ID：无；本 increment 只重构现有 Runtime/SWC 边界，不拥有或新增业务 Capability
+- Affected Capability IDs：`CAP-LEVEL`、`CAP-PLAN`、`CAP-CONTENT`、`CAP-PRACTICE`、`CAP-TRAIN`、`CAP-COACH`、`CAP-MEMORY`、`CAP-NOTE`
+- Affected Sub-capability IDs：无；本 increment 保持现有行为，不修改 Sub-capability 边界
 
 ## Stage Scope 覆盖
 这是一个 refactor increment，只为现有 P0.1 相关行为提供架构证据，不得声明新增 stage scope 已完成。

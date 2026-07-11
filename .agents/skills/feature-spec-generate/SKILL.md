@@ -24,7 +24,7 @@ Create a feature-level contract that connects requirements, architecture impact,
 - Approved increment definition and increment requirements for new product work.
 - Stage Scope Item IDs only as delivery context, not spec behavior input.
 - Product Base requirements in `docs/product/base/requirements.md` when consolidating or updating accepted stable product behavior.
-- Stable feature metadata from `docs/product/feature_registry.md` when long-lived capability boundary context is needed.
+- Active V2 Capability / Sub-capability classification from `docs/product/feature_registry.md` when ownership or boundary context is needed.
 - Relevant architecture and domain docs.
 - Current MVP scope and Definition of Done.
 
@@ -44,7 +44,7 @@ Create a feature-level contract that connects requirements, architecture impact,
 ## 文档路径约定
 - 新阶段交付规格默认写入 `docs/product/increments/<increment-id>/spec.md`。
 - 已接受稳定行为规格写入 `docs/product/base/spec.md`。
-- 输入行为只读取已批准 increment/Product Base FR；必要时读取 `docs/product/story_map.md` 作为 Slice scope guard，并读取 feature registry / change request 作为边界上下文。
+- 输入行为只读取已批准 increment/Product Base FR；必要时读取 `docs/product/story_map.md` 作为 Slice scope guard，并读取 Capability Registry / change request 作为 classification 和边界上下文。
 - 后续 AC 必须以已批准 Product Base 或 increment spec 为直接输入；spec 保留 source FR、必要 Vertical Slice scope guard 和 `Traceability Row ID`，不重复完整链路。
 - 若规格影响架构、领域、API、AI runtime 或 UX，只记录影响范围；具体契约分别交由对应 skill 更新到 `docs/architecture/`、`docs/domain/`、`docs/ai_runtime/`、`docs/ux/`。
 - 发现范围扩展时更新 `docs/process/change_request.md`，不要把变更决策埋进 spec。
@@ -52,10 +52,10 @@ Create a feature-level contract that connects requirements, architecture impact,
 ## Product Object Rules
 - For new product work, generate an increment spec at `docs/product/increments/<increment-id>/spec.md`.
 - For accepted stable product behavior, update `docs/product/base/spec.md`; do not update a baseline snapshot as the living spec.
-- Do not generate a feature spec named after a stage, priority window, roadmap horizon, MVP baseline, or increment id.
+- Do not use a stage, priority window, roadmap horizon, MVP baseline, or increment ID as stable Capability identity; an increment spec path remains a delivery artifact.
 - The spec must cite approved FRs as direct upstream, plus increment definition and capability boundaries as scope context.
 - Every relevant flow, state, and dependency must cite its source FR. Vertical Slice is scope guard / provenance only.
-- Stable feature metadata lives in `docs/product/feature_registry.md` as slug, boundary, owner, and related stage/increment; it must not absorb stage delivery plans.
+- Stable product classification lives in `docs/product/feature_registry.md` as active V2 Capability / Sub-capability identity, ownership and boundary context. Stage / Increment remain separate delivery structures, and registry classification must not become spec behavior input.
 - If architecture, domain, API, AI runtime, or UX contracts are needed, record the required contract outputs but do not inline those contracts into the increment spec.
 - If no approved FR exists, block spec generation and return the missing direct-upstream artifact.
 
@@ -77,7 +77,7 @@ Create a feature-level contract that connects requirements, architecture impact,
 - Tests are described as optional.
 - The spec cannot be traced back to requirements, user stories, or scope boundaries.
 - Acceptance criteria are generated for a P0/new feature before the feature spec is approved.
-- The spec path uses a stage name or increment id as a stable feature slug.
+- The spec uses a stage name, roadmap horizon, baseline, or increment ID as stable Capability identity.
 - The spec includes full API, AI, UX, or domain contracts instead of requesting the correct downstream contract artifacts.
 - The spec treats Story/Slice, Stage, or Capability as parallel behavior inputs instead of using approved FRs.
 - A spec section introduces behavior that is not covered by an approved FR or approved change request.

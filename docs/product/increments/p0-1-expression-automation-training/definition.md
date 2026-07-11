@@ -9,16 +9,13 @@ Implementation-review ready - active increment definition with production-harden
 ## Active Stage
 `docs/product/stages/p0-1-expression-automation.md`
 
-## Primary Feature
-`expression-automation-training`
+## Primary Capability
+- Capability ID：`CAP-TRAIN`
+- Sub-capability ID：`CAP-TRAIN-03`
 
-## Affected Features
-- `voice-scenario-practice`
-- `official-scenario-library`
-- `listening-shadowing`
-- `expression-practice-queue`
-- `learning-memory-review`
-- `scoring-feedback`
+## Affected Capabilities
+- Capability IDs：`CAP-PRACTICE`、`CAP-CONTENT`、`CAP-MEMORY`、`CAP-COACH`
+- Sub-capability IDs：`CAP-TRAIN-02`、`CAP-TRAIN-04`、`CAP-TRAIN-05`、`CAP-TRAIN-06`、`CAP-PRACTICE-01`、`CAP-PRACTICE-02`、`CAP-PRACTICE-03`、`CAP-CONTENT-03`、`CAP-MEMORY-02`、`CAP-COACH-02`、`CAP-COACH-03`、`CAP-COACH-05`
 
 ## 上游决策
 - `docs/process/change_request.md`：`CR-20260523-001 表达自动化训练 Agent`
@@ -81,7 +78,7 @@ TC-P01-013 和 TC-P01-014 已经本地关闭；本增量下一步不是继续扩
 | 1 | P01-PM-ACCEPT-001 | Product Manager | 复核 P0.1 traceability、test report、quality report 和非目标边界 | P01-SI-001..011 | PM acceptance finding in `docs/product/development_status.md` | Product Object Governance Check |
 | 2 | P01-GOV-001 | Product Object Governance Check | 独立确认 P01-SI-001..011 均由本 increment 覆盖，且未把 P0.2/P1/P2 范围误记为完成 | P01-SI-001..011 | checker finding | Documentation Governance as needed |
 | 3 | P01-BASE-001 | Product Manager / Requirement Development | 若复核通过，将已验证 session 内训练能力合入 `docs/product/base/` | P01-SI-001..011 | Product Base requirements/spec/acceptance/traceability updates | PM approval |
-| 4 | P01-REG-001 | Product Manager | 更新 `expression-automation-training` feature 状态，并保留 paid AI voice residual 指向 `commercial-ai-provider-hardening` | P01-SI-007, P01-SI-008, P01-SI-011 | `docs/product/feature_registry.md` update | Product Object Governance Check |
+| 4 | P01-REG-001 | Product Manager | 确认 `CAP-TRAIN` / `CAP-TRAIN-03` 分类，并保留 paid AI voice residual 指向 `commercial-ai-provider-hardening` | P01-SI-007, P01-SI-008, P01-SI-011 | Increment definition classification update | Product Object Governance Check |
 
 合入范围只允许覆盖两个官方场景中的 session 内训练 planner、action chain、micro-action、hint ladder、pressure check、语音主路径/文本兜底、反馈边界、学习证据写回和可恢复失败。跨 session/跨天调度、完整 L0-L5、笔记本、完整评分产品化、场景包扩展和商业权益 gating 均不进入本次 Product Base 合入。
 

@@ -20,7 +20,7 @@ Make UI work predictable by defining user goals, components, states, and accepta
 
 ## Inputs
 - Increment spec, API contract, and UX guidelines for new product work.
-- Product Base spec or feature registry boundary when validating accepted stable behavior.
+- Product Base spec and approved V2 Capability classification when validating accepted stable behavior.
 - Current app navigation and state-management conventions.
 - Acceptance criteria.
 
@@ -28,7 +28,7 @@ Make UI work predictable by defining user goals, components, states, and accepta
 - Screen goal, entry points, components, states, and actions.
 - Loading, empty, error, and success state behavior.
 - API dependencies and test checklist.
-- Traceability note to the owning increment or stable feature.
+- Traceability note to the owning increment and its approved V2 Capability classification.
 
 ## 文档语言
 - 本 skill 创建或更新的项目文档默认使用中文，除非用户明确要求英文或其他语言。
@@ -43,8 +43,9 @@ Make UI work predictable by defining user goals, components, states, and accepta
 
 ## Product Object Rules
 - For new product work, start from `docs/product/increments/<increment-id>/spec.md` and `docs/product/increments/<increment-id>/acceptance.md`.
-- Do not create screen scope from a stage goal, roadmap item, or feature registry entry alone.
-- Screen specs must list the owning increment, primary feature, affected features, and upstream API/AI contracts.
+- Do not create screen scope from a stage goal, roadmap item, or V2 Capability registry data.
+- Screen specs must copy the owning increment's approved Primary Capability and Affected Capabilities and list upstream API/AI contracts. If that increment has an approved no-Primary classification, preserve its reason and complete Affected Capability list.
+- This skill must not declare or modify Capability classification. Missing or conflicting classification blocks this downstream work and routes to Product Manager to correct the owning Product Base or increment artifact. Invoke `capability-registry-develop` only when Product Manager determines that canonical registry facts must change.
 - If upstream API or AI output schema is missing, block screen spec completion and return to the required contract skill.
 
 ## Process
@@ -59,7 +60,7 @@ Make UI work predictable by defining user goals, components, states, and accepta
 - The screen has no empty or error state.
 - The UI depends on free-form AI text instead of schema fields.
 - A component owns data outside its boundary.
-- The spec requires more screens than the feature needs.
+- The spec requires more screens than the approved product behavior needs.
 - Screen scope is added without an owning increment or approved upstream contract.
 
 ## Verification
@@ -67,7 +68,7 @@ Make UI work predictable by defining user goals, components, states, and accepta
 - Every user action has visible feedback.
 - The screen can handle API failure and slow responses.
 - Acceptance criteria cover the primary mobile workflow.
-- The screen spec maps back to the increment or stable feature artifact that required it.
+- The screen spec maps back to the Product Base or increment artifact that required it and preserves its approved V2 Capability classification.
 
 ## Common Rationalizations
 | Rationalization | Reality |

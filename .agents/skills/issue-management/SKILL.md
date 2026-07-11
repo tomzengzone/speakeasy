@@ -75,13 +75,13 @@ Recommended label taxonomy:
 - The issue claims accepted scope, priority, completion, release readiness, or Product Base merge without PM/workflow evidence.
 - The issue skips AC-to-TC mapping for committed implementation work.
 - A PR uses `Closes` for planning, partial slices, or blocked external evidence.
-- Labels or milestones imply a different stage, feature, or priority than the Product Manager decision.
+- Labels or milestones imply a different Capability, stage, increment, or priority than the Product Manager decision.
 - The issue links to generated code, tests, or reports but omits the owning increment or source-of-truth artifact.
 
 ## Verification
 - The skill name and directory do not include external issue tracker branding.
 - The issue draft clearly says local product and workflow artifacts are the source of truth.
-- Every suggested issue links to feature/stage/increment artifacts when they exist.
+- Every suggested issue links to V2 Capability/stage/increment artifacts when they exist.
 - Missing Product Manager classification is treated as blocked, not inferred silently.
 - Priority is only final when Product Manager has confirmed it.
 - `Refs` versus `Closes` matches the actual workflow state and evidence.

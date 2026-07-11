@@ -9,16 +9,13 @@ Draft - Product Manager accepted；PM 阶段开发计划、Domain/API/Architectu
 ## Active Stage
 `docs/product/stages/p0-commercial-readiness.md`
 
-## Primary Feature
-`commercial-subscription`
+## Primary Capability
+- Capability ID：`CAP-COM`
+- Sub-capability ID：`CAP-COM-03`
 
-## Affected Features
-- `profile-membership`
-- `access-onboarding`
-- `voice-scenario-practice`
-- `official-scenario-library`
-- `learning-memory-review`
-- `scoring-feedback`
+## Affected Capabilities
+- Capability IDs：`CAP-ACC`、`CAP-CONTENT`、`CAP-PRACTICE`、`CAP-COACH`、`CAP-MEMORY`
+- Sub-capability IDs：`CAP-COM-01`、`CAP-COM-02`、`CAP-COM-04`、`CAP-ACC-01`、`CAP-ACC-03`、`CAP-ACC-04`、`CAP-CONTENT-01`、`CAP-PRACTICE-03`、`CAP-COACH-01`、`CAP-MEMORY-05`
 
 ## 上游决策
 - `docs/process/change_request.md`：`CR-20260524-001 商业化订阅上线准备`
@@ -90,7 +87,7 @@ Ready for implementation routing after independent checker pass - 当前 Product
 | 字段 | 决策 |
 | --- | --- |
 | User request classification | product direction / planning request |
-| Product object mode | `feature-increment`，基于已接受的 `commercial-subscription` feature 和 `commercial-subscription-readiness` increment 继续规划 |
+| Product object mode | `feature-increment`，基于 active `CAP-COM` / `CAP-COM-03` classification 和 `commercial-subscription-readiness` increment 继续规划 |
 | Priority | P0 release-blocking |
 | Active stage | `p0-commercial-readiness` |
 | Covered Stage Scope Items | `COM-SI-001` 到 `COM-SI-012` |

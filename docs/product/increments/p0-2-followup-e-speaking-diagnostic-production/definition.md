@@ -15,15 +15,13 @@ S000 phase-0 planning passed / S001 phase-1 requirements-spec passed / S002 phas
 - Change request: `CR-20260607-001`
 - Source mode: accepted scope-change after Followup-A/B/C/D upstream-downstream review
 
-## Primary Feature
-`goal-driven-learning-autopilot`
+## Primary Capability
+- Capability ID：`CAP-LEVEL`
+- Sub-capability ID：`CAP-LEVEL-02`
 
-## Affected Features
-- `scoring-feedback`
-- `ai-provider-operations`
-- `learning-memory-review`
-- `access-onboarding`
-- `commercial-subscription`
+## Affected Capabilities
+- Capability IDs：`CAP-COACH`、`CAP-ACC`、`CAP-COM`、`CAP-PLAN`
+- Sub-capability IDs：`CAP-LEVEL-04`、`CAP-LEVEL-05`、`CAP-COACH-03`、`CAP-COACH-05`、`CAP-ACC-03`、`CAP-ACC-04`、`CAP-COM-03`、`CAP-COM-05`、`CAP-PLAN-01`、`CAP-PLAN-06`、`CAP-PLAN-07`
 
 ## Upstream Decision Source
 - P0.2 stage scope: `docs/product/stages/p0-2-training-memory.md`

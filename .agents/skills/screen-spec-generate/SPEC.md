@@ -17,7 +17,7 @@ This project-local skill applies to development workflow assets in this reposito
 - `docs/product/base/traceability.md`
 - `docs/product/increments/<increment-id>/spec.md`
 - `docs/product/increments/<increment-id>/acceptance.md`
-- `docs/product/feature_registry.md`
+- `docs/product/feature_registry.md`, only to verify the owning increment's approved V2 classification; it is not a behavior input
 - `docs/architecture/api_contract.md`
 - `docs/ai_runtime/llm_output_schema.md`
 - Existing `docs/ux/` guidance.
@@ -29,7 +29,7 @@ This project-local skill applies to development workflow assets in this reposito
 - 文案规则：必要时更新 `docs/ux/copywriting_guideline.md`。
 
 ## Product Object Outputs
-- Screen specs cite the owning increment or stable feature.
+- Screen specs cite the owning increment, approved V2 Primary Capability and Affected Capabilities, or preserve its approved no-Primary classification, reason, and complete Affected Capability list.
 
 ## Quality Bar
 - A developer can implement the page without inventing states.
@@ -37,7 +37,8 @@ This project-local skill applies to development workflow assets in this reposito
 - The screen can handle API failure and slow responses.
 - Acceptance criteria cover the primary mobile workflow.
 - Screen outputs remain under `docs/ux/` and do not replace product or API contracts.
-- Screen scope is not generated from stage scope or roadmap text alone.
+- Screen behavior is not generated from stage scope, roadmap text, or a registry entry alone.
+- This skill preserves approved classification and never declares or modifies it. Missing or conflicting classification blocks this downstream work and routes to Product Manager to correct the owning Product Base or increment artifact; `capability-registry-develop` is invoked only when Product Manager determines that canonical registry facts must change.
 
 ## Maintenance Notes
 - Keep SKILL.md concise enough for runtime use.

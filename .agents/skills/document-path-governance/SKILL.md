@@ -21,6 +21,7 @@ description: Use when project documentation needs a canonical path, document own
 - 需要检查需求到测试的链路是否断开；使用 `document-traceability-check`。
 - 需要生成具体需求、规格、API 契约或报告正文；使用对应生成类 skill。
 - 只处理业务代码或测试代码，不涉及文档路径。
+- 只需要创建、修改、拆分、合并、废弃、映射或 ready-gate Capability / Sub-capability 产品事实；由 Product Manager 使用 `capability-registry-develop`。
 
 ## Inputs
 - `docs/process/workflow.md`
@@ -29,6 +30,7 @@ description: Use when project documentation needs a canonical path, document own
 - 当前 `docs/` 目录结构
 - `.agents/skills/*/SKILL.md`
 - `.agents/skills/*/SPEC.md`
+- `.agents/skills/capability-registry-develop/SKILL.md`
 - `codex/agents/*.md`
 - 用户提供的新文档类别、目标产物或路径冲突说明。
 
@@ -47,7 +49,7 @@ description: Use when project documentation needs a canonical path, document own
 - 产品愿景与定位：`docs/product/vision.md`
 - 产品路线图：`docs/product/roadmap.md`
 - 产品开发状态：`docs/product/development_status.md`
-- 产品功能注册表：`docs/product/feature_registry.md`，V2 canonical registry，记录 `Capability ID`、`Capability slug`、`Capability name`、业务边界、owner、一级 `Sub-capability ID`、相邻能力、下游文档前缀和 `Legacy Mapping`
+- 产品功能注册表：`docs/product/feature_registry.md`，PM-owned V2 canonical Capability Registry；普通产品事实操作使用 `capability-registry-develop`
 - 产品总需求库：`docs/product/base/requirements.md`
 - 产品总规格库：`docs/product/base/spec.md`
 - 产品总验收库：`docs/product/base/acceptance.md`
@@ -98,10 +100,10 @@ description: Use when project documentation needs a canonical path, document own
 
 ## Product Object Path Rules
 - 新增产品工作必须先判断对象类型：Capability、User Story、Vertical Slice、stage、increment、baseline、change request 或 artifact。
-- Capability 是 APP 长期稳定产品分类，登记在 `docs/product/feature_registry.md`；Capability ID / Sub-capability ID 只做 ownership、boundary 和 classification mapping，不能作为 FR/spec/AC/TC 的直接行为来源。
+- Capability 是 APP 长期稳定产品分类，登记在 `docs/product/feature_registry.md`；本 skill 只治理该 canonical path、PM owner 和 source-of-truth 关系，字段、ID、迁移和 ready gate 由 `capability-registry-develop` 定义。
 - User Story / Vertical Slice 登记在 `docs/product/story_map.md`，是 Requirement Development 的直接产品上游；完整跨级映射仍由 owning `traceability.md` 维护。
-- Stage / increment 是交付结构，capability / sub-capability 是稳定产品分类；不得用 MVP、P0.1、P0.2、Now、Next、Later 等阶段名作为 `Capability slug` 或 `Capability ID`。
-- V1 slug 只允许通过 active registry 的 `Legacy Mapping` 做历史追溯；`docs/product/baselines/feature-registry-v1-<date>.md` 是 archived baseline，不得作为 active source of truth、compatibility source 或新增下游输入。
+- Stage / increment 是交付结构，Capability / Sub-capability 是稳定产品分类；两类对象不得互相替代。
+- `docs/product/baselines/feature-registry-v1-<date>.md` 是 archived baseline，不得作为 active source of truth、compatibility source 或新增下游输入；V1/V2 映射和迁移编码由 `capability-registry-develop` 定义。
 - Stage 只描述阶段目标、入口/出口和纳入/排除的 increment，不承载需求正文或 implementation plan。
 - Increment 是实际交付切片，需求、规格、验收、测试用例库和追踪优先写入 `docs/product/increments/<increment-id>/`。
 - Product Base 是需求初版/稳定 Product Base，记录已接受稳定产品行为，归入 `docs/product/base/`。
@@ -131,6 +133,7 @@ description: Use when project documentation needs a canonical path, document own
 - 每个相关 skill 的文档输入输出路径不需要靠推断。
 - 每个相关 agent 的 Outputs 被 Allowed Paths 覆盖。
 - 不存在明显重复 source of truth。
+- Capability Registry 路径规则没有复制专属 skill 的 schema 或操作方法。
 - API 契约总览与机器可执行 OpenAPI 不得互相竞争：`docs/architecture/api_contract.md` 记录契约边界、追溯、错误模型、版本和兼容策略；`docs/architecture/openapi/speakeasy-api.yaml` 是 request/response schema、paths、components 和 OpenAPI lint 的唯一 source of truth。
 - 全局 SWC 架构基准、SWC 目录与增量 SWC 分配不得互相替代：`docs/architecture/software_component_architecture.md` 记录完整 SWC 拓扑、稳定 `SWC-FLOW-*` 和局部变更参考基准；`docs/architecture/swc_catalog.md` 记录稳定组件职责边界；`docs/product/increments/<increment-id>/swc_allocation.md` 记录已批准增量的 FR/AC 到 SWC/API/domain/DB/test 分配。
 - Product Base 强制追溯矩阵使用 `docs/product/base/traceability.md`；increment 强制追溯矩阵使用 `docs/product/increments/<increment-id>/traceability.md`。

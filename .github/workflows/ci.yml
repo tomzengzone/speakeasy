@@ -62,6 +62,12 @@ jobs:
           fi
           python3 scripts/check_document_language.py --scope changed --base-ref "$BASE_REF"
 
+      - name: Capability registry gate
+        shell: bash
+        run: |
+          python3 scripts/validate_capability_registry.py
+          python3 -m unittest discover -s tests -p "test_validate_capability_registry.py" -v
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:

@@ -9,8 +9,10 @@ Draft | Proposed | Accepted | Superseded
 - WP IDs:
 - Active stage:
 - Covered Stage Scope IDs:
-- Primary feature:
-- Affected features:
+- Primary Capability ID:
+- Primary Sub-capability ID:
+- Affected Capability IDs:
+- Affected Sub-capability IDs:
 - Explicit non-goals:
 - Change mode: `brownfield-update` / `behavior-preserving-refactor` / `greenfield-with-no-existing-implementation`
 

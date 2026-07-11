@@ -37,7 +37,7 @@ This project-local skill applies to development workflow assets in this reposito
 - Product Base spec for accepted stable behavior: `docs/product/base/spec.md`.
 - New increment spec: `docs/product/increments/<increment-id>/spec.md`.
 - Approved FR references preserved in increment spec flows, states, and dependencies; Vertical Slice is scope guard only.
-- Stable feature metadata reference: `docs/product/feature_registry.md`.
+- Active V2 Capability / Sub-capability classification reference: `docs/product/feature_registry.md`.
 - Required downstream contract list for architecture, domain, API, AI runtime, UX, and tests.
 
 ## Quality Bar
@@ -51,7 +51,7 @@ This project-local skill applies to development workflow assets in this reposito
 - Requirement coverage completeness is established later by acceptance criteria and the traceability matrix, not by the spec alone.
 - For new product work, output path follows `docs/product/increments/<increment-id>/spec.md`.
 - The spec cites approved FRs as direct upstream, plus increment and capability scope context.
-- Stage goals and stable feature boundaries are referenced but not rewritten as the increment spec.
+- Stage delivery context and stable Capability boundaries are referenced but not rewritten as increment behavior; approved FR remains the direct behavior upstream.
 - New behavior in the spec must be traceable to an approved FR or a Product Manager-approved change request.
 
 ## Maintenance Notes

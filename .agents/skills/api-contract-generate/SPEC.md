@@ -7,14 +7,14 @@ Define stable API contracts before implementation so clients, tests, and service
 This project-local skill applies to development workflow assets in this repository. It supports the Codex software engineering pipeline and must not silently expand product scope or bypass the project Definition of Done.
 
 ## Trigger Context
-- A feature crosses frontend/backend boundaries.
+- Approved product behavior crosses frontend/backend boundaries.
 - An endpoint or DTO changes.
 - Error behavior or compatibility needs to be explicit.
 
 ## Inputs
 - `docs/product/increments/<increment-id>/spec.md`
 - `docs/product/base/spec.md`
-- `docs/product/feature_registry.md`
+- `docs/product/feature_registry.md`, only to verify the owning increment's approved V2 classification; it is not a behavior input
 - `docs/domain/domain_schema.md`
 - Relevant `docs/domain/<domain>_model.md`
 - Existing `docs/architecture/api_contract.md`
@@ -29,7 +29,7 @@ This project-local skill applies to development workflow assets in this reposito
 - 架构决策：必要时新增 `docs/architecture/adr/<id>-<slug>.md`。
 
 ## Product Object Outputs
-- API contract updates cite the owning increment or stable feature.
+- API contract updates cite the owning increment, approved V2 Primary Capability and Affected Capabilities, or preserve its approved no-Primary classification, reason, and complete Affected Capability list.
 
 ## Quality Bar
 - Client and server can be implemented independently from the contract.
@@ -37,7 +37,8 @@ This project-local skill applies to development workflow assets in this reposito
 - Examples cover at least one success and one failure path.
 - Tests can validate compatibility.
 - API output paths are explicit and do not mix domain model ownership into the API contract.
-- API changes are not generated from stage scope or roadmap text alone.
+- API behavior is not generated from stage scope, roadmap text, or a registry entry alone.
+- This skill preserves approved classification and never declares or modifies it. Missing or conflicting classification blocks this downstream work and routes to Product Manager to correct the owning Product Base or increment artifact; `capability-registry-develop` is invoked only when Product Manager determines that canonical registry facts must change.
 - `docs/architecture/api_contract.md` owns human-readable contract boundaries, traceability, compatibility, and examples; `docs/architecture/openapi/speakeasy-api.yaml` owns machine-readable paths, components, request/response schemas, and lintable examples.
 
 ## Maintenance Notes

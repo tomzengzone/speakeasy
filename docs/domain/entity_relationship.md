@@ -346,7 +346,7 @@ API Contract/OpenAPI 阶段必须从这些关系定义 authentication、authoriz
 | --- | --- |
 | DailyPlan -> CrossSessionSchedule -> TrainingSession | Followup-B 已定义 planned recovery/control relationship；跨 session backend implementation 和训练会话编排仍待 implementation gate。 |
 | MasteryRecord -> L0/L1/L2/L3/L4/L5 ladder | Followup-B 已定义 planned MasteryTransitionDecision；完整持久化实现、迁移和 UI 解释仍待 implementation gate。 |
-| NotebookItem -> VocabularyLookup -> arbitrary phrase notes | P1 notebook-vocabulary。 |
+| NotebookItem -> VocabularyLookup -> arbitrary phrase notes | P1 `CAP-NOTE` expansion boundary。 |
 | ScoreSignal -> ProductizedScoringRubric -> performance card | P1 scoring productization。 |
 | ScenarioPackage -> CMSContentWorkflow -> CEFRMapping | P1/P2 content expansion and CMS。 |
 | PublicUserScenario -> community sharing | Not now / non-goal。 |

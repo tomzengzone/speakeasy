@@ -29,6 +29,7 @@ description: Use when a documentation request needs routing across path governan
 - `.agents/skills/document-path-governance/SKILL.md`
 - `.agents/skills/document-content-contract/SKILL.md`
 - `.agents/skills/document-traceability-check/SKILL.md`
+- `.agents/skills/capability-registry-develop/SKILL.md`
 - 相关 `docs/`、`.agents/skills/` 或 `codex/agents/` 文件。
 
 ## Outputs
@@ -51,11 +52,13 @@ description: Use when a documentation request needs routing across path governan
 - 持久化审查记录写入 `docs/reports/quality_report.md`。
 
 ## Routing Rules
+- Capability / Sub-capability 产品事实的创建、修改、拆分、合并、废弃、映射或 ready gate：由 Product Manager 使用 `capability-registry-develop`；本 skill 不复制其操作细则。
+- Capability Registry 的 canonical path、schema、文档类别、内容边界或 source-of-truth 规则变化：使用本 skill 拆分为路径、内容契约和必要的追踪影响，再进入治理变更流程。
 - 路径、owner、Allowed Paths、source of truth、路径模板：使用 `document-path-governance`。
 - 文档目的、读者、必需章节、禁止内容、内容越界：使用 `document-content-contract`。
 - 需求、规格、验收、契约、测试、报告、发布之间的断链：使用 `document-traceability-check`。
 - 强制追溯矩阵相关问题按类型拆分：路径归属交给 `document-path-governance`，内容边界交给 `document-content-contract`，FR/AC/TC/Code Evidence/Test Evidence 完整性交给 `document-traceability-check`。
-- 产品对象治理问题先确认对象类型：feature、stage、increment、baseline、change request 或 artifact；路径归属交给 `document-path-governance`，内容边界交给 `document-content-contract`，链路完整性交给 `document-traceability-check`。
+- 产品对象治理问题先确认对象类型：Capability、Story/Slice、stage、increment、baseline、change request 或 artifact；普通 Capability Registry 操作路由到 `capability-registry-develop`，路径归属交给 `document-path-governance`，内容边界交给 `document-content-contract`，链路完整性交给 `document-traceability-check`。
 - 当文档同时混用 feature 和 stage，或把 baseline 当作新功能 requirements 时，先阻断并拆成对象分类、路径决策、内容边界、追踪检查四步。
 - 同时涉及多个治理面：先用本 skill 拆分，再按顺序调用子 skill。
 - 新增治理规则：先判断影响哪个子 skill，再更新对应 skill，最后同步总控说明。
@@ -77,6 +80,7 @@ description: Use when a documentation request needs routing across path governan
 ## Verification
 - 问题被路由到正确的具体 skill，或被拆成清晰的多步治理任务。
 - 总控没有复制子 skill 的详细规则。
+- 总控没有复制 `capability-registry-develop` 的字段、ID、迁移、影响分析或 ready-gate 规则。
 - 修改后所有文档治理类 skill 的职责不重叠。
 - `python scripts/validate_agent_skills.py` 通过。
 

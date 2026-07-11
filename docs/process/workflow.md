@@ -6,13 +6,25 @@ user request
 -> Product Manager intake
 -> product classification
 -> optional issue-management tracking when repository issue tracking is needed
--> V2 capability registry / stage scope check
--> increment definition
--> roadmap / development status update
--> PM execution brief
+-> candidate destination confirmation; run capability-registry-develop Gate A first when unresolved
+   |-- non-Registry -> owning workflow -> STOP Registry development
+   `-- Registry -> Product Manager confirms target object / target ID / change mode
+       -> capability-registry-develop type-specific Gate B
+       -> V2 capability registry row proposal when facts must change
+       -> Product Manager final row approval and persistence for registry semantic changes
+       -> scripts/validate_capability_registry.py
+       -> Product Object Governance Check for persisted registry semantic changes
+       -> stage scope check
+       -> increment definition
+       -> roadmap / development status update
+       -> PM execution brief
 ```
 
 Product Manager is the unified user-facing entry point. It decides the active stage goal, backlog priority, roadmap horizon, accepted/deferred scope, and current progress status. Users should not need to choose specialist agents directly.
+
+`docs/product/feature_registry.md` 是 PM-owned V2 canonical registry。候选对象归宿未确认时，Product Manager 先调用 `capability-registry-develop` Gate A 并确认 destination、target object type、现有目标 ID 或拟新增 provisional ID、父 ID（适用时）和 change mode；非 Registry destination 完成 owning workflow handoff 后停止 Registry development。只有确认的 Registry destination 才进入匹配类型的 Gate B 和 row proposal。Product Manager destination confirmation 不等于最终 row approval。普通 Capability / Sub-capability 创建、修改、拆分、合并、废弃、映射和 ready gate 仍由 Product Manager 调用该 skill；skill 负责操作方法和 gate，Product Manager 负责产品事实与两次决策。Registry path、schema、文档类别、内容边界或 source-of-truth 变化才进入 Documentation Governance 和 Governance Change Control。
+
+持久化 registry 变更必须通过 `python scripts/validate_capability_registry.py`；validator error 阻塞后续检查。Asymmetric-adjacency warning 必须由 skill/checker 结合 diff 判定 touched scope；只有确认未触碰后才记录 historical baseline finding，且 warning 不能替代本次 semantic gate。
 
 ## Product Object Model
 ```text
@@ -40,22 +52,30 @@ Development Orchestrator is the internal execution dispatcher. It does not decid
 ```text
 idea/change intake
 -> product classification
--> V2 capability registry / stage scope check
--> increment definition
--> requirement development
--> increment spec
--> acceptance criteria
--> test case library / AC-to-TC mapping
--> architecture/domain/API/screen/AI specs
--> software component architecture / SWC allocation
--> implementation plan
--> code
--> tests
--> review
--> report
--> product base merge when done
--> optional baseline freeze
--> release
+-> candidate destination confirmation; run Gate A first when unresolved
+   |-- non-Registry -> owning workflow -> STOP Registry development
+   `-- Registry -> Product Manager confirms target object / target ID / change mode
+       -> matching Registry type-specific Gate B
+       -> V2 capability registry row proposal when change is required
+       -> Product Manager final row approval and persistence for registry semantic change
+       -> scripts/validate_capability_registry.py
+       -> Product Object Governance Check for persisted registry semantic change
+       -> stage scope check
+       -> increment definition
+       -> requirement development
+       -> increment spec
+       -> acceptance criteria
+       -> test case library / AC-to-TC mapping
+       -> architecture/domain/API/screen/AI specs
+       -> software component architecture / SWC allocation
+       -> implementation plan
+       -> code
+       -> tests
+       -> review
+       -> report
+       -> product base merge when done
+       -> optional baseline freeze
+       -> release
 ```
 
 Requirement Development 负责 scoped feature/change 的 requirement quality。Development Orchestrator 负责 workflow routing、cross-module execution 和 Definition of Done verification。
@@ -78,7 +98,7 @@ User Story / Vertical Slice -> FR -> Spec -> AC -> TC -> implementation evidence
 
 ## Required Gates
 1. Product classification 完成前，不创建 feature/increment document。
-2. V2 capability registry 和 stage scope 确认前，不创建 requirements/spec/acceptance artifact。
+2. 候选对象 destination 未由 Product Manager 确认前，不得把它写成 Capability / Sub-capability，也不得生成 Registry row。确认 Registry destination 后，必须先通过匹配 target object type 的 `capability-registry-develop` Gate B；destination confirmation 不代替 exact row final approval。持久化语义变更后还必须通过 `python scripts/validate_capability_registry.py` 和 Product Object Governance Check。V2 capability classification 和 stage scope 确认前，不创建 requirements/spec/acceptance artifact。
 3. 没有稳定 Stage Scope Item ID，且每个 required item 没有 increment coverage decision 时，committed stage work 不得推进。
 4. Increment spec 完成前，不开始 implementation。
 5. Approved AC 尚未映射到 `docs/product/increments/<increment-id>/test_cases.md` 中的稳定 TC ID 或明确例外前，不开始 implementation。

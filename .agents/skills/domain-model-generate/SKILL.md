@@ -1,6 +1,6 @@
 ---
 name: domain-model-generate
-description: Use when a feature needs entities, relationships, lifecycle states, or persistence boundaries defined. Do not use when the change only affects presentation copy or layout.
+description: Use when approved product behavior needs entities, relationships, lifecycle states, or persistence boundaries defined. Do not use when the change only affects presentation copy or layout.
 ---
 
 # Domain Model Generate
@@ -9,7 +9,7 @@ description: Use when a feature needs entities, relationships, lifecycle states,
 Keep domain concepts stable before database, API, AI runtime, or UI work depends on them.
 
 ## When to Use
-- A feature introduces or changes business entities.
+- Approved product behavior introduces or changes business entities.
 - A workflow needs state transitions or lifecycle rules.
 - Data ownership between frontend, backend, and AI runtime is unclear.
 
@@ -20,7 +20,7 @@ Keep domain concepts stable before database, API, AI runtime, or UI work depends
 
 ## Inputs
 - Increment spec and acceptance criteria for new product work.
-- Product Base spec/acceptance or feature registry boundary when validating accepted stable behavior.
+- Product Base spec/acceptance and approved V2 Capability classification when validating accepted stable behavior.
 - Existing docs/domain/ files.
 - Architecture module boundaries and API contract.
 
@@ -28,7 +28,7 @@ Keep domain concepts stable before database, API, AI runtime, or UI work depends
 - Entity list with fields and invariants.
 - Relationships, lifecycle, and state machine notes.
 - Persistence and API boundary recommendations.
-- Traceability note to the owning increment or stable feature.
+- Traceability note to the owning increment and its approved V2 Capability classification.
 
 ## 文档语言
 - 本 skill 创建或更新的项目文档默认使用中文，除非用户明确要求英文或其他语言。
@@ -43,9 +43,10 @@ Keep domain concepts stable before database, API, AI runtime, or UI work depends
 
 ## Product Object Rules
 - For new product work, start from `docs/product/increments/<increment-id>/spec.md` and `docs/product/increments/<increment-id>/acceptance.md`.
-- Domain changes must cite the owning increment, primary feature, and affected features.
-- Do not create a domain model from a stage goal, roadmap item, or feature registry entry alone.
-- If domain work changes a long-lived product concept, update the stable feature reference as well as the increment traceability note.
+- Domain changes must copy the owning increment's approved Primary Capability and Affected Capabilities. If that increment has an approved no-Primary classification, preserve its reason and complete Affected Capability list.
+- This skill must not declare or modify Capability classification. Missing or conflicting classification blocks this downstream work and routes to Product Manager to correct the owning Product Base or increment artifact. Invoke `capability-registry-develop` only when Product Manager determines that canonical registry facts must change.
+- Do not create a domain model from a stage goal, roadmap item, or V2 Capability registry data.
+- If domain work exposes a Capability classification or boundary mismatch, block the downstream change and route the decision to Product Manager. Invoke `capability-registry-develop` only if Product Manager determines that canonical registry facts must change; do not rewrite registry facts from this skill.
 
 ## Process
 1. Identify nouns, actions, and state transitions from the Product Base or increment spec.
@@ -60,14 +61,14 @@ Keep domain concepts stable before database, API, AI runtime, or UI work depends
 - The same concept has multiple names across docs.
 - State can move backward without a rule.
 - AI output fields are treated as durable truth without validation.
-- Domain concepts are added without an owning increment or stable feature.
+- Domain concepts are added without an owning increment or approved V2 Capability classification.
 
 ## Verification
 - Each entity has an owner and lifecycle.
 - Relationships are navigable without ambiguity.
 - Constraints explain duplicate, deletion, and archival behavior.
 - API and database work can proceed without guessing.
-- The domain model cites the increment or feature artifact that required it.
+- The domain model cites the Product Base or increment artifact that required it and preserves its approved V2 Capability classification.
 
 ## Common Rationalizations
 | Rationalization | Reality |

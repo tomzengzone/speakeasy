@@ -7,7 +7,7 @@ Keep domain concepts stable before database, API, AI runtime, or UI work depends
 This project-local skill applies to development workflow assets in this repository. It supports the Codex software engineering pipeline and must not silently expand product scope or bypass the project Definition of Done.
 
 ## Trigger Context
-- A feature introduces or changes business entities.
+- Approved product behavior introduces or changes business entities.
 - A workflow needs state transitions or lifecycle rules.
 - Data ownership between frontend, backend, and AI runtime is unclear.
 
@@ -17,7 +17,7 @@ This project-local skill applies to development workflow assets in this reposito
 - `docs/product/base/spec.md`
 - `docs/product/base/acceptance.md`
 - `docs/product/base/traceability.md`
-- `docs/product/feature_registry.md`
+- `docs/product/feature_registry.md`, only to verify the owning increment's approved V2 classification; it is not a behavior input
 - Existing `docs/domain/` files.
 - `docs/architecture/system_overview.md`
 - `docs/architecture/module_boundary.md`
@@ -29,7 +29,7 @@ This project-local skill applies to development workflow assets in this reposito
 - 持久化和 API 边界建议：写入相关领域模型文档。
 
 ## Product Object Outputs
-- Domain updates cite the owning increment or stable feature.
+- Domain updates cite the owning increment, approved V2 Primary Capability and Affected Capabilities, or preserve its approved no-Primary classification, reason, and complete Affected Capability list.
 
 ## Quality Bar
 - Each entity has an owner and lifecycle.
@@ -37,7 +37,8 @@ This project-local skill applies to development workflow assets in this reposito
 - Constraints explain duplicate, deletion, and archival behavior.
 - API and database work can proceed without guessing.
 - Domain output paths use the canonical `docs/domain/` map.
-- Domain changes are not generated from stage scope or roadmap text alone.
+- Domain behavior is not generated from stage scope, roadmap text, or a registry entry alone.
+- This skill preserves approved classification and never declares or modifies it. Missing or conflicting classification blocks this downstream work and routes to Product Manager to correct the owning Product Base or increment artifact; `capability-registry-develop` is invoked only when Product Manager determines that canonical registry facts must change.
 
 ## Maintenance Notes
 - Keep SKILL.md concise enough for runtime use.

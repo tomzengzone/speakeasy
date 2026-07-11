@@ -9,7 +9,7 @@ description: Use when frontend, backend, or AI runtime work needs a contract-fir
 Define stable API contracts before implementation so clients, tests, and services share one source of truth.
 
 ## When to Use
-- A feature crosses frontend/backend boundaries.
+- Approved product behavior crosses frontend/backend boundaries.
 - An endpoint or DTO changes.
 - Error behavior or compatibility needs to be explicit.
 
@@ -20,7 +20,7 @@ Define stable API contracts before implementation so clients, tests, and service
 
 ## Inputs
 - Increment spec and domain model for new product work.
-- Product Base spec or feature registry boundary when validating accepted stable behavior.
+- Product Base spec and approved V2 Capability classification when validating accepted stable behavior.
 - Existing docs/architecture/api_contract.md.
 - Existing `docs/architecture/openapi/speakeasy-api.yaml` when present.
 - Security and compatibility requirements.
@@ -29,7 +29,7 @@ Define stable API contracts before implementation so clients, tests, and service
 - Endpoint purpose, method, path, auth, request, response, and errors.
 - Versioning and compatibility notes.
 - Examples that avoid leaking implementation details.
-- Traceability note to the owning increment or stable feature.
+- Traceability note to the owning increment and its approved V2 Capability classification.
 - Updated OpenAPI source-of-truth when implementation-level API schemas are approved.
 
 ## 文档语言
@@ -46,8 +46,9 @@ Define stable API contracts before implementation so clients, tests, and service
 
 ## Product Object Rules
 - For new product work, start from `docs/product/increments/<increment-id>/spec.md` and cite the owning increment in the API contract update.
-- Do not add or change an API contract from a stage goal, roadmap item, or feature registry entry alone.
-- API changes that affect multiple features must list the primary feature, affected features, and compatibility risk.
+- Do not add or change an API contract from a stage goal, roadmap item, or V2 Capability registry data.
+- API changes must copy the owning increment's approved Primary Capability, Affected Capabilities, and compatibility risk. If that increment has an approved no-Primary classification, preserve its reason and complete Affected Capability list.
+- This skill must not declare or modify Capability classification. Missing or conflicting classification blocks this downstream work and routes to Product Manager to correct the owning Product Base or increment artifact. Invoke `capability-registry-develop` only when Product Manager determines that canonical registry facts must change.
 - If the approved increment spec is missing, return to `feature-spec-generate` before defining the API contract.
 
 ## Process
@@ -63,14 +64,14 @@ Define stable API contracts before implementation so clients, tests, and service
 - Errors are only generic 500 responses.
 - Response fields expose internal provider or ORM details.
 - Breaking changes lack migration or version notes.
-- Contract changes lack an owning increment or stable feature reference.
+- Contract changes lack an owning increment or approved V2 Capability classification reference.
 
 ## Verification
 - Client and server can be implemented independently from the contract.
 - Each error has code, message semantics, and status.
 - Examples cover at least one success and one failure path.
 - Tests can validate compatibility.
-- The contract maps back to the increment spec or stable feature contract that required it.
+- The contract maps back to the Product Base or increment spec that required it and preserves the approved V2 Capability classification.
 - `docs/architecture/api_contract.md` and `docs/architecture/openapi/speakeasy-api.yaml` have non-overlapping source-of-truth responsibilities.
 
 ## Common Rationalizations

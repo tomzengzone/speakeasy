@@ -14,7 +14,7 @@ Proposed - Domain Schema Baseline + P0/P0.1/P0.2 Extension。
 
 | 分类 | 范围 | 状态 |
 | --- | --- | --- |
-| Product Base accepted domain | access-onboarding、official-scenario-library、listening-shadowing、expression-practice-queue、voice-scenario-practice、learning-memory-review、profile-membership 的当前稳定能力 | In scope |
+| Product Base accepted domain | `CAP-ACC`、`CAP-LEVEL`、`CAP-INTENT`、`CAP-PLAN`、`CAP-CONTENT`、`CAP-PRACTICE`、`CAP-TRAIN`、`CAP-COACH`、`CAP-MEMORY`、`CAP-NOTE`、`CAP-COM`、`CAP-ENGAGE` 中由 Product Base 已接受行为覆盖的部分 | In scope |
 | P0 extension | subscription、purchase、entitlement、usage、account deletion、commercial audit、production identity hardening、AI provider operations | In scope |
 | P0.1 extension | training session、training turn、planner decision、action chain step、micro-action、hint state、pressure check、learning evidence hardening | In scope |
 | P0.2 extension | goal profile、diagnostic、backplan、daily plan、autopilot control、notification eligibility、recovery planner、item-level memory、L0-L5 transition、forecast、checkpoint | In scope |
@@ -29,7 +29,7 @@ Proposed - Domain Schema Baseline + P0/P0.1/P0.2 Extension。
 | Product Base acceptance | `docs/product/base/acceptance.md` | 可观察验收边界 |
 | Product Base traceability | `docs/product/base/traceability.md` | Product Base 到代码/测试证据链路 |
 | Product Base implementation evidence | `docs/product/base/traceability.md` | 当前 Flutter APP 能力事实、代码证据和测试证据 |
-| Feature registry | `docs/product/feature_registry.md` | 长期 feature 边界 |
+| V2 Capability registry | `docs/product/feature_registry.md` | 长期 Capability/Sub-capability 分类与边界核验；不是领域行为输入 |
 | P0 increment | `docs/product/increments/commercial-subscription-readiness/` | 商业化领域扩展来源 |
 | P0.1 increment | `docs/product/increments/p0-1-expression-automation-training/` | 训练编排领域扩展来源 |
 | P0.1 专项训练模型 | `docs/domain/training_model.md` | P0.1 TrainingSession、ActionChainStep、MicroAction、HintState、PlannerDecision、PressureCheck、TrainingRecap 详细领域契约 |
@@ -79,7 +79,7 @@ Proposed - Domain Schema Baseline + P0/P0.1/P0.2 Extension。
 | Entity | Owner | 关键字段 | 生命周期 / 不变量 | Persistence / migration implication | API boundary recommendation | Test impact | Traceability note |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | ListeningWarmup | Training domain | warmup_id, user_id, scenario_id, level_code, current_dialogue_id, mode, status | 只围绕当前场景和等级；状态可恢复 | 可本地缓存，服务端上线后可作为 training activity | Training/Scenario API 可后续承接，不在本文定义 shape | 播放、暂停、上一句、下一句、循环、模式切换测试 | Product Base FR-004 |
-| ShadowingAttempt | Training + AI Gateway domain | attempt_id, user_id, target_dialogue_id, audio_ref, transcript_ref, completeness_score, score_signal_id, status | ASR/评分失败不得阻断完整度反馈；发音评分不可用时可降级 | 需要音频/转写引用和短期 retention；score signal 独立建模 | AI Gateway/Training API 后续处理 ASR/评分边界 | 跟读录音、ASR 失败、评分不可用测试 | Product Base FR-004；scoring-feedback |
+| ShadowingAttempt | Training + AI Gateway domain | attempt_id, user_id, target_dialogue_id, audio_ref, transcript_ref, completeness_score, score_signal_id, status | ASR/评分失败不得阻断完整度反馈；发音评分不可用时可降级 | 需要音频/转写引用和短期 retention；score signal 独立建模 | AI Gateway/Training API 后续处理 ASR/评分边界 | 跟读录音、ASR 失败、评分不可用测试 | Product Base FR-004；`CAP-COACH-03` |
 | ScoreSignal | AI Gateway + Training domain | score_signal_id, source_type, source_id, provider, score_kind, value, confidence, status | 分数是反馈信号，不单独决定长期掌握或 P0.1 通过 | 需要 provider usage 关联和 schema_version；低置信度可标记 | AI/Feedback API 后续细化；不得由客户端伪造最终信号 | 发音、完整度、语法评分可用/不可用测试 | Product Base FR-004, FR-008；P0.1 P01-FR-007 |
 
 ### Expression Practice Queue / Favorites

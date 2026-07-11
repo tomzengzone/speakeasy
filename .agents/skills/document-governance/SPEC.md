@@ -18,6 +18,7 @@
 - `.agents/skills/document-path-governance/SKILL.md`
 - `.agents/skills/document-content-contract/SKILL.md`
 - `.agents/skills/document-traceability-check/SKILL.md`
+- `.agents/skills/capability-registry-develop/SKILL.md`
 - `docs/process/workflow.md`
 - `docs/process/definition_of_done.md`
 - `docs/process/skill_quality_standard.md`
@@ -34,12 +35,15 @@
 - 混合问题必须拆分为可执行步骤。
 - 本 skill 不复制子 skill 的详细规则。
 - 路由规则必须覆盖路径、内容契约和追踪检查三类问题。
+- 普通 Capability Registry 产品事实操作必须路由到 Product Manager 使用 `capability-registry-develop`；只有 path、schema、category、content boundary 或 source-of-truth 变化留在文档治理流程。
+- 本 skill 不复制 Capability Registry 的字段、ID、迁移、影响分析或 ready-gate 细则。
 - 强制追溯矩阵问题必须按路径、内容边界、链路完整性拆分，而不是由总控直接审查细节。
 - 修改后必须通过 skill 校验。
 
 ## Maintenance Notes
 - 新增文档治理子 skill 时，更新本文件和 `SKILL.md` 的 Routing Rules。
 - 子 skill 规则变更时，只同步路由摘要，不复制细则。
+- `capability-registry-develop` 变更时，只同步普通操作与治理变更的分流边界。
 - 修改后运行 `python scripts/validate_agent_skills.py`。
 - 若外部文档治理方法被引入，只记录来源和采用的原则。
 

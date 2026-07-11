@@ -11,6 +11,7 @@
 - 需要审查文档内容是否越界。
 - 需要判断某个内容应该写在需求、规格、契约还是报告中。
 - 需要把成熟文档框架转化为本项目的内容契约。
+- Capability Registry 的允许内容、禁止内容或文档类别边界变化；普通 Capability 产品事实操作不触发本 skill。
 
 ## Inputs
 - 目标文档。
@@ -36,6 +37,7 @@
 - 文档内容不越过 workflow 阶段边界。
 - 审查结论能指导具体修订。
 - 不和路径治理、追踪检查职责重叠。
+- Capability Registry 只在此定义内容类别边界；字段、ID、迁移、影响分析和 ready gate 留在 `capability-registry-develop`。
 - Acceptance artifacts define observable behavior from approved Spec; owning traceability files record the complete Story/Slice/FR/Spec/AC/TC/SWC/evidence join.
 - 100% 覆盖只表示需求覆盖完整性，不表述为代码行覆盖率或线上零缺陷保证。
 - Committed stage scope must be expressed as stable Stage Scope Item IDs, not prose-only bullets; increment definitions must preserve those IDs as covered or excluded scope.
@@ -53,6 +55,7 @@
 - 借鉴外部模板时只吸收结构和原则，不复制未确认许可的内容。
 - 修改 skill 后运行 `python scripts/validate_agent_skills.py`。
 - 保持内容契约简洁，详细模板应放到对应生成类 skill。
+- Capability Registry 专属操作规则变化时，不在本 skill 复制细则；只在允许/禁止内容边界变化时同步摘要。
 
 ## External References
 - Diataxis documentation framework: https://github.com/evildmp/diataxis-documentation-framework

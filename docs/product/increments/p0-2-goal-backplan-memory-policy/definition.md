@@ -14,15 +14,13 @@ Planned - PM stage replanning artifact only。该增量用于承接 GoalBackplan
 - Product object mode: `feature-increment`
 - Source mode: PM stage plan
 
-## Primary Feature
-`goal-driven-learning-autopilot`
+## Primary Capability
+- Capability ID：`CAP-PLAN`
+- Sub-capability ID：`CAP-PLAN-03`
 
-## Affected Features
-- `learning-memory-review`
-- `expression-automation-training`
-- `expression-practice-queue`
-- `voice-scenario-practice`
-- `scoring-feedback`
+## Affected Capabilities
+- Capability IDs：`CAP-MEMORY`、`CAP-TRAIN`、`CAP-INTENT`、`CAP-LEVEL`、`CAP-CONTENT`
+- Sub-capability IDs：`CAP-PLAN-01`、`CAP-PLAN-02`、`CAP-PLAN-05`、`CAP-PLAN-06`、`CAP-PLAN-07`、`CAP-MEMORY-02`、`CAP-MEMORY-03`、`CAP-MEMORY-04`、`CAP-TRAIN-01`、`CAP-TRAIN-02`、`CAP-TRAIN-03`、`CAP-TRAIN-05`、`CAP-INTENT-04`、`CAP-INTENT-06`、`CAP-LEVEL-04`、`CAP-LEVEL-05`、`CAP-CONTENT-03`
 
 ## Scope
 - GoalBackplan：从目标倒推周计划、日计划和每次训练内容。

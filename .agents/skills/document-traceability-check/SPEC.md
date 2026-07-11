@@ -38,7 +38,7 @@
 - 对 local artifacts 是否只保留直接上游和必要 scope guard 的审查结论。
 - 对 increment `AC -> TC -> test script path -> execution command -> result status -> evidence report -> traceability Test Evidence` 的复核结论。
 - Product Base traceability check for `docs/product/base/traceability.md` when accepted stable behavior is in scope.
-- Architecture coverage finding for broad architecture tasks: scope mode, source inventory, feature/stage coverage, omitted-scope classification, option comparison, and downstream contract gaps.
+- Architecture coverage finding for broad architecture tasks: scope mode, source inventory, Capability/stage/increment coverage, omitted-scope classification, option comparison, and downstream contract gaps.
 - SWC architecture traceability finding: global SWC architecture baseline, referenced `SWC-FLOW-*` IDs, SWC Catalog IDs, Existing Implementation Baseline, Delta From Existing Baseline, increment allocation rows, SWC allocation gate evidence, and downstream implementation/test evidence.
 
 ## Quality Bar
@@ -52,7 +52,7 @@
 - 能确认 100% 追溯只由 owning traceability matrix 判定，local artifacts 不因缺少重复全链字段而失败。
 - 能确认 QA 或 traceability review 已把 Test Evidence 复核到 TC ID、测试脚本路径、执行命令、结果状态和证据报告。
 - 能确认 Test Evidence 为空时必须有“人工验收”、“外部服务依赖”或“暂不可自动化”例外。
-- 能阻止未覆盖 Product Base、baseline、feature registry、stage、increment 和 future boundaries 的全量架构被标记为 source of truth。
+- 能阻止未覆盖 Product Base、baseline、V2 Capability registry、stage、increment 和 future boundaries 的全量架构被标记为 source of truth。
 - 能阻止缺少全局 SWC 架构基准、Flow ID 或局部 flow 分类的 implementation-impacting increment 进入实现。
 
 ## Maintenance Notes

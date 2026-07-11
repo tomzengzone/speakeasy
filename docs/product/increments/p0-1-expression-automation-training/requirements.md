@@ -7,8 +7,10 @@ Implementation-review ready - 本 increment 的标准 requirements；2026-06-04 
 - Classification: `feature-increment`
 - Increment: `p0-1-expression-automation-training`
 - Active stage: `docs/product/stages/p0-1-expression-automation.md`
-- Primary feature: `expression-automation-training`
-- Affected features: `voice-scenario-practice`, `official-scenario-library`, `listening-shadowing`, `expression-practice-queue`, `learning-memory-review`, `scoring-feedback`
+- Primary Capability ID：`CAP-TRAIN`
+- Primary Sub-capability ID：`CAP-TRAIN-03`
+- Affected Capability IDs：`CAP-PRACTICE`、`CAP-CONTENT`、`CAP-MEMORY`、`CAP-COACH`
+- Affected Sub-capability IDs：`CAP-TRAIN-02`、`CAP-TRAIN-04`、`CAP-TRAIN-05`、`CAP-TRAIN-06`、`CAP-PRACTICE-01`、`CAP-PRACTICE-02`、`CAP-PRACTICE-03`、`CAP-CONTENT-03`、`CAP-MEMORY-02`、`CAP-COACH-02`、`CAP-COACH-03`、`CAP-COACH-05`
 
 ## 关联文档
 - `docs/product/increments/p0-1-expression-automation-training/definition.md`

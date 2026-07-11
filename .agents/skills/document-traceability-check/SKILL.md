@@ -14,7 +14,7 @@ description: Use when project documentation needs a Story/Slice-to-evidence trac
 - 需要发现断链、重复 source of truth、过期引用或未接受的变更。
 - 发布前需要审查文档证据是否足够支持完成定义。
 - 用户询问某个需求现在推进到 workflow 的哪一步。
-- 需要检查全量系统架构、平台架构、商业化架构或技术栈决策是否覆盖 Product Base、当前基线、feature registry、stage、increment、契约、测试和发布门禁。
+- 需要检查全量系统架构、平台架构、商业化架构或技术栈决策是否覆盖 Product Base、当前基线、V2 Capability registry、stage、increment、契约、测试和发布门禁。
 
 ## When NOT to Use
 - 只需要决定文档放哪里；使用 `document-path-governance`。
@@ -113,9 +113,9 @@ Increment Test Evidence review must verify:
 ## Architecture Traceability Gate
 当检查系统架构、技术栈、前后端数据库方案、商业化架构或全量 APP 架构时，必须增加以下检查：
 
-- 判定架构范围模式：`whole-app`、`stage`、`increment`、`feature`、`refactor` 或 `experiment`。
-- `whole-app` 架构必须覆盖 Product Base、当前 APP baseline、feature registry、roadmap、development status、active stages、planned increments、future-stage boundaries 和 explicit non-goals。
-- 架构文档必须包含 feature/stage coverage matrix；每个 stable feature、active stage、planned increment 至少映射到 frontend、backend、data、API、AI/runtime、security、test、release 中的适用项或明确 `not applicable`。
+- 判定架构范围模式：`whole-app`、`stage`、`increment`、`capability`、`refactor` 或 `experiment`。
+- `whole-app` 架构必须覆盖 Product Base、当前 APP baseline、V2 Capability registry、roadmap、development status、active stages、planned increments、future-stage boundaries 和 explicit non-goals。
+- 架构文档必须包含 Capability/stage/increment coverage matrix；每个 V2 Capability、active stage、planned increment 至少映射到 frontend、backend、data、API、AI/runtime、security、test、release 中的适用项或明确 `not applicable`。Capability 行只表达架构覆盖，不从 registry 单独生成行为。
 - 技术栈推荐必须能追溯到 requirements、constraints、trade-offs 和至少两个 viable options。没有 option comparison 的技术栈只能标记为 exploratory。
 - 代码实现前架构必须能追溯到全局 SWC 架构基准、SWC Catalog、increment SWC allocation、Existing Implementation Baseline 和 Delta From Existing Baseline；实现影响前端、后端、数据库、API、AI runtime、provider、复用模块或 server-owned facts 时，缺少 `docs/architecture/software_component_architecture.md`、`SWC-FLOW-*` 引用、`swc_allocation.md`、旧实现继承证据、delta-only 设计或明确 no-SWC-impact 决策，只能标记为 Blocked 或 Conditional。
 - ADR 只能记录通过 coverage gate 的重大决策；未覆盖全量范围的 ADR 不能作为全量架构 source of truth。
@@ -159,7 +159,7 @@ Increment Test Evidence review must verify:
 - Increment traceability Test Evidence cites a test report but not the owning TC ID, script path, execution command, or result status.
 - prompt/schema/API 变更没有对应契约文档。
 - implementation report 声称完成，但没有验证命令或测试缺口说明。
-- 全量架构只基于最新 change request 或 active stage，没有覆盖 Product Base、baseline、feature registry 和 future stages。
+- 全量架构只基于最新 change request 或 active stage，没有覆盖 Product Base、baseline、V2 Capability registry 和 future stages。
 - 架构文档先给技术栈结论，却没有需求覆盖矩阵、约束、市场方案比较和 omitted-scope 列表。
 - 架构 ADR 被接受，但其上游架构方案仍是 exploratory、conditional 或 coverage-blocked。
 

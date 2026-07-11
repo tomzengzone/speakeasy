@@ -19,7 +19,7 @@ Validated with local system E2E gate（已通过本地系统 E2E 门禁验证）
 
 ## 入口条件
 - Product Base 已建立：`docs/product/base/requirements.md`、`docs/product/base/spec.md`、`docs/product/base/acceptance.md`、`docs/product/base/traceability.md`。
-- Feature registry 已登记稳定产品能力：`docs/product/feature_registry.md`。
+- V2 Capability registry 已登记稳定业务能力与一级边界：`docs/product/feature_registry.md`。
 - OpenAPI source of truth 已存在：`docs/architecture/openapi/speakeasy-api.yaml`。
 - 后端和数据库已有部分基础实现，但尚未覆盖 Product Base 全量 MVP 能力。
 

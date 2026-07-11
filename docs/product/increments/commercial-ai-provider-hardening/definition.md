@@ -9,16 +9,13 @@ Draft - Product Manager planning accepted；本增量把 P0.1 DashScope provider
 ## Active Stage
 `docs/product/stages/p0-commercial-readiness.md`
 
-## Primary Feature
-`ai-provider-operations`
+## Primary Capability
+- Capability ID：`CAP-PRACTICE`
+- Sub-capability ID：`CAP-PRACTICE-03`
 
-## Affected Features
-- `voice-scenario-practice`
-- `expression-automation-training`
-- `listening-shadowing`
-- `scoring-feedback`
-- `commercial-subscription`
-- `learning-memory-review`
+## Affected Capabilities
+- Capability IDs：`CAP-COACH`、`CAP-TRAIN`、`CAP-COM`、`CAP-ACC`、`CAP-MEMORY`
+- Sub-capability IDs：`CAP-PRACTICE-01`、`CAP-COACH-02`、`CAP-COACH-03`、`CAP-COACH-04`、`CAP-TRAIN-02`、`CAP-COM-03`、`CAP-ACC-03`、`CAP-ACC-04`、`CAP-MEMORY-02`
 
 ## 上游决策
 - `docs/process/change_request.md`：`CR-20260601-002 商业 AI Provider 生产化加固`

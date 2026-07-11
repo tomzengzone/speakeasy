@@ -18,7 +18,7 @@ This project-local skill applies to development workflow assets in this reposito
 - `docs/product/increments/<increment-id>/acceptance.md`
 - `docs/product/increments/<increment-id>/spec.md`
 - `docs/product/increments/<increment-id>/traceability.md`
-- `docs/product/feature_registry.md`
+- `docs/product/feature_registry.md`, only to verify the owning increment's approved V2 classification; it is not a test behavior input
 - `docs/architecture/api_contract.md`
 - `docs/ux/screen_spec.md`
 - `docs/ai_runtime/prompt_contract.md`
@@ -37,7 +37,7 @@ This project-local skill applies to development workflow assets in this reposito
 - Test Evidence updates must cite TC ID, test script path, execution command, result status, and evidence report.
 
 ## Product Object Outputs
-- Test evidence cites the owning increment or stable feature.
+- Test evidence cites the owning increment, approved V2 Primary Capability and complete Affected Capability list, or preserves its approved no-Primary classification, reason, and complete Affected Capability list.
 - Stable test case IDs are assigned in the owning increment test case library using `TC-<scope-prefix>-<NNN>`; MVP backend uses `TC-MVP-BE-001`, `TC-MVP-BE-002`, and so on.
 - Each test case carries Traceability Row ID, Increment ID, WP ID, Spec ID, AC ID, test layer, automation status, test script path, execution command, result status, evidence report, and Gap / Exception.
 - Product Base evidence belongs in `docs/product/base/traceability.md` or `docs/reports/test_report.md`.
@@ -50,7 +50,9 @@ This project-local skill applies to development workflow assets in this reposito
 - AI schema tests validate both valid and invalid outputs.
 - Documentation outputs and executable test outputs are separated by path.
 - Test-case generation maps AC to tests or explicit exceptions; it does not define FR, AC, or requirement coverage.
-- Test generation validates approved ACs and does not create feature, stage, or increment scope.
+- Test generation validates approved ACs and does not create Capability, stage, or increment scope.
+- Registry data is never a test behavior input. Test behavior comes from approved AC/spec. Missing or conflicting classification blocks this downstream work and routes to Product Manager to correct the owning Product Base or increment artifact; `capability-registry-develop` is invoked only when Product Manager determines that canonical registry facts must change.
+- This skill preserves approved classification and never declares or modifies it.
 - Committed increment implementation is blocked until every approved AC maps to stable TC IDs or explicit allowed exceptions in the owning increment test case library.
 - Published TC IDs are immutable: do not renumber, reuse, or assign an existing ID to a different behavior; retire with replacement or reason when needed.
 - Required test case fields must be populated or carry an explicit `N/A - <reason>`; blank traceability, script, command, result, or evidence fields are blockers.

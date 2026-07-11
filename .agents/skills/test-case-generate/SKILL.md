@@ -22,7 +22,7 @@ Turn acceptance criteria into a balanced, executable test plan before or during 
 - Increment acceptance criteria and increment spec for new product work.
 - Increment definition, WP ID, and owning Traceability Row ID for delivery/evidence context.
 - Product Base acceptance/spec/traceability when validating accepted stable behavior.
-- Stable feature metadata from `docs/product/feature_registry.md` when capability boundary context is needed.
+- Approved V2 Capability classification from `docs/product/feature_registry.md` only to verify the owning increment's boundary context; it is not a test behavior input.
 - API contract, screen spec, or prompt contract.
 - Existing test conventions.
 
@@ -31,7 +31,7 @@ Turn acceptance criteria into a balanced, executable test plan before or during 
 - Regression tests for bug fixes.
 - Coverage gaps and manual verification notes.
 - Test Evidence updates or findings for the owning Product Base or increment traceability matrix.
-- Traceability note to the owning increment or stable feature.
+- Traceability note to the owning increment and its approved V2 Primary Capability and complete Affected Capability list, or its approved no-Primary classification, reason, and complete Affected Capability list.
 
 ## 文档语言
 - 本 skill 创建或更新的项目文档默认使用中文，除非用户明确要求英文或其他语言。
@@ -61,6 +61,7 @@ Turn acceptance criteria into a balanced, executable test plan before or during 
 - Product Base test evidence belongs in `docs/product/base/traceability.md` or `docs/reports/test_report.md`.
 - QA may update traceability Test Evidence after execution; traceability check may review the same evidence chain before completion.
 - If increment AC is missing, return to `acceptance-criteria-generate` before generating tests.
+- This skill preserves the owning increment's approved classification and must not declare or modify it. Missing or conflicting classification blocks this downstream work and routes to Product Manager to correct the owning Product Base or increment artifact. Invoke `capability-registry-develop` only when Product Manager determines that canonical registry facts must change.
 
 ## Required Test Case Fields
 Every test case must include these fields and must not leave them blank:
@@ -111,7 +112,7 @@ Use `N/A - <原因>` only when a field is genuinely not applicable. `测试层�
 - Test Evidence for each AC is present in tests, `docs/reports/test_report.md`, or the traceability matrix.
 - Every test case includes Traceability Row ID, Increment ID, WP ID, Spec ID, AC ID, test layer, automation status, script path, command, result status, evidence report, and Gap / Exception.
 - "100% coverage" means requirement coverage completeness, not 100% code line coverage or zero production defects.
-- Test evidence maps back to the owning increment or stable feature artifact.
+- Test evidence maps back to the Product Base or owning increment artifact and preserves its approved V2 Capability classification.
 
 ## Common Rationalizations
 | Rationalization | Reality |

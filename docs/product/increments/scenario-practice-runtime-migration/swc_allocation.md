@@ -7,8 +7,10 @@ Accepted - 2026-06-12 独立 Software Architecture Governance Check 已通过，
 - Increment ID: `scenario-practice-runtime-migration`
 - Active stage: `docs/product/stages/p0-1-expression-automation.md`
 - Covered Stage Scope IDs: P01-SI-001、P01-SI-005、P01-SI-007、P01-SI-008、P01-SI-009、P01-SI-011 仅作为 refactor evidence；不声明新增 stage-scope completion。
-- Primary feature: `voice-scenario-practice`
-- Affected features: `official-scenario-library`, `listening-shadowing`, `expression-practice-queue`, `learning-memory-review`, `scoring-feedback`
+- Capability classification: `behavior-preserving architecture support`
+- Primary Capability ID: 无；本 increment 只重构现有 Runtime/SWC 边界，不拥有或新增业务 Capability
+- Affected Capability IDs: `CAP-LEVEL`、`CAP-PLAN`、`CAP-CONTENT`、`CAP-PRACTICE`、`CAP-TRAIN`、`CAP-COACH`、`CAP-MEMORY`、`CAP-NOTE`
+- Affected Sub-capability IDs: 无；本 increment 保持现有行为，不修改 Sub-capability 边界
 - Explicit non-goals: 本增量不修改业务代码；不修改 backend/OpenAPI/DB/provider；不新增 official scenario；共享 runtime 抽取前不新增第三套 scenario-practice implementation package。
 - Change mode: `behavior-preserving-refactor`
 

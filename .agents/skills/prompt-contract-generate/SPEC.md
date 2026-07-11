@@ -7,14 +7,14 @@ Make AI runtime behavior constrained, testable, and safe for frontend rendering.
 This project-local skill applies to development workflow assets in this repository. It supports the Codex software engineering pipeline and must not silently expand product scope or bypass the project Definition of Done.
 
 ## Trigger Context
-- A scenario coach, correction, review, or explanation feature calls an LLM.
+- An approved scenario coach, correction, review, or explanation behavior calls an LLM.
 - LLM output must be rendered by the app.
 - Prompt changes need regression coverage.
 
 ## Inputs
 - `docs/product/increments/<increment-id>/spec.md`
 - `docs/product/base/spec.md`
-- `docs/product/feature_registry.md`
+- `docs/product/feature_registry.md`, only to verify the owning increment's approved V2 classification; it is not an AI behavior input
 - Relevant `docs/domain/<domain>_model.md`
 - `docs/architecture/api_contract.md`
 - Existing `docs/ai_runtime/` contracts.
@@ -28,7 +28,7 @@ This project-local skill applies to development workflow assets in this reposito
 - 对话状态机：`docs/ai_runtime/dialogue_state_machine.md`。
 
 ## Product Object Outputs
-- AI runtime updates cite the owning increment or stable feature.
+- AI runtime updates cite the owning increment, approved V2 Primary Capability and complete Affected Capability list, or preserve its approved no-Primary classification, reason, and complete Affected Capability list.
 
 ## Quality Bar
 - Output schema is stable and renderable.
@@ -36,7 +36,8 @@ This project-local skill applies to development workflow assets in this reposito
 - Eval cases include failure and off-topic inputs.
 - Prompt changes can be regression-tested.
 - AI runtime artifacts are split by contract, schema, fallback, eval, and state machine ownership.
-- AI runtime behavior is not generated from stage scope or roadmap text alone.
+- Registry data is never an AI behavior input; AI runtime behavior is not generated from stage scope or roadmap text.
+- This skill preserves approved classification and never declares or modifies it. Missing or conflicting classification blocks this downstream work and routes to Product Manager to correct the owning Product Base or increment artifact; `capability-registry-develop` is invoked only when Product Manager determines that canonical registry facts must change.
 
 ## Maintenance Notes
 - Keep SKILL.md concise enough for runtime use.

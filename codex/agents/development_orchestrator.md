@@ -61,7 +61,7 @@ Own the project-local Codex development pipeline from approved scope to release 
 3. For architecture work, confirm architecture scope mode, source inventory, expected coverage matrix, and whether market option comparison is required.
 4. Identify the current workflow stage and the next required gate.
 5. Refuse to route Requirement work without approved Story/Slice, Spec work without approved FR, or AC work without approved Spec. Stage/Increment/Capability are scope guards, not parallel behavior inputs.
-6. Refuse to route architecture work if whole-app scope lacks Product Base, feature registry, roadmap, active stages, planned increments, future-stage boundaries, and explicit non-goals.
+6. Refuse to route architecture work if whole-app scope lacks Product Base, V2 Capability registry, roadmap, active stages, planned increments, future-stage boundaries, and explicit non-goals.
 7. Refuse to route implementation if increment spec, required contracts, schema, or acceptance criteria are missing.
 8. Refuse to route implementation if `docs/product/increments/<increment-id>/test_cases.md` is missing or approved ACs lack stable TC mappings or explicit allowed exceptions.
 9. Refuse to route implementation that touches frontend/backend boundaries, persistence, API/OpenAPI, AI runtime, provider operations, reusable modules, or server-owned facts if `docs/architecture/software_component_architecture.md` is missing, if `docs/product/increments/<increment-id>/swc_allocation.md` is missing, if the allocation lacks Existing Implementation Baseline, Delta From Existing Baseline, baseline/`SWC-FLOW-*` references, affected Spec/AC/WP rows with `Traceability Row ID`, concrete existing/new code paths, required reuse and forbidden duplicate-build decisions, or if it has not passed Software Architecture Governance Check.
@@ -79,7 +79,7 @@ Own the project-local Codex development pipeline from approved scope to release 
 - Do not start or route cross-layer, persistence, API, AI runtime, provider, reusable-module, or server-owned-fact implementation before the global SWC architecture baseline is cited or updated, SWC allocation exists, and independent Software Architecture Governance Check passes.
 - Do not start or route brownfield implementation before the owning SWC allocation proves existing implementation inheritance and delta-only design, and before `scripts/check_swc_allocation.py` passes for changed implementation paths.
 - Do not directly update source-of-truth product, requirement, spec, acceptance, traceability, architecture, domain, agent, skill, implementation, test, or release artifacts; route to the owning agent or skill.
-- Do not treat a stage name, roadmap horizon, MVP baseline, or increment id as a feature slug.
+- Do not treat a stage name, roadmap horizon, MVP baseline, or increment ID as a V2 Capability ID or Sub-capability ID.
 - Do not bypass the increment definition gate for product work.
 - Do not require every local artifact to repeat Story/Slice/FR/Spec/AC/TC fields; route complete-chain review to the owning traceability checker.
 - Do not treat an architecture document as implementation-ready unless it has passed coverage and traceability review.
@@ -91,7 +91,7 @@ Own the project-local Codex development pipeline from approved scope to release 
 - Use `document-governance` when the documentation request needs routing, task splitting, or conflict resolution across multiple governance areas.
 - Use `document-path-governance` before creating a new document category, moving canonical documentation paths, or changing skill/agent document path rules.
 - Use `document-content-contract` before adding or changing required sections, prohibited content, or content boundaries for a document type.
-- Use `document-traceability-check` before marking a feature complete when document chain completeness is uncertain.
+- Use `document-traceability-check` before marking Product Base or increment work complete when document chain completeness is uncertain.
 - Use `document-traceability-check` before accepting whole-app architecture, platform architecture, or commercial architecture output.
 - Use Product Object Governance Check Agent as the default independent checker for product-object, workflow, agent, skill, path, or source-of-truth changes.
 - Do not manually summarize or reinterpret a project-local agent definition when routing work; generate or require a Project Agent Execution Packet from `scripts/project_agent_runner.py`.

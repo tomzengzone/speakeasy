@@ -19,7 +19,7 @@ The old flat `codex/skills/*.md` layout is deprecated for active project skills 
 
 - Product roadmap: `docs/product/roadmap.md`
 - Product development status: `docs/product/development_status.md`
-- Feature registry：`docs/product/feature_registry.md` 是 V2 canonical registry，记录 `Capability ID`、`Capability slug`、`Capability name`、业务边界、owner、一级 `Sub-capability ID`、相邻能力、下游文档前缀和 `Legacy Mapping`。新增或修改下游 requirements、spec、AC、TC、stage scope 和 increment definition 时，只允许引用 V2 `Capability ID` / `Sub-capability ID`。
+- Capability Registry：`docs/product/feature_registry.md` 是 PM-owned V2 canonical registry；普通产品事实维护由 Product Manager 使用 `capability-registry-develop`，path/schema/content-boundary/source-of-truth 变化进入文档与产品对象治理流程。新增或修改下游 requirements、spec、AC、TC、stage scope 和 increment definition 时，只允许引用 active V2 `Capability ID` / `Sub-capability ID`。
 - Product Base 需求：`docs/product/base/requirements.md`
 - Product Base 规格：`docs/product/base/spec.md`
 - Product Base 验收：`docs/product/base/acceptance.md`
@@ -74,7 +74,7 @@ Product Manager 拥有 roadmap、development status 和 backlog priority。Requi
 
 Product document 在选择路径前必须先区分 product object：
 
-- Capability：长期存在的 APP 稳定产品分类，登记在 `docs/product/feature_registry.md`，记录 V2 `Capability ID`、`Capability slug`、`Capability name`、业务边界、owner、一级 `Sub-capability ID`、相邻能力、下游文档前缀和 `Legacy Mapping`，不分配独立 feature 文档目录。
+- Capability：长期存在的 APP 稳定产品分类，登记在 PM-owned `docs/product/feature_registry.md`，不分配独立 feature 文档目录；具体字段、ID、迁移、影响分析和 ready gate 由 `capability-registry-develop` 定义。
 - Stage：交付 horizon 或 priority window，归入 `docs/product/stages/<stage-id>.md`。
 - Stage Scope Item：stage 内稳定、可按 ID 寻址的 capability、obligation 或 explicit deferral。Active stage scope item 归入 owning stage file，并使用 `P01-SI-001` 这类稳定 ID。
 - Increment：stage 内有边界的 delivery slice，归入 `docs/product/increments/<increment-id>/`。
@@ -82,9 +82,28 @@ Product document 在选择路径前必须先区分 product object：
 - Baseline：已实现行为快照，归入 `docs/product/baselines/<baseline-slug>.md`。
 - Change request：scope decision record，仍保留在 `docs/process/change_request.md`。
 
-- Stage / increment 是交付结构，capability / sub-capability 是稳定产品分类；stage name、MVP baseline name 或 roadmap horizon 不得作为 `Capability slug` 或 `Capability ID`。
-- 新增或修改下游 requirements、spec、AC、TC、stage scope 和 increment definition 不得引用 V1 slug 作为主结构、需求 ID、模块标题或 active source。
-- V1 slug 只允许通过 `docs/product/feature_registry.md` 的 `Legacy Mapping` 做历史追溯，不得作为新下游输入或兼容 source。
+- Stage / increment 是交付结构，Capability / Sub-capability 是稳定产品分类；两类对象不得互相替代。
+- 新增或修改下游 requirements、spec、AC、TC、stage scope 和 increment definition 只能使用 active V2 classification；V1 registry snapshot 是 archived baseline，不得作为 active source、compatibility source 或新增下游输入。
+
+Capability Registry 职责链：
+
+```text
+candidate product object
+-> capability-registry-develop destination Gate A when unresolved
+-> Product Manager destination / target ID / change mode confirmation
+   |-- non-Registry -> owning workflow -> STOP Registry development
+   `-- Registry -> matching type-specific Gate B
+       -> Registry row proposal / impact analysis / ready gate
+       -> Product Manager exact-row final approval and persistence
+       -> scripts/validate_capability_registry.py
+       -> Product Object Governance Check finding and concise persisted audit record
+```
+
+Gate A 负责候选对象归宿 finding，Gate B 负责 PM 已确认 Capability / Sub-capability 类型内的颗粒度检查；两者的枚举、适用性、模板和比较证据只由 `capability-registry-develop` 定义。Product Manager 拥有 destination confirmation 和 exact-row final approval，checker 只核验顺序、证据与治理一致性。
+
+普通 registry 产品事实维护不由 Documentation Governance 审批。Registry canonical path、schema、文档类别、内容边界或 source-of-truth 规则变化时，使用 `document-governance` 拆分并进入 Governance Change Control。
+
+`scripts/validate_capability_registry.py` 是 canonical registry 的可执行结构门禁，检查每个 Capability 二级章节、章内 Capability 单行表、直属 Sub-capability 表、章节/父子 ID 与名称一致性、稳定身份唯一性、相邻引用、downstream/FR prefix 和唯一 Legacy Mapping 表。它不决定候选对象 destination 或业务颗粒度。历史 adjacency 不对称只报告 warning；本次新增或触碰关系是否合理仍由 `capability-registry-develop` Gate A/Gate B、semantic gate 和 Product Manager 决定。
 
 ## Direct-Upstream And Traceability Ownership
 
@@ -111,7 +130,7 @@ User Story / Vertical Slice -> FR -> Spec -> AC -> TC -> Evidence
 - Published TC IDs remain in the library even when retired; retired rows must record status `retired` and a replacement TC ID or retirement reason.
 - Each increment test case must include: `TC ID`, `Traceability Row ID`, `Increment ID`, `WP ID`, `Spec ID`, `AC ID`, `测试层级`, `自动化状态`, `测试脚本路径`, `执行命令`, `结果状态`, `证据报告`, and `Gap / Exception`.
 - QA may update traceability Test Evidence only for test evidence, test status, QA gap notes, and evidence report links. Traceability check must review `AC -> TC -> test script path -> execution command -> result status -> evidence report -> Test Evidence` before completion.
-- Future roadmap placeholders may be traced only to feature/stage boundaries and architecture compatibility notes until Product Manager accepts them into an increment; they must not be represented as implementation-ready requirements.
+- Future roadmap placeholders may be traced only to V2 Capability/stage boundaries and architecture compatibility notes until Product Manager accepts them into an increment; they must not be represented as implementation-ready requirements.
 
 ## Naming
 
@@ -205,9 +224,9 @@ python scripts/project_agent_runner.py packet <agent-name> --task "<task>"
 
 Broad planning skill 和 architecture agent 必须防止把 partial context 表述成 full-system conclusion。
 
-- 每个 broad architecture 或 platform strategy task 必须声明 scope mode：`whole-app`、`stage`、`increment`、`feature`、`refactor` 或 `experiment`。
-- Whole-app task 在结论前必须建立 source inventory：Product Base、feature registry、roadmap、development status、active stages、planned increments、future-stage boundaries、non-goals、current code structure、existing contracts、release artifacts 和 reports。
-- Whole-app architecture 必须包含 feature/stage coverage matrix，把 product capability 映射到 frontend、backend、data、API、AI/runtime、security、tests、release 和 operations。
+- 每个 broad architecture 或 platform strategy task 必须声明 scope mode：`whole-app`、`stage`、`increment`、`capability`、`refactor` 或 `experiment`。
+- Whole-app task 在结论前必须建立 source inventory：Product Base、V2 Capability registry、roadmap、development status、active stages、planned increments、future-stage boundaries、non-goals、current code structure、existing contracts、release artifacts 和 reports。
+- Whole-app architecture 必须包含 Capability/stage/increment coverage matrix，把 V2 Capability 和 delivery objects 映射到 frontend、backend、data、API、AI/runtime、security、tests、release 和 operations；registry row 本身不是行为输入。
 - Implementation-impacting architecture 必须包含 software component architecture 和 allocation：global SWC architecture baseline、stable SWC ID、applicable `SWC-FLOW-*` ID、code path、responsibility、non-responsibility、provided/required interface、data ownership、persistence ownership、API/OpenAPI reference、test ownership、reuse requirement 和 forbidden bypass。
 - Increment-level implementation architecture 必须把每个受影响 FR/AC 映射到 frontend SWC、backend SWC、API/OpenAPI、domain entity、DB table/migration、provider/AI boundary 和 TC，或记录明确 `N/A - <reason>`。
 - 缺失 coverage 必须分类为 blocker、deferred 或 not applicable。未分类遗漏会阻塞 acceptance。

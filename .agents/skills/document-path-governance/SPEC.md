@@ -12,6 +12,7 @@
 - skill 或 agent 的输入输出路径不明确。
 - 同一类文档出现多个候选位置。
 - 文档迁移、重命名或废弃。
+- Capability Registry 的 canonical path、owner 或 source-of-truth 关系变化；普通 registry 产品事实操作不触发本 skill。
 
 ## Inputs
 - `docs/process/workflow.md`
@@ -36,6 +37,8 @@
 
 ## Quality Bar
 - 每类文档只有一个默认 source of truth。
+- `docs/product/feature_registry.md` 是 PM-owned V2 canonical registry；本 skill 不复制 `capability-registry-develop` 的字段、ID、迁移或 gate。
+- V1 registry snapshot 只保留 archived path 和非 active source-of-truth 边界；具体 V1/V2 映射编码不属于本 skill。
 - Product Base is the living source of truth for accepted product requirements, specs, acceptance, and traceability; baselines are frozen snapshots.
 - 每个文档产物都能映射到明确路径或路径模板。
 - agent Outputs 必须被 Allowed Paths 覆盖。
@@ -51,6 +54,7 @@
 - 新增或调整追溯矩阵路径时，同步检查 acceptance-criteria-generate、test-case-generate 和 document-traceability-check。
 - 修改后运行 `python scripts/validate_agent_skills.py`。
 - 不在本 skill 中定义文档内容模板，内容边界由 `document-content-contract` 维护。
+- 不在本 skill 中定义 Capability Registry 操作方法；普通产品事实维护由 Product Manager 使用 `capability-registry-develop`。
 
 ## External References
 - GitHub Copilot Agent Skills: https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills

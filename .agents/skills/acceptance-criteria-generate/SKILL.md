@@ -22,7 +22,7 @@ Convert requirements into behavior-oriented pass/fail checks that QA and impleme
 - Approved increment spec for new product work.
 - Approved Spec IDs as direct upstream and related FR IDs for coverage context.
 - Product Base spec in `docs/product/base/spec.md` when consolidating or updating accepted stable product behavior.
-- Stable feature metadata from `docs/product/feature_registry.md` when needed for product capability boundary context.
+- Approved V2 Capability classification from `docs/product/feature_registry.md` only to verify the owning increment's boundary context; it is not an AC behavior input.
 - Story/Slice, Stage, Capability, or change request only as scope/provenance context, not parallel AC behavior inputs.
 - Product constraints and non-goals.
 - Known platform limitations.
@@ -56,9 +56,12 @@ Convert requirements into behavior-oriented pass/fail checks that QA and impleme
 - Output new increment AC to `docs/product/increments/<increment-id>/acceptance.md`.
 - Update `docs/product/base/traceability.md` for Product Base traceability.
 - Update `docs/product/increments/<increment-id>/traceability.md` for increment traceability.
-- Do not generate AC directly from a stage goal, feature registry entry, user story, or baseline note unless this is explicitly a `product-base-consolidation` or `baseline-consolidation` task.
+- Copy the owning increment's approved Primary Capability and complete Affected Capability list. Preserve an approved no-Primary classification, reason, and complete Affected Capability list.
+- This skill must not declare or modify Capability classification. Missing or conflicting classification blocks this downstream work and routes to Product Manager to correct the owning Product Base or increment artifact. Invoke `capability-registry-develop` only when Product Manager determines that canonical registry facts must change.
+- Registry data is never an AC behavior input. Product Base or baseline consolidation may use approved Product Base/spec and baseline evidence, but not a registry entry, as direct behavior sources.
+- Do not generate AC directly from a stage goal or user story; baseline notes are direct behavior sources only for an explicitly approved `product-base-consolidation` or `baseline-consolidation` task.
 - Do not generate increment AC when the approved Spec direct-upstream reference is missing.
-- Do not use stage names, priority windows, or increment ids as feature slugs.
+- Do not use stage names, priority windows, or increment IDs as Capability IDs or slugs.
 - If the approved increment spec is missing, block AC generation and return the missing upstream artifact.
 
 ## Process

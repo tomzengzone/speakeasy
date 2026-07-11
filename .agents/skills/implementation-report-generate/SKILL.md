@@ -9,7 +9,7 @@ description: Use when a development increment finishes and docs/reports/implemen
 Create an auditable record that connects the completed change to requirements, tests, and residual risk.
 
 ## When to Use
-- A feature, workflow, or process asset has been added or changed.
+- Product behavior, workflow, or process assets have been added or changed.
 - The user asks what changed and how it was verified.
 - A sprint increment needs traceability.
 
@@ -29,7 +29,7 @@ Create an auditable record that connects the completed change to requirements, t
 - Updated docs/reports/implementation_report.md.
 - Summary, requirement mapping, files changed, validation, risks, and follow-ups.
 - Clear note when tests were not run.
-- Traceability note to the owning increment or stable feature.
+- Traceability note to the owning increment and its approved V2 Capability classification, or to the governing process artifact.
 
 ## 文档语言
 - 本 skill 创建或更新的项目文档默认使用中文，除非用户明确要求英文或其他语言。
@@ -42,7 +42,8 @@ Create an auditable record that connects the completed change to requirements, t
 - 不在实现报告中替代需求、契约或验收标准；缺失时回到对应 workflow 阶段补文档。
 
 ## Product Object Rules
-- For new product work, identify the owning increment, active stage, primary feature, and affected features before reporting completion.
+- For new product work, copy the owning increment's active stage, approved Primary Capability, and Affected Capabilities before reporting completion. If it has an approved no-Primary classification, preserve its reason and complete Affected Capability list.
+- This skill must not declare or modify Capability classification. Missing or conflicting classification is reported as a governance gap and routed to Product Manager to correct the owning Product Base or increment artifact. Invoke `capability-registry-develop` only when Product Manager determines that canonical registry facts must change.
 - Reports summarize implementation evidence; they must not redefine requirements, specs, acceptance criteria, or stage scope.
 - If no increment/spec/AC reference exists for product work, report the governance gap instead of claiming completion.
 - Documentation-only governance work may report against the process artifact and change/check agent handoff instead of a product increment.

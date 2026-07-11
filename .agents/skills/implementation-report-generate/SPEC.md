@@ -7,7 +7,7 @@ Create an auditable record that connects the completed change to requirements, t
 This project-local skill applies to development workflow assets in this repository. It supports the Codex software engineering pipeline and must not silently expand product scope or bypass the project Definition of Done.
 
 ## Trigger Context
-- A feature, workflow, or process asset has been added or changed.
+- Product behavior, workflow, or process assets have been added or changed.
 - The user asks what changed and how it was verified.
 - A sprint increment needs traceability.
 
@@ -16,7 +16,7 @@ This project-local skill applies to development workflow assets in this reposito
 - `docs/product/increments/<increment-id>/definition.md`
 - `docs/product/increments/<increment-id>/spec.md`
 - `docs/product/increments/<increment-id>/acceptance.md`
-- Requirement or feature spec reference.
+- Requirement or increment spec reference.
 - Commands run and results.
 - Known risks and follow-up items.
 - `docs/reports/test_report.md` and `docs/reports/quality_report.md` when available.
@@ -27,7 +27,8 @@ This project-local skill applies to development workflow assets in this reposito
 - 未运行测试说明：写入实现报告的验证或风险段。
 
 ## Product Object Outputs
-- Implementation reports cite the owning increment, stable feature, or process governance artifact.
+- Implementation reports cite the owning increment, approved V2 Primary Capability and Affected Capabilities, preserve its approved no-Primary classification, reason, and complete Affected Capability list, or cite the process governance artifact for governance-only work.
+- Reporting never declares or modifies classification. Missing or conflicting classification is a governance gap routed to Product Manager to correct the owning Product Base or increment artifact; `capability-registry-develop` is invoked only when Product Manager determines that canonical registry facts must change.
 - Reports summarize evidence and do not redefine requirements, specs, acceptance criteria, or stage scope.
 
 ## Quality Bar

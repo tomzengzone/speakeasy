@@ -21,7 +21,7 @@ This project-local skill applies to development workflow assets in this reposito
 - `docs/product/increments/<increment-id>/definition.md`
 - Owning increment definition and traceability matrix as scope and join context, not direct AC behavior inputs.
 - `docs/product/base/requirements.md`
-- `docs/product/feature_registry.md`
+- `docs/product/feature_registry.md`, only to verify the owning increment's approved V2 classification; it is never an AC behavior input
 - `docs/process/change_request.md`
 - Known platform limitations.
 - Current MVP code evidence only for explicit code-baseline freeze work.
@@ -37,6 +37,8 @@ This project-local skill applies to development workflow assets in this reposito
 ## Product Object Outputs
 - Product Base acceptance criteria: `docs/product/base/acceptance.md`.
 - Product Base traceability: `docs/product/base/traceability.md`.
+- Increment AC preserves the owning increment's approved Primary Capability and complete Affected Capability list, or its approved no-Primary classification, reason, and complete Affected Capability list.
+- AC generation never declares or modifies classification. Missing or conflicting classification blocks this downstream work and routes to Product Manager to correct the owning Product Base or increment artifact; `capability-registry-develop` is invoked only when Product Manager determines that canonical registry facts must change.
 - New increment acceptance criteria: `docs/product/increments/<increment-id>/acceptance.md`.
 - New increment traceability: `docs/product/increments/<increment-id>/traceability.md`.
 
@@ -52,7 +54,7 @@ This project-local skill applies to development workflow assets in this reposito
 - Requirement coverage completeness is not represented as code line coverage or a guarantee of zero production defects.
 - For new product work, AC uses the approved increment spec as the direct upstream source.
 - Increment AC and traceability live under the same increment directory.
-- Stage scope, feature registry entries, and baseline notes are upstream context, not direct AC sources except for explicit Product Base or baseline consolidation work.
+- Stage scope and V2 Capability registry entries are never direct AC behavior sources. Baseline evidence may be a direct source only for explicitly approved Product Base or baseline consolidation work.
 - For new increment work, the traceability matrix proves complete coverage; local AC rows do not repeat all upstream IDs.
 
 ## Maintenance Notes

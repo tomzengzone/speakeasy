@@ -7,8 +7,10 @@ Design-ready / implementation gated - 本文件把 `p0-2-autopilot-progress-chec
 - Classification: `feature-increment`
 - Increment: `p0-2-autopilot-progress-checkpoint`
 - Active stage: `docs/product/stages/p0-2-training-memory.md`
-- Primary feature: `goal-driven-learning-autopilot`
-- Affected features: `learning-memory-review`, `expression-automation-training`, `expression-practice-queue`, `profile-membership`, `scoring-feedback`
+- Primary Capability ID：`CAP-TRAIN`
+- Primary Sub-capability ID：`CAP-TRAIN-02`
+- Affected Capability IDs：`CAP-PLAN`、`CAP-MEMORY`、`CAP-LEVEL`、`CAP-ENGAGE`、`CAP-COM`、`CAP-ACC`
+- Affected Sub-capability IDs：`CAP-TRAIN-01`、`CAP-TRAIN-03`、`CAP-TRAIN-05`、`CAP-TRAIN-06`、`CAP-PLAN-05`、`CAP-PLAN-06`、`CAP-PLAN-07`、`CAP-MEMORY-03`、`CAP-MEMORY-04`、`CAP-MEMORY-05`、`CAP-LEVEL-02`、`CAP-LEVEL-06`、`CAP-ENGAGE-01`、`CAP-ENGAGE-02`、`CAP-COM-01`、`CAP-COM-03`、`CAP-ACC-03`
 
 ## 上游来源
 - `docs/product/stages/p0-2-training-memory.md`

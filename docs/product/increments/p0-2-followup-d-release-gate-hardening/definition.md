@@ -14,15 +14,13 @@ S011 final Product Base/release review locally passed with blockers preserved - 
 - Product object mode: `feature-increment`
 - Source mode: local implementation independent review follow-up
 
-## Primary Feature
-`goal-driven-learning-autopilot`
+## Primary Capability
+- Capability ID：`CAP-COM`
+- Sub-capability ID：`CAP-COM-03`
 
-## Affected Features
-- `commercial-subscription`
-- `ai-provider-operations`
-- `profile-membership`
-- `learning-memory-review`
-- `scoring-feedback`
+## Affected Capabilities
+- Capability IDs：`CAP-PLAN`、`CAP-TRAIN`、`CAP-LEVEL`、`CAP-INTENT`、`CAP-MEMORY`、`CAP-ACC`、`CAP-ENGAGE`
+- Sub-capability IDs：`CAP-COM-01`、`CAP-COM-05`、`CAP-PLAN-06`、`CAP-PLAN-07`、`CAP-TRAIN-02`、`CAP-LEVEL-02`、`CAP-LEVEL-05`、`CAP-INTENT-06`、`CAP-MEMORY-01`、`CAP-MEMORY-04`、`CAP-ACC-03`、`CAP-ACC-04`、`CAP-ENGAGE-01`、`CAP-ENGAGE-02`
 
 ## Upstream Decision Source
 - P0.2 stage scope: `docs/product/stages/p0-2-training-memory.md`

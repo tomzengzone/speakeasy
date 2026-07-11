@@ -14,15 +14,13 @@ Contract-ready / implemented locally through S006 replay-performance-traceabilit
 - Product object mode: `feature-increment`
 - Source mode: local implementation independent review follow-up
 
-## Primary Feature
-`goal-driven-learning-autopilot`
+## Primary Capability
+- Capability ID：`CAP-PLAN`
+- Sub-capability ID：`CAP-PLAN-06`
 
-## Affected Features
-- `learning-memory-review`
-- `expression-automation-training`
-- `expression-practice-queue`
-- `voice-scenario-practice`
-- `ai-provider-operations`
+## Affected Capabilities
+- Capability IDs：`CAP-MEMORY`、`CAP-TRAIN`、`CAP-ENGAGE`、`CAP-ACC`、`CAP-INTENT`、`CAP-LEVEL`、`CAP-COM`
+- Sub-capability IDs：`CAP-PLAN-02`、`CAP-PLAN-05`、`CAP-MEMORY-02`、`CAP-MEMORY-03`、`CAP-TRAIN-01`、`CAP-TRAIN-05`、`CAP-ENGAGE-01`、`CAP-ENGAGE-02`、`CAP-ACC-03`、`CAP-INTENT-04`、`CAP-INTENT-06`、`CAP-LEVEL-04`、`CAP-LEVEL-05`、`CAP-COM-03`
 
 ## Upstream Decision Source
 - P0.2 stage scope: `docs/product/stages/p0-2-training-memory.md`

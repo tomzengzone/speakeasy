@@ -16,7 +16,7 @@ Translate product requirements into maintainable system architecture.
 - Maintain data flow and API contract.
 - Create ADRs for significant decisions.
 - Review security, reliability, and operability impact.
-- For whole-app architecture, produce a complete coverage model across product features, stages, increments, frontend, backend, data, AI runtime, security, tests, release, and operations.
+- For whole-app architecture, produce a complete coverage model across V2 Capabilities, stages, increments, frontend, backend, data, AI runtime, security, tests, release, and operations.
 - Compare mainstream architecture and technology options before recommending a stack when the decision is expensive to reverse.
 
 ## Inputs
@@ -43,10 +43,10 @@ Translate product requirements into maintainable system architecture.
 - `docs/product/increments/<increment-id>/swc_allocation.md`
 
 ## Architecture Scope Modes
-- `whole-app`: covers current Product Base, feature registry, active stages, planned increments, future-stage boundaries, and commercial/release constraints.
+- `whole-app`: covers current Product Base, V2 Capability registry, active stages, planned increments, future-stage boundaries, and commercial/release constraints.
 - `stage`: covers one delivery stage and all increments inside it.
-- `increment`: covers one accepted increment and its affected features.
-- `feature`: covers one stable feature and its contracts.
+- `increment`: covers one accepted increment and its approved Primary/Affected Capability classification.
+- `capability`: covers one stable V2 Capability boundary and the contracts of Product Base or approved increments that realize it; registry rows alone are not behavior inputs.
 - `refactor`: covers existing behavior-preserving architectural change.
 - `experiment`: covers a bounded technical spike and must not become production architecture without a follow-up decision.
 
@@ -68,7 +68,7 @@ Translate product requirements into maintainable system architecture.
 
 ## Whole-App Architecture Required Outputs
 - Scope inventory and explicit omitted-scope list.
-- Feature/stage coverage matrix mapping product capabilities to frontend modules, backend bounded contexts, data ownership, API contracts, AI runtime contracts, security controls, tests, and release gates.
+- Capability/stage/increment coverage matrix mapping V2 product capabilities and delivery objects to frontend modules, backend bounded contexts, data ownership, API contracts, AI runtime contracts, security controls, tests, and release gates.
 - Recommended architecture style with comparison against at least two viable mainstream options.
 - Frontend architecture: presentation, state, routing, local storage, API client generation, offline/cache boundaries, and platform integration boundaries.
 - Backend architecture: bounded contexts, module dependencies, authorization boundary, transaction boundary, provider isolation, async processing, and admin/ops boundary.
@@ -81,7 +81,7 @@ Translate product requirements into maintainable system architecture.
 ## Architecture Design Gate
 1. Confirm architecture scope mode before writing.
 2. Build the source inventory from product, domain, architecture, AI, UX, release, report, and code evidence.
-3. For whole-app work, create the feature/stage coverage matrix first. Do not write a technology recommendation until coverage gaps are visible.
+3. For whole-app work, create the Capability/stage/increment coverage matrix first. Do not write a technology recommendation until coverage gaps are visible.
 4. Classify gaps as `in-scope blocker`, `explicitly deferred`, or `non-goal`. Unclassified gaps block acceptance.
 5. For implementation-impacting work, read `docs/architecture/software_component_architecture.md` and `docs/architecture/swc_catalog.md` before local design. If stable SWC topology, reusable flows, or SWC IDs change, update the global baseline/catalog first or record an accepted `legacy-compatible` exception.
 6. For brownfield work, inspect existing code and tests before proposing any new design. The Existing Implementation Baseline must name concrete current user flow, code paths, SWCs, Flow IDs, API/OpenAPI calls, domain/data ownership, tests/evidence, non-regression behavior, and known legacy/deprecated parts. Do not write a fresh design until this baseline is complete.
