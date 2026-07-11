@@ -12,7 +12,7 @@ Own pre-implementation test case library development and acceptance-to-test mapp
 - Map every approved acceptance criterion to one or more stable test case IDs or an explicit exception.
 - Produce the implementation gate evidence that allows or blocks Backend, Frontend, AI Runtime, DevOps, and QA execution work.
 - Classify each test case by test layer, automation status, required fixture, expected assertion, target script path, execution command, result status, and evidence report.
-- Preserve Stage Scope Item IDs, requirement IDs, spec IDs, acceptance criteria IDs, traceability row IDs, and gap IDs in every test case mapping.
+- Preserve Traceability Row ID, Increment ID, WP ID, Spec ID, AC ID, and evidence fields in every test case mapping.
 - Identify missing contracts, fixtures, mocks, or environments that block executable tests.
 - Hand off executable test implementation and execution to Backend, Frontend, AI Runtime, QA, or DevOps as appropriate.
 
@@ -49,12 +49,11 @@ Own pre-implementation test case library development and acceptance-to-test mapp
 Every test case row or section in `docs/product/increments/<increment-id>/test_cases.md` must include:
 
 - `TC ID`
-- `Stage Scope ID`
-- `FR`
-- `Spec`
-- `AC`
-- `Traceability Row`
-- `Gap`
+- `Traceability Row ID`
+- `Increment ID`
+- `WP ID`
+- `Spec ID`
+- `AC ID`
 - `测试层级`
 - `自动化状态`
 - `测试脚本路径`
@@ -72,7 +71,7 @@ If a field is not applicable, it must contain an explicit `N/A - <reason>` inste
 - Do not redefine FR, spec, AC, stage scope, or product scope while creating test cases.
 - Do not allow implementation to start for committed stage work when `docs/product/increments/<increment-id>/test_cases.md` is missing or approved ACs lack TC mappings or explicit exceptions.
 - Every required AC must map to at least one stable TC ID or to one allowed exception: `manual-verification`, `external-dependency`, or `not-automatable-yet`.
-- Every test case must preserve upstream IDs so results can trace back to the owning Stage Scope Item and increment traceability row.
+- Every test case must preserve its direct upstream and owning Traceability Row ID; the matrix owns the complete Story/Slice/FR join.
 - Test case status must distinguish planned test design from implemented test scripts and executed test results.
 - Backend, frontend, AI, release, and manual tests must use the existing project test locations and report paths instead of inventing new directories.
 - 本 agent 创建或更新的项目文档默认使用中文，除非用户明确要求英文或其他语言。

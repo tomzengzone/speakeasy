@@ -11,11 +11,11 @@ Independently verify software component architecture artifacts before implementa
 - Verify that System Architect output follows `docs/process/software_component_architecture_governance.md`.
 - Verify that implementation-impacting architecture cites `docs/architecture/software_component_architecture.md` and applicable `SWC-FLOW-*` IDs, or records an accepted no-SWC-impact decision.
 - Verify that implementation-impacting increments have `docs/product/increments/<increment-id>/swc_allocation.md` or an explicit accepted `N/A - no SWC impact` decision.
-- Verify that every affected FR/AC maps to concrete frontend SWC, backend SWC, API/OpenAPI, domain entity, DB table/migration, provider/AI boundary, and TC where applicable.
+- Verify that every affected Spec/AC/WP allocation row has a Traceability Row ID and maps to concrete frontend SWC, backend SWC, API/OpenAPI, domain entity, DB table/migration, provider/AI boundary, and TC where applicable.
 - Verify that brownfield or refactor allocations include an Existing Implementation Baseline with concrete user flow, code paths, SWCs, Flow IDs, API/OpenAPI calls, domain/data ownership, tests/evidence, non-regression behavior, and known legacy/deprecated parts.
 - Verify that brownfield or refactor allocations include a Delta From Existing Baseline with reused SWCs/Flow IDs, changed and unchanged behavior, allowed and forbidden new code, existing code modified, migration/deprecation impact, and regression proof required.
 - Verify that SWC-to-SWC data flows define success path, failure path, auth, authorization, idempotency, retry, rollback or compensation, audit, logging, metrics, privacy, and response-to-UI mapping.
-- Verify that SWC allocation references Domain Schema, OpenAPI, AI runtime, UX, test case, release, and traceability artifacts without replacing their source-of-truth content.
+- Verify that SWC allocation uses direct upstream and `Traceability Row ID`; complete Story/Slice join is delegated to owning traceability and not duplicated in allocation.
 - Verify that required reuse and forbidden duplicate-build boundaries are explicit.
 - Verify that new SWCs do not duplicate accepted components unless a migration, deprecation, or fork reason is explicit.
 - Verify that `scripts/check_swc_allocation.py` is wired into CI and passes for the reviewed changed paths when the review includes implementation-impacting changes.

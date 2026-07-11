@@ -27,6 +27,7 @@ description: Use when a project document needs a content boundary, required sect
 - `docs/product/base/spec.md`
 - `docs/product/base/acceptance.md`
 - `docs/product/base/traceability.md`
+- `docs/product/story_map.md`
 - `docs/product/user_stories.md`
 - `docs/architecture/*.md`
 - `docs/domain/*.md`
@@ -54,18 +55,19 @@ description: Use when a project document needs a content boundary, required sect
 ## 内容契约基线
 - `docs/product/vision.md`：写 App 定位、目标用户、核心承诺、产品原则和长期非目标；不写具体状态机、接口、页面和实现计划。
 - `docs/product/feature_registry.md`：写稳定业务 capability、`Capability ID`、`Capability slug`、`Capability name`、业务边界、非职责、owner、一级 `Sub-capability ID`、相邻能力、downstream prefix 和 `Legacy Mapping`；不写需求正文、spec、AC、TC、实现任务、测试证据或发布证据。
-- `docs/product/base/requirements.md`：写已接受稳定产品行为的 FR、用户目标、用户路径、成功标准、非目标、假设和来源；广义模块 requirements 必须引用 V2 `Capability ID` / `Sub-capability ID`，并按模块功能需求边界、一级子功能章节和三列需求 item 表组织；不得继续以 V1 slug 作为主结构；不写阶段计划、API schema、prompt schema、UI 布局或代码实现。
-- `docs/product/base/spec.md`：写已接受稳定产品行为的用户流程、状态、输入输出、失败路径、模块影响和测试期望；不写代码实现或产品优先级决策。
-- `docs/product/base/acceptance.md`：写已接受稳定产品行为的可观察 pass/fail 行为；不写类名、函数名、数据库字段或测试实现。
-- `docs/product/base/traceability.md`：写 Product Base 的 `Requirement -> AC -> Test Case ID -> Code Evidence -> Test Evidence -> Status`；不新增需求，不替代验收标准。
+- `docs/product/story_map.md`：写 PM-owned User Story 与 Vertical Slice 产品语义；不写 FR、spec、pass/fail AC、TC、SWC 或实现证据。
+- `docs/product/base/requirements.md`：直接上游是已批准 Story/Slice；写 FR、用户目标、路径、成功标准、非目标、假设和来源。FR 保留 User Story ID / Vertical Slice ID；Capability 和 Stage 只做边界或交付 scope guard。
+- `docs/product/base/spec.md`：直接上游是已批准 FR；写用户流程、状态、输入输出、失败路径、模块影响和测试期望。Vertical Slice 只做 scope guard / provenance。
+- `docs/product/base/acceptance.md`：直接上游是已批准 Spec，必要时引用相关 FR；写可观察 pass/fail 行为，不重复 Story/Slice 完整链路。
+- `docs/product/base/traceability.md`：集中维护 `Traceability Row ID -> Story/Slice -> FR -> Spec -> AC -> TC -> SWC/Code/Test Evidence -> Status`；不新增需求，不替代验收标准。
 - `docs/product/baselines/<baseline-slug>.md`：写当前已实现能力快照、事实来源、代码/资产证据、回归边界和不承诺项；不写未来新增需求或未批准计划。
 - `docs/product/stages/<stage-id>.md`：写阶段目标、入口条件、出口条件、纳入/排除的 increments，并用稳定 Stage Scope Item ID 表表达阶段范围；不写 API schema、UI 布局、prompt schema 或代码实现。
 - `docs/product/increments/<increment-id>/definition.md`：写 active stage、covered/excluded Stage Scope Item IDs、primary capability、primary sub-capability、affected capabilities、affected sub-capabilities、scope、non-goals、upstream decision 和 required artifacts；stage scope 不得替代 V2 `Capability ID` / `Sub-capability ID`；不写验收用例或实现计划。
 - `docs/product/increments/<increment-id>/requirements.md`：写本次增量的用户目标、用户路径、成功标准、非目标、假设和开放问题；广义模块 requirements 必须引用 V2 `Capability ID` / `Sub-capability ID`，并按模块功能需求边界、一级子功能章节和三列需求 item 表组织；不得继续以 V1 slug 作为主结构；不写 API 字段、prompt schema、UI 布局或代码实现。
-- `docs/product/increments/<increment-id>/spec.md`：写本次增量的状态、输入输出、状态、依赖、失败路径、模块影响和测试映射；不写代码实现或产品优先级决策。
-- `docs/product/increments/<increment-id>/acceptance.md`：写本次增量可观察 pass/fail 行为；不写类名、函数名、数据库字段或测试实现。
-- `docs/product/increments/<increment-id>/traceability.md`：写本次增量的 `Requirement -> AC -> Test Case ID -> Contract -> Code Evidence -> Test Evidence -> Status`；不新增需求或替代验收标准。
-- `docs/product/increments/<increment-id>/swc_allocation.md`：写本次增量的 Existing Implementation Baseline、Delta From Existing Baseline、`Stage Scope ID -> FR -> Spec -> AC -> FE SWC -> BE SWC -> API/OpenAPI -> Domain Entity -> DB Table/Migration -> Provider/AI Boundary -> TC` 分配、SWC 间数据流、复用要求和禁止重复实现边界；不新增需求、不改验收标准、不复制 OpenAPI schema、不定义领域实体语义、不写代码实现。
+- `docs/product/increments/<increment-id>/spec.md`：直接上游是已批准 FR；flow/state/dependency 引用 source FR，Vertical Slice 只做 scope guard。
+- `docs/product/increments/<increment-id>/acceptance.md`：直接上游是已批准 Spec，必要时引用相关 FR；Story/Slice 回连由 traceability matrix 维护。
+- `docs/product/increments/<increment-id>/traceability.md`：集中维护完整 Story/Slice-to-evidence matrix，并分配稳定 `Traceability Row ID`。
+- `docs/product/increments/<increment-id>/swc_allocation.md`：直接上游是 Spec/AC/WP 和 Existing Implementation Baseline；通过 `Traceability Row ID` 回到完整链路，不重复 Story/Slice 字段。
 - `docs/architecture/software_component_architecture.md`：写全局 SWC 架构基准，包括系统级职责分配、SWC 拓扑、稳定 `SWC-FLOW-*`、canonical SWC-to-SWC sequence、局部变更参考基准和历史迁移说明；不复制 SWC Catalog 的完整组件字段表、不替代增量 `swc_allocation.md`、不定义 Domain Schema 或 OpenAPI schema。
 - `docs/architecture/swc_catalog.md`：写稳定 SWC 目录，包括 SWC ID、layer、code path、职责、非职责、provided/required interfaces、数据所有权、持久化所有权、测试责任、必须复用和禁止绕过；不复制 Domain Schema、OpenAPI request/response schema、prompt schema、UX layout 或实现报告。
 - `docs/domain/<domain>_model.md`：写实体、关系、生命周期、状态机和约束；不写 API response 或 UI 布局。
@@ -79,11 +81,11 @@ description: Use when a project document needs a content boundary, required sect
 Requirements 文档面向产品、规格、验收和架构下游读者，必须呈现产品需求结果，而不是 agent 执行过程。广义模块需求文档必须包含：
 
 - 模块功能需求边界：说明该模块负责的产品能力、不负责的相邻能力、主要入口或前置条件、产出结果，以及和相邻模块的交接关系。
-- V2 能力引用：广义模块 requirements 必须引用 `docs/product/feature_registry.md` 中的 `Capability ID` 和适用 `Sub-capability ID`；V1 slug 只能出现在独立 legacy mapping 或历史追溯说明中，不得作为主结构、模块标题或新需求 ID。
+- Story/Slice 引用：新建或触碰的 FR 必须引用直接上游 User Story ID 和 Vertical Slice ID；Capability ID / Sub-capability ID 只做 ownership 和 boundary mapping。
 - 一级子功能章节：每个一级子功能独立成章，章节标题使用业务功能名和稳定序号，不使用 `Step 1`、`Step 2` 等过程标题。
 - 产品级功能需求边界：每个一级子功能必须说明它拥有的可观察产品能力、排除的相邻能力、入口或前置条件、结果状态，以及和其他一级子功能的交接。
 - 详细需求 item 表：每个一级子功能下的主需求表只能包含 `需求ID`、`需求项`、`需求描述` 三列。
-- 需求追溯映射：当需要 Stage Scope ID、来源 increment、Spec ID、AC ID、状态或后续证据字段时，必须放在独立追溯表中，不得加入主需求 item 表。
+- 需求追溯映射：完整 Story/Slice/FR/Spec/AC/TC/SWC/evidence join 必须放在独立 traceability matrix；下游 artifact 只保留直接上游和必要 scope guard。
 - 非目标、开放问题和下游交接备注：必须和需求 item 分开表达。
 
 Requirements 文档不得把 `Step 1`、`Step 2`、思考过程、推理过程、执行计划或 agent 自检过程作为正文结构。两步法只属于 requirement-refine 和 Requirement Development 的执行方法。

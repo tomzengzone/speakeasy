@@ -22,28 +22,27 @@ Turn product direction, user ideas, and accepted change requests into scoped, te
 
 ## Inputs
 - User idea or change request
-- Product Manager classification, stage decision, active increment definition, primary feature, affected features, and covered/excluded Stage Scope Item IDs
+- Product Manager classification, approved User Story IDs / Vertical Slice IDs, stage decision, active increment definition, and capability scope guards
 - Broad module name, expected module slug, or affected stable capability when available
 - `docs/product/vision.md`
 - `docs/product/roadmap.md`
 - `docs/product/development_status.md`
 - `docs/product/base/`
 - `docs/product/feature_registry.md`
+- `docs/product/story_map.md`
 - `docs/product/stages/`
 - `docs/product/increments/`
 - `docs/process/change_request.md`
 
 ## Outputs
-- `docs/product/user_stories.md`
 - `docs/product/base/requirements.md`
 - `docs/product/increments/<increment-id>/requirements.md`
 - First-level subfunction sections with product-level functional requirement boundaries in the owning requirements document.
 - Atomic requirement item tables under each first-level subfunction using only `需求ID`, `需求项`, and `需求描述`.
-- Separate requirement traceability mapping when Stage Scope ID, increment source, spec ID, acceptance criteria ID, or status fields are needed.
+- Direct Story/Slice references on FR; the complete cross-level join remains in the owning traceability matrix.
 - Requirement-to-acceptance handoff notes in the owning requirements document; acceptance artifacts are owned by Acceptance Criteria Generate Skill.
 
 ## Allowed Paths
-- `docs/product/user_stories.md`
 - `docs/product/base/requirements.md`
 - `docs/product/increments/<increment-id>/requirements.md`
 
@@ -60,7 +59,8 @@ Turn product direction, user ideas, and accepted change requests into scoped, te
 - Do not represent a broad module as a few oversized FR rows.
 - Do not write detailed requirement items until each first-level subfunction has a product-level functional requirement boundary.
 - Do not combine multiple independent product behaviors into one requirement item.
-- Do not put Stage Scope ID, spec ID, acceptance criteria ID, API fields, database fields, UI layout, code paths, or test implementation fields in the main requirement item table; keep traceability outside the three-column item table.
+- Do not put downstream Spec/AC/TC, API, database, UI, code, or test fields in the main requirement item table; keep the complete join in traceability.
+- Do not create FR from Stage, Roadmap, Increment title, or Capability Registry without approved Story/Slice product semantics.
 - Do not expose internal execution process headings such as `Step 1` or `Step 2` in final requirements documents.
 - If Product Manager classification, active stage, increment definition, or Product Base ownership is missing, produce clarification questions or exploratory notes instead of committed requirements.
 - Every user story must name a user, an action, and an outcome.

@@ -11,7 +11,7 @@ Turn natural-language product intent into constrained, testable requirements bef
 ## When to Use
 - A new feature request is ambiguous or broad.
 - A change may expand MVP scope.
-- A feature needs user stories, non-goals, and success criteria.
+- An approved User Story / Vertical Slice needs scoped FRs, non-goals, and success criteria.
 - A broad module needs to be decomposed into first-level subfunctions before detailed requirement items are written.
 
 ## When NOT to Use
@@ -26,15 +26,16 @@ Turn natural-language product intent into constrained, testable requirements bef
 - Product object classification from Product Manager: feature, stage, increment, baseline, change request, or artifact.
 - `docs/product/base/requirements.md` when consolidating or updating accepted stable product requirements.
 - For new product work, the V2 feature capability registry, active stage, and increment definition when available.
-- For committed stage work, Stage Scope Item IDs from the active stage file and `Covered Stage Scope Items` from the increment definition.
+- Approved User Story IDs and Vertical Slice IDs from `docs/product/story_map.md` as direct behavior upstream.
+- For committed stage work, Stage Scope Item IDs and `Covered Stage Scope Items` only as delivery scope guards.
 - Known constraints, target users, and MVP boundary.
 
 ## Outputs
 - Product object classification and path decision.
-- Updated `docs/product/user_stories.md` or Product Base / increment requirement notes.
+- Product Base / increment requirement notes derived from approved Story/Slice.
 - Product Base requirements in `docs/product/base/requirements.md` for accepted stable product behavior.
 - Increment requirements in `docs/product/increments/<increment-id>/requirements.md` for stage-bound delivery slices.
-- Requirement IDs that cite one or more upstream Stage Scope Item IDs for new increment work.
+- Requirement IDs that cite direct-upstream User Story ID and Vertical Slice ID for new increment work.
 - Upstream V2 `Capability ID` / `Sub-capability ID` references for new or modified Product Base / increment requirements.
 - Requirement documents organized by module functional boundary and first-level subfunction sections when the request covers a broad module.
 - Each first-level subfunction includes a product-level functional requirement boundary and an atomic requirement item table using only `需求ID`, `需求项`, and `需求描述`.
@@ -42,7 +43,7 @@ Turn natural-language product intent into constrained, testable requirements bef
 - Baseline references in `docs/product/baselines/<baseline-slug>.md` only when consolidating implemented behavior.
 - Testable success criteria.
 - Explicit non-goals and assumptions.
-- Upstream requirement references that can later feed specs and acceptance criteria.
+- Direct-upstream references that can feed specs; complete cross-level mapping remains in owning `traceability.md`.
 
 ## 文档语言
 - 本 skill 创建或更新的项目文档默认使用中文，除非用户明确要求英文或其他语言。
@@ -50,7 +51,7 @@ Turn natural-language product intent into constrained, testable requirements bef
 
 ## 文档路径约定
 - 产品级定位和边界写入 `docs/product/vision.md`。
-- 用户故事写入 `docs/product/user_stories.md`。
+- Approved Story/Slice 读取 `docs/product/story_map.md`；本 skill 不创建或改写 Story/Slice。
 - 已接受的稳定产品需求写入 `docs/product/base/requirements.md`；阶段交付切片需求写入 `docs/product/increments/<increment-id>/requirements.md`。
 - 范围扩展、跨模块影响或 MVP 变更写入 `docs/process/change_request.md`。
 - 延期项或非 MVP 能力通过 `docs/process/change_request.md` 记录范围变更，或在 owning Product Base / increment requirements 中标记为后续延展。
@@ -61,24 +62,24 @@ Turn natural-language product intent into constrained, testable requirements bef
 - A capability is a long-lived APP product classification registered in `docs/product/feature_registry.md` with V2 `Capability ID`, `Capability slug`, boundary, owner, first-level `Sub-capability ID`, adjacent capabilities, downstream prefix, and `Legacy Mapping`. Do not assign a feature document directory, and do not use MVP, P0, P0.1, P0.2, Now, Next, or Later as a `Capability slug` or `Capability ID`.
 - Stage goals belong in `docs/product/stages/<stage-id>.md`; they do not replace Product Base or increment requirements.
 - Stage / increment is the delivery structure; V2 capability / sub-capability is the stable product classification.
-- Increment requirements belong in `docs/product/increments/<increment-id>/requirements.md` and must reference the active stage, covered Stage Scope Item IDs, and primary `Capability ID` / `Sub-capability ID`.
+- Increment requirements belong in `docs/product/increments/<increment-id>/requirements.md` and use approved User Story / Vertical Slice as direct upstream; stage, increment, and capability are scope guards.
 - Accepted stable requirements belong in `docs/product/base/requirements.md`; baseline snapshots must not be edited as the living requirement source.
 - Legacy V1 slug is only for mapping historical material through `Legacy Mapping`; it must not be used as a new requirement ID, module title, or active upstream feature identifier.
-- Do not generate new increment requirements when the active stage lacks stable Stage Scope Item IDs or the increment definition lacks `Covered Stage Scope Items`.
-- Each new increment requirement ID must trace back to at least one Stage Scope Item ID, or explicitly mark the source as a Product Manager-approved change request.
+- Do not generate new increment requirements when approved Story/Slice product semantics are missing; do not invent behavior from Stage Scope or Capability Registry.
+- Each new increment requirement ID must trace directly to at least one User Story ID and Vertical Slice ID, or explicitly mark a Product Manager-approved change request exception.
 - If a request mixes feature, stage, increment, and baseline content, split it before writing requirements.
 - The two-step decomposition process is an execution method, not document content; final requirements documents must not expose process headings such as `Step 1` or `Step 2`.
 
 ## Process
 1. List assumptions before conclusions.
 2. Classify the product object and source mode before choosing an output path.
-3. For new increment work, list the covered Stage Scope Item IDs before drafting requirements.
+3. For new increment work, list approved User Story IDs and Vertical Slice IDs before drafting requirements; record Stage/Increment only as scope guards.
 4. Identify the broad module or stable capability being refined; if the request spans multiple modules, split it before writing committed requirements.
 5. Decompose the broad module into stable first-level subfunctions before drafting detailed requirement items.
 6. For each first-level subfunction, define its product-level functional requirement boundary: owned observable product capability, excluded adjacent capability, entry or precondition, resulting product outcome, and handoff to adjacent subfunctions.
 7. Check subfunctions for overlap, missing coverage, and cross-module leakage; route unresolved scope decisions back to Product Manager or change request handling.
 8. Under each accepted first-level subfunction, draft atomic requirement items using only `需求ID`, `需求项`, and `需求描述`.
-9. Keep Stage Scope ID, increment source, spec ID, acceptance criteria ID, and status in a separate traceability mapping, not in the main requirement item table.
+9. Keep the full Story/Slice/FR/Spec/AC/TC/evidence join in the owning traceability matrix, not in the main requirement item table.
 10. Convert expectations into measurable success criteria and downstream handoff notes without writing acceptance criteria.
 11. Mark out-of-stage ideas as backlog unless the user explicitly includes them through a change request.
 12. State whether the output is Product Base consolidation, baseline snapshot consolidation, Product Base requirements, or increment requirements.
@@ -93,8 +94,8 @@ Turn natural-language product intent into constrained, testable requirements bef
 - P0/new-feature requirements bypass downstream spec and go straight to implementation.
 - A stage name, MVP label, P0.1 label, Now/Next/Later horizon, or legacy V1 slug is used as a `Capability slug`, `Capability ID`, new requirement ID, or module title.
 - Baseline facts are rewritten as future requirements without a Product Manager decision.
-- Increment requirements are created from stage prose without stable Stage Scope Item IDs.
-- Requirement IDs cannot be traced back to `Covered Stage Scope Items` or an approved change request.
+- Increment requirements are created from stage, roadmap, or capability prose without approved Story/Slice semantics.
+- Requirement IDs cannot be traced directly to approved User Story / Vertical Slice or an approved change request.
 - A broad module is represented by only a few large FR rows instead of first-level subfunctions and atomic requirement items.
 - First-level subfunctions lack product-level functional requirement boundaries.
 - A subfunction boundary describes API, database, UI, or implementation ownership instead of product capability ownership.
@@ -111,12 +112,12 @@ Turn natural-language product intent into constrained, testable requirements bef
 - Current MVP reverse-consolidation requirements explicitly cite the code-baseline mode.
 - Output path matches the classified product object and does not mix feature, stage, increment, or baseline boundaries.
 - Output references V2 `Capability ID` / `Sub-capability ID` for Product Base or increment requirements when a product capability is in scope.
-- For new increment work, every requirement ID cites at least one Stage Scope Item ID.
+- For new increment work, every requirement ID cites at least one User Story ID and Vertical Slice ID.
 - Broad-module requirements include stable first-level subfunctions before detailed requirement items.
 - Every first-level subfunction has a product-level functional requirement boundary.
 - Every detailed requirement item belongs to exactly one first-level subfunction.
 - Main requirement item tables use only `需求ID`, `需求项`, and `需求描述`.
-- Traceability mapping exists separately when Stage Scope ID, increment source, spec, AC, or status fields are needed.
+- Complete cross-level traceability exists separately in the owning `traceability.md`; requirement rows do not duplicate downstream Spec/AC/TC fields.
 
 ## Common Rationalizations
 | Rationalization | Reality |

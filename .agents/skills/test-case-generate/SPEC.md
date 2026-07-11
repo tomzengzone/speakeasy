@@ -39,7 +39,7 @@ This project-local skill applies to development workflow assets in this reposito
 ## Product Object Outputs
 - Test evidence cites the owning increment or stable feature.
 - Stable test case IDs are assigned in the owning increment test case library using `TC-<scope-prefix>-<NNN>`; MVP backend uses `TC-MVP-BE-001`, `TC-MVP-BE-002`, and so on.
-- Each test case carries Stage Scope ID, FR, Spec, AC, Traceability Row, Gap, test layer, automation status, test script path, execution command, result status, and evidence report.
+- Each test case carries Traceability Row ID, Increment ID, WP ID, Spec ID, AC ID, test layer, automation status, test script path, execution command, result status, evidence report, and Gap / Exception.
 - Product Base evidence belongs in `docs/product/base/traceability.md` or `docs/reports/test_report.md`.
 - Increment-specific evidence belongs in the increment traceability record.
 
@@ -54,7 +54,7 @@ This project-local skill applies to development workflow assets in this reposito
 - Committed increment implementation is blocked until every approved AC maps to stable TC IDs or explicit allowed exceptions in the owning increment test case library.
 - Published TC IDs are immutable: do not renumber, reuse, or assign an existing ID to a different behavior; retire with replacement or reason when needed.
 - Required test case fields must be populated or carry an explicit `N/A - <reason>`; blank traceability, script, command, result, or evidence fields are blockers.
-- Traceability Test Evidence updates must preserve upstream Stage Scope, FR, Spec, and AC fields; only evidence/status/gap fields may change during QA evidence updates.
+- Traceability Test Evidence updates preserve Traceability Row ID, Spec ID, and AC ID; the owning matrix maintains the complete upstream join.
 - Every AC has Test Evidence or one of the allowed exceptions: 人工验收, 外部服务依赖, 暂不可自动化.
 - Missing Test Evidence is a completion blocker until recorded in the test report or traceability matrix.
 

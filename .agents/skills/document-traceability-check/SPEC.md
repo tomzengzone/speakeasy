@@ -34,8 +34,8 @@
 - 缺失、重复、过期或状态冲突清单。
 - 下一步 workflow 建议。
 - 用户要求时写入 `docs/reports/quality_report.md`。
-- 对 `FR -> User Story -> AC -> Code Evidence -> Test Evidence -> Status` 的完整性审查结论。
-- 对新 increment 的 `Stage Scope ID -> Increment ID -> FR -> AC -> TC -> Contract Evidence -> Code Evidence -> Test Evidence -> Release Evidence -> Status` 完整性审查结论。
+- 对 `Story/Slice -> FR -> Spec -> AC -> TC -> SWC/Code/Test Evidence -> Product Base merge decision` 的完整性审查结论。
+- 对 local artifacts 是否只保留直接上游和必要 scope guard 的审查结论。
 - 对 increment `AC -> TC -> test script path -> execution command -> result status -> evidence report -> traceability Test Evidence` 的复核结论。
 - Product Base traceability check for `docs/product/base/traceability.md` when accepted stable behavior is in scope.
 - Architecture coverage finding for broad architecture tasks: scope mode, source inventory, feature/stage coverage, omitted-scope classification, option comparison, and downstream contract gaps.
@@ -49,7 +49,7 @@
 - 输出可以指导下一步使用哪个 skill。
 - 能区分当前 MVP 代码基线固化与 P0/新增功能 workflow 的 AC 来源规则。
 - 能确认 100% 覆盖约束是在 acceptance criteria 阶段建立，测试阶段只验证并补充测试证据。
-- 能确认 committed stage work 的 100% 追溯覆盖包括 Stage Scope Item ID coverage、increment coverage、FR coverage、AC coverage 和 evidence status。
+- 能确认 100% 追溯只由 owning traceability matrix 判定，local artifacts 不因缺少重复全链字段而失败。
 - 能确认 QA 或 traceability review 已把 Test Evidence 复核到 TC ID、测试脚本路径、执行命令、结果状态和证据报告。
 - 能确认 Test Evidence 为空时必须有“人工验收”、“外部服务依赖”或“暂不可自动化”例外。
 - 能阻止未覆盖 Product Base、baseline、feature registry、stage、increment 和 future boundaries 的全量架构被标记为 source of truth。
@@ -60,7 +60,7 @@
 - Product Base traceability lives at `docs/product/base/traceability.md`; increment traceability lives at `docs/product/increments/<increment-id>/traceability.md`.
 - Definition of Done 变化时同步更新检查规则。
 - 当追溯矩阵字段、AC 来源规则或测试阶段职责变化时，同步更新 acceptance-criteria-generate 和 test-case-generate。
-- 当 Stage Scope Item ID 或 stage-to-increment coverage 规则变化时，同步更新 Product Manager agent、workflow、requirement-refine、feature-spec-generate 和 acceptance-criteria-generate。
+- 当 direct-upstream 或完整矩阵字段变化时，同步检查 workflow、相关 generation skills、templates 和 owning checker，避免把完整链扩散到所有 Agent。
 - 当 increment test case library、TC ID 或 Test Evidence 字段规则变化时，同步更新 test-case-generate、QA Agent 和 traceability check。
 - 当 architecture、domain、API、AI runtime 或 release workflow 增加新的强制合同类型时，同步更新 Architecture Traceability Gate。
 - 当 SWC 架构基准、Flow ID 或 increment SWC allocation 规则变化时，同步更新 workflow、Software Architecture Governance Check、System Architect 和 document-content-contract。

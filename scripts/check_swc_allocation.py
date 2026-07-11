@@ -77,6 +77,57 @@ REQUIRED_TEMPLATE_SECTIONS = (
     "## Verification",
 )
 
+MODERN_MATRIX_COLUMNS = (
+    "Traceability Row ID",
+    "Increment ID",
+    "WP ID",
+    "FR",
+    "Spec",
+    "AC",
+    "FE SWC",
+    "BE SWC",
+    "API/OpenAPI",
+    "Domain Entity",
+    "DB Table/Migration",
+    "Provider/AI Boundary",
+    "TC",
+    "Notes",
+)
+
+# Compatibility for allocations created during the earlier Story/Slice migration.
+MODERN_PARENT_CHAIN_MATRIX_COLUMNS = (
+    "User Story ID",
+    "Vertical Slice ID",
+    "Increment ID",
+    "WP ID",
+    "FR",
+    "Spec",
+    "AC",
+    "FE SWC",
+    "BE SWC",
+    "API/OpenAPI",
+    "Domain Entity",
+    "DB Table/Migration",
+    "Provider/AI Boundary",
+    "TC",
+    "Notes",
+)
+
+LEGACY_MATRIX_COLUMNS = (
+    "Stage Scope ID",
+    "FR",
+    "Spec",
+    "AC",
+    "FE SWC",
+    "BE SWC",
+    "API/OpenAPI",
+    "Domain Entity",
+    "DB Table/Migration",
+    "Provider/AI Boundary",
+    "TC",
+    "Notes",
+)
+
 BASELINE_ITEMS = (
     "Existing user flow",
     "Existing code paths",
@@ -299,6 +350,11 @@ def validate_template() -> list[Finding]:
             findings.append(Finding(TEMPLATE_PATH, f"Template missing required brownfield field: {item}."))
     if "Change mode:" not in text:
         findings.append(Finding(TEMPLATE_PATH, "Template must require Change mode in Scope."))
+    rows = markdown_table(section(text, "Requirement Allocation Matrix"))
+    headers = rows[0] if rows else []
+    missing = [column for column in MODERN_MATRIX_COLUMNS if column not in headers]
+    if missing:
+        findings.append(Finding(TEMPLATE_PATH, f"Template Requirement Allocation Matrix missing direct-upstream columns: {', '.join(missing)}."))
     return findings
 
 
@@ -308,23 +364,10 @@ def validate_requirement_matrix(relative: str, text: str) -> list[Finding]:
     if len(rows) < 2:
         return [Finding(relative, "Requirement Allocation Matrix must include headers and at least one allocation row.")]
     headers = rows[0]
-    required_columns = (
-        "Stage Scope ID",
-        "FR",
-        "Spec",
-        "AC",
-        "FE SWC",
-        "BE SWC",
-        "API/OpenAPI",
-        "Domain Entity",
-        "DB Table/Migration",
-        "Provider/AI Boundary",
-        "TC",
-        "Notes",
-    )
-    missing = [column for column in required_columns if column not in headers]
-    if missing:
-        findings.append(Finding(relative, f"Requirement Allocation Matrix missing columns: {', '.join(missing)}."))
+    accepted_shapes = (MODERN_MATRIX_COLUMNS, MODERN_PARENT_CHAIN_MATRIX_COLUMNS, LEGACY_MATRIX_COLUMNS)
+    if not any(all(column in headers for column in shape) for shape in accepted_shapes):
+        missing = [column for column in MODERN_MATRIX_COLUMNS if column not in headers]
+        findings.append(Finding(relative, f"Requirement Allocation Matrix missing direct-upstream columns: {', '.join(missing)}."))
         return findings
     fe_index = headers.index("FE SWC")
     be_index = headers.index("BE SWC")

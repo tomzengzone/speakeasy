@@ -1,12 +1,12 @@
 ---
 name: document-traceability-check
-description: Use when project documentation needs a workflow traceability audit across requirements, Product Base/increment specs, acceptance criteria, domain/API/AI/UX contracts, tests, implementation reports, quality reports, or release notes. Do not use for deciding document paths or defining document templates.
+description: Use when project documentation needs a Story/Slice-to-evidence traceability audit across requirements, specs, AC, contracts, tests, reports, or release notes. Do not use for deciding document paths or defining document templates.
 ---
 
 # Document Traceability Check
 
 ## Overview
-检查项目文档链路是否可追踪，确保需求、规格、验收、契约、测试、实现报告和质量报告之间没有断链、重复链、过期引用或缺失状态。
+集中检查完整 `Story/Slice -> FR -> Spec -> AC -> TC -> SWC/Code/Test Evidence` 链路。Local artifact 只需要记录本层直接上游；不得因为没有重复整条链路而失败。
 
 ## When to Use
 - 需要检查一个 feature 是否具备完整文档链路。
@@ -26,6 +26,7 @@ description: Use when project documentation needs a workflow traceability audit 
 - `docs/process/workflow.md`
 - `docs/process/definition_of_done.md`
 - `docs/process/change_request.md`
+- `docs/product/story_map.md`
 - `docs/product/vision.md`
 - `docs/product/base/requirements.md`
 - `docs/product/base/spec.md`
@@ -62,36 +63,29 @@ description: Use when project documentation needs a workflow traceability audit 
 - 检查链路时使用仓库相对路径引用文档。
 
 ## Traceability Model
-标准链路：
+Canonical product-to-evidence chain：
 
 ```text
-docs/product/vision.md
-docs/product/base/requirements.md
-  -> docs/product/base/spec.md
-  -> docs/product/base/acceptance.md
-  -> docs/product/base/traceability.md
-  -> docs/process/change_request.md
-  -> docs/product/increments/<increment-id>/requirements.md
-  -> docs/product/increments/<increment-id>/spec.md
-  -> docs/domain/<domain>_model.md
-  -> docs/architecture/api_contract.md
-  -> docs/architecture/software_component_architecture.md
-  -> docs/architecture/swc_catalog.md
-  -> docs/product/increments/<increment-id>/swc_allocation.md when implementation-impacting
-  -> docs/ai_runtime/prompt_contract.md
-  -> docs/ux/screen_spec.md
-  -> test/、backend/src/test/java/ 或 tests/
-  -> docs/reports/implementation_report.md
-  -> docs/reports/quality_report.md
-  -> docs/release/release_checklist.md
+User Story ID / Vertical Slice ID
+-> FR ID
+-> Spec ID
+-> AC ID
+-> TC ID
+-> Contract / SWC allocation when applicable
+-> WP ID
+-> PR / Code Evidence
+-> Test Evidence
+-> Product Base merge decision
 ```
 
-不是每个 feature 都必须触达所有下游文档；但跳过某个下游文档时，必须有明确原因或“不适用”说明。
+Owning traceability matrix 至少包含：`Traceability Row ID`, `Primary Capability ID`, `Affected Capability IDs`, `User Story ID`, `Vertical Slice ID`, `Increment ID`, `WP ID`, `FR ID`, `Spec ID`, `AC ID`, `TC ID`, `PR / Code Evidence`, `Test Evidence`, `Product Base merge decision`, `Status`, `Gap / Exception`。
+
+Local artifact direct-upstream model：FR 带 Story/Slice；Spec 带 approved FR 和必要 Slice scope guard；AC 带 approved Spec 和适用 FR；TC 带 AC/Spec、Increment/WP 和执行证据字段；SWC allocation 带 Spec/AC/WP 和 concrete component impact。
 
 新 increment 标准链路：
 
 ```text
-Stage Scope ID
+User Story ID / Vertical Slice ID
   -> docs/product/increments/<increment-id>/definition.md
   -> docs/product/increments/<increment-id>/requirements.md
   -> docs/product/increments/<increment-id>/spec.md
@@ -107,7 +101,7 @@ Stage Scope ID
   -> docs/release/release_checklist.md when release scope is affected
 ```
 
-`100% traceability` for committed stage work means every required Stage Scope Item ID is covered by at least one increment or has an explicit deferred/not-applicable decision, every increment requirement traces back to at least one Stage Scope Item ID, every FR has at least one AC, every AC maps to stable TC IDs or explicit exceptions, implementation-impacting ACs map to the global SWC architecture baseline/Flow ID and SWC allocation rows or explicit no-SWC-impact decisions, every AC has code/test evidence or a documented exception once implementation has started, and release evidence exists when the increment affects release scope.
+`100% traceability` is decided only from the owning matrix: each committed Slice joins to FR, Spec, AC, TC and evidence or an explicit exception; Stage Scope coverage remains a delivery-control check; implementation-impacting ACs map to SWC allocation or a no-impact decision; release evidence exists when release scope is affected.
 
 Increment Test Evidence review must verify:
 - every AC listed in increment acceptance appears in the increment test case library or has an allowed exception;
@@ -129,12 +123,12 @@ Increment Test Evidence review must verify:
 
 ## Process
 1. 确定要检查的 feature、变更请求或文档范围。
-2. 找到最上游来源：产品定位、MVP 范围、需求收敛或变更请求。
+2. 在 `docs/product/story_map.md` 找到 Story/Slice source；legacy 或技术例外必须显式记录。
 3. 判断 AC 来源模式：Product Base 稳定需求库、当前 MVP 代码基线固化，或标准 P0/新增 increment workflow。
 4. 对标准 increment workflow，先检查 active stage 是否有稳定 Stage Scope Item IDs，以及 increment definition 是否列出 `Covered Stage Scope Items` 和 `Excluded Stage Scope Items`。
-5. 当前 MVP 代码基线固化时，检查 AC 是否基于主需求文档、MVP scope、用户故事和实际代码证据；P0/新增功能时，检查 AC 是否以已批准 increment spec 为直接输入，并保留 Stage Scope Item IDs。
+5. 当前 MVP 代码基线固化时，检查 AC 是否基于主需求文档、MVP scope、用户故事和实际代码证据；P0/新增功能时，检查 AC 是否以已批准 increment spec 为直接输入，Stage/Increment 只作为 scope context。
 6. 沿 workflow 检查是否存在 feature/increment spec、验收标准、强制追溯矩阵、相关契约、测试和报告。
-7. 检查新 increment 链路是否完整：每个 required Stage Scope ID 有 increment 覆盖或明确 deferred/not applicable；每个 FR 至少有 1 个 AC；每个 AC 反向引用 1 个或多个 FR 和上游 Stage Scope ID；每个 AC 映射到 stable TC ID 或明确例外；Code Evidence 不为空；Test Evidence 不为空或有明确例外。
+7. 检查 owning traceability matrix 的完整链路；同时确认 local artifacts 只保留直接上游，没有把完整链作为重复必填输入。
 8. 对 implementation-impacting increment 检查 `swc_allocation.md`：每个受影响 FR/AC 是否映射到 FE SWC、BE SWC、API/OpenAPI、Domain Entity、DB Table/Migration、Provider/AI Boundary、TC 或明确 `N/A - <reason>`，并是否引用全局 SWC 架构基准和适用 `SWC-FLOW-*` ID。
 9. 对 brownfield/refactor increment 检查 Existing Implementation Baseline 和 Delta From Existing Baseline：是否列出现有用户流、代码路径、SWC、Flow ID、API、数据归属、测试、不可回归行为、复用 SWC/Flow、允许/禁止新增代码、允许修改旧代码、迁移/废弃和回归证明。
 10. 检查 SWC allocation gate evidence：implementation-impacting PR 是否运行或计划运行 `python3 scripts/check_swc_allocation.py --scope changed --base-ref <base-ref>`；若变更场景对话路径，是否引用 `SWC-FLOW-SCENARIO-PRACTICE-RUNTIME` 和 `FE-SCENARIO-PRACTICE` / `FE-PRACTICE-RUNTIME`。
@@ -160,7 +154,7 @@ Increment Test Evidence review must verify:
 - SWC allocation 绕过现有 SWC 或 cross-cutting boundary，新增重复组件却没有迁移/废弃理由。
 - `FR`、`AC`、`Code Evidence` 或 `Test Evidence` 字段为空且无明确例外。
 - Stage scope is written only as bullets with no stable Stage Scope Item IDs for committed work.
-- Increment definition lacks `Covered Stage Scope Items`, or requirements/spec/AC drop those IDs downstream.
+- Local spec、AC、TC 或 SWC allocation 重复要求完整 Story/Slice/FR/Spec/AC/TC 链路，而不是只记录直接上游。
 - 100% traceability is claimed while a required Stage Scope Item ID is uncovered, deferred without reason, or not represented in the increment traceability matrix.
 - Increment traceability Test Evidence cites a test report but not the owning TC ID, script path, execution command, or result status.
 - prompt/schema/API 变更没有对应契约文档。
@@ -171,6 +165,8 @@ Increment Test Evidence review must verify:
 
 ## Verification
 - 每个检查对象都有上游来源。
+- 完整跨级 join 只在 owning traceability matrix 中判定。
+- Local artifacts 遵循 direct-upstream model，不因缺少重复的完整跨级字段而失败。
 - 缺失链路被明确标记为缺失或不适用。
 - 下一步建议对应 workflow 的具体阶段。
 - 没有把追踪检查变成内容生成。

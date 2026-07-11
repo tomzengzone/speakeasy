@@ -19,9 +19,10 @@ Create a feature-level contract that connects requirements, architecture impact,
 - There is already an approved feature spec and no behavior change.
 
 ## Inputs
-- Refined requirement or user story.
+- Approved refined FRs as the direct behavior upstream.
+- Vertical Slice IDs only as scope guard / provenance.
 - Approved increment definition and increment requirements for new product work.
-- Covered Stage Scope Item IDs from the active stage and increment definition for new product work.
+- Stage Scope Item IDs only as delivery context, not spec behavior input.
 - Product Base requirements in `docs/product/base/requirements.md` when consolidating or updating accepted stable product behavior.
 - Stable feature metadata from `docs/product/feature_registry.md` when long-lived capability boundary context is needed.
 - Relevant architecture and domain docs.
@@ -34,7 +35,7 @@ Create a feature-level contract that connects requirements, architecture impact,
 - API, data, UI, AI, and test impact sections.
 - Non-goals and rollout notes.
 - Traceable references that allow acceptance criteria to use the approved Product Base or increment spec as direct upstream input.
-- Preserved Stage Scope Item ID references for every increment spec section that refines committed stage scope.
+- Source FR references for every increment spec flow, state, and dependency; complete Story/Slice join stays in owning traceability.
 
 ## 文档语言
 - 本 skill 创建或更新的项目文档默认使用中文，除非用户明确要求英文或其他语言。
@@ -43,8 +44,8 @@ Create a feature-level contract that connects requirements, architecture impact,
 ## 文档路径约定
 - 新阶段交付规格默认写入 `docs/product/increments/<increment-id>/spec.md`。
 - 已接受稳定行为规格写入 `docs/product/base/spec.md`。
-- 输入需求优先读取 `docs/product/increments/<increment-id>/requirements.md` 或 `docs/product/base/requirements.md`，必要时补读 `docs/product/user_stories.md`、`docs/product/feature_registry.md` 和 `docs/process/change_request.md`。
-- 后续 P0 或新增功能的验收标准必须以已批准 Product Base 或 increment spec 为直接输入；因此 spec 必须保留需求、用户故事、范围边界和非目标的可追溯引用。
+- 输入行为只读取已批准 increment/Product Base FR；必要时读取 `docs/product/story_map.md` 作为 Slice scope guard，并读取 feature registry / change request 作为边界上下文。
+- 后续 AC 必须以已批准 Product Base 或 increment spec 为直接输入；spec 保留 source FR、必要 Vertical Slice scope guard 和 `Traceability Row ID`，不重复完整链路。
 - 若规格影响架构、领域、API、AI runtime 或 UX，只记录影响范围；具体契约分别交由对应 skill 更新到 `docs/architecture/`、`docs/domain/`、`docs/ai_runtime/`、`docs/ux/`。
 - 发现范围扩展时更新 `docs/process/change_request.md`，不要把变更决策埋进 spec。
 
@@ -52,16 +53,16 @@ Create a feature-level contract that connects requirements, architecture impact,
 - For new product work, generate an increment spec at `docs/product/increments/<increment-id>/spec.md`.
 - For accepted stable product behavior, update `docs/product/base/spec.md`; do not update a baseline snapshot as the living spec.
 - Do not generate a feature spec named after a stage, priority window, roadmap horizon, MVP baseline, or increment id.
-- The spec must cite its upstream increment definition, increment requirements, active stage, primary feature, and affected features.
-- The spec must cite the `Covered Stage Scope Items` from the increment definition and preserve those IDs in relevant flows, states, dependencies, and non-goals.
+- The spec must cite approved FRs as direct upstream, plus increment definition and capability boundaries as scope context.
+- Every relevant flow, state, and dependency must cite its source FR. Vertical Slice is scope guard / provenance only.
 - Stable feature metadata lives in `docs/product/feature_registry.md` as slug, boundary, owner, and related stage/increment; it must not absorb stage delivery plans.
 - If architecture, domain, API, AI runtime, or UX contracts are needed, record the required contract outputs but do not inline those contracts into the increment spec.
-- If no approved increment definition exists, or if the increment definition lacks `Covered Stage Scope Items` for committed stage work, block spec generation and return the missing upstream artifact.
+- If no approved FR exists, block spec generation and return the missing direct-upstream artifact.
 
 ## Process
 1. Start with assumptions and dependencies.
 2. Confirm the product object and output path before drafting the spec.
-3. For new increment work, list covered Stage Scope Item IDs and map each major flow/state to them.
+3. List approved FR IDs and map each major flow/state/dependency to its source FR; add Vertical Slice only as scope guard.
 4. Define observable user success criteria before implementation details.
 5. List impacted files or modules by ownership area.
 6. Split work if the expected change touches more than five files.
@@ -78,8 +79,8 @@ Create a feature-level contract that connects requirements, architecture impact,
 - Acceptance criteria are generated for a P0/new feature before the feature spec is approved.
 - The spec path uses a stage name or increment id as a stable feature slug.
 - The spec includes full API, AI, UX, or domain contracts instead of requesting the correct downstream contract artifacts.
-- The spec drops Stage Scope Item IDs and only references the stage or increment in prose.
-- A spec section introduces behavior that is not covered by Stage Scope Item IDs, increment requirements, or an approved change request.
+- The spec treats Story/Slice, Stage, or Capability as parallel behavior inputs instead of using approved FRs.
+- A spec section introduces behavior that is not covered by an approved FR or approved change request.
 
 ## Verification
 - The feature can be accepted or rejected from the spec alone.
@@ -89,7 +90,7 @@ Create a feature-level contract that connects requirements, architecture impact,
 - The spec can serve as the direct upstream input for P0/new-feature acceptance criteria.
 - The spec does not claim 100% requirement coverage; that is established in the acceptance-criteria traceability matrix.
 - For new product work, the spec is tied to one increment definition and one increment requirements document.
-- For new product work, every major flow/state cites a Stage Scope Item ID or an approved change request source.
+- For new product work, every major flow/state/dependency cites an approved FR or an approved change request source.
 
 ## Common Rationalizations
 | Rationalization | Reality |

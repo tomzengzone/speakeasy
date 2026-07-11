@@ -20,7 +20,7 @@ This project-local skill applies to development workflow assets in this reposito
 - `docs/product/increments/<increment-id>/requirements.md`
 - `docs/product/base/requirements.md`
 - `docs/product/feature_registry.md`
-- `docs/product/user_stories.md`
+- `docs/product/story_map.md`，仅用于 Vertical Slice scope guard / provenance。
 - `docs/process/change_request.md`
 - Relevant architecture and domain docs when they already exist.
 - `docs/process/definition_of_done.md`
@@ -36,7 +36,7 @@ This project-local skill applies to development workflow assets in this reposito
 ## Product Object Outputs
 - Product Base spec for accepted stable behavior: `docs/product/base/spec.md`.
 - New increment spec: `docs/product/increments/<increment-id>/spec.md`.
-- Stage Scope Item ID references preserved in increment spec flows, states, dependencies, and non-goals.
+- Approved FR references preserved in increment spec flows, states, and dependencies; Vertical Slice is scope guard only.
 - Stable feature metadata reference: `docs/product/feature_registry.md`.
 - Required downstream contract list for architecture, domain, API, AI runtime, UX, and tests.
 
@@ -50,9 +50,9 @@ This project-local skill applies to development workflow assets in this reposito
 - The spec preserves traceability to requirements, user stories, MVP/P0 scope, and non-goals.
 - Requirement coverage completeness is established later by acceptance criteria and the traceability matrix, not by the spec alone.
 - For new product work, output path follows `docs/product/increments/<increment-id>/spec.md`.
-- The spec cites active stage, covered Stage Scope Item IDs, primary feature, affected features, increment definition, and increment requirements.
+- The spec cites approved FRs as direct upstream, plus increment and capability scope context.
 - Stage goals and stable feature boundaries are referenced but not rewritten as the increment spec.
-- New behavior in the spec must be traceable to a Stage Scope Item ID, an increment requirement, or a Product Manager-approved change request.
+- New behavior in the spec must be traceable to an approved FR or a Product Manager-approved change request.
 
 ## Maintenance Notes
 - Keep SKILL.md concise enough for runtime use.

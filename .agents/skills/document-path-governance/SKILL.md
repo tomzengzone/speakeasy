@@ -62,7 +62,8 @@ description: Use when project documentation needs a canonical path, document own
 - 增量测试用例库：`docs/product/increments/<increment-id>/test_cases.md`
 - 增量追踪：`docs/product/increments/<increment-id>/traceability.md`
 - 增量 SWC 分配：`docs/product/increments/<increment-id>/swc_allocation.md`
-- 用户故事：`docs/product/user_stories.md`
+- User Story / Vertical Slice：`docs/product/story_map.md`，PM-owned canonical product source
+- 旧用户故事入口：`docs/product/user_stories.md`，仅作 legacy compatibility reference
 - 变更请求：`docs/process/change_request.md`
 - 工作流程：`docs/process/workflow.md`
 - 完成定义：`docs/process/definition_of_done.md`
@@ -96,8 +97,9 @@ description: Use when project documentation needs a canonical path, document own
 - 版本记录：`docs/release/version_log.md`
 
 ## Product Object Path Rules
-- 新增产品工作必须先判断对象类型：feature、stage、increment、baseline、change request 或 artifact。
-- Capability 是 APP 长期稳定产品分类，登记在 `docs/product/feature_registry.md`，使用 V2 `Capability ID` / `Sub-capability ID` 作为下游 requirements、spec、AC、TC、stage scope 和 increment definition 的引用入口，不分配独立 feature 文档目录。
+- 新增产品工作必须先判断对象类型：Capability、User Story、Vertical Slice、stage、increment、baseline、change request 或 artifact。
+- Capability 是 APP 长期稳定产品分类，登记在 `docs/product/feature_registry.md`；Capability ID / Sub-capability ID 只做 ownership、boundary 和 classification mapping，不能作为 FR/spec/AC/TC 的直接行为来源。
+- User Story / Vertical Slice 登记在 `docs/product/story_map.md`，是 Requirement Development 的直接产品上游；完整跨级映射仍由 owning `traceability.md` 维护。
 - Stage / increment 是交付结构，capability / sub-capability 是稳定产品分类；不得用 MVP、P0.1、P0.2、Now、Next、Later 等阶段名作为 `Capability slug` 或 `Capability ID`。
 - V1 slug 只允许通过 active registry 的 `Legacy Mapping` 做历史追溯；`docs/product/baselines/feature-registry-v1-<date>.md` 是 archived baseline，不得作为 active source of truth、compatibility source 或新增下游输入。
 - Stage 只描述阶段目标、入口/出口和纳入/排除的 increment，不承载需求正文或 implementation plan。

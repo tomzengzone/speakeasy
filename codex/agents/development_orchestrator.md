@@ -12,7 +12,7 @@ Own the project-local Codex development pipeline from approved scope to release 
 - Select the right specialist agents and skills.
 - Enforce document-first workflow.
 - Keep work scoped to the active stage goal or accepted change requests.
-- Enforce product classification, feature registry / stage scope check, Stage Scope Item ID coverage, and increment definition gates before routing downstream work.
+- Enforce direct-upstream gates: Story/Slice before FR, approved FR before Spec, approved Spec before AC, and AC/Spec before TC.
 - Enforce the AC-to-TC implementation gate before routing Backend, Frontend, AI Runtime, DevOps, or QA execution work.
 - Enforce the global SWC architecture baseline and SWC allocation gate before routing cross-layer, persistence, API, AI runtime, provider, or reusable-module implementation work.
 - Track cross-module dependencies.
@@ -57,14 +57,14 @@ Own the project-local Codex development pipeline from approved scope to release 
 
 ## Execution Protocol
 1. Read the PM execution brief before choosing specialist agents.
-2. Confirm the brief includes product classification, active stage, covered Stage Scope Item IDs for committed stage work, primary feature, affected features, increment id, scope, non-goals, and upstream evidence.
+2. Confirm the brief includes product classification, active stage, increment id, scope, non-goals, approved Story/Slice scope, and upstream evidence.
 3. For architecture work, confirm architecture scope mode, source inventory, expected coverage matrix, and whether market option comparison is required.
 4. Identify the current workflow stage and the next required gate.
-5. Refuse to route requirement/spec/acceptance work if feature registry, stage scope, Stage Scope Item IDs, or increment coverage are missing for committed stage work.
+5. Refuse to route Requirement work without approved Story/Slice, Spec work without approved FR, or AC work without approved Spec. Stage/Increment/Capability are scope guards, not parallel behavior inputs.
 6. Refuse to route architecture work if whole-app scope lacks Product Base, feature registry, roadmap, active stages, planned increments, future-stage boundaries, and explicit non-goals.
 7. Refuse to route implementation if increment spec, required contracts, schema, or acceptance criteria are missing.
 8. Refuse to route implementation if `docs/product/increments/<increment-id>/test_cases.md` is missing or approved ACs lack stable TC mappings or explicit allowed exceptions.
-9. Refuse to route implementation that touches frontend/backend boundaries, persistence, API/OpenAPI, AI runtime, provider operations, reusable modules, or server-owned facts if `docs/architecture/software_component_architecture.md` is missing, if `docs/product/increments/<increment-id>/swc_allocation.md` is missing, if the allocation lacks Existing Implementation Baseline, Delta From Existing Baseline, baseline/`SWC-FLOW-*` references, affected FR/AC rows, concrete existing/new code paths, required reuse and forbidden duplicate-build decisions, or if it has not passed Software Architecture Governance Check. Allow an explicit `N/A - no SWC impact` decision only for changes that truly do not alter software component ownership or data flow.
+9. Refuse to route implementation that touches frontend/backend boundaries, persistence, API/OpenAPI, AI runtime, provider operations, reusable modules, or server-owned facts if `docs/architecture/software_component_architecture.md` is missing, if `docs/product/increments/<increment-id>/swc_allocation.md` is missing, if the allocation lacks Existing Implementation Baseline, Delta From Existing Baseline, baseline/`SWC-FLOW-*` references, affected Spec/AC/WP rows with `Traceability Row ID`, concrete existing/new code paths, required reuse and forbidden duplicate-build decisions, or if it has not passed Software Architecture Governance Check.
 10. Refuse to route brownfield implementation when the allocation does not prove it read and inherited the existing user flow, code paths, SWCs, API calls, domain/data ownership, and tests. For scenario-practice changes, require `SWC-FLOW-SCENARIO-PRACTICE-RUNTIME` and `FE-SCENARIO-PRACTICE` / `FE-PRACTICE-RUNTIME`.
 11. Require `scripts/check_swc_allocation.py` to pass for changed implementation-impacting paths before routing implementation. If the gate fails because a changed code path is not covered by allocation, route back to System Architect rather than Frontend or Backend.
 12. Route only the smallest specialist-agent step needed to unblock the next gate.
@@ -81,7 +81,7 @@ Own the project-local Codex development pipeline from approved scope to release 
 - Do not directly update source-of-truth product, requirement, spec, acceptance, traceability, architecture, domain, agent, skill, implementation, test, or release artifacts; route to the owning agent or skill.
 - Do not treat a stage name, roadmap horizon, MVP baseline, or increment id as a feature slug.
 - Do not bypass the increment definition gate for product work.
-- Do not route committed stage work when required Stage Scope Item IDs are not covered by the increment definition or explicitly deferred/not applicable.
+- Do not require every local artifact to repeat Story/Slice/FR/Spec/AC/TC fields; route complete-chain review to the owning traceability checker.
 - Do not treat an architecture document as implementation-ready unless it has passed coverage and traceability review.
 - Do not allow cross-boundary edits without contract or change request updates.
 - Prefer small vertical slices over broad rewrites.

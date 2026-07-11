@@ -86,39 +86,30 @@ Product document 在选择路径前必须先区分 product object：
 - 新增或修改下游 requirements、spec、AC、TC、stage scope 和 increment definition 不得引用 V1 slug 作为主结构、需求 ID、模块标题或 active source。
 - V1 slug 只允许通过 `docs/product/feature_registry.md` 的 `Legacy Mapping` 做历史追溯，不得作为新下游输入或兼容 source。
 
-## Stage-To-Increment Traceability
+## Direct-Upstream And Traceability Ownership
 
-Committed stage work 在生成下游 artifact 前必须可追溯：
+开发 artifact 逐级细化，并只把直接上游作为行为输入：
 
 ```text
-Stage Scope ID
--> Increment ID
--> Requirement ID
--> Spec section/state ID
--> Acceptance Criteria ID
--> Contract ID, when applicable
--> Global SWC Architecture Baseline / Flow ID, when applicable
--> SWC Allocation Row, when applicable
--> Work Package ID, when available
--> Code Evidence
--> Test Evidence
--> Release Evidence
+User Story / Vertical Slice -> FR -> Spec -> AC -> TC -> Evidence
 ```
 
 规则：
 
 - Active stage file 必须用稳定 Stage Scope Item ID 暴露 scope，并把每个 item 分类为 `required`、`deferred` 或 `not applicable`。
 - Increment definition 必须列出 `Covered Stage Scope Items` 和 `Excluded Stage Scope Items`。
-- 新 increment work 的 requirement artifact 必须引用其细化的 Stage Scope Item ID。
-- Spec 和 acceptance criteria 必须保留 Stage Scope Item ID，不得用纯 prose reference 替换。
+- Requirement 的直接上游是已批准 User Story / Vertical Slice；Stage Scope、Increment 和 Capability 只做 scope guard / delivery classification。
+- Spec 的直接上游是已批准 FR；AC 的直接上游是已批准 Spec；TC 的直接上游是 AC/Spec。
+- Local artifact 不得把完整 Story/Slice/FR/Spec/AC/TC/SWC 链作为重复必填字段。
+- 完整跨级 join 只在 owning Product Base 或 increment `traceability.md` 中维护，并使用稳定 `Traceability Row ID`。
 - Implementation-impacting increment 在编码开始前必须包含 `docs/product/increments/<increment-id>/swc_allocation.md`，或明确 `N/A - no SWC impact` decision。
 - Brownfield implementation-impacting increment 在编码开始前必须包含 Existing Implementation Baseline 和 Delta From Existing Baseline。
 - Implementation-impacting increment 必须引用 `docs/architecture/software_component_architecture.md` 和适用 `SWC-FLOW-*` ID，或为任何 local SWC flow 给出 migration/reuse rationale 分类。
 - Implementation-impacting PR 必须通过 `scripts/check_swc_allocation.py`；changed implementation path 必须被 owning allocation 的 existing code baseline 或 allowed code delta 覆盖。
-- Traceability matrices must prove 100% coverage for committed scope: every required Stage Scope Item ID is covered by an increment or has an explicit deferred/not-applicable decision, every increment requirement traces to at least one Stage Scope Item ID, every FR has at least one AC, and every AC has code/test evidence or a documented exception when implementation has started.
+- Traceability matrices must prove 100% coverage for committed scope; local artifacts prove only their direct-upstream relationship and evidence fields.
 - Increment test case libraries must assign stable `TC-<scope-prefix>-<NNN>` IDs. For MVP backend work, use `TC-MVP-BE-001`, `TC-MVP-BE-002`, and continue sequentially without renumbering or reuse.
 - Published TC IDs remain in the library even when retired; retired rows must record status `retired` and a replacement TC ID or retirement reason.
-- Each increment test case must include: `Stage Scope ID`, `FR`, `Spec`, `AC`, `Traceability Row`, `Gap`, `测试层级`, `自动化状态`, `测试脚本路径`, `执行命令`, `结果状态`, and `证据报告`. Blank required fields are not allowed; use `N/A - <reason>` only when the field is genuinely not applicable.
+- Each increment test case must include: `TC ID`, `Traceability Row ID`, `Increment ID`, `WP ID`, `Spec ID`, `AC ID`, `测试层级`, `自动化状态`, `测试脚本路径`, `执行命令`, `结果状态`, `证据报告`, and `Gap / Exception`.
 - QA may update traceability Test Evidence only for test evidence, test status, QA gap notes, and evidence report links. Traceability check must review `AC -> TC -> test script path -> execution command -> result status -> evidence report -> Test Evidence` before completion.
 - Future roadmap placeholders may be traced only to feature/stage boundaries and architecture compatibility notes until Product Manager accepts them into an increment; they must not be represented as implementation-ready requirements.
 

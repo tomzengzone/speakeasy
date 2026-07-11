@@ -36,13 +36,13 @@
 - 文档内容不越过 workflow 阶段边界。
 - 审查结论能指导具体修订。
 - 不和路径治理、追踪检查职责重叠。
-- `docs/product/base/acceptance.md` and `docs/product/increments/<increment-id>/acceptance.md` define observable acceptance behavior; `docs/product/base/traceability.md` and `docs/product/increments/<increment-id>/traceability.md` record FR, User Story, AC, Test Case ID, Code Evidence, Test Evidence, and Status.
+- Acceptance artifacts define observable behavior from approved Spec; owning traceability files record the complete Story/Slice/FR/Spec/AC/TC/SWC/evidence join.
 - 100% 覆盖只表示需求覆盖完整性，不表述为代码行覆盖率或线上零缺陷保证。
 - Committed stage scope must be expressed as stable Stage Scope Item IDs, not prose-only bullets; increment definitions must preserve those IDs as covered or excluded scope.
 - Global SWC architecture baseline must own topology and reusable `SWC-FLOW-*` IDs; SWC Catalog must own component inventory; increment SWC allocation must own Existing Implementation Baseline, Delta From Existing Baseline, and FR/AC-to-SWC delta mapping.
 - Broad-module requirements documents present product requirement results, not execution process. They must not use `Step 1` or `Step 2` headings.
 - Broad-module requirements documents must include module functional requirement boundary, first-level subfunction sections, product-level functional requirement boundary for each subfunction, and requirement item tables with only `需求ID`, `需求项`, and `需求描述`.
-- Traceability fields such as Stage Scope ID, source increment, spec ID, acceptance criteria ID, status, and evidence must remain in separate traceability mapping, not in the main requirement item table.
+- Complete cross-level fields remain in the owning traceability matrix; local artifacts keep only direct upstream plus necessary scope guards.
 
 ## Maintenance Notes
 - 新增文档类别时，同时检查是否需要更新 `document-path-governance`。

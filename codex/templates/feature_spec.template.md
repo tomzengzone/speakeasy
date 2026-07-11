@@ -3,12 +3,22 @@
 ## Status
 Draft
 
+## Direct Upstream
+- Approved FR IDs:
+- Increment ID:
+- Traceability Row ID:
+
+## Scope Guard
+| Vertical Slice ID | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- |
+|  |  |  |
+
 ## Goal
-<What user or business problem this solves.>
+<本规格解决的用户或业务问题。>
 
 ## User Path
-1. <Step>
-2. <Step>
+1. <Step; source FR ID>
+2. <Step; source FR ID>
 
 ## Inputs
 - <Input>
@@ -37,9 +47,11 @@ Draft
 ## Non-goals
 - <Out of scope>
 
+完整 Story/Slice-to-evidence join 由 owning `traceability.md` 维护；本 spec 不重复整条链路。
+
 ## Rollout
-- <Feature flag, migration, release notes>
+- <功能开关、迁移和发布说明>
 
 ## Rollback
-- <How to revert safely>
+- <安全回滚方式>
 

@@ -11,6 +11,7 @@
 
 ## Product Object Check
 - V2 capability registry（V2 能力注册表）: <confirmed | missing | not applicable>
+- Story map（用户故事/垂直切片）: <confirmed | missing | not applicable>
 - Baseline（基线）: <path or not applicable>
 - Active stage（当前阶段）: <path or not applicable>
 - Stage scope item IDs（阶段范围项 ID）: <confirmed | missing | not applicable>
@@ -27,6 +28,8 @@
 - Affected sub-capabilities（受影响子能力）: <Sub-capability IDs, for example CAP-PRACTICE-03, CAP-COACH-01, or none>
 - Increment id（增量 ID）: <increment id or not applicable>
 - Covered Stage Scope Items（已覆盖阶段范围项）: <Stage Scope Item IDs or not applicable>
+- User Story IDs（直接产品上游）: <IDs or not applicable>
+- Vertical Slice IDs（直接产品上游）: <IDs or not applicable>
 - Excluded Stage Scope Items（排除阶段范围项）: <Stage Scope Item IDs or not applicable>
 - Uncovered required Stage Scope Items（未覆盖 required 阶段范围项）: <none | IDs with deferred/not-applicable reason | blocker>
 
