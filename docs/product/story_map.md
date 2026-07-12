@@ -861,6 +861,178 @@ Child Vertical Slices:
 | `VS-ENGAGE-011` | 学习者查看活动或挑战入口和参与状态；成功时知道活动是否可参加、是否已参与或是否可继续；加载失败时展示可恢复提示。 | `draft` | `CAP-ENGAGE` | `CAP-CONTENT`, `CAP-PLAN`, `CAP-COM` |
 | `VS-ENGAGE-012` | 当活动不可用、已结束或学习者未满足参与条件时，系统展示明确状态和返回常规学习路径；成功时学习者不会误以为活动仍可参加。 | `draft` | `CAP-ENGAGE` | `CAP-CONTENT`, `CAP-PLAN`, `CAP-COM` |
 
+## 13. 应用设置与体验偏好（CAP-SETTING / app-experience-settings）
+
+### US-SETTING-001 - 学习者建立个人化 App 使用环境
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `US-SETTING-001` | 作为在不同设备和环境中使用 App 的学习者，我希望理解显示、语言与地区偏好的生效范围，并在调整时预览实际效果，以便建立稳定、可预期的个人使用环境，而不改变学习目标语言或课程内容。 | `draft` | `CAP-SETTING` | `CAP-ACC` |
+
+Child Vertical Slices:
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `VS-SETTING-001` | 学习者首次进入设置或在新设备上恢复使用时，可以区分哪些显示、语言与地区偏好仅作用于本设备，哪些随账号保留，以及未设置项目采用的系统值或产品推荐值，再决定沿用还是修改。 | `draft` | `CAP-SETTING` | `CAP-ACC` |
+| `VS-SETTING-002` | 学习者切换浅色、深色或跟随系统主题，或调整显示密度时，当前设置页立即呈现文字、控件和内容列表的实际效果；确认后作为后续 App 页面默认展示，取消则恢复调整前状态。 | `draft` | `CAP-SETTING` | `none` |
+| `VS-SETTING-003` | 学习者更改 App 显示语言或地区后，可以在确认前看到界面文案以及日期、时间和数字格式的变化范围；该选择只影响 App 界面和地区格式，不修改学习目标语言、课程语言或官方内容。 | `draft` | `CAP-SETTING` | `none` |
+
+### US-SETTING-002 - 学习者配置听说练习的默认体验
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `US-SETTING-002` | 作为经常进行听力、跟读和对话练习的学习者，我希望预先配置语音播放与语音输入方式，并能区分全局默认值和单次练习调整，以便减少重复操作，同时保留针对具体练习临时改变体验的自由。 | `draft` | `CAP-SETTING` | `CAP-PRACTICE`, `CAP-ACC` |
+
+Child Vertical Slices:
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `VS-SETTING-004` | 学习者组合选择默认语音或口音、播放速度、TTS 播放和自动播放后，可以试听一段代表性音频并确认这组组合；保存后，听力、跟读和示范音频入口以该组合作为默认值。 | `draft` | `CAP-SETTING` | `CAP-PRACTICE` |
+| `VS-SETTING-005` | 学习者在按住说话、自动检测说话结束和录制后提交之间选择默认语音输入方式时，可以看到每种方式对 AI 对话轮次、提交时机和练习节奏的影响；需要麦克风但尚未授权的方式同时给出授权入口。 | `draft` | `CAP-SETTING` | `CAP-PRACTICE`, `CAP-ACC` |
+| `VS-SETTING-006` | 学习者在某次练习中临时改变语速、语音或输入方式时，可以选择“仅本次使用”或“更新为默认设置”；前者在离开练习后恢复全局默认值，后者才会影响后续练习入口。 | `draft` | `CAP-SETTING` | `CAP-PRACTICE` |
+
+### US-SETTING-003 - 学习者控制本地缓存和离线资源
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `US-SETTING-003` | 作为需要控制流量和设备空间的学习者，我希望知道 App 本地存储由哪些资源构成，选择自动缓存和离线下载策略，并安全释放可重新获取的文件，以便在训练可用性、网络消耗和存储空间之间作出明确取舍。 | `draft` | `CAP-SETTING` | `CAP-PRACTICE` |
+
+Child Vertical Slices:
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `VS-SETTING-007` | 学习者查看存储占用时，可以分别看到音频缓存、课程与练习资源、主动下载的离线资源和临时文件所占空间，并识别哪些资源可重新下载、哪些资源仍被离线学习计划使用。 | `draft` | `CAP-SETTING` | `CAP-PRACTICE` |
+| `VS-SETTING-008` | 学习者可在“仅 WiFi 下载”“自动缓存今日计划”和“不自动缓存”之间设置下载策略；设置页说明每种策略对移动网络使用、今日训练就绪状态和离线可用范围的影响。 | `draft` | `CAP-SETTING` | `CAP-PRACTICE` |
+| `VS-SETTING-009` | 学习者清理存储前会看到可重新下载的缓存与主动保留的离线资源分别将释放多少空间，并可分开选择；清理不删除账号资料、学习记录、个人素材或远端课程资产。 | `draft` | `CAP-SETTING` | `CAP-ACC`, `CAP-PRACTICE` |
+
+Boundary note:
+
+- `CAP-SETTING` 定义通用 App 体验偏好及其生效范围。账号身份与隐私授权归 `CAP-ACC`，课程和练习行为归 `CAP-CONTENT` / `CAP-PRACTICE`，学习计划归 `CAP-PLAN`；设置可以向这些入口提供默认值，但不替代其业务规则和运行状态。
+
+## 14. 用户支持、反馈与服务（CAP-SUPPORT / user-support-feedback-service）
+
+### US-SUPPORT-001 - 学习者获得与当前问题相关的自助帮助
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `US-SUPPORT-001` | 作为在具体功能中遇到问题的学习者，我希望从当前上下文获得适用的帮助内容、搜索其他问题并完成引导式排障，以便优先自行解决问题；无法解决时，已确认的信息可以继续用于人工服务。 | `draft` | `CAP-SUPPORT` | `CAP-ACC`, `CAP-CONTENT`, `CAP-COM` |
+
+Child Vertical Slices:
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `VS-SUPPORT-001` | 学习者从登录、练习、内容或会员页面打开帮助时，帮助中心优先呈现与当前功能、当前状态和设备平台相符的主题，同时允许切换到完整帮助分类；学习者不必先猜测内部模块名称。 | `draft` | `CAP-SUPPORT` | `CAP-ACC`, `CAP-CONTENT`, `CAP-COM` |
+| `VS-SUPPORT-002` | 学习者按问题关键词搜索时，可以继续按产品区域、问题类型和设备平台缩小结果，并在每条结果上判断适用对象和解决目标；没有匹配内容时，可改用分类浏览或带着搜索词发起反馈。 | `draft` | `CAP-SUPPORT` | `CAP-ACC`, `CAP-CONTENT`, `CAP-COM` |
+| `VS-SUPPORT-003` | 学习者进入引导式排障后，按可观察现象逐步确认网络、权限、账号状态或内容可用性，并看到已完成步骤与下一步；问题未解决时，可将问题类型和已尝试步骤带入人工服务请求。 | `draft` | `CAP-SUPPORT` | `CAP-ACC`, `CAP-CONTENT` |
+
+### US-SUPPORT-002 - 学习者提交可定位、可追踪的产品与内容反馈
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `US-SUPPORT-002` | 作为发现内容错误、产品问题或 AI 反馈质量异常的学习者，我希望从问题发生处提交带有必要上下文的反馈，并在反馈中心跟踪处理结果，以便团队能定位问题，我也无需反复描述同一情况。 | `draft` | `CAP-SUPPORT` | `CAP-CONTENT`, `CAP-COACH` |
+
+Child Vertical Slices:
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `VS-SUPPORT-004` | 学习者从课程、表达或练习素材发起内容错误反馈时，反馈自动关联内容标识和具体位置，并让学习者选择错别字、翻译、音频、答案或其他问题类型，再补充说明和证据。 | `draft` | `CAP-SUPPORT` | `CAP-CONTENT` |
+| `VS-SUPPORT-005` | 学习者对 AI 回答、评分或教练建议反馈质量问题时，可以在隐私提示后附带本次输入、系统输出、评分结果和问题类型；提交只创建质量反馈记录，不直接改写原回答、分数或学习记录。 | `draft` | `CAP-SUPPORT` | `CAP-COACH` |
+| `VS-SUPPORT-006` | 学习者在反馈中心按“已收到、评估中、需补充、已回复、已关闭”查看自己提交的反馈，并在需要补充时继续追加信息；同一反馈的回复和状态保留在一条时间线上。 | `draft` | `CAP-SUPPORT` | `CAP-CONTENT`, `CAP-COACH` |
+
+### US-SUPPORT-003 - 学习者进入人工服务并持续跟进
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `US-SUPPORT-003` | 作为自助帮助不足以解决问题的学习者，我希望根据问题紧急度和可用时间选择人工服务渠道，提交一次完整请求，并持续查看回复、待办和处理状态，以便明确知道由谁处理、下一步需要我做什么。 | `draft` | `CAP-SUPPORT` | `CAP-ACC`, `CAP-COM`, `CAP-BILLING` |
+
+Child Vertical Slices:
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `VS-SUPPORT-007` | 学习者进入人工服务时，可以比较当前可用的在线客服、邮件和工单渠道，以及各渠道公开的服务时间、响应说明和适用问题；渠道暂不可用时，页面给出后续可用说明或替代渠道。 | `draft` | `CAP-SUPPORT` | `CAP-ACC`, `CAP-COM`, `CAP-BILLING` |
+| `VS-SUPPORT-008` | 学习者选择问题类型后，只需补齐该类问题必需的信息；系统沿用帮助或排障阶段已有的页面、订单或账号上下文，并在提交前让学习者确认将发送的内容，随后生成可查询的工单编号。 | `draft` | `CAP-SUPPORT` | `CAP-ACC`, `CAP-COM`, `CAP-BILLING` |
+| `VS-SUPPORT-009` | 学习者打开工单详情时，可以在同一时间线查看双方消息、附件、当前负责人状态和自己的待补充事项；工单关闭后仍可查看结论，并在问题未解决时按规则重新打开或创建关联工单。 | `draft` | `CAP-SUPPORT` | `CAP-ACC`, `CAP-COM`, `CAP-BILLING` |
+
+### US-SUPPORT-004 - 学习者发起申诉或争议并理解处理边界
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `US-SUPPORT-004` | 作为认为账号处置、内容或 AI 评估、会员权益或交易结果存在错误的学习者，我希望选择正确的申诉或争议类型、提交必要证据并跟踪审查状态，以便进入对应责任域的人工复核，而不是把普通反馈误当成正式申诉。 | `draft` | `CAP-SUPPORT` | `CAP-ACC`, `CAP-CONTENT`, `CAP-COACH`, `CAP-COM`, `CAP-BILLING` |
+
+Child Vertical Slices:
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `VS-SUPPORT-010` | 学习者对账号限制或异常状态发起申诉时，入口说明可申诉的处置对象、身份核验要求和可补充证据；提交后进入账号安全责任域复核，申诉记录本身不会自动恢复账号状态。 | `draft` | `CAP-SUPPORT` | `CAP-ACC` |
+| `VS-SUPPORT-011` | 学习者对内容结论、AI 评分或教练反馈发起争议时，可以选择被争议的具体结果、说明理由并附加证据；页面区分“报告质量问题”和“请求复核结果”，复核期间保留原内容与评分事实。 | `draft` | `CAP-SUPPORT` | `CAP-CONTENT`, `CAP-COACH` |
+| `VS-SUPPORT-012` | 学习者选择会员权益或账单争议时，系统先区分“已支付但权益未生效”和“交易金额、退款或重复扣款问题”：前者交给权益处理，后者带订单上下文进入账单处理，学习者可在统一争议记录中查看两类状态。 | `draft` | `CAP-SUPPORT` | `CAP-COM`, `CAP-BILLING` |
+
+Boundary note:
+
+- `CAP-SUPPORT` 拥有帮助内容入口、反馈记录、客服工单和申诉/争议流程状态，但不拥有被反馈对象的业务结论。Bug 修复、内容改写、AI 评分调整、账号风控结论、退款审批和会员权益判定仍由对应 capability 或外部处理方负责。
+
+## 15. 账单与支付服务（CAP-BILLING / billing-payment-service）
+
+### US-BILLING-001 - 学习者理解自己的交易历史与凭证
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `US-BILLING-001` | 作为发生过购买、续费、恢复购买或退款的学习者，我希望按时间和状态查看交易，理解一笔订单的金额、渠道、处理进度及对应凭证，以便核对支付事实，并与当前会员权益状态区分开。 | `draft` | `CAP-BILLING` | `CAP-ACC`, `CAP-COM` |
+
+Child Vertical Slices:
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `VS-BILLING-001` | 学习者在账单中心按时间范围、交易类型和状态筛选订单，列表显示商品、实付金额与币种、支付渠道、交易时间和当前状态；没有记录时说明当前账号未找到对应交易，并提供核对购买账号的入口。 | `draft` | `CAP-BILLING` | `CAP-ACC`, `CAP-COM` |
+| `VS-BILLING-002` | 学习者打开订单后，可以查看订单号、商品与计费周期、金额明细、支付渠道、状态时间线和关联退款，并明确区分“交易已完成”与“权益当前可用”是两个由不同能力维护的状态。 | `draft` | `CAP-BILLING` | `CAP-COM` |
+| `VS-BILLING-003` | 对已有凭证的订单，学习者可以查看或获取支付渠道提供的收据；需要账单证明或发票类材料时，订单页说明当前支持类型、申请入口和由外部渠道提供凭证时的获取路径。 | `draft` | `CAP-BILLING` | `CAP-ACC`, `CAP-SUPPORT` |
+
+### US-BILLING-002 - 学习者从支付异常中恢复
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `US-BILLING-002` | 作为刚刚发起购买但没有得到明确结果的学习者，我希望知道支付仍在处理、已经失败还是可以恢复，并获得不会造成重复扣款的下一步操作，以便安全完成购买或回到账单支持路径。 | `draft` | `CAP-BILLING` | `CAP-COM`, `CAP-SUPPORT` |
+
+Child Vertical Slices:
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `VS-BILLING-004` | 支付渠道返回处理中或结果未知时，学习者看到待确认订单及最近更新时间，页面阻止对同一订单直接重复支付，并提供刷新状态、稍后查看和联系支持三种安全路径。 | `draft` | `CAP-BILLING` | `CAP-COM`, `CAP-SUPPORT` |
+| `VS-BILLING-005` | 支付失败或被取消后，学习者看到可理解的失败类别，并据此选择重试原方式、更换可用方式、前往外部商店处理或结束购买；原订单保留失败或取消事实，不被显示成已付款。 | `draft` | `CAP-BILLING` | `CAP-COM` |
+| `VS-BILLING-006` | 学习者选择恢复购买时，系统核对当前账号在所选渠道的历史交易，并返回“已恢复”“权益本已存在”“找到交易但无法匹配权益”或“未找到可恢复交易”；需要授予权益的结果交由 `CAP-COM` 处理。 | `draft` | `CAP-BILLING` | `CAP-ACC`, `CAP-COM`, `CAP-SUPPORT` |
+
+### US-BILLING-003 - 学习者处理退款和账单争议
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `US-BILLING-003` | 作为对某笔交易需要退款或有金额争议的学习者，我希望从订单判断可用处理路径、提交或跳转到正确渠道，并持续查看退款状态，以便理解谁在处理、当前进度以及交易事实是否已经变化。 | `draft` | `CAP-BILLING` | `CAP-COM`, `CAP-SUPPORT` |
+
+Child Vertical Slices:
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `VS-BILLING-007` | 学习者从订单发起退款或账单争议时，页面依据支付渠道和订单状态说明当前可申请的事项、处理责任方和需要准备的信息；不符合入口条件时说明原因，但不把“暂无入口”表述成退款已被拒绝。 | `draft` | `CAP-BILLING` | `CAP-SUPPORT` |
+| `VS-BILLING-008` | 对 App 内可受理的请求，学习者确认退款对象、原因和必要证据后获得请求编号；对必须由应用商店或其他外部支付渠道处理的订单，页面带着订单识别信息跳转并说明返回后如何查询进度。 | `draft` | `CAP-BILLING` | `CAP-SUPPORT` |
+| `VS-BILLING-009` | 学习者在原订单上查看退款的“已提交、外部处理中、需补充、部分退款、全部退款、被拒绝或已取消”时间线；退款状态只反映交易处理，后续权益变化由 `CAP-COM` 单独展示。 | `draft` | `CAP-BILLING` | `CAP-COM`, `CAP-SUPPORT` |
+
+### US-BILLING-004 - 学习者解决账号与交易不匹配问题
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `US-BILLING-004` | 作为确认已经付款但在当前账号找不到订单或权益的学习者，我希望用购买渠道和交易线索定位付款、区分交易匹配与权益恢复进度，并在无法自助解决时生成带有必要证据的支持请求，以便避免重复购买和重复说明。 | `draft` | `CAP-BILLING` | `CAP-ACC`, `CAP-COM`, `CAP-SUPPORT` |
+
+Child Vertical Slices:
+
+| Id | description | Status | Primary Capability ID | Affected Capability IDs |
+| --- | --- | --- | --- | --- |
+| `VS-BILLING-010` | 当前账号没有显示预期订单时，学习者可以选择原购买渠道、核对可能使用的登录账号，并输入订单号或选择渠道交易记录；匹配结果明确区分“已与当前账号匹配”“需要核对购买账号”和“尚未找到交易”，不披露其他账号身份。 | `draft` | `CAP-BILLING` | `CAP-ACC` |
+| `VS-BILLING-011` | 当付款已被确认但权益未生效时，账单页保留已确认的交易事实，并把权益恢复请求交给 `CAP-COM`；学习者分别看到“交易已匹配”和“权益处理中/已恢复/无法恢复”，避免把两步合并成模糊的恢复成功。 | `draft` | `CAP-BILLING` | `CAP-COM` |
+| `VS-BILLING-012` | 自助匹配仍无法定位交易时，学习者可创建账单支持请求，系统附带已脱敏的渠道、订单号、交易时间、金额和已尝试步骤，并让学习者确认补充凭证；工单建立后由 `CAP-SUPPORT` 承接沟通。 | `draft` | `CAP-BILLING` | `CAP-ACC`, `CAP-SUPPORT` |
+
+Boundary note:
+
+- `CAP-BILLING` 拥有订单、支付尝试、退款和凭证的交易事实与用户可见处理状态。会员计划、权益授予和商业 access gate 归 `CAP-COM`；账号归属归 `CAP-ACC`；人工沟通归 `CAP-SUPPORT`；支付、税务和外部商店的内部审批规则不在本节定义。
+
 ## Legacy 覆盖索引
 
 - `启动、登录与首评`：覆盖到 `US-ACC-001`、`US-LEVEL-001`、`US-LEVEL-002`、`US-LEVEL-003`、`US-INTENT-001`、`US-INTENT-003`、`US-INTENT-004`、`US-INTENT-005`。
@@ -868,26 +1040,43 @@ Child Vertical Slices:
 - `听力热身与推荐表达`：覆盖到 `US-PRACTICE-001`、`US-PRACTICE-002`、`US-PRACTICE-004`、`US-TRAIN-002`、`US-TRAIN-004`、`US-TRAIN-005`、`US-NOTE-001`。
 - `语音模拟与教练反馈`：覆盖到 `US-PRACTICE-003`、`US-PRACTICE-005`、`US-COACH-001`、`US-COACH-002`、`US-COACH-003`、`US-TRAIN-003`、`US-TRAIN-004`。
 - `复盘、复习与个人结果`：覆盖到 `US-PLAN-002`、`US-PLAN-003`、`US-PLAN-004`、`US-TRAIN-001`、`US-MEMORY-001`、`US-MEMORY-002`、`US-MEMORY-003`、`US-MEMORY-004`、`US-NOTE-001`、`US-NOTE-002`、`US-NOTE-003`、`US-NOTE-004`。
-- `我的与账号设置`：覆盖到 `US-ACC-002`、`US-ACC-004`、`US-ACC-005`、`US-ACC-006`、`US-ACC-007`、`US-ACC-008`、`US-ACC-009`、`US-COM-001`、`US-COM-002`、`US-COM-003`、`US-ENGAGE-001`、`US-ENGAGE-002`、`US-ENGAGE-003`、`US-ENGAGE-004`、`US-ENGAGE-005`。
+- `我的与账号设置`：覆盖到 `US-ACC-002`、`US-ACC-004`、`US-ACC-005`、`US-ACC-006`、`US-ACC-007`、`US-ACC-008`、`US-ACC-009`、`US-SETTING-001`、`US-SETTING-002`、`US-SETTING-003`、`US-ENGAGE-001`、`US-ENGAGE-002`、`US-ENGAGE-003`、`US-ENGAGE-004`、`US-ENGAGE-005`。
+- `会员订阅与账单`：覆盖到 `US-COM-001`、`US-COM-002`、`US-COM-003`、`US-BILLING-001`、`US-BILLING-002`、`US-BILLING-003`、`US-BILLING-004`。
+- `用户支持与反馈`：覆盖到 `US-SUPPORT-001`、`US-SUPPORT-002`、`US-SUPPORT-003`、`US-SUPPORT-004`。
 
 ## Ready Gate 记录
 
 Assumptions:
 
+- Scope mode: `capability`，目标范围为 `CAP-SETTING`、`CAP-SUPPORT`、`CAP-BILLING`。
 - Product classification: `product-base-consolidation` / capability-organized story map normalization.
 - Capability classification: 依据 `docs/product/feature_registry.md` 的 V2 Capability Table 做章节和边界映射；不从 Capability Registry 反推产品行为。
 - Product behavior source: `docs/product/user_stories.md` legacy 清单和本次 PM 输入示例。
+- 本轮行为来源：用户明确要求将上一轮已评审的商业化 Story/Slice 草案写入 story map，分类为 `user-authorized draft proposal`；它允许持久化为 `draft`，不等于 PM approval 或 downstream commitment。Registry 的 owns / does not own / sub-capability 仅用于约束边界和 mapping，不作为行为来源。
 - 当前 registry 没有 `CAP-AUTH`；认证主流程暂纳入 `CAP-ACC`，后续如新增 `AUTH` capability 需迁移。
-- 本轮产物优先解决可读性和信息覆盖，Child Vertical Slices 是 draft narrative；进入交付前仍需对选中的 Story/Slice 运行完整 ready gate。
+- 本轮按成熟商业软件的产品叙事重写三个 capability：每个 Slice 必须承载具体业务对象、用户决策、状态变化或跨 capability 交接，不能仅用通用成功/失败句式填充；进入交付前仍需对选中的 Story/Slice 运行完整 ready gate。
+
+Row-level Source Coverage:
+
+- `US-SETTING-001..003`、`VS-SETTING-001..009` -> user-authorized draft proposal：用户明确要求持久化上一轮商业化草案。
+- `US-SUPPORT-001..004`、`VS-SUPPORT-001..012` -> user-authorized draft proposal：用户明确要求持久化上一轮商业化草案。
+- `US-BILLING-001..004`、`VS-BILLING-001..012` -> user-authorized draft proposal：用户明确要求持久化上一轮商业化草案。
+
+Omitted Scope:
+
+- 本轮不决定具体支付/税务 provider、精确客服 SLA、退款或争议审批规则、账号/内容/AI 治理结论、下游 FR/spec/AC/TC/contract/implementation/release artifact。
 
 Ready Gate Finding:
 
 - Result: pass
-- Narrative finding: Story Map 已按 V2 capability 章节组织；每个 User Story 都有可读叙事、明确 actor、场景、目标动作和用户可见价值；Child Vertical Slices 保留 legacy 行为细节，并补充成功、失败、空状态或状态保护意图。
-- Metadata completeness finding: 每条 User Story 均包含用户指定的 `Status`、`Primary Capability ID` 和 `Affected Capability IDs`；每条 Child Vertical Slice 均有 ID、标题和闭环叙事。Child Vertical Slice 当前不是完整 ready-gate metadata 卡，选中进入下游前必须补齐完整 metadata 并单独 ready gate。
-- Narrative/metadata consistency finding: Capability metadata 仅作为边界分类；用户行为均来自 legacy 清单或 PM 输入示例，没有把 capability 条目直接当需求来源。
-- Ambiguity finding: 邮箱认证方式、`AUTH` capability 是否拆出、学习报告完整内容、推荐/复习算法、provider 实现和支付 provider 均保持为待澄清或 out of scope，不在本文中替下游决策。
-- Split finding: 账号、首评、目标、计划、内容、练习、训练、教练、记忆、个人素材、商业和提醒已拆成独立用户价值区域；同一 Story 下的 slices 只表达该 Story 的子闭环。
+- Gate: draft structural + narrative quality
+- Source authority finding: 本轮 44 个 rows 均分类为 user-authorized draft proposal，来源是用户明确要求持久化的上一轮商业化草案；它们保持 `draft`，未被表述成 PM-approved facts。具体 provider、精确客服 SLA、审批规则和治理结论仍保留为 omitted scope。
+- Coverage finding: `CAP-SETTING`、`CAP-SUPPORT`、`CAP-BILLING` 的目标 Story/Slice 已全部覆盖；Affected Capability IDs 已限制为 registry 对各 Primary Capability 声明的相邻 capability，非相邻责任域只在 description 或 Boundary note 中作为“不拥有/不改变”边界说明。
+- Narrative finding: Story Map 已按 V2 capability 章节组织；本轮重写的 `CAP-SETTING`、`CAP-SUPPORT`、`CAP-BILLING` 不再把页面加载或通用错误提示当作独立价值，而是明确偏好生效范围、临时与全局设置、反馈上下文、工单与争议生命周期、交易与权益分离、支付恢复和账号/交易匹配等业务决策。
+- Metadata completeness finding: 每条 User Story 与 Child Vertical Slice 均使用现行五列结构，包含 ID、description、Status、Primary Capability ID 和 Affected Capability IDs；Parent Story 由章节嵌套表达。该结果仅表示 draft structural 与 narrative quality 通过，不表示这些 `draft` rows 已通过 approval semantic gate。
+- Narrative/metadata consistency finding: Capability metadata 仅作为边界分类；用户行为来自 legacy 清单、PM 输入或本轮明确标注的 user-authorized draft proposal，没有把 capability 条目直接当需求来源，也没有把 user-authorized draft 误写成 PM approval。
+- Ambiguity finding: 邮箱认证方式、`AUTH` capability 是否拆出、学习报告完整内容、推荐/复习算法、provider 实现、支付 provider、税务 provider、客服 SLA、退款审批和 AI/内容治理最终结论均保持为待澄清或 out of scope，不在本文中替下游决策。
+- Split finding: 三个 capability 的 sibling slices 均有可单独说明的用户目标或业务状态：设置按使用环境、听说默认体验和本地存储拆分；支持按自助帮助、反馈、人工服务和正式争议拆分；账单按交易历史、支付恢复、退款争议和账号/交易不匹配拆分。
 
 PM Approval Required:
 
