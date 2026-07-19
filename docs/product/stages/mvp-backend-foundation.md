@@ -94,8 +94,8 @@ Validated with local system E2E gate（已通过本地系统 E2E 门禁验证）
 | MVP-BE-GAP-008 | 账号删除已有 foundation，但缺 Product Base 学习数据删除/匿名化完整执行和验收证据。 | Backend + Security + QA | Closed（已关闭） 2026-05-29 |
 | MVP-BE-GAP-009 | 会员/报告/占位页只需 MVP 边界事实，不应误升级为完整商业订阅；需防止与 P0 商业化 scope 混淆。 | Product Manager + Backend + Frontend | Closed（已关闭） 2026-05-29 |
 | MVP-BE-GAP-010 | OpenAPI 与 Flutter 现有 API client 存在 drift，缺 generated Dart client 或等效强约束。 | Frontend + Backend + QA | Closed（已关闭） 2026-05-29 |
-| MVP-BE-GAP-011 | 后端测试、契约测试、Flutter integration/e2e、implementation report 和 quality report 尚未覆盖本 stage 全量。 | QA + Development Orchestrator | Closed（已关闭） 2026-05-29 |
-| MVP-E2E-GAP-001..004 | 本地系统级黑盒验证能力加固：真实 PostgreSQL + backend + Flutter integration test、Product Base AC 覆盖审计、证据报告。 | QA + Development Orchestrator | Closed（已关闭） 2026-05-29 in `mvp-system-e2e-validation` |
+| MVP-BE-GAP-011 | 后端测试、契约测试、Flutter integration/e2e、implementation report 和 quality report 尚未覆盖本 stage 全量。 | QA + Codex Root | Closed（已关闭） 2026-05-29 |
+| MVP-E2E-GAP-001..004 | 本地系统级黑盒验证能力加固：真实 PostgreSQL + backend + Flutter integration test、Product Base AC 覆盖审计、证据报告。 | QA + Codex Root | Closed（已关闭） 2026-05-29 in `mvp-system-e2e-validation` |
 | MVP-E2E-GAP-005..008 | 场景目录/听力/学习记忆、语音模拟/反馈、profile/settings/session persistence 和真实支付 provider 的深度系统回归或外部例外。 | Frontend + Backend + QA + Product | GAP-005..007 Closed（已关闭） 2026-05-29; GAP-008 accepted external payment exception（已接受外部支付例外） |
 
 ## 阶段非目标

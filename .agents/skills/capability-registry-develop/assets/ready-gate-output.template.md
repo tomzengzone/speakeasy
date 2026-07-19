@@ -78,12 +78,12 @@ Post-persistence Validation:
 - touched-scope decision for each relevant warning
 
 Independent Check Required:
-- yes for every persisted semantic change; Product Object Governance Check must pass before governance completion is claimed.
+- every persisted semantic change sets `product_object_governance_change=true`, so `G-INDEPENDENT-CHECK` selects Product Object Governance Check before governance completion is claimed.
 - handoff includes Gate applicability, Gate A finding, PM destination confirmation, Gate B finding, exact persisted diff, PM final approval, impact inventory and validator output.
 - Gate analysis remains handoff/check evidence and must not be copied into docs/product/feature_registry.md.
 
 Persistent Check Record:
-- required for every persisted Capability / Sub-capability semantic change in docs/reports/product_object_governance_check_report.md.
+- required for the matched Gate in `docs/reports/product_object_governance_check_report.md`, using the Artifact's explicit evidence location.
 - retain target IDs, change mode, Gate A/N/A result, PM destination confirmation, Gate B/N/A result and comparison references, PM final row approval, validator result, touched-warning decision, checker result and residual risk.
 - the report is audit evidence, not a second Registry source of truth; do not copy full Gate analysis into docs/product/feature_registry.md.
 ```

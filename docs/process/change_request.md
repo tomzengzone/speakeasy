@@ -254,7 +254,7 @@ Product Manager 接受该变更为付费上线前的 P0 发布阻塞增量：
 - 新增 stage：`docs/product/stages/p0-commercial-readiness.md`。
 - 新增 increment definition：`docs/product/increments/commercial-subscription-readiness/definition.md`。
 - 已补齐 `commercial-subscription-readiness` 的 requirements、spec、acceptance 和 traceability。
-- Development Orchestrator 后续应路由 Domain Schema、API Contract、Architecture/Security、UX/Screen Spec、Backend、Frontend、QA/Test Plan、DevOps/Release 和独立 checker agent，逐步补齐商业发布门禁。
+- Codex Root 后续应路由 Domain Schema、API Contract、Architecture/Security、UX/Screen Spec、Backend、Frontend、QA/Test Plan、DevOps/Release 和独立 checker agent，逐步补齐商业发布门禁。
 
 ## CR-20260601-002 商业 AI Provider 生产化加固
 

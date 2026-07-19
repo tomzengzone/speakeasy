@@ -6,73 +6,53 @@ description: Use when a Flutter or mobile UI screen needs behavior, state, inter
 # Screen Spec Generate
 
 ## Overview
-Make UI work predictable by defining user goals, components, states, and acceptance checks before page implementation.
+
+Define user goals, components, states, interactions, and dependencies before implementing a mobile screen.
 
 ## When to Use
-- A new screen or major screen state is needed.
-- A page consumes new API or AI runtime output.
-- UX review needs a concrete screen contract.
+
+Use for a new screen, major screen state, new API/AI output consumption, or a UX review requiring a concrete contract.
 
 ## When NOT to Use
-- Only a text label, icon, or spacing value changes.
-- There is no user-facing UI behavior.
-- A design source of truth already fully specifies the change.
+
+Do not use for a label/icon/spacing-only edit, non-user-facing behavior, or a fully specified design source with no behavior change.
+
+## Contract
+
+- Method skill for `SCREEN_SPEC`; `USER_FLOW` and `USABILITY_CHECKLIST` are related UX Artifacts. Resolve accountable ownership from `docs/process/governance/index.json`.
+- Direct upstream is `INCREMENT_SPEC` plus `INCREMENT_ACCEPTANCE` (or Product Base equivalents); `API_CONTRACT` and `LLM_OUTPUT_SCHEMA` are conditional dependencies.
+- Paths and write scopes are governed by `docs/process/governance/index.json`.
 
 ## Inputs
-- Increment spec, API contract, and UX guidelines for new product work.
-- Product Base spec and approved V2 Capability classification when validating accepted stable behavior.
-- Current app navigation and state-management conventions.
-- Acceptance criteria.
+
+Approved spec/acceptance, API and AI output contracts, current navigation/state conventions, UX guidelines, and approved Capability classification only as boundary context. Missing upstream contracts block completion.
 
 ## Outputs
-- Screen goal, entry points, components, states, and actions.
-- Loading, empty, error, and success state behavior.
-- API dependencies and test checklist.
-- Traceability note to the owning increment and its approved V2 Capability classification.
 
-## 文档语言
-- 本 skill 创建或更新的项目文档默认使用中文，除非用户明确要求英文或其他语言。
-- App 内用户可见文案按产品本地化要求处理；持久化的产品、流程、架构、领域、AI runtime、报告、测试计划、需求和设计文档默认使用中文。
+Screen goal/entry points, components and data, named states/transitions, success/loading/empty/error/offline/duplicate/retry behavior, API dependencies, test checklist, and traceability to the owning increment/Product Base.
 
 ## 文档路径约定
-- 页面规格写入 `docs/ux/screen_spec.md`。
-- 用户流程写入 `docs/ux/user_flow.md`。
-- 可用性检查项写入 `docs/ux/usability_checklist.md`。
-- 文案规则写入 `docs/ux/copywriting_guideline.md`。
-- 输入优先读取 `docs/product/base/spec.md`、`docs/product/base/acceptance.md`、`docs/product/increments/<increment-id>/spec.md`、`docs/product/increments/<increment-id>/acceptance.md`、`docs/architecture/api_contract.md` 和 `docs/ai_runtime/llm_output_schema.md`。
 
-## Product Object Rules
-- For new product work, start from `docs/product/increments/<increment-id>/spec.md` and `docs/product/increments/<increment-id>/acceptance.md`.
-- Do not create screen scope from a stage goal, roadmap item, or V2 Capability registry data.
-- Screen specs must copy the owning increment's approved Primary Capability and Affected Capabilities and list upstream API/AI contracts. If that increment has an approved no-Primary classification, preserve its reason and complete Affected Capability list.
-- This skill must not declare or modify Capability classification. Missing or conflicting classification blocks this downstream work and routes to Product Manager to correct the owning Product Base or increment artifact. Invoke `capability-registry-develop` only when Product Manager determines that canonical registry facts must change.
-- If upstream API or AI output schema is missing, block screen spec completion and return to the required contract skill.
+Write the governed UX artifacts only: `docs/ux/screen_spec.md`, `docs/ux/user_flow.md`, `docs/ux/usability_checklist.md`, or `docs/ux/copywriting_guideline.md` as applicable.
 
 ## Process
-1. Start with the user's next action on the screen.
-2. List stable components and the data each consumes.
-3. Define state names and transitions.
-4. Specify edge cases including offline, empty, duplicate, and retry states.
-5. Keep copy short and supportive for learning workflows.
-6. Map screen states to widget or integration tests.
+
+1. Start from the user’s next action and list stable components/data boundaries.
+2. Define state names/transitions and visible feedback for every action.
+3. Cover slow, offline, empty, duplicate, error, and retry cases.
+4. Keep copy supportive and map states to widget/integration tests.
 
 ## Red Flags
-- The screen has no empty or error state.
-- The UI depends on free-form AI text instead of schema fields.
-- A component owns data outside its boundary.
-- The spec requires more screens than the approved product behavior needs.
-- Screen scope is added without an owning increment or approved upstream contract.
+
+No error/empty state, free-form AI text as truth, component-owned data outside its boundary, excess screens, or scope without approved upstream.
 
 ## Verification
-- A developer can implement the page without inventing states.
-- Every user action has visible feedback.
-- The screen can handle API failure and slow responses.
-- Acceptance criteria cover the primary mobile workflow.
-- The screen spec maps back to the Product Base or increment artifact that required it and preserves its approved V2 Capability classification.
+
+A developer can implement without inventing states; every action has feedback; API failure/slow responses are handled; primary workflow acceptance is covered; upstream and classification context are traceable.
 
 ## Common Rationalizations
+
 | Rationalization | Reality |
 | --- | --- |
-| "This is obvious, so no spec is needed." | Obvious work is still easy to mis-scope; write the smallest useful artifact. |
-| "We can validate it after implementation." | Validation criteria must exist before the implementation can be called done. |
-| "This is only internal process." | Process assets shape future code quality and need the same review discipline. |
+| “The design already shows the screen.” | Visuals do not define lifecycle, error, or data-boundary behavior. |
+| “The API will be obvious.” | Screen state depends on explicit upstream contracts and stable errors. |

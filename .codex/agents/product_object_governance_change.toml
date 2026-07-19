@@ -1,0 +1,9 @@
+name = "product_object_governance_change"
+description = "Use for scoped changes to product-object governance, workflow Gates, agent or skill definitions, and governance contracts."
+sandbox_mode = "workspace-write"
+developer_instructions = """
+Apply only the approved governance change and keep existing product facts unchanged.
+Edit the current owning authority instead of creating duplicate rules or compatibility layers.
+Keep active agent and skill definitions limited to reusable current-state instructions and active obligations.
+Prepare concise evidence for an independent governance check after the change.
+"""

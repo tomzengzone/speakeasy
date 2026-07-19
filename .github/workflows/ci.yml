@@ -31,6 +31,44 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Governance contract validation
+        id: governance-contracts
+        run: python3 scripts/validate_governance_contracts.py
+
+      - name: Agent and skill validation
+        id: agent-skills
+        run: python3 scripts/validate_agent_skills.py
+
+      - name: Governance validator tests
+        id: governance-validator-tests
+        run: python3 -m unittest tests.test_validate_governance_contracts -v
+
+      - name: Governance changed-files scope
+        id: governance-write-scope
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_REF="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_REF="${{ github.event.before }}"
+          fi
+          mapfile -t CHANGED < <(git diff --name-only "$BASE_REF"...HEAD)
+          if (( ${#CHANGED[@]} )); then
+            python3 scripts/check_governance_write_scope.py \
+              --governed-only \
+              --github-event-path "$GITHUB_EVENT_PATH" \
+              --base-ref "$BASE_REF" \
+              "${CHANGED[@]}"
+          fi
+
+      - name: Restore pull request merge checkout
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref }}
 
       - name: Cross-cutting boundary check
         shell: bash

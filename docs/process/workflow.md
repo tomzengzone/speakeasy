@@ -1,8 +1,18 @@
 # Codex Development Workflow
 
+## Governance Contract Routing
+
+`docs/process/governance/index.json` 是治理契约根索引。Artifact path、accountable owner、contributors、直接/条件输入、临时输出、checker candidate 和验证命令由其按领域路由到 `artifacts/*.json`；Artifact 的持久化 self-output 由 lifecycle 与 canonical path 表达；Gate applicability、风险、结果等级、例外和证据命令由 `gates/*.json` 定义。
+
+执行时只读取当前任务命中的 contract 条目。本文解释执行流程，contract 负责 owner、I/O、生命周期、适用性和门禁事实；若两者发生无法解释的冲突，必须阻塞并由对应 accountable owner 裁决，不得静默选择任一副本。
+
+Artifact checker、evidence 和稀疏 I/O 按 `docs/process/governance/policy.json` 解释；Artifact 字段本身不触发 Checker 或报告写入，执行动作只来自用户授权与命中的 Gate。
+
+尚未形成 committed baseline 或尚未通过 required CI 的治理工作树使用 `index.status = candidate`，不作为稳定 authority。只有当前治理基线文件与已退役运行时接口的删除同时进入同一 Git HEAD、该精确提交通过 required CI，且 validator 确认不存在墓碑接口或已跟踪缓存时，后续激活提交才能把状态改为 `active`。首次切换的回滚目标是 candidate baseline 的第一父提交；完成激活后，回滚目标是最近一个通过 CI 的 `active` 提交。
+
 ## Product Planning Layer
 ```text
-user request
+product-scope request
 -> Product Manager intake
 -> product classification
 -> optional issue-management tracking when repository issue tracking is needed
@@ -20,7 +30,7 @@ user request
        -> PM execution brief
 ```
 
-Product Manager is the unified user-facing entry point. It decides the active stage goal, backlog priority, roadmap horizon, accepted/deferred scope, and current progress status. Users should not need to choose specialist agents directly.
+Product Manager owns product-scope decisions: active stage goal, backlog priority, roadmap horizon, accepted/deferred scope, and current progress status. Ordinary code fixes, local refactors, UI polish, and read-only analysis stay with Codex Root unless they reveal a product decision. Users do not need to choose specialist agents directly.
 
 `docs/product/feature_registry.md` 是 PM-owned V2 canonical registry。候选对象归宿未确认时，Product Manager 先调用 `capability-registry-develop` Gate A 并确认 destination、target object type、现有目标 ID 或拟新增 provisional ID、父 ID（适用时）和 change mode；非 Registry destination 完成 owning workflow handoff 后停止 Registry development。只有确认的 Registry destination 才进入匹配类型的 Gate B 和 row proposal。Product Manager destination confirmation 不等于最终 row approval。普通 Capability / Sub-capability 创建、修改、拆分、合并、废弃、映射和 ready gate 仍由 Product Manager 调用该 skill；skill 负责操作方法和 gate，Product Manager 负责产品事实与两次决策。Registry path、schema、文档类别、内容边界或 source-of-truth 变化才进入 Documentation Governance 和 Governance Change Control。
 
@@ -43,12 +53,17 @@ Capability 和 stage 是两条独立轴线；capability 不是 stage，stage 也
 
 ## Execution Layer
 ```text
-PM execution brief -> Development Orchestrator -> workflow gate check -> specialist agents -> validation evidence -> PM status update -> user summary
+user task -> Codex Root fast-path decision
+          |-> direct execution -> targeted validation -> user summary
+          `-> applicable Product Manager / specialist / Gate -> validation evidence -> user summary
 ```
 
-Development Orchestrator is the internal execution dispatcher. It does not decide whether a product goal is worth doing; it decides which workflow step is currently legal and necessary for approved scope.
+Codex Root is the native execution coordinator. It completes ordinary work directly and delegates only when product authority, specialist expertise, independent review, or an applicable Gate requires it. It does not decide whether a product goal is worth doing.
 
-## Standard Flow
+## Feature Delivery Flow
+
+This flow applies only when accepted product behavior is created or materially changed. A task skips every step and document that is not applicable to its actual impact.
+
 ```text
 idea/change intake
 -> product classification
@@ -78,7 +93,7 @@ idea/change intake
        -> release
 ```
 
-Requirement Development 负责 scoped feature/change 的 requirement quality。Development Orchestrator 负责 workflow routing、cross-module execution 和 Definition of Done verification。
+Requirement Development 负责 scoped feature/change 的 requirement quality。Codex Root 负责 workflow routing、cross-module execution 和 Definition of Done verification。
 
 ## Direct-Upstream Input Rule
 开发文档按逐级细化模型传递输入。每个 artifact 只把本层直接上游作为行为生成输入，并保留必要的 scope guard；不得把完整上游链重复塞入每个下游文档。
@@ -97,6 +112,8 @@ User Story / Vertical Slice -> FR -> Spec -> AC -> TC -> implementation evidence
 完整 `Story/Slice -> FR -> Spec -> AC -> TC -> SWC/Code/Test Evidence` join 只在 owning `docs/product/base/traceability.md` 或 `docs/product/increments/<increment-id>/traceability.md` 中维护，并由 `document-traceability-check` 统一审查。
 
 ## Required Gates
+
+The following gates are evaluated only inside the applicable feature-delivery or release path; they are not prerequisites for unrelated code-only work.
 1. Product classification 完成前，不创建 feature/increment document。
 2. 候选对象 destination 未由 Product Manager 确认前，不得把它写成 Capability / Sub-capability，也不得生成 Registry row。确认 Registry destination 后，必须先通过匹配 target object type 的 `capability-registry-develop` Gate B；destination confirmation 不代替 exact row final approval。持久化语义变更后还必须通过 `python scripts/validate_capability_registry.py` 和 Product Object Governance Check。V2 capability classification 和 stage scope 确认前，不创建 requirements/spec/acceptance artifact。
 3. 没有稳定 Stage Scope Item ID，且每个 required item 没有 increment coverage decision 时，committed stage work 不得推进。
@@ -108,7 +125,7 @@ User Story / Vertical Slice -> FR -> Spec -> AC -> TC -> implementation evidence
 9. 没有测试或 documented test gap 时，不得标记 completion。
 10. 没有 release checklist 时，不得 release。
 11. Acceptance、traceability、适用时的 SWC allocation、implementation、test 和 report evidence 未完成或未明确例外前，increment 不得 merge into Product Base。
-12. Multi-step product、architecture、software component 或 documentation governance task，在独立 checker agent 对已完成步骤返回 pass finding 前，不得进入下一步。
+12. Multi-step product、product-object governance、architecture governance、software-component governance、documentation governance 或 meta-governance task 命中 `G-INDEPENDENT-CHECK` 时，在独立 checker agent 返回 pass finding 前不得完成对应治理步骤。
 13. 除非用户明确指定其他语言，新增或修改的持久化项目文档自然语言必须使用中文；若保留英文原文，英文正文块后必须紧跟中文翻译，并通过 document language gate。
 
 ## 文档语言门禁
@@ -123,7 +140,7 @@ python3 scripts/check_document_language.py --scope changed --include-worktree
 ## Cross-Cutting Boundary Registry
 `docs/process/cross_cutting_boundary_registry.md` 是 reusable cross-cutting boundary 的 governance registry，覆盖 media/audio refs、AI provider usage、OpenAPI/generated clients、entitlement、Goal Autopilot facts、data governance 和 issue tracking 等边界。
 
-Cross-layer implementation 开始前，Development Orchestrator 和 specialist agent 必须检查工作是否触碰已登记 Boundary ID。若触碰，implementation plan 必须引用授权条目、复用的 module/API/service、forbidden bypass、legacy exception 或 migration need，以及 evidence gate。新的 cross-cutting capability 在被实现作为稳定边界使用前，必须先登记。
+Cross-layer implementation 开始前，Codex Root 和 specialist agent 必须检查工作是否触碰已登记 Boundary ID。若触碰，implementation plan 必须引用授权条目、复用的 module/API/service、forbidden bypass、legacy exception 或 migration need，以及 evidence gate。新的 cross-cutting capability 在被实现作为稳定边界使用前，必须先登记。
 
 `python scripts/check_cross_cutting_boundaries.py --scope changed --base-ref <base-ref>` 是针对新增变更文件的 repository automation guard。CI 以 changed-only mode 运行它，确保新增或修改代码不能加入已登记 forbidden bypass；单独追踪的 legacy path 在自己的 slice 中治理。Full-scope scan 可在本地用于 governance audit 和 legacy exception planning。
 
@@ -193,7 +210,7 @@ SWC allocation document 不得重新定义 product scope、requirements、accept
 
 Brownfield change 只能写 delta。若 increment 扩展、修复、重构或加固既有能力，其架构不得从全新设计开始。它必须先证明继承了哪些 existing implementation facts，包括 code path 和 test。除非 allocation 解释为什么 accepted component 不能复用，并记录 migration/deprecation ownership，否则禁止新增 SWC、runtime、store、API、migration、provider 或 cache layer。
 
-CI 通过 `scripts/check_swc_allocation.py` 强制执行。PR 如果修改 `lib/`、`backend/src/main/java/`、`backend/src/main/resources/db/migration/` 或 `docs/architecture/openapi/speakeasy-api.yaml` 下的 implementation-impacting path，必须包含覆盖这些 path 的 changed increment `swc_allocation.md`，或包含已接受的 `N/A - no SWC impact` traceability decision。Scenario-practice 变更必须引用 `SWC-FLOW-SCENARIO-PRACTICE-RUNTIME` 和既有 `FE-SCENARIO-PRACTICE` / `FE-PRACTICE-RUNTIME` 边界。
+CI 通过 `scripts/check_swc_allocation.py` 强制执行。PR 如果修改 `lib/`、`backend/src/main/java/`、`backend/src/main/resources/db/migration/` 或 `docs/architecture/openapi/speakeasy-api.yaml` 下的 implementation-impacting path，必须包含覆盖这些 path 的 changed increment `swc_allocation.md`，或包含已接受的 `N/A - no SWC impact` traceability decision。触及已登记跨切面能力时，allocation 必须引用对应 Boundary ID、稳定 SWC/Flow 和复用约束。
 
 如果 increment 改变 stable SWC topology，或把 local flow 变成 reusable system flow，必须在 implementation planning 前更新 `docs/architecture/software_component_architecture.md` 和 `docs/architecture/swc_catalog.md`；否则 increment 必须携带 accepted `legacy-compatible` exception，并写明 migration owner 和 expiry condition。
 
@@ -237,11 +254,11 @@ User Story ID / Vertical Slice ID
 - `docs/product/base/acceptance.md`
 - `docs/product/base/traceability.md`
 
-当前 MVP legacy artifact 只有在描述已实现或已接受稳定行为时才能迁入 Product Base。计划中的 increment 行为必须保留在 owning increment 中，直到 Definition of Done 证据满足且 Product Manager 批准回并。
+历史 artifact 只有在描述已实现或已接受稳定行为时才能迁入 Product Base。计划中的 increment 行为必须保留在 owning increment 中，直到 Definition of Done 证据满足且 Product Manager 批准回并。
 
 ## Change Flow
 Use `docs/process/change_request.md` when a change:
-- expands MVP scope
+- expands approved delivery scope
 - changes domain schema
 - changes API contract
 - changes AI output schema
@@ -249,63 +266,62 @@ Use `docs/process/change_request.md` when a change:
 
 ## Agent Handoffs
 - Product Manager 设定 roadmap priority 并更新 `docs/product/development_status.md`。
-- Product Manager 使用 `codex/templates/pm_orchestrator_brief.template.md` 将已批准或调查性工作交给 Development Orchestrator。
+- Product Manager 使用 `codex/templates/pm_execution_brief.template.md` 将已批准或调查性工作交给根 Codex 会话。
 - Product Manager 拥有产品分类、Story/Slice 产品事实、stage scope、Stage Scope Item ID 和 increment priority。
 - Requirement Development 将已批准 Story/Slice 转换为 FR 和成功标准。
-- Development Orchestrator 将已批准工作路由给 specialist agent，并向 Product Manager 返回流程进度或 DoD 缺口。
-- Product Manager 在 Orchestrator 返回执行发现后负责用户摘要、产品取舍说明和开发状态更新。
+- 根 Codex 会话优先直接完成单一 owner 的局部任务；只有专业边界、独立审查或可独立并行工作需要时才委派原生 specialist agent。
+- Product Manager 在收到实现或审查结果后负责产品取舍说明和必要的持久化状态更新。
 - Product Object Governance Change Agent 每次只实施一个小范围治理变更。
-- Product Object Governance Check Agent 在进入下一步前检查每个治理步骤。
+- Product Object Governance Check Agent 仅在 product-object、workflow、agent、skill 或 source-of-truth 治理实际变化时执行独立检查。
 
-## Dynamic Project Agent Runner
-Project-local agent 通过动态 runner contract 执行，不复制到静态工具定义。
+## Native Codex Agent Execution
+项目 specialist agent 由 Codex 从 `.codex/agents/*.toml` 原生发现和执行；根 `AGENTS.md` 只保留跨任务工作约定。
 
 ```text
-PM execution brief
--> scripts/project_agent_runner.py packet development_orchestrator
--> Orchestrator routing finding
--> scripts/project_agent_runner.py packet <specialist-agent>
--> specialist output
--> scripts/project_agent_runner.py packet product_object_governance_check
--> checker finding
+user task
+-> root Codex fast-path decision or native specialist delegation
+-> task-matched skill and applicable Artifact/Gate read on demand
+-> implementation or specialist finding
+-> independent checker only when the task or applicable Gate requires it
+-> root Codex integrates the result
 ```
 
-Runner 规则：
-- 唯一权威 agent 定义是 `codex/agents/*.md`。
-- Project agent 运行前，runner 必须加载当前匹配的 Markdown 文件并生成 Project Agent Execution Packet。
-- Packet 必须包含用户任务、上游 handoff、已加载 agent 定义路径和完整定义。
-- 下一 Agent 必须读取上一 Agent 的 handoff 输出，不得凭记忆重建范围。
-- 除非没有合适 project agent，主任务只负责路由、packet 生成、整合和用户摘要。
-- `worker` 或 `default` 等静态 multi-agent role 可以执行 packet，但不得替代或覆盖已加载的 project-local agent 定义。
-- 修改 `codex/agents/`、runner script 或 runner packet template 后，使用 `python scripts/project_agent_runner.py validate` 验证完整性。
+执行规则：
+- 原生 specialist 定义位于 `.codex/agents/*.toml`；角色只描述专业边界、权限和当前行为，不复制 Skill 或 Contract 正文。
+- Skill 是按任务加载的方法，不与某个 Agent 永久绑定。
+- 只有任务改变持久化治理事实或命中风险边界时才读取 `docs/process/governance/index.json` 和对应 Artifact/Gate 条目。
+- code-only bugfix、行为不变重构、UI polish 和只读分析默认走 Fast Path，不新增产品或治理文档。
+- Reviewer/Checker 使用只读 sandbox，不修改被检查对象。
+- Agent、Skill 或治理 Contract 变化后运行 `python scripts/validate_governance_contracts.py` 和适用的 skill validator。
 
-## PM-Orchestrator Decision Boundary
+## Decision Boundaries
 - Product Manager 回答：现在做、以后做或不做；当前产品 stage、产品分类、scope 和 explicit non-goals 是什么。
-- Development Orchestrator 回答：当前 workflow gate、缺失 artifact、下一 specialist agent/skill 和所需验证证据是什么。
+- 根 Codex 回答：当前任务是否可直接完成、是否需要 specialist、哪些 Artifact/Gate 实际适用以及需要哪些验证证据。
 - Requirement Development 回答：已批准 Story/Slice 是否已转为可测试 FR。
 - Specialist agent 回答：如何在批准范围内产出其拥有的 artifact 或实现。
 
 ## Governance Change Control
 Workflow、文档类别、路径规则、内容契约、追踪规则或 agent/skill 治理变更必须遵循：
 ```text
-approved remediation step
+approved task scope
 -> Product Object Governance Change Agent edit
+-> applicable deterministic validation
 -> Product Object Governance Check Agent finding
--> validation command when skills change
--> next step only after pass
+-> completion only after pass
 ```
 
 Checker 必须确认编辑符合目标步骤、不改变产品范围、未在缺少明确授权时迁移既有产品 artifact，且没有引入新的 source-of-truth 冲突。
 
-任何多步骤 product、requirement、workflow 或 documentation governance 任务的每一步都必须遵循：
+只有适用 Gate、用户明确要求或风险边界要求独立审查时，才进入：
 ```text
 approved step scope
 -> specialist agent edits
 -> independent checker agent finding
--> next step only after pass
+-> completion decision
 ```
 
 Product-object、path、workflow、agent 或 skill 变更默认由 Product Object Governance Check Agent 检查；纯文档内容边界可使用 Documentation Governance Agent。
 
 ## User Communication Rule
-除非用户明确要求 specialist review 或实现细节，用户可见回复应采用 Product Manager 视角。Product Manager 内部可咨询 Development Orchestrator，但最终摘要必须用产品语言说明状态、下一步、owner 和风险。
+
+产品范围工作由 Product Manager 对外给出产品决策和状态摘要。普通实现、缺陷修复、审查和分析由 Codex Root 直接报告结果。除非用户要求完整专业细节，否则专业 Agent 的结论应使用易懂语言汇总。

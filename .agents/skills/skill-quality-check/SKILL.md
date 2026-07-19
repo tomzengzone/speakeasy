@@ -6,67 +6,54 @@ description: Use when project-local skills are created or changed and need valid
 # Skill Quality Check
 
 ## Overview
-Inspect project-local skills for structure, trigger clarity, verification quality, and maintainability.
+
+Validate project-local skill structure, routing clarity, verification quality, source-of-truth boundaries, and maintainability.
 
 ## When to Use
-- A skill under .agents/skills is added or edited.
-- The skill quality standard changes.
-- A release wants to ensure development workflow assets are valid.
+
+Use when a `.agents/skills/<skill>/SKILL.md` or bundled resource, the skill standard, or the skill validator changes, or before a workflow release.
 
 ## When NOT to Use
-- The artifact is an application feature, not a skill.
-- The request is to review production code quality.
-- The old codex/skills layout is intentionally being archived outside the project.
+
+Do not use for application behavior/code quality, issue triage, or archived external skill layouts.
+
+## Contract
+
+- Method skill for `SKILL_DEFINITION`, `SKILL_RESOURCE`, and `SKILL_QUALITY_STANDARD`; resolve accountable ownership from `docs/process/governance/index.json`.
+- Run `scripts/validate_agent_skills.py`; report findings with exact skill paths. Persistent quality findings use the declared `QUALITY_REPORT` contributor scope; otherwise findings are ephemeral.
+- Paths, owner, lifecycle, and write scope are governed by `docs/process/governance/index.json`.
 
 ## Inputs
-- .agents/skills/<skill>/SKILL.md and SPEC.md.
-- docs/process/skill_quality_standard.md.
-- scripts/validate_agent_skills.py output.
+
+Changed `SKILL.md` and directly linked bundled resources, `docs/process/skill_quality_standard.md`, validator output, and (for broad governance/architecture/product/contract skills) source inventory, scope mode, coverage/traceability gate, and omitted-scope evidence.
 
 ## Outputs
-- Pass/fail findings with file paths.
-- Required fixes for missing sections or weak triggers.
-- Suggestions for future validator hardening.
 
-## 文档语言
-- 本 skill 创建或更新的项目文档默认使用中文，除非用户明确要求英文或其他语言。
-- App 内用户可见文案按产品本地化要求处理；持久化的产品、流程、架构、领域、AI runtime、报告、测试计划、需求和设计文档默认使用中文。
+Pass/block findings with file paths, required corrections for missing sections or weak triggers, executable verification evidence, and optional future validator-hardening suggestions. Do not modify the skill under review as part of the check.
 
 ## 文档路径约定
-- skill 质量标准写入 `docs/process/skill_quality_standard.md`。
-- 被检查 skill 位于 `.agents/skills/<skill>/SKILL.md` 和 `.agents/skills/<skill>/SPEC.md`。
-- 校验脚本为 `scripts/validate_agent_skills.py`。
-- 检查结果默认在最终回复中给出；用户要求持久化时写入 `docs/reports/quality_report.md`。
-- 不检查业务功能质量；业务质量审查使用 `code-review-quality`。
+
+Inspect `.agents/skills/<skill>/SKILL.md` and only its directly linked bundled resources; use `docs/process/skill_quality_standard.md` as the standard and `scripts/validate_agent_skills.py` as the structural gate.
 
 ## Process
+
 1. Run the lightweight validator first.
-2. Read the SKILL.md and SPEC.md for any failed or changed skill.
-3. Check that triggers are specific and non-overlapping.
-4. Check that verification steps are executable.
-5. Check that external references and attribution are present when borrowed content exists.
-6. For governance, architecture, product, or contract skills, check that they require source inventory, scope mode, coverage/traceability gate, and explicit omitted-scope handling before accepting broad outputs.
-7. Report blockers before style suggestions.
+2. Read the changed SKILL and only the bundled resources selected by its stated conditions.
+3. Check trigger/non-trigger boundaries, non-overlap, verification commands, direct resource links, and source-of-truth boundaries.
+4. For broad-scope skills, reject partial-context conclusions and missing coverage/omitted-scope handling.
+5. Report blockers before style suggestions; do not silently rewrite weak outputs.
 
 ## Red Flags
-- A skill says always use without clear boundaries.
-- When NOT to Use is empty or generic.
-- Verification only says review manually.
-- SPEC.md duplicates SKILL.md without adding maintenance context.
-- A broad planning or architecture skill can produce conclusions without first proving input coverage.
-- A skill allows technology or implementation recommendations without constraints, alternatives, trade-offs, and verification gates.
-- A skill has no rule for rejecting or superseding its own weak outputs.
+
+Always-use triggers, generic/empty non-use boundaries, manual-only verification, parallel maintenance files, unlinked or unconditional references, recommendations without constraints/trade-offs, or no rule to reject/supersede weak output.
 
 ## Verification
-- Validator exits with code 0.
-- Each changed skill has concrete use and non-use triggers.
-- Red flags describe failure modes, not preferences.
-- No deprecated codex/skills directory remains.
-- Broad-scope skills define coverage gates that prevent partial context from being presented as full-system conclusions.
+
+Validator exits 0; changed skills have concrete triggers and red flags; no deprecated `codex/skills`; broad skills define coverage gates; findings distinguish blockers from suggestions and cite exact paths.
 
 ## Common Rationalizations
+
 | Rationalization | Reality |
 | --- | --- |
-| "This is obvious, so no spec is needed." | Obvious work is still easy to mis-scope; write the smallest useful artifact. |
-| "We can validate it after implementation." | Validation criteria must exist before the implementation can be called done. |
-| "This is only internal process." | Process assets shape future code quality and need the same review discipline. |
+| “The skill is short, so review is unnecessary.” | Trigger, contract, and verification gaps can still change routing behavior. |
+| “Manual review is enough.” | The structural validator is required evidence before semantic review. |

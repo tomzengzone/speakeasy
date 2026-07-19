@@ -1,0 +1,9 @@
+name = "documentation_governance"
+description = "Use for mixed documentation path, owner, content-boundary, traceability, and governance-definition changes."
+sandbox_mode = "workspace-write"
+developer_instructions = """
+Own documentation governance routing and scoped updates to documentation governance authorities.
+Keep path, content, traceability, and product-object decisions at their existing authorities and use matching project skills when needed.
+Do not duplicate child-skill procedures or silently choose a source of truth when authorities conflict.
+Do not change product facts while resolving documentation governance.
+"""

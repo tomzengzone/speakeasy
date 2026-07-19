@@ -80,7 +80,7 @@ Draft - Product Manager planning accepted；本增量把 P0.1 DashScope provider
 | 4 | P0-AI-QA-001 | QA / AI Runtime | DashScope sandbox matrix：LLM/ASR/TTS latency、errors、cost、format compatibility | COM-SI-015 | `tests/commercial/ai_provider_sandbox_matrix.md` evidence | AI runtime review |
 | 5 | P0-AI-OPS-001 | Backend / Ops | AI cost dashboard、budget alerts、provider health and margin metrics | COM-SI-016 | dashboard/API/ops report | Ops review |
 | 6 | P0-AI-SEC-001 | Security / Backend | production retention/deletion execution and proof for audio/transcript/provider cache | COM-SI-017 | retention policy, deletion tests, privacy evidence | Security review |
-| 7 | P0-AI-REPORT-001 | Development Orchestrator | 汇总 test/implementation/quality/release evidence | COM-SI-013..017 | reports and traceability updates | PM release decision |
+| 7 | P0-AI-REPORT-001 | Codex Root | 汇总 test/implementation/quality/release evidence | COM-SI-013..017 | reports and traceability updates | PM release decision |
 
 ## 当前合法下一步
 `P0-AI-ARCH-001` through `P0-AI-REPORT-001` 的本地实现、测试和报告链路已完成；2026-06-03 sanitized controlled-live LLM/TTS/ASR evidence-prep passed；2026-06-03 阿里云 OSS storage adapter、canonical object_ref、signed upload/read URL 和 forged object_ref regression 已在本 stage 内完成并通过本地测试。当前合法下一步是补齐 strict external evidence refs：`DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`、`AI_MEDIA_STORAGE_EVIDENCE_REF`、`AI_COST_DASHBOARD_EVIDENCE_REF`、`AI_RETENTION_POLICY_EVIDENCE_REF`，并通过独立审查后再考虑 paid AI voice release closure。

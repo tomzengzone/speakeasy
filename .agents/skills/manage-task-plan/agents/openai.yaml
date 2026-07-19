@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manage Task Plan"
+  short_description: "Run approval-gated PR task plans"
+  default_prompt: "Use $manage-task-plan to create or resume an approval-gated PR task plan."

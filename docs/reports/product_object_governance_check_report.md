@@ -4,12 +4,12 @@
 2026-05-24
 
 ## 检查角色
-`codex/agents/product_object_governance_check.md`
+`.codex/agents/product_object_governance_check.toml`
 
 ## 检查范围
 - `docs/process/product_object_governance_remediation.md`
-- `codex/agents/product_object_governance_change.md`
-- `codex/agents/product_object_governance_check.md`
+- `.codex/agents/product_object_governance_change.toml`
+- `.codex/agents/product_object_governance_check.toml`
 - `docs/process/workflow.md`
 - `docs/process/skill_quality_standard.md`
 - `.agents/skills/document-path-governance/`

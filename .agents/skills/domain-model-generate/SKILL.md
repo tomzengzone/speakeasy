@@ -6,73 +6,53 @@ description: Use when approved product behavior needs entities, relationships, l
 # Domain Model Generate
 
 ## Overview
-Keep domain concepts stable before database, API, AI runtime, or UI work depends on them.
+
+Stabilize domain concepts before database, API, AI-runtime, or UI work depends on them.
 
 ## When to Use
-- Approved product behavior introduces or changes business entities.
-- A workflow needs state transitions or lifecycle rules.
-- Data ownership between frontend, backend, and AI runtime is unclear.
+
+Use when approved behavior introduces shared/persisted entities, state transitions, lifecycle rules, or unclear data ownership.
 
 ## When NOT to Use
-- No persisted or shared domain data changes.
-- The entity already exists and only a field label changes.
-- The task is an isolated UI polish change.
+
+Do not use for no-data changes, an existing entity’s label-only edit, or isolated UI polish.
+
+## Contract
+
+- Method skill for `DOMAIN_SCHEMA` and `DOMAIN_MODEL`; `ENTITY_RELATIONSHIP` is the related relationship Artifact. Resolve accountable ownership from `docs/process/governance/index.json`.
+- Direct upstream is `INCREMENT_SPEC` (or approved Product Base spec for stable behavior); `INCREMENT_ACCEPTANCE`, architecture boundaries, and API contract are context.
+- Paths, lifecycle, and write scopes are governed by `docs/process/governance/index.json`.
 
 ## Inputs
-- Increment spec and acceptance criteria for new product work.
-- Product Base spec/acceptance and approved V2 Capability classification when validating accepted stable behavior.
-- Existing docs/domain/ files.
-- Architecture module boundaries and API contract.
+
+Approved spec/acceptance, existing domain artifacts, system/module boundaries, API contract, and approved Capability classification only as boundary context. Missing or conflicting classification blocks and routes to Product Manager.
 
 ## Outputs
-- Entity list with fields and invariants.
-- Relationships, lifecycle, and state machine notes.
-- Persistence and API boundary recommendations.
-- Traceability note to the owning increment and its approved V2 Capability classification.
 
-## 文档语言
-- 本 skill 创建或更新的项目文档默认使用中文，除非用户明确要求英文或其他语言。
-- App 内用户可见文案按产品本地化要求处理；持久化的产品、流程、架构、领域、AI runtime、报告、测试计划、需求和设计文档默认使用中文。
+Entities, fields, IDs/invariants, relationships, lifecycle/state transitions, persistence/API boundary recommendations, migration/seed needs, and traceability to the owning Product Base/increment spec.
 
 ## 文档路径约定
-- 领域总览写入 `docs/domain/domain_schema.md`。
-- 实体关系写入 `docs/domain/entity_relationship.md`。
-- 专项领域模型写入 `docs/domain/<domain>_model.md`，例如 `scene_model.md`、`expression_model.md`、`review_model.md`。
-- 输入优先读取 `docs/product/base/spec.md`、`docs/product/base/acceptance.md`、`docs/product/increments/<increment-id>/spec.md`、`docs/product/increments/<increment-id>/acceptance.md` 和 `docs/architecture/system_overview.md`。
-- 涉及持久化或跨模块状态变更时，确认 `docs/process/change_request.md` 是否已有对应记录。
 
-## Product Object Rules
-- For new product work, start from `docs/product/increments/<increment-id>/spec.md` and `docs/product/increments/<increment-id>/acceptance.md`.
-- Domain changes must copy the owning increment's approved Primary Capability and Affected Capabilities. If that increment has an approved no-Primary classification, preserve its reason and complete Affected Capability list.
-- This skill must not declare or modify Capability classification. Missing or conflicting classification blocks this downstream work and routes to Product Manager to correct the owning Product Base or increment artifact. Invoke `capability-registry-develop` only when Product Manager determines that canonical registry facts must change.
-- Do not create a domain model from a stage goal, roadmap item, or V2 Capability registry data.
-- If domain work exposes a Capability classification or boundary mismatch, block the downstream change and route the decision to Product Manager. Invoke `capability-registry-develop` only if Product Manager determines that canonical registry facts must change; do not rewrite registry facts from this skill.
+Write the governed domain artifacts only: `docs/domain/domain_schema.md`, `docs/domain/entity_relationship.md`, or `docs/domain/{domain}_model.md`; do not duplicate contracts in feature specs.
 
 ## Process
-1. Identify nouns, actions, and state transitions from the Product Base or increment spec.
-2. Separate domain concepts from transport DTOs and UI view models.
-3. Define IDs, ownership, uniqueness, timestamps, and audit needs.
-4. Describe lifecycle states and allowed transitions.
-5. Flag migration or seed data requirements.
-6. Update docs/domain/ before implementation.
+
+1. Derive nouns, actions, and states from the approved spec.
+2. Separate domain concepts from DTOs and UI view models.
+3. Define ownership, uniqueness, timestamps/audit, lifecycle transitions, archival/deletion, and migration needs.
+4. Update the appropriate domain artifact before implementation.
 
 ## Red Flags
-- Database fields appear before domain meaning is defined.
-- The same concept has multiple names across docs.
-- State can move backward without a rule.
-- AI output fields are treated as durable truth without validation.
-- Domain concepts are added without an owning increment or approved V2 Capability classification.
+
+Database fields before meaning, inconsistent names, unconstrained backward transitions, AI output treated as durable truth, missing owner/upstream, or registry facts changed from this skill.
 
 ## Verification
-- Each entity has an owner and lifecycle.
-- Relationships are navigable without ambiguity.
-- Constraints explain duplicate, deletion, and archival behavior.
-- API and database work can proceed without guessing.
-- The domain model cites the Product Base or increment artifact that required it and preserves its approved V2 Capability classification.
+
+Every entity has an owner and lifecycle; relationships and duplicate/deletion rules are unambiguous; API/database work can proceed without guessing; approved upstream and classification context are cited.
 
 ## Common Rationalizations
+
 | Rationalization | Reality |
 | --- | --- |
-| "This is obvious, so no spec is needed." | Obvious work is still easy to mis-scope; write the smallest useful artifact. |
-| "We can validate it after implementation." | Validation criteria must exist before the implementation can be called done. |
-| "This is only internal process." | Process assets shape future code quality and need the same review discipline. |
+| “The table already exists.” | Existing storage does not define domain ownership or lifecycle semantics. |
+| “The UI state is enough.” | Shared truth needs explicit domain boundaries before implementation. |

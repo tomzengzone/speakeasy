@@ -78,14 +78,14 @@ Draft | Proposed | Accepted | Superseded
 - 触发条件：
 - 成功路径：
   ```text
-  UI
-    -> Adapter
-    -> FE-API-CLIENT
-    -> BE-API-CONTROLLERS
-    -> BE-...
-    -> DB-... / AI-... / provider
+  <frontend-feature>
+    -> <frontend-adapter>
+    -> <frontend-shared-service>
+    -> <backend-api-boundary>
+    -> <backend-domain-owner>
+    -> <data-or-ai-owner>
     -> response
-    -> UI
+    -> <frontend-feature>
   ```
 - 失败路径：
 - Auth / authorization：

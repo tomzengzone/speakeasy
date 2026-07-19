@@ -1,0 +1,20 @@
+{
+  "schema_version":"1.0",
+  "authority_model":{
+    "agent":"角色、权限、专业边界和 handoff",
+    "skill":"按任务加载的可复用执行方法，不作为 Artifact accountable owner",
+    "artifact_contract":"路径、accountable owner、事实依赖、生命周期和固有校验能力",
+    "gate_contract":"适用条件、风险、结果等级、例外、验证和证据要求",
+    "workflow_exchange":"仅在稳定跨角色消费者存在时定义的 ephemeral 结构化交接，不声明持久化路径",
+    "checker":"由适用 Gate 选择并执行独立判定，不修改被检查对象"
+  },
+  "permission_rule":"Contract 只收窄权限。实际写权限是原生 Agent sandbox、Artifact owner/contributor scope 与用户授权的交集；Contract 不得扩大 Agent 权限。",
+  "precedence":["用户明确指令与安全边界","已批准的当前产品事实","原生 Agent 最小权限","Artifact/Gate contract","Skill 执行方法","非权威示例"],
+  "loading_rule":"只读取根索引、任务实际命中的 ID 路由和对应条目，不扫描无关分片。",
+  "conflict_rule":"非权威 prose 与 contract 冲突时阻塞并交由 accountable owner 裁决。",
+  "artifact_checker_rule":"Artifact 不声明 checker；只有 G-INDEPENDENT-CHECK applicability 命中时，才由 Gate selector 按触发类型或受影响 Artifact ID 选择并执行独立 Checker。",
+  "gate_evidence_rule":"Artifact 不声明 evidence_location；Gate 的 evidence_artifact_id 只引用已登记的持久化证据 Artifact，默认验证结果保持 ephemeral，只有用户或适用 Gate 明确要求时才写入。",
+  "artifact_input_rule":"required_direct_inputs 与 conditional_inputs 只在存在真实依赖时逐 Artifact 显式声明非空列表；字段缺省表示无该类契约依赖，不使用空数组默认值。",
+  "artifact_validation_rule":"Artifact 可声明自身固有的 validation_command；只有 G-ARTIFACT-VALIDATION 在受影响 Artifact 存在该能力时才解析执行，结果默认保持 ephemeral。",
+  "artifact_output_rule":"persistent Artifact 的 canonical_path 是唯一隐含持久化 self-output；Artifact 不声明 persistent_outputs 或 ephemeral_outputs。稳定跨角色临时交接只在 Workflow Exchange 中定义，其他过程结果保持会话内。"
+}

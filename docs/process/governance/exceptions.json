@@ -1,0 +1,6 @@
+{
+  "schema_version":"1.0",
+  "policy":"仅收录仍影响当前行为的兼容义务；历史事件和已关闭整改不得写入。",
+  "entry_schema":{"required":["exception_id","target_id","owner","scope","reason","created_at","expires_at","removal_evidence","status"],"status_values":["active","expired","closed"]},
+  "exceptions":[]
+}
