@@ -5,10 +5,9 @@
 - Owner: Product Manager Agent
 - Status: capability-organized story and slice draft
 - Canonical path: `docs/product/story_map.md`
-- Legacy compatibility: `docs/product/user_stories.md` 仅作为旧入口；新增或触碰的 Story/Slice 必须写入本文。
 - Method: `.agents/skills/story-map-develop/SKILL.md`
 
-本文按 `docs/product/feature_registry.md` 的 V2 Capability Table 组织 User Story 与 Child Vertical Slices。Capability 只作为边界分类，不作为产品行为来源；产品行为主要来自 `docs/product/user_stories.md` 的 legacy 清单和本次 PM 输入示例。
+本文是 User Story 与 Child Vertical Slice 的唯一 canonical product source，按 `docs/product/feature_registry.md` 的 V2 Capability Table 组织内容。Capability 只作为边界分类；approved User Story 与其嵌套的 approved Child Vertical Slice 是当前产品行为来源。
 
 本文只定义 User Story 与 Vertical Slice 的产品价值、用户可见行为、边界和 E2E 验收意图。本文不生成 FR、spec、pass/fail acceptance criteria、test cases、API/domain/UX/SWC contract、实现计划或发布决策。
 
@@ -24,21 +23,15 @@
 ## 追溯链路
 
 ```text
-User Story ID / Vertical Slice ID
--> Primary Capability ID / Affected Capability IDs
--> Increment ID
--> FR ID
--> Spec ID
--> AC ID
--> TC ID
--> Contract / SWC gate when applicable
--> WP ID
--> PR / Code Evidence
--> Test Evidence
--> Product Base merge decision
+Capability ID
+-> approved User Story ID
+-> approved Vertical Slice ID
+-> mandatory Functional Requirement ID
+-> typed Test Case edge
+-> affected Engineering Contract and implementation evidence when applicable
 ```
 
-`Stage`、`Roadmap`、`Increment`、`Work Package` 和 `PR` 只组织交付，不定义产品行为。Capability Registry 只定义稳定业务边界。
+`Stage`、`Roadmap`、`Increment`、`Work Package` 和 `PR` 只组织交付，不定义产品行为，也不作为 FR、TC 或 Engineering Contract 的事实上游。Capability Registry 只定义稳定业务边界。
 
 ## 1. 账号、身份资料与隐私（CAP-ACC / account-profile-privacy）
 

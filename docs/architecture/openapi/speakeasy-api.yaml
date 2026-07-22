@@ -1,3 +1,8 @@
+# PR-003 current lineage
+# This lineage-only marker does not change API behavior, schemas, compatibility,
+# or accepted implementation facts. Current product lineage is resolved from
+# applicable approved Functional Requirements; legacy Product Base, Increment,
+# Spec/AC, test-case, and traceability labels below are historical provenance.
 openapi: 3.0.3
 info:
   title: SpeakEasy API

@@ -1,59 +1,10 @@
 {
-  "schema_version": "1.0",
-  "exchanges": [
-    {
-      "exchange_id": "EX-PRODUCT-OBJECT-REVIEW",
-      "producer": "product-manager",
-      "consumers": ["product-object-governance-check"],
-      "source_artifacts": ["CAPABILITY_REGISTRY", "STORY_MAP"],
-      "applicability": "a product object proposal requires an independent readiness decision",
-      "lifecycle": "ephemeral",
-      "required_fields": ["candidate destination", "proposed changes", "impact inventory", "readiness decision"]
-    },
-    {
-      "exchange_id": "EX-REQUIREMENT-DOWNSTREAM",
-      "producer": "requirement-development",
-      "consumers": ["product-spec-authority", "traceability-authority", "product-manager"],
-      "source_artifacts": ["PRODUCT_BASE_REQUIREMENTS", "INCREMENT_REQUIREMENTS"],
-      "applicability": "approved requirements need downstream specification, traceability, or scope handling",
-      "lifecycle": "ephemeral",
-      "required_fields": ["approved requirement scope", "specification handoff", "traceability handoff", "scope-decision request"]
-    },
-    {
-      "exchange_id": "EX-AC-DOWNSTREAM",
-      "producer": "acceptance-authority",
-      "consumers": ["test-case-development", "traceability-authority"],
-      "source_artifacts": ["PRODUCT_BASE_ACCEPTANCE", "INCREMENT_ACCEPTANCE"],
-      "applicability": "approved acceptance criteria need test or traceability handling",
-      "lifecycle": "ephemeral",
-      "required_fields": ["acceptance mapping", "pending test mapping", "unresolved exceptions"]
-    },
-    {
-      "exchange_id": "EX-TEST-DOWNSTREAM",
-      "producer": "test-case-development",
-      "consumers": ["qa", "traceability-authority"],
-      "source_artifacts": ["INCREMENT_TEST_CASES"],
-      "applicability": "test design is ready for execution evidence or traceability updates",
-      "lifecycle": "ephemeral",
-      "required_fields": ["stable test IDs", "evidence plan", "traceability update", "executable test owner"]
-    },
-    {
-      "exchange_id": "EX-TRACEABILITY-REVIEW",
-      "producer": "traceability-authority",
-      "consumers": ["product-manager", "qa"],
-      "source_artifacts": ["PRODUCT_BASE_TRACEABILITY", "INCREMENT_TRACEABILITY"],
-      "applicability": "coverage review produces actionable gaps or a next workflow step",
-      "lifecycle": "ephemeral",
-      "required_fields": ["checked scope", "coverage finding", "gaps or exceptions", "next workflow step"]
-    },
-    {
-      "exchange_id": "EX-SKILL-QUALITY-REVIEW",
-      "producer": "documentation-governance",
-      "consumers": ["product-object-governance-change", "codex-root"],
-      "source_artifacts": ["SKILL_QUALITY_STANDARD", "SKILL_DEFINITION"],
-      "applicability": "a skill definition or its quality standard requires a pass/block decision",
-      "lifecycle": "ephemeral",
-      "required_fields": ["checked scope", "result", "required corrections", "residual risk"]
-    }
+  "schema_version":"1.0",
+  "exchanges":[
+    {"exchange_id":"EX-PRODUCT-OBJECT-REVIEW","producer":"product-manager","consumers":["product-object-governance-check"],"source_artifacts":["CAPABILITY_REGISTRY","STORY_MAP"],"applicability":"a product object proposal requires an independent readiness decision","lifecycle":"ephemeral","required_fields":["candidate destination","proposed changes","impact inventory","readiness decision"]},
+    {"exchange_id":"EX-FR-DOWNSTREAM","producer":"requirement-development","consumers":["product-manager","test-case-development","traceability-authority","system-architect","domain-schema","ai-runtime","ux-review"],"source_artifacts":["FUNCTIONAL_REQUIREMENT_CATALOG"],"applicability":"approved mandatory FRs require test design, Engineering Contract impact review, or traceability refresh","lifecycle":"ephemeral","required_fields":["approved FR IDs","source VS IDs","primary classification","affected contract decision"]},
+    {"exchange_id":"EX-TEST-DOWNSTREAM","producer":"test-case-development","consumers":["qa","traceability-authority"],"source_artifacts":["TEST_CASE_CATALOG"],"applicability":"stable FR, Contract, or VS test design is ready for implementation or traceability refresh","lifecycle":"ephemeral","required_fields":["stable TC IDs","direct upstream IDs","selectors","executable test owner"]},
+    {"exchange_id":"EX-TRACEABILITY-REVIEW","producer":"traceability-authority","consumers":["product-manager","qa"],"source_artifacts":["TRACEABILITY"],"applicability":"derived coverage review produces actionable gaps or a next workflow step","lifecycle":"ephemeral","required_fields":["checked scope","derived coverage finding","gaps or exceptions","next workflow step"]},
+    {"exchange_id":"EX-SKILL-QUALITY-REVIEW","producer":"documentation-governance","consumers":["product-object-governance-change","codex-root"],"source_artifacts":["SKILL_QUALITY_STANDARD","SKILL_DEFINITION"],"applicability":"a skill definition or its quality standard requires a pass/block decision","lifecycle":"ephemeral","required_fields":["checked scope","result","required corrections","residual risk"]}
   ]
 }

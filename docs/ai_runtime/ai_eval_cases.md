@@ -1,5 +1,9 @@
 # AI Evaluation Cases
 
+## PR-003 current lineage
+
+本次只切换来源链，不改变本文已有 fixture、rubric/threshold、provider/model 配置或已接受实现事实。本文仅持有由 Test Case Catalog 中 AI Contract-TC ID 关联的 AI 专用输入 fixture、评分 rubric/threshold 和 provider/model evaluation configuration；既有 `Input`/`Expected` 表格按 fixture/rubric 解读，既有 TC ID、validator 或 command 引用仅作 historical implementation provenance。AI Contract-TC 的稳定测试意图、oracle、scope、selector 和执行命令仅由 Test Case Catalog 持有。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability 或 Increment SWC Allocation 引用均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+
 ## Case Format
 
 ```json

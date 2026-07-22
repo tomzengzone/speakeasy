@@ -18,8 +18,6 @@
     {"actor_id":"product-object-governance-check","kind":"checker","definition":".codex/agents/product_object_governance_check.toml"},
     {"actor_id":"software-architecture-governance-check","kind":"checker","definition":".codex/agents/software_architecture_governance_check.toml"},
     {"actor_id":"evidence-reviewer","kind":"checker","definition":".codex/agents/evidence_reviewer.toml"},
-    {"actor_id":"product-spec-authority","kind":"workflow-role","approval_owner":"product-manager","method_skill":"feature-spec-generate","routed_by":"codex-root"},
-    {"actor_id":"acceptance-authority","kind":"workflow-role","approval_owner":"product-manager","method_skill":"acceptance-criteria-generate","routed_by":"codex-root"},
     {"actor_id":"traceability-authority","kind":"workflow-role","approval_owner":"documentation-governance","method_skill":"document-traceability-check","routed_by":"codex-root"},
     {"actor_id":"implementation-report-authority","kind":"workflow-role","approval_owner":"codex-root","method_skill":"implementation-report-generate","routed_by":"codex-root"}
   ]

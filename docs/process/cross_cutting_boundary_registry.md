@@ -1,10 +1,14 @@
 # 跨切面边界注册表
 
+## PR-003 current lineage
+
+本次只切换治理来源链，不改变下列跨切面工程边界、API、模块责任或已接受实现事实。当前产品 lineage 来自 approved Story/VS 与 mandatory FR，测试 lineage 来自 typed TC；Artifact inputs、owner 与适用 Gate 仅由 Governance Contract 解析。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+
 ## 目的
 
 本注册表记录项目中容易被局部实现绕过的跨切面能力边界。它用于约束实现计划、代码审查和后续验证：当一个需求触及已登记能力时，实施方必须复用授权入口，不得重新发明事实源、网关、上传链路或状态裁决规则。
 
-本文件是治理注册表，不替代 Product Base、increment requirements/spec/acceptance/test_cases/traceability、架构契约、实现报告、测试报告、质量报告或发布证据。
+本文件是治理注册表，不替代 Story Map、FR Catalog、TC Catalog、canonical derived traceability、Engineering Contract、实现报告、测试报告、质量报告或发布证据。
 
 ## 使用规则
 
@@ -24,8 +28,8 @@
 | XCB-004 | 会员权益、额度和商业事实 | Backend Commerce/Entitlement/Usage | Entitlement、subscription、usage API family | Flutter 本地判定最终权益、额度、账单、退款或商业发布状态；AI/provider 创建权益事实 | entitlement tests、quota/cost downgrade tests、release gate evidence | Backend + DevOps / QA + Evidence Reviewer |
 | XCB-005 | Goal Autopilot 目标、诊断、预测和 checkpoint 事实 | Backend Goal Autopilot domain | Goal Autopilot API family and deterministic policies | Flutter 本地推断最终 goal 状态、ETA、claim guard、diagnostic mode、confidence band；LLM/provider 直接写持久状态 | backend policy tests、projection tests、low-confidence downgrade tests、claim guard tests | Backend + Frontend + AI Runtime / QA + Evidence Reviewer |
 | XCB-006 | 数据保留、导出、删除和审计 | Backend data governance / Ops | Account deletion、retention、export、redacted audit paths | 新表或新媒体事实不接入删除/导出/retention；日志、报告或 API 暴露 raw audio、raw transcript、provider payload、secret 或完整 signed URL | account deletion tests、export redaction tests、retention job tests、log/report redaction review | Backend + DevOps / QA + Evidence Reviewer |
-| XCB-007 | Product source of truth 与 issue tracking | Product Manager / local product artifacts | Product Base、stage、increment、traceability、issue-management tracking | 用 issue、PR、报告或实现代码替代 PM 分类、需求、验收、测试、traceability、release evidence 或 Product Base merge | issue body source-of-truth links、traceability check、quality review | Product Manager + Documentation Governance / Product Object Governance Check |
-| XCB-008 | 场景练习与共享运行时复用 | Software Component Architecture / SWC Catalog | `FE-SCENARIO-PRACTICE`、`FE-PRACTICE-RUNTIME`、`SWC-FLOW-SCENARIO-PRACTICE-RUNTIME` | 为同一交互主干新建重复 session、voice、message、TTS、history 或 recovery runtime；绕过既有共享组件和 Flow | `scripts/check_swc_allocation.py`、受影响 allocation 的 SWC/Flow 引用、复用与禁止边界证据 | Frontend + System Architect / Software Architecture Governance Check |
+| XCB-007 | Product source of truth 与 issue tracking | Product Manager / current product Artifacts | Story Map、FR Catalog、TC Catalog、derived traceability、issue-management tracking | 用 issue、PR、报告或实现代码替代 Story/VS/FR、typed TC、derived traceability 或 release evidence | issue body Artifact-ID links、traceability check、quality review | Product Manager + Documentation Governance / Product Object Governance Check |
+| XCB-008 | 场景练习与共享运行时复用 | Software Component Architecture / SWC Catalog | `FE-SCENARIO-PRACTICE`、`FE-PRACTICE-RUNTIME`、`SWC-FLOW-SCENARIO-PRACTICE-RUNTIME` | 为同一交互主干新建重复 session、voice、message、TTS、history 或 recovery runtime；绕过既有共享组件和 Flow | 当前 SWC/Flow 引用、受影响 Contract-TC、复用与禁止边界证据 | Frontend + System Architect / Software Architecture Governance Check |
 
 ## XCB-001 详细说明：统一音频上传主干与业务消费边界
 
@@ -394,55 +398,56 @@ XCB-006 not-applicable exception: table=<table>; owner=<owner>; safe_fields=<saf
 
 ### 统一产品对象治理主干
 
-产品范围、优先级、需求、验收、测试、实现证据、发布证据和 issue tracking 必须按产品对象治理主干分层：
+产品范围、产品事实、测试设计、实现证据、发布证据和 issue tracking 必须按当前产品对象治理主干分层：
 
 ```text
 用户想法或问题
--> Product Manager 分类 V2 Capability/stage/increment/change request
--> Product Base 或 owning increment artifacts
--> requirements / spec / acceptance / test_cases / traceability
+-> Product Manager 分类 Capability/Sub-capability
+-> approved Story -> approved Child VS -> mandatory FR
+-> FR-TC / affected Contract-TC / VS-TC
+-> canonical derived traceability
 -> Codex Root 路由实现或审核
 -> reports / quality / release evidence
 -> issue 只作为 tracking container 链接上述 source of truth
 ```
 
-Issue、PR、代码、报告和 agent 输出都不能替代 Product Manager 分类、Product Base、increment artifacts、AC/TC/traceability、release evidence 或 Product Base merge decision。
+Issue、PR、代码、报告和 agent 输出都不能替代 Product Manager 分类、Story/VS/FR、typed TC、derived traceability 或 release decision。
 
 ### 授权治理入口
 
 | 治理场景 | 授权入口 | 业务语义 |
 | --- | --- | --- |
-| 产品范围与优先级 | Product Manager agent、`docs/product/development_status.md`、V2 Capability registry、stage docs | 决定当前做什么、延期什么、属于哪个 Capability/stage/increment |
-| 稳定产品事实 | `docs/product/base/` | 已接受稳定行为的 living source of truth |
-| 增量事实 | `docs/product/increments/<increment-id>/` | 当前或历史 increment 的 definition、requirements、spec、acceptance、test_cases、traceability |
-| 工作流治理 | `docs/process/workflow.md`、`skill_quality_standard.md`、本注册表 | 规定路由、边界、source-of-truth 和检查流程 |
-| Issue tracking | `.agents/skills/issue-management/`、GitHub issues | 跟踪协调、链接源头和证据，不拥有产品事实 |
-| 独立审核 | Product Object Governance Check、Documentation Governance、Evidence Reviewer、QA | 审查范围、链路、证据和 release/Product Base 状态 |
+| 产品范围与优先级 | Product Manager、Capability Registry、roadmap/planning Artifacts | 决定当前做什么、延期什么和 Capability classification；planning 不定义行为 |
+| 产品事实 | Story Map 与 FR Catalog | 持有 approved Story/VS 和 mandatory atomic FR |
+| 测试与追溯 | TC Catalog 与 canonical derived traceability | 持有 typed oracle/direct edge，并从 owning sources 投影完整 join |
+| 工作流治理 | `WORKFLOW`、`SKILL_QUALITY_STANDARD`、本注册表 Artifact | 规定方法顺序与跨切面边界；治理事实由 Governance Contract 解析 |
+| Issue tracking | `issue-management`、repository issues | 跟踪协调、链接 Artifact IDs 和证据，不拥有产品事实 |
+| 独立审核 | Product Object Governance Check、Documentation Governance、Evidence Reviewer、QA | 审查范围、链路、证据和 release 状态 |
 
 ### 当前实现状态和 legacy/planned 说明
 
-- 当前 workflow 已明确 Product Manager 是用户入口和产品对象 owner，Codex Root 负责路由，issue-management 只做 tracking。
-- `.agents/skills/issue-management/` 已存在并要求 issue 不得替代 PM 分类、需求、验收、测试、traceability 或 release evidence。
+- 当前 workflow 明确 Product Manager 负责产品决策，Codex Root 负责路由，issue-management 只做 tracking。
+- `issue-management` 要求 issue 不得替代 Story/VS/FR、typed TC、traceability 或 release evidence。
 - XCB-001..XCB-006 的治理表只能作为 implementation plan 和 review 的边界约束，不能直接声明需求完成、release ready 或 Product Base merge。
 - 当前工作树存在非本步骤的治理/脚本改动时，审核必须区分当前步骤范围和既有 residual risk。
 - Followup-E 当前仍是 planning/contract evidence only；任何 issue 或跟踪项都不得把它标成 implemented、tested 或 release-approved。
 
 ### 禁止绕过
 
-- 不得用 issue、PR、实现代码、测试通过、报告摘要或 agent 口头结论替代 Product Manager 的 scope/priority/stage/increment 决策。
-- 不得把 baseline、Capability、stage、increment、change request 和 Product Base 混成同一个 source of truth。
-- 不得用本注册表补写需求、验收、测试用例、实现报告、质量报告或发布证据。
-- 不得在缺少 owning increment、AC-to-TC mapping、traceability 和 evidence 的情况下声明 done。
+- 不得用 issue、PR、实现代码、测试通过、报告摘要或 agent 口头结论替代 Product Manager 的产品决策。
+- 不得把 Capability、Stage、Increment、Work Package 或 change request 当成产品行为 source。
+- 不得用本注册表补写 Story/VS/FR、typed TC、实现报告、质量报告或发布证据。
+- 不得在缺少 mandatory FR、适用 typed TC、derived traceability 和 exact-commit evidence 时声明 done。
 - 不得把 local deterministic pass 写成 commercial release approval、paid AI external evidence pass 或 Product Base merge approval。
 
 ### 模块责任表
 
 | 模块 | 责任 | 不允许 |
 | --- | --- | --- |
-| Product Manager | 分类请求、维护 roadmap/development status、V2 Capability registry、stage scope、increment definition 和优先级 | 写详细实现、测试、API schema 或被 issue/PR 替代 |
-| Product Base | 承载已接受稳定需求、spec、acceptance、traceability | 接收未完成或未批准的 planned increment scope |
-| Increment artifacts | 承载当前增量 definition、requirements、spec、AC、TC、traceability 和 evidence 状态 | 冒充 Product Base 或跨增量混用 scope |
-| Codex Root | 检查产品对象门禁并路由 specialist agents | 决定产品优先级或绕过 missing increment/AC/TC gate |
+| Product Manager | 分类请求、维护 Story/VS/FR 与 planning priority | 写详细实现、测试、API schema 或被 issue/PR 替代 |
+| Story Map / FR Catalog | 承载 approved Story/VS 和 mandatory atomic FR | 接收交付批次、执行状态或工程 schema |
+| TC Catalog / Traceability | 承载 typed oracle/direct edge 与 derived full-chain projection | 新增产品行为、复制运行状态或覆盖 owning edge |
+| Codex Root | 检查产品对象门禁并路由 specialist agents | 决定产品优先级或绕过 missing VS/FR/TC gate |
 | Issue Management | 创建/更新 tracking issue、链接 source-of-truth、建议 label/status | 决定产品范围、优先级、完成状态或 release readiness |
 | Reports / Release evidence | 记录已执行范围、测试、质量、风险、external blockers | 新增需求或把本地 pass 写成发布批准 |
 | Product Object Governance Check | 独立检查范围、路径、source-of-truth 和边界一致性 | 自己生成缺失需求或批准自己的变更 |
@@ -461,4 +466,4 @@ Cross-cutting boundaries:
 
 ## 维护规则
 
-本注册表由 Product Object Governance Change Agent 维护，Product Object Governance Check Agent 独立审核。新增或修改边界时，必须确认没有改变产品范围、路线图优先级、已接受需求或 release 状态。
+本注册表的维护与独立审核角色由 Governance Contract 解析。新增或修改边界时，必须确认没有改变产品范围、路线图优先级、已接受 Story/VS/FR 或 release 状态。

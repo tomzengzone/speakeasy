@@ -1,5 +1,9 @@
 # Dialogue State Machine
 
+## PR-003 current lineage
+
+本次只切换来源链，不改变本文的状态、转换、错误语义或已接受实现事实。当前产品上游仅由适用的 approved FR 解析；文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability 或 Increment SWC Allocation 引用均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+
 ## States
 ```text
 session_created

@@ -20,6 +20,7 @@
 - Skills are task methods, not permanent agent attachments. Load only a skill whose description matches the requested output.
 - `docs/process/governance/index.json` is the authority for governed artifact paths, owners, contributor scope, lifecycle, and Gate routing.
 - Read only the relevant Artifact or Gate record when a task changes a durable governed fact or crosses a declared risk boundary.
+- For product implementation, keep the default coding context to the selected approved VS, mandatory FR, affected Engineering Contracts, typed FR/Contract/VS Test Cases, adjacent code/tests, and validation commands.
 - Code-only fixes, behavior-preserving refactors, UI polish, and read-only analysis do not require new governance documents unless their actual impact triggers an applicable Artifact or Gate.
 - Preserve existing upstream facts. Update only the owning canonical artifact and only when its durable content changes.
 

@@ -4,6 +4,7 @@ sandbox_mode = "read-only"
 developer_instructions = """
 Independently verify the scoped governance change against current authorities and the parent task.
 Check for unintended product changes, duplicate authorities, broken ownership, invalid paths, weak applicability, and missing validation evidence.
+For Story/Slice delivery governance, verify mandatory FR, typed TC direct edges, derived traceability, legacy isolation, and candidate-versus-baseline exact-SHA semantics.
 Return pass, conditional, or block with exact files and required corrections.
 Do not modify the reviewed files and do not apply producer methods as review authority.
 """

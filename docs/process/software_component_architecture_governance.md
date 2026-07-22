@@ -1,216 +1,79 @@
 # Software Component Architecture Governance
 
-## 状态
-Accepted process governance。本文件定义代码架构设计如何在本项目落地，不改变产品范围、不替代需求、领域模型、OpenAPI、UX、AI runtime、测试或发布文档。
+## 状态与范围
 
-## 目标
-把成熟代码架构设计变成实现前强制门禁，确保每个跨层或可复用模块变更在编码前完成：
-- 系统级职责分配；
-- Domain Schema 引用；
-- OpenAPI / Interface Contract 引用；
-- SWC Catalog；
-- Existing Implementation Baseline；
-- Delta From Existing Baseline；
-- Requirement Allocation Matrix；
-- SWC 间数据流；
-- 复用与禁止边界。
+Accepted current process governance。本文件定义 SWC 架构方法和审查内容，不改变产品范围，也不替代 Domain、OpenAPI、AI runtime、UX、测试或发布 Artifact。Canonical path、owner、lifecycle、inputs 与 Gate routing 只从 Governance Contract 的 Artifact/Gate ID 解析。
 
-## Canonical Artifacts
-| Artifact | Path | Owner | Purpose |
-| --- | --- | --- | --- |
-| Global SWC Catalog | `docs/architecture/swc_catalog.md` | System Architect Agent | 稳定 SWC 库：前端、后端、数据库、AI runtime、provider、ops 组件清单和职责边界 |
-| Global SWC Architecture Baseline | `docs/architecture/software_component_architecture.md` | System Architect Agent | 完整汇总的软件组件架构：SWC 拓扑、全局 SWC-to-SWC Flow ID、稳定复用流和局部变更参考基准 |
-| Increment SWC Allocation | `docs/product/increments/<increment-id>/swc_allocation.md` | System Architect Agent | 将已批准 increment 的 FR/AC 分配到具体 SWC、API、领域实体、DB/migration 和测试 |
-| Increment SWC Allocation Template | `codex/templates/swc_allocation.template.md` | System Architect Agent | 生成增量 SWC allocation 的稳定模板，防止字段漂移 |
-| SWC Allocation Gate Script | `scripts/check_swc_allocation.py` | DevOps + Software Architecture Governance Check Agent | CI 检查模板、增量 allocation、旧实现继承、变更代码路径覆盖和场景对话复用边界 |
+## Applicability
 
-独立 SWC 审查是 `G-INDEPENDENT-CHECK` 命中后的 Gate finding，默认保持临时，不是新的 canonical Artifact；只有用户或适用 Contract 明确要求时才写入治理声明的 evidence location。
+只有变更实际影响稳定共享 SWC topology、system-level flow、reusable component boundary、跨层事实 ownership 或重大架构风险时进入 `G-SWC`。普通单组件实现、行为不变重构、copy/style polish 不创建额外 allocation 文档。
 
-Template change 属于 workflow/source-of-truth governance change，除普通 validation 外，在 `G-INDEPENDENT-CHECK` 命中时还必须通过对应 Checker。
+当前 SWC 架构工作使用 `SOFTWARE_COMPONENT_ARCHITECTURE`、`SWC_CATALOG`、`DATA_FLOW`、`MODULE_BOUNDARY` 和适用专业 Engineering Contract。Stage、Increment、Work Package 只可记录 planning/delivery selection，不作为 SWC 架构事实上游。旧 Increment SWC Allocation、Spec/AC 与其 gate/script 只属于 historical provenance，不是当前 prerequisite、fallback 或 CI required check。
 
-## Workflow Placement
-SWC 架构门禁位于：
+## Current workflow
 
 ```text
-increment spec
--> acceptance criteria
--> test case library / AC-to-TC mapping
--> architecture/domain/API/screen/AI specs
--> existing implementation baseline / delta from baseline
--> software component architecture / SWC allocation
--> implementation plan
--> code
+selected approved VS + mandatory FR
+-> affected Engineering Contract facts
+-> inspect existing SWC/Flow and adjacent code/tests
+-> decide no stable architecture impact, or update current SWC architecture/catalog
+-> Contract-TC and targeted architecture validation
+-> G-INDEPENDENT-CHECK when applicable
+-> implementation
 ```
 
-如果变更只影响纯文案、单文件样式或不触达跨层/可复用组件，可在 increment traceability 中记录 `N/A - no SWC impact`，但必须说明原因。
+若只是局部实现，交付记录说明复用的 SWC/Flow、相邻代码和验证即可。若稳定 topology/flow/ownership 改变，必须在编码前更新 owning current architecture Artifact，并取得结构化 System Architect evidence；不得通过批次 allocation 文档复制全局事实。
 
-## Global SWC Catalog Content Contract
-`docs/architecture/swc_catalog.md` 必须包含：
-- SWC ID；
-- layer：frontend、backend、database、provider、AI runtime、ops、shared；
-- owning agent：Frontend、Backend、Domain Schema、AI Runtime、DevOps、System Architect 等；
-- code path；
-- responsibilities；
-- explicit non-responsibilities；
-- provided interfaces；
-- required interfaces；
-- owned data / DB tables / migrations；
-- called APIs or provider boundaries；
+## SWC Catalog content method
+
+每个稳定 SWC 条目应包含：
+
+- stable SWC ID 与 layer；
+- code boundary；
+- responsibilities 与 explicit non-responsibilities；
+- provided/required interfaces；
+- data、persistence 与 provider ownership；
+- called API/Contract IDs；
 - test ownership；
-- required reuse and forbidden bypasses（必需复用与禁止绕过）；
-- current status（当前状态）：accepted、proposed、deprecated、legacy-compatible。
+- required reuse、forbidden bypass 与 current status。
 
-SWC Catalog 不能复制完整 Domain Schema、OpenAPI schema、prompt schema 或 UX layout；它只能引用这些 source of truth。
+Catalog 只描述组件和复用边界；Domain entity、OpenAPI request/response、prompt schema、UX layout 和测试 oracle 继续由各 owning Artifact 持有。
 
-## Global SWC Architecture Baseline Content Contract
-`docs/architecture/software_component_architecture.md` 必须包含：
-- 文档与 `swc_catalog.md`、`data_flow.md`、`module_boundary.md`、Domain Schema、OpenAPI、increment allocation 的 source-of-truth 边界；
-- 系统级 frontend/backend/database/provider/AI runtime/ops 职责分配；
-- 全局 SWC 拓扑；
-- 稳定 SWC-to-SWC Flow ID library；
-- 每个 Flow ID 的 SWC sequence 和 canonical source；
-- 局部架构变更的 baseline reference rule；
-- 增量局部 flow 升级为全局稳定 flow 的规则；
-- 历史 increment 迁移说明。
+## Global architecture content method
 
-Global SWC Architecture Baseline 不能替代 `swc_catalog.md` 的组件字段清单，也不能替代增量 `swc_allocation.md` 的 FR/AC 落地矩阵。它回答“完整软件组件架构和局部变更参考基准是什么”。
+稳定 SWC 架构应描述：
 
-## Increment SWC Allocation Content Contract
-`docs/product/increments/<increment-id>/swc_allocation.md` 必须包含：
+- system-level frontend/backend/database/provider/AI runtime/ops responsibility allocation；
+- current topology 与 stable `SWC-FLOW-*` library；
+- 每个 Flow 的 SWC sequence、success/failure path 和 canonical engineering sources；
+- auth/authorization、idempotency/retry、rollback/compensation、audit/logging/metrics 与 privacy boundary；
+- existing implementation、复用规则、禁止重复组件和迁移/废弃责任；
+- 局部 flow 升级为 stable global flow 的条件。
 
-除非正在更新已有 accepted allocation，否则必须以 `codex/templates/swc_allocation.template.md` 作为起始结构。
+Brownfield change 先定位既有 user flow、code path、SWC/Flow、API、data ownership 和 tests，再写最小 delta。若新增 runtime、store、API、provider adapter、cache 或 migration，必须说明现有组件不能复用的原因、兼容影响、迁移 owner 和 regression proof。
 
-1. Scope
-   - increment id；
-   - active stage；
-   - covered Stage Scope IDs；
-   - primary Capability ID / Sub-capability ID（主要能力与一级子能力）；
-   - affected Capability IDs / Sub-capability IDs（受影响能力与一级子能力）；
-   - explicit non-goals；
-   - change mode：`brownfield-update`、`behavior-preserving-refactor` 或 `greenfield-with-no-existing-implementation`。
+## Responsibility boundaries
 
-2. Existing Implementation Baseline
-   - existing user flow；
-   - existing code paths；
-   - existing SWCs；
-   - existing global Flow IDs；
-   - existing API/OpenAPI calls；
-   - existing domain/data ownership；
-   - existing tests/evidence；
-   - behavior that must not regress（不可回归行为）；
-   - known legacy/deprecated parts（已知 legacy/deprecated 部分）及 migration owner 和 expiry。
+- Product Manager 决定产品范围、Story/VS 与 FR；不决定 SWC 细节。
+- System Architect 判断 topology、flow、reuse 与 cross-layer ownership；不改变产品事实或专业 Contract schema。
+- Domain/API/AI/UX owner 维护各自工程事实；SWC 文档只引用，不复制。
+- Frontend/Backend/AI Runtime/DevOps 在批准边界内实现，不能把 client cache、provider candidate 或 ops signal 提升为 domain truth。
+- Test Case Development 设计 typed TC；不决定架构 ownership。
+- Software Architecture Governance Check 独立只读检查；不生成被审查架构。
 
-   Brownfield 或 refactor increment 不得用空泛的“复用旧流程”替代具体代码路径、SWC ID、Flow ID、API 和测试证据。只有真正没有已接受实现的 greenfield increment 才能写 `N/A - greenfield, no accepted implementation`，并且必须说明为什么不是对现有能力的扩展。
+## Review criteria
 
-3. Delta From Existing Baseline
-   - reused SWCs；
-   - reused Flow IDs；
-   - changed behavior；
-   - unchanged behavior；
-   - new code allowed；
-   - new code forbidden；
-   - existing code modified；
-   - migration/deprecation impact；
-   - regression proof required。
+命中 `G-SWC` 或 `G-INDEPENDENT-CHECK` 时，以下情况阻塞：
 
-   Increment design 只能写相对既有 baseline 的 delta。若需要新增 SWC、runtime、API、store、provider adapter、cache 或 DB migration，必须说明现有组件为什么不能复用以及旧组件是否迁移、保留或废弃。
+- stable topology/flow/ownership 改变但 owning current architecture 未更新；
+- 没有先识别 existing code/SWC/Flow/API/data/test baseline；
+- 新组件复制已接受 SWC，且没有可验证的必要性与迁移责任；
+- frontend 拥有 server-owned facts，或 backend 绕过 domain/media/AI gateway/usage/entitlement/audit/data-governance boundary；
+- data flow 遗漏实际适用的 failure、auth、idempotency、retry、audit、privacy 或 rollback；
+- SWC 文档复制或冲突 Domain、OpenAPI、AI runtime、UX、TC 或 release facts；
+- changed Contract 缺少 Contract-TC，或测试未覆盖架构 delta；
+- 批次 planning metadata 被当作产品或架构 source。
 
-4. Baseline References
-   - `docs/architecture/software_component_architecture.md`；
-   - referenced global `SWC-FLOW-*` IDs；
-   - referenced `docs/architecture/swc_catalog.md` SWC IDs；
-   - inherited `data_flow.md` / `module_boundary.md` rules；
-   - local flow classification：`one-off`、`proposed-global`、`legacy-compatible` 或 `N/A - uses existing global flow only`。
+## Verification
 
-5. System Responsibility Allocation
-   - frontend responsibilities；
-   - backend responsibilities；
-   - database responsibilities；
-   - provider responsibilities；
-   - AI runtime responsibilities；
-   - ops/release responsibilities；
-   - server-owned facts；
-   - client-cache-only facts。
-
-6. Requirement Allocation Matrix
-   必需列：
-   `Traceability Row ID`, `Increment ID`, `WP ID`, `FR`, `Spec`, `AC`, `FE SWC`, `BE SWC`, `API/OpenAPI`, `Domain Entity`, `DB Table/Migration`, `Provider/AI Boundary`, `TC`, `Notes`.
-
-   SWC allocation 只接收 Spec/AC/WP 和既有实现基线作为本层输入；完整 Story/Slice 回连通过 `Traceability Row ID` 交给 owning `traceability.md`，不得在 allocation row 重复整条产品链。
-
-7. SWC Data Flow
-   每个核心 flow 必须列出：
-   - global Flow ID 或 local flow id；
-   - success path；
-   - failure path；
-   - auth/authorization；
-   - idempotency/retry；
-   - rollback or compensation；
-   - audit/logging/metrics；
-   - permission/privacy；
-   - response-to-UI mapping。
-
-8. Reuse And Forbidden Boundaries
-   - 必须复用的 existing SWC；
-   - 允许新增的 new SWC；
-   - 禁止重复创建的 duplicate component；
-   - forbidden direct call 或 bypass；
-   - legacy exception 和 migration plan。
-
-9. Verification
-   - expected tests；
-   - expected static gates；
-   - OpenAPI/generated drift checks；
-   - traceability checker；
-   - `python3 scripts/check_swc_allocation.py --scope changed --base-ref <base-ref>`；
-   - `G-INDEPENDENT-CHECK` 命中时的 Software Architecture Governance Check finding。
-
-## Agent Responsibilities
-| Agent | Owns | Must not own |
-| --- | --- | --- |
-| Product Manager | stage priority, product scope, accepted/deferred decisions | SWC details, code ownership, API schema |
-| Requirement Development | FR, user path, acceptance input quality | SWC assignment or implementation design |
-| System Architect | global SWC architecture baseline, SWC catalog, increment SWC allocation, module/data-flow/API-boundary architecture | Product priority, detailed domain entity semantics, OpenAPI YAML schema, implementation code |
-| Domain Schema | domain entities, lifecycle, invariants, ownership | API request/response schema, SWC implementation routing |
-| API Contract | API family, request/response/error/idempotency/version contract | DB implementation, product priority, UI layout |
-| Frontend | Flutter SWC implementation under approved allocation | server-owned facts, provider secrets, final entitlement/mastery facts |
-| Backend | backend SWC implementation under approved allocation | UI layout, product scope, client-only facts as source of truth |
-| QA/Test Case Development | TC design and execution evidence | architecture ownership decisions |
-| Software Architecture Governance Check | independent pass/block review of SWC gate | creating SWC allocation or changing product scope |
-| Product Object Governance Check | meta-governance for workflow/agent/skill/source-of-truth changes | technical SWC correctness review when Software Architecture Governance Check is the owning checker |
-
-## Stable Output Rule
-每个 implementation-impacting increment 必须产出以下之一：
-- 通过 `scripts/check_swc_allocation.py` 的 `docs/product/increments/<increment-id>/swc_allocation.md`；若同时命中 `G-INDEPENDENT-CHECK`，再取得独立 checker pass；或
-- increment traceability 中带 reviewer acceptance 的明确 `N/A - no SWC impact` decision。
-
-除非 accepted decision 是 `N/A - no SWC impact`，否则 `swc_allocation.md` 必须引用 `docs/architecture/software_component_architecture.md`、referenced `SWC-FLOW-*` ID 和 referenced SWC Catalog ID。
-
-Implementation-impacting PR 必须通过 `scripts/check_swc_allocation.py`。当 `lib/`、`backend/src/main/java/`、`backend/src/main/resources/db/migration/` 或 OpenAPI 下的 implementation path 变化时，changed SWC allocation 必须提到变化的 existing/new code path，或 owning increment traceability 必须携带 accepted `N/A - no SWC impact` decision。Scenario-practice code change 必须引用 `SWC-FLOW-SCENARIO-PRACTICE-RUNTIME` 和 existing `FE-SCENARIO-PRACTICE` / `FE-PRACTICE-RUNTIME` boundary。
-
-Implementation report 必须引用 changed code 对应的 SWC allocation row，或引用 accepted no-impact decision。当变更触碰 frontend/backend boundary、persistence、provider/AI runtime、cross-cutting reusable module 或 owned facts 时，code review 应把 missing baseline reference、missing SWC allocation 或 uncategorized local flow 视为 blocker。
-
-## Review Criteria
-命中 `G-INDEPENDENT-CHECK` 后，独立 checker 在以下情况下必须 block：
-- 需要完整 SWC architecture baseline，但 `docs/architecture/software_component_architecture.md` 缺失，或 increment allocation 未引用它；
-- Existing Implementation Baseline 缺失、没有列出具体 existing code path/SWC/Flow ID/API/test，或在存在 existing accepted implementation 时声称 greenfield；
-- Delta From Existing Baseline 缺失、没有列出 reused SWC/Flow ID、没有定义 new-code-allowed/new-code-forbidden boundary，或静默替换 existing behavior；
-- local SWC data flow 既没有映射到 existing `SWC-FLOW-*` ID，也没有分类为 `one-off`、`proposed-global` 或 `legacy-compatible`；
-- 任一 implementation-impacting FR/AC 没有 SWC allocation，也没有明确 N/A reason；
-- FE/BE/DB/provider ownership 模糊；
-- client SWC 拥有 server-owned facts；
-- backend SWC 绕过 existing domain、media、AI gateway、usage、entitlement、audit 或 data-governance boundary；
-- new SWC 在没有 migration reason 的情况下复制 accepted SWC；
-- changed implementation path 没有被 owning SWC allocation 的 existing code baseline 或 allowed code delta 覆盖；
-- 适用时 data flow 遗漏 failure path、idempotency、auth、audit/logging 或 rollback/compensation；
-- SWC allocation 复制或冲突 Domain Schema、OpenAPI、AI runtime、UX、test cases、release gates 或 Product Base scope；
-- 变更后相关 agent 或 skill ownership 冲突。
-
-## Migration Plan
-1. 为 global SWC architecture baseline 和 SWC allocation 增加 workflow/DoD gate。
-2. 增加 System Architect 对 global SWC architecture baseline、SWC catalog 和 increment allocation 的 ownership。
-3. 增加 Software Architecture Governance Check Agent 作为 independent reviewer。
-4. 更新 document path/content/traceability governance，使其识别 SWC artifact。
-5. 对新的 increment，implementation 前要求 baseline reference 和 `swc_allocation.md`。
-6. 将 `scripts/check_swc_allocation.py` 加入 CI，使缺失 existing-implementation inheritance 的 PR 被阻塞。
-7. 对已有实现的 active increment，在下一次 touched slice 或 Product Base merge review 中补充 baseline references、Existing Implementation Baseline、Delta From Existing Baseline 和 SWC allocation，而不是原地重写历史。
+先运行 affected Contract/architecture 的最窄测试和静态检查，再运行 selected VS 定向全链路测试。由 Governance Contract 解析 Artifact validation commands 和适用独立 checker；本文件不维护命令、path 或 owner 副本。

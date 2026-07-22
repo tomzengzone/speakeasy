@@ -46,7 +46,7 @@ DEFINITION_PROCESS_TERMS = re.compile(
     re.I,
 )
 DELIVERY_INSTANCE_TERMS = re.compile(r"\b(?:current\s+)?MVP\b|\bP[0-4](?:\.\d+)*\b|\bFollowup-[A-Z]\b", re.I)
-CONCRETE_INSTANCE_ID = re.compile(r"\b(?:TC|SWC-FLOW|FE|BE|DB|AI|OPS|P\d+)-[A-Z0-9][A-Z0-9-]*\b")
+CONCRETE_INSTANCE_ID = re.compile(r"(?<!G-)\b(?:TC|SWC-FLOW|FE|BE|DB|AI|OPS|P\d+)-[A-Z0-9][A-Z0-9-]*\b")
 STANDARD_ARTIFACT_OWNER_CLAIM = re.compile(
     r"[^.\n]{1,100}(?:owns|拥有)[^.\n]{0,160}"
     r"(?:roadmap|development status|requirements?|user stor(?:y|ies)|acceptance criteria|test cases?|spec|traceability|report)",
@@ -62,7 +62,7 @@ READ_ONLY_NATIVE_AGENTS = {
     "product_object_governance_check",
     "software_architecture_governance_check",
 }
-ALLOWED_GOVERNANCE_STATUSES = {"candidate", "active"}
+ALLOWED_GOVERNANCE_STATUSES = {"candidate"}
 RETIRED_RUNTIME_PATH_PATTERNS = (
     "scripts/project_agent_runner.py",
     "scripts/run_governance_ab.py",
@@ -223,129 +223,20 @@ def validate_governance_activation(root: Path, status: object) -> list[str]:
             if path.is_file():
                 errors.append(f"retired runtime interface exists: {path.relative_to(root).as_posix()}")
 
-    if status == "candidate":
-        head_paths = _git_tree_paths(root, "HEAD")
-        if head_paths is None or _governance_status_at(root, "HEAD") != "candidate":
-            return errors
-
-        dirty_baseline = _git_dirty_baseline_paths(root)
-        if dirty_baseline is None:
-            errors.append("candidate governance could not compare the worktree with HEAD")
-        elif dirty_baseline:
-            errors.append(
-                "candidate governance worktree differs from HEAD: "
-                + ", ".join(dirty_baseline)
-            )
-
-        baseline_paths = set(ACTIVE_BASELINE_FILES)
-        missing_from_worktree = sorted(path for path in ACTIVE_BASELINE_FILES if not (root / path).is_file())
-        if missing_from_worktree:
-            errors.append(
-                "candidate governance requires baseline files in the worktree; missing: "
-                + ", ".join(missing_from_worktree)
-            )
-        for directory in ACTIVE_BASELINE_DIRECTORIES:
-            baseline_paths.update(_relative_files(root, directory))
-        missing = sorted(baseline_paths - head_paths)
-        if missing:
-            errors.append(
-                "candidate governance requires all baseline files in HEAD; missing: "
-                + ", ".join(missing)
-            )
-
-        retired_in_head = sorted(path for path in head_paths if _matches_retired_runtime_path(path))
-        if retired_in_head:
-            errors.append(
-                "candidate governance HEAD contains retired runtime interfaces: "
-                + ", ".join(retired_in_head)
-            )
-        tracked_caches = sorted(
-            path for path in head_paths if path.endswith(".pyc") or "/__pycache__/" in f"/{path}"
-        )
-        if tracked_caches:
-            errors.append("candidate governance HEAD contains tracked cache files: " + ", ".join(tracked_caches))
-        return errors
-
-    head_paths = _git_tree_paths(root, "HEAD")
-    if head_paths is None:
-        errors.append("active governance requires a committed Git baseline")
-        return errors
-
-    if _governance_status_at(root, "HEAD") != "active":
-        errors.append("active governance status must be committed in HEAD")
-
-    dirty_baseline = _git_dirty_baseline_paths(root)
-    if dirty_baseline is None:
-        errors.append("active governance could not compare the worktree with HEAD")
-    elif dirty_baseline:
-        errors.append(
-            "active governance worktree differs from HEAD: "
-            + ", ".join(dirty_baseline)
-        )
-
-    baseline_paths = set(ACTIVE_BASELINE_FILES)
-    missing_from_worktree = sorted(path for path in ACTIVE_BASELINE_FILES if not (root / path).is_file())
-    if missing_from_worktree:
-        errors.append(
-            "active governance requires baseline files in the worktree; missing: "
-            + ", ".join(missing_from_worktree)
-        )
-    for directory in ACTIVE_BASELINE_DIRECTORIES:
-        baseline_paths.update(_relative_files(root, directory))
-    missing = sorted(baseline_paths - head_paths)
-    if missing:
-        errors.append(
-            "active governance requires all baseline files in HEAD; missing: "
-            + ", ".join(missing)
-        )
-
-    retired_in_head = sorted(path for path in head_paths if _matches_retired_runtime_path(path))
-    if retired_in_head:
-        errors.append(
-            "active governance HEAD contains retired runtime interfaces: "
-            + ", ".join(retired_in_head)
-        )
-    tracked_caches = sorted(path for path in head_paths if path.endswith(".pyc") or "/__pycache__/" in f"/{path}")
+    # Local validation intentionally accepts an approved dirty candidate worktree.
+    # Clean checkout, branch/base relationship, SHA stability, exact-CI evidence and
+    # protected-ref activation belong to verify_exact_commit_ci.py after commit creation.
+    head_paths = _git_tree_paths(root, "HEAD") or set()
+    tracked_caches = sorted(
+        path for path in head_paths if path.endswith(".pyc") or "/__pycache__/" in f"/{path}"
+    )
     if tracked_caches:
-        errors.append("active governance HEAD contains tracked cache files: " + ", ".join(tracked_caches))
-
-    parent_paths = _git_tree_paths(root, "HEAD^")
-    parent_status = _governance_status_at(root, "HEAD^")
-    if parent_paths is None or parent_status not in {"candidate", "active"}:
-        errors.append("active governance requires a committed candidate predecessor")
-    elif parent_status == "candidate":
-        missing_from_candidate = sorted(baseline_paths - parent_paths)
-        if missing_from_candidate:
-            errors.append(
-                "active governance candidate predecessor lacks baseline files: "
-                + ", ".join(missing_from_candidate)
-            )
-        retired_in_candidate = sorted(path for path in parent_paths if _matches_retired_runtime_path(path))
-        if retired_in_candidate:
-            errors.append(
-                "active governance candidate predecessor contains retired runtime interfaces: "
-                + ", ".join(retired_in_candidate)
-            )
-        tracked_candidate_caches = sorted(
-            path for path in parent_paths if path.endswith(".pyc") or "/__pycache__/" in f"/{path}"
-        )
-        if tracked_candidate_caches:
-            errors.append(
-                "active governance candidate predecessor contains tracked cache files: "
-                + ", ".join(tracked_candidate_caches)
-            )
-        activation_changes = _git_changed_paths(root, "HEAD^", "HEAD")
-        expected_activation_change = {"docs/process/governance/index.json"}
-        if activation_changes != expected_activation_change:
-            rendered_changes = ", ".join(sorted(activation_changes or set())) or "none"
-            errors.append(
-                "candidate-to-active commit may only change docs/process/governance/index.json; changed: "
-                + rendered_changes
-            )
+        errors.append("candidate baseline contains tracked cache files: " + ", ".join(tracked_caches))
     return errors
 
 
 def validate_repository(root: Path) -> tuple[list[str], list[str], dict]:
+    root = root.resolve()
     errors: list[str] = []
     warnings: list[str] = []
     contract_root = root / "docs/process/governance"
@@ -433,10 +324,14 @@ def validate_repository(root: Path) -> tuple[list[str], list[str], dict]:
 
     workflow_path = root / "docs/process/workflow.md"
     skill_standard_path = root / "docs/process/skill_quality_standard.md"
-    reusable_definition_paths = [project_instructions, workflow_path, skill_standard_path]
-    reusable_definition_paths.extend(native_agent_paths)
-    reusable_definition_paths.extend((root / ".agents/skills").glob("**/*.md"))
-    reusable_definition_paths.extend((root / "codex/templates").glob("*.md"))
+    from validate_story_slice_cutover import collect_candidate_authority_graph
+    graph_paths = collect_candidate_authority_graph(root)
+    reusable_definition_paths = [
+        path for path in graph_paths
+        if path in {project_instructions, workflow_path, skill_standard_path}
+        or ".codex/agents" in path.as_posix()
+        or ".agents/skills" in path.as_posix()
+    ]
     for path in sorted(set(reusable_definition_paths)):
         if not path.exists():
             errors.append(f"reusable definition does not exist: {path.relative_to(root)}")

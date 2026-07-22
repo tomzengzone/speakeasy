@@ -1,57 +1,50 @@
 ---
 name: implementation-report-generate
-description: Use when a development increment finishes and docs/reports/implementation_report.md must record scope, files, tests, risks, and follow-ups. Do not use before implementation or validation results are known.
+description: Use when completed implementation or governance work requires a durable report of scope, files, validation, risks, and follow-ups. Do not use before validation.
 ---
 
 # Implementation Report Generate
 
 ## Overview
 
-Create an auditable completion record linking changed work to requirements, evidence, and residual risk.
+Create an auditable delivery record without copying product, engineering, test or governance authority.
 
 ## When to Use
 
-Use after product, workflow, or governance assets change and validation results are known, or when the user asks for an implementation summary.
+Use only after changed files and validation results are known and the user or applicable contract requires a persistent implementation report.
 
 ## When NOT to Use
 
-Do not use when no files changed, work is exploratory, or a release note is the requested artifact.
+Do not use for exploratory/no-change work, before validation, or when an ephemeral task summary is sufficient.
 
 ## Contract
 
-- Method skill for `IMPLEMENTATION_REPORT`; resolve accountable ownership and contributor record fields from `docs/process/governance/index.json`.
-- The canonical path, append schema, lifecycle, and write scope are in `docs/process/governance/index.json`.
+Method skill for `IMPLEMENTATION_REPORT`. Resolve path, lifecycle, contributor fields and validation from `GOVERNANCE_INDEX`.
 
 ## Inputs
 
-Git status/diff and changed-file purpose, increment or governing process reference, requirements/spec/acceptance, commands and actual results, skipped tests, risks, and follow-ups.
+Selected VS/FR/Contract/TC IDs when applicable, actual changed-file list and purpose, exact commands/results, skipped checks, risks and follow-ups.
 
 ## Outputs
 
-An append-only implementation report entry containing summary, requirement/process mapping, files by purpose, validation evidence, explicit unrun tests, risks, and next steps. Never redefine requirements, specs, acceptance, or stage scope.
+One append-only report entry with scope, changed files, validation evidence, explicit unrun checks, risks, rollback context and next steps.
 
-## 文档路径约定
+## Derived operational pointer
 
-Write `docs/reports/implementation_report.md` through the governed append-record contract; link test/quality reports rather than copying them.
+When a persistent report is required, the resolved `IMPLEMENTATION_REPORT` contract currently points to `docs/reports/implementation_report.md`; validate this pointer against the contract before writing.
 
 ## Process
 
-1. Identify the addressed increment, request, or process artifact.
-2. Group changed files by purpose, record exact validation commands/status, and state skipped tests.
-3. Record residual risks and follow-ups; append rather than rewriting history except to correct the current entry.
-4. For product work, preserve approved Capability context; missing upstream/acceptance is a governance gap, not completion.
+1. Confirm a persistent report is required.
+2. Link stable product/Contract/TC IDs without copying their contents.
+3. Group files by purpose and record only commands/results actually run.
+4. State skipped checks, residual risks, rollback context and follow-ups.
+5. Append without rewriting prior entries; run resolved validation.
 
 ## Red Flags
 
-Done claims without evidence, omitted generated/process files, hidden risks, premature reporting, or product completion without an owning increment/spec/acceptance.
+Done claim without evidence; product/Contract/oracle text duplicated; planned command reported as run; hidden risk; Stage/Increment treated as product authority; report written when not required.
 
 ## Verification
 
-Every meaningful changed area is represented; commands match actual runs; skipped tests are explicit; the entry supports audit/rollback and maps to the governing artifact.
-
-## Common Rationalizations
-
-| Rationalization | Reality |
-| --- | --- |
-| “The diff is self-explanatory.” | A durable report preserves evidence and rollback context. |
-| “We can add tests later.” | The report must distinguish verified, skipped, and follow-up work now. |
+Every meaningful changed area is represented; evidence matches actual execution and exact SHA where applicable; skipped work is explicit; no authority is redefined.

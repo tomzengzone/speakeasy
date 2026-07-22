@@ -1,9 +1,9 @@
 # Release Checklist
 
 ## Before Release
-- [x] MVP scope updated.
-- [x] Feature specs updated.
-- [x] Acceptance criteria mapped to tests.
+- [x] Release scope selects approved Story/VS and mandatory FR without treating planning metadata as product behavior.
+- [x] FR-TC and affected Contract-TC have run before selected VS integration/E2E evidence.
+- [x] Canonical derived traceability resolves the selected VS/FR/Contract/TC branches.
 - [x] API contract updated.
 - [x] Domain schema updated.
 - [x] AI output schemas validated.
@@ -13,7 +13,7 @@
 - [x] Version log updated.
 - [x] Rollback plan reviewed.
 
-Scope note: the top checklist is a baseline documentation/process checklist. It does not override the dated P0 Commercial Subscription, P0 Commercial AI Provider Hardening, or P0.1 Training Product Base/Production Hardening sections below; unchecked, planned, or blocked items in those sections remain blockers for their stated release/Product Base promotion scope.
+PR-003 current lineage: 本次只切换治理来源链，不改变下列既有 release 状态、工程行为或执行证据。下方 dated evidence 中的 Product Base、Increment、Spec/AC、旧 TC/traceability 或 Increment SWC Allocation 标签仅是 historical provenance，不是新 release 的 current authority、prerequisite 或 fallback。未勾选、planned 或 blocked 项仍按其原有 release scope 保持阻塞；新 release 通过 Story/VS、mandatory FR、typed TC 与 derived traceability 解析产品与测试 lineage。
 
 ## Production Controls
 - [x] Provider secrets are not bundled in client.
@@ -66,7 +66,7 @@ Required before commercial store submission:
 Status: local implementation/evidence-prep passed / blocked until strict external evidence is supplied.
 
 Required before paid AI voice or real DashScope provider release:
-- [ ] `commercial-ai-provider-hardening` requirements/spec/acceptance/test_cases/traceability remain in sync.
+- [x] The historical `commercial-ai-provider-hardening` requirements/spec/acceptance/test_cases/traceability packet remains frozen as provenance; current release lineage resolves through approved Story/VS, mandatory FR, typed TC, and derived traceability.
 - [x] Paid AI external evidence checklist and strict aggregate gate exist: `tests/commercial/ai_external_release_evidence_checklist.md`, `scripts/check_ai_external_release_evidence.py`.
 - [x] TC-COM-AI-001 trusted media upload/reference tests passed locally.
 - [x] TC-COM-AI-002 production ASR rejects local paths, unsigned URLs and forged metadata locally.

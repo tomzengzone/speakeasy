@@ -1,5 +1,9 @@
 # Training Model：P0.1 表达自动化训练闭环
 
+## PR-003 current lineage
+
+本次只切换来源链，不改变本文的领域对象、生命周期、不变量、持久化边界或已接受实现事实。当前产品上游仅由适用的 approved FR 解析；文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability 或 Increment SWC Allocation 引用均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+
 ## 状态
 Proposed - P0.1 Domain Gate Ready；2026-06-03 commercial production-hardening domain addendum added.
 

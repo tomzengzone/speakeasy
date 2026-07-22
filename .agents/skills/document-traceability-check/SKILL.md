@@ -1,78 +1,47 @@
 ---
 name: document-traceability-check
-description: Use when project documentation needs a Story/Slice-to-evidence traceability audit across requirements, specs, AC, contracts, tests, reports, or release notes. Do not use for deciding document paths or defining document templates.
+description: Use when Story/VS/FR/Engineering Contract/Test Case lineage and derived coverage need an independent traceability audit. Do not use to author owning facts.
 ---
 
 # Document Traceability Check
 
 ## Overview
 
-Audit the complete product-to-evidence join while letting each local artifact retain only its direct upstream and necessary scope guards.
+Rebuild the canonical full-chain projection from owning direct edges and report gaps without creating or repairing facts in the projection.
 
 ## When to Use
 
-Use for feature/increment completeness, requirement-to-acceptance/test/evidence audits, broken/duplicate/expired references, pre-release readiness, workflow-stage status, or whole-app/platform/commercial architecture coverage.
+Use for Story/VS/FR/TC changes, Engineering Contract fact changes, coverage audits, dangling IDs or traceability projection updates.
 
 ## When NOT to Use
 
-Do not use for path/owner decisions, content-boundary decisions, ordinary test execution, or generating missing documents. Route those to the owning skill.
+Do not use to choose canonical paths, create requirements/tests/contracts, store execution status or approve product behavior.
 
 ## Contract
 
-- Method skill for `PRODUCT_BASE_TRACEABILITY` and `INCREMENT_TRACEABILITY`; resolve accountable ownership and QA contributor fields from `docs/process/governance/index.json`.
-- Direct-upstream contracts remain: FR←Story/Slice; Spec←approved FR (+ scope guard); AC←approved Spec; TC←AC/Spec; SWC allocation←Spec/AC/WP and implementation baseline; evidence←TC/report.
-- `docs/process/governance/index.json` is authoritative for paths, lifecycle, owners, contributor scopes, and Gate evidence.
+Method skill for `TRACEABILITY`. Resolve its governance facts by Artifact ID. The projection is derived-read-only; read direct edges only from Story Map, FR Catalog, Engineering Contracts and TC Catalog.
 
 ## Inputs
 
-Workflow/DoD/change request, Story Map, Product Base or increment requirements/spec/acceptance/test cases/traceability, stage and increment scope, architecture/SWC/domain/API/AI/UX contracts, code/test/implementation/quality/release evidence, and applicable contract shards.
-
-For whole-app, architecture, cross-layer, or implementation-impacting SWC review, read [architecture and SWC traceability](references/architecture-swc-traceability.md). Do not load it for product-only FR/AC/TC evidence checks.
+Current Story Map, FR Catalog, applicable Engineering Contract references, TC Catalog and stable selector/evidence links.
 
 ## Outputs
 
-Traceability result, missing/broken/duplicate/expired/conflicting link list, evidence-status gaps, next workflow step, and (only when requested) a scoped `QUALITY_REPORT` finding. Never create missing source artifacts or redefine their content.
-
-## 文档路径约定
-
-Use `docs/product/base/traceability.md` or `docs/product/increments/{increment_id}/traceability.md` as the owning matrix; cite reports/contracts/code/tests by canonical Artifact path. Use repository-relative paths and do not create alternate matrices.
-
-## Canonical join
-
-```text
-User Story / Vertical Slice
- -> FR -> Spec -> AC -> TC
- -> Contract / SWC allocation when applicable
- -> WP -> PR / Code Evidence -> Test Evidence
- -> Product Base merge decision
-```
-
-The owning matrix must include at least: `Traceability Row ID`, Primary/Affected Capability IDs, Story/Slice IDs, Increment ID, WP ID, FR ID, Spec ID, AC ID, TC ID, PR/Code Evidence, Test Evidence, Product Base merge decision, Status, and Gap/Exception. `100% traceability` means every committed Slice joins to FR/Spec/AC/TC/evidence or an explicit exception; it does not mean code-line coverage.
-
-## Increment Test Evidence gate
-
-For every increment: each AC is in the test-case library or has an allowed exception; every TC cites the owning Traceability Row ID; automated/planned cases have script path and execution command; executed cases have result status and evidence report; traceability Test Evidence cites TC ID, script, command, result, and report (or explicit exception). QA may update only governed evidence/status/gap fields.
+Rebuilt projection, completeness/uniqueness findings, dangling-edge findings and correction handoffs to the owning sources.
 
 ## Process
 
-1. Define target feature/increment/architecture scope and find the canonical Story/Slice source; record legacy/exception sources explicitly.
-2. Select source mode (Product Base, approved baseline consolidation, or increment) and verify Stage Scope IDs plus increment covered/excluded items when committed delivery applies.
-3. Walk direct-upstream links and the owning matrix; check status consistency, source-of-truth duplication, and evidence freshness.
-4. Run the increment AC→TC→script→command→result→report→Test Evidence review and the SWC/architecture gate when applicable.
-5. Classify missing/not-applicable/duplicate/expired/conflicting links and give the next workflow step; do not invent coverage.
-6. Run applicable validators, language, contract, SWC, and independent-check gates after governance changes.
+1. Read Story-to-Capability and nested VS-to-Story edges from Story Map.
+2. Read VS-to-FR only from `source_vs_ids` in FR Catalog.
+3. Read FR-to-affected-Contract only from the changed owning Engineering Contract.
+4. Read FR-TC, Contract-TC and VS-TC direct edges only from their typed TC fields.
+5. Join selectors/evidence, derive VS-TC-to-FR coverage, and compare with the read-only projection.
+6. Fix discrepancies only in the owning source, then regenerate and validate traceability.
 
 ## Red Flags
 
-New or changed behavior without approved spec/AC, proposed requirements with accepted downstream implementation, tests used to redefine FR/AC, empty evidence without exception, repeated full chains in local artifacts, unallocated implementation paths, brownfield work without baseline/delta, partial architecture presented as whole-system, missing option comparison/omitted scope, or ADR treated as an unverified architecture source of truth.
+Direct edge authored in traceability; VS-TC repeating FR IDs; multiple direct-upstream types in one TC; execution result copied into projection; Stage/Increment used as lineage; missing approved VS mandatory FR.
 
 ## Verification
 
-Every checked object has an approved upstream; the complete join is judged only in the owning matrix; local artifacts follow direct-upstream rules; gaps are explicit; stage/increment/FR/AC/evidence statuses agree; architecture coverage is complete or explicitly conditional/blocked; no missing document is silently generated.
-
-## Common Rationalizations
-
-| Rationalization | Reality |
-| --- | --- |
-| “Tests passed, so traceability is complete.” | Tests prove assertions, not that requirements and evidence are joined. |
-| “Small changes need no matrix.” | Small changes can alter contracts, behavior, or evidence ownership. |
+All three branches resolve without ambiguity or dangling IDs; every approved implementing VS has FR/FR-TC/VS-TC coverage; changed Contracts have Contract-TC; projection contains no independent edge or runtime status.

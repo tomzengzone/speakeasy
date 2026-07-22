@@ -43,14 +43,14 @@ class GovernanceContractValidationTest(unittest.TestCase):
     def test_repository_contracts_are_valid(self):
         errors, _warnings, metrics = validate_repository(ROOT)
         self.assertEqual([], errors)
-        self.assertIn(metrics["governance_status"], {"candidate", "active"})
-        self.assertEqual(69, metrics["artifacts"])
+        self.assertEqual("candidate", metrics["governance_status"])
+        self.assertEqual(61, metrics["artifacts"])
         self.assertEqual(14, metrics["gates"])
-        self.assertEqual(6, metrics["workflow_exchanges"])
+        self.assertEqual(5, metrics["workflow_exchanges"])
         self.assertEqual(4, metrics["evidence_artifact_references"])
         self.assertGreater(metrics["artifact_validation_commands"], 0)
-        self.assertEqual(33, metrics["artifact_required_input_contracts"])
-        self.assertEqual(7, metrics["artifact_conditional_input_contracts"])
+        self.assertEqual(24, metrics["artifact_required_input_contracts"])
+        self.assertEqual(9, metrics["artifact_conditional_input_contracts"])
 
     def test_invalid_governance_status_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -63,7 +63,7 @@ class GovernanceContractValidationTest(unittest.TestCase):
             errors, _warnings, _metrics = validate_repository(target)
             self.assertTrue(any("unsupported governance status" in error for error in errors))
 
-    def test_active_status_requires_a_committed_governance_baseline(self):
+    def test_candidate_content_rejects_global_active_status(self):
         with tempfile.TemporaryDirectory() as temp:
             target = Path(temp)
             self.copy_governance_fixture(target)
@@ -72,9 +72,16 @@ class GovernanceContractValidationTest(unittest.TestCase):
             data["status"] = "active"
             index.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
             errors, _warnings, _metrics = validate_repository(target)
-            self.assertTrue(any("active governance requires a committed Git baseline" in error for error in errors))
+            self.assertTrue(any("unsupported governance status: active" in error for error in errors))
 
-    def test_candidate_status_accepts_a_clean_committed_baseline(self):
+    def test_candidate_status_accepts_without_a_git_repository(self):
+        with tempfile.TemporaryDirectory() as temp:
+            target = Path(temp)
+            self.copy_governance_fixture(target)
+            errors, _warnings, _metrics = validate_repository(target)
+            self.assertEqual([], [error for error in errors if "committed Git" in error or "worktree differs" in error])
+
+    def test_candidate_status_accepts_an_approved_dirty_worktree(self):
         with tempfile.TemporaryDirectory() as temp:
             target = Path(temp)
             self.copy_governance_fixture(target)
@@ -89,8 +96,10 @@ class GovernanceContractValidationTest(unittest.TestCase):
             subprocess.run(["git", "config", "user.name", "Governance Test"], **git_run)
             subprocess.run(["git", "add", "."], **git_run)
             subprocess.run(["git", "commit", "-qm", "candidate governance baseline"], **git_run)
+            workflow = target / "docs/process/workflow.md"
+            workflow.write_text(workflow.read_text(encoding="utf-8") + "\n本地批准候选变更。\n", encoding="utf-8")
             errors, _warnings, _metrics = validate_repository(target)
-            self.assertEqual([], [error for error in errors if "candidate governance" in error])
+            self.assertEqual([], [error for error in errors if "worktree differs" in error])
 
     def test_candidate_status_rejects_tracked_cache_files(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -110,180 +119,16 @@ class GovernanceContractValidationTest(unittest.TestCase):
             subprocess.run(["git", "config", "user.name", "Governance Test"], **git_run)
             subprocess.run(["git", "add", "."], **git_run)
             subprocess.run(["git", "add", "-f", cache.relative_to(target).as_posix()], **git_run)
-            subprocess.run(["git", "commit", "-qm", "candidate governance baseline with cache"], **git_run)
+            subprocess.run(["git", "commit", "-qm", "candidate baseline with cache"], **git_run)
             errors, _warnings, _metrics = validate_repository(target)
-            self.assertTrue(any("candidate governance HEAD contains tracked cache files" in error for error in errors))
+            self.assertTrue(any("candidate baseline contains tracked cache files" in error for error in errors))
 
-    def test_active_status_accepts_a_committed_baseline_without_retired_paths(self):
-        with tempfile.TemporaryDirectory() as temp:
-            target = Path(temp)
-            self.copy_governance_fixture(target)
-            git_run = {
-                "cwd": target,
-                "check": True,
-                "stdout": subprocess.DEVNULL,
-                "stderr": subprocess.DEVNULL,
-            }
-            subprocess.run(["git", "init", "-q"], **git_run)
-            subprocess.run(["git", "config", "user.email", "governance-test@example.invalid"], **git_run)
-            subprocess.run(["git", "config", "user.name", "Governance Test"], **git_run)
-            subprocess.run(["git", "add", "."], **git_run)
-            subprocess.run(["git", "commit", "-qm", "candidate governance baseline"], **git_run)
-            index = target / "docs/process/governance/index.json"
-            data = json.loads(index.read_text(encoding="utf-8"))
-            data["status"] = "active"
-            index.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-            subprocess.run(["git", "add", index.relative_to(target).as_posix()], **git_run)
-            subprocess.run(["git", "commit", "-qm", "activate governance baseline"], **git_run)
-            errors, _warnings, _metrics = validate_repository(target)
-            self.assertEqual([], [error for error in errors if "active governance" in error or "retired runtime" in error])
-
-    def test_active_status_rejects_a_one_step_initial_activation(self):
-        with tempfile.TemporaryDirectory() as temp:
-            target = Path(temp)
-            self.copy_governance_fixture(target)
-            index = target / "docs/process/governance/index.json"
-            data = json.loads(index.read_text(encoding="utf-8"))
-            data["status"] = "active"
-            index.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-            git_run = {
-                "cwd": target,
-                "check": True,
-                "stdout": subprocess.DEVNULL,
-                "stderr": subprocess.DEVNULL,
-            }
-            subprocess.run(["git", "init", "-q"], **git_run)
-            subprocess.run(["git", "config", "user.email", "governance-test@example.invalid"], **git_run)
-            subprocess.run(["git", "config", "user.name", "Governance Test"], **git_run)
-            subprocess.run(["git", "add", "."], **git_run)
-            subprocess.run(["git", "commit", "-qm", "invalid initial activation"], **git_run)
-            errors, _warnings, _metrics = validate_repository(target)
-            self.assertTrue(any("committed candidate predecessor" in error for error in errors))
-
-    def test_active_status_rejects_uncommitted_baseline_changes(self):
-        with tempfile.TemporaryDirectory() as temp:
-            target = Path(temp)
-            self.copy_governance_fixture(target)
-            git_run = {
-                "cwd": target,
-                "check": True,
-                "stdout": subprocess.DEVNULL,
-                "stderr": subprocess.DEVNULL,
-            }
-            subprocess.run(["git", "init", "-q"], **git_run)
-            subprocess.run(["git", "config", "user.email", "governance-test@example.invalid"], **git_run)
-            subprocess.run(["git", "config", "user.name", "Governance Test"], **git_run)
-            subprocess.run(["git", "add", "."], **git_run)
-            subprocess.run(["git", "commit", "-qm", "candidate governance baseline"], **git_run)
-            index = target / "docs/process/governance/index.json"
-            data = json.loads(index.read_text(encoding="utf-8"))
-            data["status"] = "active"
-            index.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-            subprocess.run(["git", "add", index.relative_to(target).as_posix()], **git_run)
-            subprocess.run(["git", "commit", "-qm", "activate governance baseline"], **git_run)
-            workflow = target / "docs/process/workflow.md"
-            workflow.write_text(workflow.read_text(encoding="utf-8") + "\nUncommitted change.\n", encoding="utf-8")
-            errors, _warnings, _metrics = validate_repository(target)
-            self.assertTrue(any("worktree differs from HEAD" in error for error in errors))
-
-    def test_active_status_rejects_an_uncommitted_status_flip(self):
-        with tempfile.TemporaryDirectory() as temp:
-            target = Path(temp)
-            self.copy_governance_fixture(target)
-            git_run = {
-                "cwd": target,
-                "check": True,
-                "stdout": subprocess.DEVNULL,
-                "stderr": subprocess.DEVNULL,
-            }
-            subprocess.run(["git", "init", "-q"], **git_run)
-            subprocess.run(["git", "config", "user.email", "governance-test@example.invalid"], **git_run)
-            subprocess.run(["git", "config", "user.name", "Governance Test"], **git_run)
-            subprocess.run(["git", "add", "."], **git_run)
-            subprocess.run(["git", "commit", "-qm", "candidate governance baseline"], **git_run)
-            index = target / "docs/process/governance/index.json"
-            data = json.loads(index.read_text(encoding="utf-8"))
-            data["status"] = "active"
-            index.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-            errors, _warnings, _metrics = validate_repository(target)
-            self.assertTrue(any("status must be committed in HEAD" in error for error in errors))
-            self.assertTrue(any("worktree differs from HEAD" in error for error in errors))
-
-    def test_active_status_rejects_an_uncommitted_baseline_deletion(self):
-        with tempfile.TemporaryDirectory() as temp:
-            target = Path(temp)
-            self.copy_governance_fixture(target)
-            git_run = {
-                "cwd": target,
-                "check": True,
-                "stdout": subprocess.DEVNULL,
-                "stderr": subprocess.DEVNULL,
-            }
-            subprocess.run(["git", "init", "-q"], **git_run)
-            subprocess.run(["git", "config", "user.email", "governance-test@example.invalid"], **git_run)
-            subprocess.run(["git", "config", "user.name", "Governance Test"], **git_run)
-            subprocess.run(["git", "add", "."], **git_run)
-            subprocess.run(["git", "commit", "-qm", "candidate governance baseline"], **git_run)
-            index = target / "docs/process/governance/index.json"
-            data = json.loads(index.read_text(encoding="utf-8"))
-            data["status"] = "active"
-            index.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-            subprocess.run(["git", "add", index.relative_to(target).as_posix()], **git_run)
-            subprocess.run(["git", "commit", "-qm", "activate governance baseline"], **git_run)
-            (target / ".codex/agents/backend.toml").unlink()
-            errors, _warnings, _metrics = validate_repository(target)
-            self.assertTrue(any("worktree differs from HEAD" in error for error in errors))
-
-    def test_active_status_rejects_a_retired_interface_left_in_head(self):
-        with tempfile.TemporaryDirectory() as temp:
-            target = Path(temp)
-            self.copy_governance_fixture(target)
-            index = target / "docs/process/governance/index.json"
-            data = json.loads(index.read_text(encoding="utf-8"))
-            data["status"] = "active"
-            index.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-            retired = target / "scripts/project_agent_runner.py"
-            retired.write_text("# retired\n", encoding="utf-8")
-            git_run = {
-                "cwd": target,
-                "check": True,
-                "stdout": subprocess.DEVNULL,
-                "stderr": subprocess.DEVNULL,
-            }
-            subprocess.run(["git", "init", "-q"], **git_run)
-            subprocess.run(["git", "config", "user.email", "governance-test@example.invalid"], **git_run)
-            subprocess.run(["git", "config", "user.name", "Governance Test"], **git_run)
-            subprocess.run(["git", "add", "."], **git_run)
-            subprocess.run(["git", "commit", "-qm", "incomplete governance baseline"], **git_run)
-            retired.unlink()
-            errors, _warnings, _metrics = validate_repository(target)
-            self.assertTrue(any("HEAD contains retired runtime interfaces" in error for error in errors))
-
-    def test_active_status_rejects_tracked_cache_files(self):
-        with tempfile.TemporaryDirectory() as temp:
-            target = Path(temp)
-            self.copy_governance_fixture(target)
-            index = target / "docs/process/governance/index.json"
-            data = json.loads(index.read_text(encoding="utf-8"))
-            data["status"] = "active"
-            index.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-            cache = target / "scripts/__pycache__/legacy.pyc"
-            cache.parent.mkdir(parents=True, exist_ok=True)
-            cache.write_bytes(b"cache")
-            git_run = {
-                "cwd": target,
-                "check": True,
-                "stdout": subprocess.DEVNULL,
-                "stderr": subprocess.DEVNULL,
-            }
-            subprocess.run(["git", "init", "-q"], **git_run)
-            subprocess.run(["git", "config", "user.email", "governance-test@example.invalid"], **git_run)
-            subprocess.run(["git", "config", "user.name", "Governance Test"], **git_run)
-            subprocess.run(["git", "add", "."], **git_run)
-            subprocess.run(["git", "add", "-f", cache.relative_to(target).as_posix()], **git_run)
-            subprocess.run(["git", "commit", "-qm", "governance baseline with cache"], **git_run)
-            errors, _warnings, _metrics = validate_repository(target)
-            self.assertTrue(any("HEAD contains tracked cache files" in error for error in errors))
+    def test_exact_sha_ref_is_the_only_activation_anchor(self):
+        policy = json.loads((ROOT / "docs/process/governance/policy.json").read_text(encoding="utf-8"))
+        rule = policy["active_graph_rule"]
+        self.assertIn("refs/heads/speakeasy-20260705", rule)
+        self.assertIn("exact-commit CI", rule)
+        self.assertIn("candidate", rule)
 
     def test_retired_runtime_interfaces_are_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -371,9 +216,13 @@ class GovernanceContractValidationTest(unittest.TestCase):
             {
                 "CAPABILITY_REGISTRY",
                 "STORY_MAP",
+                "FUNCTIONAL_REQUIREMENT_CATALOG",
+                "TEST_CASE_CATALOG",
+                "TRACEABILITY",
                 "CROSS_CUTTING_BOUNDARY_REGISTRY",
                 "SWC_GOVERNANCE",
-                "INCREMENT_SWC_ALLOCATION",
+                "SYSTEM_OVERVIEW",
+                "SOFTWARE_COMPONENT_ARCHITECTURE",
             },
             set(selector["by_artifact_id"]),
         )
@@ -508,10 +357,12 @@ class GovernanceContractValidationTest(unittest.TestCase):
     def test_stable_method_handoffs_are_consolidated_as_workflow_exchanges(self):
         data = json.loads((ROOT / "docs/process/governance/exchanges.json").read_text(encoding="utf-8"))
         exchanges = {item["exchange_id"]: item for item in data["exchanges"]}
-        self.assertEqual(6, len(exchanges))
-        self.assertEqual("ephemeral", exchanges["EX-REQUIREMENT-DOWNSTREAM"]["lifecycle"])
-        self.assertIn("INCREMENT_REQUIREMENTS", exchanges["EX-REQUIREMENT-DOWNSTREAM"]["source_artifacts"])
-        self.assertIn("test-case-development", exchanges["EX-AC-DOWNSTREAM"]["consumers"])
+        self.assertEqual(5, len(exchanges))
+        self.assertEqual("ephemeral", exchanges["EX-FR-DOWNSTREAM"]["lifecycle"])
+        self.assertIn("FUNCTIONAL_REQUIREMENT_CATALOG", exchanges["EX-FR-DOWNSTREAM"]["source_artifacts"])
+        self.assertIn("test-case-development", exchanges["EX-FR-DOWNSTREAM"]["consumers"])
+        self.assertIn("TEST_CASE_CATALOG", exchanges["EX-TEST-DOWNSTREAM"]["source_artifacts"])
+        self.assertIn("TRACEABILITY", exchanges["EX-TRACEABILITY-REVIEW"]["source_artifacts"])
         for shard in (ROOT / "docs/process/governance/artifacts").glob("*.json"):
             artifact_data = json.loads(shard.read_text(encoding="utf-8"))
             for artifact in artifact_data["artifacts"]:
@@ -560,7 +411,7 @@ class GovernanceContractValidationTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             target = Path(temp)
             self.copy_governance_fixture(target)
-            skill = target / ".agents/skills/acceptance-criteria-generate/SKILL.md"
+            skill = target / ".agents/skills/requirement-refine/SKILL.md"
             text = skill.read_text(encoding="utf-8")
             text = text.replace(
                 "## Inputs",
@@ -572,12 +423,14 @@ class GovernanceContractValidationTest(unittest.TestCase):
             self.assertTrue(any("must resolve Artifact ownership" in error for error in errors))
 
     def test_method_skill_owner_boundaries_use_handoffs(self):
-        acceptance = (ROOT / ".agents/skills/acceptance-criteria-generate/SKILL.md").read_text(encoding="utf-8")
         requirements = (ROOT / ".agents/skills/requirement-refine/SKILL.md").read_text(encoding="utf-8")
         test_case = (ROOT / ".agents/skills/test-case-generate/SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("ephemeral AC-to-traceability handoff", acceptance)
-        self.assertIn("does not create or edit Story Map, Registry, Spec, AC, TC, or traceability artifacts", requirements)
-        self.assertIn("Persist only the test library", test_case)
+        traceability = (ROOT / ".agents/skills/document-traceability-check/SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("source_vs_ids", requirements)
+        self.assertIn("tests, or Engineering Contract design", requirements)
+        self.assertIn("one typed direct upstream per case", test_case)
+        self.assertIn("TC execution results belong to exact-commit", test_case)
+        self.assertIn("projection is derived-read-only", traceability)
 
     def test_skill_validator_accepts_progressive_disclosure_layout(self):
         errors, warnings = validate_skills(ROOT)
@@ -588,7 +441,7 @@ class GovernanceContractValidationTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             target = Path(temp)
             self.copy_governance_fixture(target)
-            spec = target / ".agents/skills/code-review-quality/SPEC.md"
+            spec = target / ".agents/skills/requirement-refine/SPEC.md"
             spec.write_text("# Parallel maintenance rules\n", encoding="utf-8")
             errors, _warnings = validate_skills(target)
             self.assertTrue(any("parallel maintenance layer" in error for error in errors))
@@ -597,13 +450,13 @@ class GovernanceContractValidationTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             target = Path(temp)
             self.copy_governance_fixture(target)
-            reference = target / ".agents/skills/code-review-quality/references/advanced.md"
+            reference = target / ".agents/skills/requirement-refine/references/advanced.md"
             reference.parent.mkdir(parents=True, exist_ok=True)
             reference.write_text("# Advanced review\n", encoding="utf-8")
             errors, _warnings = validate_skills(target)
-            self.assertTrue(any("not linked directly from SKILL.md" in error for error in errors))
+            self.assertFalse(any("advanced.md" in error for error in errors))
 
-            skill = target / ".agents/skills/code-review-quality/SKILL.md"
+            skill = target / ".agents/skills/requirement-refine/SKILL.md"
             skill.write_text(
                 skill.read_text(encoding="utf-8") + "\nSee [advanced](references/advanced.md).\n",
                 encoding="utf-8",
@@ -634,8 +487,10 @@ class GovernanceContractValidationTest(unittest.TestCase):
         self.assertEqual([], check_paths(ROOT, [path], "product-manager"))
         self.assertTrue(check_paths(ROOT, [path], "backend"))
 
-    def test_write_scope_accepts_registered_template_path(self):
-        self.assertEqual([], check_paths(ROOT, ["docs/product/increments/demo/spec.md"], "product-spec-authority"))
+    def test_write_scope_accepts_current_fr_owner_and_rejects_retired_actor(self):
+        path = "docs/product/functional_requirements.md"
+        self.assertEqual([], check_paths(ROOT, [path], "requirement-development"))
+        self.assertTrue(check_paths(ROOT, [path], "product-spec-authority"))
 
     def test_write_scope_accepts_one_level_skill_resources(self):
         paths = [
@@ -773,17 +628,22 @@ class GovernanceContractValidationTest(unittest.TestCase):
         self.assertIn('--github-event-path "$GITHUB_EVENT_PATH"', workflow)
         self.assertIn('--base-ref "$BASE_REF"', workflow)
 
-    def test_ci_checks_the_pull_request_head_commit_chain(self):
+    def test_ci_checks_one_declared_candidate_sha_through_all_checkpoints(self):
         workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-        head_checkout = workflow.index("github.event.pull_request.head.sha")
+        candidate_declaration = workflow.index("CANDIDATE_SHA:")
+        checkout = workflow.index("ref: ${{ env.CANDIDATE_SHA }}")
+        preflight = workflow.index("id: exact-commit-preflight")
         governance_validation = workflow.index("id: governance-contracts")
-        governance_scope = workflow.index("id: governance-write-scope")
-        merge_checkout = workflow.index("ref: ${{ github.ref }}")
-        integration_validation = workflow.index("name: Cross-cutting boundary check")
-        self.assertLess(head_checkout, governance_validation)
-        self.assertLess(governance_scope, merge_checkout)
-        self.assertLess(merge_checkout, integration_validation)
-        self.assertIn("|| github.sha", workflow)
+        governance_checkpoint = workflow.index("--name after-governance")
+        application_checkpoint = workflow.index("--name after-application")
+        finalize = workflow.index("Finalize exact-commit attestation")
+        self.assertLess(candidate_declaration, checkout)
+        self.assertLess(checkout, preflight)
+        self.assertLess(preflight, governance_validation)
+        self.assertLess(governance_validation, governance_checkpoint)
+        self.assertLess(governance_checkpoint, application_checkpoint)
+        self.assertLess(application_checkpoint, finalize)
+        self.assertNotIn("ref: ${{ github.ref }}", workflow)
 
     def test_unrelated_script_is_not_governed(self):
         self.assertTrue(check_paths(ROOT, ["scripts/check_p0_2_followup_d_traceability.py"], "product-object-governance-change"))

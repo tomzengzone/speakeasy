@@ -1,5 +1,9 @@
 # Whole-App System Overview
 
+## PR-003 current lineage
+
+本次只切换来源链，不改变本文的工程行为、架构结论或已接受实现事实。当前产品 lineage 仅由适用的 approved FR 解析；Engineering Artifact 之间的 direct/conditional inputs 和适用 Gate 继续仅由 Governance Contract 解析。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+
 ## 状态
 Proposed - whole-app architecture。本文基于 PM execution brief 进入第二轮架构产物更新，必须在 `document-traceability-check` 和 Product Object Governance Check Agent 通过后，才能作为下游实现依据。
 

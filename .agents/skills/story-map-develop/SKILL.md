@@ -1,71 +1,46 @@
 ---
 name: story-map-develop
-description: Use when Product Manager needs to create, split, rewrite, review, or ready-gate business-specific User Stories and Child Vertical Slices in docs/product/story_map.md, including rejecting formulaic or low-information narratives; Do not use to generate FR, spec, AC, TC, contracts, implementation plans, code, roadmap, priority, or release decisions.
+description: Use when Product Manager creates, splits, rewrites, reviews, or approves User Stories and nested Child Vertical Slices. Do not use for FR, TC, or implementation.
 ---
 
 # Story Map Develop
 
 ## Overview
 
-Propose and quality-gate PM-owned User Stories and Child Vertical Slices as the direct product source for requirements. Product Manager owns product facts, priority, and approval.
+Maintain the unique current product source for User Stories and their nested Child Vertical Slices.
 
 ## When to Use
 
-Use for new or revised Story/Slice rows, split/merge review, ambiguity or low-information review, current-format validation, and ready-gate findings.
+Use when Story/VS behavior, boundary, nesting, classification or approval status changes.
 
 ## When NOT to Use
 
-Do not generate downstream requirements, specifications, acceptance criteria, tests, technical contracts, implementation, reports, roadmap/stage/increment decisions, or Capability registry changes.
+Do not use for FR, TC, Contract, delivery planning, implementation or historical product-document maintenance.
 
 ## Contract
 
-- Method for `STORY_MAP`; resolve path and ownership through the governance index.
-- Drafts and findings are ephemeral until PM approval. `CAPABILITY_REGISTRY` supplies approved ownership boundaries, never Story/Slice behavior.
-- `docs/process/governance/index.json` is authoritative for path, lifecycle, write scope, and checker. Write only Story Map rows after approval; never edit downstream artifacts to fill a narrative gap.
+Method skill for `STORY_MAP`. Resolve governance facts through `GOVERNANCE_INDEX`; `CAPABILITY_REGISTRY` supplies classification boundaries, not behavior.
 
 ## Inputs
 
-PM/user-authorized behavior, actors, business objects, decisions, state meaning, cross-Capability handoffs, meaningful exceptions, non-goals, scope mode, source inventory, relevant Story Map/registry sections, and existing IDs. Read only the target scope.
-
-For row creation, semantic rewrite, split/merge, or approval-readiness work, read [Story/Slice ready gates](references/ready-gates.md). Do not load it for path lookup or an unchanged-format inspection.
+PM decision, relevant current Story Map rows, applicable Capability/Sub-capability boundary, user/scenario/goal, visible outcome, state change, failure path and explicit non-goals.
 
 ## Outputs
 
-Paste-ready rows, boundary notes, split/ambiguity/ready findings, row-level source coverage, omitted scope, and an explicit PM-approval requirement.
-
-## 文档路径约定
-
-Persist only to `docs/product/story_map.md`; use the registry as boundary reference and conditionally selected references/assets as method support.
-
-## Current format
-
-Organize by Capability. A Story is `### US-... - <title>`, followed by one five-column table and nested `Child Vertical Slices` rows:
-
-```text
-Id | description | Status | Primary Capability ID | Affected Capability IDs
-```
-
-The description owns row semantics. Do not add Actor/Scenario/Success/Parent columns; nesting owns the parent link. Status is `draft` or `approved`, and only PM approves. Put shared assumptions, source notes, and non-goals in a nearby boundary note.
+Story rows nested under Capability sections and Child VS rows nested under one Story. Story directly records Capability classification; nesting owns the VS-to-Story edge.
 
 ## Process
 
-1. State scope, target rows, sources, assumptions, and unknowns.
-2. Read relevant Story Map rows and registry boundaries; never infer behavior from labels.
-3. Build a compact behavior inventory and apply Story, Slice, information, source, structure, and approval gates.
-4. Produce current-format rows or findings; stop rather than invent missing facts.
-5. Obtain PM approval before persistence and run the touched-scope validator plus independent checker when required.
+1. Confirm the product decision and classification without inferring behavior from labels.
+2. Write a Story with user, situation, goal and value.
+3. Split independently verifiable user loops into Child VS rows with trigger, prerequisites, user choice, state change, visible result and key failure/boundary.
+4. Keep one parent through nesting; do not add duplicate parent columns.
+5. Only Product Manager sets `approved`; validate touched rows.
 
 ## Red Flags
 
-Stories that are modules/pages/roadmap items; alternate schemas; duplicate parent columns; one row containing independent loops; CRUD/loading boilerplate; state lists without user decision/value; behavior inferred from Capability; missing source/omitted scope; or downstream artifacts edited to manufacture completeness.
+Pages/modules as stories; capability text treated as behavior; formulaic CRUD slices; one VS containing independent loops; Stage/Increment delivery metadata; FR/TC/Contract body copied into the map; downstream artifacts used to manufacture completeness.
 
 ## Verification
 
-Rows fit the current map; nesting, IDs, columns, and status validate; each Slice has concrete facts and differs from siblings; description is the sole row semantics source; authority, adjacency, omitted scope, and PM approval are explicit; no downstream or release decision is emitted.
-
-## Common Rationalizations
-
-| Rationalization | Reality |
-| --- | --- |
-| “Every field or UI state is a Slice.” | A Slice needs independent user value, state meaning, or verification. |
-| “Capability already defines behavior.” | Capability defines ownership; PM must provide concrete behavior. |
+Each approved VS has a unique approved Story parent and complete user loop; classifications exist; descriptions own row semantics; no delivery chain or downstream content is duplicated.
