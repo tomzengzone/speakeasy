@@ -60,7 +60,7 @@ PR-003 依赖已完成并验收的 PR-001。PR-004 依赖 PR-003 完成并通过
 
 - PR-001：已完成并验收。
 - PR-002：已 superseded，未实施。
-- PR-003：revision 15 正在实施；删除高强度交付治理、恢复普通 CI，并清理阻塞 PR #5 的 Flutter analyzer/Android build 问题。
+- PR-003：revision 16 正在实施；PR 保留 analyze/test，APK Build 仅在合并到 `main` 后执行。
 - PR-004：等待 PR-003 完成后选择试点。
 
 ## Overall Verification
@@ -69,11 +69,11 @@ PR-003 完成后运行治理 validators、Skill validator、task-plan validator 
 
 ## Current Summary
 
-PR-003 revision 15 正在实施，目标是保留普通 PR CI、删除专用 exact-commit 交付机制，并让 PR #5 的 CI 全量通过。
+PR-003 revision 16 正在实施，目标是以 PR analyze/test 和 main APK Build 完成普通 CI 闭环。
 
 ## Next Action
 
-完成 PR-003 revision 15 的 GitHub CI、合并与对抗性审查。
+完成 PR-003 revision 16 的 PR CI、合并、main APK Build 与对抗性审查。
 
 ## Next Approval Required
 

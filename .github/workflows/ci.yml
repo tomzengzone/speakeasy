@@ -22,7 +22,7 @@ env:
 
 jobs:
   flutter-ci:
-    name: Flutter Analyze Test Build
+    name: Flutter Analyze Test / Main Build
     runs-on: ubuntu-latest
     timeout-minutes: 35
 
@@ -90,6 +90,7 @@ jobs:
         run: flutter test
 
       - name: Build Android APK
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         run: |
           API_BASE_URL="${APP_API_BASE_URL:-https://example.invalid}"
