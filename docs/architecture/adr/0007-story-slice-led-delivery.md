@@ -3,7 +3,6 @@
 - Status: Accepted for candidate baseline
 - Date: 2026-07-21
 - Decision owner: Product Manager / System Architect / Governance Owner
-- Accepted baseline anchor: `refs/heads/speakeasy-20260705`
 
 ## Context
 
@@ -69,24 +68,22 @@ Feature Spec 与 Acceptance Criteria 的 active Artifact、Actor、Skill 和 Gat
 
 PR-002 的 shadow、262 条 migration disposition 和 typed-destination 方案已被本前向切换决定明确 supersede。PR-001 的 migration-only 文件可作为历史证据原地保留，但不进入 active route、CI 入口或默认上下文。
 
-本项目不建立 project-local Hook、runtime governance resolver、ephemeral context bundle、首次写入 deny/retry 或 actor/session/turn 匹配。治理执行依赖 native permission、最终 diff validator、exact-commit CI 和独立 checker。
+本项目不建立 project-local Hook、runtime governance resolver、ephemeral context bundle、首次写入 deny/retry 或 actor/session/turn 匹配。治理执行依赖 native permission、静态 validator、普通 PR CI 和适用的独立 checker。
 
 ### Candidate 与 baseline 激活
 
-候选内容维持 `candidate` 语义；不能通过候选文件内的全局 `status=active` 冒充已接受基线。Candidate authority graph 从 index route、registered native Agent/config、active method Skill 及其直接链接 resource 派生；task plan、未登记 template、migration-only 文件和历史产品文档不进入图。
-
-`refs/heads/speakeasy-20260705` 是 accepted active baseline 的唯一机器可读 anchor。只有 required CI 和独立检查对同一 exact candidate SHA 全部通过，且用户另行授权将该受保护 ref 从已核对 base SHA fast-forward 到该 candidate SHA，候选才成为 active baseline。失败候选不移动 baseline ref，也不需要第二个 status-only 内容提交。
+当前 authority graph 从默认分支的 index route、registered native Agent/config、active method Skill 及其直接链接 resource 派生；task plan、未登记 template、migration-only 文件和历史产品文档不进入图。变更通过受保护分支的普通 PR CI 和代码审查后合并生效。
 
 ## Consequences
 
 - 产品事实、工程事实、持久测试 oracle 和一次性交付状态各有唯一 owner。
 - 普通改动减少重复 artifact 和默认上下文，同时保留原子 FR、快速测试、全链路测试与风险治理。
 - 旧产品文档继续可用于历史审计，但不能被新变更当成当前 authority。
-- 任一 mandatory FR、typed TC、derived traceability、Contract 同步或 exact-SHA 证据缺口都会阻止候选激活。
+- 任一 mandatory FR、typed TC、derived traceability、Contract 同步或 CI 证据缺口都会阻止合并。
 
 ## Superseded decisions
 
-以下内容只说明历史方案已失效，不构成当前义务：optional FR、强制 Spec/AC Gate、shadow rollout、262 条 legacy 迁移、runtime Hook/preflight/resolver/bundle、候选内容自声明 active。ADR 0001 保留为历史记录；本 ADR 在上述 baseline ref 指向已验证 exact SHA 后取代其交付流程规则。
+以下内容只说明历史方案已失效，不构成当前义务：optional FR、强制 Spec/AC Gate、shadow rollout、262 条 legacy 迁移、runtime Hook/preflight/resolver/bundle、候选内容自声明 active。ADR 0001 保留为历史记录；本 ADR 取代其交付流程规则。
 
 ## Alternatives rejected
 

@@ -223,15 +223,12 @@ def validate_governance_activation(root: Path, status: object) -> list[str]:
             if path.is_file():
                 errors.append(f"retired runtime interface exists: {path.relative_to(root).as_posix()}")
 
-    # Local validation intentionally accepts an approved dirty candidate worktree.
-    # Clean checkout, branch/base relationship, SHA stability, exact-CI evidence and
-    # protected-ref activation belong to verify_exact_commit_ci.py after commit creation.
     head_paths = _git_tree_paths(root, "HEAD") or set()
     tracked_caches = sorted(
         path for path in head_paths if path.endswith(".pyc") or "/__pycache__/" in f"/{path}"
     )
     if tracked_caches:
-        errors.append("candidate baseline contains tracked cache files: " + ", ".join(tracked_caches))
+        errors.append("governance commit contains tracked cache files: " + ", ".join(tracked_caches))
     return errors
 
 
@@ -247,8 +244,6 @@ def validate_repository(root: Path) -> tuple[list[str], list[str], dict]:
     if set(index) != allowed_index:
         errors.append("governance index must be routing-only")
     errors.extend(validate_governance_activation(root, index.get("status")))
-    if index.get("status") == "candidate":
-        warnings.append("governance status is candidate; active cutover still requires a committed baseline and exact-commit CI evidence")
 
     policy = load_json(contract_root / index.get("policy", ""), errors)
     if "Contract 只收窄权限" not in policy.get("permission_rule", ""):

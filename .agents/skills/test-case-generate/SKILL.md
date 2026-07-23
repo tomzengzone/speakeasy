@@ -19,7 +19,7 @@ Do not use to run existing tests, store CI results, invent behavior, or compensa
 
 ## Contract
 
-Method skill for `TEST_CASE_CATALOG`. Resolve governance facts by Artifact ID. TC execution results belong to exact-commit test/CI evidence, not this catalog.
+Method skill for `TEST_CASE_CATALOG`. Resolve governance facts by Artifact ID. TC execution results belong to CI evidence, not this catalog.
 
 ## Inputs
 

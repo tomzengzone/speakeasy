@@ -12,7 +12,7 @@
   "permission_rule":"Contract 只收窄权限。实际写权限是原生 Agent sandbox、Artifact owner/contributor scope 与用户授权的交集；Contract 不得扩大 Agent 权限。",
   "precedence":["用户明确指令与安全边界","已批准的当前产品事实","原生 Agent 最小权限","Artifact/Gate contract","Skill 执行方法","非权威示例"],
   "loading_rule":"只读取根索引、任务命中的 Artifact/Gate 路由、registered native Agent/config、active method Skill 及其直接链接 resource；task plan、未登记 template、migration-only 文件和 historical product docs 不进入默认上下文。",
-  "active_graph_rule":"candidate graph 与 accepted graph 使用相同 routed records。内容保持 candidate 语义；只有 refs/heads/speakeasy-20260705 指向已通过 exact-commit CI 和独立检查的同一 SHA 后，该 SHA 才是 accepted active baseline。",
+  "active_graph_rule":"当前治理图由默认分支中的 routed records 定义；变更通过受保护分支上的常规 PR CI、代码审查与合并策略后生效。",
   "conflict_rule":"非权威 prose 与 contract 冲突时阻塞并交由 accountable owner 裁决。",
   "operational_pointer_rule":"非 owning layer 只能通过 Artifact/Gate ID 解析 contract；确有执行需要的 path/command literal 必须标记为 derived operational pointer，并由 validator 与 contract 精确对照，不形成第二份 authority。",
   "artifact_checker_rule":"Artifact 不声明 checker；只有 G-INDEPENDENT-CHECK applicability 命中时，才由 Gate selector 按触发类型或受影响 Artifact ID 选择并执行独立 Checker。",

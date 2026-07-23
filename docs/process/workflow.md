@@ -4,7 +4,7 @@
 
 `GOVERNANCE_INDEX` 是治理契约入口。Artifact path、accountable owner、contributor scope、lifecycle、direct/conditional inputs 和 validation command 由 Artifact ID 解析；Gate applicability、owner/checker、结果和证据要求由 Gate ID 解析。本文只定义阶段顺序与决策点，不重新声明这些治理事实。
 
-工作树和独立候选分支始终是 candidate。只有受保护的 `refs/heads/speakeasy-20260705` 指向 required CI 与独立检查已经验证的同一 exact SHA，内容才是 accepted active baseline。
+变更通过普通 GitHub PR 流程交付：受保护分支要求 CI 编译、静态分析和测试通过后方可合并，CI 结果由 GitHub 绑定到被检查的 commit SHA。
 
 ## 默认执行路径
 
@@ -14,7 +14,7 @@
 -> 只加载命中的 Artifact/Gate contract
 -> 单 owner 局部执行，或在专业/独立审查边界交接
 -> 最窄定向验证
--> 适用治理验证和 exact-commit CI
+-> 适用治理验证和普通 PR CI
 -> 用户总结
 ```
 
@@ -52,7 +52,7 @@ idea/change intake
 -> FR/Contract 快速测试
 -> selected VS 定向 integration/E2E
 -> applicable governance validators and independent checks
--> exact-commit CI
+-> 普通 PR CI
 -> report/release controls when applicable
 ```
 
@@ -92,7 +92,7 @@ API、OpenAPI、Domain、Persistence、AI structured output、Prompt/fallback、
 - `G-CONTRACT`：验证工程事实同步和 Contract-TC。
 - `G-SWC`：仅共享拓扑、system flow 或重要复用边界变化时执行。
 - `G-AI-SCHEMA`：LLM structured output/Prompt/fallback 变化时执行，并要求适用 AI Contract-TC。
-- `G-TEST`：先快后全，最终证据绑定 exact SHA。
+- `G-TEST`：先快后全，最终结果由 CI 绑定到被检查的 commit SHA。
 - `G-RELEASE`：只在 release scope 命中时执行。
 - `G-ARTIFACT-VALIDATION`、`G-INDEPENDENT-CHECK`、`G-DOCUMENT-LANGUAGE`：按 contract applicability 执行。
 

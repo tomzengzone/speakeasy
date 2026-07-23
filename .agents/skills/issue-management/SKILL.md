@@ -39,7 +39,7 @@ Concise issue title/body, labels/status suggestions, linked Artifact IDs, blocke
 
 ## Red Flags
 
-Issue-only product facts; copied oracle or Contract schema; Stage/Increment treated as behavior source; completion claim without exact-SHA evidence; issue scope silently expanding approved behavior.
+Issue-only product facts; copied oracle or Contract schema; Stage/Increment treated as behavior source; completion claim without CI evidence linked to the checked commit; issue scope silently expanding approved behavior.
 
 ## Verification
 

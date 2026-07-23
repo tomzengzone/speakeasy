@@ -47,4 +47,4 @@ Done claim without evidence; product/Contract/oracle text duplicated; planned co
 
 ## Verification
 
-Every meaningful changed area is represented; evidence matches actual execution and exact SHA where applicable; skipped work is explicit; no authority is redefined.
+Every meaningful changed area is represented; evidence matches actual execution and the checked commit where applicable; skipped work is explicit; no authority is redefined.

@@ -11,7 +11,6 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from validate_story_slice_cutover import (  # noqa: E402
-    authority_graph_digest,
     collect_candidate_authority_graph,
     collect_current_definition_paths,
     validate_cutover,
@@ -39,7 +38,6 @@ class StorySliceCutoverValidationTest(unittest.TestCase):
         errors, metrics = validate_cutover(ROOT)
         self.assertEqual([], errors)
         self.assertGreater(metrics["authority_graph_files"], 20)
-        self.assertEqual(64, len(metrics["authority_graph_digest"]))
 
     def test_graph_is_route_derived_and_excludes_historical_state(self) -> None:
         graph = {path.relative_to(ROOT).as_posix() for path in collect_candidate_authority_graph(ROOT)}
@@ -66,14 +64,6 @@ class StorySliceCutoverValidationTest(unittest.TestCase):
             definitions,
         )
         self.assertNotIn("docs/product/user_stories.md", definitions)
-
-    def test_digest_changes_for_active_definition(self) -> None:
-        temp, root = self.fixture()
-        self.addCleanup(temp.cleanup)
-        before = authority_graph_digest(root)
-        path = root / ".agents/skills/requirement-refine/SKILL.md"
-        path.write_text(path.read_text(encoding="utf-8") + "\n", encoding="utf-8")
-        self.assertNotEqual(before, authority_graph_digest(root))
 
     def test_retired_route_is_rejected(self) -> None:
         temp, root = self.fixture()

@@ -24,7 +24,7 @@
 - [ ] 先运行受影响 FR/Contract 的最窄快速测试，再运行 selected VS 的定向全链路测试。
 - [ ] Unit、contract、integration、migration、AI eval、widget 或 E2E 测试已按实际影响新增或更新。
 - [ ] Applicable governance validator、语言检查和风险 Gate 已通过。
-- [ ] 最终 CI 结果绑定同一 exact candidate commit SHA；TC Catalog 和 traceability 未复制运行状态。
+- [ ] PR 的编译、静态分析和测试均通过，CI 结果绑定被检查的 commit SHA；TC Catalog 和 traceability 未复制运行状态。
 - [ ] 用户可见变化完成适用 UX review；release scope 命中时完成 release checklist、rollback 与发布控制。
 - [ ] 需要持久报告时，报告只记录本次范围、文件、测试、风险和后续项；不复制产品或治理 authority。
 

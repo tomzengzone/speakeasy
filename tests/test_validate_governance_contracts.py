@@ -121,14 +121,13 @@ class GovernanceContractValidationTest(unittest.TestCase):
             subprocess.run(["git", "add", "-f", cache.relative_to(target).as_posix()], **git_run)
             subprocess.run(["git", "commit", "-qm", "candidate baseline with cache"], **git_run)
             errors, _warnings, _metrics = validate_repository(target)
-            self.assertTrue(any("candidate baseline contains tracked cache files" in error for error in errors))
+            self.assertTrue(any("governance commit contains tracked cache files" in error for error in errors))
 
-    def test_exact_sha_ref_is_the_only_activation_anchor(self):
+    def test_active_graph_uses_normal_protected_branch_ci(self):
         policy = json.loads((ROOT / "docs/process/governance/policy.json").read_text(encoding="utf-8"))
         rule = policy["active_graph_rule"]
-        self.assertIn("refs/heads/speakeasy-20260705", rule)
-        self.assertIn("exact-commit CI", rule)
-        self.assertIn("candidate", rule)
+        self.assertIn("受保护分支", rule)
+        self.assertIn("常规 PR CI", rule)
 
     def test_retired_runtime_interfaces_are_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -429,7 +428,7 @@ class GovernanceContractValidationTest(unittest.TestCase):
         self.assertIn("source_vs_ids", requirements)
         self.assertIn("tests, or Engineering Contract design", requirements)
         self.assertIn("one typed direct upstream per case", test_case)
-        self.assertIn("TC execution results belong to exact-commit", test_case)
+        self.assertIn("TC execution results belong to CI", test_case)
         self.assertIn("projection is derived-read-only", traceability)
 
     def test_skill_validator_accepts_progressive_disclosure_layout(self):
@@ -623,27 +622,15 @@ class GovernanceContractValidationTest(unittest.TestCase):
         self.assertEqual([], validate_content_scope(before, allowed, scope))
         self.assertTrue(validate_content_scope(before, rejected, scope))
 
-    def test_ci_write_scope_passes_event_metadata_and_base_ref(self):
+    def test_ci_uses_standard_pull_request_checks(self):
         workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-        self.assertIn('--github-event-path "$GITHUB_EVENT_PATH"', workflow)
-        self.assertIn('--base-ref "$BASE_REF"', workflow)
-
-    def test_ci_checks_one_declared_candidate_sha_through_all_checkpoints(self):
-        workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-        candidate_declaration = workflow.index("CANDIDATE_SHA:")
-        checkout = workflow.index("ref: ${{ env.CANDIDATE_SHA }}")
-        preflight = workflow.index("id: exact-commit-preflight")
-        governance_validation = workflow.index("id: governance-contracts")
-        governance_checkpoint = workflow.index("--name after-governance")
-        application_checkpoint = workflow.index("--name after-application")
-        finalize = workflow.index("Finalize exact-commit attestation")
-        self.assertLess(candidate_declaration, checkout)
-        self.assertLess(checkout, preflight)
-        self.assertLess(preflight, governance_validation)
-        self.assertLess(governance_validation, governance_checkpoint)
-        self.assertLess(governance_checkpoint, application_checkpoint)
-        self.assertLess(application_checkpoint, finalize)
-        self.assertNotIn("ref: ${{ github.ref }}", workflow)
+        self.assertIn("pull_request:", workflow)
+        self.assertIn("uses: actions/checkout@v4", workflow)
+        self.assertIn("run: flutter analyze", workflow)
+        self.assertIn("run: flutter test", workflow)
+        self.assertIn("flutter build apk --debug", workflow)
+        self.assertNotIn("workflow_dispatch", workflow)
+        self.assertNotIn("attestation", workflow)
 
     def test_unrelated_script_is_not_governed(self):
         self.assertTrue(check_paths(ROOT, ["scripts/check_p0_2_followup_d_traceability.py"], "product-object-governance-change"))

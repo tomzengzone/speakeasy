@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import re
 import sys
@@ -137,18 +136,6 @@ def collect_candidate_authority_graph(root: Path = ROOT) -> list[Path]:
     return sorted(files, key=lambda path: path.relative_to(root).as_posix())
 
 
-def authority_graph_digest(root: Path = ROOT) -> str:
-    digest = hashlib.sha256()
-    root = root.resolve()
-    for path in collect_candidate_authority_graph(root):
-        relative = path.relative_to(root).as_posix().encode("utf-8")
-        digest.update(relative)
-        digest.update(b"\0")
-        digest.update(path.read_bytes())
-        digest.update(b"\0")
-    return digest.hexdigest()
-
-
 def _load_artifacts(root: Path, index: dict) -> dict[str, dict]:
     contract = root / GOVERNANCE
     artifacts: dict[str, dict] = {}
@@ -169,7 +156,7 @@ def validate_adr(root: Path) -> list[str]:
         "mandatory Functional Requirement", "source_fr_id", "source_contract_id",
         "source_vs_id", "Derived canonical traceability", "forward-only",
         "no-migration", "PR-002", "historical-reference-only",
-        "不建立 project-local Hook", "refs/heads/speakeasy-20260705",
+        "不建立 project-local Hook",
     )
     for marker in required:
         if marker not in text:
@@ -298,7 +285,6 @@ def validate_cutover(root: Path = ROOT, *, check_adr: bool = True, check_story_m
     graph = collect_candidate_authority_graph(root)
     metrics = {
         "authority_graph_files": len(graph),
-        "authority_graph_digest": authority_graph_digest(root),
         "artifact_routes": len(routes),
         "gate_routes": len(gates),
     }
@@ -324,7 +310,6 @@ def main(argv: list[str] | None = None) -> int:
         for error in errors:
             print(f"ERROR: {error}")
         print(f"Authority graph files: {metrics.get('authority_graph_files', 0)}")
-        print(f"Authority graph digest: {metrics.get('authority_graph_digest', '')}")
         print(f"Result: {'failed' if errors else 'passed'}")
     return 1 if errors else 0
 

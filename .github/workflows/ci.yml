@@ -7,22 +7,9 @@ on:
   pull_request:
     branches:
       - main
-  # Remote exact-SHA approval must first confirm this dispatch entry is already
-  # available on the repository default branch; GitHub will not bootstrap it
-  # from an unaccepted candidate branch.
-  workflow_dispatch:
-    inputs:
-      candidate_sha:
-        description: Full candidate commit SHA to check and attest
-        required: true
-        type: string
-      base_sha:
-        description: Current refs/heads/speakeasy-20260705 SHA and rollback target
-        required: true
-        type: string
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}-${{ inputs.candidate_sha || github.sha }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -38,211 +25,45 @@ jobs:
     name: Flutter Analyze Test Build
     runs-on: ubuntu-latest
     timeout-minutes: 35
-    env:
-      CANDIDATE_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.candidate_sha || github.sha }}
-      BASE_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.base_sha || (github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before) }}
-      EXACT_CI_STATE: ${{ runner.temp }}/speakeasy-exact-commit-state.json
-      EXACT_CI_ATTESTATION: ${{ runner.temp }}/speakeasy-exact-commit-attestation.json
 
     steps:
-      - name: Initialize rejected exact-commit attestation
-        if: github.event_name == 'workflow_dispatch'
-        shell: bash
-        env:
-          DISPATCH_CANDIDATE_SHA: ${{ inputs.candidate_sha }}
-          DISPATCH_BASE_SHA: ${{ inputs.base_sha }}
-        run: |
-          python3 - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-
-          candidate = os.environ["DISPATCH_CANDIDATE_SHA"]
-          base = os.environ["DISPATCH_BASE_SHA"]
-          fallback = {
-              "schema_version": 1,
-              "result": "rejected",
-              "phase": "initialization",
-              "reason": "exact-commit preflight did not complete",
-              "candidate": {
-                  "sha": candidate,
-                  "branch": os.environ["GITHUB_REF_NAME"],
-                  "remote": {"name": "origin", "url": "unavailable-before-preflight"},
-              },
-              "baseline": {
-                  "ref": "refs/heads/speakeasy-20260705",
-                  "base_sha": base,
-              },
-              "rollback_target": base,
-              "event": {
-                  "name": os.environ["GITHUB_EVENT_NAME"],
-                  "repository": os.environ["GITHUB_REPOSITORY"],
-                  "workflow": os.environ["GITHUB_WORKFLOW"],
-                  "run_id": os.environ["GITHUB_RUN_ID"],
-                  "run_attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
-              },
-              "authority_graph": {"digest_algorithm": "sha256", "digest": None},
-              "independent_checker_input": {
-                  "candidate_sha": candidate,
-                  "base_sha": base,
-                  "authority_graph_digest": None,
-              },
-              "required_checks": [],
-          }
-          path = Path(os.environ["EXACT_CI_ATTESTATION"])
-          path.write_text(json.dumps(fallback, indent=2) + "\n", encoding="utf-8")
-          PY
-
-      - name: Checkout declared candidate
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ env.CANDIDATE_SHA }}
-
-      - name: Fetch exact-commit refs
-        if: github.event_name == 'workflow_dispatch'
-        shell: bash
-        run: |
-          git fetch --no-tags origin \
-            "+refs/heads/${GITHUB_REF_NAME}:refs/remotes/origin/${GITHUB_REF_NAME}" \
-            "+refs/heads/speakeasy-20260705:refs/remotes/origin/speakeasy-20260705"
-
-      - name: Exact-commit preflight
-        id: exact-commit-preflight
-        if: github.event_name == 'workflow_dispatch'
-        shell: bash
-        run: |
-          python3 scripts/verify_exact_commit_ci.py start \
-            --state-file "$EXACT_CI_STATE" \
-            --candidate-sha "$CANDIDATE_SHA" \
-            --base-sha "$BASE_SHA" \
-            --candidate-branch "$GITHUB_REF_NAME" \
-            --remote origin \
-            --event-name "$GITHUB_EVENT_NAME" \
-            --repository "$GITHUB_REPOSITORY" \
-            --workflow-name "$GITHUB_WORKFLOW" \
-            --workflow-run-id "$GITHUB_RUN_ID" \
-            --workflow-run-attempt "$GITHUB_RUN_ATTEMPT" \
-            --required-check governance-contracts \
-            --required-check story-slice-delivery \
-            --required-check story-slice-cutover \
-            --required-check agent-skills \
-            --required-check governance-validator-tests \
-            --required-check governance-write-scope \
-            --required-check document-language \
-            --required-check capability-registry \
-            --required-check flutter-dependencies \
-            --required-check flutter-analyze \
-            --required-check flutter-test \
-            --required-check flutter-build
 
       - name: Governance contract validation
-        id: governance-contracts
-        continue-on-error: ${{ github.event_name == 'workflow_dispatch' }}
         run: python3 scripts/validate_governance_contracts.py
 
       - name: Story-slice delivery validation
-        id: story-slice-delivery
-        continue-on-error: ${{ github.event_name == 'workflow_dispatch' }}
         run: python3 scripts/validate_story_slice_delivery.py
 
       - name: Story-slice cutover validation
-        id: story-slice-cutover
-        continue-on-error: ${{ github.event_name == 'workflow_dispatch' }}
-        shell: bash
         run: |
           python3 scripts/validate_story_slice_cutover.py
           python3 scripts/validate_story_slice_cutover.py --check-adr --check-story-map
 
       - name: Agent and skill validation
-        id: agent-skills
-        continue-on-error: ${{ github.event_name == 'workflow_dispatch' }}
         run: python3 scripts/validate_agent_skills.py
 
       - name: Governance validator tests
-        id: governance-validator-tests
-        continue-on-error: ${{ github.event_name == 'workflow_dispatch' }}
-        shell: bash
         run: |
           python3 -m unittest \
             tests.test_validate_governance_contracts \
             tests.test_validate_story_slice_delivery \
             tests.test_validate_story_slice_cutover \
-            tests.test_verify_exact_commit_ci \
             -v
 
-      - name: Governance changed-files scope
-        id: governance-write-scope
-        continue-on-error: ${{ github.event_name == 'workflow_dispatch' }}
-        shell: bash
-        run: |
-          BASE_REF="$BASE_SHA"
-          if [[ "$BASE_REF" =~ ^0+$ ]]; then
-            BASE_REF="$(git rev-list --max-parents=0 HEAD)"
-          fi
-          mapfile -t CHANGED < <(git diff --name-only "$BASE_REF"...HEAD)
-          if (( ${#CHANGED[@]} )); then
-            METADATA_ARGS=()
-            if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-              while IFS= read -r line; do
-                case "$line" in
-                  "Governance-Actor:"*)
-                    VALUE="${line#Governance-Actor:}"
-                    VALUE="${VALUE#"${VALUE%%[![:space:]]*}"}"
-                    METADATA_ARGS+=(--actor "$VALUE")
-                    ;;
-                  "Governance-Scope:"*)
-                    VALUE="${line#Governance-Scope:}"
-                    VALUE="${VALUE#"${VALUE%%[![:space:]]*}"}"
-                    METADATA_ARGS+=(--scope-ref "$VALUE")
-                    ;;
-                esac
-              done < <(git show -s --format=%B "$CANDIDATE_SHA")
-            else
-              METADATA_ARGS+=(--github-event-path "$GITHUB_EVENT_PATH")
-            fi
-            python3 scripts/check_governance_write_scope.py \
-              --governed-only \
-              --base-ref "$BASE_REF" \
-              "${METADATA_ARGS[@]}" \
-              "${CHANGED[@]}"
-          fi
-
-      - name: Document language gate
-        id: document-language
-        continue-on-error: ${{ github.event_name == 'workflow_dispatch' }}
-        shell: bash
-        run: |
-          BASE_REF="$BASE_SHA"
-          if [[ "$BASE_REF" =~ ^0+$ ]]; then
-            BASE_REF="$(git rev-list --max-parents=0 HEAD)"
-          fi
-          python3 scripts/check_document_language.py --scope changed --base-ref "$BASE_REF"
-
-      - name: Capability registry gate
-        id: capability-registry
-        continue-on-error: ${{ github.event_name == 'workflow_dispatch' }}
-        shell: bash
+      - name: Capability registry validation
         run: |
           python3 scripts/validate_capability_registry.py
           python3 -m unittest discover -s tests -p "test_validate_capability_registry.py" -v
 
-      - name: Exact-commit checkpoint after governance
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          python3 scripts/verify_exact_commit_ci.py checkpoint \
-            --state-file "$EXACT_CI_STATE" \
-            --name after-governance
-
       - name: Set up Java
-        id: setup-java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
       - name: Set up Flutter
-        id: setup-flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -260,61 +81,18 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Install dependencies
-        id: flutter-dependencies
-        continue-on-error: ${{ github.event_name == 'workflow_dispatch' }}
         run: flutter pub get
 
       - name: Analyze
-        id: flutter-analyze
-        continue-on-error: ${{ github.event_name == 'workflow_dispatch' }}
         run: flutter analyze
 
       - name: Test
-        id: flutter-test
-        continue-on-error: ${{ github.event_name == 'workflow_dispatch' }}
         run: flutter test
 
       - name: Build Android APK
-        id: flutter-build
-        continue-on-error: ${{ github.event_name == 'workflow_dispatch' }}
         shell: bash
         run: |
           API_BASE_URL="${APP_API_BASE_URL:-https://example.invalid}"
           flutter build apk --debug \
             --dart-define=API_BASE_URL="$API_BASE_URL" \
             --dart-define=ENV=ci
-
-      - name: Exact-commit checkpoint after application checks
-        if: always() && github.event_name == 'workflow_dispatch'
-        run: |
-          python3 scripts/verify_exact_commit_ci.py checkpoint \
-            --state-file "$EXACT_CI_STATE" \
-            --name after-application
-
-      - name: Finalize exact-commit attestation
-        if: always() && github.event_name == 'workflow_dispatch'
-        run: |
-          python3 scripts/verify_exact_commit_ci.py finalize \
-            --state-file "$EXACT_CI_STATE" \
-            --attestation-file "$EXACT_CI_ATTESTATION" \
-            --check "governance-contracts=${{ steps.governance-contracts.outcome }}" \
-            --check "story-slice-delivery=${{ steps.story-slice-delivery.outcome }}" \
-            --check "story-slice-cutover=${{ steps.story-slice-cutover.outcome }}" \
-            --check "agent-skills=${{ steps.agent-skills.outcome }}" \
-            --check "governance-validator-tests=${{ steps.governance-validator-tests.outcome }}" \
-            --check "governance-write-scope=${{ steps.governance-write-scope.outcome }}" \
-            --check "document-language=${{ steps.document-language.outcome }}" \
-            --check "capability-registry=${{ steps.capability-registry.outcome }}" \
-            --check "flutter-dependencies=${{ steps.flutter-dependencies.outcome }}" \
-            --check "flutter-analyze=${{ steps.flutter-analyze.outcome }}" \
-            --check "flutter-test=${{ steps.flutter-test.outcome }}" \
-            --check "flutter-build=${{ steps.flutter-build.outcome }}"
-
-      - name: Upload exact-commit attestation
-        if: always() && github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
-        with:
-          name: exact-commit-attestation-${{ inputs.candidate_sha }}
-          path: ${{ env.EXACT_CI_ATTESTATION }}
-          if-no-files-found: error
-          retention-days: 30
