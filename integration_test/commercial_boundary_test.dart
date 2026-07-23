@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:speakeasy/config/payment_config.dart';
+import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
 import 'package:speakeasy/features/commercial/commercial_scenario_gate.dart';
 import 'package:speakeasy/l10n/l10n.dart';
 import 'package:speakeasy/pages/membership_page.dart';
@@ -19,6 +20,7 @@ void main() {
         supportedLocales: L10n.supportedLocales,
         home: MembershipPage(
           currentPlan: PaymentConfig.freePlanId,
+          entitlementProjection: _freeEntitlement(),
           isLoading: false,
           onBack: () {},
           onSubscribe: (_) async {},
@@ -52,14 +54,14 @@ void main() {
     expect(
       CommercialScenarioGate.canAccess(
         targetLevel: CommercialScenarioGate.proTargetLevel,
-        isPro: false,
+        entitlement: _freeEntitlement(),
       ),
       isFalse,
     );
     expect(
       CommercialScenarioGate.canAccess(
         targetLevel: CommercialScenarioGate.proTargetLevel,
-        isPro: true,
+        entitlement: _proEntitlement(),
       ),
       isTrue,
     );
@@ -73,6 +75,7 @@ void main() {
         supportedLocales: L10n.supportedLocales,
         home: MembershipPage(
           currentPlan: PaymentConfig.freePlanId,
+          entitlementProjection: _freeEntitlement(),
           isLoading: false,
           errorMessage: '网络不可用，请稍后重试或恢复购买。',
           onBack: () {},
@@ -97,5 +100,25 @@ void main() {
       find.byKey(const ValueKey<String>('membership_restore_purchases_button')),
       findsOneWidget,
     );
+  });
+}
+
+CommercialEntitlementProjection _freeEntitlement() {
+  return CommercialEntitlementProjection.fromJson(<String, dynamic>{
+    'plan': 'free',
+    'status': 'active',
+    'features': <String, dynamic>{'advanced_scenarios': false},
+    'validUntil': DateTime.now().add(const Duration(days: 1)).toIso8601String(),
+    'generatedAt': DateTime.now().toIso8601String(),
+  });
+}
+
+CommercialEntitlementProjection _proEntitlement() {
+  return CommercialEntitlementProjection.fromJson(<String, dynamic>{
+    'plan': 'pro',
+    'status': 'active',
+    'features': <String, dynamic>{'advanced_scenarios': true},
+    'validUntil': DateTime.now().add(const Duration(days: 1)).toIso8601String(),
+    'generatedAt': DateTime.now().toIso8601String(),
   });
 }

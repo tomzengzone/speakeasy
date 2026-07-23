@@ -5,7 +5,7 @@ title: 开发流程精简治理
 status: in_progress
 delivery_target: protected_branch_ci
 created_at: 2026-07-17T15:26:03+08:00
-updated_at: 2026-07-23T11:22:41+08:00
+updated_at: 2026-07-23T11:38:59+08:00
 ---
 # 开发流程精简治理
 
@@ -60,7 +60,7 @@ PR-003 依赖已完成并验收的 PR-001。PR-004 依赖 PR-003 完成并通过
 
 - PR-001：已完成并验收。
 - PR-002：已 superseded，未实施。
-- PR-003：revision 12 正在实施；删除高强度交付治理并恢复普通 CI。
+- PR-003：revision 13 正在实施；删除高强度交付治理、恢复普通 CI，并修复 PR #5 的 Flutter analyzer API 漂移。
 - PR-004：等待 PR-003 完成后选择试点。
 
 ## Overall Verification
@@ -69,12 +69,12 @@ PR-003 完成后运行治理 validators、Skill validator、task-plan validator 
 
 ## Current Summary
 
-PR-003 revision 12 正在实施，目标是保留普通 PR CI 并删除专用 exact-commit 交付机制。
+PR-003 revision 13 正在实施，目标是保留普通 PR CI、删除专用 exact-commit 交付机制，并让 PR #5 的 CI 全量通过。
 
 ## Next Action
 
-完成 PR-003 revision 12 的本地验证与对抗性审查后等待用户验收。
+完成 PR-003 revision 13 的 GitHub CI、合并与对抗性审查。
 
 ## Next Approval Required
 
-本地验证通过后，请用户验收 PR-003 revision 12；未验收前不启动 PR-004。
+PR #5 CI 通过并合并后完成 PR-003；未完成前不启动 PR-004。
