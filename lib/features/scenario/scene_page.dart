@@ -138,9 +138,7 @@ class _ScenePageState extends State<ScenePage> {
   final List<Uint8List> _pendingTurnVoiceChunks = <Uint8List>[];
   List<Uint8List>? _queuedTurnVoiceChunks;
   int _pendingVoiceMessageDuration = 3;
-  String _lastRealtimeUserText = '';
   String _lastRealtimeNpcText = '';
-  bool _awaitingAssistantReplyForLastUser = false;
   bool _awaitingUserReplyForLastNpc = false;
   String _sessionId = '';
   SceneTurnContract? _serverTurnContract;
@@ -6075,14 +6073,6 @@ class _ScenePageState extends State<ScenePage> {
     }
   }
 
-  List<Uint8List> _packPcmChunks(List<Uint8List> chunks) {
-    return _sceneVoiceTurnRulesCoordinator.packPcmChunks(chunks);
-  }
-
-  int _estimateVoiceDurationSeconds(List<Uint8List> chunks) {
-    return _sceneVoiceTurnRulesCoordinator.estimateVoiceDurationSeconds(chunks);
-  }
-
   Future<void> _startRealtimeStreamRecording() async {
     if (!_hasRealtimeAudioService || _realtimeAudioService.isStreamRecording) {
       return;
@@ -6236,7 +6226,6 @@ class _ScenePageState extends State<ScenePage> {
     _isAiSpeaking = false;
     _isFinalizingAiTurn = false;
     _voiceTurnOrchestrator.clearSession();
-    _awaitingAssistantReplyForLastUser = false;
     _awaitingUserReplyForLastNpc = false;
     _voiceSessionMode = _VoiceSessionMode.none;
     _queuedTurnVoiceChunks = null;
@@ -6288,7 +6277,6 @@ class _ScenePageState extends State<ScenePage> {
     }
     _lastRealtimeNpcText = cleanedText;
     _awaitingUserReplyForLastNpc = true;
-    _awaitingAssistantReplyForLastUser = false;
     setState(() {
       final int lastIndex = _messages.length - 1;
       if (lastIndex >= 0 &&

@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import 'package:speakeasy/config/app_config.dart';
