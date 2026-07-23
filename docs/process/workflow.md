@@ -1,275 +1,119 @@
-# Codex Development Workflow
+# Codex 开发流程
 
-## Product Planning Layer
+## 治理路由
+
+`GOVERNANCE_INDEX` 是治理契约入口。Artifact path、accountable owner、contributor scope、lifecycle、direct/conditional inputs 和 validation command 由 Artifact ID 解析；Gate applicability、owner/checker、结果和证据要求由 Gate ID 解析。本文只定义阶段顺序与决策点，不重新声明这些治理事实。
+
+变更通过普通 GitHub PR 流程交付：受保护分支要求 CI 编译、静态分析和测试通过后方可合并，CI 结果由 GitHub 绑定到被检查的 commit SHA。
+
+## 默认执行路径
+
 ```text
-user request
--> Product Manager intake
--> product classification
--> optional issue-management tracking when repository issue tracking is needed
--> V2 capability registry / stage scope check
--> increment definition
--> roadmap / development status update
--> PM execution brief
+用户任务
+-> 根 Codex 判断影响范围
+-> 只加载命中的 Artifact/Gate contract
+-> 单 owner 局部执行，或在专业/独立审查边界交接
+-> 最窄定向验证
+-> 适用治理验证和普通 PR CI
+-> 用户总结
 ```
 
-Product Manager is the unified user-facing entry point. It decides the active stage goal, backlog priority, roadmap horizon, accepted/deferred scope, and current progress status. Users should not need to choose specialist agents directly.
+普通 code-only 修复、行为不变重构、UI polish 和只读分析不创建产品治理文档，除非实际影响命中某个 Artifact 或 Gate。
 
-## Product Object Model
+## 产品与交付轴
+
+产品事实链固定为：
+
 ```text
-Capability = long-lived product capability registered by V2 Capability ID / Sub-capability ID
-Product Base = living source of truth for accepted product requirements, specs, acceptance, and traceability
-Stage = delivery horizon or priority window
-Stage Scope Item = stable, ID-addressable capability or obligation committed, deferred, or marked not applicable inside a stage
-Increment = scoped delivery slice inside a stage
-Test Case Library = canonical AC-to-TC design artifact for an increment before implementation starts
-Baseline = frozen snapshot of Product Base at a stage, version, release, or audit point
-Change Request = decision record for scope change
-Artifact = requirements, spec, acceptance, contracts, tests, reports, release evidence
+Capability/Sub-capability classification
+-> approved User Story
+-> approved Child Vertical Slice
+-> mandatory Functional Requirement
 ```
 
-Capability 和 stage 是两条独立轴线；capability 不是 stage，stage 也不是 capability。`Capability ID` 与 `Sub-capability ID` 来自 V2 registry `docs/product/feature_registry.md`；`Stage Scope ID` 描述阶段交付承诺，不得替代 capability ID。Product Base 是活的产品需求库。已接受稳定行为的 requirements、specs、acceptance criteria 和 traceability 位于 `docs/product/base/`。Increment artifacts 在完成并被批准 merge back into Product Base 前，位于 `docs/product/increments/<increment-id>/`。Increment test case library 位于 `docs/product/increments/<increment-id>/test_cases.md`，是 implementation 开始前 AC-to-TC design 的 source of truth。`docs/product/baselines/` 下的 baselines 是冻结快照，不得替代 Product Base。
+Capability Registry 只定义稳定业务边界和分类。Story Map 保存 Story 到 Capability、Child VS 到 Story 的直接关系。FR Catalog 中 FR 只通过 `source_vs_ids` 直接引用 approved VS。Stage、Roadmap、Increment、Work Package 和 PR 是 planning/delivery metadata，不定义产品行为，也不作为 FR、TC 或 Engineering Contract 的上游。
 
-## Execution Layer
-```text
-PM execution brief -> Development Orchestrator -> workflow gate check -> specialist agents -> validation evidence -> PM status update -> user summary
-```
+交付轴选择 approved VS 与 mandatory FR，并在事实变化时同步受影响 Engineering Contract。Issue/PR 只记录本次选择、范围、风险、状态与证据链接，不复制产品、Contract 或测试事实。
 
-Development Orchestrator is the internal execution dispatcher. It does not decide whether a product goal is worth doing; it decides which workflow step is currently legal and necessary for approved scope.
+## Feature delivery
 
-## Standard Flow
+只有创建或实质改变已接受产品行为时使用此流程；不适用步骤必须跳过：
+
 ```text
 idea/change intake
--> product classification
--> V2 capability registry / stage scope check
--> increment definition
--> requirement development
--> increment spec
--> acceptance criteria
--> test case library / AC-to-TC mapping
--> architecture/domain/API/screen/AI specs
--> software component architecture / SWC allocation
--> implementation plan
--> code
--> tests
--> review
--> report
--> product base merge when done
--> optional baseline freeze
--> release
+-> G-PRODUCT-CLASSIFICATION
+-> Capability/Sub-capability classification（边界变化时进入 G-REGISTRY）
+-> Story 与 Child VS 完整、approved
+-> G-FR：每个 selected VS 至少一条 approved FR
+-> G-TC：FR-TC 与 VS-TC；Contract 事实变化时增加 Contract-TC
+-> G-CONTRACT：只同步事实发生变化的专业 Contract
+-> G-SWC：稳定共享拓扑或重大复用边界变化时更新架构并独立检查
+-> test-first implementation
+-> FR/Contract 快速测试
+-> selected VS 定向 integration/E2E
+-> applicable governance validators and independent checks
+-> 普通 PR CI
+-> report/release controls when applicable
 ```
 
-Requirement Development 负责 scoped feature/change 的 requirement quality。Development Orchestrator 负责 workflow routing、cross-module execution 和 Definition of Done verification。
+FR 缺失、VS 未批准或产品行为不完整时回到 owning source，由 Product Manager 裁决；不得在 TC、Contract、Issue 或代码中补造行为。
 
-## Required Gates
-1. Product classification 完成前，不创建 feature/increment document。
-2. V2 capability registry 和 stage scope 确认前，不创建 requirements/spec/acceptance artifact。
-3. 没有稳定 Stage Scope Item ID，且每个 required item 没有 increment coverage decision 时，committed stage work 不得推进。
-4. Increment spec 完成前，不开始 implementation。
-5. Approved AC 尚未映射到 `docs/product/increments/<increment-id>/test_cases.md` 中的稳定 TC ID 或明确例外前，不开始 implementation。
-6. Contract update 完成前，不开始 cross-layer implementation。
-7. Global SWC architecture baseline 未被引用或更新，且 owning increment 没有带适用 `SWC-FLOW-*` reference 的 `docs/product/increments/<increment-id>/swc_allocation.md` 或明确 `N/A - no SWC impact` decision 前，不开始 cross-layer 或 SWC-impacting implementation。
-8. Schema definition 完成前，不做 AI UI rendering。
-9. 没有测试或 documented test gap 时，不得标记 completion。
-10. 没有 release checklist 时，不得 release。
-11. Acceptance、traceability、适用时的 SWC allocation、implementation、test 和 report evidence 未完成或未明确例外前，increment 不得 merge into Product Base。
-12. Multi-step product、architecture、software component 或 documentation governance task，在独立 checker agent 对已完成步骤返回 pass finding 前，不得进入下一步。
-13. 除非用户明确指定其他语言，新增或修改的持久化项目文档自然语言必须使用中文；若保留英文原文，英文正文块后必须紧跟中文翻译，并通过 document language gate。
+## 分层测试决策
 
-## 文档语言门禁
-持久化项目文档默认使用中文，覆盖 `docs/` 和 `codex/templates/` 下的 Markdown 输出。技术标识、代码路径、API 名称、OpenAPI 字段、SWC ID、测试 ID、命令和机器解析字段可以保留英文。若文档需要保留英文原文，必须使用源文件内双语格式：英文正文块后紧跟对应中文翻译或中文等价说明。
+`TEST_CASE_CATALOG` 固定三类唯一 direct-upstream edge：
 
-CI 通过 `scripts/check_document_language.py` 检查 changed scope，防止新生成或修改的项目文档出现没有中文对应说明的英文段落。本地验证命令：
+- FR-TC 只记录 `source_fr_id`，选择能最快证明原子规则的最低成本层级。
+- Contract-TC 只记录 `source_contract_id`，覆盖实际变化的 API、Domain、Persistence、AI、UX 等边界。
+- VS-TC 只记录 `source_vs_id`，覆盖用户可感知的定向全链路和关键失败/降级路径。
+
+先运行 FR/Contract 快速测试，再运行 selected VS 的定向全链路测试。最终 release E2E 不得成为首次发现模块缺陷的验证点。TC Catalog 不保存运行结果；执行证据绑定 exact commit SHA。
+
+`TRACEABILITY` 从 Story Map、FR Catalog、适用 Engineering Contract 和 TC Catalog 派生三条完整分支及 coverage join。它不拥有或覆盖任何 direct edge；不一致时修复 owning source 后重建投影。
+
+## Engineering Contract 与风险
+
+API、OpenAPI、Domain、Persistence、AI structured output、Prompt/fallback、Dialogue、UX 或架构事实变化时，必须同步对应 owning Artifact 并运行适用 Contract-TC。风险低不能豁免事实同步。
+
+稳定 SWC topology、system-level flow 或 reusable component boundary 变化时进入 `G-SWC`，引用当前 Software Component Architecture、SWC Catalog、Data Flow、Module Boundary 和适用专业 Contract；普通局部实现不创建 increment allocation 文档。安全、隐私、支付、数据完整性、不可逆迁移、跨系统兼容、重大共享拓扑或生产发布风险按命中的 Gate 追加独立审查、迁移、canary、回滚或 release control。
+
+触碰 reusable cross-cutting boundary 时，按 `CROSS_CUTTING_BOUNDARY_REGISTRY` Artifact ID 解析当前条目，并在实现与证据中引用 Boundary ID。新增稳定 cross-cutting capability 必须先登记。
+
+## 最小编码上下文
+
+普通实现默认只加载：selected approved VS、mandatory FR、受影响 Contract、FR/Contract/VS 分层 TC、相邻代码/测试和验证命令。历史 `user_stories`、Product Base、Increment Requirements/Spec/Acceptance/Test/Traceability、migration-only 文件、task plan 与未登记 template 不进入默认上下文或 authoritative fallback。
+
+## Gates
+
+- `G-PRODUCT-CLASSIFICATION`：识别 change type、primary/affected Capability 与是否发生产品事实变化。
+- `G-REGISTRY`：仅 Capability/Sub-capability 边界事实变化时执行。
+- `G-INCREMENT-SCOPE`：仅 planning scope/batch 变化时执行；其结果不进入产品/Contract/TC lineage。
+- `G-FR`：验证 selected approved VS 的 mandatory、atomic FR 和唯一 VS lineage。
+- `G-TC`：验证三类 TC 的唯一 direct edge、oracle、层级、selector、脚本与命令。
+- `G-CONTRACT`：验证工程事实同步和 Contract-TC。
+- `G-SWC`：仅共享拓扑、system flow 或重要复用边界变化时执行。
+- `G-AI-SCHEMA`：LLM structured output/Prompt/fallback 变化时执行，并要求适用 AI Contract-TC。
+- `G-TEST`：先快后全，最终结果由 CI 绑定到被检查的 commit SHA。
+- `G-RELEASE`：只在 release scope 命中时执行。
+- `G-ARTIFACT-VALIDATION`、`G-INDEPENDENT-CHECK`、`G-DOCUMENT-LANGUAGE`：按 contract applicability 执行。
+
+Gate 的 owner、checker、required evidence、result 和 exception 只能从 Governance Contract 解析。
+
+## Issue tracking
+
+Issue tracking 是可选协作手段，在产品分类后用于协调缺陷、实现切片、阻塞、PR 或证据链接。Issue 不替代 Story Map、FR Catalog、Engineering Contract、TC Catalog、Traceability 或正式报告。只有 Definition of Done 已满足时才能使用 closing 语义。
+
+## 文档语言
+
+新增或修改的持久化项目文档默认使用中文。技术标识、代码路径、API/OpenAPI 字段、SWC/TC ID、命令和机器字段可以保留英文。适用时运行：
 
 ```bash
 python3 scripts/check_document_language.py --scope changed --include-worktree
 ```
 
-## Cross-Cutting Boundary Registry
-`docs/process/cross_cutting_boundary_registry.md` 是 reusable cross-cutting boundary 的 governance registry，覆盖 media/audio refs、AI provider usage、OpenAPI/generated clients、entitlement、Goal Autopilot facts、data governance 和 issue tracking 等边界。
+## Agent handoff
 
-Cross-layer implementation 开始前，Development Orchestrator 和 specialist agent 必须检查工作是否触碰已登记 Boundary ID。若触碰，implementation plan 必须引用授权条目、复用的 module/API/service、forbidden bypass、legacy exception 或 migration need，以及 evidence gate。新的 cross-cutting capability 在被实现作为稳定边界使用前，必须先登记。
-
-`python scripts/check_cross_cutting_boundaries.py --scope changed --base-ref <base-ref>` 是针对新增变更文件的 repository automation guard。CI 以 changed-only mode 运行它，确保新增或修改代码不能加入已登记 forbidden bypass；单独追踪的 legacy path 在自己的 slice 中治理。Full-scope scan 可在本地用于 governance audit 和 legacy exception planning。
-
-## Product Classification Gate
-Every incoming request must be classified before requirements or specs are created:
-- `product-base-consolidation`: consolidates accepted stable product behavior into the living Product Base under `docs/product/base/`.
-- `baseline-consolidation`: freezes Product Base into an implemented capability snapshot under `docs/product/baselines/`.
-- `new-feature`: adds a long-lived product capability.
-- `feature-increment`: changes or extends an existing feature inside a stage.
-- `bugfix`: corrects existing behavior without changing product scope.
-- `refactor`: changes implementation structure without changing user-visible behavior.
-- `experiment`: investigates feasibility and produces findings, not delivery commitment.
-- `scope-change`: changes accepted scope and requires `docs/process/change_request.md`.
-
-分类必须识别 primary `Capability ID` / `Sub-capability ID`；当触碰多个 capability 时，还必须识别 affected `Capability ID` / `Sub-capability ID` values、active stage、expected increment，以及是否需要 change request。
-
-## Issue Tracking Boundary
-Issue tracking is optional and must happen after Product Manager classification when it would help coordinate bugs, follow-ups, release blockers, workflow changes, implementation slices, pull requests, or evidence links.
-
-Use `.agents/skills/issue-management/` for issue title/body drafting, triage fields, label/status suggestions, branch or pull request link text, and source-of-truth links. Issues are tracking containers only. They must not replace Product Manager classification, roadmap priority, Product Base, increment requirements/specs/acceptance/test cases/traceability, implementation reports, test reports, quality reports, or release evidence.
-
-If an issue conflicts with local product or workflow artifacts, the local artifacts win and the issue must be corrected or marked blocked. Use `Refs #<id>` for planning, partial slices, investigations, and blocked evidence. Use `Closes #<id>` only after Definition of Done evidence is complete.
-
-## Increment Definition Gate
-Before requirement development starts, the active increment must state:
-- increment id and name
-- active stage
-- covered Stage Scope Item IDs
-- primary `Capability ID` / `Sub-capability ID`
-- affected `Capability ID` / `Sub-capability ID` values
-- scope and non-goals
-- upstream decision source
-- required downstream artifacts
-- owner agent and checker agent
-
-If the work is product-base consolidation, the artifact must update `docs/product/base/` and must only include accepted stable behavior. If the work is baseline consolidation, the artifact must be marked as a frozen baseline snapshot and must not replace the living Product Base.
-
-## AC-To-TC Implementation Gate
-Owning increment 在 `docs/product/increments/<increment-id>/test_cases.md` 中建立 canonical test case library 前，committed increment implementation 不得开始。在 Backend、Frontend、AI Runtime、DevOps 或 QA 执行工作开始前，该 library 必须把每个 approved AC 映射到至少一个稳定 TC ID，或映射到明确允许的例外。
-
-允许的例外是 `manual-verification`、`external-dependency` 或 `not-automatable-yet`，且每个例外必须包含 reason、owner 和 evidence plan。缺失 AC-to-TC mapping 是 workflow blocker，不是 QA follow-up。
-
-## Software Component Architecture Gate
-Cross-layer、persistence-impacting、API-impacting、AI-runtime-impacting、provider-impacting 或 reusable-module-impacting implementation，在 System Architect 产出适用 software component architecture artifact 且独立 Software Architecture Governance Check 返回 pass 前不得开始。
-
-Canonical paths：
-- Global SWC architecture baseline：`docs/architecture/software_component_architecture.md`
-- Global SWC catalog：`docs/architecture/swc_catalog.md`
-- Increment SWC allocation：`docs/product/increments/<increment-id>/swc_allocation.md`
-
-`docs/architecture/software_component_architecture.md` 是完整 global SWC architecture baseline。它记录 system-level responsibility allocation、global SWC topology、稳定 `SWC-FLOW-*` ID、canonical SWC-to-SWC sequence，以及 local architecture change 的 reference baseline。它必须引用 `docs/architecture/swc_catalog.md`、`docs/architecture/data_flow.md`、`docs/architecture/module_boundary.md`、Domain Schema 和 OpenAPI，不得复制这些 source-of-truth detail。
-
-`docs/architecture/swc_catalog.md` 是稳定 frontend、backend、database、provider、AI runtime 和 operations SWC 的 reusable inventory。它记录 SWC ID、owner layer、code path、responsibility、explicit non-responsibility、provided interface、required interface、data ownership、persistence ownership、provider ownership、test 和 forbidden bypass。它必须引用 `docs/domain/`、`docs/architecture/api_contract.md` 和 `docs/architecture/openapi/speakeasy-api.yaml`，不得复制 domain 或 OpenAPI schema。
-
-`docs/product/increments/<increment-id>/swc_allocation.md` 是 owning increment 的 implementation-readiness artifact。它必须包含：
-- Existing Implementation Baseline：列出当前 accepted user flow、existing code path、existing SWC、existing `SWC-FLOW-*` ID、existing API/OpenAPI call、domain/data ownership、tests/evidence、non-regression behavior 和 known legacy/deprecated parts；
-- Delta From Existing Baseline：列出 reused SWC、reused Flow ID、changed behavior、unchanged behavior、new code allowed、new code forbidden、existing code modified、migration/deprecation impact 和 regression proof required；
-- baseline references：引用 `docs/architecture/software_component_architecture.md`、适用 `SWC-FLOW-*` ID、referenced SWC Catalog ID，以及继承的 `data_flow.md` / `module_boundary.md` rule；
-- frontend、backend、database、third-party provider、AI runtime 和 operations 的 system-level responsibility allocation；
-- requirement allocation matrix：`Stage Scope ID -> FR -> Spec -> AC -> FE SWC -> BE SWC -> API/OpenAPI -> Domain Entity -> DB table/migration -> TC`；
-- 每个 core use case 的 SWC-to-SWC data flow，包括 global Flow ID 或 local flow id、success path、failure path、auth、idempotency、retry、rollback/compensation、audit、logging、metrics 和 permission boundary；
-- required reuse list 和 forbidden duplicate-build list；
-- 对任何未触碰 layer 写出明确 `N/A - <reason>`；
-- architecture validation expectation 和 independent checker finding reference。
-
-SWC allocation document 不得重新定义 product scope、requirements、acceptance criteria、domain entity semantics、OpenAPI request/response schema、AI prompt schema、UX layout、test implementation 或 release approval。它只把已批准 scope 分配到 software component，并证明 implementation 可以在没有 ownership ambiguity 和 duplicate component creation 的前提下推进。
-
-Brownfield change 只能写 delta。若 increment 扩展、修复、重构或加固既有能力，其架构不得从全新设计开始。它必须先证明继承了哪些 existing implementation facts，包括 code path 和 test。除非 allocation 解释为什么 accepted component 不能复用，并记录 migration/deprecation ownership，否则禁止新增 SWC、runtime、store、API、migration、provider 或 cache layer。
-
-CI 通过 `scripts/check_swc_allocation.py` 强制执行。PR 如果修改 `lib/`、`backend/src/main/java/`、`backend/src/main/resources/db/migration/` 或 `docs/architecture/openapi/speakeasy-api.yaml` 下的 implementation-impacting path，必须包含覆盖这些 path 的 changed increment `swc_allocation.md`，或包含已接受的 `N/A - no SWC impact` traceability decision。Scenario-practice 变更必须引用 `SWC-FLOW-SCENARIO-PRACTICE-RUNTIME` 和既有 `FE-SCENARIO-PRACTICE` / `FE-PRACTICE-RUNTIME` 边界。
-
-如果 increment 改变 stable SWC topology，或把 local flow 变成 reusable system flow，必须在 implementation planning 前更新 `docs/architecture/software_component_architecture.md` 和 `docs/architecture/swc_catalog.md`；否则 increment 必须携带 accepted `legacy-compatible` exception，并写明 migration owner 和 expiry condition。
-
-## Stage Scope Traceability Gate
-每个 active stage 在生成下游 increment artifact 前，必须把 committed scope 暴露为稳定 Stage Scope Item。每个 stage scope file 应包含一张表，列出：
-
-- Stage Scope ID
-- Capability
-- Required status: `required`, `deferred`, or `not applicable`
-- Target increment or reason no increment is planned
-- Current status
-
-Each increment definition must include `Covered Stage Scope Items` and `Excluded Stage Scope Items`. The traceability chain for committed stage work is:
-
-```text
-Stage Scope ID
--> Increment ID
--> Requirement ID
--> Spec section/state ID
--> Acceptance Criteria ID
--> Test Case ID
--> Contract ID, when applicable
--> Global SWC Architecture Baseline / Flow ID, when applicable
--> SWC Allocation Row, when applicable
--> Work Package ID, when available
--> Code Evidence
--> Test Evidence
--> Release Evidence
-```
-
-`100% traceability` 指每个 required Stage Scope Item ID 都被至少一个 increment 覆盖，或有明确 deferred/not-applicable decision；每条 increment requirement 都能追溯回至少一个 Stage Scope Item ID；每个 FR 至少有一个 AC；每个 AC 映射到至少一个稳定 TC ID 或明确例外；每个 implementation-impacting AC 映射到 global SWC architecture baseline/Flow ID 和 SWC allocation row，或明确 no-SWC-impact decision；每个 AC 都能追溯到 implementation 和 test evidence 或 documented exception；当 release scope 受影响时存在 release evidence。
-
-每个 increment test case 必须携带证明链路所需的最小 traceability field：`Stage Scope ID`, `FR`, `Spec`, `AC`, `Traceability Row`, `Gap`, `测试层级`, `自动化状态`, `测试脚本路径`, `执行命令`, `结果状态`, `证据报告`。空字段是 traceability gap，除非包含明确 `N/A - <reason>`。
-
-测试执行后，QA 只能更新 owning Product Base 或 increment traceability file 中的 Test Evidence、test status、QA gap notes 和 evidence report link。完成前，traceability check 必须能审查完整 `AC -> TC -> test script path -> execution command -> result status -> evidence report -> Test Evidence` 链路。
-
-## Product Base Gate
-`docs/product/base/` is the living source of truth for accepted product behavior:
-- `docs/product/base/requirements.md`
-- `docs/product/base/spec.md`
-- `docs/product/base/acceptance.md`
-- `docs/product/base/traceability.md`
-
-Current MVP legacy artifacts may be migrated into Product Base only when they describe implemented or accepted stable behavior. Planned increment behavior must remain under the owning increment until it satisfies Definition of Done evidence and Product Manager approves the merge.
-
-## Change Flow
-Use `docs/process/change_request.md` when a change:
-- expands MVP scope
-- changes domain schema
-- changes API contract
-- changes AI output schema
-- changes release behavior
-
-## Agent Handoffs
-- Product Manager sets roadmap priority and updates `docs/product/development_status.md`.
-- Product Manager sends approved or investigatory work to Development Orchestrator using the PM execution brief in `codex/templates/pm_orchestrator_brief.template.md`.
-- Product Manager owns product classification, stage scope, Stage Scope Item IDs, and increment priority.
-- Requirement Development converts accepted scope into user stories, feature requirements, and acceptance criteria.
-- Development Orchestrator routes the approved work through specialist agents and reports workflow progress or DoD gaps back to Product Manager.
-- Product Manager is responsible for user-facing summaries, product tradeoff explanations, and development status updates after Orchestrator returns execution findings.
-- Product Object Governance Change Agent applies governance rule changes one small step at a time.
-- Product Object Governance Check Agent verifies each governance step before the next step starts.
-
-## Dynamic Project Agent Runner
-Project-local agents are executed through a dynamic runner contract rather than copied into static tool definitions.
-
-```text
-PM execution brief
--> scripts/project_agent_runner.py packet development_orchestrator
--> Orchestrator routing finding
--> scripts/project_agent_runner.py packet <specialist-agent>
--> specialist output
--> scripts/project_agent_runner.py packet product_object_governance_check
--> checker finding
-```
-
-Runner rules:
-- The only authoritative agent definitions are `codex/agents/*.md`.
-- Before a project agent runs, the runner must load the current matching markdown file and emit a Project Agent Execution Packet.
-- The packet must include the user task, upstream handoff, loaded agent definition path, and full loaded definition.
-- The next agent must read the previous agent's handoff output rather than reconstructing scope from memory.
-- Main thread work is limited to routing, packet generation, integration, and user-facing summary unless no suitable project agent exists.
-- A static multi-agent tool role such as `worker` or `default` may execute the packet, but it must not replace or override the loaded project-local agent definition.
-- Validate runner integrity with `python scripts/project_agent_runner.py validate` after changing `codex/agents/`, the runner script, or the runner packet template.
-
-## PM-Orchestrator Decision Boundary
-- Product Manager answers: should this be done now, later, or not now; what is the active product stage; what is the product classification; what is in scope; what is explicitly out of scope.
-- Development Orchestrator answers: what workflow gate is current; which artifact is missing; which specialist agent or skill should run next; what validation evidence is required.
-- Requirement Development answers: whether accepted scope is expressed as testable requirements, user stories, and acceptance criteria.
-- Specialist agents answer: how to produce their owned artifact or implementation within the approved scope.
-
-## Governance Change Control
-Changes to workflow, document categories, path rules, content contracts, traceability rules, or agent/skill governance must follow:
-```text
-approved remediation step
--> Product Object Governance Change Agent edit
--> Product Object Governance Check Agent finding
--> validation command when skills change
--> next step only after pass
-```
-
-The checker must verify that the edit matches the intended step, does not change product scope, does not migrate existing product artifacts unless explicitly authorized, and does not introduce a new source-of-truth conflict.
-
-For any multi-step product, requirement, workflow, or documentation governance task, each step must follow:
-```text
-approved step scope
--> specialist agent edits
--> independent checker agent finding
--> next step only after pass
-```
-
-The default checker is Product Object Governance Check Agent for product-object, path, workflow, agent, or skill changes; Documentation Governance Agent may be used for pure documentation content-boundary checks.
-
-## User Communication Rule
-The user-facing response should come from the Product Manager viewpoint unless the user explicitly asks for a specialist review or implementation detail. Internally, Product Manager may consult Development Orchestrator, but the final user summary should explain product status, next step, owner, and risk in product terms.
+- Product Manager 决定产品分类、Story/VS 与 FR 的产品事实和批准状态。
+- Requirement Development 按已批准 VS 提炼 atomic mandatory FR，不改变产品方向。
+- Test Case Development 设计 FR/Contract/VS 分层 TC，不发明产品行为。
+- System Architect 与专业 owner 只在对应工程事实或风险边界变化时介入。
+- 根 Codex 负责最短安全执行路径、验证和交接；独立 checker 保持只读。

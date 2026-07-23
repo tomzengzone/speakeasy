@@ -5,7 +5,7 @@ Proposed - P0/P0.1 共同技术前置。
 
 提议状态 - 本文件定义 P0/P0.1 共同技术前置，尚需完成复核后才能作为实现输入。
 
-本文定义 P0 商业化订阅上线准备与 P0.1 表达自动化训练闭环共享的后端、数据库和契约基础边界。它不是新产品 feature，不新增用户可见范围，不替代 Domain Schema、API Contract/OpenAPI、AI Runtime、UX、QA 或 DevOps 后续产物。本文通过 `document-traceability-check` 和 Product Object Governance Check Agent 复核前，不得作为实现开工依据。
+本文定义 P0 商业化订阅上线准备与 P0.1 表达自动化训练闭环共享的后端、数据库和契约基础边界。它不是业务 Capability，不新增用户可见范围，不替代 Domain Schema、API Contract/OpenAPI、AI Runtime、UX、QA 或 DevOps 后续产物。本文通过 `document-traceability-check` 和 Product Object Governance Check Agent 复核前，不得作为实现开工依据。
 
 ## 架构范围模式
 `increment` 范围内的 cross-increment foundation contract。覆盖两个已接受增量：
@@ -18,9 +18,9 @@ Proposed - P0/P0.1 共同技术前置。
 ## 上游依据
 | 来源 | 路径 | 用途 |
 | --- | --- | --- |
-| PM handoff / PM 交接 | `.codex_tmp_remote_patch/agent-handoffs/foundation_contract_pm_brief.md` | 确认本轮是 P0/P0.1 共同技术前置，不是新 feature |
+| PM handoff / PM 交接 | `.codex_tmp_remote_patch/agent-handoffs/foundation_contract_pm_brief.md` | 确认本轮是 P0/P0.1 共同技术前置，不是业务 Capability |
 | Product Base | `docs/product/base/requirements.md`, `docs/product/base/spec.md`, `docs/product/base/acceptance.md`, `docs/product/base/traceability.md` | 确认当前稳定能力、会员入口、本地学习闭环和后端/DB 缺口 |
-| Feature registry / 功能登记 | `docs/product/feature_registry.md` | 确认受影响 feature 与 P0/P0.1 边界 |
+| V2 Capability registry | `docs/product/feature_registry.md` | 核验受影响 Capability 与 P0/P0.1 边界；不作为行为输入 |
 | P0 stage / P0 阶段 | `docs/product/stages/p0-commercial-readiness.md` | 确认商业化账号、订阅、权益、用量、合规、发布门禁 |
 | P0.1 stage / P0.1 阶段 | `docs/product/stages/p0-1-expression-automation.md` | 确认 session 内 planner、micro-action、hint、学习证据写回 |
 | P0 traceability / P0 追溯 | `docs/product/increments/commercial-subscription-readiness/traceability.md` | 确认商业 Domain/API/Architecture/Security/QA/DevOps 仍待补 |

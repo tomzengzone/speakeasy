@@ -1,5 +1,9 @@
 # API Contract / API 契约
 
+## PR-003 current lineage
+
+本次只切换来源链，不改变本文的 API 行为、错误语义、兼容性或已接受实现事实。当前产品 lineage 仅由适用的 approved FR 解析；Engineering Artifact 之间的 direct/conditional inputs 和适用 Gate 继续仅由 Governance Contract 解析。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+
 ## 状态
 
 Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 API 契约总览；机器可校验的 OpenAPI source of truth 是 `docs/architecture/openapi/speakeasy-api.yaml`。
@@ -40,8 +44,8 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | P0 commercial AI provider hardening<br>P0 商业 AI provider 加固 | Implementation-level paths allowed for media upload/signing, provider evidence, cost metrics and retention operations<br>允许为媒体上传/签名、provider evidence、成本指标和保留任务定义实现级 path | Approved increment artifacts exist and `P0-AI-ARCH-001` records the API/security contract gate<br>已有获批增量产物，且 `P0-AI-ARCH-001` 记录 API/安全契约门禁 |
 | P0.1 expression automation training<br>P0.1 表达自动化训练 | Implementation-level paths allowed where server-backed behavior is required<br>仅在需要服务端支撑的行为上允许实现级 path | Approved increment artifacts exist; local-only behavior must not be over-promoted<br>已有获批增量产物；纯本地行为不能被提升为服务端产品能力 |
 | P0.2 goal-driven learning autopilot<br>P0.2 目标驱动学习 autopilot | Implementation-level paths allowed for goal intake, diagnostic summary, backplan, daily plan, next action, autopilot control, reminder eligibility/outbox, recovery replan, item-policy decision, mastery transition audit, progress forecast and checkpoint operations<br>允许为 goal intake、diagnostic summary、backplan、daily plan、next action、autopilot control、reminder eligibility/outbox、recovery replan、item-policy decision、mastery transition audit、progress forecast、checkpoint 操作定义实现级 path | Owning P0.2 increments, including Followup-B, have requirements/spec/AC/TC/traceability and P02 policy gates<br>P0.2 归属增量（含 Followup-B）已有 requirements/spec/AC/TC/traceability 和 P02 policy gate |
-| P1 notebook/scoring/content expansion<br>P1 笔记/评分/内容扩展 | Deferred boundary only<br>仅保留 deferred boundary | Roadmap/future feature boundary only<br>仅属于 roadmap/future feature 边界 |
-| P2 A1-C2/CMS/content production<br>P2 A1-C2/CMS/内容生产 | Deferred boundary only<br>仅保留 deferred boundary | Roadmap/future feature boundary only<br>仅属于 roadmap/future feature 边界 |
+| P1 notebook/scoring/content expansion<br>P1 笔记/评分/内容扩展 | Deferred boundary only<br>仅保留 deferred boundary | Roadmap/future V2 Capability boundary only<br>仅属于 roadmap/future V2 Capability 边界 |
+| P2 A1-C2/CMS/content production<br>P2 A1-C2/CMS/内容生产 | Deferred boundary only<br>仅保留 deferred boundary | Roadmap/future V2 Capability boundary only<br>仅属于 roadmap/future V2 Capability 边界 |
 
 ## Contract Rules / 契约规则
 
@@ -72,7 +76,7 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | Usage / AI Gateway<br>用量/AI Gateway | `Usage`, `AI Gateway` | P0 FR-COM-010; Product Base FR-004, FR-008; P0.1 P01-FR-006, P01-FR-007; `mvp-backend-practice-ai` MVP-SI-006/MVP-SI-009 | In OpenAPI, including server-side ASR/TTS/pronunciation/coach adapters, no client provider secret field, and typed fallback results<br>已进入 OpenAPI，覆盖服务端 ASR/TTS/pronunciation/coach adapter、禁止客户端 provider secret 字段，以及 typed fallback result |
 | Media / AI Provider Operations<br>媒体/AI Provider 运维 | `Media`, `AI Ops`, `AI Gateway` | P0 `commercial-ai-provider-hardening` FR-COM-AI-001..005 | In OpenAPI for media upload/signing, TTS cache metadata, provider evidence, cost metrics and retention jobs<br>已进入 OpenAPI，覆盖媒体上传/签名、TTS cache metadata、provider evidence、成本指标和 retention job |
 | Admin / Ops<br>管理/运维 | `Admin` | P0 FR-COM-008, FR-COM-011, FR-COM-012 | In OpenAPI<br>已进入 OpenAPI |
-| P0.2/P1/P2 future extensions<br>P0.2/P1/P2 未来扩展 | `Deferred` | Roadmap/stage/future feature registry boundaries only<br>仅来自 roadmap/stage/future feature registry 边界 | No implementation-level endpoints<br>不定义实现级 endpoint |
+| P0.2/P1/P2 future extensions<br>P0.2/P1/P2 未来扩展 | `Deferred` | Roadmap/stage/future V2 Capability boundaries only<br>仅来自 roadmap/stage/future V2 Capability 边界 | No implementation-level endpoints<br>不定义实现级 endpoint |
 
 ## Product Base Identity/Profile Contract Note / Product Base 身份与资料契约说明
 

@@ -74,7 +74,7 @@ Excluded from the Flutter batch until separately approved:
 ## Planned Verification Commands
 | Gate | Command |
 | --- | --- |
-| Project agent validation | `python3 scripts/project_agent_runner.py validate` |
+| Project agent validation | `python3 scripts/validate_governance_contracts.py` |
 | OpenAPI/API drift | `npm run check:api-contract`; `npm run check:dart-client-drift` |
 | Backend targeted tests | `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=DiagnosticAudioUploadContractTest,DiagnosticAudioUploadIdempotencyTest,DiagnosticAudioSecurityAndDeleteTest,SpeakingDiagnosticQualityGateTest,SpeakingDiagnosticModePolicyTest test` |
 | Flutter focused widget tests | `flutter test test/features/goal_autopilot/speaking_check_entry_widget_test.dart test/features/goal_autopilot/speaking_check_no_goal_guard_test.dart test/features/goal_autopilot/speaking_check_sample_tasks_widget_test.dart test/features/goal_autopilot/speaking_check_recording_controls_test.dart test/features/goal_autopilot/speaking_check_permission_fallback_test.dart test/features/goal_autopilot/speaking_diagnostic_mode_downgrade_test.dart test/features/goal_autopilot/speaking_check_privacy_copy_test.dart` |

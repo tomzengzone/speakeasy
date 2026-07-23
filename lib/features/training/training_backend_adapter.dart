@@ -192,7 +192,7 @@ class TrainingBackendAdapter {
           'schema_version': 1,
           if (transcript != null && transcript.trim().isNotEmpty)
             'transcript': transcript.trim(),
-          if (trustedAudioRef != null) 'audio_ref': trustedAudioRef,
+          'audio_ref': ?trustedAudioRef,
           if (selectedOptionId != null && selectedOptionId.trim().isNotEmpty)
             'selected_option_id': selectedOptionId.trim(),
           'client_state_version': ?clientStateVersion,

@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "domain": "product",
+  "defaults": {
+    "lifecycle": "persistent",
+    "contributors": [],
+    "mutable_fields": {},
+    "validation_command": null
+  },
+  "artifacts": [
+    {"artifact_id":"PRODUCT_VISION","canonical_path":"docs/product/vision.md","accountable_owner":"product-manager","applicability":"product direction or positioning changes"},
+    {"artifact_id":"PRODUCT_ROADMAP","canonical_path":"docs/product/roadmap.md","accountable_owner":"product-manager","applicability":"priority or delivery horizon changes","required_direct_inputs":["PRODUCT_VISION"]},
+    {"artifact_id":"DEVELOPMENT_STATUS","canonical_path":"docs/product/development_status.md","accountable_owner":"product-manager","applicability":"durable product progress changes","conditional_inputs":["IMPLEMENTATION_REPORT","TEST_REPORT"]},
+    {"artifact_id":"CAPABILITY_REGISTRY","canonical_path":"docs/product/feature_registry.md","accountable_owner":"product-manager","method_skill":"capability-registry-develop","applicability":"Capability or Sub-capability facts change","validation_command":"python scripts/validate_capability_registry.py"},
+    {"artifact_id":"STORY_MAP","canonical_path":"docs/product/story_map.md","accountable_owner":"product-manager","method_skill":"story-map-develop","applicability":"User Story or Child Vertical Slice semantics or approval changes","required_direct_inputs":["CAPABILITY_REGISTRY"],"validation_command":"python3 scripts/validate_story_slice_delivery.py"},
+    {"artifact_id":"FUNCTIONAL_REQUIREMENT_CATALOG","canonical_path":"docs/product/functional_requirements.md","accountable_owner":"requirement-development","method_skill":"requirement-refine","applicability":"approved Vertical Slice behavior needs an atomic mandatory requirement","required_direct_inputs":["STORY_MAP"],"validation_command":"python3 scripts/validate_story_slice_delivery.py"},
+    {"artifact_id":"TEST_CASE_CATALOG","canonical_path":"docs/quality/test_cases.md","accountable_owner":"test-case-development","method_skill":"test-case-generate","applicability":"stable FR, Engineering Contract, or Vertical Slice test design changes","conditional_inputs":["STORY_MAP","FUNCTIONAL_REQUIREMENT_CATALOG","SYSTEM_OVERVIEW","MODULE_BOUNDARY","SOFTWARE_COMPONENT_ARCHITECTURE","SWC_CATALOG","API_CONTRACT","OPENAPI","DATA_FLOW","ADR","DOMAIN_SCHEMA","ENTITY_RELATIONSHIP","DOMAIN_MODEL","PROMPT_CONTRACT","LLM_OUTPUT_SCHEMA","AI_FALLBACK","DIALOGUE_STATE_MACHINE","SCREEN_SPEC","USER_FLOW","USABILITY_CHECKLIST","COPY_GUIDELINE"],"validation_command":"python3 scripts/validate_story_slice_delivery.py"},
+    {"artifact_id":"TRACEABILITY","canonical_path":"docs/quality/traceability.md","accountable_owner":"traceability-authority","method_skill":"document-traceability-check","applicability":"canonical product-to-contract-to-test projection changes","required_direct_inputs":["STORY_MAP","FUNCTIONAL_REQUIREMENT_CATALOG","TEST_CASE_CATALOG"],"conditional_inputs":["SYSTEM_OVERVIEW","MODULE_BOUNDARY","SOFTWARE_COMPONENT_ARCHITECTURE","SWC_CATALOG","API_CONTRACT","OPENAPI","DATA_FLOW","ADR","DOMAIN_SCHEMA","ENTITY_RELATIONSHIP","DOMAIN_MODEL","PROMPT_CONTRACT","LLM_OUTPUT_SCHEMA","AI_FALLBACK","DIALOGUE_STATE_MACHINE","SCREEN_SPEC","USER_FLOW","USABILITY_CHECKLIST","COPY_GUIDELINE"],"validation_command":"python3 scripts/validate_story_slice_delivery.py"},
+    {"artifact_id":"STAGE_SCOPE","canonical_path":"docs/product/stages/{stage_id}.md","accountable_owner":"product-manager","applicability":"delivery horizon or planning scope changes","required_direct_inputs":["PRODUCT_ROADMAP"]},
+    {"artifact_id":"INCREMENT_DEFINITION","canonical_path":"docs/product/increments/{increment_id}/definition.md","accountable_owner":"product-manager","applicability":"planning batch or delivery selection changes","required_direct_inputs":["STAGE_SCOPE","CAPABILITY_REGISTRY"]},
+    {"artifact_id":"CHANGE_REQUEST","canonical_path":"docs/process/change_request.md","accountable_owner":"product-manager","applicability":"accepted scope or contract boundary changes"}
+  ]
+}

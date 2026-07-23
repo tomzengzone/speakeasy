@@ -1,5 +1,9 @@
 # Screen Spec
 
+## PR-003 current lineage
+
+本次只切换来源链，不改变本文的 UI 行为、状态、交互或已接受实现事实。当前产品上游仅由适用的 approved FR 解析；文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability 或 Increment SWC Allocation 引用均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+
 ## Required Screen Spec Fields
 Every new screen must define:
 
@@ -15,7 +19,7 @@ Every new screen must define:
 - loading state
 - error state
 - analytics or logging events if needed
-- acceptance criteria mapping
+- mandatory Functional Requirement mapping
 
 - purpose：页面目的。
 - entry points：入口来源。
@@ -27,7 +31,7 @@ Every new screen must define:
 - loading state：加载状态。
 - error state：错误状态。
 - analytics or logging events if needed：需要时定义分析或日志事件。
-- acceptance criteria mapping：验收标准映射。
+- mandatory Functional Requirement mapping：强制功能需求映射。
 
 ## MVP Screens
 

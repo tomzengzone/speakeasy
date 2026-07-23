@@ -7,8 +7,10 @@ S011 final Product Base/release review locally passed with blockers preserved - 
 - 分类：`feature-increment`
 - Increment：`p0-2-followup-d-release-gate-hardening`
 - Active stage：`docs/product/stages/p0-2-training-memory.md`
-- Primary feature：`goal-driven-learning-autopilot`
-- Affected features：`commercial-subscription`、`ai-provider-operations`、`profile-membership`、`learning-memory-review`、`scoring-feedback`
+- Primary Capability ID：`CAP-COM`
+- Primary Sub-capability ID：`CAP-COM-03`
+- Affected Capability IDs：`CAP-PLAN`、`CAP-TRAIN`、`CAP-LEVEL`、`CAP-INTENT`、`CAP-MEMORY`、`CAP-ACC`、`CAP-ENGAGE`
+- Affected Sub-capability IDs：`CAP-COM-01`、`CAP-COM-05`、`CAP-PLAN-06`、`CAP-PLAN-07`、`CAP-TRAIN-02`、`CAP-LEVEL-02`、`CAP-LEVEL-05`、`CAP-INTENT-06`、`CAP-MEMORY-01`、`CAP-MEMORY-04`、`CAP-ACC-03`、`CAP-ACC-04`、`CAP-ENGAGE-01`、`CAP-ENGAGE-02`
 
 ## 需求假设
 - Followup-A 已关闭 GoalProfile、DiagnosticAssessment、no-goal Explore Mode、目标 revision/stale 可见化和低置信度/unsupported 降级的本地实现审核。

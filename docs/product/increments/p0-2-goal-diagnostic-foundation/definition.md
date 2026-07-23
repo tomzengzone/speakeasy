@@ -14,15 +14,13 @@ Planned - PM stage replanning artifact only。该增量用于承接 GoalProfile 
 - Product object mode: `feature-increment`
 - Source mode: PM stage plan
 
-## Primary Feature
-`goal-driven-learning-autopilot`
+## Primary Capability
+- Capability ID：`CAP-INTENT`
+- Sub-capability ID：`CAP-INTENT-01`
 
-## Affected Features
-- `access-onboarding`
-- `learning-memory-review`
-- `scoring-feedback`
-- `expression-automation-training`
-- `official-scenario-library`
+## Affected Capabilities
+- Capability IDs：`CAP-LEVEL`、`CAP-PLAN`、`CAP-MEMORY`、`CAP-COACH`、`CAP-CONTENT`
+- Sub-capability IDs：`CAP-INTENT-04`、`CAP-INTENT-06`、`CAP-LEVEL-02`、`CAP-LEVEL-03`、`CAP-LEVEL-04`、`CAP-LEVEL-05`、`CAP-PLAN-01`、`CAP-MEMORY-02`、`CAP-MEMORY-03`、`CAP-COACH-03`、`CAP-COACH-04`、`CAP-CONTENT-02`
 
 ## Scope
 - GoalProfile：目标类型、目标分数或能力、截止日期、每日可投入时间、强度偏好。

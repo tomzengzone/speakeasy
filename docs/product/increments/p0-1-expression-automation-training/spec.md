@@ -7,13 +7,15 @@ Implementation-review ready - 作为 P0.1 acceptance criteria 的直接上游输
 - Increment definition: `docs/product/increments/p0-1-expression-automation-training/definition.md`
 - Increment requirements: `docs/product/increments/p0-1-expression-automation-training/requirements.md`
 - Product Base: `docs/product/base/requirements.md`, `docs/product/base/spec.md`, `docs/product/base/acceptance.md`, `docs/product/base/traceability.md`
-- Feature registry: `docs/product/feature_registry.md`
+- Capability Registry classification: `docs/product/feature_registry.md`
 - Change request: `docs/process/change_request.md`
 
 ## Product Object
 - Active stage: P0.1 表达自动化训练闭环
-- Primary feature: `expression-automation-training`
-- Affected features: `voice-scenario-practice`, `official-scenario-library`, `listening-shadowing`, `expression-practice-queue`, `learning-memory-review`, `scoring-feedback`
+- Primary Capability ID：`CAP-TRAIN`
+- Primary Sub-capability ID：`CAP-TRAIN-03`
+- Affected Capability IDs：`CAP-PRACTICE`、`CAP-CONTENT`、`CAP-MEMORY`、`CAP-COACH`
+- Affected Sub-capability IDs：`CAP-TRAIN-02`、`CAP-TRAIN-04`、`CAP-TRAIN-05`、`CAP-TRAIN-06`、`CAP-PRACTICE-01`、`CAP-PRACTICE-02`、`CAP-PRACTICE-03`、`CAP-CONTENT-03`、`CAP-MEMORY-02`、`CAP-COACH-02`、`CAP-COACH-03`、`CAP-COACH-05`
 
 ## Spec Trace IDs
 | Spec ID | Stage Scope ID | Requirement ID | Spec area |
@@ -136,7 +138,7 @@ P0.1 不新增第三个官方场景、不实现任意场景生成、跨天长期
 ## Module Impact
 | Area | Impact |
 | --- | --- |
-| Product | P0.1 increment，primary feature 为 `expression-automation-training` |
+| Product | P0.1 increment，primary classification 为 `CAP-TRAIN` / `CAP-TRAIN-03` |
 | Scenario content | 两个官方场景需要 action chain 映射 |
 | Domain | 需要训练 session、action chain step、micro-action、hint level、pressure check、learning evidence 模型 |
 | AI runtime | 需要结构化反馈、提示、重试、下一步建议和追问建议 schema |

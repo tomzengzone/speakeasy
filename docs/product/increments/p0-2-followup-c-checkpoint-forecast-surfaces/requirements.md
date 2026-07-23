@@ -7,8 +7,10 @@ S001 forecast hardening、S002 checkpoint task library、S003 checkpoint-to-plan
 - 分类：`feature-increment`
 - Increment：`p0-2-followup-c-checkpoint-forecast-surfaces`
 - Active stage：`docs/product/stages/p0-2-training-memory.md`
-- Primary feature：`goal-driven-learning-autopilot`
-- Affected features：`learning-memory-review`、`expression-practice-queue`、`profile-membership`、`scoring-feedback`、`official-scenario-library`
+- Primary Capability ID：`CAP-PLAN`
+- Primary Sub-capability ID：`CAP-PLAN-07`
+- Affected Capability IDs：`CAP-MEMORY`、`CAP-LEVEL`、`CAP-TRAIN`、`CAP-CONTENT`、`CAP-COACH`、`CAP-ACC`、`CAP-COM`、`CAP-INTENT`
+- Affected Sub-capability IDs：`CAP-PLAN-06`、`CAP-MEMORY-02`、`CAP-MEMORY-03`、`CAP-MEMORY-04`、`CAP-MEMORY-05`、`CAP-LEVEL-02`、`CAP-LEVEL-05`、`CAP-LEVEL-06`、`CAP-TRAIN-05`、`CAP-TRAIN-06`、`CAP-CONTENT-03`、`CAP-COACH-03`、`CAP-COACH-04`、`CAP-ACC-04`、`CAP-COM-03`、`CAP-INTENT-06`
 
 ## 需求假设
 - Followup-A 已提供 GoalProfile、DiagnosticAssessment、goal revision/stale 可见化和 no-goal Explore Mode 的上游事实边界。

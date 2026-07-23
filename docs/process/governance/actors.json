@@ -1,0 +1,24 @@
+{
+  "schema_version":"1.0",
+  "actors":[
+    {"actor_id":"product-manager","kind":"agent","definition":".codex/agents/product_manager.toml"},
+    {"actor_id":"requirement-development","kind":"agent","definition":".codex/agents/requirement_developer.toml"},
+    {"actor_id":"test-case-development","kind":"agent","definition":".codex/agents/test_case_development.toml"},
+    {"actor_id":"system-architect","kind":"agent","definition":".codex/agents/system_architect.toml"},
+    {"actor_id":"domain-schema","kind":"agent","definition":".codex/agents/domain_schema.toml"},
+    {"actor_id":"backend","kind":"agent","definition":".codex/agents/backend.toml"},
+    {"actor_id":"frontend","kind":"agent","definition":".codex/agents/frontend.toml"},
+    {"actor_id":"ai-runtime","kind":"agent","definition":".codex/agents/ai_runtime.toml"},
+    {"actor_id":"ux-review","kind":"agent","definition":".codex/agents/ux_review.toml"},
+    {"actor_id":"documentation-governance","kind":"agent","definition":".codex/agents/documentation_governance.toml"},
+    {"actor_id":"codex-root","kind":"runtime-role","definition":"AGENTS.md"},
+    {"actor_id":"qa","kind":"agent","definition":".codex/agents/qa.toml"},
+    {"actor_id":"devops","kind":"agent","definition":".codex/agents/devops.toml"},
+    {"actor_id":"product-object-governance-change","kind":"agent","definition":".codex/agents/product_object_governance_change.toml"},
+    {"actor_id":"product-object-governance-check","kind":"checker","definition":".codex/agents/product_object_governance_check.toml"},
+    {"actor_id":"software-architecture-governance-check","kind":"checker","definition":".codex/agents/software_architecture_governance_check.toml"},
+    {"actor_id":"evidence-reviewer","kind":"checker","definition":".codex/agents/evidence_reviewer.toml"},
+    {"actor_id":"traceability-authority","kind":"workflow-role","approval_owner":"documentation-governance","method_skill":"document-traceability-check","routed_by":"codex-root"},
+    {"actor_id":"implementation-report-authority","kind":"workflow-role","approval_owner":"codex-root","method_skill":"implementation-report-generate","routed_by":"codex-root"}
+  ]
+}

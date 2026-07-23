@@ -15,11 +15,11 @@ Latest Followup-E quality state: docs-only planning/contract evidence. Followup-
 - `docs/process/software_component_architecture_governance.md`
 - `docs/process/skill_quality_standard.md`
 - `docs/architecture/swc_catalog.md`
-- `codex/agents/system_architect.md`
-- `codex/agents/product_manager.md`
-- `codex/agents/development_orchestrator.md`
-- `codex/agents/software_architecture_governance_check.md`
-- `codex/agents/product_object_governance_check.md`
+- `.codex/agents/system_architect.toml`
+- `.codex/agents/product_manager.toml`
+- `AGENTS.md`
+- `.codex/agents/software_architecture_governance_check.toml`
+- `.codex/agents/product_object_governance_check.toml`
 - `.agents/skills/document-path-governance/SKILL.md`
 - `.agents/skills/document-content-contract/SKILL.md`
 - `.agents/skills/document-traceability-check/SKILL.md`
@@ -30,11 +30,11 @@ Latest Followup-E quality state: docs-only planning/contract evidence. Followup-
 - 初始 blocker 已修复：Product Manager architecture intake 现在把 SWC 或 implementation-impacting architecture 路由到 Software Architecture Governance Check；Product Object Governance Check 继续作为 workflow/source-of-truth/agent/skill 变更的 meta-governance checker。
 - 初始 blocker 已修复：`docs/process/software_component_architecture_governance.md` 和本报告现在记录已修正的 follow-up 状态，不再出现 pending/pass 冲突表述。
 - 修正后 content boundary 未发现 blocker。`swc_catalog.md` 拥有 stable component inventory；per-increment `swc_allocation.md` 拥有 FR/AC-to-SWC allocation；两者都不替代 Domain Schema、OpenAPI、AI runtime、UX、test case 或 release gate。
-- 修正后 agent responsibility separation 未发现 blocker。System Architect 产出 SWC artifact；Development Orchestrator 执行 gate；Software Architecture Governance Check 独立审核 SWC readiness；Product Object Governance Check 仍是 workflow/source-of-truth/agent/skill 变更的 meta-governance checker。
+- 修正后 agent responsibility separation 未发现 blocker。System Architect 产出 SWC artifact；Codex Root 执行 gate；Software Architecture Governance Check 独立审核 SWC readiness；Product Object Governance Check 仍是 workflow/source-of-truth/agent/skill 变更的 meta-governance checker。
 - Stable output 未发现 blocker。Implementation-impacting increment 现在要求 `docs/product/increments/<increment-id>/swc_allocation.md`，或明确已接受的 `N/A - no SWC impact` decision。
 
 验证：
-- `python3 scripts/project_agent_runner.py validate`：passed。
+- `python3 scripts/validate_governance_contracts.py`：passed。
 - `python3 scripts/validate_agent_skills.py`：passed。
 - `git diff --check`：passed。
 
@@ -69,7 +69,7 @@ Validation:
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
 - `npm run check:api-contract` - passed with OpenAPI hash `464464b9346a28422831e56e8f5ba42118ebb0a6005d981e4381bee52fce4e30`.
 - `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed for 32 changed files.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Required corrections:
@@ -107,7 +107,7 @@ Validation:
 - `npm run check:dart-client-drift` - passed with OpenAPI hash `defb6aad8bbf84fe39aa3c2982137c7560145ae63d729d30d9d02b9aa70e5a4d`.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminAuditControllerTest,CommercialFoundationControllerTest,AiProviderEvidenceControllerTest,AiCostDashboardTest,AiRetentionPolicyTest,AccountDeletionFailureAuditTest test` - passed.
 - `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
 
@@ -145,7 +145,7 @@ Validation:
 - `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 95.7%, backend branch 81.1% and Flutter line 89.2%.
 - `python3 -m py_compile scripts/check_p0_2_followup_b_traceability.py` - passed.
 - `python3 scripts/check_p0_2_followup_b_traceability.py` - passed after report synchronization.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Required corrections:
@@ -182,7 +182,7 @@ Validation:
 - `python3 scripts/check_cross_cutting_boundaries.py --scope full` - passed.
 - `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
 - `python3 -m py_compile scripts/check_cross_cutting_boundaries.py` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Residual risk:
@@ -238,7 +238,7 @@ Validation:
 - `python3 scripts/check_p0_2_followup_b_traceability.py` - passed.
 - `python3 scripts/check_p0_2_followup_d_traceability.py` - passed.
 - `python3 scripts/check_p0_2_followup_d_final_review.py` - passed with release/Product Base blockers preserved.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Required corrections:
@@ -273,7 +273,7 @@ Validation:
 - Strict `scripts/check_release_readiness.sh` with the same fixture variables - strict release readiness failed as expected with status 1.
 - `python3 scripts/check_p0_2_followup_d_traceability.py` - passed after report synchronization.
 - `python3 scripts/check_p0_2_followup_d_final_review.py` - passed after report synchronization.
-- `python3 scripts/project_agent_runner.py validate` - passed after report synchronization.
+- `python3 scripts/validate_governance_contracts.py` - passed after report synchronization.
 - `git diff --check` - passed after report synchronization.
 
 Required corrections:
@@ -308,7 +308,7 @@ Validation:
 - `scripts/check_release_readiness.sh --env-only` with fixture production/evidence variables - passed.
 - Strict `scripts/check_release_readiness.sh` with the same fixture variables - strict release readiness failed as expected with status 1.
 - `python3 scripts/check_p0_2_followup_d_traceability.py` - passed after report synchronization.
-- `python3 scripts/project_agent_runner.py validate` - passed after report synchronization.
+- `python3 scripts/validate_governance_contracts.py` - passed after report synchronization.
 - `git diff --check` - passed after report synchronization.
 
 Required corrections:
@@ -343,7 +343,7 @@ Validation:
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotTelemetryTest,GoalAutopilotDataExportRetentionTest,GoalAutopilotCostTelemetryTest,GoalAutopilotQuotaDowngradeTest,GoalAutopilotRuntimeGateTest test` - passed.
 - Backend JaCoCo goal-autopilot suite including S009 tests and prior S001-S008 regressions - passed.
 - `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 95.7%, backend branch 81.1% and Flutter line 90.9%.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest test` - passed.
 
@@ -379,7 +379,7 @@ Validation:
 - `python3 scripts/check_commercial_copy_contract.py` - passed, while still reporting missing external store/privacy/support evidence refs as release blockers.
 - `python3 scripts/check_p0_2_goal_autopilot_frontend_source_of_truth.py` - passed.
 - `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.0%, backend branch 81.2% and Flutter line 90.9%.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check -- <S008 changed files and reports>` - passed.
 
 Required corrections:
@@ -453,7 +453,7 @@ Validation:
 - `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
 - `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 95.9%, backend branch 81.2% and Flutter line 90.5%.
 - `python3 scripts/check_p0_2_goal_autopilot_frontend_source_of_truth.py` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Required corrections:
@@ -495,7 +495,7 @@ Validation:
 - `flutter test test/services/api_client_contract_test.dart` - passed.
 - `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
 - `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.1%, backend branch 81.3% and Flutter line 90.5%.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Required corrections:
@@ -534,7 +534,7 @@ Validation:
 - `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.0%, backend branch 81.1% and Flutter line 90.5%.
 - `flutter analyze` - passed.
 - `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Required corrections:
@@ -571,7 +571,7 @@ Validation:
 - `flutter test --coverage test/features/goal_autopilot test/services/api_client_contract_test.dart` - passed.
 - Backend JaCoCo goal-autopilot suite with `GoalAutopilotEntitlementPolicyTest` - passed.
 - `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.1%, backend branch 81.0% and Flutter line 90.5%.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Required corrections:
@@ -635,7 +635,7 @@ Validation:
 - `npm run check:api-contract` - passed with OpenAPI hash `0918bcf90cbc08198be7273e07fd18aa0471e06ba32f9cee21185105814780b2`.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,GoalAutopilotRuntimeGateTest,GoalProgressProjectionDataGovernanceTest,GoalProgressProjectionServiceTest,ProgressForecastPolicyTest,CheckpointCadencePolicyTest,GoalAutopilotControlPerformanceTest,NotificationOutboxReplayTest,MissedDayRecoveryPlannerTest,GoalAutopilotReplayFixtureTest,NotificationEligibilityPolicyTest,MemoryCurveReplayTest,MasteryTransitionPolicyTest,GoalProgressProjectionPerformanceTest,ForecastExplanationSchemaTest,CheckpointReplayAuditTest,GoalAutopilotRecoveryControllerTest,MemoryCurvePolicyTest,NotificationOutboxServiceTest org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
 - `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed with backend line 96.1%, backend branch 80.9% and Flutter line 90.1%.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Required corrections:
@@ -664,7 +664,7 @@ Findings:
 - Fixed before close: stage scope coverage was tightened from range-only coverage to an explicit P02-SI-001..013 detail routing table in `requirements.md`.
 
 Validation:
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check -- docs/product/increments/p0-2-followup-d-release-gate-hardening docs/reports/test_report.md docs/reports/implementation_report.md docs/reports/quality_report.md` - passed.
 
 Required corrections:
@@ -696,7 +696,7 @@ Validation:
 - `flutter test test/services/api_client_contract_test.dart` - passed.
 - `python3 scripts/check_p0_2_followup_c_traceability.py` - passed with nullable cleanup and generated hash assertions.
 - `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Required corrections:
@@ -733,7 +733,7 @@ Validation:
 - `flutter analyze` - passed.
 - `npm run check:dart-client-drift` - passed.
 - `npm run check:api-contract` - passed. Historical note: Redocly reported six nullable `$ref` warnings at S007 close; this was later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Required corrections:
@@ -770,7 +770,7 @@ Validation:
 - `flutter analyze` - passed.
 - `npm run check:dart-client-drift` - passed.
 - `npm run check:api-contract` - passed. Historical note: Redocly reported nullable `$ref` warnings at S006 close; this was later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Required corrections:
@@ -805,7 +805,7 @@ Validation:
 - `flutter analyze` - passed.
 - `npm run check:dart-client-drift` - passed.
 - `npm run check:api-contract` - passed. Historical note: Redocly reported nullable `$ref` warnings at S005 close; this was later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Required corrections:
@@ -838,7 +838,7 @@ Validation:
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc004ProjectionIsBackendOwned test` - passed.
 - `npm run check:api-contract` - passed. Historical note: Redocly reported nullable `$ref` warnings at S004 close; this was later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
 - `npm run check:dart-client-drift` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 
 Residual risk:
 - Followup-C remains incomplete, not release-ready and not Product Base-ready.
@@ -870,7 +870,7 @@ Validation:
 - `npm run check:api-contract` - passed. Historical note: Redocly reported nullable `$ref` warnings at S003 close; this was later fixed by `P02-FOLLOWUP-C-S007-OPENAPI-NULLABLE-CLEANUP-20260606`.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest,CheckpointReplayAuditTest org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
 - Changed backend source coverage: line 98.4%, branch 92.0%.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Residual risk:
@@ -901,7 +901,7 @@ Validation:
 - `flutter analyze lib/generated/api/speakeasy_api.dart` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
 - `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 95.7%, backend branch 80.8%, Flutter line 90.9%.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Residual risk:
@@ -926,7 +926,7 @@ Findings:
 - Scope boundary is correct. S001 does not claim checkpoint cadence/task library, checkpoint-to-plan update, Home/Queue/Wiki propagation, deletion downgrade, p95 performance, coverage, release approval or Product Base merge.
 
 Validation:
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=ProgressForecastPolicyTest,ForecastExplanationSchemaTest test` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fuc001ForecastHardeningClaimGuard test` - passed after migration syntax fix.
 - `npm run check:api-contract` - passed.
@@ -958,7 +958,7 @@ Findings:
 - No blocker found for status accuracy. S000 is marked as documentation validation only; S001-S007 contract/code/test/performance/coverage evidence remains planned or not started.
 
 Validation:
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check -- docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces docs/reports/quality_report.md` - passed.
 
 Residual risk:
@@ -982,7 +982,7 @@ Findings:
 - Scope boundary is correct. S006 closes local replay/performance/coverage/traceability evidence only; it does not claim external release, store/commercial readiness, Product Base merge, Followup-C or Followup-D completion.
 
 Validation:
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `npm run check:api-contract` - passed.
 - `git diff --check` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotReplayFixtureTest test` - passed.
@@ -1019,7 +1019,7 @@ Validation:
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MasteryTransitionPolicyTest,GoalAutopilotControllerTest,FoundationMigrationTest,AccountDeletionLearningDataTest test` - passed.
 - `npm run check:api-contract` - passed.
 - `npm run check:dart-client-drift` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter line 90.9%.
 - `git diff --check` - passed.
 
@@ -1045,7 +1045,7 @@ Validation:
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MemoryCurvePolicyTest,MemoryCurveReplayTest test` - passed after replay-determinism fix.
 - `npm run check:api-contract` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MemoryCurvePolicyTest,MemoryCurveReplayTest,GoalAutopilotControllerTest,GoalAutopilotRecoveryControllerTest test` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter line 90.9%.
 - `git diff --check` - passed.
 
@@ -1072,7 +1072,7 @@ Validation:
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest#tcP02Fub002ControlDataGovernanceAndValidationAreServerSide test` - passed after S003 governance status-marker fix.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=MissedDayRecoveryPlannerTest,GoalAutopilotRecoveryControllerTest,GoalAutopilotControllerTest,NotificationEligibilityPolicyTest,NotificationOutboxServiceTest,NotificationOutboxReplayTest test` - passed.
 - `npm run check:api-contract` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed: backend line 96.3%, backend branch 88.6%, Flutter line 90.9%.
 - `git diff --check` - passed.
 
@@ -1100,7 +1100,7 @@ Validation:
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=GoalAutopilotControllerTest test` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=FoundationMigrationTest,AccountDeletionLearningDataTest,TrainingAccountDeletionRetentionTest test` - passed.
 - `npm run check:api-contract` - passed after OpenAPI/example/hash sync.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `flutter analyze lib/generated/api/speakeasy_api.dart` - passed.
 - `git diff --check` - passed.
 
@@ -1170,7 +1170,7 @@ Findings:
 
 Validation:
 - `git diff --check -- docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/requirements.md docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/spec.md docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/acceptance.md docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/test_cases.md docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/traceability.md docs/reports/test_report.md docs/reports/quality_report.md` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `npm run check:api-contract` - passed.
 - Followup-B TC enum audit - passed for test layer, automation status and result status.
 
@@ -1201,12 +1201,12 @@ Findings:
 - Followup-B is no longer scaffold-only. Its pre-implementation product docs and required contracts have been created or updated and independently reviewed.
 - PM status now records Followup-B as documentation/contract-ready while keeping code, executable tests, performance, coverage and release evidence gated.
 - TC-P02-FUB-017 historically distinguished the then-missing `scripts/check_p0_2_followup_b_traceability.py` implementation-completion deliverable from the pre-implementation equivalent routing gate; S006 above later created and ran the script.
-- No blocker remains in this reporting/status step for asking Development Orchestrator to route the smallest implementation slice.
+- No blocker remains in this reporting/status step for asking Codex Root to route the smallest implementation slice.
 
 Validation:
 - `git diff --check -- docs/product/development_status.md docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/definition.md` - passed.
 - `git diff --check -- docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/test_cases.md docs/reports/test_report.md` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - Followup-B PM status reconciliation independent checker - passed.
 - Followup-B Test Case Development reconciliation independent checker - passed.
 
@@ -1233,7 +1233,7 @@ Validation:
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest,GoalAutopilotPerformanceTest test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
 - `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed.
 - `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check -- <Followup-A FR-009 changed files>` - passed.
 - Followup-A FR-009 touched-file whitespace audit - passed.
 
@@ -1259,7 +1259,7 @@ Validation:
 - `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
 - `git diff --check -- docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening docs/reports/quality_report.md docs/reports/test_report.md scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
 - Followup-A no-goal touched-file whitespace audit - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 
 Residual risk:
 - Historical note from this documentation-only review: no code had been changed for FR-009 in that earlier step. This is superseded by the implementation review above.
@@ -1283,7 +1283,7 @@ Validation:
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent -Dtest=FoundationMigrationTest,GoalAutopilotControllerTest,GoalAutopilotPerformanceTest test org.jacoco:jacoco-maven-plugin:0.8.12:report` - passed.
 - `python3 scripts/check_p0_2_goal_autopilot_coverage.py` - passed.
 - `python3 scripts/check_p0_2_goal_autopilot_traceability.py` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Residual risk:
@@ -1311,7 +1311,7 @@ Validation already performed:
 
 Final validation before code:
 - `git diff --check -- docs/product/increments/p0-2-followup-a-goal-intake-diagnostic-hardening docs/reports/quality_report.md` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - Followup-A FR/Spec/AC/TC/traceability chain audit - passed.
 
 Residual risk:
@@ -1334,7 +1334,7 @@ Validation:
 - Stage/roadmap/development-status/feature-registry reference audit - passed.
 - `git diff --check -- <modified P0.2 product status docs>` - passed.
 - Followup new-file non-empty and trailing-whitespace audit - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 
 Residual risk:
 - A-D still need full requirements/spec/acceptance/test_cases generation and independent review before any code changes.
@@ -1392,7 +1392,7 @@ Validation:
 - `p02-policy-gate-downstream=passed`.
 - `p02-ac-tc-trace-prefixes=passed`.
 - `git diff --check -- <P0.2 downstream docs and reports>` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 
 Residual risk:
 - Product engineering can use these docs to start downstream domain/API/AI/UX contract generation, but implementation must remain blocked until those contracts, code, tests, coverage reports, performance results and executed traceability evidence exist.
@@ -1422,7 +1422,7 @@ Validation:
 - P02 policy gate ID audit - passed.
 - P02 seven-defect closure audit - passed at planning-gate level.
 - `git diff --check -- <P0.2 policy gate docs and reports>` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 
 Residual risk:
 - The seven defects are not implemented away yet. They are now hard gates for the next requirements/spec/AC/TC/traceability and contract-generation steps.
@@ -1442,7 +1442,7 @@ Validation:
 - Superseded artifact reference audit - passed after active links were removed.
 - Directory removal check - passed.
 - `git diff --check -- <P0.2 supersession docs>` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 
 Residual risk:
 - The new P0.2 increments currently have PM definitions only. They still need downstream docs and contract gates before any code work can start.
@@ -1460,7 +1460,7 @@ Findings:
 Validation:
 - P0.2 goal-driven stage audit - passed with no missing P02-SI-001..013 or requirement-chain terms.
 - `git diff --check -- <P0.2 stage replanning docs>` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 
 Residual risk:
 - The three new P0.2 increments currently have PM definitions only. They still need requirements, specs, acceptance criteria, test cases, traceability, domain/API/AI/UX contracts and independent checker review before implementation.
@@ -1481,7 +1481,7 @@ Independent step reviews:
 Validation:
 - P02 documentation ID coverage audit - passed with no missing IDs and no forbidden implementation/release claims.
 - `git diff --check -- <P0.2 documentation paths>` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - P02 traceability `rg` audit - passed before supersession.
 
 Residual risk:
@@ -1506,7 +1506,7 @@ Validation:
 - `npm run check:api-contract` - passed.
 - `python3 scripts/check_p0_1_training_frontend_source_of_truth.py` - passed.
 - `python3 scripts/check_p0_1_training_rollout_readiness.py` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `flutter test test/features/training/training_entry_test.dart test/features/training/training_backend_only_loop_test.dart test/features/training/training_text_fallback_test.dart test/features/training/training_recoverable_failure_test.dart test/features/training/training_feedback_schema_test.dart test/features/training/training_voice_flow_test.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
 - `flutter analyze lib/config/app_config.dart lib/services/api_client.dart lib/features/training/training_backend_adapter.dart lib/features/training/training_session_loop_page.dart lib/pages/home_page.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
 - `flutter test integration_test/p0_1_training_loop_test.dart` - passed.
@@ -1581,7 +1581,7 @@ Validation:
 - `flutter analyze lib/config/app_config.dart lib/services/api_client.dart lib/features/training/training_backend_adapter.dart lib/features/training/training_session_loop_page.dart lib/pages/home_page.dart test/features/training/training_content_mapping_test.dart test/features/training/training_backend_pipeline_test.dart test/features/training/training_planner_replay_test.dart` - passed.
 - `python3 scripts/check_p0_1_training_rollout_readiness.py` - passed.
 - `npm run check:api-contract` - passed in the original batch; 2026-06-04 revalidation passed after generated Dart drift pins were synced to current OpenAPI hash `4880e61f8dae8673c13eb2aff5c66e690de70e67663bae45608f57206502fcbf`.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 
 Residual risk:
 - Superseded by 2026-06-04 implementation review: generated Dart OpenAPI drift pins are now synced to the current OpenAPI hash.
@@ -1603,7 +1603,7 @@ Findings:
 Validation:
 - `rg -n "P01-FR-012|P01-SPEC-013|AC-P01-014|TC-P01-021|P01-TR-013|P01-GAP-009|P01-HARDEN-001|Product Base/production" ...` - passed.
 - `npm run check:api-contract` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check -- <changed docs>` - passed.
 
 Residual risk:
@@ -1627,7 +1627,7 @@ Validation:
 - `npm run check:api-contract` - passed.
 - `python3 scripts/check_ai_external_release_evidence.py` - passed with expected release blockers.
 - `python3 scripts/check_ai_external_release_evidence.py --strict-external` - failed as expected without external refs.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Residual risk:
@@ -1676,7 +1676,7 @@ Findings:
 
 Validation:
 - `python3 scripts/check_ai_external_release_evidence.py` - passed and reported `AI_RETENTION_POLICY_EVIDENCE_REF` as a release blocker.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 
 Overall validation:
 - `python3 -m py_compile scripts/check_ai_external_release_evidence.py scripts/check_ai_provider_sandbox_evidence.py scripts/check_manual_external_evidence_plan.py` - passed.
@@ -1712,7 +1712,7 @@ Validation performed:
 - Commercial non-strict gates - passed.
 - Commercial strict gates - failed as expected on missing external/native/store/release evidence refs and production env.
 - `git diff --check` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 
 Residual risk:
 - Commercial release remains blocked by TC-COM-012/015/019/021/022 and TC-COM-AI-004 strict external evidence.
@@ -1773,7 +1773,7 @@ Quality findings:
 
 Validation performed:
 - `python3 scripts/check_manual_external_evidence_plan.py` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 - `python3 scripts/check_provider_sandbox_evidence.py` - passed in non-strict mode and reported existing Apple/Google external evidence blockers.
 
@@ -1813,7 +1813,7 @@ Validation performed:
 - `PYTHONPATH=.uv-cache/archive-v0/6TiI4tLkyvVElUd4WZMLn/lib/python3.11/site-packages python3 scripts/check_openapi_contract.py` - passed.
 - `PYTHONPATH=.uv-cache/archive-v0/6TiI4tLkyvVElUd4WZMLn/lib/python3.11/site-packages python3 scripts/check_openapi_dart_drift.py` - passed.
 - `git diff --check` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 
 Residual risk:
 - No live DashScope request was executed; provider calls remain fake-transport local evidence.
@@ -1997,7 +1997,7 @@ Traceability finding:
 
 Validation:
 - `git diff --check` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository "-Dtest=FoundationMigrationTest,PostgresFoundationMigrationTest,FoundationResponseContractTest,FoundationErrorContractTest,AuthControllerTest,AuthServiceTest,AuthSessionLifecycleTest" test` - passed.
 - `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
 - `npm run check:api-contract` - passed: 47 paths, 51 operations, 26 request examples, 47 success examples, 54 error examples; Dart pre-client drift gate passed with hash `aaa05cb55926e5cd36a0a1ecf254d159226efe3f29ddeced57f8d78d628a86ed`.
@@ -2009,7 +2009,7 @@ Required corrections:
 Residual risk:
 - `PostgresFoundationMigrationTest` uses Docker when available and falls back to local PostgreSQL binaries; it can skip only on machines with neither available.
 - Generated Dart client integration remains a later client/QA increment; this increment only preserves the pre-client drift gate.
-- The next route may proceed to onboarding/content only after Development Orchestrator opens that increment separately.
+- The next route may proceed to onboarding/content only after Codex Root opens that increment separately.
 
 ## 2026-05-29 mvp-backend-onboarding-content QA And Governance Check
 
@@ -2039,7 +2039,7 @@ Traceability finding:
 
 Validation:
 - `git diff --check` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository "-Dtest=OnboardingAssessmentControllerTest,LearningRouteMappingTest,OnboardingRouteResponseContractTest,ScenarioCatalogControllerTest,ScenarioContentControllerTest,ScenarioSeedVersioningTest,UserScenarioStateControllerTest,HomeSummaryControllerTest" test` - passed.
 - `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
 - `npm run check:api-contract` - passed: 50 paths, 55 operations, 28 request examples, 51 success examples, 61 error examples; Dart pre-client drift gate passed with hash `d763f44d29ac60f85d953cf302db63f23acba77d711cdb86432e1489f6f284d9`.
@@ -2051,7 +2051,7 @@ Required corrections:
 Residual risk:
 - Generated Dart client integration remains a later client/QA increment; this increment only preserves the pre-client drift gate.
 - Home summary review/weakness/unfinished-session details intentionally return explicit defaults until later practice and learning/memory increments provide live data.
-- The next route may proceed to `mvp-backend-practice-ai` only after Development Orchestrator opens that increment separately.
+- The next route may proceed to `mvp-backend-practice-ai` only after Codex Root opens that increment separately.
 
 ## 2026-05-29 mvp-backend-practice-ai QA And Governance Check
 
@@ -2090,7 +2090,7 @@ Required corrections:
 Residual risk:
 - Deterministic provider adapters are sufficient for contract/lifecycle tests but do not validate real provider credentials, latency, retry policy, or production cost accounting.
 - Accepted evidence, mastery, review scheduling, and learning history remain in `mvp-backend-learning-memory`.
-- The next route may proceed to `mvp-backend-learning-memory` only after Development Orchestrator opens that increment separately.
+- The next route may proceed to `mvp-backend-learning-memory` only after Codex Root opens that increment separately.
 
 ## 2026-05-29 mvp-backend-learning-memory QA And Governance Check
 
@@ -2122,7 +2122,7 @@ Validation:
 - `npm run check:api-contract` - passed: 55 paths, 60 operations, 29 request examples, 55 success examples, 67 error examples; Dart pre-client drift gate passed with hash `d677224d822630f0ca30bdcdd55b8c0793b778b7e8e8a65dbfa58f38be15886e`.
 - `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
 - `git diff --check` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 
 Required corrections:
 - None remaining.
@@ -2131,7 +2131,7 @@ Required corrections:
 Residual risk:
 - Review scheduling is intentionally MVP immediate-due behavior; P0.2 long-term spaced repetition and full L0-L5 mastery remain deferred.
 - Generated Dart client integration remains a later client/QA increment; this increment only preserves the pre-client drift gate.
-- The next route may proceed to `mvp-backend-membership-boundary` only after Development Orchestrator opens that increment separately.
+- The next route may proceed to `mvp-backend-membership-boundary` only after Codex Root opens that increment separately.
 
 ## 2026-05-29 mvp-backend-membership-boundary QA And Governance Check
 
@@ -2163,7 +2163,7 @@ Validation:
 - `npm run check:api-contract` - passed: 62 paths, 67 operations, 29 request examples, 62 success examples, 74 error examples; Dart pre-client drift gate passed with hash `506282ac758a37269df95e12ca6752de9c201eb162fd4cc0e227b13c287ab082`.
 - `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
 - `git diff --check` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 
 Required corrections:
 - None remaining.
@@ -2171,7 +2171,7 @@ Required corrections:
 Residual risk:
 - Production retention for object-store raw media/transcript refs still needs the owning DevOps/Security policy and implementation.
 - Generated Dart client integration and release readiness remain in `mvp-backend-client-qa-release`; this increment only preserves the pre-client drift gate.
-- The next route may proceed to `mvp-backend-client-qa-release` only after Development Orchestrator opens that increment separately.
+- The next route may proceed to `mvp-backend-client-qa-release` only after Codex Root opens that increment separately.
 
 ## 2026-05-29 mvp-backend-client-qa-release QA And Governance Check
 
@@ -2205,7 +2205,7 @@ Validation:
 - `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` - passed.
 - `flutter test` - passed, 173 tests.
 - `git diff --check` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 
 Required corrections:
 - None remaining.
@@ -2242,7 +2242,7 @@ Backend / DB / API architecture review:
 - Security/API review found no production `X-User-Id` reliance, no client-submitted provider secret boundary in backend code, server-side bearer auth on protected paths, `schema_version` request validation, shared error schema, and `Idempotency-Key` enforcement on practice turns and account deletion.
 
 Validation rerun:
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 - `npm run check:api-contract` - first failed inside sandbox because `uv` panicked in system configuration access; rerun outside sandbox passed: 62 paths, 67 operations, 29 request examples, 62 success examples, 74 error examples; generated Dart drift passed with OpenAPI hash `506282ac758a37269df95e12ca6752de9c201eb162fd4cc0e227b13c287ab082`, 67 operations, 117 schemas.
 - `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` from `backend/` - passed.
@@ -2271,7 +2271,7 @@ Corrections applied:
 - `docs/product/increments/mvp-backend-client-qa-release/traceability.md` MVP-BE-TR-013 and MVP-BE-TR-014 no longer use compact TC ranges and now list TC-MVP-BE-039 through TC-MVP-BE-046 explicitly, including the documented exception command/result for TC-MVP-BE-042.
 
 Validation:
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - Traceability evidence audit - passed: 10 affected rows and 30 TC mappings checked against the owning `test_cases.md`; compact ranges removed.
 - `git diff --check` - passed.
 
@@ -2316,7 +2316,7 @@ Validation:
 - `python3 scripts/check_mvp_system_e2e_coverage.py` - passed: 10 TC rows, 13 Product Base AC rows, 4 traceability rows.
 - `flutter test` - passed, 173 tests.
 - `env JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` from `backend/` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Required corrections:
@@ -2338,7 +2338,7 @@ Findings:
 - No Product Base or stage scope expansion was introduced. The review keeps `commercial-subscription-readiness` as the owning increment for `COM-SI-001` through `COM-SI-012`.
 
 Checked step:
-- Development Orchestrator routing evidence for `P0-COM-DOM-001`, `P0-COM-API-001`, `P0-COM-ARCH-001`, `P0-COM-UX-001`, and `P0-COM-QA-001`.
+- Codex Root routing evidence for `P0-COM-DOM-001`, `P0-COM-API-001`, `P0-COM-ARCH-001`, `P0-COM-UX-001`, and `P0-COM-QA-001`.
 - Document traceability from requirements to acceptance criteria to test cases.
 - Product Object Governance Check for scope boundaries, stage object ownership, and no implementation-before-test-case violation.
 - Code Review Quality gate for changed docs, OpenAPI contract, generated boundary hash, validation results, and release risk.
@@ -2359,7 +2359,7 @@ Traceability finding:
 
 Validation:
 - `npm run check:api-contract` - passed: OpenAPI contract gate passed with 62 paths, 67 operations, 29 request examples, 62 success examples, and 74 error examples; Dart generated-client drift gate passed with OpenAPI hash `4a0a9978ba4dec45d1df598bc0cd39770fd5eaa021fc6f7fe2ce47f16d0fb63a`, 67 operations, and 117 schemas.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 - `awk` TC row audit - passed: 23 `TC-COM` rows, no malformed row field count reported.
 - `awk` coverage audits - passed: `COM-SI-001..012`, `FR-COM-001..012`, and `AC-COM-001..014` all have test-case coverage.
@@ -2371,7 +2371,7 @@ Residual risk:
 - The project is not commercial release ready.
 - `TC-COM-001` through `TC-COM-022` are planned but not implemented or executed.
 - Apple sandbox, Google Play internal testing, refund/expiry/provider event evidence, social login production configuration, store metadata, privacy/support URLs, release secrets, signing, symbols, rollback evidence, implementation report, and release decision remain future blockers.
-- This review only authorizes the next Development Orchestrator implementation routing; it does not authorize skipping the planned backend, frontend, provider, release, or QA execution gates.
+- This review only authorizes the next Codex Root implementation routing; it does not authorize skipping the planned backend, frontend, provider, release, or QA execution gates.
 
 ## 2026-05-29 P0-COM-BE-001 Independent Review
 
@@ -2487,7 +2487,7 @@ Validation:
 - `flutter test test/features/commercial/entitlement_downgrade_widget_test.dart test/features/commercial/account_deletion_cleanup_test.dart test/services/api_client_contract_test.dart` - passed.
 - `JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=CommercialFoundationControllerTest,FoundationErrorContractTest,FoundationResponseContractTest,AuthControllerTest,AuthServiceTest,AuthSessionLifecycleTest test` - passed.
 - `git diff --check` - passed before report update.
-- `python3 scripts/project_agent_runner.py validate` - passed before report update.
+- `python3 scripts/validate_governance_contracts.py` - passed before report update.
 
 Required corrections:
 - Closed before final acceptance: timestamp-based provider idempotency keys were replaced with stable transaction/token/platform keys.
@@ -2527,7 +2527,7 @@ Validation:
 - Fixture `scripts/check_release_readiness.sh --env-only` with production API, social-login env, Sentry, Android signing, Apple/Google provider evidence refs, store metadata ref, reviewer account ref, symbol upload ref, rollback rehearsal ref, privacy URL, and support URL - passed.
 - Same fixture `scripts/check_release_readiness.sh` in strict mode - failed as expected with native iOS social-login blockers.
 - `git diff --check` - passed before report update.
-- `python3 scripts/project_agent_runner.py validate` - passed before report update.
+- `python3 scripts/validate_governance_contracts.py` - passed before report update.
 
 Required corrections:
 - Closed before final acceptance: readiness gate now checks `SYMBOL_UPLOAD_EVIDENCE_REF` and `ROLLBACK_REHEARSAL_REF`, not only Sentry DSN and rollback document existence.
@@ -2590,7 +2590,7 @@ Validation:
 - Release readiness fixture gate - passed; strict release readiness failed as expected on native iOS social-login blockers.
 - Final FR/AC/TC coverage audit - passed with no missing FR, AC, or TC links.
 - `git diff --check` - passed after final report update.
-- `python3 scripts/project_agent_runner.py validate` - passed after final report update.
+- `python3 scripts/validate_governance_contracts.py` - passed after final report update.
 
 Required corrections:
 - None remaining for the 1-7 execution sequence.
@@ -2619,7 +2619,7 @@ Validation:
 - `flutter test test/features/commercial/scenario_gating_consistency_test.dart` - passed.
 - `flutter test test/features/commercial/scenario_gating_consistency_test.dart test/features/interview/interview_practice_page_widget_test.dart` - passed.
 - `flutter analyze lib/features/commercial/commercial_scenario_gate.dart lib/features/interview/interview_practice_page.dart lib/pages/home_page.dart test/features/commercial/scenario_gating_consistency_test.dart test/features/interview/interview_practice_page_widget_test.dart` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 
 Required corrections:
 - Closed during implementation: removed `Future.delayed(Duration.zero)` waits from widget-test helpers because they deadlocked under fake async before `tester.pump`.
@@ -3077,7 +3077,7 @@ Findings:
 - No blocker. Traceability rows preserve S001-S007 as planned/not started and keep required downstream contract, code, test and report evidence pending.
 
 Validation:
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check -- docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces docs/reports/quality_report.md` - passed.
 - Stale S005 completion-gate phrase scan across Followup-C docs and `quality_report.md` - no current completion-gate residue.
 
@@ -3181,7 +3181,7 @@ Validation:
 - `python3 scripts/check_p0_2_followup_c_traceability.py` - passed.
 - `python3 scripts/check_cross_cutting_boundaries.py --scope full` - passed.
 - `python3 scripts/check_cross_cutting_boundaries.py --scope changed --include-worktree --base-ref HEAD` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Required corrections:
@@ -3224,7 +3224,7 @@ Validation:
 - `python3 -m unittest test.scripts.test_cross_cutting_boundaries` - passed.
 - `python3 -m py_compile scripts/check_cross_cutting_boundaries.py` - passed.
 - `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Residual risk:
@@ -3260,7 +3260,7 @@ Validation:
 - `python3 -m py_compile scripts/check_cross_cutting_boundaries.py` - passed.
 - `python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` - passed.
 - `cd backend && JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository -Dtest=AdminAuditControllerTest,AiRetentionPolicyTest test` - passed.
-- `python3 scripts/project_agent_runner.py validate` - passed.
+- `python3 scripts/validate_governance_contracts.py` - passed.
 - `git diff --check` - passed.
 
 Residual risk:
@@ -3279,7 +3279,7 @@ Residual risk:
 - SWC catalog boundary：`docs/architecture/swc_catalog.md`。
 - Business flow 和 module-boundary source reference：`docs/architecture/data_flow.md`、`docs/architecture/module_boundary.md`、`docs/architecture/system_overview.md`。
 - Process gate：`docs/process/software_component_architecture_governance.md`、`docs/process/workflow.md`、`docs/process/definition_of_done.md`、`docs/process/skill_quality_standard.md`。
-- Agent 和 skill routing：`codex/agents/system_architect.md`、`codex/agents/development_orchestrator.md`、`codex/agents/product_manager.md`、`codex/agents/software_architecture_governance_check.md`、`codex/agents/product_object_governance_check.md`、`.agents/skills/document-path-governance/`、`.agents/skills/document-content-contract/`、`.agents/skills/document-traceability-check/`。
+- Agent 和 skill routing：`.codex/agents/system_architect.toml`、`AGENTS.md`、`.codex/agents/product_manager.toml`、`.codex/agents/software_architecture_governance_check.toml`、`.codex/agents/product_object_governance_check.toml`、`.agents/skills/document-path-governance/`、`.agents/skills/document-content-contract/`、`.agents/skills/document-traceability-check/`。
 - Template：`codex/templates/swc_allocation.template.md`。
 
 发现：
@@ -3287,7 +3287,7 @@ Residual risk:
 - 无剩余 blocker。`docs/architecture/swc_catalog.md` 继续作为 stable component inventory，不变成完整 architecture 或 increment allocation artifact。
 - 无剩余 blocker。Increment `swc_allocation.md` 现在定义为相对 global SWC baseline 的 delta，并且必须引用适用 `SWC-FLOW-*` ID，或把 local flow 分类为 `one-off`、`proposed-global` 或 `legacy-compatible`。
 - 无剩余 blocker。`data_flow.md` 和 `module_boundary.md` 现在声明它们为 SWC baseline 提供 business flow/fact-source rule 和 context boundary，而不是与其竞争。
-- 无剩余 blocker。Product Manager、Development Orchestrator、System Architect、Software Architecture Governance Check、Product Object Governance Check 和 document governance skill 现在对 baseline/catalog/allocation 拆分保持一致。
+- 无剩余 blocker。Product Manager、Codex Root、System Architect、Software Architecture Governance Check、Product Object Governance Check 和 document governance skill 现在对 baseline/catalog/allocation 拆分保持一致。
 - 初始 template blocker 已修复：`codex/templates/swc_allocation.template.md` 不再暗示 AI/provider 可以拥有最终持久化事实。Candidate output 保留在 AI/provider；accepted persistent fact 由 deterministic rule 接受后归 backend/domain SWC 拥有。
 - Template governance 已澄清：修改 `codex/templates/swc_allocation.template.md` 属于 workflow/source-of-truth governance change，需要 Product Object Governance Check。
 
@@ -3297,7 +3297,7 @@ Residual risk:
 - Agent `Aristotle` final template follow-up：文字修正和 template-change governance note 补齐后通过。
 
 验证：
-- `python3 scripts/project_agent_runner.py validate`：passed。
+- `python3 scripts/validate_governance_contracts.py`：passed。
 - `python3 scripts/validate_agent_skills.py`：passed。
 - `git diff --check`：passed。
 
@@ -3317,7 +3317,7 @@ Residual risk:
 检查范围：
 - Increment docs：`docs/product/increments/scenario-practice-runtime-migration/definition.md`、`requirements.md`、`spec.md`、`acceptance.md`、`test_cases.md`、`traceability.md`、`swc_allocation.md`。
 - Global SWC baseline：`docs/architecture/software_component_architecture.md`、`docs/architecture/swc_catalog.md`、`docs/architecture/module_boundary.md`、`docs/architecture/data_flow.md`。
-- Process 和 checker contract：`docs/process/software_component_architecture_governance.md`、`codex/agents/software_architecture_governance_check.md`。
+- Process 和 checker contract：`docs/process/software_component_architecture_governance.md`、`.codex/agents/software_architecture_governance_check.toml`。
 - Code evidence 只读检查：`lib/features/interview/`、`lib/features/scenario/`、`lib/application/scene/`、`lib/services/audio_service.dart`、`lib/services/voice_chat_service.dart`、`lib/services/voice_turn_orchestrator.dart`、`lib/services/api_client.dart`、`lib/services/app_session.dart`、`lib/application/session/session_stats_coordinator.dart`、`lib/services/stats_service.dart`、`lib/models/learning_stats_model.dart`。
 
 发现：
@@ -3339,7 +3339,7 @@ Residual risk:
 验证：
 - `python3 scripts/check_swc_allocation.py --scope changed --include-worktree`：passed。
 - `python3 scripts/check_swc_allocation.py --scope all`：passed。
-- `python3 scripts/project_agent_runner.py validate`：passed。
+- `python3 scripts/validate_governance_contracts.py`：passed。
 - `python3 scripts/validate_agent_skills.py`：passed。
 - 针对已触碰 architecture/increment docs 的 `git diff --check`：passed。
 - 未运行 Flutter/backend test，因为这是 architecture-only documentation increment，没有 business-code change。

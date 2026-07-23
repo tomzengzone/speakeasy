@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "spec-ac-retirement.schema.json",
+  "title": "Spec and acceptance retirement manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "lifecycle",
+    "legacy_root",
+    "legacy_glob",
+    "archive_root",
+    "expected_file_count",
+    "legacy_path_digest",
+    "prohibited_input_domains",
+    "sunset_conditions",
+    "records"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "artifact_id": {"const": "SPEC_AC_RETIREMENT_MANIFEST"},
+    "lifecycle": {"const": "migration-only"},
+    "legacy_root": {"const": "docs/product/increments"},
+    "legacy_glob": {"const": "**/*.md"},
+    "archive_root": {"const": "docs/archive/product-increments"},
+    "expected_file_count": {"type": "integer", "minimum": 0},
+    "legacy_path_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "prohibited_input_domains": {
+      "type": "array",
+      "items": {"enum": ["product", "engineering"]},
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true
+    },
+    "sunset_conditions": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "minItems": 3,
+      "uniqueItems": true
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "old_path",
+          "old_id",
+          "source_kind",
+          "status",
+          "destinations",
+          "reason",
+          "owner"
+        ],
+        "properties": {
+          "old_path": {
+            "type": "string",
+            "pattern": "^docs/product/increments/.+/(spec|acceptance)\\.md$"
+          },
+          "old_id": {
+            "type": "string",
+            "pattern": "^(?:(?:[A-Z0-9]+-)*SPEC(?:-[A-Z0-9]+)*|(?:[A-Z0-9]+-)*AC(?:-[A-Z0-9]+)*)-[0-9]{3}$"
+          },
+          "source_kind": {"enum": ["spec", "acceptance"]},
+          "status": {
+            "enum": ["grandfathered-unverified", "migrated", "obsolete", "rejected"]
+          },
+          "destinations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "id"],
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "vertical-slice",
+                    "functional-requirement",
+                    "api-contract",
+                    "domain-contract",
+                    "persistence-contract",
+                    "ai-contract",
+                    "ux-contract",
+                    "executable-regression-test"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z0-9_-]*$"
+                }
+              }
+            },
+            "uniqueItems": true
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "[\\u4e00-\\u9fff]"
+          },
+          "owner": {"type": "string", "minLength": 1}
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {"status": {"const": "migrated"}},
+              "required": ["status"]
+            },
+            "then": {
+              "properties": {"destinations": {"minItems": 1}}
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "enum": ["grandfathered-unverified", "obsolete", "rejected"]
+                }
+              },
+              "required": ["status"]
+            },
+            "then": {
+              "properties": {"destinations": {"maxItems": 0}}
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -7,8 +7,10 @@ Design-ready / implementation gated - 本文件把 `p0-2-goal-backplan-memory-po
 - Classification: `feature-increment`
 - Increment: `p0-2-goal-backplan-memory-policy`
 - Active stage: `docs/product/stages/p0-2-training-memory.md`
-- Primary feature: `goal-driven-learning-autopilot`
-- Affected features: `learning-memory-review`, `expression-automation-training`, `expression-practice-queue`, `voice-scenario-practice`, `scoring-feedback`
+- Primary Capability ID：`CAP-PLAN`
+- Primary Sub-capability ID：`CAP-PLAN-03`
+- Affected Capability IDs：`CAP-MEMORY`、`CAP-TRAIN`、`CAP-INTENT`、`CAP-LEVEL`、`CAP-CONTENT`
+- Affected Sub-capability IDs：`CAP-PLAN-01`、`CAP-PLAN-02`、`CAP-PLAN-05`、`CAP-PLAN-06`、`CAP-PLAN-07`、`CAP-MEMORY-02`、`CAP-MEMORY-03`、`CAP-MEMORY-04`、`CAP-TRAIN-01`、`CAP-TRAIN-02`、`CAP-TRAIN-03`、`CAP-TRAIN-05`、`CAP-INTENT-04`、`CAP-INTENT-06`、`CAP-LEVEL-04`、`CAP-LEVEL-05`、`CAP-CONTENT-03`
 
 ## 上游来源
 - `docs/product/stages/p0-2-training-memory.md`

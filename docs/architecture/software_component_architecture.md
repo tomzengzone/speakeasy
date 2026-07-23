@@ -1,5 +1,9 @@
 # Software Component Architecture
 
+## PR-003 current lineage
+
+本次只切换来源链，不改变本文的 SWC 拓扑、数据流、边界或已接受实现事实。当前产品 lineage 仅由适用的 approved FR 解析；Engineering Artifact 之间的 direct/conditional inputs 和适用 Gate 继续仅由 Governance Contract 解析。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述均为 historical provenance，不是当前 authority、prerequisite 或 fallback。局部实现按事实影响引用当前 SWC/Flow，无需创建 increment allocation 文档。
+
 ## 状态
 Proposed - global SWC architecture baseline. 本文是全局软件组件架构基准，用于汇总稳定 SWC 拓扑、全局 SWC 间数据流、跨层复用边界和局部变更参考规则。本文不替代 `docs/architecture/swc_catalog.md`、`docs/architecture/data_flow.md`、Domain Schema、OpenAPI、AI runtime、UX、测试或实现报告。
 

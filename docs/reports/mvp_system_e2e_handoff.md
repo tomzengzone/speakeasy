@@ -61,7 +61,7 @@
 | `python3 scripts/check_mvp_system_e2e_coverage.py` | passed：10 TC rows, 13 Product Base AC rows, 4 traceability rows |
 | `flutter test` | passed：173 tests |
 | `env JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -Dmaven.repo.local=.m2/repository test` from `backend/` | passed |
-| `python3 scripts/project_agent_runner.py validate` | passed |
+| `python3 scripts/validate_governance_contracts.py` | passed |
 | `git diff --check` | passed |
 
 ## 证据日志

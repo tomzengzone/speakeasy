@@ -1,137 +1,34 @@
-# Skill Quality Standard
+# Skill 质量标准
 
-本仓库使用 `.agents/skills/` 下的 project-local Codex development skills。
-目标是让 Codex 按受控的软件工程流水线执行，而不是作为无约束的代码生成器运行。
+本标准约束 active project-local Skill 的方法质量。Governance Contract 独占 Artifact/Gate 治理事实；Skill 只保存可复用的当前方法、内容规则和验证方法。
 
-## Directory Contract
+## Active scope
 
-每个 skill 必须放在独立目录中：
+Active Skill 集合只包含由 routed Artifact 的 `method_skill` 引用的 package，以及其 `SKILL.md` 直接链接且实际存在的 resource。整个 `.agents/skills/` 目录不能被一概视为 active。已退役、未登记、migration-only 或仅有历史用途的 package/resource 不进入默认上下文。
+
+## 目录结构
 
 ```text
 .agents/skills/<skill-name>/
   SKILL.md
-  SPEC.md
+  references/   # 仅在 SKILL 直接链接并说明读取条件时使用
+  scripts/      # 可选确定性 helper
+  assets/       # 可选输出资源，不是运行规则
 ```
 
-The old flat `codex/skills/*.md` layout is deprecated for active project skills and must not exist in the repository.
+`SKILL.md` 是唯一必需的运行时指令文件。不得添加平行 README、规范、迁移说明或 tombstone Skill 继续触发已退役方法。
 
-## Product Planning Document Paths
+## Authority separation
 
-- Product roadmap: `docs/product/roadmap.md`
-- Product development status: `docs/product/development_status.md`
-- Feature registry：`docs/product/feature_registry.md` 是 V2 canonical registry，记录 `Capability ID`、`Capability slug`、`Capability name`、业务边界、owner、一级 `Sub-capability ID`、相邻能力、下游文档前缀和 `Legacy Mapping`。新增或修改下游 requirements、spec、AC、TC、stage scope 和 increment definition 时，只允许引用 V2 `Capability ID` / `Sub-capability ID`。
-- Product Base 需求：`docs/product/base/requirements.md`
-- Product Base 规格：`docs/product/base/spec.md`
-- Product Base 验收：`docs/product/base/acceptance.md`
-- Product Base 追溯：`docs/product/base/traceability.md`
-- Product baselines: `docs/product/baselines/<baseline-slug>.md`
-- Stage scopes: `docs/product/stages/<stage-id>.md`
-- Increment definition: `docs/product/increments/<increment-id>/definition.md`
-- Increment requirements: `docs/product/increments/<increment-id>/requirements.md`
-- Increment specs: `docs/product/increments/<increment-id>/spec.md`
-- Increment acceptance criteria: `docs/product/increments/<increment-id>/acceptance.md`
-- Increment test case library: `docs/product/increments/<increment-id>/test_cases.md`
-- Increment traceability: `docs/product/increments/<increment-id>/traceability.md`
+- Canonical path、accountable owner、contributor scope、lifecycle、Artifact direct/conditional inputs 和 Gate routing 只能由 Governance Contract 定义。
+- Skill 通过 Artifact/Gate ID 解析 contract，不复制上述字段或维护第二张 registry。
+- 执行所必需的精确路径/命令只有在标记为 `Derived operational pointer` 且能与 contract 校验一致时才允许出现；它不是 authority。
+- Agent 只定义角色、权限、专业边界和 handoff；Workflow 只定义顺序与决策点；Template 只定义字段/版式。
+- Governance Contract 以外的冲突副本必须删除，而不是建立兼容层。
 
-## Process Governance Document Paths
+## SKILL.md contract
 
-- Workflow: `docs/process/workflow.md`
-- Definition of Done: `docs/process/definition_of_done.md`
-- Skill quality standard: `docs/process/skill_quality_standard.md`
-- Cross-cutting boundary registry: `docs/process/cross_cutting_boundary_registry.md`
-- Software component architecture governance: `docs/process/software_component_architecture_governance.md`
-- Change request log: `docs/process/change_request.md`
-
-## Architecture And API Document Paths
-
-- System overview: `docs/architecture/system_overview.md`
-- Module boundary: `docs/architecture/module_boundary.md`
-- Data flow: `docs/architecture/data_flow.md`
-- Global SWC architecture baseline: `docs/architecture/software_component_architecture.md`
-- Global SWC catalog: `docs/architecture/swc_catalog.md`
-- API contract overview: `docs/architecture/api_contract.md`
-- OpenAPI source of truth: `docs/architecture/openapi/speakeasy-api.yaml`
-- Increment SWC allocation: `docs/product/increments/<increment-id>/swc_allocation.md`
-
-`docs/architecture/api_contract.md` 记录 API family、product-object traceability、统一 error semantics、versioning、compatibility policy 和 generation boundary。`docs/architecture/openapi/speakeasy-api.yaml` 是 OpenAPI path、component、request/response schema、example 和 lint check 的唯一机器可读 source of truth。两者不得重复拥有 implementation-level schema。
-
-`docs/architecture/software_component_architecture.md` 记录完整 global SWC architecture baseline：system-level responsibility allocation、global SWC topology、stable `SWC-FLOW-*` ID、canonical SWC-to-SWC sequence，以及 local architecture change 的 reference baseline。它不得替代 `docs/architecture/swc_catalog.md`、`docs/architecture/data_flow.md`、Domain Schema、OpenAPI、AI runtime、UX、测试或 implementation report。
-
-`docs/architecture/swc_catalog.md` 记录 reusable software component inventory 和 ownership boundary。它必须引用 Domain Schema 和 OpenAPI，不得复制 entity 或 request/response schema。`docs/product/increments/<increment-id>/swc_allocation.md` 记录一个已批准 increment 的 implementation-readiness allocation：Existing Implementation Baseline、Delta From Existing Baseline，以及 FR/AC 到 frontend SWC、backend SWC、API/OpenAPI、domain entity、DB table/migration、provider/AI boundary 和 test case 的分配。它必须引用 global SWC architecture baseline 和适用 `SWC-FLOW-*` ID，或把 local flow 分类为 `one-off`、`proposed-global` 或 `legacy-compatible`。对于 brownfield work，它必须列出具体 existing code path、existing SWC、existing API、existing test、reused SWC/Flow ID、allowed new code、forbidden duplicate code 和 regression proof。它不得引入 product scope，也不得覆盖 requirements、acceptance criteria、domain、API、AI runtime、UX、test 或 release artifact。
-
-`scripts/check_swc_allocation.py` 是 SWC allocation completeness 的可执行门禁。CI 必须对 changed implementation-impacting path 运行它。该 gate 会阻塞缺失 brownfield baseline、缺失 delta、未知 SWC ID、未知 Flow ID、allocation row 中的泛化 frontend/backend 标签、未被 changed allocation 覆盖的 implementation path，以及未复用 canonical scenario-practice SWC/Flow baseline 的 scenario-practice 变更。
-
-Product Manager 拥有 roadmap、development status 和 backlog priority。Requirement Development 拥有 Product Base / increment requirements、user stories 和 acceptance criteria。
-
-## Executable Test Paths
-
-- Flutter/Dart tests: `test/`
-- Backend Maven/Spring Boot tests: `backend/src/test/java/`
-- Cross-service or repository-level tests: `tests/`
-- Backend-specific cross-project tests: `tests/backend/`
-
-## Product Object Governance
-
-Product document 在选择路径前必须先区分 product object：
-
-- Capability：长期存在的 APP 稳定产品分类，登记在 `docs/product/feature_registry.md`，记录 V2 `Capability ID`、`Capability slug`、`Capability name`、业务边界、owner、一级 `Sub-capability ID`、相邻能力、下游文档前缀和 `Legacy Mapping`，不分配独立 feature 文档目录。
-- Stage：交付 horizon 或 priority window，归入 `docs/product/stages/<stage-id>.md`。
-- Stage Scope Item：stage 内稳定、可按 ID 寻址的 capability、obligation 或 explicit deferral。Active stage scope item 归入 owning stage file，并使用 `P01-SI-001` 这类稳定 ID。
-- Increment：stage 内有边界的 delivery slice，归入 `docs/product/increments/<increment-id>/`。
-- Product Base：需求初版/稳定 Product Base，归入 `docs/product/base/`。
-- Baseline：已实现行为快照，归入 `docs/product/baselines/<baseline-slug>.md`。
-- Change request：scope decision record，仍保留在 `docs/process/change_request.md`。
-
-- Stage / increment 是交付结构，capability / sub-capability 是稳定产品分类；stage name、MVP baseline name 或 roadmap horizon 不得作为 `Capability slug` 或 `Capability ID`。
-- 新增或修改下游 requirements、spec、AC、TC、stage scope 和 increment definition 不得引用 V1 slug 作为主结构、需求 ID、模块标题或 active source。
-- V1 slug 只允许通过 `docs/product/feature_registry.md` 的 `Legacy Mapping` 做历史追溯，不得作为新下游输入或兼容 source。
-
-## Stage-To-Increment Traceability
-
-Committed stage work 在生成下游 artifact 前必须可追溯：
-
-```text
-Stage Scope ID
--> Increment ID
--> Requirement ID
--> Spec section/state ID
--> Acceptance Criteria ID
--> Contract ID, when applicable
--> Global SWC Architecture Baseline / Flow ID, when applicable
--> SWC Allocation Row, when applicable
--> Work Package ID, when available
--> Code Evidence
--> Test Evidence
--> Release Evidence
-```
-
-规则：
-
-- Active stage file 必须用稳定 Stage Scope Item ID 暴露 scope，并把每个 item 分类为 `required`、`deferred` 或 `not applicable`。
-- Increment definition 必须列出 `Covered Stage Scope Items` 和 `Excluded Stage Scope Items`。
-- 新 increment work 的 requirement artifact 必须引用其细化的 Stage Scope Item ID。
-- Spec 和 acceptance criteria 必须保留 Stage Scope Item ID，不得用纯 prose reference 替换。
-- Implementation-impacting increment 在编码开始前必须包含 `docs/product/increments/<increment-id>/swc_allocation.md`，或明确 `N/A - no SWC impact` decision。
-- Brownfield implementation-impacting increment 在编码开始前必须包含 Existing Implementation Baseline 和 Delta From Existing Baseline。
-- Implementation-impacting increment 必须引用 `docs/architecture/software_component_architecture.md` 和适用 `SWC-FLOW-*` ID，或为任何 local SWC flow 给出 migration/reuse rationale 分类。
-- Implementation-impacting PR 必须通过 `scripts/check_swc_allocation.py`；changed implementation path 必须被 owning allocation 的 existing code baseline 或 allowed code delta 覆盖。
-- Traceability matrices must prove 100% coverage for committed scope: every required Stage Scope Item ID is covered by an increment or has an explicit deferred/not-applicable decision, every increment requirement traces to at least one Stage Scope Item ID, every FR has at least one AC, and every AC has code/test evidence or a documented exception when implementation has started.
-- Increment test case libraries must assign stable `TC-<scope-prefix>-<NNN>` IDs. For MVP backend work, use `TC-MVP-BE-001`, `TC-MVP-BE-002`, and continue sequentially without renumbering or reuse.
-- Published TC IDs remain in the library even when retired; retired rows must record status `retired` and a replacement TC ID or retirement reason.
-- Each increment test case must include: `Stage Scope ID`, `FR`, `Spec`, `AC`, `Traceability Row`, `Gap`, `测试层级`, `自动化状态`, `测试脚本路径`, `执行命令`, `结果状态`, and `证据报告`. Blank required fields are not allowed; use `N/A - <reason>` only when the field is genuinely not applicable.
-- QA may update traceability Test Evidence only for test evidence, test status, QA gap notes, and evidence report links. Traceability check must review `AC -> TC -> test script path -> execution command -> result status -> evidence report -> Test Evidence` before completion.
-- Future roadmap placeholders may be traced only to feature/stage boundaries and architecture compatibility notes until Product Manager accepts them into an increment; they must not be represented as implementation-ready requirements.
-
-## Naming
-
-- Directory name 使用 lowercase kebab-case。
-- `SKILL.md` frontmatter `name` 必须与目录名完全一致。
-- 名称应描述一个可复用动作，而不是角色或部门。
-- Skill 应足够小，能够独立执行和验证。
-
-## SKILL.md Required Structure
-
-`SKILL.md` 是运行时指令文件，必须以 YAML frontmatter 开始：
+每个 Skill 以 YAML frontmatter 开始：
 
 ```yaml
 ---
@@ -140,138 +37,61 @@ description: Use when ... Do not use ...
 ---
 ```
 
-Required sections:
+目录名使用 lowercase kebab-case，frontmatter `name` 与目录名一致。`description` 必须包含正向与反向触发边界。运行时正文至少包含：
 
 - `## Overview`
 - `## When to Use`
 - `## When NOT to Use`
+- `## Contract`
 - `## Inputs`
 - `## Outputs`
-- `## 文档路径约定`
 - `## Process`
 - `## Red Flags`
 - `## Verification`
-- `## Common Rationalizations`
 
-`description` 必须同时包含正向和反向触发边界，并使用 `Use when` 与 `Do not use` 短语。
+内容必须面向可重复使用的 current state。一次性事件、已完成迁移、旧方案过程、兼容 fallback 和整改编号不得保留在 active instructions 中。
 
-## SPEC.md Required Structure
+## Method quality
 
-`SPEC.md` 是 skill 的治理和维护契约。
+- Inputs 只包含执行方法需要的当前事实；缺失产品行为时回到 owning Story/VS/FR，不在 Skill 中推断。
+- Outputs 明确语义边界，但不自行建立 path、owner 或 lifecycle。
+- Process 应小而可验证，区分适用与不适用步骤，避免把每个任务都扩展为全流程。
+- Verification 给出确定性结构检查、测试或审查方法；测试证据不能替代适用独立 checker。
+- Red Flags 必须覆盖最可能的 scope creep、重复 authority、错误 source 和不可验证输出。
+- 只加载任务命中的 Skill 和其条件命中的直接 resource；不递归加载未引用材料。
 
-Required sections:
+## Story/Slice delivery methods
 
-- `## Purpose`
-- `## Scope`
-- `## Trigger Context`
-- `## Inputs`
-- `## Outputs`
-- `## Quality Bar`
-- `## Maintenance Notes`
-- `## External References`
+- `story-map-develop` 维护 Story 与嵌套 Child VS；Capability 只分类。
+- `requirement-refine` 把 approved VS 提炼成 mandatory atomic FR；FR 只通过 `source_vs_ids` 直接引用 VS。
+- `test-case-generate` 维护 FR-TC、Contract-TC、VS-TC；三类 case 分别只直接引用 FR、Contract、VS。
+- `document-traceability-check` 只从 owning sources 重建完整 projection 和 coverage join，不能拥有 direct edge 或执行状态。
+- API/Domain/AI/UX 方法以 applicable mandatory FR 为产品上游；事实变化必须有对应 Contract-TC。
 
-`SPEC.md` 必须说明 skill 为什么存在、何时维护，以及如何判断质量。
+普通编码的最小上下文为 selected approved VS、mandatory FR、受影响 Engineering Contract、typed TCs、相邻代码/测试和验证命令。Stage/Increment/Work Package 只作 planning metadata，不是产品/Contract/TC lineage。
 
-## Trigger Quality
+## Bundled resources
 
-A high-quality skill has clear boundaries:
+- `references/` 只保存非总是适用的领域细节；SKILL 必须以 Markdown link 直接链接并写明选择条件。
+- Reference 只允许一层，不得继续路由另一份 reference，也不得覆盖核心 trigger、permission、I/O、process 或 verification。
+- `scripts/` 用于确定性重复操作；`assets/` 仅供输出，不作为规则来源。
+- 未被 active SKILL 直接链接的资源不进入 authority graph 或默认上下文。
 
-- `When to Use` says which work should trigger it.
-- `When NOT to Use` prevents over-triggering.
-- `Red Flags` identifies failure modes, scope creep, weak assumptions, and unverifiable outputs.
-- `Verification` gives concrete checks that can be performed after the skill runs.
+## Native Agent quality
 
-## Spec-Driven Behavior
+- 每个 registered TOML 包含唯一 `name`、具体 `description`、精简 `developer_instructions` 和与职责相称的 sandbox mode。
+- Producer 只能在用户批准和 contract contributor scope 内写入；独立 Checker 必须 read-only。
+- Agent 不复制 Skill 方法、Artifact 路径表或 Gate 正文，也不维护静态永久 Skill 附件。
+- 普通单 owner 工作由根会话走最短安全路径；只有专业边界、并行收益或独立审查确有必要时委派。
 
-Project skill 应遵循以下规则：
+## Verification
 
-- 先列 assumptions，再给 conclusions。
-- 实现前把 requirements 转成可测试 success criteria。
-- 预计触碰超过五个文件的任务应拆分。
-- 优先采用 contract-first API 和 interface design。
-- cross-layer、persistence、API、provider、AI runtime 或 reusable-module implementation 前必须要求 SWC allocation。
-- bug fix 必须要求 regression test。
-- 在 implementation report 中记录 validation、risk 和 follow-up。
-
-## Project Agent Runner Governance
-
-Project-local agent 位于 `codex/agents/*.md`，不得复制到 static tool metadata。使用 project agent 时，应通过 dynamic runner 生成 execution boundary：
+Skill/Agent/governance definition 变化后至少运行：
 
 ```bash
-python scripts/project_agent_runner.py packet <agent-name> --task "<task>"
+python3 scripts/validate_agent_skills.py
+python3 scripts/validate_governance_contracts.py
+python3 scripts/validate_story_slice_cutover.py
 ```
 
-质量规则：
-
-- `codex/agents/*.md` 是 project-local agent role、input、output、allowed path、protocol 和 rule 的唯一 source of truth。
-- Project Agent Execution Packet 必须包含 loaded definition path、task、upstream handoff 和完整 loaded definition。
-- 主线程负责 route 和 integrate；loaded agent packet 负责执行 specialist step。
-- 下一个 agent 必须消费上一个 agent 的 handoff output，而不是依赖 conversational memory。
-- 当任务属于 multi-step governance、architecture、requirement、documentation 或 product-object work 时，workflow 进入下一步前必须由 checker agent 审查已完成步骤。
-- 修改 `codex/agents/`、`scripts/project_agent_runner.py` 或 `codex/templates/agent_runner_packet.template.md` 后运行 `python scripts/project_agent_runner.py validate`。
-
-## Full-Scope Planning and Architecture Governance
-
-Broad planning skill 和 architecture agent 必须防止把 partial context 表述成 full-system conclusion。
-
-- 每个 broad architecture 或 platform strategy task 必须声明 scope mode：`whole-app`、`stage`、`increment`、`feature`、`refactor` 或 `experiment`。
-- Whole-app task 在结论前必须建立 source inventory：Product Base、feature registry、roadmap、development status、active stages、planned increments、future-stage boundaries、non-goals、current code structure、existing contracts、release artifacts 和 reports。
-- Whole-app architecture 必须包含 feature/stage coverage matrix，把 product capability 映射到 frontend、backend、data、API、AI/runtime、security、tests、release 和 operations。
-- Implementation-impacting architecture 必须包含 software component architecture 和 allocation：global SWC architecture baseline、stable SWC ID、applicable `SWC-FLOW-*` ID、code path、responsibility、non-responsibility、provided/required interface、data ownership、persistence ownership、API/OpenAPI reference、test ownership、reuse requirement 和 forbidden bypass。
-- Increment-level implementation architecture 必须把每个受影响 FR/AC 映射到 frontend SWC、backend SWC、API/OpenAPI、domain entity、DB table/migration、provider/AI boundary 和 TC，或记录明确 `N/A - <reason>`。
-- 缺失 coverage 必须分类为 blocker、deferred 或 not applicable。未分类遗漏会阻塞 acceptance。
-- Technology recommendation 必须能追溯到 requirements、constraints、market/common-practice option comparison、trade-off、team/operations fit 和 rollback cost。
-- ADR 记录 accepted 或 proposed decision；不得用 ADR 把 exploratory 或 incomplete architecture 洗成 source of truth。
-- 任何 coverage 不通过的 architecture artifact，在下游 development 使用前必须删除、supersede 或标记为 non-source-of-truth。
-- Governance fix 必须处理 failure class。不要增加“remember P0.2”这类 one-off rule；应增加可复用 coverage、traceability 和 review gate。
-
-## 文档路径治理
-
-项目内 skill 必须让文档输入和输出位置清晰可追踪：
-
-- 使用明确的仓库路径或路径模板，例如 `docs/product/increments/<increment-id>/spec.md`。
-- 避免只写 `updated docs`、`feature-specific notes`、`report updates` 这类泛称；如果必须使用泛称，也要同时列出具体目标路径。
-- 保持 `SKILL.md` 的运行时说明与 `SPEC.md` 的维护契约一致。
-- 新增持久化项目文档默认使用中文，除非用户明确要求其他语言。
-- 若需要保留英文原文，必须采用源文件内双语格式：英文正文块后紧跟中文翻译或中文等价说明，不另行生成 `.en.md` 旁路文件，除非用户明确要求。
-- 涉及 `docs/` 或 `codex/templates/` 下持久化项目文档输出时，解释性段落、状态、规则、结论和流程说明必须通过 `python3 scripts/check_document_language.py --scope changed --include-worktree`；技术标识、路径、API、OpenAPI、SWC ID 和测试 ID 可以保留英文。
-- 当路径不清楚或新增文档路径时，先使用 `document-path-governance` skill 做路径归属判断。
-- 当问题同时涉及路径、内容契约和追踪检查，或无法判断属于哪一类治理问题时，先使用 `document-governance` 做总控路由。
-
-## 文档治理 skill 分层
-
-文档治理职责拆分为四个 skill：
-
-- `document-governance`：总控路由，负责判断问题类型、拆分任务和处理跨治理冲突。
-- `document-path-governance`：路径治理，负责 canonical path、owner、source of truth、路径模板、skill 输入输出路径和 agent Allowed Paths。
-- `document-content-contract`：内容契约治理，负责每类文档写什么、不写什么、必需章节、禁止内容和验收检查。
-- `document-traceability-check`：追踪检查，负责需求、规格、验收、契约、测试、报告和发布证据之间的链路完整性。
-
-新增或修改文档治理规则时，应优先更新具体子 skill；只有路由和冲突处理规则才写入 `document-governance`。
-
-## External References and Attribution
-
-本仓库借鉴公开 skill 和工程流程仓库中的 workflow patterns，但不直接 vendoring 其内容。
-如果未来复制外部 skill 内容到本仓库，必须在对应 skill 目录保留 attribution 和 license 信息。
-
-Reference sources:
-
-- GitHub Copilot Agent Skills: https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills
-- OpenAI Codex skill-creator sample: https://github.com/openai/codex/blob/main/codex-rs/skills/src/assets/samples/skill-creator/SKILL.md
-- addyosmani/agent-skills: https://github.com/addyosmani/agent-skills
-- addyosmani documentation-and-ADRs skill: https://github.com/addyosmani/agent-skills/blob/main/skills/documentation-and-adrs/SKILL.md
-- Microsoft cloud-solution-architect skill: https://github.com/microsoft/skills/tree/main/.github/skills/cloud-solution-architect
-- Callstack agent-skills React Native workflow patterns: https://github.com/callstackincubator/agent-skills
-- AIWG multi-agent workflow primitives: https://github.com/jmagly/aiwg
-- agent-ecosystem/skill-validator: https://github.com/agent-ecosystem/skill-validator
-- getsentry/skills: https://github.com/getsentry/skills
-
-## Local Validation
-
-新增或编辑 skills 后运行以下命令：
-
-```bash
-python scripts/validate_agent_skills.py
-```
-
-当前 validator 有意保持轻量，只检查必需结构和基础触发质量；后续可集成完整 skill validator 或增加语义检查。
+验证必须覆盖 trigger/non-trigger、必需章节、active method route、直接 resource、retired Skill discovery、authority separation、legacy active reference 和 derived operational pointer 对齐。对合法的 contract-aligned pointer 不得误报。

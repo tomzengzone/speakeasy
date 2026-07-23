@@ -73,7 +73,7 @@ TC_EXPECTATIONS = {
         "docs/reports/implementation_report.md",
         "docs/reports/test_report.md",
         "docs/reports/quality_report.md",
-        "python3 scripts/project_agent_runner.py validate",
+        "python3 scripts/validate_governance_contracts.py",
         "git diff --check",
         "passed",
         S007_REVIEW_ANCHOR,

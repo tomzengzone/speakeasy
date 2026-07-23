@@ -8,8 +8,10 @@ Phase 1 requirements passed / Phase 2 contracts passed after correction / Phase 
 - Increment: `p0-2-followup-e-speaking-diagnostic-production`
 - Change request: `CR-20260607-001`
 - Active stage: `docs/product/stages/p0-2-training-memory.md`
-- Primary feature: `goal-driven-learning-autopilot`
-- Affected features: `scoring-feedback`, `ai-provider-operations`, `learning-memory-review`, `access-onboarding`, `commercial-subscription`
+- Primary Capability ID：`CAP-LEVEL`
+- Primary Sub-capability ID：`CAP-LEVEL-02`
+- Affected Capability IDs：`CAP-COACH`、`CAP-ACC`、`CAP-COM`、`CAP-PLAN`
+- Affected Sub-capability IDs：`CAP-LEVEL-04`、`CAP-LEVEL-05`、`CAP-COACH-03`、`CAP-COACH-05`、`CAP-ACC-03`、`CAP-ACC-04`、`CAP-COM-03`、`CAP-COM-05`、`CAP-PLAN-01`、`CAP-PLAN-06`、`CAP-PLAN-07`
 
 ## 上游来源
 - `docs/product/stages/p0-2-training-memory.md`

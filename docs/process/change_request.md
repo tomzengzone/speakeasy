@@ -7,7 +7,8 @@
 - id
 - date
 - requester
-- affected feature
+- primary capability or approved no-Primary classification
+- affected capabilities
 - change summary
 - reason
 - scope impact
@@ -29,6 +30,7 @@
 
 ## 规则
 被接受的变更请求必须先更新相关源文档，之后才能开始实现。
+新变更请求必须复制 owning product object 已批准的 V2 Primary/Affected Capability 分类；若采用 no-Primary，必须保留理由和完整 Affected Capability list。变更请求不得声明或修改 registry 分类，缺失或冲突时路由 Product Manager + `capability-registry-develop`。以下历史条目中的 `affected feature` 字段作为当时记录保留，不作为新模板。
 
 ## CR-20260607-001 P0.2 生产级音频优先口语诊断
 
@@ -252,7 +254,7 @@ Product Manager 接受该变更为付费上线前的 P0 发布阻塞增量：
 - 新增 stage：`docs/product/stages/p0-commercial-readiness.md`。
 - 新增 increment definition：`docs/product/increments/commercial-subscription-readiness/definition.md`。
 - 已补齐 `commercial-subscription-readiness` 的 requirements、spec、acceptance 和 traceability。
-- Development Orchestrator 后续应路由 Domain Schema、API Contract、Architecture/Security、UX/Screen Spec、Backend、Frontend、QA/Test Plan、DevOps/Release 和独立 checker agent，逐步补齐商业发布门禁。
+- Codex Root 后续应路由 Domain Schema、API Contract、Architecture/Security、UX/Screen Spec、Backend、Frontend、QA/Test Plan、DevOps/Release 和独立 checker agent，逐步补齐商业发布门禁。
 
 ## CR-20260601-002 商业 AI Provider 生产化加固
 

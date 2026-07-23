@@ -4,7 +4,7 @@
 2026-05-24
 
 ## 审查角色
-`codex/agents/product_manager.md`
+`.codex/agents/product_manager.toml`
 
 ## 审查目标
 确认当前产品对象治理、APP 基线提炼、P0.1/P0.2 阶段边界、PM/Orchestrator 协作和版本控制状态是否符合预期；识别偏离项、非预期变更和剩余风险。
@@ -22,9 +22,9 @@
 - `docs/product/roadmap.md`
 - `docs/product/development_status.md`
 - `docs/process/change_request.md`
-- `codex/agents/product_manager.md`
-- `codex/agents/development_orchestrator.md`
-- `codex/templates/pm_orchestrator_brief.template.md`
+- `.codex/agents/product_manager.toml`
+- `AGENTS.md`
+- `codex/templates/pm_execution_brief.template.md`
 - `docs/reports/implementation_report.md`
 - 既有旧扁平 feature 工件引用已清理，后续不再作为路径来源。
 
@@ -35,7 +35,7 @@
 - 将 P0.1 表达自动化训练闭环表达为 active increment definition。
 - 建立 P0.1 increment requirements、spec、acceptance 和 traceability。
 - 旧扁平 feature 工件引用已清理；实体删除由后续治理步骤处理。
-- 修复 Product Manager、Development Orchestrator 和 PM brief 没有接入 product classification / feature registry / stage / increment 的问题。
+- 修复 Product Manager、Codex Root 和 PM brief 没有接入 product classification / feature registry / stage / increment 的问题。
 - 修复 untracked 状态导致的审查粒度问题：将治理、产品、agent、skill、report 资产 staged，供后续 diff/commit 审查。
 
 ## 审查结论
@@ -49,17 +49,17 @@ Result: pass
 Status: fixed
 
 修复内容：
-- `codex/agents/product_manager.md` 已加入 feature registry、baselines、stages、increments 输入输出。
+- `.codex/agents/product_manager.toml` 已加入 feature registry、baselines、stages、increments 输入输出。
 - User Intake Protocol 已要求 product object classification、registry/stage/increment 检查和 increment definition。
 - Rules 已禁止用 MVP、P0.1、P0.2、Now、Next、Later 作为 feature slug。
 
-### P1：Development Orchestrator 和 PM brief 未接入新门禁
+### P1：Codex Root 和 PM brief 未接入新门禁
 Status: fixed
 
 修复内容：
-- `codex/agents/development_orchestrator.md` 已要求确认 classification、active stage、primary feature、affected features、increment id、scope、non-goals 和 upstream evidence。
+- `AGENTS.md` 已要求确认 classification、active stage、primary feature、affected features、increment id、scope、non-goals 和 upstream evidence。
 - Orchestrator 已禁止绕过 increment definition gate。
-- `codex/templates/pm_orchestrator_brief.template.md` 已增加 Product Classification、Product Object Check、Primary feature、Affected features、Increment id 和 Required Downstream Artifacts。
+- `codex/templates/pm_execution_brief.template.md` 已增加 Product Classification、Product Object Check、Primary feature、Affected features、Increment id 和 Required Downstream Artifacts。
 
 ### P2：未跟踪文件导致无法精确审查
 Status: fixed by staging

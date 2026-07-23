@@ -14,15 +14,13 @@ Implemented locally for FR-001..009 / release-gated。Followup-A 本地 Flutter 
 - Product object mode: `feature-increment`
 - Source mode: local implementation independent review follow-up
 
-## Primary Feature
-`goal-driven-learning-autopilot`
+## Primary Capability
+- Capability ID：`CAP-INTENT`
+- Sub-capability ID：`CAP-INTENT-01`
 
-## Affected Features
-- `access-onboarding`
-- `learning-memory-review`
-- `scoring-feedback`
-- `official-scenario-library`
-- `ai-provider-operations`
+## Affected Capabilities
+- Capability IDs：`CAP-LEVEL`、`CAP-PLAN`、`CAP-MEMORY`、`CAP-COACH`、`CAP-CONTENT`、`CAP-ACC`
+- Sub-capability IDs：`CAP-INTENT-04`、`CAP-INTENT-06`、`CAP-LEVEL-02`、`CAP-LEVEL-04`、`CAP-LEVEL-05`、`CAP-PLAN-06`、`CAP-PLAN-07`、`CAP-MEMORY-02`、`CAP-MEMORY-03`、`CAP-COACH-03`、`CAP-COACH-04`、`CAP-CONTENT-01`、`CAP-CONTENT-02`、`CAP-ACC-03`
 
 ## Upstream Decision Source
 - P0.2 stage scope: `docs/product/stages/p0-2-training-memory.md`

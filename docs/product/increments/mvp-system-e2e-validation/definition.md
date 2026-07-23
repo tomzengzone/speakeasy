@@ -11,7 +11,7 @@ Validated for local MVP system E2E gate - 已建立并跑通 MVP 本地系统级
 | v1.1 | 2026-05-29 | Validated | TC-MVP-E2E-006 到 TC-MVP-E2E-010 深度系统回归通过；真实支付 provider 保留 external/manual gate。 |
 
 ## Owner
-QA / Development Orchestrator
+QA / Codex Root
 
 ## Problem
 当前 MVP 已有后端迁移、MockMvc、contract、Flutter unit/widget 测试，但这些测试不能证明真实用户路径已经在同一台电脑上贯通 Flutter UI、Spring Boot API 和 PostgreSQL 持久化。人工在手机端逐条回归成本高，也容易漏掉跨层问题，例如：

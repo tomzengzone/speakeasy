@@ -1,30 +1,33 @@
 # 完成定义
 
-只有满足以下条件，feature 才能标记为完成：
+只有实际适用的条目全部满足或存在 contract 允许的明确例外，工作才可标记完成。
 
-- [ ] Feature spec 已存在。
-- [ ] Acceptance criteria 已存在，并已映射到测试。
-- [ ] 实现开始前已存在 increment test case library，且每条已批准 AC 都映射到稳定 TC ID 或明确例外。
-- [ ] 如果数据发生变化，Domain schema 已更新。
-- [ ] 如果 frontend/backend boundary 发生变化，API contract 已更新。
-- [ ] 如果 UI 发生变化，Screen spec 已更新。
-- [ ] 如果 LLM 行为发生变化，AI output schema 已更新。
-- [ ] 当变更影响稳定 SWC topology、data flow 或 reusable component boundary 时，已引用或更新 Global SWC architecture baseline。
-- [ ] 对于 cross-layer、persistence、API、AI runtime、provider 或 reusable-module 变更，已存在 SWC allocation，或已记录明确 no-SWC-impact exception。
-- [ ] 当变更触及既有能力时，SWC allocation 已包含 Existing Implementation Baseline，并列出具体 existing user flow、code path、SWC、Flow ID、API/OpenAPI call、domain/data ownership、tests/evidence、non-regression behavior 和 legacy/deprecated parts。
-- [ ] SWC allocation 已包含 Delta From Existing Baseline，并列出 reused SWC/Flow ID、changed/unchanged behavior、allowed/forbidden new code、existing code modified、migration/deprecation impact 和 regression proof required。
-- [ ] SWC allocation 已引用适用的 global `SWC-FLOW-*` ID，或把 local flow 分类为 `one-off`、`proposed-global` 或 `legacy-compatible`。
-- [ ] 适用时，SWC allocation 已把受影响 FR/AC 映射到 frontend SWC、backend SWC、API/OpenAPI、domain entity、DB table/migration 和 test case。
-- [ ] 实现前已审查 required reuse 和 forbidden duplicate-build boundary。
-- [ ] 对 implementation-impacting 变更，`python3 scripts/check_swc_allocation.py --scope changed --base-ref <base-ref>` 已通过。
-- [ ] 涉及持久化项目文档变更时，新增或修改的自然语言内容默认中文；若保留英文原文，则英文正文块后必须紧跟中文翻译；`python3 scripts/check_document_language.py --scope changed --base-ref <base-ref>` 已通过。
-- [ ] 实现已完成。
-- [ ] Unit test 已新增或更新。
-- [ ] 风险需要时，integration/widget/e2e test 已新增。
-- [ ] Regression check 已通过，或 gap 已记录。
-- [ ] 面向用户的变更已完成 UX review。
-- [ ] Implementation report 已更新。
-- [ ] Release checklist impact 已审查。
+## 产品与测试
+
+- [ ] 产品行为变化已引用完整且 approved 的 Story / Child VS；Story/VS 缺口由 Product Manager 修正。
+- [ ] 每个 selected approved VS 至少关联一条 approved、atomic FR，且 FR 只直接引用 VS。
+- [ ] 每条适用 FR 有最低成本 FR-TC，或有 owner、原因、影响与失效期限明确的例外。
+- [ ] 每个实施中的 selected VS 有用户可感知的 integration/E2E VS-TC，覆盖关键失败/降级路径。
+- [ ] 三类 TC 只保存各自唯一 direct edge，并具有自包含 oracle、Given/When/Then、边界/负例、层级、scope、selector、脚本路径和执行命令。
+- [ ] Derived canonical traceability 可从 owning sources 重建，无悬空引用或重复 edge ownership。
+
+## 工程事实与实现
+
+- [ ] API/OpenAPI、Domain/Persistence、AI、UX 或架构事实发生变化时，owning Engineering Contract 已同步。
+- [ ] 每个发生事实变化的 Contract 有适用 Contract-TC；低风险未被用作跳过 Contract 同步的理由。
+- [ ] 稳定共享 SWC topology、system flow 或 reusable boundary 变化时，当前 SWC 架构与 catalog 已更新并完成独立架构检查。
+- [ ] 触碰既有能力时已复用当前实现和跨切面边界；新增组件或旁路有明确必要性和迁移责任。
+- [ ] 实现范围只覆盖 selected VS / FR，未在代码、TC、Contract 或 Issue 中发明产品行为。
+
+## 验证与证据
+
+- [ ] 先运行受影响 FR/Contract 的最窄快速测试，再运行 selected VS 的定向全链路测试。
+- [ ] Unit、contract、integration、migration、AI eval、widget 或 E2E 测试已按实际影响新增或更新。
+- [ ] Applicable governance validator、语言检查和风险 Gate 已通过。
+- [ ] PR 的编译、静态分析和测试均通过，CI 结果绑定被检查的 commit SHA；TC Catalog 和 traceability 未复制运行状态。
+- [ ] 用户可见变化完成适用 UX review；release scope 命中时完成 release checklist、rollback 与发布控制。
+- [ ] 需要持久报告时，报告只记录本次范围、文件、测试、风险和后续项；不复制产品或治理 authority。
 
 ## 完成规则
-任何必需复选项未完成且没有明确记录例外时，不得把 feature 标记为完成。
+
+Stage、Increment、Work Package 或 PR 状态不能替代上述事实和证据。任一 required item 缺失、候选 SHA 漂移、独立 checker 缺失或未关闭 blocker 都会阻止完成与 baseline 激活。

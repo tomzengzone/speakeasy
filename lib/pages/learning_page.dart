@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import 'package:speakeasy/domain/scene/scene_models.dart';
 import 'package:speakeasy/models/app_models.dart';
 import 'package:speakeasy/services/audio_service.dart';
 import 'package:speakeasy/l10n/l10n.dart';

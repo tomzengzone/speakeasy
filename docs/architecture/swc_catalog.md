@@ -1,5 +1,9 @@
 # Software Component Catalog
 
+## PR-003 current lineage
+
+本次只切换来源链，不改变本文的组件责任、接口、复用边界或已接受实现事实。当前产品 lineage 仅由适用的 approved FR 解析；Engineering Artifact 之间的 direct/conditional inputs 和适用 Gate 继续仅由 Governance Contract 解析。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+
 ## 状态
 Proposed - 初始 SWC catalog，用于 architecture governance。本文把当前已知前端、后端、数据、AI/provider 和 ops 组件收敛为稳定 SWC ID，供后续 increment 的 `swc_allocation.md` 引用。本文不替代 Domain Schema、OpenAPI、AI runtime、UX、测试或发布文档。
 

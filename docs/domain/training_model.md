@@ -1,5 +1,9 @@
 # Training Model：P0.1 表达自动化训练闭环
 
+## PR-003 current lineage
+
+本次只切换来源链，不改变本文的领域对象、生命周期、不变量、持久化边界或已接受实现事实。当前产品上游仅由适用的 approved FR 解析；文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability 或 Increment SWC Allocation 引用均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+
 ## 状态
 Proposed - P0.1 Domain Gate Ready；2026-06-03 commercial production-hardening domain addendum added.
 
@@ -13,8 +17,10 @@ Proposed - P0.1 Domain Gate Ready；2026-06-03 commercial production-hardening d
 | --- | --- |
 | Increment | `docs/product/increments/p0-1-expression-automation-training/` |
 | Active stage | `docs/product/stages/p0-1-expression-automation.md` |
-| Primary feature | `expression-automation-training` |
-| Affected features | `voice-scenario-practice`, `official-scenario-library`, `listening-shadowing`, `expression-practice-queue`, `learning-memory-review`, `scoring-feedback` |
+| Primary Capability ID | `CAP-TRAIN` |
+| Primary Sub-capability ID | `CAP-TRAIN-03` |
+| Affected Capability IDs | `CAP-PRACTICE`、`CAP-CONTENT`、`CAP-MEMORY`、`CAP-COACH` |
+| Affected Sub-capability IDs | `CAP-TRAIN-02`、`CAP-TRAIN-04`、`CAP-TRAIN-05`、`CAP-TRAIN-06`、`CAP-PRACTICE-01`、`CAP-PRACTICE-02`、`CAP-PRACTICE-03`、`CAP-CONTENT-03`、`CAP-MEMORY-02`、`CAP-COACH-02`、`CAP-COACH-03`、`CAP-COACH-05` |
 | Covered gap | `P01-GAP-001`, `P01-GAP-009` through `P01-GAP-014` |
 
 ## Source Inputs

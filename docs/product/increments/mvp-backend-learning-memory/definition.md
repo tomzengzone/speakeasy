@@ -14,15 +14,13 @@ Draft - MVP backend-first stage planned increment。
 ## Active Stage
 `docs/product/stages/mvp-backend-foundation.md`
 
-## Primary Feature
-`server-backed-learning-foundation`
+## Primary Capability
+- Capability ID：`CAP-MEMORY`
+- Sub-capability ID：`CAP-MEMORY-02`
 
-## Affected Features
-- `expression-practice-queue`
-- `learning-memory-review`
-- `voice-scenario-practice`
-- `scoring-feedback`
-- `official-scenario-library`
+## Affected Capabilities
+- Capability IDs：`CAP-PLAN`、`CAP-TRAIN`、`CAP-NOTE`
+- Sub-capability IDs：`CAP-MEMORY-01`、`CAP-MEMORY-03`、`CAP-MEMORY-04`、`CAP-MEMORY-05`、`CAP-PLAN-05`、`CAP-TRAIN-04`、`CAP-NOTE-04`、`CAP-NOTE-05`
 
 ## 上游决策
 - Product Base：`docs/product/base/requirements.md`、`docs/product/base/spec.md`、`docs/product/base/acceptance.md`、`docs/product/base/traceability.md`

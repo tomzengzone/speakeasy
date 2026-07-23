@@ -5,10 +5,14 @@ Draft | Proposed | Accepted | Superseded
 
 ## Scope
 - Increment ID:
+- Traceability Row IDs:
+- WP IDs:
 - Active stage:
 - Covered Stage Scope IDs:
-- Primary feature:
-- Affected features:
+- Primary Capability ID:
+- Primary Sub-capability ID:
+- Affected Capability IDs:
+- Affected Sub-capability IDs:
 - Explicit non-goals:
 - Change mode: `brownfield-update` / `behavior-preserving-refactor` / `greenfield-with-no-existing-implementation`
 
@@ -63,9 +67,9 @@ Draft | Proposed | Accepted | Superseded
 | Ops / release |  |  | Gates, audit, rollback, observability evidence |
 
 ## Requirement Allocation Matrix
-| Stage Scope ID | FR | Spec | AC | FE SWC | BE SWC | API/OpenAPI | Domain Entity | DB Table/Migration | Provider/AI Boundary | TC | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-|  |  |  |  |  |  |  |  |  |  |  |  |
+| Traceability Row ID | Increment ID | WP ID | FR | Spec | AC | FE SWC | BE SWC | API/OpenAPI | Domain Entity | DB Table/Migration | Provider/AI Boundary | TC | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 
 ## SWC Data Flows
 
@@ -74,14 +78,14 @@ Draft | Proposed | Accepted | Superseded
 - 触发条件：
 - 成功路径：
   ```text
-  UI
-    -> Adapter
-    -> FE-API-CLIENT
-    -> BE-API-CONTROLLERS
-    -> BE-...
-    -> DB-... / AI-... / provider
+  <frontend-feature>
+    -> <frontend-adapter>
+    -> <frontend-shared-service>
+    -> <backend-api-boundary>
+    -> <backend-domain-owner>
+    -> <data-or-ai-owner>
     -> response
-    -> UI
+    -> <frontend-feature>
   ```
 - 失败路径：
 - Auth / authorization：
@@ -112,3 +116,4 @@ Draft | Proposed | Accepted | Superseded
 ## Notes
 - 本文是相对于 `docs/architecture/software_component_architecture.md` 的 delta，不是完整 SWC architecture。
 - 不得在本文中重新定义 product scope、requirements、acceptance criteria、domain entity semantics、OpenAPI schemas、AI prompt schemas、UX layout、test implementation 或 release approval。
+- 完整 Story/Slice-to-evidence join 只在 owning `traceability.md` 中维护；本文通过 `Traceability Row ID` 回连。

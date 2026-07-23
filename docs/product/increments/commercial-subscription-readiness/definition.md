@@ -9,16 +9,13 @@ Draft - Product Manager accepted；PM 阶段开发计划、Domain/API/Architectu
 ## Active Stage
 `docs/product/stages/p0-commercial-readiness.md`
 
-## Primary Feature
-`commercial-subscription`
+## Primary Capability
+- Capability ID：`CAP-COM`
+- Sub-capability ID：`CAP-COM-03`
 
-## Affected Features
-- `profile-membership`
-- `access-onboarding`
-- `voice-scenario-practice`
-- `official-scenario-library`
-- `learning-memory-review`
-- `scoring-feedback`
+## Affected Capabilities
+- Capability IDs：`CAP-ACC`、`CAP-CONTENT`、`CAP-PRACTICE`、`CAP-COACH`、`CAP-MEMORY`
+- Sub-capability IDs：`CAP-COM-01`、`CAP-COM-02`、`CAP-COM-04`、`CAP-ACC-01`、`CAP-ACC-03`、`CAP-ACC-04`、`CAP-CONTENT-01`、`CAP-PRACTICE-03`、`CAP-COACH-01`、`CAP-MEMORY-05`
 
 ## 上游决策
 - `docs/process/change_request.md`：`CR-20260524-001 商业化订阅上线准备`
@@ -90,7 +87,7 @@ Ready for implementation routing after independent checker pass - 当前 Product
 | 字段 | 决策 |
 | --- | --- |
 | User request classification | product direction / planning request |
-| Product object mode | `feature-increment`，基于已接受的 `commercial-subscription` feature 和 `commercial-subscription-readiness` increment 继续规划 |
+| Product object mode | `feature-increment`，基于 active `CAP-COM` / `CAP-COM-03` classification 和 `commercial-subscription-readiness` increment 继续规划 |
 | Priority | P0 release-blocking |
 | Active stage | `p0-commercial-readiness` |
 | Covered Stage Scope Items | `COM-SI-001` 到 `COM-SI-012` |
@@ -123,10 +120,10 @@ Ready for implementation routing after independent checker pass - 当前 Product
 | 9 | P0-COM-FE-001 | Frontend Agent | Flutter 会员页、付费墙、权益刷新缓存、Android Billing、restore、降级、本地账号注销清理 | COM-SI-002,003,006,007,008,009 | Flutter code、widget/integration tests、generated client drift evidence | Flutter tests，UX review，commercial copy check |
 | 10 | P0-COM-REL-001 | DevOps Agent | release secrets、签名、Sentry/dSYM/ProGuard、商店元数据、隐私申报、审核账号、rollback | COM-SI-005,009,011,012 | `docs/release/release_checklist.md`、`docs/release/rollback_plan.md`、`docs/release/version_log.md` | DevOps review，Documentation Governance |
 | 11 | P0-COM-QA-002 | QA Agent | 商业边界测试执行：购买、恢复、退款、过期、宽限期、账号切换、注销、弱网、权限拒绝、崩溃恢复、额度耗尽 | COM-SI-011,012 | `docs/reports/test_report.md`、traceability Test Evidence | QA pass 或明确 release blocker |
-| 12 | P0-COM-REPORT-001 | Development Orchestrator + Documentation Governance | 汇总 implementation、quality、release evidence，并向 PM 返回 release-readiness finding | COM-SI-001..012 | `docs/reports/implementation_report.md`、`docs/reports/quality_report.md`、release evidence | PM release decision |
+| 12 | P0-COM-REPORT-001 | Codex Root + Documentation Governance | 汇总 implementation、quality、release evidence，并向 PM 返回 release-readiness finding | COM-SI-001..012 | `docs/reports/implementation_report.md`、`docs/reports/quality_report.md`、release evidence | PM release decision |
 
 ### Current Legal Next Step
-Development Orchestrator 在独立 checker pass 后可开始路由实现批次，建议先执行 `P0-COM-BE-001` 商业 foundation hardening，再依次路由 `P0-COM-BE-002` 权益/用量 gating、`P0-COM-BE-003` provider verify/webhook、`P0-COM-FE-001` Flutter 商业 UI 和 `P0-COM-REL-001` release gate。任何商业发布口径仍必须等待 QA 执行、provider sandbox/internal test、release evidence、quality report 和 PM release decision。
+Codex Root 在独立 checker pass 后可开始路由实现批次，建议先执行 `P0-COM-BE-001` 商业 foundation hardening，再依次路由 `P0-COM-BE-002` 权益/用量 gating、`P0-COM-BE-003` provider verify/webhook、`P0-COM-FE-001` Flutter 商业 UI 和 `P0-COM-REL-001` release gate。任何商业发布口径仍必须等待 QA 执行、provider sandbox/internal test、release evidence、quality report 和 PM release decision。
 
 Paid AI voice 或真实 DashScope provider 上线还必须执行 `commercial-ai-provider-hardening` 的 `P0-AI-*` work packages；不得用本增量的用量 gating 证据替代对象存储上传、持久化 TTS cache、DashScope live evidence、成本看板和生产数据策略。
 

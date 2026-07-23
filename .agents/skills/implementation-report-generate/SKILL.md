@@ -1,77 +1,50 @@
 ---
 name: implementation-report-generate
-description: Use when a development increment finishes and docs/reports/implementation_report.md must record scope, files, tests, risks, and follow-ups. Do not use before implementation or validation results are known.
+description: Use when completed implementation or governance work requires a durable report of scope, files, validation, risks, and follow-ups. Do not use before validation.
 ---
 
 # Implementation Report Generate
 
 ## Overview
-Create an auditable record that connects the completed change to requirements, tests, and residual risk.
+
+Create an auditable delivery record without copying product, engineering, test or governance authority.
 
 ## When to Use
-- A feature, workflow, or process asset has been added or changed.
-- The user asks what changed and how it was verified.
-- A sprint increment needs traceability.
+
+Use only after changed files and validation results are known and the user or applicable contract requires a persistent implementation report.
 
 ## When NOT to Use
-- No files were changed.
-- The work is still exploratory and not ready to report.
-- A release note is needed instead of an implementation report.
+
+Do not use for exploratory/no-change work, before validation, or when an ephemeral task summary is sufficient.
+
+## Contract
+
+Method skill for `IMPLEMENTATION_REPORT`. Resolve path, lifecycle, contributor fields and validation from `GOVERNANCE_INDEX`.
 
 ## Inputs
-- Git status and changed file list.
-- Increment reference for new product work.
-- Product Base or increment requirement/spec reference.
-- Commands run and results.
-- Known risks and follow-up items.
+
+Selected VS/FR/Contract/TC IDs when applicable, actual changed-file list and purpose, exact commands/results, skipped checks, risks and follow-ups.
 
 ## Outputs
-- Updated docs/reports/implementation_report.md.
-- Summary, requirement mapping, files changed, validation, risks, and follow-ups.
-- Clear note when tests were not run.
-- Traceability note to the owning increment or stable feature.
 
-## 文档语言
-- 本 skill 创建或更新的项目文档默认使用中文，除非用户明确要求英文或其他语言。
-- App 内用户可见文案按产品本地化要求处理；持久化的产品、流程、架构、领域、AI runtime、报告、测试计划、需求和设计文档默认使用中文。
+One append-only report entry with scope, changed files, validation evidence, explicit unrun checks, risks, rollback context and next steps.
 
-## 文档路径约定
-- 实现报告写入 `docs/reports/implementation_report.md`。
-- 输入优先读取本次 Product Base / increment requirement 或 spec、`git status`、变更文件清单、实际运行命令和结果。
-- 测试结果摘要可引用 `docs/reports/test_report.md`，质量风险可引用 `docs/reports/quality_report.md`。
-- 不在实现报告中替代需求、契约或验收标准；缺失时回到对应 workflow 阶段补文档。
+## Derived operational pointer
 
-## Product Object Rules
-- For new product work, identify the owning increment, active stage, primary feature, and affected features before reporting completion.
-- Reports summarize implementation evidence; they must not redefine requirements, specs, acceptance criteria, or stage scope.
-- If no increment/spec/AC reference exists for product work, report the governance gap instead of claiming completion.
-- Documentation-only governance work may report against the process artifact and change/check agent handoff instead of a product increment.
+When a persistent report is required, the resolved `IMPLEMENTATION_REPORT` contract currently points to `docs/reports/implementation_report.md`; validate this pointer against the contract before writing.
 
 ## Process
-1. Identify the requirement, increment, or user request addressed.
-2. List changed files by purpose, not as a raw dump.
-3. Record validation commands with pass/fail status.
-4. Call out unrun tests and why.
-5. Record residual risks and next steps.
-6. Keep the report append-only unless correcting the current entry.
+
+1. Confirm a persistent report is required.
+2. Link stable product/Contract/TC IDs without copying their contents.
+3. Group files by purpose and record only commands/results actually run.
+4. State skipped checks, residual risks, rollback context and follow-ups.
+5. Append without rewriting prior entries; run resolved validation.
 
 ## Red Flags
-- The report claims done without test or validation evidence.
-- The report omits generated docs or process files.
-- Risks are hidden in vague wording.
-- The report is written before final validation.
-- Product work is reported as done without an owning increment or acceptance evidence.
+
+Done claim without evidence; product/Contract/oracle text duplicated; planned command reported as run; hidden risk; Stage/Increment treated as product authority; report written when not required.
 
 ## Verification
-- Every meaningful changed area is represented.
-- Validation commands match what was actually run.
-- Skipped tests are explicit.
-- The entry can support later audit or rollback planning.
-- The report maps changed files and validation back to the owning increment or process governance artifact.
 
-## Common Rationalizations
-| Rationalization | Reality |
-| --- | --- |
-| "This is obvious, so no spec is needed." | Obvious work is still easy to mis-scope; write the smallest useful artifact. |
-| "We can validate it after implementation." | Validation criteria must exist before the implementation can be called done. |
-| "This is only internal process." | Process assets shape future code quality and need the same review discipline. |
+Every meaningful changed area is represented; evidence matches actual execution and the checked commit where applicable; skipped work is explicit; no authority is redefined.

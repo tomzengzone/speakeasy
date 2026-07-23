@@ -6,8 +6,10 @@ Draft - 由 Product Manager 接受的 P0 商业化发布阻塞增量需求。
 ## Product Object
 - Increment：`commercial-subscription-readiness`
 - Stage：`docs/product/stages/p0-commercial-readiness.md`
-- Primary feature：`commercial-subscription`
-- Affected features：`profile-membership`、`access-onboarding`、`voice-scenario-practice`、`official-scenario-library`、`learning-memory-review`、`scoring-feedback`
+- Primary Capability ID：`CAP-COM`
+- Primary Sub-capability ID：`CAP-COM-03`
+- Affected Capability IDs：`CAP-ACC`、`CAP-CONTENT`、`CAP-PRACTICE`、`CAP-COACH`、`CAP-MEMORY`
+- Affected Sub-capability IDs：`CAP-COM-01`、`CAP-COM-02`、`CAP-COM-04`、`CAP-ACC-01`、`CAP-ACC-03`、`CAP-ACC-04`、`CAP-CONTENT-01`、`CAP-PRACTICE-03`、`CAP-COACH-01`、`CAP-MEMORY-05`
 
 ## 上游来源
 - `docs/product/increments/commercial-subscription-readiness/definition.md`

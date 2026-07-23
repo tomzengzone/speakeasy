@@ -11,6 +11,12 @@ Draft - derived from MVP backend stage。
 ## Owner
 Requirement Development Agent
 
+## Capability Classification
+- Primary Capability ID：`CAP-ACC`
+- Primary Sub-capability ID：`CAP-ACC-04`
+- Affected Capability IDs：`CAP-COM`
+- Affected Sub-capability IDs：`CAP-ACC-01`、`CAP-COM-03`、`CAP-COM-05`
+
 ## Requirement Coverage
 | Requirement ID | Stage Scope ID | Requirement |
 | --- | --- | --- |

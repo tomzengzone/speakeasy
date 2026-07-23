@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "domain": "engineering",
+  "defaults": {
+    "lifecycle": "persistent",
+    "contributors": [],
+    "mutable_fields": {},
+    "validation_command": null,
+    "engineering_contract": true
+  },
+  "artifacts": [
+    {"artifact_id":"SYSTEM_OVERVIEW","canonical_path":"docs/architecture/system_overview.md","accountable_owner":"system-architect","applicability":"whole-app or cross-module architecture changes","conditional_inputs":["STORY_MAP","FUNCTIONAL_REQUIREMENT_CATALOG"]},
+    {"artifact_id":"MODULE_BOUNDARY","canonical_path":"docs/architecture/module_boundary.md","accountable_owner":"system-architect","applicability":"module responsibility changes","required_direct_inputs":["SYSTEM_OVERVIEW"]},
+    {"artifact_id":"SOFTWARE_COMPONENT_ARCHITECTURE","canonical_path":"docs/architecture/software_component_architecture.md","accountable_owner":"system-architect","applicability":"stable SWC topology or reusable flow changes","required_direct_inputs":["SYSTEM_OVERVIEW","MODULE_BOUNDARY"]},
+    {"artifact_id":"SWC_CATALOG","canonical_path":"docs/architecture/swc_catalog.md","accountable_owner":"system-architect","applicability":"stable reusable component responsibility changes","required_direct_inputs":["SOFTWARE_COMPONENT_ARCHITECTURE"]},
+    {"artifact_id":"API_CONTRACT","canonical_path":"docs/architecture/api_contract.md","accountable_owner":"system-architect","method_skill":"api-contract-generate","applicability":"frontend/backend or external API boundary facts change","required_direct_inputs":["FUNCTIONAL_REQUIREMENT_CATALOG"],"conditional_inputs":["DOMAIN_SCHEMA"]},
+    {"artifact_id":"OPENAPI","canonical_path":"docs/architecture/openapi/speakeasy-api.yaml","accountable_owner":"backend","method_skill":"api-contract-generate","applicability":"machine-readable API schema changes","required_direct_inputs":["API_CONTRACT"],"validation_command":"python scripts/check_openapi_contract.py"},
+    {"artifact_id":"DATA_FLOW","canonical_path":"docs/architecture/data_flow.md","accountable_owner":"system-architect","applicability":"cross-component data flow changes","conditional_inputs":["SOFTWARE_COMPONENT_ARCHITECTURE","DOMAIN_SCHEMA","OPENAPI"]},
+    {"artifact_id":"ADR","canonical_path":"docs/architecture/adr/{id}-{slug}.md","accountable_owner":"system-architect","applicability":"architecture decision requires durable trade-off record"},
+    {"artifact_id":"DOMAIN_SCHEMA","canonical_path":"docs/domain/domain_schema.md","accountable_owner":"domain-schema","method_skill":"domain-model-generate","applicability":"business entities, relationships or lifecycle facts change","required_direct_inputs":["FUNCTIONAL_REQUIREMENT_CATALOG"]},
+    {"artifact_id":"ENTITY_RELATIONSHIP","canonical_path":"docs/domain/entity_relationship.md","accountable_owner":"domain-schema","applicability":"persistent entity relationships change","required_direct_inputs":["DOMAIN_SCHEMA"]},
+    {"artifact_id":"DOMAIN_MODEL","canonical_path":"docs/domain/{domain}_model.md","accountable_owner":"domain-schema","method_skill":"domain-model-generate","applicability":"domain-specific lifecycle or invariants change","required_direct_inputs":["FUNCTIONAL_REQUIREMENT_CATALOG"]},
+    {"artifact_id":"PROMPT_CONTRACT","canonical_path":"docs/ai_runtime/prompt_contract.md","accountable_owner":"ai-runtime","method_skill":"prompt-contract-generate","applicability":"LLM-facing behavior facts change","required_direct_inputs":["FUNCTIONAL_REQUIREMENT_CATALOG"]},
+    {"artifact_id":"LLM_OUTPUT_SCHEMA","canonical_path":"docs/ai_runtime/llm_output_schema.md","accountable_owner":"ai-runtime","method_skill":"prompt-contract-generate","applicability":"rendered or persisted AI output shape changes","required_direct_inputs":["PROMPT_CONTRACT"]},
+    {"artifact_id":"AI_FALLBACK","canonical_path":"docs/ai_runtime/fallback_strategy.md","accountable_owner":"ai-runtime","applicability":"AI failure or downgrade behavior changes","required_direct_inputs":["PROMPT_CONTRACT"]},
+    {"artifact_id":"AI_EVAL_CASES","canonical_path":"docs/ai_runtime/ai_eval_cases.md","accountable_owner":"ai-runtime","method_skill":"prompt-contract-generate","applicability":"AI evaluation fixtures, rubrics, thresholds, or configuration changes","required_direct_inputs":["PROMPT_CONTRACT","LLM_OUTPUT_SCHEMA"],"conditional_inputs":["TEST_CASE_CATALOG"],"engineering_contract":false},
+    {"artifact_id":"DIALOGUE_STATE_MACHINE","canonical_path":"docs/ai_runtime/dialogue_state_machine.md","accountable_owner":"ai-runtime","applicability":"AI dialogue state facts change","required_direct_inputs":["FUNCTIONAL_REQUIREMENT_CATALOG"],"conditional_inputs":["PROMPT_CONTRACT"]},
+    {"artifact_id":"SCREEN_SPEC","canonical_path":"docs/ux/screen_spec.md","accountable_owner":"ux-review","method_skill":"screen-spec-generate","applicability":"user-facing screen behavior facts change","required_direct_inputs":["FUNCTIONAL_REQUIREMENT_CATALOG"],"conditional_inputs":["API_CONTRACT","LLM_OUTPUT_SCHEMA"]},
+    {"artifact_id":"USER_FLOW","canonical_path":"docs/ux/user_flow.md","accountable_owner":"ux-review","applicability":"cross-screen user flow changes","required_direct_inputs":["SCREEN_SPEC"]},
+    {"artifact_id":"USABILITY_CHECKLIST","canonical_path":"docs/ux/usability_checklist.md","accountable_owner":"ux-review","applicability":"UX validation scope changes","required_direct_inputs":["SCREEN_SPEC"]},
+    {"artifact_id":"COPY_GUIDELINE","canonical_path":"docs/ux/copywriting_guideline.md","accountable_owner":"ux-review","applicability":"learner-facing copy policy changes"}
+  ]
+}

@@ -11,6 +11,12 @@ Draft - derived from MVP backend stage。
 ## Owner
 Requirement Development Agent
 
+## Capability Classification
+- Classification type：cross-capability delivery support
+- Primary Capability ID：无；本 increment 只负责客户端契约、测试、追溯和发布证据，不拥有业务 Capability
+- Affected Capability IDs：`CAP-ACC`、`CAP-LEVEL`、`CAP-INTENT`、`CAP-PLAN`、`CAP-CONTENT`、`CAP-PRACTICE`、`CAP-TRAIN`、`CAP-COACH`、`CAP-MEMORY`、`CAP-NOTE`、`CAP-COM`、`CAP-ENGAGE`
+- Affected Sub-capability IDs：无；本 increment 验证前序业务切片，不重定义其业务边界
+
 ## Requirement Coverage
 | Requirement ID | Stage Scope ID | Requirement |
 | --- | --- | --- |

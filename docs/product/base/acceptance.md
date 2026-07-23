@@ -13,7 +13,7 @@ Acceptance Criteria Generate Skill（验收标准生成技能）
 
 ## 范围
 - 本文只纳入当前已实现、已接受或已稳定验收的 MVP 能力。
-- 本文不纳入 P0.1 `expression-automation-training` 的 planned（计划中）行为。
+- 本文不纳入 P0.1 `p0-1-expression-automation-training` increment 的 planned（计划中）行为。
 - 本文只定义可观察验收标准，不定义 API schema、prompt schema、数据库字段、UI 布局或代码实现。
 
 ## 追溯规则

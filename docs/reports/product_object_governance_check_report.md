@@ -4,12 +4,12 @@
 2026-05-24
 
 ## 检查角色
-`codex/agents/product_object_governance_check.md`
+`.codex/agents/product_object_governance_check.toml`
 
 ## 检查范围
 - `docs/process/product_object_governance_remediation.md`
-- `codex/agents/product_object_governance_change.md`
-- `codex/agents/product_object_governance_check.md`
+- `.codex/agents/product_object_governance_change.toml`
+- `.codex/agents/product_object_governance_check.toml`
 - `docs/process/workflow.md`
 - `docs/process/skill_quality_standard.md`
 - `.agents/skills/document-path-governance/`
@@ -85,3 +85,37 @@ Result: pass
 - `docs/product/feature_registry.md`、`docs/product/stages/<stage-id>.md`、`docs/product/increments/<increment-id>/` 仍需要在下一步按新规则创建或迁移。
 - 旧扁平 feature 工件路径兼容状态已由后续治理步骤清理。
 - 本次是流程和文档治理变更，未运行应用层测试。
+
+## 2026-07-11 Capability Registry 候选对象落表检查
+
+Result: pass
+
+检查步骤：
+- 当前步骤为 Product Manager 按 `capability-registry-develop` 流程将候选对象落入 `docs/product/feature_registry.md`，不生成 Story、FR、Spec、AC、TC、stage、increment、架构或代码。
+
+目标与变更模式：
+- `CAP-SETTING`：`add`，新增顶层 Capability 和 `CAP-SETTING-01..04`。
+- `CAP-SUPPORT`：`add`，新增顶层 Capability 和 `CAP-SUPPORT-01..04`。
+- `CAP-BILLING`：`add`，新增顶层 Capability 和 `CAP-BILLING-01..04`。
+- `CAP-ACC`、`CAP-COM`、`CAP-COM-02`、`CAP-COM-04` 及相关相邻 Capability 行：`boundary-change`，用于明确账号、会员权益、应用设置、用户支持、账单支付之间的 ownership 边界。
+- `profile-membership`、`commercial-subscription` Legacy Mapping：`legacy-mapping-only` 更新。
+
+Gate 与 PM 确认：
+- Gate A：通过。PM 确认通用 App 设置、用户支持服务、账单与支付服务均为 Registry destination，目标对象类型为 Capability，目标 ID 分别为 `CAP-SETTING`、`CAP-SUPPORT`、`CAP-BILLING`。
+- Gate B：通过。三项新增 Capability 均有独立长期业务结果，且分别与 `CAP-ACC`、`CAP-COM`、`CAP-ENGAGE`、`CAP-PRACTICE`、`CAP-COACH`、`CAP-CONTENT` 等相邻能力完成边界比较。
+- PM exact-row final approval：已确认并持久化上述 Capability 行、12 条 Sub-capability 行、`CAP-COM-02`、`CAP-COM-04`、相关边界/相邻关系行和 Legacy Mapping 行。
+
+验证：
+- `python scripts/validate_capability_registry.py` 通过。
+- Validator rows：capabilities=15，sub_capabilities=73，legacy_mappings=14。
+- Validator warning：none。
+
+独立检查：
+- Checker：tool-backed independent Product Object Governance Check Agent。
+- Checker result：pass。
+- Checker finding：新增 `CAP-SETTING`、`CAP-SUPPORT`、`CAP-BILLING` 与既有 `CAP-ACC`、`CAP-COM`、`CAP-ENGAGE`、`CAP-PRACTICE` 等边界分离清楚；未发现 split/merge/deprecate successor 伪持久化；未发现本轮 row-level scope 外的下游改写。
+
+残留风险：
+- 工作区存在大量本轮开始前已存在的 dirty / untracked 文件，未作为本轮 blocker。
+- `docs/product/feature_registry.md` 顶部治理说明相关 diff 不是本轮 row-level registry 变更审查范围；若后续要声明该治理文案为本轮产物，需要单独治理证据。
+- 本轮没有迁移已有 Story、Product Base、increment、requirements、spec、AC、TC 或实现引用；相关文档在后续被触碰时应按新的 Capability Registry 边界重新分类。

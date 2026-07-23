@@ -52,7 +52,7 @@ Document Traceability Check Skill
 ## Gap Register
 | Gap ID | Gap | Affected rows | Owner / next route | Status |
 | --- | --- | --- | --- | --- |
-| MVP-E2E-GAP-001 | 本地真实 PostgreSQL + backend + Flutter orchestration script 尚未落地。 | MVP-E2E-TR-001 | QA + Development Orchestrator | Closed 2026-05-29 |
+| MVP-E2E-GAP-001 | 本地真实 PostgreSQL + backend + Flutter orchestration script 尚未落地。 | MVP-E2E-TR-001 | QA + Codex Root | Closed 2026-05-29 |
 | MVP-E2E-GAP-002 | Flutter integration smoke 尚未实现，无法证明 UI 到后端/DB 的核心路径已经自动化通过。 | MVP-E2E-TR-002 | Frontend + QA | Closed 2026-05-29 |
 | MVP-E2E-GAP-003 | Product Base AC 系统覆盖矩阵尚未有机器审核脚本。 | MVP-E2E-TR-003 | QA | Closed 2026-05-29 |
 | MVP-E2E-GAP-004 | 系统 E2E 执行证据和失败分类尚未写入报告。 | MVP-E2E-TR-004 | QA | Closed 2026-05-29 |

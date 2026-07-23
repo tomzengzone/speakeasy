@@ -14,15 +14,13 @@ S001 forecast hardening、S002 checkpoint task library、S003 checkpoint-to-plan
 - Product object mode: `feature-increment`
 - Source mode: local implementation independent review follow-up
 
-## Primary Feature
-`goal-driven-learning-autopilot`
+## Primary Capability
+- Capability ID：`CAP-PLAN`
+- Sub-capability ID：`CAP-PLAN-07`
 
-## Affected Features
-- `learning-memory-review`
-- `expression-practice-queue`
-- `profile-membership`
-- `scoring-feedback`
-- `official-scenario-library`
+## Affected Capabilities
+- Capability IDs：`CAP-MEMORY`、`CAP-LEVEL`、`CAP-TRAIN`、`CAP-CONTENT`、`CAP-COACH`、`CAP-ACC`、`CAP-COM`、`CAP-INTENT`
+- Sub-capability IDs：`CAP-PLAN-06`、`CAP-MEMORY-02`、`CAP-MEMORY-03`、`CAP-MEMORY-04`、`CAP-MEMORY-05`、`CAP-LEVEL-02`、`CAP-LEVEL-05`、`CAP-LEVEL-06`、`CAP-TRAIN-05`、`CAP-TRAIN-06`、`CAP-CONTENT-03`、`CAP-COACH-03`、`CAP-COACH-04`、`CAP-ACC-04`、`CAP-COM-03`、`CAP-INTENT-06`
 
 ## Upstream Decision Source
 - P0.2 stage scope: `docs/product/stages/p0-2-training-memory.md`

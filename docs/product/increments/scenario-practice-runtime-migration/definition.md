@@ -14,16 +14,11 @@
 
 本增量是 P0.1 相关主练习链路的架构迁移准备工作，不新增 stage、不新增产品能力、不扩大 P0.1 范围。
 
-## 主 Feature
-`voice-scenario-practice`
-
-## 受影响 Feature
-- `voice-scenario-practice`
-- `official-scenario-library`
-- `listening-shadowing`
-- `expression-practice-queue`
-- `learning-memory-review`
-- `scoring-feedback`
+## Capability Classification
+- Classification type：`behavior-preserving architecture support`
+- Primary Capability ID：无；本 increment 只重构现有 Runtime/SWC 边界，不拥有或新增业务 Capability
+- Affected Capability IDs：`CAP-LEVEL`、`CAP-PLAN`、`CAP-CONTENT`、`CAP-PRACTICE`、`CAP-TRAIN`、`CAP-COACH`、`CAP-MEMORY`、`CAP-NOTE`
+- Affected Sub-capability IDs：无；本 increment 保持现有行为，不修改 Sub-capability 边界
 
 ## 上游决策
 - `docs/architecture/software_component_architecture.md`

@@ -642,42 +642,6 @@ class _InterviewExpressionWarmupDeckViewState
     }
   }
 
-  InterviewExpressionLearningStep _currentStepForAttempt(String taskType) {
-    if (taskType == 'shadow') {
-      return InterviewExpressionLearningStep.shadow;
-    }
-    return InterviewExpressionLearningStep.recall;
-  }
-
-  String _practiceFailureMessage({
-    required String practiceMode,
-    required bool contentTooLow,
-  }) {
-    if (contentTooLow) {
-      return switch (practiceMode) {
-        ExpressionDailyQueueItem.practiceModeCueResponse ||
-        ExpressionDailyQueueItem.practiceModeVariantParaphrase =>
-          '意思还没接近目标回应，先按答案把核心说法说出来。',
-        ExpressionDailyQueueItem.practiceModeSlotPersonalize =>
-          '替换后的句子还不够完整，保留目标句的主干再换信息。',
-        ExpressionDailyQueueItem.practiceModeMistakeRepair =>
-          '还没有修正到自然版本，先看答案再说一遍。',
-        ExpressionDailyQueueItem.practiceModeClozeRecall =>
-          '空格部分还没对上，尽量把完整句说出来。',
-        ExpressionDailyQueueItem.practiceModeIntentRecall ||
-        ExpressionDailyQueueItem.practiceModeChunkRecall ||
-        ExpressionDailyQueueItem.practiceModeEchoRecall => '回忆还不够完整，先看答案再试一次。',
-        _ => '内容还没对上目标表达，尽量按目标句完整跟读。',
-      };
-    }
-    if (practiceMode == ExpressionDailyQueueItem.practiceModeFluencySprint) {
-      return '这次还不够顺，试着更连贯地一口气说完。';
-    }
-    return practiceMode == ExpressionDailyQueueItem.practiceModeSlotPersonalize
-        ? '先把替换后的句子说完整一点。'
-        : '这次发音还不够稳，再说一次。';
-  }
-
   Future<void> _toggleRecording(String taskType) async {
     if (_recording) {
       await _stopRecording();
@@ -728,7 +692,6 @@ class _InterviewExpressionWarmupDeckViewState
     if (item == null) {
       return;
     }
-    final String taskType = _recordingTaskType ?? 'shadow';
     final AudioService audioService =
         _audioService ?? AudioServiceScope.of(context);
     _recordingTimer?.cancel();

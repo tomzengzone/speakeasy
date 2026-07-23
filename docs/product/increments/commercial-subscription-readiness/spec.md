@@ -7,7 +7,10 @@ Draft - 可作为 acceptance criteria 的直接上游输入；实现前仍需下
 - Increment：`commercial-subscription-readiness`
 - Requirements：`docs/product/increments/commercial-subscription-readiness/requirements.md`
 - Active stage：`docs/product/stages/p0-commercial-readiness.md`
-- Primary feature：`commercial-subscription`
+- Primary Capability ID：`CAP-COM`
+- Primary Sub-capability ID：`CAP-COM-03`
+- Affected Capability IDs：`CAP-ACC`、`CAP-CONTENT`、`CAP-PRACTICE`、`CAP-COACH`、`CAP-MEMORY`
+- Affected Sub-capability IDs：`CAP-COM-01`、`CAP-COM-02`、`CAP-COM-04`、`CAP-ACC-01`、`CAP-ACC-03`、`CAP-ACC-04`、`CAP-CONTENT-01`、`CAP-PRACTICE-03`、`CAP-COACH-01`、`CAP-MEMORY-05`
 
 ## Spec Trace IDs
 | Spec ID | Stage Scope ID | Requirement ID | Spec area |
@@ -25,7 +28,7 @@ Draft - 可作为 acceptance criteria 的直接上游输入；实现前仍需下
 | COM-SPEC-011 | COM-SI-011 | FR-COM-011 | QA / Test Plan contract, Rollout Notes |
 | COM-SPEC-012 | COM-SI-012 | FR-COM-012 | DevOps / Release contract, Required States, Rollout Notes |
 
-## Feature Goal
+## Increment Goal
 让 SpeakEasy 从“会员入口和前端支付雏形”升级为可真实收费、可恢复、可降级、可审计、可发布的订阅系统。
 
 ## Core User Flows

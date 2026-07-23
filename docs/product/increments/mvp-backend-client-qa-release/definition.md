@@ -14,17 +14,11 @@ Draft - MVP backend-first stage planned increment。
 ## Active Stage
 `docs/product/stages/mvp-backend-foundation.md`
 
-## Primary Feature
-`server-backed-learning-foundation`
-
-## Affected Features
-- `access-onboarding`
-- `official-scenario-library`
-- `expression-practice-queue`
-- `voice-scenario-practice`
-- `learning-memory-review`
-- `profile-membership`
-- `scoring-feedback`
+## Capability Classification
+- Classification type：cross-capability delivery support
+- Primary Capability ID：无；本 increment 只负责客户端契约、测试、追溯和发布证据，不拥有业务 Capability
+- Affected Capability IDs：`CAP-ACC`、`CAP-LEVEL`、`CAP-INTENT`、`CAP-PLAN`、`CAP-CONTENT`、`CAP-PRACTICE`、`CAP-TRAIN`、`CAP-COACH`、`CAP-MEMORY`、`CAP-NOTE`、`CAP-COM`、`CAP-ENGAGE`
+- Affected Sub-capability IDs：无；本 increment 验证前序业务切片，不重定义其业务边界
 
 ## 上游决策
 - MVP backend stage：`docs/product/stages/mvp-backend-foundation.md`

@@ -7,8 +7,10 @@ Requirements accepted for Followup-B scoped implementation / downstream executed
 - 分类：`feature-increment`
 - Increment：`p0-2-followup-b-autopilot-control-planner-memory`
 - Active stage：`docs/product/stages/p0-2-training-memory.md`
-- Primary feature：`goal-driven-learning-autopilot`
-- Affected features：`learning-memory-review`、`expression-automation-training`、`expression-practice-queue`、`voice-scenario-practice`、`ai-provider-operations`
+- Primary Capability ID：`CAP-PLAN`
+- Primary Sub-capability ID：`CAP-PLAN-06`
+- Affected Capability IDs：`CAP-MEMORY`、`CAP-TRAIN`、`CAP-ENGAGE`、`CAP-ACC`、`CAP-INTENT`、`CAP-LEVEL`、`CAP-COM`
+- Affected Sub-capability IDs：`CAP-PLAN-02`、`CAP-PLAN-05`、`CAP-MEMORY-02`、`CAP-MEMORY-03`、`CAP-TRAIN-01`、`CAP-TRAIN-05`、`CAP-ENGAGE-01`、`CAP-ENGAGE-02`、`CAP-ACC-03`、`CAP-INTENT-04`、`CAP-INTENT-06`、`CAP-LEVEL-04`、`CAP-LEVEL-05`、`CAP-COM-03`
 
 ## 需求假设
 - Followup-A 已提供可编辑 GoalProfile、诊断输入、目标 revision/stale 可见化和 no-goal Explore Mode 的事实边界。

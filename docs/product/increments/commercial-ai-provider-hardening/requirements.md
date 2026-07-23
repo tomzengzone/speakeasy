@@ -6,7 +6,10 @@ Draft - P0 商业化发布阻塞增量需求；尚未实现。
 ## Product Object
 - Increment：`commercial-ai-provider-hardening`
 - Stage：`docs/product/stages/p0-commercial-readiness.md`
-- Primary feature：`ai-provider-operations`
+- Primary Capability ID：`CAP-PRACTICE`
+- Primary Sub-capability ID：`CAP-PRACTICE-03`
+- Affected Capability IDs：`CAP-COACH`、`CAP-TRAIN`、`CAP-COM`、`CAP-ACC`、`CAP-MEMORY`
+- Affected Sub-capability IDs：`CAP-PRACTICE-01`、`CAP-COACH-02`、`CAP-COACH-03`、`CAP-COACH-04`、`CAP-TRAIN-02`、`CAP-COM-03`、`CAP-ACC-03`、`CAP-ACC-04`、`CAP-MEMORY-02`
 
 ## 上游来源
 - `docs/product/increments/commercial-ai-provider-hardening/definition.md`

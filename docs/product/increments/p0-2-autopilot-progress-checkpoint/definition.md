@@ -14,15 +14,13 @@ Planned - PM stage replanning artifact only。该增量用于承接 AutopilotTra
 - Product object mode: `feature-increment`
 - Source mode: PM stage plan
 
-## Primary Feature
-`goal-driven-learning-autopilot`
+## Primary Capability
+- Capability ID：`CAP-TRAIN`
+- Sub-capability ID：`CAP-TRAIN-02`
 
-## Affected Features
-- `learning-memory-review`
-- `expression-automation-training`
-- `expression-practice-queue`
-- `profile-membership`
-- `scoring-feedback`
+## Affected Capabilities
+- Capability IDs：`CAP-PLAN`、`CAP-MEMORY`、`CAP-LEVEL`、`CAP-ENGAGE`、`CAP-COM`、`CAP-ACC`
+- Sub-capability IDs：`CAP-TRAIN-01`、`CAP-TRAIN-03`、`CAP-TRAIN-05`、`CAP-TRAIN-06`、`CAP-PLAN-05`、`CAP-PLAN-06`、`CAP-PLAN-07`、`CAP-MEMORY-03`、`CAP-MEMORY-04`、`CAP-MEMORY-05`、`CAP-LEVEL-02`、`CAP-LEVEL-06`、`CAP-ENGAGE-01`、`CAP-ENGAGE-02`、`CAP-COM-01`、`CAP-COM-03`、`CAP-ACC-03`
 
 ## Scope
 - AutopilotTraining：系统自动开练、自动切换训练/复习/复测，不依赖用户自律。

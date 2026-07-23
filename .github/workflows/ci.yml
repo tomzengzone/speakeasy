@@ -22,45 +22,40 @@ env:
 
 jobs:
   flutter-ci:
-    name: Flutter Analyze Test Build
+    name: Flutter Analyze Test / Main Build
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Cross-cutting boundary check
-        shell: bash
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BASE_REF="${{ github.event.pull_request.base.sha }}"
-          else
-            BASE_REF="${{ github.event.before }}"
-          fi
-          python3 scripts/check_cross_cutting_boundaries.py --scope changed --base-ref "$BASE_REF"
+      - name: Governance contract validation
+        run: python3 scripts/validate_governance_contracts.py
 
-      - name: SWC allocation gate
-        shell: bash
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BASE_REF="${{ github.event.pull_request.base.sha }}"
-          else
-            BASE_REF="${{ github.event.before }}"
-          fi
-          python3 scripts/check_swc_allocation.py --scope changed --base-ref "$BASE_REF"
+      - name: Story-slice delivery validation
+        run: python3 scripts/validate_story_slice_delivery.py
 
-      - name: Document language gate
-        shell: bash
+      - name: Story-slice cutover validation
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BASE_REF="${{ github.event.pull_request.base.sha }}"
-          else
-            BASE_REF="${{ github.event.before }}"
-          fi
-          python3 scripts/check_document_language.py --scope changed --base-ref "$BASE_REF"
+          python3 scripts/validate_story_slice_cutover.py
+          python3 scripts/validate_story_slice_cutover.py --check-adr --check-story-map
+
+      - name: Agent and skill validation
+        run: python3 scripts/validate_agent_skills.py
+
+      - name: Governance validator tests
+        run: |
+          python3 -m unittest \
+            tests.test_validate_governance_contracts \
+            tests.test_validate_story_slice_delivery \
+            tests.test_validate_story_slice_cutover \
+            -v
+
+      - name: Capability registry validation
+        run: |
+          python3 scripts/validate_capability_registry.py
+          python3 -m unittest discover -s tests -p "test_validate_capability_registry.py" -v
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -95,6 +90,7 @@ jobs:
         run: flutter test
 
       - name: Build Android APK
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         run: |
           API_BASE_URL="${APP_API_BASE_URL:-https://example.invalid}"

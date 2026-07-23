@@ -11,6 +11,12 @@ Draft - derived from `docs/product/stages/mvp-backend-foundation.md`。
 ## Owner
 Requirement Development Agent
 
+## Capability Classification
+- Primary Capability ID：`CAP-ACC`
+- Primary Sub-capability ID：`CAP-ACC-01`
+- Affected Capability IDs：无（仅影响 `CAP-ACC`）
+- Affected Sub-capability IDs：`CAP-ACC-02`
+
 ## 上游输入
 - `docs/product/stages/mvp-backend-foundation.md`
 - `docs/product/base/requirements.md`

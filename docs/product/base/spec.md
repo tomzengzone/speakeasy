@@ -8,13 +8,13 @@ Feature Spec Generate Skill（功能规格生成技能）
 
 ## 关联文档
 - Product Base requirements（Product Base 需求）: `docs/product/base/requirements.md`
-- Feature registry（功能登记表）: `docs/product/feature_registry.md`
+- V2 Capability registry（能力登记表）: `docs/product/feature_registry.md`
 - Product Base acceptance（Product Base 验收标准）: `docs/product/base/acceptance.md`
 - Product Base traceability（Product Base 追溯矩阵）: `docs/product/base/traceability.md`
 
 ## 明确排除
 - 不纳入 P0.1 planned behavior（计划行为）。
-- 不定义 `expression-automation-training` 的训练型 Agent、session planner、micro-action、hint ladder、action chain 或 pressure check。
+- 不定义 `p0-1-expression-automation-training` increment 的训练型 Agent、session planner、micro-action、hint ladder、action chain 或 pressure check。
 - 不定义 API request/response schema、LLM prompt schema、数据库字段、UI 布局或代码实现。
 
 ## 规格目标
