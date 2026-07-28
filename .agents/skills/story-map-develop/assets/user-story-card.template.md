@@ -1,6 +1,6 @@
 # User Story 表格模板
 
-用于 `docs/product/story_map.md` 的 capability 章节。保持与当前文件一致，不新增 metadata 列。
+用于 `STORY_MAP` 的单个 Capability 分片；路径与所有权通过 Governance Contract 解析。保持现行五列结构，不新增 metadata 列。
 
 ```md
 ### US-<CAP>-<NNN> - <title>

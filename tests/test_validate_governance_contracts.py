@@ -44,13 +44,34 @@ class GovernanceContractValidationTest(unittest.TestCase):
         errors, _warnings, metrics = validate_repository(ROOT)
         self.assertEqual([], errors)
         self.assertEqual("candidate", metrics["governance_status"])
-        self.assertEqual(61, metrics["artifacts"])
+        self.assertEqual(62, metrics["artifacts"])
         self.assertEqual(14, metrics["gates"])
         self.assertEqual(5, metrics["workflow_exchanges"])
         self.assertEqual(4, metrics["evidence_artifact_references"])
         self.assertGreater(metrics["artifact_validation_commands"], 0)
         self.assertEqual(24, metrics["artifact_required_input_contracts"])
-        self.assertEqual(9, metrics["artifact_conditional_input_contracts"])
+        self.assertEqual(13, metrics["artifact_conditional_input_contracts"])
+
+    def test_story_map_uses_capability_shards_with_navigation_index(self):
+        contract_root = ROOT / "docs/process/governance"
+        index = json.loads((contract_root / "index.json").read_text(encoding="utf-8"))
+        product = json.loads((contract_root / "artifacts/product.json").read_text(encoding="utf-8"))
+        artifacts = {item["artifact_id"]: item for item in product["artifacts"]}
+
+        self.assertEqual(
+            "docs/product/user_stories/user_story_CAP_{capability_prefix}.md",
+            artifacts["STORY_MAP"]["canonical_path"],
+        )
+        story_map_index = artifacts["STORY_MAP_INDEX"]
+        self.assertEqual("docs/product/story_map.md", story_map_index["canonical_path"])
+        self.assertEqual("product-manager", story_map_index["accountable_owner"])
+        self.assertEqual(
+            ["CAPABILITY_REGISTRY", "STORY_MAP"],
+            story_map_index["required_direct_inputs"],
+        )
+        self.assertIn("navigation", story_map_index["applicability"])
+        self.assertIn("non-behavior", story_map_index["applicability"])
+        self.assertEqual("artifacts/product.json", index["artifact_routes"]["STORY_MAP_INDEX"])
 
     def test_invalid_governance_status_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -208,8 +229,16 @@ class GovernanceContractValidationTest(unittest.TestCase):
         mapping = selector["by_trigger"]
         self.assertEqual(triggers, set(mapping))
         self.assertEqual(
+            {"product_object_semantic_risk", "software_architecture_semantic_risk"},
+            triggers,
+        )
+        self.assertEqual(
             {"product-object-governance-check", "software-architecture-governance-check"},
             set(mapping.values()),
+        )
+        self.assertEqual(
+            {"deterministic_validation_sufficient=true"},
+            set(gate["excludes_if"]["any"]),
         )
         self.assertEqual(
             {
@@ -226,6 +255,18 @@ class GovernanceContractValidationTest(unittest.TestCase):
             set(selector["by_artifact_id"]),
         )
         self.assertIn("ephemeral by default", gate["evidence_contract"]["persistence"])
+        self.assertEqual(
+            ["candidate exact SHA", "checked scope"],
+            gate["evidence_contract"]["validation_evidence_policy"]["identity_fields"],
+        )
+        self.assertEqual("consume", gate["evidence_contract"]["validation_evidence_policy"]["mode"])
+        self.assertIn(
+            "checker must not rerun validators",
+            gate["evidence_contract"]["validation_evidence_policy"]["on_invalid"],
+        )
+        self.assertIn("candidate exact SHA", gate["evidence_contract"]["required_fields"])
+        self.assertIn("validator evidence", gate["evidence_contract"]["required_fields"])
+        self.assertIn("evidence scope/revision match", gate["evidence_contract"]["required_fields"])
 
     def test_artifact_validation_gate_resolves_intrinsic_commands_once(self):
         gates = json.loads((ROOT / "docs/process/governance/gates/core.json").read_text(encoding="utf-8"))["gates"]
@@ -234,8 +275,42 @@ class GovernanceContractValidationTest(unittest.TestCase):
         self.assertIn("Artifact.validation_command", validation_gate["machine_check"])
         self.assertEqual("artifact://impacted/validation_command", validation_gate["evidence_command"])
         self.assertEqual("ephemeral", validation_gate["evidence_contract"]["persistence"])
+        self.assertIn("candidate exact SHA", validation_gate["evidence_contract"]["required_fields"])
+        self.assertIn("checked scope", validation_gate["evidence_contract"]["required_fields"])
         self.assertIsNone(contract_gate["machine_check"])
         self.assertIsNone(contract_gate["evidence_command"])
+
+    def test_independent_check_validation_evidence_policy_is_required(self):
+        with tempfile.TemporaryDirectory() as temp:
+            target = Path(temp)
+            self.copy_governance_fixture(target)
+            gates = target / "docs/process/governance/gates/core.json"
+            data = json.loads(gates.read_text(encoding="utf-8"))
+            independent = next(item for item in data["gates"] if item["gate_id"] == "G-INDEPENDENT-CHECK")
+            independent["evidence_contract"].pop("validation_evidence_policy", None)
+            gates.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+            errors, _warnings, _metrics = validate_repository(target)
+            self.assertTrue(any("must consume exact-SHA and scope-bound validator evidence" in error for error in errors))
+
+    def test_independent_check_rejects_task_type_triggers_and_read_only_retention(self):
+        with tempfile.TemporaryDirectory() as temp:
+            target = Path(temp)
+            self.copy_governance_fixture(target)
+            gates = target / "docs/process/governance/gates/core.json"
+            data = json.loads(gates.read_text(encoding="utf-8"))
+            independent = next(item for item in data["gates"] if item["gate_id"] == "G-INDEPENDENT-CHECK")
+            independent["applicability"]["any"] = ["meta_governance_change=true"]
+            independent["evidence_contract"]["checker_selector"]["by_trigger"] = {
+                "meta_governance_change": "product-object-governance-check"
+            }
+            independent["excludes_if"] = None
+            read_only = next(item for item in data["short_circuit_rules"] if item["rule_id"] == "SC-READ-ONLY")
+            read_only["retain"] = ["G-INDEPENDENT-CHECK"]
+            gates.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+            errors, _warnings, _metrics = validate_repository(target)
+            self.assertTrue(any("semantic-risk triggers" in error for error in errors))
+            self.assertTrue(any("deterministic validation exclusion" in error for error in errors))
+            self.assertTrue(any("must not retain G-INDEPENDENT-CHECK" in error for error in errors))
 
     def test_unknown_gate_evidence_artifact_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -256,10 +331,10 @@ class GovernanceContractValidationTest(unittest.TestCase):
             governance = target / "docs/process/governance/artifacts/governance.json"
             data = json.loads(governance.read_text(encoding="utf-8"))
             report = next(item for item in data["artifacts"] if item["artifact_id"] == "QUALITY_REPORT")
-            report["accountable_owner"] = "evidence-reviewer"
+            report["accountable_owner"] = "product-object-governance-check"
             governance.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
             errors, _warnings, _metrics = validate_repository(target)
-            self.assertTrue(any("cannot be owned by read-only checker evidence-reviewer" in error for error in errors))
+            self.assertTrue(any("cannot be owned by read-only checker product-object-governance-check" in error for error in errors))
 
     def test_incomplete_gate_contract_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -327,15 +402,21 @@ class GovernanceContractValidationTest(unittest.TestCase):
             "software_component_governance_change": False,
             "documentation_governance_change": False,
             "meta_governance_change": False,
+            "product_object_semantic_risk": False,
+            "software_architecture_semantic_risk": False,
+            "deterministic_validation_sufficient": False,
         }
         scenarios = {
             "small-bugfix": ({**local_defaults, "implementation_change": True}, {"G-TEST", "G-ADVISORY-LOCAL-CHANGE"}),
             "ui-only": ({**local_defaults, "implementation_change": True}, {"G-TEST", "G-ADVISORY-LOCAL-CHANGE"}),
             "api-change": ({**local_defaults, "api_change": True, "contract_change": True, "swc_impact": True, "implementation_change": True, "artifact_change": True, "impacted_artifact_has_validation_command": True}, {"G-CONTRACT", "G-SWC", "G-TEST", "G-ARTIFACT-VALIDATION"}),
             "cross-layer": ({**local_defaults, "cross_layer_change": True, "swc_impact": True, "implementation_change": True}, {"G-SWC", "G-TEST"}),
-            "governance": ({**local_defaults, "meta_governance_change": True, "artifact_change": True, "impacted_artifact_has_validation_command": True}, {"G-ARTIFACT-VALIDATION", "G-INDEPENDENT-CHECK"}),
+            "governance": ({**local_defaults, "meta_governance_change": True, "artifact_change": True, "impacted_artifact_has_validation_command": True}, {"G-ARTIFACT-VALIDATION"}),
+            "semantic-governance": ({**local_defaults, "meta_governance_change": True, "product_object_semantic_risk": True, "artifact_change": True, "impacted_artifact_has_validation_command": True}, {"G-ARTIFACT-VALIDATION", "G-INDEPENDENT-CHECK"}),
+            "validator-only-governance": ({**local_defaults, "meta_governance_change": True, "product_object_semantic_risk": True, "deterministic_validation_sufficient": True, "artifact_change": True, "impacted_artifact_has_validation_command": True}, {"G-ARTIFACT-VALIDATION"}),
             "release": ({**local_defaults, "release_change": True, "release_requested": True}, {"G-RELEASE"}),
-            "read-only-review": ({**local_defaults, "operation": "read-only", "meta_governance_change": True}, {"G-INDEPENDENT-CHECK"}),
+            "read-only-review": ({**local_defaults, "operation": "read-only", "meta_governance_change": True}, set()),
+            "read-only-semantic-review": ({**local_defaults, "operation": "read-only", "meta_governance_change": True, "product_object_semantic_risk": True}, {"G-INDEPENDENT-CHECK"}),
         }
         for name, (facts, expected) in scenarios.items():
             matched = {gate["gate_id"] for gate in gates if matches_gate(gate, facts)}
@@ -426,7 +507,8 @@ class GovernanceContractValidationTest(unittest.TestCase):
         test_case = (ROOT / ".agents/skills/test-case-generate/SKILL.md").read_text(encoding="utf-8")
         traceability = (ROOT / ".agents/skills/document-traceability-check/SKILL.md").read_text(encoding="utf-8")
         self.assertIn("source_vs_ids", requirements)
-        self.assertIn("tests, or Engineering Contract design", requirements)
+        self.assertIn("Markdown presentation of supplied values", requirements)
+        self.assertIn("treating this template as content authority", requirements)
         self.assertIn("one typed direct upstream per case", test_case)
         self.assertIn("TC execution results belong to CI", test_case)
         self.assertIn("projection is derived-read-only", traceability)
@@ -650,7 +732,7 @@ class GovernanceContractValidationTest(unittest.TestCase):
     def test_native_agent_definitions_are_minimal_and_registered(self):
         errors = []
         paths = sorted((ROOT / ".codex/agents").glob("*.toml"))
-        self.assertEqual(16, len(paths))
+        self.assertEqual(15, len(paths))
         for path in paths:
             data = load_toml(path, errors)
             self.assertEqual(path.stem, data["name"])
@@ -661,7 +743,6 @@ class GovernanceContractValidationTest(unittest.TestCase):
     def test_native_review_agents_are_read_only(self):
         errors = []
         for name in [
-            "evidence_reviewer",
             "product_object_governance_check",
             "software_architecture_governance_check",
         ]:
@@ -673,13 +754,94 @@ class GovernanceContractValidationTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             target = Path(temp)
             self.copy_governance_fixture(target)
-            reviewer = target / ".codex/agents/evidence_reviewer.toml"
+            reviewer = target / ".codex/agents/product_object_governance_check.toml"
             reviewer.write_text(
                 reviewer.read_text(encoding="utf-8").replace('sandbox_mode = "read-only"', 'sandbox_mode = "workspace-write"'),
                 encoding="utf-8",
             )
             errors, _warnings, _metrics = validate_repository(target)
             self.assertTrue(any("must use read-only sandbox_mode" in error for error in errors))
+
+    def test_retired_evidence_reviewer_has_no_active_definition_or_route(self):
+        actors = json.loads((ROOT / "docs/process/governance/actors.json").read_text(encoding="utf-8"))["actors"]
+        self.assertFalse((ROOT / ".codex/agents/evidence_reviewer.toml").exists())
+        self.assertNotIn("evidence-reviewer", {item["actor_id"] for item in actors})
+        self.assertNotIn("evidence_reviewer", (ROOT / "AGENTS.md").read_text(encoding="utf-8"))
+        self.assertNotIn(
+            "Evidence Reviewer",
+            (ROOT / "docs/process/cross_cutting_boundary_registry.md").read_text(encoding="utf-8"),
+        )
+
+    def test_structural_change_reference_does_not_define_completion_check(self):
+        reference = (
+            ROOT / ".agents/skills/capability-registry-develop/references/structural-change-gates.md"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("## Completion check", reference)
+        self.assertIn("## Evidence and Gate result distinction", reference)
+
+    def test_product_governance_checker_consumes_validation_and_reviews_only_semantics(self):
+        errors = []
+        reviewer = load_toml(ROOT / ".codex/agents/product_object_governance_check.toml", errors)
+        instructions = reviewer["developer_instructions"]
+        self.assertIn("Consume existing validator evidence for the current scope and revision.", instructions)
+        self.assertIn("Review only semantic risks that validators cannot decide:", instructions)
+        self.assertIn("Do not rerun deterministic validators", instructions)
+        for mechanical_duty in [
+            "duplicate authorities",
+            "broken ownership",
+            "invalid paths",
+            "FR-TC coverage",
+            "typed TC direct edges",
+            "legacy isolation",
+            "exact-SHA semantics",
+        ]:
+            self.assertNotIn(mechanical_duty, instructions)
+        self.assertEqual([], errors)
+
+    def test_product_governance_checker_mechanical_duty_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temp:
+            target = Path(temp)
+            self.copy_governance_fixture(target)
+            reviewer = target / ".codex/agents/product_object_governance_check.toml"
+            reviewer.write_text(
+                reviewer.read_text(encoding="utf-8").replace(
+                    "Review only semantic risks that validators cannot decide:",
+                    "Review only semantic risks that validators cannot decide, and check invalid paths:",
+                ),
+                encoding="utf-8",
+            )
+            errors, _warnings, _metrics = validate_repository(target)
+            self.assertTrue(any("must not own mechanical validator duty 'invalid paths'" in error for error in errors))
+
+    def test_architecture_governance_checker_consumes_validation_and_reviews_only_semantics(self):
+        errors = []
+        reviewer = load_toml(ROOT / ".codex/agents/software_architecture_governance_check.toml", errors)
+        instructions = reviewer["developer_instructions"]
+        self.assertIn("Consume existing validator evidence for the current scope and revision.", instructions)
+        self.assertIn("Review only semantic architecture risks that validators cannot decide:", instructions)
+        self.assertIn("Do not rerun deterministic validators", instructions)
+        for mechanical_duty in [
+            "direct upstream evidence",
+            "applicable allocation",
+            "executable validation results",
+        ]:
+            self.assertNotIn(mechanical_duty, instructions)
+        self.assertEqual([], errors)
+
+    def test_architecture_governance_checker_mechanical_duty_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temp:
+            target = Path(temp)
+            self.copy_governance_fixture(target)
+            reviewer = target / ".codex/agents/software_architecture_governance_check.toml"
+            reviewer.write_text(
+                reviewer.read_text(encoding="utf-8").replace(
+                    "Review only semantic architecture risks that validators cannot decide:",
+                    "Review only semantic architecture risks that validators cannot decide, and check applicable allocation:",
+                ),
+                encoding="utf-8",
+            )
+            errors, _warnings, _metrics = validate_repository(target)
+            self.assertTrue(any("must not own mechanical validator duty 'applicable allocation'" in error for error in errors))
 
     def test_root_instructions_define_fast_path_and_on_demand_governance(self):
         instructions = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

@@ -42,6 +42,7 @@ class StorySliceCutoverValidationTest(unittest.TestCase):
     def test_graph_is_route_derived_and_excludes_historical_state(self) -> None:
         graph = {path.relative_to(ROOT).as_posix() for path in collect_candidate_authority_graph(ROOT)}
         self.assertIn("docs/process/governance/index.json", graph)
+        self.assertIn("docs/product/user_stories/user_story_CAP_TRAIN.md", graph)
         self.assertIn(".agents/skills/requirement-refine/SKILL.md", graph)
         self.assertIn(".codex/agents/backend.toml", graph)
         self.assertIn(
@@ -112,24 +113,45 @@ class StorySliceCutoverValidationTest(unittest.TestCase):
         errors, _ = validate_cutover(root)
         self.assertTrue(any("structural-change-gates.md" in error and "retired positive" in error for error in errors))
 
-    def test_adr_optional_fr_current_rule_is_rejected(self) -> None:
+    def test_adr_requires_when_present_fr_current_rule(self) -> None:
         temp, root = self.fixture()
         self.addCleanup(temp.cleanup)
         path = root / "docs/architecture/adr/0007-story-slice-led-delivery.md"
-        path.write_text(path.read_text(encoding="utf-8") + "\nFR 是可选。\n", encoding="utf-8")
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                "Functional Requirement when present", "Functional Requirement"
+            ),
+            encoding="utf-8",
+        )
         errors, _ = validate_cutover(root)
-        self.assertTrue(any("optional current policy" in error for error in errors))
+        self.assertTrue(any("missing current-decision marker" in error for error in errors))
 
     def test_story_map_legacy_source_is_rejected(self) -> None:
         temp, root = self.fixture()
         self.addCleanup(temp.cleanup)
         path = root / "docs/product/story_map.md"
+        text = "当前来源：`docs/product/user_stories.md`。\n" + path.read_text(encoding="utf-8")
+        path.write_text(text, encoding="utf-8")
+        errors, _ = validate_cutover(root)
+        self.assertTrue(any("Story Map index header contains retired" in error for error in errors))
+
+    def test_missing_story_map_shard_is_rejected(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        (root / "docs/product/user_stories/user_story_CAP_TRAIN.md").unlink()
+        errors, _ = validate_cutover(root)
+        self.assertTrue(any("expected Story Map shard is missing" in error for error in errors))
+
+    def test_story_map_shard_rejects_wrong_primary_capability(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        path = root / "docs/product/user_stories/user_story_CAP_ACC.md"
         text = path.read_text(encoding="utf-8").replace(
-            "本文是 User Story", "来源：`docs/product/user_stories.md`。\n\n本文是 User Story", 1,
+            "| `CAP-ACC` | — |", "| `CAP-LEVEL` | — |", 1,
         )
         path.write_text(text, encoding="utf-8")
         errors, _ = validate_cutover(root)
-        self.assertTrue(any("Story Map header contains retired" in error for error in errors))
+        self.assertTrue(any("primary CAP-LEVEL does not match CAP-ACC" in error for error in errors))
 
     def test_missing_engineering_lineage_marker_is_rejected(self) -> None:
         temp, root = self.fixture()

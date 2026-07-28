@@ -1,6 +1,6 @@
 ---
 name: api-contract-generate
-description: Use when approved Functional Requirements change a frontend/backend or external API boundary. Do not use for private helpers or local-only state.
+description: Use when an approved Vertical Slice, or an applicable approved Functional Requirement when present, changes a frontend/backend or external API boundary. Do not use for private helpers or local-only state.
 ---
 
 # API Contract Generate
@@ -19,11 +19,11 @@ Do not use for implementation-only internals, unchanged API facts or unapproved 
 
 ## Contract
 
-Method skill for `API_CONTRACT`; `OPENAPI` is the machine-readable companion Artifact. Resolve all governance facts by Artifact ID. Mandatory FR is the product upstream; Domain Schema is conditional engineering context.
+Method skill for `API_CONTRACT`; `OPENAPI` is the machine-readable companion Artifact. Resolve all governance facts by Artifact ID. The selected approved VS is the product upstream; an applicable approved FR adds requirement lineage when present. Domain Schema is conditional engineering context.
 
 ## Inputs
 
-Applicable approved FR IDs, current API/OpenAPI and Domain facts, security/compatibility constraints, affected clients and relevant Contract-TC needs.
+Selected approved VS IDs, applicable approved FR IDs when present, current API/OpenAPI and Domain facts, security/compatibility constraints, affected clients and relevant Contract-TC needs.
 
 ## Outputs
 
@@ -31,7 +31,7 @@ Purpose, method/path/auth, request/response, validation, stable errors/recovery,
 
 ## Process
 
-1. Confirm applicable FR and actual API fact change.
+1. Confirm the selected approved VS, any applicable approved FR, and the actual API fact change.
 2. Define boundary semantics before route shape; keep storage/provider/framework details out.
 3. Update prose and OpenAPI in their distinct ownership boundaries.
 4. Add or update Contract-TC with `source_contract_id` only.
@@ -43,4 +43,4 @@ Table mirroring; generic-only errors; provider leakage; breaking change without 
 
 ## Verification
 
-Client/server can implement independently; errors and compatibility are explicit; applicable FR lineage is resolvable through governance/traceability; Contract-TC proves each changed fact.
+Client/server can implement independently; errors and compatibility are explicit; selected VS lineage and any present FR lineage are resolvable through governance/traceability; Contract-TC proves each changed fact.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate mandatory FRs, typed Test Cases, and derived Story/Slice traceability."""
+"""Validate optional FR branches, typed Test Cases, and derived Story/Slice traceability."""
 from __future__ import annotations
 
 import argparse
@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ID_RE = re.compile(r"`((?:US|VS|FR|TC)-[A-Z0-9-]+)`")
+STORY_ROW_RE = re.compile(r"^\|\s*`((?:US|VS)-[A-Z0-9-]+)`\s*\|")
 SOURCE_KEYS = {"source_fr_id", "source_contract_id", "source_vs_id"}
 TC_REQUIRED = {"type", "layer", "scope", "selector", "script_path", "command", "Given", "When", "Then", "Boundary/negative"}
 EXECUTION_RESULT_KEYS = {
@@ -58,6 +59,79 @@ def parse_story_map(text: str) -> tuple[set[str], dict[str, str], set[str]]:
     return approved_stories, parent_by_vs, approved_vs
 
 
+def _active_artifact(root: Path, artifact_id: str) -> dict:
+    contract_root = root / "docs/process/governance"
+    index = json.loads((contract_root / "index.json").read_text(encoding="utf-8"))
+    shard = index.get("artifact_routes", {}).get(artifact_id)
+    if not shard:
+        raise ValueError(f"missing active Artifact route: {artifact_id}")
+    data = json.loads((contract_root / shard).read_text(encoding="utf-8"))
+    defaults = data.get("defaults", {})
+    matches = [row for row in data.get("artifacts", []) if row.get("artifact_id") == artifact_id]
+    if len(matches) != 1:
+        raise ValueError(f"expected one {artifact_id} contract, found {len(matches)}")
+    return {**defaults, **matches[0]}
+
+
+def discover_story_shards(root: Path = ROOT) -> list[Path]:
+    """Expand the active STORY_MAP canonical template into its existing shards."""
+    root = root.resolve()
+    canonical = str(_active_artifact(root, "STORY_MAP").get("canonical_path", ""))
+    token = "{capability_prefix}"
+    if token not in canonical or canonical.count(token) != 1:
+        raise ValueError(
+            "STORY_MAP canonical_path must contain exactly one {capability_prefix} placeholder"
+        )
+    pattern = canonical.replace(token, "*")
+    return sorted(path for path in root.glob(pattern) if path.is_file())
+
+
+def parse_story_shards(
+    paths: list[Path], root: Path,
+) -> tuple[set[str], dict[str, str], set[str], list[str]]:
+    approved_stories: set[str] = set()
+    approved_vs: set[str] = set()
+    parent_by_vs: dict[str, str] = {}
+    first_seen: dict[str, tuple[Path, int]] = {}
+    errors: list[str] = []
+
+    for path in paths:
+        current_story: str | None = None
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            match = STORY_ROW_RE.match(line)
+            if not match:
+                continue
+            item_id = match.group(1)
+            location = (path, number)
+            if item_id in first_seen:
+                first_path, first_number = first_seen[item_id]
+                errors.append(
+                    f"duplicate Story/Slice ID {item_id}: "
+                    f"{first_path.relative_to(root)}:{first_number} and "
+                    f"{path.relative_to(root)}:{number}"
+                )
+                continue
+            first_seen[item_id] = location
+
+            approved = bool(re.search(r"\|\s*`approved`\s*\|", line))
+            if item_id.startswith("US-"):
+                current_story = item_id
+                if approved:
+                    approved_stories.add(item_id)
+            else:
+                if current_story:
+                    parent_by_vs[item_id] = current_story
+                else:
+                    errors.append(
+                        f"{path.relative_to(root)}:{number}: "
+                        f"{item_id} has no parent User Story in its shard"
+                    )
+                if approved:
+                    approved_vs.add(item_id)
+
+    return approved_stories, parent_by_vs, approved_vs, errors
+
+
 def _active_engineering_contract_ids(root: Path) -> set[str]:
     contract_root = root / "docs/process/governance"
     index = json.loads((contract_root / "index.json").read_text(encoding="utf-8"))
@@ -102,7 +176,6 @@ def validate_delivery(root: Path = ROOT) -> tuple[list[str], dict]:
     root = root.resolve()
     errors: list[str] = []
     paths = {
-        "story": root / "docs/product/story_map.md",
         "fr": root / "docs/product/functional_requirements.md",
         "tc": root / "docs/quality/test_cases.md",
         "trace": root / "docs/quality/traceability.md",
@@ -113,11 +186,20 @@ def validate_delivery(root: Path = ROOT) -> tuple[list[str], dict]:
     if errors:
         return errors, {}
 
-    story_text = paths["story"].read_text(encoding="utf-8")
     fr_text = paths["fr"].read_text(encoding="utf-8")
     tc_text = paths["tc"].read_text(encoding="utf-8")
     trace_text = paths["trace"].read_text(encoding="utf-8")
-    approved_stories, parent_by_vs, approved_vs = parse_story_map(story_text)
+    try:
+        story_shards = discover_story_shards(root)
+    except (OSError, json.JSONDecodeError, KeyError, ValueError) as exc:
+        errors.append(f"cannot resolve canonical STORY_MAP shards: {exc}")
+        story_shards = []
+    if not story_shards:
+        errors.append("canonical STORY_MAP template resolved no story shards")
+    approved_stories, parent_by_vs, approved_vs, story_errors = parse_story_shards(
+        story_shards, root
+    )
+    errors.extend(story_errors)
     frs = _records(fr_text, "FR")
     tcs = _records(tc_text, "TC")
     try:
@@ -139,7 +221,7 @@ def validate_delivery(root: Path = ROOT) -> tuple[list[str], dict]:
         if forbidden_lineage:
             errors.append(f"{fr_id} contains forbidden second-lineage fields: {sorted(forbidden_lineage)}")
         if not fields.get("Rule"):
-            errors.append(f"{fr_id} has no atomic Rule")
+            errors.append(f"{fr_id} has no Rule content")
         if not fields.get("primary_capability_id") or not fields.get("primary_sub_capability_id"):
             errors.append(f"{fr_id} lacks Capability/Sub-capability classification")
         for vs_id in source_vs_ids:
@@ -149,8 +231,6 @@ def validate_delivery(root: Path = ROOT) -> tuple[list[str], dict]:
                 frs_by_vs.setdefault(vs_id, set()).add(fr_id)
 
     for vs_id in sorted(approved_vs):
-        if not frs_by_vs.get(vs_id):
-            errors.append(f"approved implementing VS {vs_id} has no mandatory approved FR")
         parent = parent_by_vs.get(vs_id)
         if not parent or parent not in approved_stories:
             errors.append(f"approved VS {vs_id} has no unique approved Story parent")
@@ -226,9 +306,10 @@ def validate_delivery(root: Path = ROOT) -> tuple[list[str], dict]:
                 errors.append(f"traceability lacks co-located VS/VS-TC row for {vs_id} -> {tc_id}")
 
     metrics = {
+        "story_shards": len(story_shards),
         "approved_stories": len(approved_stories), "approved_vertical_slices": len(approved_vs),
         "functional_requirements": len(frs), "test_cases": len(tcs),
-        "mandatory_fr_coverage": sum(bool(frs_by_vs.get(vs)) for vs in approved_vs),
+        "vertical_slices_with_frs": sum(bool(frs_by_vs.get(vs)) for vs in approved_vs),
         "fr_tc_coverage": sum(bool(fr_tc_by_fr.get(fr)) for fr in frs),
         "vs_tc_coverage": sum(bool(vs_tc_by_vs.get(vs)) for vs in approved_vs),
     }

@@ -51,6 +51,14 @@ description: Use when ... Do not use ...
 
 内容必须面向可重复使用的 current state。一次性事件、已完成迁移、旧方案过程、兼容 fallback 和整改编号不得保留在 active instructions 中。
 
+## 语言与术语
+
+- 流程规则、角色职责、禁止事项和业务解释必须使用中文。
+- 文件路径、命令、Artifact ID、Gate ID、Agent/Skill 名称和字段名必须保留英文原文。
+- 规范性要求统一使用“必须”“不得”“应该”“可以”。
+- 同一概念必须使用统一名称；使用多个名称时，必须先声明其等价关系。
+- 示例、输入输出格式和校验命令必须真实、可复制并与当前 Governance Contract 对齐。
+
 ## Method quality
 
 - Inputs 只包含执行方法需要的当前事实；缺失产品行为时回到 owning Story/VS/FR，不在 Skill 中推断。
@@ -59,16 +67,6 @@ description: Use when ... Do not use ...
 - Verification 给出确定性结构检查、测试或审查方法；测试证据不能替代适用独立 checker。
 - Red Flags 必须覆盖最可能的 scope creep、重复 authority、错误 source 和不可验证输出。
 - 只加载任务命中的 Skill 和其条件命中的直接 resource；不递归加载未引用材料。
-
-## Story/Slice delivery methods
-
-- `story-map-develop` 维护 Story 与嵌套 Child VS；Capability 只分类。
-- `requirement-refine` 把 approved VS 提炼成 mandatory atomic FR；FR 只通过 `source_vs_ids` 直接引用 VS。
-- `test-case-generate` 维护 FR-TC、Contract-TC、VS-TC；三类 case 分别只直接引用 FR、Contract、VS。
-- `document-traceability-check` 只从 owning sources 重建完整 projection 和 coverage join，不能拥有 direct edge 或执行状态。
-- API/Domain/AI/UX 方法以 applicable mandatory FR 为产品上游；事实变化必须有对应 Contract-TC。
-
-普通编码的最小上下文为 selected approved VS、mandatory FR、受影响 Engineering Contract、typed TCs、相邻代码/测试和验证命令。Stage/Increment/Work Package 只作 planning metadata，不是产品/Contract/TC lineage。
 
 ## Bundled resources
 
@@ -89,9 +87,9 @@ description: Use when ... Do not use ...
 Skill/Agent/governance definition 变化后至少运行：
 
 ```bash
-python3 scripts/validate_agent_skills.py
-python3 scripts/validate_governance_contracts.py
-python3 scripts/validate_story_slice_cutover.py
+python scripts/validate_agent_skills.py
+python scripts/validate_governance_contracts.py
+python scripts/validate_story_slice_cutover.py
 ```
 
 验证必须覆盖 trigger/non-trigger、必需章节、active method route、直接 resource、retired Skill discovery、authority separation、legacy active reference 和 derived operational pointer 对齐。对合法的 contract-aligned pointer 不得误报。

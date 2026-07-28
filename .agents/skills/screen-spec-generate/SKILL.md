@@ -1,6 +1,6 @@
 ---
 name: screen-spec-generate
-description: Use when approved Functional Requirements change a Flutter/mobile screen’s behavior, states, interaction, or API/AI dependencies. Do not use for trivial visual-only edits.
+description: Use when an approved Vertical Slice, or an applicable approved Functional Requirement when present, changes a Flutter/mobile screen’s behavior, states, interaction, or API/AI dependencies. Do not use for trivial visual-only edits.
 ---
 
 # Screen Spec Generate
@@ -19,11 +19,11 @@ Do not use for copy/icon/spacing-only work, unchanged screen behavior or unappro
 
 ## Contract
 
-Method skill for `SCREEN_SPEC`; User Flow and Usability Checklist retain their own Artifact ownership. Resolve governance facts by Artifact ID. Mandatory FR is the product upstream; API/LLM contracts are conditional engineering inputs.
+Method skill for `SCREEN_SPEC`; User Flow and Usability Checklist retain their own Artifact ownership. Resolve governance facts by Artifact ID. The selected approved VS is the product upstream; an applicable approved FR adds requirement lineage when present. API/LLM contracts are conditional engineering inputs.
 
 ## Inputs
 
-Applicable approved FR IDs, current UX/API/AI contracts, navigation/state conventions, accessibility constraints and relevant Contract-TC needs.
+Selected approved VS IDs, applicable approved FR IDs when present, current UX/API/AI contracts, navigation/state conventions, accessibility constraints and relevant Contract-TC needs.
 
 ## Outputs
 
@@ -31,7 +31,7 @@ Goal/entry, components/data, named states/transitions, visible feedback, loading
 
 ## Process
 
-1. Confirm applicable FR and actual UX fact change.
+1. Confirm the selected approved VS, any applicable approved FR, and the actual UX fact change.
 2. Start from the user’s next action; define stable components and data boundaries.
 3. Cover success, slow, offline, empty, duplicate, error and retry states.
 4. Map changed UX facts to Contract-TC and selected VS to VS-TC without duplicating their direct edges.

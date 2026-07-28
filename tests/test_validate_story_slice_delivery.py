@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import shutil
 import sys
 import tempfile
@@ -9,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from validate_story_slice_delivery import validate_delivery  # noqa: E402
+from validate_story_slice_delivery import discover_story_shards, validate_delivery  # noqa: E402
 
 
 class StorySliceDeliveryValidationTest(unittest.TestCase):
@@ -17,7 +18,7 @@ class StorySliceDeliveryValidationTest(unittest.TestCase):
         temp = tempfile.TemporaryDirectory()
         root = Path(temp.name)
         for relative in (
-            "docs/product/story_map.md", "docs/product/functional_requirements.md",
+            "docs/product/functional_requirements.md",
             "docs/quality/test_cases.md", "docs/quality/traceability.md",
             "docs/process/governance/index.json",
             "docs/process/governance/artifacts/engineering.json",
@@ -26,14 +27,124 @@ class StorySliceDeliveryValidationTest(unittest.TestCase):
             target = root / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / relative, target)
+        for source in discover_story_shards(ROOT):
+            target = root / source.relative_to(ROOT)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
         return temp, root
 
-    def test_repository_catalogs_are_complete(self) -> None:
+    def test_repository_catalogs_validate(self) -> None:
         errors, metrics = validate_delivery(ROOT)
         self.assertEqual([], errors)
-        self.assertEqual(1, metrics["mandatory_fr_coverage"])
+        self.assertEqual(len(discover_story_shards(ROOT)), metrics["story_shards"])
+        self.assertEqual(1, metrics["vertical_slices_with_frs"])
         self.assertEqual(1, metrics["fr_tc_coverage"])
         self.assertEqual(1, metrics["vs_tc_coverage"])
+
+    def test_approved_implementing_vs_with_zero_frs_passes(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        fr_path = root / "docs/product/functional_requirements.md"
+        fr_path.write_text(
+            re.sub(
+                r"\n## FR-TRAIN.*?(?=\n## 维护规则)",
+                "",
+                fr_path.read_text(encoding="utf-8"),
+                flags=re.S,
+            ),
+            encoding="utf-8",
+        )
+        tc_path = root / "docs/quality/test_cases.md"
+        tc_path.write_text(
+            re.sub(
+                r"## FR-TC.*?(?=## Contract-TC)",
+                "## FR-TC\n\n当前没有 FR，因此没有 FR-TC。\n\n",
+                tc_path.read_text(encoding="utf-8"),
+                flags=re.S,
+            ),
+            encoding="utf-8",
+        )
+        (root / "docs/quality/traceability.md").write_text(
+            """# Canonical Traceability
+
+- Projection: `derived-read-only`
+
+| Story | Vertical Slice | VS-TC |
+| --- | --- | --- |
+| `US-TRAIN-001` | `VS-TRAIN-001` | `TC-VS-TRAIN-001` |
+""",
+            encoding="utf-8",
+        )
+        errors, metrics = validate_delivery(root)
+        self.assertEqual([], errors)
+        self.assertEqual(0, metrics["functional_requirements"])
+        self.assertEqual(0, metrics["vertical_slices_with_frs"])
+        self.assertEqual(0, metrics["fr_tc_coverage"])
+
+    def test_fr_rule_may_contain_multiple_independent_behaviors(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        path = root / "docs/product/functional_requirements.md"
+        text = path.read_text(encoding="utf-8").replace(
+            "- Rule: ",
+            "- Rule: 系统必须记录一次独立审计事件；",
+            1,
+        )
+        path.write_text(text, encoding="utf-8")
+        errors, _ = validate_delivery(root)
+        self.assertEqual([], errors)
+
+    def test_existing_fr_requires_rule_content(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        path = root / "docs/product/functional_requirements.md"
+        text = re.sub(r"^- Rule:.*\n", "", path.read_text(encoding="utf-8"), count=1, flags=re.M)
+        path.write_text(text, encoding="utf-8")
+        errors, _ = validate_delivery(root)
+        self.assertTrue(any("FR-TRAIN-001 has no Rule content" in error for error in errors))
+
+    def test_missing_story_shard_breaks_approved_vs_lineage(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        (root / "docs/product/user_stories/user_story_CAP_TRAIN.md").unlink()
+        errors, _ = validate_delivery(root)
+        self.assertTrue(any("missing or unapproved VS VS-TRAIN-001" in error for error in errors))
+
+    def test_duplicate_id_across_story_shards_is_rejected(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        source = root / "docs/product/user_stories/user_story_CAP_TRAIN.md"
+        duplicate = next(
+            line for line in source.read_text(encoding="utf-8").splitlines()
+            if line.startswith("| `US-TRAIN-001`")
+        )
+        target = root / "docs/product/user_stories/user_story_CAP_ACC.md"
+        target.write_text(target.read_text(encoding="utf-8") + f"\n{duplicate}\n", encoding="utf-8")
+        errors, _ = validate_delivery(root)
+        self.assertTrue(any("duplicate Story/Slice ID US-TRAIN-001" in error for error in errors))
+
+    def test_story_shards_do_not_inherit_parent_across_files(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        path = root / "docs/product/user_stories/user_story_CAP_ACC.md"
+        orphan = "| `VS-ACC-999` | orphan | `draft` | `CAP-ACC` | — |"
+        text = path.read_text(encoding="utf-8").replace(
+            "\n### US-ACC-001", f"\n{orphan}\n\n### US-ACC-001", 1,
+        )
+        path.write_text(text, encoding="utf-8")
+        errors, _ = validate_delivery(root)
+        self.assertTrue(any("VS-ACC-999 has no parent User Story" in error for error in errors))
+
+    def test_approved_vs_requires_approved_story_in_its_shard(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        path = root / "docs/product/user_stories/user_story_CAP_TRAIN.md"
+        text = path.read_text(encoding="utf-8").replace(
+            "| `approved` | `CAP-TRAIN` |", "| `draft` | `CAP-TRAIN` |", 1,
+        )
+        path.write_text(text, encoding="utf-8")
+        errors, _ = validate_delivery(root)
+        self.assertTrue(any("VS-TRAIN-001 has no unique approved Story parent" in error for error in errors))
 
     def test_fr_requires_direct_approved_vs_lineage(self) -> None:
         temp, root = self.fixture()
@@ -54,6 +165,22 @@ class StorySliceDeliveryValidationTest(unittest.TestCase):
         path.write_text(text, encoding="utf-8")
         errors, _ = validate_delivery(root)
         self.assertTrue(any("only direct edge source_vs_id" in error for error in errors))
+
+    def test_existing_fr_requires_fr_tc(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        path = root / "docs/quality/test_cases.md"
+        path.write_text(
+            re.sub(
+                r"### TC-FR-TRAIN-001.*?(?=## Contract-TC)",
+                "",
+                path.read_text(encoding="utf-8"),
+                flags=re.S,
+            ),
+            encoding="utf-8",
+        )
+        errors, _ = validate_delivery(root)
+        self.assertTrue(any("FR-TRAIN-001 has no FR-TC" in error for error in errors))
 
     def test_traceability_cannot_drop_an_owning_id(self) -> None:
         temp, root = self.fixture()

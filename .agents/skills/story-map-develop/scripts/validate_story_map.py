@@ -12,6 +12,7 @@ from pathlib import Path
 CAPABILITY_ID = re.compile(r"^CAP-[A-Z][A-Z0-9-]*$")
 STORY_ID = re.compile(r"^(US|VS)-([A-Z][A-Z0-9-]*)-(\d{3})$")
 SECTION = re.compile(r"^## \d+\..*[（(](CAP-[A-Z][A-Z0-9-]*)\s*/")
+SHARD_NAME = re.compile(r"^user_story_CAP_([A-Z][A-Z0-9-]*)\.md$")
 
 
 def cells(line: str) -> list[str]:
@@ -40,76 +41,92 @@ def registry_adjacency(path: Path) -> dict[str, set[str]]:
     return result
 
 
-def validate(story_map: Path, registry: Path, selected: set[str]) -> list[str]:
+def validate(story_maps: list[Path], registry: Path, selected: set[str]) -> list[str]:
     adjacency = registry_adjacency(registry)
     errors: list[str] = []
     unknown = selected - adjacency.keys()
     if unknown:
         errors.append(f"unknown capability: {', '.join(sorted(unknown))}")
 
-    current: str | None = None
-    seen: dict[str, int] = {}
+    seen: dict[str, tuple[Path, int]] = {}
     counts = {capability: {"US": 0, "VS": 0} for capability in selected}
 
-    for number, line in enumerate(story_map.read_text(encoding="utf-8").splitlines(), start=1):
-        heading = SECTION.match(line)
-        if heading:
-            current = heading.group(1)
-            continue
-        if not line.startswith("|"):
-            continue
+    for story_map in story_maps:
+        shard_match = SHARD_NAME.fullmatch(story_map.name)
+        expected_capability = f"CAP-{shard_match.group(1)}" if shard_match else None
+        current: str | None = None
+        current_story: str | None = None
+        section_count = 0
 
-        row = cells(line)
-        if row and row[0] in {"Id", "---"}:
-            continue
-        if current not in selected:
-            if len(row) == 5:
-                external_id = unquote(row[0])
-                if STORY_ID.fullmatch(external_id):
-                    if external_id in seen:
-                        errors.append(
-                            f"line {number}: duplicate {external_id}; "
-                            f"first seen at line {seen[external_id]}"
-                        )
-                    seen[external_id] = number
-            continue
-        if len(row) != 5:
-            errors.append(f"line {number}: expected 5 columns, found {len(row)}")
-            continue
-        row_id = unquote(row[0])
-        match = STORY_ID.fullmatch(row_id)
-        if not match:
-            errors.append(f"line {number}: invalid Story/Slice ID {row_id}")
-            continue
-        if row_id in seen:
-            errors.append(f"line {number}: duplicate {row_id}; first seen at line {seen[row_id]}")
-        seen[row_id] = number
+        for number, line in enumerate(story_map.read_text(encoding="utf-8").splitlines(), start=1):
+            location = f"{story_map}:{number}"
+            heading = SECTION.match(line)
+            if heading:
+                current = heading.group(1)
+                current_story = None
+                section_count += 1
+                if expected_capability and current != expected_capability:
+                    errors.append(
+                        f"{location}: section {current} does not match shard {expected_capability}"
+                    )
+                continue
+            if not line.startswith("|"):
+                continue
 
-        kind, prefix, _ = match.groups()
-        counts[current][kind] += 1
-        expected_prefix = current.removeprefix("CAP-")
-        if prefix != expected_prefix:
-            errors.append(f"line {number}: {row_id} prefix does not match section {current}")
+            row = cells(line)
+            if row and row[0] in {"Id", "---"}:
+                continue
+            if len(row) != 5:
+                errors.append(f"{location}: expected 5 columns, found {len(row)}")
+                continue
+            row_id = unquote(row[0])
+            match = STORY_ID.fullmatch(row_id)
+            if not match:
+                errors.append(f"{location}: invalid Story/Slice ID {row_id}")
+                continue
+            if row_id in seen:
+                first_path, first_number = seen[row_id]
+                errors.append(
+                    f"{location}: duplicate {row_id}; first seen at {first_path}:{first_number}"
+                )
+            else:
+                seen[row_id] = (story_map, number)
 
-        status = unquote(row[2])
-        if status not in {"draft", "approved"}:
-            errors.append(f"line {number}: unsupported status {status}")
-        primary = unquote(row[3])
-        if primary != current:
-            errors.append(f"line {number}: primary {primary} does not match section {current}")
+            kind, prefix, _ = match.groups()
+            if kind == "US":
+                current_story = row_id
+            elif current_story is None:
+                errors.append(f"{location}: {row_id} has no parent User Story in this shard")
 
-        affected_cell = row[4]
-        affected_pattern = r"`none`|`CAP-[A-Z][A-Z0-9-]*`(?:, `CAP-[A-Z][A-Z0-9-]*`)*"
-        if not re.fullmatch(affected_pattern, affected_cell):
-            errors.append(f"line {number}: malformed affected capability list")
-            continue
-        affected = set(re.findall(r"`(CAP-[A-Z][A-Z0-9-]*)`", affected_cell))
-        invalid = affected - adjacency.get(current, set())
-        if invalid:
-            errors.append(
-                f"line {number}: {row_id} uses non-adjacent capability "
-                f"{', '.join(sorted(invalid))} for {current}"
-            )
+            if current not in selected:
+                continue
+            counts[current][kind] += 1
+            expected_prefix = current.removeprefix("CAP-")
+            if prefix != expected_prefix:
+                errors.append(f"{location}: {row_id} prefix does not match section {current}")
+
+            status = unquote(row[2])
+            if status not in {"draft", "approved"}:
+                errors.append(f"{location}: unsupported status {status}")
+            primary = unquote(row[3])
+            if primary != current:
+                errors.append(f"{location}: primary {primary} does not match section {current}")
+
+            affected_cell = row[4]
+            affected_pattern = r"`none`|—|`CAP-[A-Z][A-Z0-9-]*`(?:, `CAP-[A-Z][A-Z0-9-]*`)*"
+            if not re.fullmatch(affected_pattern, affected_cell):
+                errors.append(f"{location}: malformed affected capability list")
+                continue
+            affected = set(re.findall(r"`(CAP-[A-Z][A-Z0-9-]*)`", affected_cell))
+            invalid = affected - adjacency.get(current, set())
+            if invalid:
+                errors.append(
+                    f"{location}: {row_id} uses non-adjacent capability "
+                    f"{', '.join(sorted(invalid))} for {current}"
+                )
+
+        if expected_capability and section_count != 1:
+            errors.append(f"{story_map}: expected exactly one Capability section")
 
     for capability, kinds in counts.items():
         if kinds["US"] == 0 or kinds["VS"] == 0:
@@ -119,13 +136,17 @@ def validate(story_map: Path, registry: Path, selected: set[str]) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--story-map", type=Path, default=Path("docs/product/story_map.md"))
+    parser.add_argument("--story-map", type=Path, action="append")
     parser.add_argument("--registry", type=Path, default=Path("docs/product/feature_registry.md"))
     parser.add_argument("--capability", action="append", required=True)
     args = parser.parse_args()
 
     selected = set(args.capability)
-    errors = validate(args.story_map, args.registry, selected)
+    story_maps = args.story_map or sorted(
+        Path("docs/product/user_stories").glob("user_story_CAP_*.md")
+    )
+    errors = [] if story_maps else ["no canonical Story Map shards found"]
+    errors.extend(validate(story_maps, args.registry, selected))
     if errors:
         print("Story map validation failed:")
         for error in errors:

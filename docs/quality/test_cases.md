@@ -7,7 +7,7 @@
 
 本目录保存稳定的测试意图和 oracle，不保存运行时 `passed` / `failed` 状态。三类 TC 的直接上游互斥：FR-TC 只使用 `source_fr_id`，Contract-TC 只使用 `source_contract_id`，VS-TC 只使用 `source_vs_id`。跨层覆盖由 `TRACEABILITY` 从 owning sources 派生，不在 TC 中重复维护。
 
-当前用例仅为已批准 `VS-TRAIN-001` 及其 mandatory FR 建立治理目录关系，不实施产品行为，也不声明旧测试或旧产品文档已完成迁移。
+当前用例仅为已批准 `VS-TRAIN-001`、当前已存在的 `FR-TRAIN-001` 及其分层测试建立治理目录关系，不实施产品行为，也不声明旧测试或旧产品文档已完成迁移。
 
 ## FR-TC
 
@@ -47,7 +47,7 @@
 
 ## 维护规则
 
-- 每条 approved FR 必须有最低成本的 FR-TC；例外必须记录 owner、原因、影响和失效期限。
+- FR 存在时，每条 approved FR 必须有适用的最低成本 FR-TC；例外必须记录 owner、原因、影响和失效期限。
 - 每个实施中的 VS 必须有一个用户可感知的 integration/E2E VS-TC。
 - Contract 事实变化必须新增或更新对应 Contract-TC，并选择 contract、integration、migration 或 AI-eval 等适用层级。
 - selector、脚本路径和命令是可执行定位信息；运行结果由绑定 exact commit SHA 的测试或 CI 系统保存。

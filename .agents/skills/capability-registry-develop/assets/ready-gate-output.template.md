@@ -77,15 +77,15 @@ Post-persistence Validation:
 - asymmetric-adjacency warnings
 - touched-scope decision for each relevant warning
 
-Independent Check Required:
-- every persisted semantic change sets `product_object_governance_change=true`, so `G-INDEPENDENT-CHECK` selects Product Object Governance Check before governance completion is claimed.
-- handoff includes Gate applicability, Gate A finding, PM destination confirmation, Gate B finding, exact persisted diff, PM final approval, impact inventory and validator output.
+Independent Check Applicability:
+- persistence or change type alone does not trigger `G-INDEPENDENT-CHECK`; set `product_object_semantic_risk=true` only when validator evidence cannot decide a material product-object semantic risk.
+- when the Gate applies, the handoff includes Gate applicability, Gate A finding, PM destination confirmation, Gate B finding, exact persisted diff, PM final approval, impact inventory and validator output.
 - Gate analysis remains handoff/check evidence and must not be copied into docs/product/feature_registry.md.
 
-Persistent Check Record:
-- required for the matched Gate in `docs/reports/product_object_governance_check_report.md`, using the Artifact's explicit evidence location.
-- retain target IDs, change mode, Gate A/N/A result, PM destination confirmation, Gate B/N/A result and comparison references, PM final row approval, validator result, touched-warning decision, checker result and residual risk.
-- the report is audit evidence, not a second Registry source of truth; do not copy full Gate analysis into docs/product/feature_registry.md.
+Checker Evidence:
+- keep the checker result ephemeral by default; persist it only when the user or an applicable contract explicitly requires a record.
+- include target IDs, change mode, Gate A/N/A result, PM destination confirmation, Gate B/N/A result and comparison references, PM final row approval, validator result, touched-warning decision, checker result and residual risk when persistence is required.
+- persisted audit evidence is not a second Registry source of truth; do not copy full Gate analysis into docs/product/feature_registry.md.
 ```
 
 输出不得生成或改写 Story、FR、spec、AC、TC、stage、increment、architecture、implementation、test、priority 或 release artifact。

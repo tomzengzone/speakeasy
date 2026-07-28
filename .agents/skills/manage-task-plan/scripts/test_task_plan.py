@@ -61,7 +61,7 @@ class TaskPlanCliTest(unittest.TestCase):
             "--pr",
             "Update validator",
         )
-        return self.workspace / ".codex" / "task-plans" / task_id
+        return self.workspace / "docs" / "task-plans" / task_id
 
     def fill_plan(self, task_dir: Path) -> None:
         plan = task_dir / "plan.md"

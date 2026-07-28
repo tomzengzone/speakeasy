@@ -11,7 +11,7 @@ Design layered executable test cases with one typed direct upstream per case and
 
 ## When to Use
 
-Use for mandatory FR coverage, Engineering Contract fact changes, selected VS full-chain coverage, or a bug requiring a stable regression oracle.
+Use for FR-TC design when an approved FR exists, Engineering Contract fact changes, selected VS full-chain coverage, or a bug requiring a stable regression oracle.
 
 ## When NOT to Use
 
@@ -23,7 +23,7 @@ Method skill for `TEST_CASE_CATALOG`. Resolve governance facts by Artifact ID. T
 
 ## Inputs
 
-Approved FRs, selected approved VS, changed Engineering Contract IDs, existing test conventions/code, stable selectors, fixtures, failure boundaries and target commands.
+Selected approved VS, approved FRs when present, changed Engineering Contract IDs, existing test conventions/code, stable selectors, fixtures, failure boundaries and target commands.
 
 ## Outputs
 
@@ -32,7 +32,7 @@ FR-TC, Contract-TC and VS-TC entries containing one typed direct edge, self-cont
 ## Process
 
 1. Choose exactly one type: FR-TC uses only `source_fr_id`; Contract-TC uses only `source_contract_id`; VS-TC uses only `source_vs_id`.
-2. For FR-TC, choose the lowest-cost layer that proves the atomic rule.
+2. For FR-TC, choose the lowest-cost layer that proves the referenced FR behavior; use additional FR-TCs when its independent behaviors need different oracles or layers.
 3. For Contract-TC, select contract/integration/migration/AI-eval or another layer that proves the changed engineering fact.
 4. For VS-TC, cover the user-visible integration/E2E loop on all actually affected layers and its key degradation path.
 5. Add stable selector, script and command; leave runtime result status out.
@@ -44,4 +44,4 @@ More than one direct upstream type; copied cross-layer coverage joins; passing s
 
 ## Verification
 
-Every FR has an FR-TC or time-bounded explicit exception; every implementing VS has a VS-TC; every changed Contract has a Contract-TC; all entries have executable fields and exactly one allowed direct edge.
+When FRs exist, each has an FR-TC or time-bounded explicit exception; every implementing VS has a VS-TC; every changed Contract has a Contract-TC; all entries have executable fields and exactly one allowed direct edge.

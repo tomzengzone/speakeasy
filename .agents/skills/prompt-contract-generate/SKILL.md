@@ -1,6 +1,6 @@
 ---
 name: prompt-contract-generate
-description: Use when approved Functional Requirements change LLM prompts, structured output, fallback behavior, or AI evaluation configuration. Do not use for deterministic behavior without an LLM path.
+description: Use when an approved Vertical Slice, or an applicable approved Functional Requirement when present, changes LLM prompts, structured output, fallback behavior, or AI evaluation configuration. Do not use for deterministic behavior without an LLM path.
 ---
 
 # Prompt Contract Generate
@@ -19,11 +19,11 @@ Do not use for deterministic/static behavior, provider wiring with unchanged AI 
 
 ## Contract
 
-Method skill for `PROMPT_CONTRACT`, `LLM_OUTPUT_SCHEMA` and `AI_EVAL_CASES`; related fallback/dialogue Artifacts retain their own ownership. Resolve governance facts by Artifact ID. Mandatory FR is the product upstream.
+Method skill for `PROMPT_CONTRACT`, `LLM_OUTPUT_SCHEMA` and `AI_EVAL_CASES`; related fallback/dialogue Artifacts retain their own ownership. Resolve governance facts by Artifact ID. The selected approved VS is the product upstream; an applicable approved FR adds requirement lineage when present.
 
 ## Inputs
 
-Applicable approved FR IDs, current AI/Domain/API/UX facts, safety/fallback/cost constraints and relevant AI Contract-TC IDs.
+Selected approved VS IDs, applicable approved FR IDs when present, current AI/Domain/API/UX facts, safety/fallback/cost constraints and relevant AI Contract-TC IDs.
 
 ## Outputs
 
@@ -31,7 +31,7 @@ Prompt constraints, input/output schema, positive/negative examples, determinist
 
 ## Process
 
-1. Confirm applicable FR and actual AI contract fact change.
+1. Confirm the selected approved VS, any applicable approved FR, and the actual AI contract fact change.
 2. Define decisions the model must not make and design structured output before prompt prose.
 3. Define invalid, low-confidence, off-topic and provider-failure fallbacks.
 4. Put stable AI oracle/selector in a Contract-TC; keep AI Eval Cases limited to TC-linked fixtures, rubric/threshold and provider/model configuration.

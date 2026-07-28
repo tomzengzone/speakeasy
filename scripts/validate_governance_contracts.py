@@ -58,9 +58,51 @@ SKILL_CONTRACT_OWNER_ASSIGNMENT = re.compile(
 )
 REQUIRED_NATIVE_AGENT_FIELDS = {"name", "description", "developer_instructions"}
 READ_ONLY_NATIVE_AGENTS = {
-    "evidence_reviewer",
     "product_object_governance_check",
     "software_architecture_governance_check",
+}
+RETIRED_NATIVE_AGENT_NAMES = {"evidence_reviewer"}
+RETIRED_ACTOR_IDS = {"evidence-reviewer"}
+EXPECTED_INDEPENDENT_SEMANTIC_TRIGGERS = {
+    "product_object_semantic_risk",
+    "software_architecture_semantic_risk",
+}
+EXPECTED_INDEPENDENT_EXCLUSIONS = {"deterministic_validation_sufficient=true"}
+CHECKER_REQUIRED_BOUNDARY_PHRASES = {
+    "product_object_governance_check": (
+        "Consume existing validator evidence for the current scope and revision.",
+        "Review only semantic risks that validators cannot decide:",
+        "Do not rerun deterministic validators",
+    ),
+    "software_architecture_governance_check": (
+        "Consume existing validator evidence for the current scope and revision.",
+        "Review only semantic architecture risks that validators cannot decide:",
+        "Do not rerun deterministic validators",
+    ),
+}
+CHECKER_FORBIDDEN_MECHANICAL_DUTIES = {
+    "product_object_governance_check": (
+        "duplicate authorities",
+        "broken ownership",
+        "invalid paths",
+        "FR-TC coverage",
+        "typed TC direct edges",
+        "legacy isolation",
+        "exact-SHA semantics",
+    ),
+    "software_architecture_governance_check": (
+        "direct upstream evidence",
+        "applicable allocation",
+        "executable validation results",
+    ),
+}
+EXPECTED_INDEPENDENT_VALIDATION_EVIDENCE_POLICY = {
+    "mode": "consume",
+    "identity_fields": ["candidate exact SHA", "checked scope"],
+    "on_invalid": (
+        "return to producer when evidence is missing, stale, scope/revision-mismatched, conflicting, or failed; "
+        "checker must not rerun validators"
+    ),
 }
 ALLOWED_GOVERNANCE_STATUSES = {"candidate"}
 RETIRED_RUNTIME_PATH_PATTERNS = (
@@ -265,6 +307,8 @@ def validate_repository(root: Path) -> tuple[list[str], list[str], dict]:
     if len(actor_ids) != len(set(actor_ids)):
         errors.append("actor IDs must be unique")
     actors = set(actor_ids)
+    for retired_actor in sorted(actors & RETIRED_ACTOR_IDS):
+        errors.append(f"retired actor must not be registered: {retired_actor}")
     read_only_actor_ids = {
         row.get("actor_id")
         for row in actor_rows
@@ -298,6 +342,8 @@ def validate_repository(root: Path) -> tuple[list[str], list[str], dict]:
             errors.append(f"{path.relative_to(root)} missing native agent fields: {sorted(missing)}")
             continue
         name = data["name"]
+        if name in RETIRED_NATIVE_AGENT_NAMES:
+            errors.append(f"retired native agent must not be active: {name}")
         if name in native_names:
             errors.append(f"duplicate native agent name: {name}")
         native_names.add(name)
@@ -309,6 +355,17 @@ def validate_repository(root: Path) -> tuple[list[str], list[str], dict]:
             errors.append(f"{path.relative_to(root)} developer_instructions exceed 2400 bytes")
         if name in READ_ONLY_NATIVE_AGENTS and data.get("sandbox_mode") != "read-only":
             errors.append(f"native review agent {name} must use read-only sandbox_mode")
+        if name in CHECKER_REQUIRED_BOUNDARY_PHRASES:
+            instructions = data["developer_instructions"]
+            for phrase in CHECKER_REQUIRED_BOUNDARY_PHRASES[name]:
+                if phrase not in instructions:
+                    errors.append(f"native review agent {name} missing validator/checker boundary: {phrase}")
+            for mechanical_duty in CHECKER_FORBIDDEN_MECHANICAL_DUTIES[name]:
+                if mechanical_duty.casefold() in instructions.casefold():
+                    errors.append(
+                        f"native review agent {name} must not own mechanical validator duty "
+                        f"'{mechanical_duty}'"
+                    )
     actor_native_definitions = {
         row.get("definition") for row in actor_rows
         if str(row.get("definition", "")).startswith(".codex/agents/")
@@ -445,12 +502,18 @@ def validate_repository(root: Path) -> tuple[list[str], list[str], dict]:
                 errors.append(f"artifact {aid} references unknown input {dependency}")
 
     gates: dict[str, dict] = {}
+    short_circuit_rules: dict[str, dict] = {}
     evidence_artifact_references: set[str] = set()
     gate_routes = index.get("gate_routes", {})
     for shard in sorted(set(gate_routes.values())):
         data = load_json(contract_root / shard, errors)
         if not data.get("short_circuit_rules"):
             errors.append(f"gate shard {shard} has no short-circuit rules")
+        for rule in data.get("short_circuit_rules", []):
+            rule_id = rule.get("rule_id")
+            if rule_id in short_circuit_rules:
+                errors.append(f"duplicate short-circuit rule ID: {rule_id}")
+            short_circuit_rules[rule_id] = rule
         for gate in data.get("gates", []):
             gid = gate.get("gate_id")
             missing = REQUIRED_GATE_FIELDS - set(gate)
@@ -517,11 +580,20 @@ def validate_repository(root: Path) -> tuple[list[str], list[str], dict]:
     if set(gate_routes) != set(gates):
         errors.append("gate ID-to-shard routes do not match loaded gates")
     independent_gate = gates.get("G-INDEPENDENT-CHECK", {})
-    checker_selector = independent_gate.get("evidence_contract", {}).get("checker_selector", {})
+    independent_evidence_contract = independent_gate.get("evidence_contract", {})
+    checker_selector = independent_evidence_contract.get("checker_selector", {})
     checker_by_trigger = checker_selector.get("by_trigger", {})
     checker_by_artifact = checker_selector.get("by_artifact_id", {})
     expected_checker_triggers = set(independent_gate.get("applicability", {}).get("any", []))
     expected_checker_triggers = {value.removesuffix("=true") for value in expected_checker_triggers}
+    if expected_checker_triggers != EXPECTED_INDEPENDENT_SEMANTIC_TRIGGERS:
+        errors.append("G-INDEPENDENT-CHECK must use only product-object and software-architecture semantic-risk triggers")
+    independent_exclusions = set((independent_gate.get("excludes_if") or {}).get("any", []))
+    if independent_exclusions != EXPECTED_INDEPENDENT_EXCLUSIONS:
+        errors.append("G-INDEPENDENT-CHECK must define the deterministic validation exclusion")
+    read_only_retained = set(short_circuit_rules.get("SC-READ-ONLY", {}).get("retain", []))
+    if "G-INDEPENDENT-CHECK" in read_only_retained:
+        errors.append("SC-READ-ONLY must not retain G-INDEPENDENT-CHECK by default")
     if set(checker_by_trigger) != expected_checker_triggers:
         errors.append("G-INDEPENDENT-CHECK checker_by_trigger must cover every applicability trigger")
     for trigger, checker in checker_by_trigger.items():
@@ -532,6 +604,17 @@ def validate_repository(root: Path) -> tuple[list[str], list[str], dict]:
             errors.append(f"G-INDEPENDENT-CHECK selects checker for unknown artifact {artifact_id}")
         if checker not in read_only_actor_ids:
             errors.append(f"G-INDEPENDENT-CHECK artifact {artifact_id} uses non-checker actor {checker}")
+    if independent_evidence_contract.get("validation_evidence_policy") != EXPECTED_INDEPENDENT_VALIDATION_EVIDENCE_POLICY:
+        errors.append("G-INDEPENDENT-CHECK must consume exact-SHA and scope-bound validator evidence")
+    independent_required_fields = set(independent_evidence_contract.get("required_fields", []))
+    expected_independent_fields = {
+        "checked scope", "changed files", "candidate exact SHA", "validator evidence",
+        "evidence scope/revision match", "result", "required corrections", "residual risk",
+    }
+    if not expected_independent_fields.issubset(independent_required_fields):
+        errors.append("G-INDEPENDENT-CHECK required_fields must bind validator evidence to exact SHA and scope")
+    if independent_gate.get("result_levels") != ["block", "pass"]:
+        errors.append("G-INDEPENDENT-CHECK result_levels must be block/pass")
     for evidence_artifact_id in evidence_artifact_references:
         evidence_artifact = artifacts.get(evidence_artifact_id)
         if evidence_artifact and evidence_artifact["accountable_owner"] in read_only_actor_ids:
@@ -553,6 +636,9 @@ def validate_repository(root: Path) -> tuple[list[str], list[str], dict]:
             errors.append("G-ARTIFACT-VALIDATION must use the impacted Artifact validation command URI")
         if validation_gate.get("evidence_contract", {}).get("persistence") != "ephemeral":
             errors.append("G-ARTIFACT-VALIDATION results must remain ephemeral")
+        validation_required_fields = set(validation_gate.get("evidence_contract", {}).get("required_fields", []))
+        if not {"candidate exact SHA", "checked scope"}.issubset(validation_required_fields):
+            errors.append("G-ARTIFACT-VALIDATION evidence must be bound to candidate exact SHA and checked scope")
 
     exchange_data = load_json(contract_root / index.get("exchange_registry", ""), errors)
     exchange_rows = exchange_data.get("exchanges", [])

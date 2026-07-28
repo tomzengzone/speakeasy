@@ -1,6 +1,6 @@
 ---
 name: domain-model-generate
-description: Use when approved Functional Requirements change entities, relationships, lifecycle states, invariants, or persistence ownership. Do not use for presentation-only changes.
+description: Use when an approved Vertical Slice, or an applicable approved Functional Requirement when present, changes entities, relationships, lifecycle states, invariants, or persistence ownership. Do not use for presentation-only changes.
 ---
 
 # Domain Model Generate
@@ -19,11 +19,11 @@ Do not use for label/layout changes, unchanged data facts or unapproved product 
 
 ## Contract
 
-Method skill for `DOMAIN_SCHEMA` and `DOMAIN_MODEL`; `ENTITY_RELATIONSHIP` is a related Artifact. Resolve governance facts by Artifact ID. Mandatory FR is the product upstream; architecture/API are engineering context.
+Method skill for `DOMAIN_SCHEMA` and `DOMAIN_MODEL`; `ENTITY_RELATIONSHIP` is a related Artifact. Resolve governance facts by Artifact ID. The selected approved VS is the product upstream; an applicable approved FR adds requirement lineage when present. Architecture/API are engineering context.
 
 ## Inputs
 
-Applicable approved FR IDs, current domain/relationship/model artifacts, system and API boundaries, persistence constraints and relevant Contract-TC needs.
+Selected approved VS IDs, applicable approved FR IDs when present, current domain/relationship/model artifacts, system and API boundaries, persistence constraints and relevant Contract-TC needs.
 
 ## Outputs
 
@@ -31,7 +31,7 @@ Entities, fields, identities, invariants, relationships, lifecycle transitions, 
 
 ## Process
 
-1. Confirm applicable FR and actual domain fact change.
+1. Confirm the selected approved VS, any applicable approved FR, and the actual domain fact change.
 2. Separate domain concepts from DTOs, database mechanics and UI view models.
 3. Define ownership, uniqueness, audit, deletion and valid transitions.
 4. Update only the affected owning Domain Artifact.
@@ -43,4 +43,4 @@ Storage fields before meaning; inconsistent naming; unconstrained transitions; A
 
 ## Verification
 
-Every changed concept has explicit ownership/lifecycle; relationships and deletion rules are unambiguous; applicable FR resolves through traceability; Contract-TC proves each changed fact.
+Every changed concept has explicit ownership/lifecycle; relationships and deletion rules are unambiguous; selected VS lineage and any present FR lineage resolve through traceability; Contract-TC proves each changed fact.

@@ -28,12 +28,12 @@
 Capability/Sub-capability classification
 -> approved User Story
 -> approved Child Vertical Slice
--> mandatory Functional Requirement
+-> Functional Requirement when present
 ```
 
 Capability Registry 只定义稳定业务边界和分类。Story Map 保存 Story 到 Capability、Child VS 到 Story 的直接关系。FR Catalog 中 FR 只通过 `source_vs_ids` 直接引用 approved VS。Stage、Roadmap、Increment、Work Package 和 PR 是 planning/delivery metadata，不定义产品行为，也不作为 FR、TC 或 Engineering Contract 的上游。
 
-交付轴选择 approved VS 与 mandatory FR，并在事实变化时同步受影响 Engineering Contract。Issue/PR 只记录本次选择、范围、风险、状态与证据链接，不复制产品、Contract 或测试事实。
+交付轴选择 approved VS，并在 FR 存在时选择适用的 approved FR；工程事实变化时同步受影响 Engineering Contract。Issue/PR 只记录本次选择、范围、风险、状态与证据链接，不复制产品、Contract 或测试事实。
 
 ## Feature delivery
 
@@ -44,8 +44,8 @@ idea/change intake
 -> G-PRODUCT-CLASSIFICATION
 -> Capability/Sub-capability classification（边界变化时进入 G-REGISTRY）
 -> Story 与 Child VS 完整、approved
--> G-FR：每个 selected VS 至少一条 approved FR
--> G-TC：FR-TC 与 VS-TC；Contract 事实变化时增加 Contract-TC
+-> FR 存在时进入 G-FR，验证 approved 状态与直接 VS lineage
+-> G-TC：VS-TC；FR 存在时增加 FR-TC，Contract 事实变化时增加 Contract-TC
 -> G-CONTRACT：只同步事实发生变化的专业 Contract
 -> G-SWC：稳定共享拓扑或重大复用边界变化时更新架构并独立检查
 -> test-first implementation
@@ -56,19 +56,19 @@ idea/change intake
 -> report/release controls when applicable
 ```
 
-FR 缺失、VS 未批准或产品行为不完整时回到 owning source，由 Product Manager 裁决；不得在 TC、Contract、Issue 或代码中补造行为。
+VS 未批准、产品行为不完整，或当前 FR 自身未批准、lineage 无效或内容冲突时回到 owning source，由 Product Manager 裁决；不得在 TC、Contract、Issue 或代码中补造行为。Selected approved VS 可以没有 FR，且不需要为零 FR 创建例外记录。
 
 ## 分层测试决策
 
 `TEST_CASE_CATALOG` 固定三类唯一 direct-upstream edge：
 
-- FR-TC 只记录 `source_fr_id`，选择能最快证明原子规则的最低成本层级。
+- FR-TC 仅在 FR 存在时使用，只记录 `source_fr_id`，并选择能最快证明该 FR 行为的最低成本层级；FR 内独立行为需要不同 oracle 或层级时可使用多个 FR-TC。
 - Contract-TC 只记录 `source_contract_id`，覆盖实际变化的 API、Domain、Persistence、AI、UX 等边界。
 - VS-TC 只记录 `source_vs_id`，覆盖用户可感知的定向全链路和关键失败/降级路径。
 
-先运行 FR/Contract 快速测试，再运行 selected VS 的定向全链路测试。最终 release E2E 不得成为首次发现模块缺陷的验证点。TC Catalog 不保存运行结果；执行证据绑定 exact commit SHA。
+先运行适用的 FR/Contract 快速测试，再运行 selected VS 的定向全链路测试。最终 release E2E 不得成为首次发现模块缺陷的验证点。TC Catalog 不保存运行结果；执行证据绑定 exact commit SHA。
 
-`TRACEABILITY` 从 Story Map、FR Catalog、适用 Engineering Contract 和 TC Catalog 派生三条完整分支及 coverage join。它不拥有或覆盖任何 direct edge；不一致时修复 owning source 后重建投影。
+`TRACEABILITY` 从 Story Map、TC Catalog、存在时的 FR Catalog 和适用 Engineering Contract 派生当前存在的分支及 coverage join。没有 FR 时不生成 FR、FR-TC 或 VS-TC-to-FR join。它不拥有或覆盖任何 direct edge；不一致时修复 owning source 后重建投影。
 
 ## Engineering Contract 与风险
 
@@ -80,14 +80,14 @@ API、OpenAPI、Domain、Persistence、AI structured output、Prompt/fallback、
 
 ## 最小编码上下文
 
-普通实现默认只加载：selected approved VS、mandatory FR、受影响 Contract、FR/Contract/VS 分层 TC、相邻代码/测试和验证命令。历史 `user_stories`、Product Base、Increment Requirements/Spec/Acceptance/Test/Traceability、migration-only 文件、task plan 与未登记 template 不进入默认上下文或 authoritative fallback。
+普通实现默认只加载：selected approved VS、存在时的适用 approved FR 与 FR-TC、受影响 Contract 与 Contract-TC、VS-TC、相邻代码/测试和验证命令。历史 `user_stories`、Product Base、Increment Requirements/Spec/Acceptance/Test/Traceability、migration-only 文件、task plan 与未登记 template 不进入默认上下文或 authoritative fallback。
 
 ## Gates
 
 - `G-PRODUCT-CLASSIFICATION`：识别 change type、primary/affected Capability 与是否发生产品事实变化。
 - `G-REGISTRY`：仅 Capability/Sub-capability 边界事实变化时执行。
 - `G-INCREMENT-SCOPE`：仅 planning scope/batch 变化时执行；其结果不进入产品/Contract/TC lineage。
-- `G-FR`：验证 selected approved VS 的 mandatory、atomic FR 和唯一 VS lineage。
+- `G-FR`：仅在 FR 存在时验证其 approved 状态、非空直接 VS lineage 与 Capability/Sub-capability classification；FR 可包含多个独立规则、不变量、边界或失败条件。
 - `G-TC`：验证三类 TC 的唯一 direct edge、oracle、层级、selector、脚本与命令。
 - `G-CONTRACT`：验证工程事实同步和 Contract-TC。
 - `G-SWC`：仅共享拓扑、system flow 或重要复用边界变化时执行。
@@ -113,7 +113,7 @@ python3 scripts/check_document_language.py --scope changed --include-worktree
 ## Agent handoff
 
 - Product Manager 决定产品分类、Story/VS 与 FR 的产品事实和批准状态。
-- Requirement Development 按已批准 VS 提炼 atomic mandatory FR，不改变产品方向。
+- Requirement Development 仅在 Product Manager 决定使用 FR 时，按已批准 VS 贡献 FR，不改变产品方向，也不要求每个 implementing VS 都有 FR。
 - Test Case Development 设计 FR/Contract/VS 分层 TC，不发明产品行为。
 - System Architect 与专业 owner 只在对应工程事实或风险边界变化时介入。
 - 根 Codex 负责最短安全执行路径、验证和交接；独立 checker 保持只读。

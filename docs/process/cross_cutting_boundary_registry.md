@@ -2,7 +2,7 @@
 
 ## PR-003 current lineage
 
-本次只切换治理来源链，不改变下列跨切面工程边界、API、模块责任或已接受实现事实。当前产品 lineage 来自 approved Story/VS 与 mandatory FR，测试 lineage 来自 typed TC；Artifact inputs、owner 与适用 Gate 仅由 Governance Contract 解析。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+本次只切换治理来源链，不改变下列跨切面工程边界、API、模块责任或已接受实现事实。当前产品 lineage 来自 approved Story/VS，以及存在时的 approved FR；测试 lineage 来自 typed TC。Artifact inputs、owner 与适用 Gate 仅由 Governance Contract 解析。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
 
 ## 目的
 
@@ -22,12 +22,12 @@
 
 | Boundary ID | 跨切面能力 | 事实源/拥有方 | 授权入口 | 禁止行为 | 最低验证证据 | Owner / Checker |
 | --- | --- | --- | --- | --- | --- | --- |
-| XCB-001 | 音频媒体上传与 `audio_ref` | Backend MediaAsset / AI Gateway | `POST /media/audio/uploads`、对象存储 `upload_url`、`POST /media/audio/uploads/{media_id}/complete`、业务接口消费后端返回的 `media://audio/...` | Flutter 生成、拼接、推断或持久化 `audio_ref`；把本地文件路径、裸 URL、未验证 ref 当成生产 ASR/评分输入；新建第二套媒体上传系统 | API/OpenAPI 契约、Dart client drift、非法 ref negative tests、上传 create/complete/idempotency tests、Flutter 上传桥接测试 | Backend + Frontend + AI Runtime / QA + Evidence Reviewer |
+| XCB-001 | 音频媒体上传与 `audio_ref` | Backend MediaAsset / AI Gateway | `POST /media/audio/uploads`、对象存储 `upload_url`、`POST /media/audio/uploads/{media_id}/complete`、业务接口消费后端返回的 `media://audio/...` | Flutter 生成、拼接、推断或持久化 `audio_ref`；把本地文件路径、裸 URL、未验证 ref 当成生产 ASR/评分输入；新建第二套媒体上传系统 | API/OpenAPI 契约、Dart client drift、非法 ref negative tests、上传 create/complete/idempotency tests、Flutter 上传桥接测试 | Backend + Frontend + AI Runtime / QA |
 | XCB-002 | AI provider 调用与用量治理 | Backend AI Gateway | `AiGatewayService`、`AiProviderPolicyService`、`UsageService`、provider gateway adapter | 业务 service 直接调用 provider 并绕过权限、用量、媒体校验、fallback 和审计；provider 输出直接写最终事实 | provider policy tests、usage reservation/commit/release tests、fallback tests、forbidden-field AI evals | Backend + AI Runtime / QA |
 | XCB-003 | OpenAPI 与 generated client | OpenAPI source of truth | `docs/architecture/openapi/speakeasy-api.yaml` + generated Dart client | 手写 generated client 语义；新增跨层接口但不更新 OpenAPI；绕过 drift gate | OpenAPI lint、contract check、Dart generated client drift check | Backend + Frontend / QA |
-| XCB-004 | 会员权益、额度和商业事实 | Backend Commerce/Entitlement/Usage | Entitlement、subscription、usage API family | Flutter 本地判定最终权益、额度、账单、退款或商业发布状态；AI/provider 创建权益事实 | entitlement tests、quota/cost downgrade tests、release gate evidence | Backend + DevOps / QA + Evidence Reviewer |
-| XCB-005 | Goal Autopilot 目标、诊断、预测和 checkpoint 事实 | Backend Goal Autopilot domain | Goal Autopilot API family and deterministic policies | Flutter 本地推断最终 goal 状态、ETA、claim guard、diagnostic mode、confidence band；LLM/provider 直接写持久状态 | backend policy tests、projection tests、low-confidence downgrade tests、claim guard tests | Backend + Frontend + AI Runtime / QA + Evidence Reviewer |
-| XCB-006 | 数据保留、导出、删除和审计 | Backend data governance / Ops | Account deletion、retention、export、redacted audit paths | 新表或新媒体事实不接入删除/导出/retention；日志、报告或 API 暴露 raw audio、raw transcript、provider payload、secret 或完整 signed URL | account deletion tests、export redaction tests、retention job tests、log/report redaction review | Backend + DevOps / QA + Evidence Reviewer |
+| XCB-004 | 会员权益、额度和商业事实 | Backend Commerce/Entitlement/Usage | Entitlement、subscription、usage API family | Flutter 本地判定最终权益、额度、账单、退款或商业发布状态；AI/provider 创建权益事实 | entitlement tests、quota/cost downgrade tests、release gate evidence | Backend + DevOps / QA |
+| XCB-005 | Goal Autopilot 目标、诊断、预测和 checkpoint 事实 | Backend Goal Autopilot domain | Goal Autopilot API family and deterministic policies | Flutter 本地推断最终 goal 状态、ETA、claim guard、diagnostic mode、confidence band；LLM/provider 直接写持久状态 | backend policy tests、projection tests、low-confidence downgrade tests、claim guard tests | Backend + Frontend + AI Runtime / QA |
+| XCB-006 | 数据保留、导出、删除和审计 | Backend data governance / Ops | Account deletion、retention、export、redacted audit paths | 新表或新媒体事实不接入删除/导出/retention；日志、报告或 API 暴露 raw audio、raw transcript、provider payload、secret 或完整 signed URL | account deletion tests、export redaction tests、retention job tests、log/report redaction review | Backend + DevOps / QA |
 | XCB-007 | Product source of truth 与 issue tracking | Product Manager / current product Artifacts | Story Map、FR Catalog、TC Catalog、derived traceability、issue-management tracking | 用 issue、PR、报告或实现代码替代 Story/VS/FR、typed TC、derived traceability 或 release evidence | issue body Artifact-ID links、traceability check、quality review | Product Manager + Documentation Governance / Product Object Governance Check |
 | XCB-008 | 场景练习与共享运行时复用 | Software Component Architecture / SWC Catalog | `FE-SCENARIO-PRACTICE`、`FE-PRACTICE-RUNTIME`、`SWC-FLOW-SCENARIO-PRACTICE-RUNTIME` | 为同一交互主干新建重复 session、voice、message、TTS、history 或 recovery runtime；绕过既有共享组件和 Flow | 当前 SWC/Flow 引用、受影响 Contract-TC、复用与禁止边界证据 | Frontend + System Architect / Software Architecture Governance Check |
 
@@ -368,7 +368,7 @@ Flutter 可以展示后端 projection，也可以提交用户意图和样本引�
 | `AiRetentionService` | 清理 AI media、TTS cache owner、provider metrics、transcript refs，返回 aggregate counts | 返回 raw media/provider evidence 或跳过 idempotency |
 | Export helpers | 生成 redacted/minimized export projection、retention rules 和 omitted field 列表 | 导出 raw transcript、audio ref、provider payload、full signed URL 或 idempotency key |
 | `AuditLog` / telemetry | 记录 redacted proof、blocked reason、fallback audit 和 rollout health | 写入 raw user UUID 之外的敏感 payload、prompt、secret 或完整请求体 |
-| QA / Evidence Reviewer | 验证删除、导出、retention、redaction 和 release blocker | 用 report 文字替代实际 deletion/export/retention evidence |
+| QA | 验证删除、导出、retention、redaction 和 release blocker | 用 report 文字替代实际 deletion/export/retention evidence |
 | Flutter | 展示删除/导出/隐私状态和后端返回的安全 projection | 本地判定删除完成或缓存敏感原始 payload |
 
 ### 可执行门禁与追溯规则
@@ -403,8 +403,8 @@ XCB-006 not-applicable exception: table=<table>; owner=<owner>; safe_fields=<saf
 ```text
 用户想法或问题
 -> Product Manager 分类 Capability/Sub-capability
--> approved Story -> approved Child VS -> mandatory FR
--> FR-TC / affected Contract-TC / VS-TC
+-> approved Story -> approved Child VS -> approved FR when present
+-> FR-TC when an FR exists / affected Contract-TC / VS-TC
 -> canonical derived traceability
 -> Codex Root 路由实现或审核
 -> reports / quality / release evidence
@@ -418,11 +418,11 @@ Issue、PR、代码、报告和 agent 输出都不能替代 Product Manager 分�
 | 治理场景 | 授权入口 | 业务语义 |
 | --- | --- | --- |
 | 产品范围与优先级 | Product Manager、Capability Registry、roadmap/planning Artifacts | 决定当前做什么、延期什么和 Capability classification；planning 不定义行为 |
-| 产品事实 | Story Map 与 FR Catalog | 持有 approved Story/VS 和 mandatory atomic FR |
+| 产品事实 | Story Map 与 FR Catalog | 持有 approved Story/VS，以及存在时可包含多个独立规则、不变量、边界或失败条件的 approved FR |
 | 测试与追溯 | TC Catalog 与 canonical derived traceability | 持有 typed oracle/direct edge，并从 owning sources 投影完整 join |
 | 工作流治理 | `WORKFLOW`、`SKILL_QUALITY_STANDARD`、本注册表 Artifact | 规定方法顺序与跨切面边界；治理事实由 Governance Contract 解析 |
 | Issue tracking | `issue-management`、repository issues | 跟踪协调、链接 Artifact IDs 和证据，不拥有产品事实 |
-| 独立审核 | Product Object Governance Check、Documentation Governance、Evidence Reviewer、QA | 审查范围、链路、证据和 release 状态 |
+| 独立审核 | Product Object Governance Check、Software Architecture Governance Check | 仅审查机器证据无法判断的产品对象或软件架构语义风险 |
 
 ### 当前实现状态和 legacy/planned 说明
 
@@ -437,7 +437,7 @@ Issue、PR、代码、报告和 agent 输出都不能替代 Product Manager 分�
 - 不得用 issue、PR、实现代码、测试通过、报告摘要或 agent 口头结论替代 Product Manager 的产品决策。
 - 不得把 Capability、Stage、Increment、Work Package 或 change request 当成产品行为 source。
 - 不得用本注册表补写 Story/VS/FR、typed TC、实现报告、质量报告或发布证据。
-- 不得在缺少 mandatory FR、适用 typed TC、derived traceability 和 CI evidence 时声明 done。
+- 不得在缺少 VS-TC、受影响 Contract-TC、现有 FR 的 FR-TC、当前 derived traceability 分支或 CI evidence 时声明 done；零 FR 本身不是缺口。
 - 不得把 local deterministic pass 写成 commercial release approval、paid AI external evidence pass 或 Product Base merge approval。
 
 ### 模块责任表
@@ -445,12 +445,12 @@ Issue、PR、代码、报告和 agent 输出都不能替代 Product Manager 分�
 | 模块 | 责任 | 不允许 |
 | --- | --- | --- |
 | Product Manager | 分类请求、维护 Story/VS/FR 与 planning priority | 写详细实现、测试、API schema 或被 issue/PR 替代 |
-| Story Map / FR Catalog | 承载 approved Story/VS 和 mandatory atomic FR | 接收交付批次、执行状态或工程 schema |
+| Story Map / FR Catalog | 承载 approved Story/VS，以及存在时的 approved FR | 接收交付批次、执行状态或工程 schema |
 | TC Catalog / Traceability | 承载 typed oracle/direct edge 与 derived full-chain projection | 新增产品行为、复制运行状态或覆盖 owning edge |
-| Codex Root | 检查产品对象门禁并路由 specialist agents | 决定产品优先级或绕过 missing VS/FR/TC gate |
+| Codex Root | 检查产品对象门禁并路由 specialist agents | 决定产品优先级，或绕过 missing VS/VS-TC、受影响 Contract/Contract-TC、现有 FR lineage/FR-TC gate |
 | Issue Management | 创建/更新 tracking issue、链接 source-of-truth、建议 label/status | 决定产品范围、优先级、完成状态或 release readiness |
 | Reports / Release evidence | 记录已执行范围、测试、质量、风险、external blockers | 新增需求或把本地 pass 写成发布批准 |
-| Product Object Governance Check | 独立检查范围、路径、source-of-truth 和边界一致性 | 自己生成缺失需求或批准自己的变更 |
+| Product Object Governance Check | 独立检查范围、source-of-truth 和边界语义 | 重跑机械验证、自己生成缺失需求或批准自己的变更 |
 
 ## 实现计划引用模板
 

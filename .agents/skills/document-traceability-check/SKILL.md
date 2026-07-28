@@ -23,7 +23,7 @@ Method skill for `TRACEABILITY`. Resolve its governance facts by Artifact ID. Th
 
 ## Inputs
 
-Current Story Map, FR Catalog, applicable Engineering Contract references, TC Catalog and stable selector/evidence links.
+Current Story Map, FR Catalog when it contains applicable FRs, applicable Engineering Contract references, TC Catalog and stable selector/evidence links.
 
 ## Outputs
 
@@ -32,16 +32,16 @@ Rebuilt projection, completeness/uniqueness findings, dangling-edge findings and
 ## Process
 
 1. Read Story-to-Capability and nested VS-to-Story edges from Story Map.
-2. Read VS-to-FR only from `source_vs_ids` in FR Catalog.
-3. Read FR-to-affected-Contract only from the changed owning Engineering Contract.
-4. Read FR-TC, Contract-TC and VS-TC direct edges only from their typed TC fields.
-5. Join selectors/evidence, derive VS-TC-to-FR coverage, and compare with the read-only projection.
+2. When FRs exist, read VS-to-FR only from `source_vs_ids` in FR Catalog.
+3. When an FR affects a changed Contract, read that relation only from the owning Engineering Contract.
+4. Read present FR-TC, Contract-TC and VS-TC direct edges only from their typed TC fields.
+5. Join selectors/evidence, derive VS-TC-to-FR coverage when FRs exist, and compare with the read-only projection.
 6. Fix discrepancies only in the owning source, then regenerate and validate traceability.
 
 ## Red Flags
 
-Direct edge authored in traceability; VS-TC repeating FR IDs; multiple direct-upstream types in one TC; execution result copied into projection; Stage/Increment used as lineage; missing approved VS mandatory FR.
+Direct edge authored in traceability; VS-TC repeating FR IDs; multiple direct-upstream types in one TC; execution result copied into projection; Stage/Increment used as lineage; a present FR missing approved status, VS lineage, FR-TC, or its derived projection branch.
 
 ## Verification
 
-All three branches resolve without ambiguity or dangling IDs; every approved implementing VS has FR/FR-TC/VS-TC coverage; changed Contracts have Contract-TC; projection contains no independent edge or runtime status.
+Every present branch resolves without ambiguity or dangling IDs; each approved FR has direct VS lineage and FR-TC coverage, every approved implementing VS has VS-TC coverage, changed Contracts have Contract-TC, and the projection contains no independent edge or runtime status.

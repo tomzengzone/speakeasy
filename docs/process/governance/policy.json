@@ -15,7 +15,7 @@
   "active_graph_rule":"当前治理图由默认分支中的 routed records 定义；变更通过受保护分支上的常规 PR CI、代码审查与合并策略后生效。",
   "conflict_rule":"非权威 prose 与 contract 冲突时阻塞并交由 accountable owner 裁决。",
   "operational_pointer_rule":"非 owning layer 只能通过 Artifact/Gate ID 解析 contract；确有执行需要的 path/command literal 必须标记为 derived operational pointer，并由 validator 与 contract 精确对照，不形成第二份 authority。",
-  "artifact_checker_rule":"Artifact 不声明 checker；只有 G-INDEPENDENT-CHECK applicability 命中时，才由 Gate selector 按触发类型或受影响 Artifact ID 选择并执行独立 Checker。",
+  "artifact_checker_rule":"Artifact 不声明 checker；只有主 Agent 影响分析确认存在机器证据无法判断的 product-object 或 software-architecture 语义风险且 G-INDEPENDENT-CHECK applicability 命中时，才由 Gate selector 按语义风险领域或受影响 Artifact ID 选择并执行独立 Checker；只读、文档、meta 或其他任务类型本身不触发，确定性验证足够时排除。",
   "gate_evidence_rule":"Artifact 不声明 evidence_location；Gate 的 evidence_artifact_id 只引用已登记的持久化证据 Artifact，默认验证结果保持 ephemeral，只有用户或适用 Gate 明确要求时才写入。",
   "artifact_input_rule":"required_direct_inputs 与 conditional_inputs 只在存在真实依赖时逐 Artifact 显式声明非空列表；字段缺省表示无该类契约依赖，不使用空数组默认值。",
   "artifact_validation_rule":"Artifact 可声明自身固有的 validation_command；只有 G-ARTIFACT-VALIDATION 在受影响 Artifact 存在该能力时才解析执行，结果默认保持 ephemeral。",

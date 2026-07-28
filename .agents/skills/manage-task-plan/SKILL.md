@@ -12,7 +12,7 @@ description: Use when the user explicitly asks Codex to create, approve, execute
 ## Contract
 
 - 仅在用户明确要求创建、批准、执行、续接、修订或完成持久任务计划时运行；不要因任务很大而自动启用。
-- 写入 `.codex/task-plans/<task-id>/plan.md` 和 `prs/PR-NNN.md`。它们只是执行状态，不替代正式 source of truth。
+- 写入 `docs/task-plans/<task-id>/plan.md` 和 `prs/PR-NNN.md`。它们只是执行状态，不替代正式 source of truth。
 - 总计划批准前不实施；每个 PR 必须单独批准开始、提交证据并等待用户验收。未完成当前 PR，不启动下一个。
 - 同一任务最多有一个 `in_progress` 或 `awaiting_acceptance` PR。
 - 目标、范围、允许路径、验收或验证变化时，递增 `revision`、清空 `approved_revision` 并重新批准。

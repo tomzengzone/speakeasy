@@ -13,7 +13,7 @@ Accepted current process governance。本文件定义 SWC 架构方法和审查�
 ## Current workflow
 
 ```text
-selected approved VS + mandatory FR
+selected approved VS + 存在时的适用 approved FR
 -> affected Engineering Contract facts
 -> inspect existing SWC/Flow and adjacent code/tests
 -> decide no stable architecture impact, or update current SWC architecture/catalog

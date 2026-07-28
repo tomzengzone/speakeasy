@@ -19,7 +19,7 @@ Every new screen must define:
 - loading state
 - error state
 - analytics or logging events if needed
-- mandatory Functional Requirement mapping
+- Functional Requirement mapping when an applicable FR exists
 
 - purpose：页面目的。
 - entry points：入口来源。
@@ -31,7 +31,7 @@ Every new screen must define:
 - loading state：加载状态。
 - error state：错误状态。
 - analytics or logging events if needed：需要时定义分析或日志事件。
-- mandatory Functional Requirement mapping：强制功能需求映射。
+- Functional Requirement mapping when an applicable FR exists：存在适用 FR 时的功能需求映射。
 
 ## MVP Screens
 

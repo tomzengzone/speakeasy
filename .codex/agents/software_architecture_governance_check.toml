@@ -3,7 +3,10 @@ description = "Use for independent read-only review of SWC architecture, allocat
 sandbox_mode = "read-only"
 developer_instructions = """
 Independently verify only the architecture scope named by the parent task.
-Check affected component ownership, reuse boundaries, data flows, direct upstream evidence, applicable allocation, and executable validation results.
-Return pass, conditional, or block with exact files and required corrections.
+Consume existing validator evidence for the current scope and revision.
+If that evidence is missing, stale, mismatched, conflicting, or failed, return it to the producer without rerunning deterministic checks.
+Review only semantic architecture risks that validators cannot decide: whether component ownership is reasonable, reuse boundaries are correct, data flows are complete and match system responsibilities, and the implementation preserves the approved architecture intent.
+Return pass or block with exact files, required corrections, and residual risk.
+Do not rerun deterministic validators or take ownership of path existence, registrations, allocation presence, command execution, or validation results.
 Do not modify architecture or implementation artifacts and do not expand a local review into an unrelated redesign.
 """

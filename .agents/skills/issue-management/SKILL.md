@@ -23,7 +23,7 @@ Method skill for `ISSUE_TRACKING`. Resolve governance facts by Artifact ID; Prod
 
 ## Inputs
 
-Classification, selected approved VS, mandatory FR, affected Contract IDs, typed TC IDs, scoped delivery intent, owner, dependencies and stable evidence links.
+Classification, selected approved VS, applicable approved FR and FR-TC IDs when present, affected Contract and Contract-TC IDs, VS-TC IDs, scoped delivery intent, owner, dependencies and stable evidence links.
 
 ## Outputs
 
@@ -32,7 +32,7 @@ Concise issue title/body, labels/status suggestions, linked Artifact IDs, blocke
 ## Process
 
 1. Confirm classification and selected product IDs.
-2. Link the minimum coding context: VS, FR, affected Contracts, FR/Contract/VS TCs, adjacent code/tests and validation commands.
+2. Link the minimum coding context: VS, applicable FR and FR-TC when present, affected Contracts and Contract-TCs, the VS-TC, adjacent code/tests and validation commands.
 3. State scope, non-goals, owner, risks and evidence without copying owning text.
 4. Use `Refs` for planning/partial/blocked work; use closing semantics only after Definition of Done.
 5. Reconcile conflicts by correcting the issue, never the authority from issue text.

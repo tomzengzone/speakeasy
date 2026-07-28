@@ -5,7 +5,7 @@
 - Artifact ID: `FUNCTIONAL_REQUIREMENT_CATALOG`
 - Status: candidate
 
-本目录只保存由已批准 Vertical Slice 提炼出的原子产品规则。每条 FR 只能通过 `source_vs_ids` 直接引用一个或多个 approved VS；Capability 与 Sub-capability 字段仅用于分类、编号和影响筛选，不构成第二条产品 lineage。Stage、Increment、Work Package、PR、实现和执行结果不属于本目录。
+本目录只保存 Product Manager 决定从已批准 Vertical Slice 表达为 Functional Requirement 的产品行为。FR 可包含一个或多个独立规则、不变量、边界或失败条件；每条 FR 只能通过 `source_vs_ids` 直接引用一个或多个 approved VS。Capability 与 Sub-capability 字段仅用于分类、编号和影响筛选，不构成第二条产品 lineage。Stage、Increment、Work Package、PR、实现和执行结果不属于本目录。
 
 当前条目仅把已批准 `VS-TRAIN-001` 的既有行为登记到新治理目录；它不是 PR-003 产品实现，也不表示旧文档迁移或完整历史覆盖。
 
@@ -24,6 +24,6 @@
 
 ## 维护规则
 
-- 每个进入实现的 approved VS 至少关联一条 approved FR。
-- 一条 FR 只表达一个可独立验证的规则、不变量、边界或失败条件；同一规则不得在 TC 或 Contract 中重新定义。
+- Product Manager 按 implementing VS 决定是否创建 FR；零条 FR 不会仅因缺少 FR 而阻止交付。
+- FR 存在时必须保持 approved 状态和非空 `source_vs_ids`；其一个或多个规则、不变量、边界或失败条件不得在 TC 或 Contract 中重新定义。
 - FR 变化由 Product Manager 批准；需求开发者按 `FUNCTIONAL_REQUIREMENT_CATALOG` Artifact contract 贡献内容。

@@ -24,6 +24,6 @@ Modes are `editorial`, `boundary-change`, `add`, `split`, `merge`, and `deprecat
 
 Split, merge, and deprecate remain fail-closed until the canonical schema supports lifecycle and successor identity. Candidate successor analysis may be drafted, but not persisted.
 
-## Completion check
+## Evidence and Gate result distinction
 
 Keep Gate A, PM destination confirmation, Gate B, draft row, PM final approval, deterministic validation, and any `G-INDEPENDENT-CHECK` result as distinct results. The registry stores only approved facts; detailed findings remain ephemeral unless a matched contract explicitly requires a durable record.

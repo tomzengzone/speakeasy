@@ -15,7 +15,7 @@ from pathlib import Path
 SKILL_DIR = Path(__file__).resolve().parents[1]
 TASK_TEMPLATE = SKILL_DIR / "assets" / "task-plan.template.md"
 PR_TEMPLATE = SKILL_DIR / "assets" / "pr-unit.template.md"
-TASKS_RELATIVE_DIR = Path(".codex") / "task-plans"
+TASKS_RELATIVE_DIR = Path("docs") / "task-plans"
 DOC_RE = re.compile(r"\A---\n(.*?)\n---\n(.*)\Z", re.DOTALL)
 TASK_ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 

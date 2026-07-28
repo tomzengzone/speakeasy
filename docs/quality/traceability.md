@@ -24,4 +24,4 @@
 
 ## Coverage join
 
-`TC-VS-TRAIN-001` 通过 owning edge `VS-TRAIN-001 -> FR-TRAIN-001` 派生覆盖 `FR-TRAIN-001`；VS-TC 自身不保存 FR ID 集合。当前 projection 无悬空引用，approved VS 的 mandatory FR、FR-TC 和 VS-TC coverage 均完整。执行证据只可链接绑定 exact commit SHA 的外部测试或 CI 记录，不在本文复制易过期结果状态。
+`TC-VS-TRAIN-001` 通过当前存在的 owning edge `VS-TRAIN-001 -> FR-TRAIN-001` 派生覆盖 `FR-TRAIN-001`；VS-TC 自身不保存 FR ID 集合。当前 projection 无悬空引用，已登记 FR 的直接 VS lineage 与 FR-TC coverage、以及 approved VS 的 VS-TC coverage 均完整。没有 FR 时不生成 FR、FR-TC 或对应 coverage join。执行证据只可链接绑定 exact commit SHA 的外部测试或 CI 记录，不在本文复制易过期结果状态。
