@@ -1,46 +1,46 @@
 ---
 name: domain-model-generate
-description: Use when an approved Vertical Slice, or an applicable approved Functional Requirement when present, changes entities, relationships, lifecycle states, invariants, or persistence ownership. Do not use for presentation-only changes.
+description: Use when：已批准的 Vertical Slice，或存在时适用的已批准 Functional Requirement，导致实体、关系、生命周期状态、不变量或持久化事实归属发生变化。不适用于仅改变呈现方式的场景。
 ---
 
 # Domain Model Generate
 
 ## Overview
 
-Stabilize domain and persistence facts before API, backend, AI or UI work depends on them.
+在 API、后端、AI 或 UI 工作依赖领域与持久化事实之前，先使这些事实稳定下来。
 
 ## When to Use
 
-Use for shared/persisted entities, relationships, lifecycle transitions, invariants, ownership or migration facts.
+用于共享或持久化实体、关系、生命周期转换、不变量、事实归属或迁移事实发生变化的场景。
 
 ## When NOT to Use
 
-Do not use for label/layout changes, unchanged data facts or unapproved product behavior.
+不得用于标签/布局变化、数据事实未变化或产品行为尚未批准的场景。
 
 ## Contract
 
-Method skill for `DOMAIN_SCHEMA` and `DOMAIN_MODEL`; `ENTITY_RELATIONSHIP` is a related Artifact. Resolve governance facts by Artifact ID. The selected approved VS is the product upstream; an applicable approved FR adds requirement lineage when present. Architecture/API are engineering context.
+这是 `DOMAIN_SCHEMA` 和 `DOMAIN_MODEL` 的 method Skill；`ENTITY_RELATIONSHIP` 是相关 Artifact。治理事实必须通过 Artifact ID 解析。选定的已批准 VS 是产品上游；存在适用的已批准 FR 时，FR 提供需求追溯关系。Architecture/API 是工程上下文。
 
 ## Inputs
 
-Selected approved VS IDs, applicable approved FR IDs when present, current domain/relationship/model artifacts, system and API boundaries, persistence constraints and relevant Contract-TC needs.
+选定的已批准 VS ID、存在时适用的已批准 FR ID、当前 domain/relationship/model Artifact、系统与 API 边界、持久化约束，以及相关 Contract-TC 需求。
 
 ## Outputs
 
-Entities, fields, identities, invariants, relationships, lifecycle transitions, persistence ownership, migration needs and testable contract changes.
+实体、字段、标识、不变量、关系、生命周期转换、持久化事实归属、迁移需求，以及可测试的 contract 变更。
 
 ## Process
 
-1. Confirm the selected approved VS, any applicable approved FR, and the actual domain fact change.
-2. Separate domain concepts from DTOs, database mechanics and UI view models.
-3. Define ownership, uniqueness, audit, deletion and valid transitions.
-4. Update only the affected owning Domain Artifact.
-5. Add/update Contract-TC and run resolved validation.
+1. 确认选定的已批准 VS、任何适用的已批准 FR，以及实际发生变化的领域事实。
+2. 必须将领域概念与 DTO、数据库机制和 UI view model 分离。
+3. 定义事实归属、唯一性、审计、删除规则和有效转换。
+4. 只更新持有受影响事实的 Domain Artifact。
+5. 新增或更新 Contract-TC，并运行解析得到的校验。
 
 ## Red Flags
 
-Storage fields before meaning; inconsistent naming; unconstrained transitions; AI candidate treated as durable truth; product behavior invented in the model; missing Contract-TC.
+在明确语义前先定义存储字段；命名不一致；转换不受约束；将 AI 候选结果当作持久事实；在模型中发明产品行为；缺少 Contract-TC。
 
 ## Verification
 
-Every changed concept has explicit ownership/lifecycle; relationships and deletion rules are unambiguous; selected VS lineage and any present FR lineage resolve through traceability; Contract-TC proves each changed fact.
+每个发生变化的概念都有明确的事实归属和生命周期；关系与删除规则无歧义；选定 VS 的追溯关系和存在时 FR 的追溯关系可以通过 traceability 解析；Contract-TC 可以证明每项发生变化的事实。

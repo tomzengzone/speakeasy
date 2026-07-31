@@ -33,11 +33,11 @@ Active Skill 集合只包含由 routed Artifact 的 `method_skill` 引用的 pac
 ```yaml
 ---
 name: skill-name
-description: Use when ... Do not use ...
+description: Use when：说明 Skill 的功能及具体触发场景。
 ---
 ```
 
-目录名使用 lowercase kebab-case，frontmatter `name` 与目录名一致。`description` 必须包含正向与反向触发边界。运行时正文至少包含：
+目录名使用 lowercase kebab-case，frontmatter `name` 与目录名一致。`description` 必须清晰说明 Skill 的功能及具体触发场景。运行时正文至少包含：
 
 - `## Overview`
 - `## When to Use`
@@ -92,4 +92,4 @@ python scripts/validate_governance_contracts.py
 python scripts/validate_story_slice_cutover.py
 ```
 
-验证必须覆盖 trigger/non-trigger、必需章节、active method route、直接 resource、retired Skill discovery、authority separation、legacy active reference 和 derived operational pointer 对齐。对合法的 contract-aligned pointer 不得误报。
+验证必须覆盖 trigger、必需章节、active method route、直接 resource、retired Skill discovery、authority separation、legacy active reference 和 derived operational pointer 对齐。对合法的 contract-aligned pointer 不得误报。

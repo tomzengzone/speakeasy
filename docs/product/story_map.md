@@ -16,8 +16,8 @@
 
 - 一级功能区域按 V2 capability 顺序编号；各 Capability 文件标题使用 capability name，并保留 Capability ID 与 slug。
 - User Story ID 使用 `US-<Capability Prefix>-<NNN>`。
-- Vertical Slice ID 使用 `VS-<Capability Prefix>-<NNN>`，在同一 capability 内连续编号。
-- `Status: draft` 表示待 PM 批准和后续 ready gate；不代表 downstream commitment。除既有 `US-TRAIN-001` / `VS-TRAIN-001` 保留已批准语义外，当前新增 Story/Slice 均为 draft narrative。
+- Vertical Slice ID 统一使用 `VS-<Capability Prefix>-<Story NNN>-<Child N>`（例如 `VS-CONTENT-001-1`）；`Story NNN` 必须与外层 User Story 编号一致，`Child N` 在该 Story 内从 `1` 开始连续编号。ID 必须全局唯一，Parent 关系仍由 Story 下的嵌套位置定义。
+- `Status: draft` 表示待 PM 批准和后续 ready gate；不代表 downstream commitment。除既有 `US-TRAIN-001` / `VS-TRAIN-001-1` 保留已批准语义外，当前新增 Story/Slice 均为 draft narrative。
 - 当前 V2 Capability Registry 没有独立 `CAP-AUTH`。注册、登录、会话恢复暂按 `CAP-ACC-01 账号访问` 纳入 `CAP-ACC`；若后续 registry 拆出 `AUTH` capability，应迁移对应 Story/Slice。
 - Child Vertical Slices 以可读闭环叙事嵌套在所属 User Story 下；后续进入交付前仍需按 `story-map-develop` ready gate 补齐或复核完整 metadata。
 
@@ -59,7 +59,7 @@ Capability ID
 > 本节是从既有旅程名称到当前 User Story ID 的 derived/历史覆盖说明，仅用于导航与核对，不拥有或定义 Story/VS 语义。
 
 - `启动、登录与首评`：覆盖到 `US-ACC-001`、`US-ACC-002`、`US-LEVEL-001`、`US-LEVEL-002`、`US-LEVEL-003`、`US-INTENT-001`、`US-INTENT-003`、`US-INTENT-004`、`US-INTENT-005`。
-- `情景学习`：覆盖到 `US-PLAN-001`、`US-PLAN-002`、`US-PLAN-003`、`US-PLAN-004`、`US-CONTENT-001`、`US-CONTENT-002`、`US-CONTENT-003`、`US-CONTENT-004`、`US-INTENT-002`、`US-INTENT-003`。
+- `情景学习`：覆盖到 `US-PLAN-001`、`US-PLAN-002`、`US-PLAN-003`、`US-PLAN-004`、`US-CONTENT-001`、`US-CONTENT-002`、`US-CONTENT-003`、`US-INTENT-002`、`US-INTENT-003`。
 - `听力热身与推荐表达`：覆盖到 `US-PRACTICE-001`、`US-PRACTICE-002`、`US-PRACTICE-004`、`US-TRAIN-002`、`US-TRAIN-004`、`US-TRAIN-005`、`US-NOTE-001`。
 - `语音模拟与教练反馈`：覆盖到 `US-PRACTICE-003`、`US-PRACTICE-005`、`US-COACH-001`、`US-COACH-002`、`US-COACH-003`、`US-TRAIN-003`、`US-TRAIN-004`。
 - `复盘、复习与个人结果`：覆盖到 `US-PLAN-002`、`US-PLAN-003`、`US-PLAN-004`、`US-TRAIN-001`、`US-MEMORY-001`、`US-MEMORY-002`、`US-MEMORY-003`、`US-MEMORY-004`、`US-NOTE-001`、`US-NOTE-002`、`US-NOTE-003`、`US-NOTE-004`。
@@ -83,9 +83,9 @@ Assumptions:
 
 Row-level Source Coverage:
 
-- `US-SETTING-001..003`、`VS-SETTING-001..009` -> user-authorized draft proposal：用户明确要求持久化上一轮商业化草案。
-- `US-SUPPORT-001..004`、`VS-SUPPORT-001..012` -> user-authorized draft proposal：用户明确要求持久化上一轮商业化草案。
-- `US-BILLING-001..004`、`VS-BILLING-001..012` -> user-authorized draft proposal：用户明确要求持久化上一轮商业化草案。
+- `US-SETTING-001..003`、`VS-SETTING-001-1..009` -> user-authorized draft proposal：用户明确要求持久化上一轮商业化草案。
+- `US-SUPPORT-001..004`、`VS-SUPPORT-001-1..012` -> user-authorized draft proposal：用户明确要求持久化上一轮商业化草案。
+- `US-BILLING-001..004`、`VS-BILLING-001-1..012` -> user-authorized draft proposal：用户明确要求持久化上一轮商业化草案。
 
 Omitted Scope:
 
@@ -96,7 +96,7 @@ Ready Gate Finding:
 - Result: pass
 - Gate: draft structural + narrative quality
 - Source authority finding: 本轮 44 个 rows 均分类为 user-authorized draft proposal，来源是用户明确要求持久化的上一轮商业化草案；它们保持 `draft`，未被表述成 PM-approved facts。具体 provider、精确客服 SLA、审批规则和治理结论仍保留为 omitted scope。
-- Coverage finding: `CAP-SETTING`、`CAP-SUPPORT`、`CAP-BILLING` 的目标 Story/Slice 已全部覆盖；Affected Capability IDs 已限制为 registry 对各 Primary Capability 声明的相邻 capability，非相邻责任域只在 description 或 Boundary note 中作为“不拥有/不改变”边界说明。
+- Coverage finding: `CAP-SETTING`、`CAP-SUPPORT`、`CAP-BILLING` 的目标 Story/Slice 已全部覆盖，跨 Capability 影响记录在 Affected Capability IDs 或就近 Boundary note 中。
 - Narrative finding: Story Map 已按 V2 capability 章节组织；本轮重写的 `CAP-SETTING`、`CAP-SUPPORT`、`CAP-BILLING` 不再把页面加载或通用错误提示当作独立价值，而是明确偏好生效范围、临时与全局设置、反馈上下文、工单与争议生命周期、交易与权益分离、支付恢复和账号/交易匹配等业务决策。
 - Metadata completeness finding: 每条 User Story 与 Child Vertical Slice 均使用现行五列结构，包含 ID、description、Status、Primary Capability ID 和 Affected Capability IDs；Parent Story 由章节嵌套表达。该结果仅表示 draft structural 与 narrative quality 通过，不表示这些 `draft` rows 已通过 approval semantic gate。
 - Narrative/metadata consistency finding: Capability metadata 仅作为边界分类；用户行为来自 legacy 清单、PM 输入或本轮明确标注的 user-authorized draft proposal，没有把 capability 条目直接当需求来源，也没有把 user-authorized draft 误写成 PM approval。

@@ -1,46 +1,46 @@
 ---
 name: document-content-contract
-description: Use when a governed document needs audience, required sections, prohibited content, upstream usage, or completeness reviewed.
+description: Use when：需要审查受治理文档面向的受众、必须包含与禁止包含的内容、上游事实的使用方式、下游消费边界及语义完整性，并需要形成交给 owning writer 的内容边界发现项。
 ---
 
 # Document Content Contract
 
 ## Overview
 
-Define or review what a document communicates without owning its path, owner, lifecycle, dependency graph or Gate routing.
+定义或审查文档传达的内容，但不拥有其 path、owner、lifecycle、dependency graph 或 Gate routing。
 
 ## When to Use
 
-Use for audience, required sections, prohibited content, semantic completeness and downstream consumption boundaries.
+用于审查受众、必需章节、禁止内容、语义完整性和下游消费边界。
 
 ## When NOT to Use
 
-Do not use for path/source decisions, full-chain traceability, ordinary document generation, code review or product classification.
+不得用于 path/source 决策、全链路 traceability、普通文档生成、code review 或产品分类。
 
 ## Contract
 
-Resolve governance facts by Artifact ID. This method owns only content-boundary analysis; direct inputs are consumed, not redefined.
+必须通过 Artifact ID 解析治理事实。本方法只负责内容边界分析；只能消费 direct inputs，不得重新定义它们。
 
 ## Inputs
 
-Target Artifact ID and content, intended audience/use, relevant contract record, owning method and known upstream facts.
+目标 Artifact ID 及其内容、预期受众和用途、相关 contract record、owning method，以及已知上游事实。
 
 ## Outputs
 
-Required/prohibited content findings, audience/consumer contract, completeness gaps and handoff to the owning writer.
+必需/禁止内容发现项、受众/消费者契约、完整性缺口，以及交给 owning writer 的 handoff。
 
 ## Process
 
-1. Resolve target Artifact and read only applicable upstream facts.
-2. Identify reader decisions the document must enable.
-3. Separate owning facts from context, derived projection and one-time evidence.
-4. Reject duplicated product/governance facts and invented behavior.
-5. Report pass/block findings and validate after owner correction.
+1. 解析目标 Artifact，并且只读取适用的上游事实。
+2. 识别文档必须支持的读者决策。
+3. 区分归属事实、上下文、派生投影和一次性证据。
+4. 拒绝复制产品或治理事实，不得发明行为。
+5. 报告 pass/block 发现项，并在 owner 修正后重新验证。
 
 ## Red Flags
 
-Template convenience becoming authority; copied path/owner/dependency/Gate data; downstream facts used to repair upstream gaps; traceability joins stored in non-owning documents.
+以下情况属于危险信号：为了 Template 使用方便而形成新的 authority；复制 path/owner/dependency/Gate 数据；使用下游事实修补上游缺口；在非 owning document 中存储 traceability join。
 
 ## Verification
 
-Required reader decisions are supported; prohibited content is absent; direct inputs are used consistently; the document does not create a second source.
+必须确认文档支持必需的读者决策、未包含禁止内容、使用 direct inputs 的方式一致，并且没有创建第二个 source。

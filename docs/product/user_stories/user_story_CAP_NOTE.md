@@ -10,11 +10,11 @@ Child Vertical Slices:
 
 | Id | description | Status | Primary Capability ID | Affected Capability IDs |
 | --- | --- | --- | --- | --- |
-| `VS-NOTE-001` | 学习者在表达卡片、推荐表达或练习结果中收藏表达；成功时表达进入个人收藏集合；失败时展示可恢复提示。 | `draft` | `CAP-NOTE` | `CAP-MEMORY`, `CAP-PRACTICE`, `CAP-CONTENT` |
-| `VS-NOTE-002` | 学习者取消收藏表达；成功时收藏集合更新；失败时保持原收藏状态并允许重试。 | `draft` | `CAP-NOTE` | `CAP-MEMORY`, `CAP-PRACTICE`, `CAP-CONTENT` |
-| `VS-NOTE-003` | 学习者进入收藏页后，系统展示去重后的收藏表达；成功时可复看真正有用的表达；无收藏时展示空状态。 | `draft` | `CAP-NOTE` | `CAP-MEMORY`, `CAP-PRACTICE`, `CAP-CONTENT` |
-| `VS-NOTE-004` | 学习者从收藏页删除不需要的表达；成功时列表和摘要更新；失败时不误删收藏。 | `draft` | `CAP-NOTE` | `CAP-MEMORY`, `CAP-PRACTICE`, `CAP-CONTENT` |
-| `VS-NOTE-005` | 当收藏表达可被记忆能力引用时，系统将其作为个人素材候选；成功时后续复习或推荐可引用；引用失败时不影响收藏本身。 | `draft` | `CAP-NOTE` | `CAP-MEMORY`, `CAP-PRACTICE`, `CAP-CONTENT` |
+| `VS-NOTE-001-1` | 学习者在表达卡片、推荐表达或练习结果中收藏表达；成功时表达进入个人收藏集合；失败时展示可恢复提示。 | `draft` | `CAP-NOTE` | `CAP-MEMORY`, `CAP-PRACTICE`, `CAP-CONTENT` |
+| `VS-NOTE-001-2` | 学习者取消收藏表达；成功时收藏集合更新；失败时保持原收藏状态并允许重试。 | `draft` | `CAP-NOTE` | `CAP-MEMORY`, `CAP-PRACTICE`, `CAP-CONTENT` |
+| `VS-NOTE-001-3` | 学习者进入收藏页后，系统展示去重后的收藏表达；成功时可复看真正有用的表达；无收藏时展示空状态。 | `draft` | `CAP-NOTE` | `CAP-MEMORY`, `CAP-PRACTICE`, `CAP-CONTENT` |
+| `VS-NOTE-001-4` | 学习者从收藏页删除不需要的表达；成功时列表和摘要更新；失败时不误删收藏。 | `draft` | `CAP-NOTE` | `CAP-MEMORY`, `CAP-PRACTICE`, `CAP-CONTENT` |
+| `VS-NOTE-001-5` | 当收藏表达可被记忆能力引用时，系统将其作为个人素材候选；成功时后续复习或推荐可引用；引用失败时不影响收藏本身。 | `draft` | `CAP-NOTE` | `CAP-MEMORY`, `CAP-PRACTICE`, `CAP-CONTENT` |
 
 ### US-NOTE-002 - 学习者管理个人词汇和表达资产
 
@@ -26,9 +26,9 @@ Child Vertical Slices:
 
 | Id | description | Status | Primary Capability ID | Affected Capability IDs |
 | --- | --- | --- | --- | --- |
-| `VS-NOTE-006` | 学习者从练习、内容详情或个人入口新增或保存词汇、短语；成功时个人词汇资产创建或更新；保存失败时保留原页面状态并允许重试。 | `draft` | `CAP-NOTE` | `CAP-CONTENT`, `CAP-MEMORY`, `CAP-PRACTICE` |
-| `VS-NOTE-007` | 学习者打开个人词汇或短语条目查看释义、来源和例句；成功时知道素材来自哪里以及如何使用；来源缺失时展示不完整状态。 | `draft` | `CAP-NOTE` | `CAP-CONTENT`, `CAP-MEMORY`, `CAP-PRACTICE` |
-| `VS-NOTE-008` | 学习者保存句型模板或表达变体；成功时模板或变体进入个人表达资产；保存失败、重复或格式无效时展示可恢复提示。 | `draft` | `CAP-NOTE` | `CAP-CONTENT`, `CAP-MEMORY`, `CAP-PRACTICE` |
+| `VS-NOTE-002-1` | 学习者从练习、内容详情或个人入口新增或保存词汇、短语；成功时个人词汇资产创建或更新；保存失败时保留原页面状态并允许重试。 | `draft` | `CAP-NOTE` | `CAP-CONTENT`, `CAP-MEMORY`, `CAP-PRACTICE` |
+| `VS-NOTE-002-2` | 学习者打开个人词汇或短语条目查看释义、来源和例句；成功时知道素材来自哪里以及如何使用；来源缺失时展示不完整状态。 | `draft` | `CAP-NOTE` | `CAP-CONTENT`, `CAP-MEMORY`, `CAP-PRACTICE` |
+| `VS-NOTE-002-3` | 学习者保存句型模板或表达变体；成功时模板或变体进入个人表达资产；保存失败、重复或格式无效时展示可恢复提示。 | `draft` | `CAP-NOTE` | `CAP-CONTENT`, `CAP-MEMORY`, `CAP-PRACTICE` |
 
 ### US-NOTE-003 - 学习者记录和管理学习笔记
 
@@ -40,9 +40,9 @@ Child Vertical Slices:
 
 | Id | description | Status | Primary Capability ID | Affected Capability IDs |
 | --- | --- | --- | --- | --- |
-| `VS-NOTE-009` | 学习者从内容、练习结果或个人素材入口新增学习笔记；成功时笔记条目保存并可在个人素材中找到；保存失败时展示可恢复提示。 | `draft` | `CAP-NOTE` | `CAP-CONTENT`, `CAP-MEMORY` |
-| `VS-NOTE-010` | 学习者编辑或删除学习笔记；成功时笔记内容或删除状态更新；失败时保持原笔记不变并说明原因。 | `draft` | `CAP-NOTE` | `CAP-CONTENT`, `CAP-MEMORY` |
-| `VS-NOTE-011` | 学习者为学习笔记添加或调整场景标签；成功时笔记可按标签被检索或归类；标签保存失败时保留原标签状态。 | `draft` | `CAP-NOTE` | `CAP-CONTENT`, `CAP-MEMORY` |
+| `VS-NOTE-003-1` | 学习者从内容、练习结果或个人素材入口新增学习笔记；成功时笔记条目保存并可在个人素材中找到；保存失败时展示可恢复提示。 | `draft` | `CAP-NOTE` | `CAP-CONTENT`, `CAP-MEMORY` |
+| `VS-NOTE-003-2` | 学习者编辑或删除学习笔记；成功时笔记内容或删除状态更新；失败时保持原笔记不变并说明原因。 | `draft` | `CAP-NOTE` | `CAP-CONTENT`, `CAP-MEMORY` |
+| `VS-NOTE-003-3` | 学习者为学习笔记添加或调整场景标签；成功时笔记可按标签被检索或归类；标签保存失败时保留原标签状态。 | `draft` | `CAP-NOTE` | `CAP-CONTENT`, `CAP-MEMORY` |
 
 ### US-NOTE-004 - 学习者检索和整理个人素材
 
@@ -54,7 +54,7 @@ Child Vertical Slices:
 
 | Id | description | Status | Primary Capability ID | Affected Capability IDs |
 | --- | --- | --- | --- | --- |
-| `VS-NOTE-012` | 学习者在个人素材页搜索、筛选或排序词汇、表达、笔记和收藏；成功时看到匹配结果；无结果时展示清除条件或新增素材入口。 | `draft` | `CAP-NOTE` | `CAP-MEMORY`, `CAP-PLAN`, `CAP-TRAIN`, `CAP-PRACTICE` |
-| `VS-NOTE-013` | 学习者批量管理、归档或软删个人素材；成功时素材状态更新并可被筛选查看；操作失败时不误删素材并允许重试。 | `draft` | `CAP-NOTE` | `CAP-MEMORY`, `CAP-PLAN`, `CAP-TRAIN`, `CAP-PRACTICE` |
-| `VS-NOTE-014` | 学习者从个人素材发起复习或训练意图；成功时系统展示可交接给计划或训练的入口；素材不可用或入口不可用时展示原因，不直接启动未定义训练流程。 | `draft` | `CAP-NOTE` | `CAP-MEMORY`, `CAP-PLAN`, `CAP-TRAIN`, `CAP-PRACTICE` |
+| `VS-NOTE-004-1` | 学习者在个人素材页搜索、筛选或排序词汇、表达、笔记和收藏；成功时看到匹配结果；无结果时展示清除条件或新增素材入口。 | `draft` | `CAP-NOTE` | `CAP-MEMORY`, `CAP-PLAN`, `CAP-TRAIN`, `CAP-PRACTICE` |
+| `VS-NOTE-004-2` | 学习者批量管理、归档或软删个人素材；成功时素材状态更新并可被筛选查看；操作失败时不误删素材并允许重试。 | `draft` | `CAP-NOTE` | `CAP-MEMORY`, `CAP-PLAN`, `CAP-TRAIN`, `CAP-PRACTICE` |
+| `VS-NOTE-004-3` | 学习者从个人素材发起复习或训练意图；成功时系统展示可交接给计划或训练的入口；素材不可用或入口不可用时展示原因，不直接启动未定义训练流程。 | `draft` | `CAP-NOTE` | `CAP-MEMORY`, `CAP-PLAN`, `CAP-TRAIN`, `CAP-PRACTICE` |
 

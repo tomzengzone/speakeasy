@@ -7,7 +7,7 @@
 
 本目录保存稳定的测试意图和 oracle，不保存运行时 `passed` / `failed` 状态。三类 TC 的直接上游互斥：FR-TC 只使用 `source_fr_id`，Contract-TC 只使用 `source_contract_id`，VS-TC 只使用 `source_vs_id`。跨层覆盖由 `TRACEABILITY` 从 owning sources 派生，不在 TC 中重复维护。
 
-当前用例仅为已批准 `VS-TRAIN-001`、当前已存在的 `FR-TRAIN-001` 及其分层测试建立治理目录关系，不实施产品行为，也不声明旧测试或旧产品文档已完成迁移。
+当前用例仅为已批准 `VS-TRAIN-001-1`、当前已存在的 `FR-TRAIN-001` 及其分层测试建立治理目录关系，不实施产品行为，也不声明旧测试或旧产品文档已完成迁移。
 
 ## FR-TC
 
@@ -31,10 +31,10 @@
 
 ## VS-TC
 
-### TC-VS-TRAIN-001 — 官方场景练习结束全链路验证
+### TC-VS-TRAIN-001-1 — 官方场景练习结束全链路验证
 
 - type: `VS-TC`
-- source_vs_id: `VS-TRAIN-001`
+- source_vs_id: `VS-TRAIN-001-1`
 - layer: `integration-e2e`
 - scope: `selected VS user-visible training loop`
 - selector: `training_session_view -> training_recap_panel`

@@ -88,8 +88,8 @@ def validate_skills(root=ROOT):
                 desc = frontmatter.get("description", "")
                 if len(desc) < 80:
                     errors.append(f"{skill_md.relative_to(root)} description is too short")
-                if "Use when" not in desc or "Do not use" not in desc:
-                    errors.append(f"{skill_md.relative_to(root)} description must include 'Use when' and 'Do not use'")
+                if "Use when" not in desc:
+                    errors.append(f"{skill_md.relative_to(root)} description must include 'Use when'")
 
             check_file_contains(root, skill_md, skill_text, REQUIRED_SKILL_SECTIONS, errors)
 

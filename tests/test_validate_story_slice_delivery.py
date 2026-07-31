@@ -71,7 +71,7 @@ class StorySliceDeliveryValidationTest(unittest.TestCase):
 
 | Story | Vertical Slice | VS-TC |
 | --- | --- | --- |
-| `US-TRAIN-001` | `VS-TRAIN-001` | `TC-VS-TRAIN-001` |
+| `US-TRAIN-001` | `VS-TRAIN-001-1` | `TC-VS-TRAIN-001-1` |
 """,
             encoding="utf-8",
         )
@@ -108,7 +108,7 @@ class StorySliceDeliveryValidationTest(unittest.TestCase):
         self.addCleanup(temp.cleanup)
         (root / "docs/product/user_stories/user_story_CAP_TRAIN.md").unlink()
         errors, _ = validate_delivery(root)
-        self.assertTrue(any("missing or unapproved VS VS-TRAIN-001" in error for error in errors))
+        self.assertTrue(any("missing or unapproved VS VS-TRAIN-001-1" in error for error in errors))
 
     def test_duplicate_id_across_story_shards_is_rejected(self) -> None:
         temp, root = self.fixture()
@@ -127,13 +127,13 @@ class StorySliceDeliveryValidationTest(unittest.TestCase):
         temp, root = self.fixture()
         self.addCleanup(temp.cleanup)
         path = root / "docs/product/user_stories/user_story_CAP_ACC.md"
-        orphan = "| `VS-ACC-999` | orphan | `draft` | `CAP-ACC` | — |"
+        orphan = "| `VS-ACC-999-1` | orphan | `draft` | `CAP-ACC` | — |"
         text = path.read_text(encoding="utf-8").replace(
             "\n### US-ACC-001", f"\n{orphan}\n\n### US-ACC-001", 1,
         )
         path.write_text(text, encoding="utf-8")
         errors, _ = validate_delivery(root)
-        self.assertTrue(any("VS-ACC-999 has no parent User Story" in error for error in errors))
+        self.assertTrue(any("VS-ACC-999-1 has no parent User Story" in error for error in errors))
 
     def test_approved_vs_requires_approved_story_in_its_shard(self) -> None:
         temp, root = self.fixture()
@@ -144,13 +144,13 @@ class StorySliceDeliveryValidationTest(unittest.TestCase):
         )
         path.write_text(text, encoding="utf-8")
         errors, _ = validate_delivery(root)
-        self.assertTrue(any("VS-TRAIN-001 has no unique approved Story parent" in error for error in errors))
+        self.assertTrue(any("VS-TRAIN-001-1 has no unique approved Story parent" in error for error in errors))
 
     def test_fr_requires_direct_approved_vs_lineage(self) -> None:
         temp, root = self.fixture()
         self.addCleanup(temp.cleanup)
         path = root / "docs/product/functional_requirements.md"
-        path.write_text(path.read_text(encoding="utf-8").replace("- source_vs_ids: `VS-TRAIN-001`", "- source_story_id: `US-TRAIN-001`"), encoding="utf-8")
+        path.write_text(path.read_text(encoding="utf-8").replace("- source_vs_ids: `VS-TRAIN-001-1`", "- source_story_id: `US-TRAIN-001`"), encoding="utf-8")
         errors, _ = validate_delivery(root)
         self.assertTrue(any("source_vs_ids" in error for error in errors))
         self.assertTrue(any("second-lineage" in error for error in errors))
@@ -160,7 +160,7 @@ class StorySliceDeliveryValidationTest(unittest.TestCase):
         self.addCleanup(temp.cleanup)
         path = root / "docs/quality/test_cases.md"
         text = path.read_text(encoding="utf-8").replace(
-            "- source_vs_id: `VS-TRAIN-001`", "- source_vs_id: `VS-TRAIN-001`\n- source_fr_id: `FR-TRAIN-001`",
+            "- source_vs_id: `VS-TRAIN-001-1`", "- source_vs_id: `VS-TRAIN-001-1`\n- source_fr_id: `FR-TRAIN-001`",
         )
         path.write_text(text, encoding="utf-8")
         errors, _ = validate_delivery(root)
@@ -280,8 +280,8 @@ class StorySliceDeliveryValidationTest(unittest.TestCase):
         self.addCleanup(temp.cleanup)
         path = root / "docs/quality/traceability.md"
         text = path.read_text(encoding="utf-8").replace(
-            "| `VS-TRAIN-001` | `TC-VS-TRAIN-001` |",
-            "| `VS-TRAIN-999` | `TC-VS-TRAIN-001` |",
+            "| `VS-TRAIN-001-1` | `TC-VS-TRAIN-001-1` |",
+            "| `VS-TRAIN-999-1` | `TC-VS-TRAIN-001-1` |",
             1,
         )
         path.write_text(text, encoding="utf-8")

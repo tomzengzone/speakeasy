@@ -13,7 +13,7 @@ Child Vertical Slices:
 
 | Id | description | Status | Primary Capability ID | Affected Capability IDs |
 | --- | --- | --- | --- | --- |
-| `VS-<CAP>-<NNN>` | <one user-perceivable delivery loop> | `draft` | `CAP-<PRIMARY>` | `CAP-<AFFECTED>` |
+| `VS-<CAP>-<STORY-NNN>-<CHILD-N>` | <one user-perceivable delivery loop> | `draft` | `CAP-<PRIMARY>` | `CAP-<AFFECTED>` |
 ```
 
 检查：

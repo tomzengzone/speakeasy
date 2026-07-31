@@ -1,46 +1,46 @@
 ---
 name: prompt-contract-generate
-description: Use when an approved Vertical Slice, or an applicable approved Functional Requirement when present, changes LLM prompts, structured output, fallback behavior, or AI evaluation configuration. Do not use for deterministic behavior without an LLM path.
+description: Use when：已批准的 Vertical Slice，或存在时适用的已批准 Functional Requirement，导致 LLM prompt、结构化输出、fallback 行为或 AI evaluation 配置发生变化。不适用于没有 LLM 路径的确定性行为。
 ---
 
 # Prompt Contract Generate
 
 ## Overview
 
-Constrain AI runtime behavior so structured output, prompt, fallback and evaluation remain safe and testable.
+约束 AI runtime 行为，使结构化输出、prompt、fallback 和 evaluation 保持安全且可测试。
 
 ## When to Use
 
-Use for LLM-facing product behavior or changes to structured output, fallback, safety or eval configuration.
+用于面向 LLM 的产品行为，或者结构化输出、fallback、安全性或 evaluation 配置发生变化的场景。
 
 ## When NOT to Use
 
-Do not use for deterministic/static behavior, provider wiring with unchanged AI contract, or unapproved product behavior.
+不得用于确定性/静态行为、AI contract 未变化的 provider 接线工作，或产品行为尚未批准的场景。
 
 ## Contract
 
-Method skill for `PROMPT_CONTRACT`, `LLM_OUTPUT_SCHEMA` and `AI_EVAL_CASES`; related fallback/dialogue Artifacts retain their own ownership. Resolve governance facts by Artifact ID. The selected approved VS is the product upstream; an applicable approved FR adds requirement lineage when present.
+这是 `PROMPT_CONTRACT`、`LLM_OUTPUT_SCHEMA` 和 `AI_EVAL_CASES` 的 method Skill；相关 fallback/dialogue Artifact 保留各自的事实归属。治理事实必须通过 Artifact ID 解析。选定的已批准 VS 是产品上游；存在适用的已批准 FR 时，FR 提供需求追溯关系。
 
 ## Inputs
 
-Selected approved VS IDs, applicable approved FR IDs when present, current AI/Domain/API/UX facts, safety/fallback/cost constraints and relevant AI Contract-TC IDs.
+选定的已批准 VS ID、存在时适用的已批准 FR ID、当前 AI/Domain/API/UX 事实、安全/fallback/成本约束，以及相关 AI Contract-TC ID。
 
 ## Outputs
 
-Prompt constraints, input/output schema, positive/negative examples, deterministic fallback, and AI evaluation fixtures/rubric/config keyed by TC ID.
+Prompt 约束、输入/输出 schema、正向/反向示例、确定性 fallback，以及以 TC ID 为键的 AI evaluation fixture、rubric 和配置。
 
 ## Process
 
-1. Confirm the selected approved VS, any applicable approved FR, and the actual AI contract fact change.
-2. Define decisions the model must not make and design structured output before prompt prose.
-3. Define invalid, low-confidence, off-topic and provider-failure fallbacks.
-4. Put stable AI oracle/selector in a Contract-TC; keep AI Eval Cases limited to TC-linked fixtures, rubric/threshold and provider/model configuration.
-5. Run resolved schema/eval validation.
+1. 确认选定的已批准 VS、任何适用的已批准 FR，以及实际发生变化的 AI contract 事实。
+2. 定义模型不得做出的决策，并且必须先设计结构化输出，再编写 prompt 文本。
+3. 定义无效、低置信度、偏题和 provider 失败时的 fallback。
+4. 必须将稳定的 AI 测试判定依据和 selector 放入 Contract-TC；AI Eval Cases 必须仅包含与 TC 关联的 fixture、rubric/threshold 和 provider/model 配置。
+5. 运行解析得到的 schema/evaluation 校验。
 
 ## Red Flags
 
-Free-form UI parsing; AI changing progress/billing truth; malformed output without deterministic fallback; eval file duplicating product behavior/oracle/result; missing Contract-TC.
+UI 解析自由格式文本；AI 修改进度或账单权威事实；格式错误的输出没有确定性 fallback；evaluation 文件复制产品行为、测试判定依据或执行结果；缺少 Contract-TC。
 
 ## Verification
 
-Output is schema-valid and renderable; invalid paths are deterministic; AI Contract-TC owns the oracle; eval fixtures/config link by TC ID without copying execution state.
+输出符合 schema 且可以渲染；无效路径具有确定性；AI Contract-TC 持有测试判定依据；evaluation fixture/config 通过 TC ID 关联，且不复制执行状态。

@@ -43,7 +43,10 @@ ENGINEERING_LINEAGE_DOCS = (
 )
 CAPABILITY_ID = re.compile(r"^CAP-[A-Z][A-Z0-9-]*$")
 STORY_SECTION = re.compile(r"^##\s+\d+\..*?[（(](CAP-[A-Z][A-Z0-9-]*)\s*/")
-STORY_ID = re.compile(r"^(US|VS)-([A-Z][A-Z0-9-]*)-\d{3}$")
+USER_STORY_ID = re.compile(r"^US-([A-Z][A-Z0-9-]*)-\d{3}$")
+VERTICAL_SLICE_ID = re.compile(
+    r"^VS-([A-Z][A-Z0-9-]*)-\d{3}-[1-9]\d*$"
+)
 
 
 def _json(path: Path) -> dict:
@@ -270,9 +273,9 @@ def validate_story_map(root: Path) -> list[str]:
                 errors.append(f"{shard.relative_to(root)}:{number} Story/VS row must have 5 columns")
                 continue
             story_id = cells[0].strip("`")
-            match = STORY_ID.fullmatch(story_id)
+            match = USER_STORY_ID.fullmatch(story_id) or VERTICAL_SLICE_ID.fullmatch(story_id)
             primary = cells[3].strip("`")
-            if not match or match.group(2) != prefix:
+            if not match or match.group(1) != prefix:
                 errors.append(
                     f"{shard.relative_to(root)}:{number} {story_id} does not match shard prefix {prefix}"
                 )

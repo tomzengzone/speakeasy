@@ -12,7 +12,7 @@
 
 | Primary Capability | Primary Sub-capability | Story | Vertical Slice | Functional Requirement | FR-TC | FR-TC selector |
 | --- | --- | --- | --- | --- | --- | --- |
-| `CAP-TRAIN` | `CAP-TRAIN-06` | `US-TRAIN-001` | `VS-TRAIN-001` | `FR-TRAIN-001` | `TC-FR-TRAIN-001` | `training_recap_panel` |
+| `CAP-TRAIN` | `CAP-TRAIN-06` | `US-TRAIN-001` | `VS-TRAIN-001-1` | `FR-TRAIN-001` | `TC-FR-TRAIN-001` | `training_recap_panel` |
 
 | Functional Requirement | Affected Engineering Contract | Contract-TC | Contract-TC selector |
 | --- | --- | --- | --- |
@@ -20,8 +20,8 @@
 
 | Vertical Slice | VS-TC | VS-TC selector |
 | --- | --- | --- |
-| `VS-TRAIN-001` | `TC-VS-TRAIN-001` | `training_session_view -> training_recap_panel` |
+| `VS-TRAIN-001-1` | `TC-VS-TRAIN-001-1` | `training_session_view -> training_recap_panel` |
 
 ## Coverage join
 
-`TC-VS-TRAIN-001` 通过当前存在的 owning edge `VS-TRAIN-001 -> FR-TRAIN-001` 派生覆盖 `FR-TRAIN-001`；VS-TC 自身不保存 FR ID 集合。当前 projection 无悬空引用，已登记 FR 的直接 VS lineage 与 FR-TC coverage、以及 approved VS 的 VS-TC coverage 均完整。没有 FR 时不生成 FR、FR-TC 或对应 coverage join。执行证据只可链接绑定 exact commit SHA 的外部测试或 CI 记录，不在本文复制易过期结果状态。
+`TC-VS-TRAIN-001-1` 通过当前存在的 owning edge `VS-TRAIN-001-1 -> FR-TRAIN-001` 派生覆盖 `FR-TRAIN-001`；VS-TC 自身不保存 FR ID 集合。当前 projection 无悬空引用，已登记 FR 的直接 VS lineage 与 FR-TC coverage、以及 approved VS 的 VS-TC coverage 均完整。没有 FR 时不生成 FR、FR-TC 或对应 coverage join。执行证据只可链接绑定 exact commit SHA 的外部测试或 CI 记录，不在本文复制易过期结果状态。

@@ -1,46 +1,47 @@
 ---
 name: story-map-develop
-description: Use when Product Manager creates, splits, rewrites, reviews, or approves User Stories and nested Child Vertical Slices. Do not use for FR, TC, or implementation.
+description: Use when：Product Manager 创建、拆分、重写、审查或批准 User Story 及其嵌套的 Child Vertical Slice。不适用于 FR、TC 或实现工作。
 ---
 
 # Story Map Develop
 
 ## Overview
 
-Maintain the unique current product source for User Stories and their nested Child Vertical Slices.
+维护 User Story 及其嵌套 Child Vertical Slice 的唯一当前产品事实来源。
 
 ## When to Use
 
-Use when Story/VS behavior, boundary, nesting, classification or approval status changes.
+用于 Story/VS 行为、边界、嵌套关系、分类或批准状态发生变化的场景。
 
 ## When NOT to Use
 
-Do not use for FR, TC, Contract, delivery planning, implementation or historical product-document maintenance.
+不得用于 FR、TC、Contract、交付规划、实现或历史产品文档维护。
 
 ## Contract
 
-Method skill for `STORY_MAP`. Resolve governance facts through `GOVERNANCE_INDEX`; `CAPABILITY_REGISTRY` supplies classification boundaries, not behavior.
+这是 `STORY_MAP` 的 method Skill。治理事实必须通过 `GOVERNANCE_INDEX` 解析；`CAPABILITY_REGISTRY` 提供分类边界，不提供行为事实。
 
 ## Inputs
 
-PM decision, relevant current Story Map rows, applicable Capability/Sub-capability boundary, user/scenario/goal, visible outcome, state change, failure path and explicit non-goals.
+PM 决策、相关当前 Story Map 记录、适用的 Capability/Sub-capability 边界、用户/场景/目标、可见结果、状态变化、失败路径和明确的非目标。
 
 ## Outputs
 
-Story rows nested under Capability sections and Child VS rows nested under one Story. Story directly records Capability classification; nesting owns the VS-to-Story edge.
+嵌套在 Capability 章节下的 Story 记录，以及嵌套在一个 Story 下的 Child VS 记录。Story 直接记录 Capability 分类；嵌套关系持有 VS-to-Story 直接关系。
 
 ## Process
 
-1. Confirm the product decision and classification without inferring behavior from labels.
-2. Write a Story with user, situation, goal and value.
-3. Split independently verifiable user loops into Child VS rows with trigger, prerequisites, user choice, state change, visible result and key failure/boundary.
-4. Keep one parent through nesting; do not add duplicate parent columns.
-5. Only Product Manager sets `approved`; validate touched rows.
+1. Read when：对于记录创建、语义重写、拆分/合并或批准就绪工作，必须读取 [Story 和 Slice 就绪门](references/ready-gates.md)。
+2. 确认产品决策和分类，不得从标签推断行为。
+3. 编写包含用户、情境、目标和价值的 Story。
+4. 将可独立验证的用户闭环拆分为 Child VS 记录，并包含触发条件、前置条件、用户选择、状态变化、可见结果和关键失败/边界。
+5. 通过嵌套关系保留一个父级；不得增加重复的父级列。
+6. 只有 Product Manager 可以设置 `approved`；必须校验本次修改的记录。
 
 ## Red Flags
 
-Pages/modules as stories; capability text treated as behavior; formulaic CRUD slices; one VS containing independent loops; Stage/Increment delivery metadata; FR/TC/Contract body copied into the map; downstream artifacts used to manufacture completeness.
+将页面/module 当作 Story；将 Capability 文本当作行为；公式化的 CRUD Slice；一个 VS 包含多个独立闭环；包含 Stage/Increment 交付 metadata；将 FR/TC/Contract 正文复制到 Story Map；使用下游 Artifact 制造完整性。
 
 ## Verification
 
-Each approved VS has a unique approved Story parent and complete user loop; classifications exist; descriptions own row semantics; no delivery chain or downstream content is duplicated.
+每个已批准 VS 都有唯一的已批准 Story 父级和完整用户闭环；分类真实存在；description 持有记录语义；没有复制交付链或下游内容。

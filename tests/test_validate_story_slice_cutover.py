@@ -153,6 +153,17 @@ class StorySliceCutoverValidationTest(unittest.TestCase):
         errors, _ = validate_cutover(root)
         self.assertTrue(any("primary CAP-LEVEL does not match CAP-ACC" in error for error in errors))
 
+    def test_story_map_shard_rejects_simple_vertical_slice_id(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        path = root / "docs/product/user_stories/user_story_CAP_ACC.md"
+        text = path.read_text(encoding="utf-8").replace(
+            "VS-ACC-001-1", "VS-ACC-001", 1,
+        )
+        path.write_text(text, encoding="utf-8")
+        errors, _ = validate_cutover(root)
+        self.assertTrue(any("VS-ACC-001 does not match shard prefix ACC" in error for error in errors))
+
     def test_missing_engineering_lineage_marker_is_rejected(self) -> None:
         temp, root = self.fixture()
         self.addCleanup(temp.cleanup)

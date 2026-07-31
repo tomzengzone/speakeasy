@@ -509,14 +509,38 @@ class GovernanceContractValidationTest(unittest.TestCase):
         self.assertIn("source_vs_ids", requirements)
         self.assertIn("Markdown presentation of supplied values", requirements)
         self.assertIn("treating this template as content authority", requirements)
-        self.assertIn("one typed direct upstream per case", test_case)
-        self.assertIn("TC execution results belong to CI", test_case)
-        self.assertIn("projection is derived-read-only", traceability)
+        self.assertIn("每个 Test Case 只有一种带类型的直接上游", test_case)
+        self.assertIn("TC 执行结果属于 CI evidence", test_case)
+        self.assertIn("投影是只读派生结果", traceability)
 
     def test_skill_validator_accepts_progressive_disclosure_layout(self):
         errors, warnings = validate_skills(ROOT)
         self.assertEqual([], errors)
         self.assertEqual([], [warning for warning in warnings if "governance status is candidate" not in warning])
+
+    def test_skill_validator_accepts_description_without_negative_trigger_phrase(self):
+        with tempfile.TemporaryDirectory() as temp:
+            target = Path(temp)
+            self.copy_governance_fixture(target)
+            skill = target / ".agents/skills/document-traceability-check/SKILL.md"
+            text = skill.read_text(encoding="utf-8")
+            original_description = "description: Use when：Story/VS/FR/Engineering Contract/Test Case 的追溯关系和派生覆盖需要独立审计。不适用于编写事实归属方持有的事实。"
+            self.assertIn(original_description, text)
+            text = text.replace(
+                original_description,
+                "description: Use when：Story/VS/FR/Engineering Contract/Test Case 的追溯关系和派生覆盖需要独立审计，并需要报告完整性、唯一性或悬空 ID 发现项。",
+            )
+            skill.write_text(text, encoding="utf-8")
+
+            errors, _warnings = validate_skills(target)
+
+            self.assertFalse(
+                any(
+                    "document-traceability-check\\SKILL.md description" in error
+                    or "document-traceability-check/SKILL.md description" in error
+                    for error in errors
+                )
+            )
 
     def test_skill_validator_rejects_parallel_spec_layer(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -776,8 +800,8 @@ class GovernanceContractValidationTest(unittest.TestCase):
         reference = (
             ROOT / ".agents/skills/capability-registry-develop/references/structural-change-gates.md"
         ).read_text(encoding="utf-8")
-        self.assertNotIn("## Completion check", reference)
-        self.assertIn("## Evidence and Gate result distinction", reference)
+        self.assertNotIn("## 完成检查", reference)
+        self.assertIn("## 证据与 Gate 结果的区分", reference)
 
     def test_product_governance_checker_consumes_validation_and_reviews_only_semantics(self):
         errors = []

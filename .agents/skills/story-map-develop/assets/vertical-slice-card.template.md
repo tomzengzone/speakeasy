@@ -7,12 +7,13 @@ Child Vertical Slices:
 
 | Id | description | Status | Primary Capability ID | Affected Capability IDs |
 | --- | --- | --- | --- | --- |
-| `VS-<CAP>-<NNN>` | <以适合该业务的自然句式，说明入口或触发、具体业务对象、用户选择或状态变化、可见结果，以及必要的作用范围或跨 capability 交接。> | `draft` | `CAP-<PRIMARY>` | `CAP-<AFFECTED-1>`, `CAP-<AFFECTED-2>` |
+| `VS-<CAP>-<STORY-NNN>-<CHILD-N>` | <以适合该业务的自然句式，说明入口或触发、具体业务对象、用户选择或状态变化、可见结果，以及必要的作用范围或跨 capability 交接。> | `draft` | `CAP-<PRIMARY>` | `CAP-<AFFECTED-1>`, `CAP-<AFFECTED-2>` |
 ```
 
 检查：
 
 - 一行只表达一个 primary user-perceivable delivery loop。
+- Story 分组编号中的 `<STORY-NNN>` 与外层 User Story 编号一致；Parent 关系仍由文档嵌套位置表达。
 - 同一动作的异常分支留在同一行；独立触发、结果和验证路径拆成 sibling row。
 - 每行至少承载两类具体产品事实，例如可选方案、状态含义、作用范围、责任域交接或有业务意义的例外。
 - 删除业务名词后若只剩“进入、查看、保存、失败重试”，说明信息密度不足，必须重写。

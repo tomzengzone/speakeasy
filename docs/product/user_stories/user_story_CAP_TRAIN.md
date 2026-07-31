@@ -10,10 +10,10 @@ Child Vertical Slices:
 
 | Id | description | Status | Primary Capability ID | Affected Capability IDs |
 | --- | --- | --- | --- | --- |
-| `VS-TRAIN-001` | 当学习者从官方场景模拟页完成当前一轮语音练习并触发结束动作时，系统给出本轮练习总结和可见的后续学习入口；成功时学习者看到本轮总结、关键反馈和进度变化；失败或无可用结果时学习者看到可恢复的错误或空状态，且进度不会被错误推进；产品状态变化为本轮练习完成状态与学习证据候选被记录。 | `approved` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-COACH`, `CAP-MEMORY`, `CAP-PLAN` |
-| `VS-TRAIN-002` | 当本轮训练结果可用时，系统展示本轮掌握、薄弱标签和下轮重点；成功时学习者知道哪些表达需要继续巩固；无可用结果时展示空状态，不生成错误结论。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-COACH`, `CAP-MEMORY`, `CAP-PLAN` |
-| `VS-TRAIN-003` | 当训练结果可交接给学习事实时，系统展示总进度和遗忘曲线摘要；成功时学习者能观察进度变化；状态更新失败时保持原进度并提示重试。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-COACH`, `CAP-MEMORY`, `CAP-PLAN` |
-| `VS-TRAIN-004` | 学习者在总结页选择继续练习、复习薄弱表达或返回首页；成功时进入对应入口；入口不可用时展示替代路径。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-COACH`, `CAP-MEMORY`, `CAP-PLAN` |
+| `VS-TRAIN-001-1` | 当学习者从官方场景模拟页完成当前一轮语音练习并触发结束动作时，系统给出本轮练习总结和可见的后续学习入口；成功时学习者看到本轮总结、关键反馈和进度变化；失败或无可用结果时学习者看到可恢复的错误或空状态，且进度不会被错误推进；产品状态变化为本轮练习完成状态与学习证据候选被记录。 | `approved` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-COACH`, `CAP-MEMORY`, `CAP-PLAN` |
+| `VS-TRAIN-001-2` | 当本轮训练结果可用时，系统展示本轮掌握、薄弱标签和下轮重点；成功时学习者知道哪些表达需要继续巩固；无可用结果时展示空状态，不生成错误结论。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-COACH`, `CAP-MEMORY`, `CAP-PLAN` |
+| `VS-TRAIN-001-3` | 当训练结果可交接给学习事实时，系统展示总进度和遗忘曲线摘要；成功时学习者能观察进度变化；状态更新失败时保持原进度并提示重试。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-COACH`, `CAP-MEMORY`, `CAP-PLAN` |
+| `VS-TRAIN-001-4` | 学习者在总结页选择继续练习、复习薄弱表达或返回首页；成功时进入对应入口；入口不可用时展示替代路径。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-COACH`, `CAP-MEMORY`, `CAP-PLAN` |
 
 ### US-TRAIN-002 - 已加入场景的学习者完成推荐表达队列训练
 
@@ -25,10 +25,10 @@ Child Vertical Slices:
 
 | Id | description | Status | Primary Capability ID | Affected Capability IDs |
 | --- | --- | --- | --- | --- |
-| `VS-TRAIN-005` | 当已加入场景的学习者进入推荐表达页时，系统展示每日表达队列及每条表达的训练原因；成功时学习者知道今天要练什么；无队列时展示空状态和回到场景入口。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-CONTENT`, `CAP-MEMORY`, `CAP-PLAN` |
-| `VS-TRAIN-006` | 学习者选择队列中的表达或点击继续；成功时系统交接到对应练习单元；练习素材不可用时展示可恢复提示。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-CONTENT`, `CAP-MEMORY`, `CAP-PLAN` |
-| `VS-TRAIN-007` | 学习者完成表达小任务后，队列更新复习、薄弱、变体或完成状态；成功时学习者看到队列进度；更新失败时不错误标记完成。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-CONTENT`, `CAP-MEMORY`, `CAP-PLAN` |
-| `VS-TRAIN-008` | 当每日表达队列完成或无更多可练项时，系统展示下一步入口；成功时学习者可返回首页、继续场景或查看复盘；状态不可用时展示保守提示。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-CONTENT`, `CAP-MEMORY`, `CAP-PLAN` |
+| `VS-TRAIN-002-1` | 当已加入场景的学习者进入推荐表达页时，系统展示每日表达队列及每条表达的训练原因；成功时学习者知道今天要练什么；无队列时展示空状态和回到场景入口。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-CONTENT`, `CAP-MEMORY`, `CAP-PLAN` |
+| `VS-TRAIN-002-2` | 学习者选择队列中的表达或点击继续；成功时系统交接到对应练习单元；练习素材不可用时展示可恢复提示。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-CONTENT`, `CAP-MEMORY`, `CAP-PLAN` |
+| `VS-TRAIN-002-3` | 学习者完成表达小任务后，队列更新复习、薄弱、变体或完成状态；成功时学习者看到队列进度；更新失败时不错误标记完成。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-CONTENT`, `CAP-MEMORY`, `CAP-PLAN` |
+| `VS-TRAIN-002-4` | 当每日表达队列完成或无更多可练项时，系统展示下一步入口；成功时学习者可返回首页、继续场景或查看复盘；状态不可用时展示保守提示。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-CONTENT`, `CAP-MEMORY`, `CAP-PLAN` |
 
 ### US-TRAIN-003 - 中途退出的学习者恢复未完成训练会话
 
@@ -40,9 +40,9 @@ Child Vertical Slices:
 
 | Id | description | Status | Primary Capability ID | Affected Capability IDs |
 | --- | --- | --- | --- | --- |
-| `VS-TRAIN-009` | 当学习者再次进入场景时，系统检查是否存在可恢复会话；成功时展示继续入口；状态不可用时不展示错误恢复入口。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-MEMORY`, `CAP-PLAN` |
-| `VS-TRAIN-010` | 学习者选择继续后，系统恢复当前问题、目标进度和场景导航；成功时可继续练习；恢复失败时允许从头开始或返回首页。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-MEMORY`, `CAP-PLAN` |
-| `VS-TRAIN-011` | 当未完成会话过期、内容版本变化或状态损坏时，系统展示原因和替代入口；成功时学习者知道可以重新开始或选择其他任务。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-MEMORY`, `CAP-PLAN` |
+| `VS-TRAIN-003-1` | 当学习者再次进入场景时，系统检查是否存在可恢复会话；成功时展示继续入口；状态不可用时不展示错误恢复入口。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-MEMORY`, `CAP-PLAN` |
+| `VS-TRAIN-003-2` | 学习者选择继续后，系统恢复当前问题、目标进度和场景导航；成功时可继续练习；恢复失败时允许从头开始或返回首页。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-MEMORY`, `CAP-PLAN` |
+| `VS-TRAIN-003-3` | 当未完成会话过期、内容版本变化或状态损坏时，系统展示原因和替代入口；成功时学习者知道可以重新开始或选择其他任务。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-MEMORY`, `CAP-PLAN` |
 
 ### US-TRAIN-004 - 学习者在训练中处理节奏与状态
 
@@ -54,10 +54,10 @@ Child Vertical Slices:
 
 | Id | description | Status | Primary Capability ID | Affected Capability IDs |
 | --- | --- | --- | --- | --- |
-| `VS-TRAIN-012` | 学习者在训练会话中暂停并稍后继续；成功时当前计划训练项、训练流位置和练习单元游标可恢复；暂停或继续失败时展示可恢复提示。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-MEMORY`, `CAP-PLAN` |
-| `VS-TRAIN-013` | 学习者对当前练习单元选择跳过、重做或重新开始；成功时练习单元状态和训练节奏更新；操作失败时保持原状态并允许继续当前练习。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-COACH`, `CAP-MEMORY`, `CAP-PLAN` |
-| `VS-TRAIN-014` | 当训练流内容不可用或需要 fallback 时，系统展示原因和替代训练入口；成功时学习者能继续其他可用训练；无替代入口时展示可返回状态。 | `draft` | `CAP-TRAIN` | `CAP-CONTENT`, `CAP-PRACTICE`, `CAP-PLAN` |
-| `VS-TRAIN-015` | 学习者查看计划训练项或练习单元的部分完成、中断、失败或 stale 状态；成功时知道下一步可继续、重试、重算或返回；状态不可用时不错误标记完成。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-MEMORY`, `CAP-PLAN` |
+| `VS-TRAIN-004-1` | 学习者在训练会话中暂停并稍后继续；成功时当前计划训练项、训练流位置和练习单元游标可恢复；暂停或继续失败时展示可恢复提示。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-MEMORY`, `CAP-PLAN` |
+| `VS-TRAIN-004-2` | 学习者对当前练习单元选择跳过、重做或重新开始；成功时练习单元状态和训练节奏更新；操作失败时保持原状态并允许继续当前练习。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-COACH`, `CAP-MEMORY`, `CAP-PLAN` |
+| `VS-TRAIN-004-3` | 当训练流内容不可用或需要 fallback 时，系统展示原因和替代训练入口；成功时学习者能继续其他可用训练；无替代入口时展示可返回状态。 | `draft` | `CAP-TRAIN` | `CAP-CONTENT`, `CAP-PRACTICE`, `CAP-PLAN` |
+| `VS-TRAIN-004-4` | 学习者查看计划训练项或练习单元的部分完成、中断、失败或 stale 状态；成功时知道下一步可继续、重试、重算或返回；状态不可用时不错误标记完成。 | `draft` | `CAP-TRAIN` | `CAP-PRACTICE`, `CAP-MEMORY`, `CAP-PLAN` |
 
 ### US-TRAIN-005 - 学习者从计划训练项进入可解释训练会话
 
@@ -69,6 +69,6 @@ Child Vertical Slices:
 
 | Id | description | Status | Primary Capability ID | Affected Capability IDs |
 | --- | --- | --- | --- | --- |
-| `VS-TRAIN-016` | 学习者从计划训练项进入训练会话入口；成功时看到计划来源、训练对象、训练流引用、预期时长和完成规则；入口加载失败时可返回计划页。 | `draft` | `CAP-TRAIN` | `CAP-PLAN`, `CAP-CONTENT`, `CAP-PRACTICE`, `CAP-MEMORY` |
-| `VS-TRAIN-017` | 当训练对象或训练流不可用时，训练入口展示不可用原因和替代入口；成功时学习者可选择其他可练项、返回计划或等待内容恢复。 | `draft` | `CAP-TRAIN` | `CAP-PLAN`, `CAP-CONTENT`, `CAP-PRACTICE`, `CAP-MEMORY` |
+| `VS-TRAIN-005-1` | 学习者从计划训练项进入训练会话入口；成功时看到计划来源、训练对象、训练流引用、预期时长和完成规则；入口加载失败时可返回计划页。 | `draft` | `CAP-TRAIN` | `CAP-PLAN`, `CAP-CONTENT`, `CAP-PRACTICE`, `CAP-MEMORY` |
+| `VS-TRAIN-005-2` | 当训练对象或训练流不可用时，训练入口展示不可用原因和替代入口；成功时学习者可选择其他可练项、返回计划或等待内容恢复。 | `draft` | `CAP-TRAIN` | `CAP-PLAN`, `CAP-CONTENT`, `CAP-PRACTICE`, `CAP-MEMORY` |
 

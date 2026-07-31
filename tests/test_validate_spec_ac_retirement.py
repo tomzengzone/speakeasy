@@ -196,7 +196,7 @@ class SpecAcRetirementValidationTest(unittest.TestCase):
             manifest = self.load_json(target, relative)
             manifest["records"][0]["status"] = "migrated"
             manifest["records"][0]["destinations"] = [
-                {"kind": "vertical-slice", "id": "VS-COM-AI-001"},
+                {"kind": "vertical-slice", "id": "VS-COM-AI-001-1"},
                 {"kind": "functional-requirement", "id": "FR-COM-AI-001"},
                 {"kind": "executable-regression-test", "id": "TC-COM-AI-001"},
             ]
@@ -210,7 +210,7 @@ class SpecAcRetirementValidationTest(unittest.TestCase):
             self.copy_fixture(target)
             relative = "docs/process/migrations/spec-ac-retirement.json"
             manifest = self.load_json(target, relative)
-            destination = {"kind": "vertical-slice", "id": "VS-COM-AI-001"}
+            destination = {"kind": "vertical-slice", "id": "VS-COM-AI-001-1"}
             manifest["records"][0]["status"] = "migrated"
             manifest["records"][0]["destinations"] = [destination, dict(destination)]
             self.write_json(target, relative, manifest)

@@ -35,7 +35,6 @@ Ready Gate Finding:
 - source authority and row coverage finding
 - split / ambiguity / boundary finding
 - capability mapping finding
-- registry adjacency finding
 - omitted-scope finding
 - missing information, if any
 

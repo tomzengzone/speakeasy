@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate selected story-map capability sections against the registry boundary."""
+"""Validate selected story-map capability sections and Capability references."""
 
 from __future__ import annotations
 
@@ -10,7 +10,10 @@ from pathlib import Path
 
 
 CAPABILITY_ID = re.compile(r"^CAP-[A-Z][A-Z0-9-]*$")
-STORY_ID = re.compile(r"^(US|VS)-([A-Z][A-Z0-9-]*)-(\d{3})$")
+USER_STORY_ID = re.compile(r"^US-([A-Z][A-Z0-9-]*)-(\d{3})$")
+VERTICAL_SLICE_ID = re.compile(
+    r"^VS-([A-Z][A-Z0-9-]*)-(\d{3})-([1-9]\d*)$"
+)
 SECTION = re.compile(r"^## \d+\..*[（(](CAP-[A-Z][A-Z0-9-]*)\s*/")
 SHARD_NAME = re.compile(r"^user_story_CAP_([A-Z][A-Z0-9-]*)\.md$")
 
@@ -23,8 +26,8 @@ def unquote(value: str) -> str:
     return value[1:-1] if value.startswith("`") and value.endswith("`") else value
 
 
-def registry_adjacency(path: Path) -> dict[str, set[str]]:
-    result: dict[str, set[str]] = {}
+def registry_capabilities(path: Path) -> set[str]:
+    result: set[str] = set()
     for line in path.read_text(encoding="utf-8").splitlines():
         row = cells(line) if line.startswith("|") else []
         if len(row) != 12:
@@ -32,19 +35,14 @@ def registry_adjacency(path: Path) -> dict[str, set[str]]:
         capability = unquote(row[0])
         if not CAPABILITY_ID.fullmatch(capability):
             continue
-        adjacent = {
-            value
-            for value in re.findall(r"`(CAP-[A-Z][A-Z0-9-]*)`", row[9])
-            if value != capability
-        }
-        result[capability] = adjacent
+        result.add(capability)
     return result
 
 
 def validate(story_maps: list[Path], registry: Path, selected: set[str]) -> list[str]:
-    adjacency = registry_adjacency(registry)
+    capabilities = registry_capabilities(registry)
     errors: list[str] = []
-    unknown = selected - adjacency.keys()
+    unknown = selected - capabilities
     if unknown:
         errors.append(f"unknown capability: {', '.join(sorted(unknown))}")
 
@@ -56,6 +54,8 @@ def validate(story_maps: list[Path], registry: Path, selected: set[str]) -> list
         expected_capability = f"CAP-{shard_match.group(1)}" if shard_match else None
         current: str | None = None
         current_story: str | None = None
+        current_story_number: str | None = None
+        current_child_number = 0
         section_count = 0
 
         for number, line in enumerate(story_map.read_text(encoding="utf-8").splitlines(), start=1):
@@ -64,6 +64,8 @@ def validate(story_maps: list[Path], registry: Path, selected: set[str]) -> list
             if heading:
                 current = heading.group(1)
                 current_story = None
+                current_story_number = None
+                current_child_number = 0
                 section_count += 1
                 if expected_capability and current != expected_capability:
                     errors.append(
@@ -80,8 +82,9 @@ def validate(story_maps: list[Path], registry: Path, selected: set[str]) -> list
                 errors.append(f"{location}: expected 5 columns, found {len(row)}")
                 continue
             row_id = unquote(row[0])
-            match = STORY_ID.fullmatch(row_id)
-            if not match:
+            user_story_match = USER_STORY_ID.fullmatch(row_id)
+            vertical_slice_match = VERTICAL_SLICE_ID.fullmatch(row_id)
+            if not user_story_match and not vertical_slice_match:
                 errors.append(f"{location}: invalid Story/Slice ID {row_id}")
                 continue
             if row_id in seen:
@@ -92,11 +95,27 @@ def validate(story_maps: list[Path], registry: Path, selected: set[str]) -> list
             else:
                 seen[row_id] = (story_map, number)
 
-            kind, prefix, _ = match.groups()
-            if kind == "US":
+            if user_story_match:
+                kind = "US"
+                prefix, current_story_number = user_story_match.groups()
                 current_story = row_id
-            elif current_story is None:
-                errors.append(f"{location}: {row_id} has no parent User Story in this shard")
+                current_child_number = 0
+            else:
+                kind = "VS"
+                prefix, story_number, child_number = vertical_slice_match.groups()
+                current_child_number += 1
+                if current_story is None:
+                    errors.append(f"{location}: {row_id} has no parent User Story in this shard")
+                elif story_number != current_story_number:
+                    errors.append(
+                        f"{location}: {row_id} grouped Story number {story_number} "
+                        f"does not match parent {current_story}"
+                    )
+                if int(child_number) != current_child_number:
+                    errors.append(
+                        f"{location}: {row_id} child number {child_number} is not "
+                        f"the expected contiguous value {current_child_number}"
+                    )
 
             if current not in selected:
                 continue
@@ -118,11 +137,11 @@ def validate(story_maps: list[Path], registry: Path, selected: set[str]) -> list
                 errors.append(f"{location}: malformed affected capability list")
                 continue
             affected = set(re.findall(r"`(CAP-[A-Z][A-Z0-9-]*)`", affected_cell))
-            invalid = affected - adjacency.get(current, set())
-            if invalid:
+            unknown_affected = affected - capabilities
+            if unknown_affected:
                 errors.append(
-                    f"{location}: {row_id} uses non-adjacent capability "
-                    f"{', '.join(sorted(invalid))} for {current}"
+                    f"{location}: {row_id} uses unknown capability "
+                    f"{', '.join(sorted(unknown_affected))}"
                 )
 
         if expected_capability and section_count != 1:

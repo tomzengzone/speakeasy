@@ -1,46 +1,46 @@
 ---
 name: document-path-governance
-description: Use when project documentation needs a canonical path, source-of-truth decision, owner/lifecycle audit, or Agent/Skill path-reference review.
+description: Use when：项目文档需要 canonical path、source-of-truth 决策、owner/lifecycle 审计，或 Agent/Skill path reference 审查。
 ---
 
 # Document Path Governance
 
 ## Overview
 
-Audit or propose document routing while keeping canonical path, owner, lifecycle, inputs and scope in the Governance Contract.
+审计或提出文档路由建议，同时将 canonical path、owner、lifecycle、inputs 和 scope 保留在 Governance Contract 中。
 
 ## When to Use
 
-Use for new/moved/renamed categories, duplicate locations, source conflicts, or Agent/Skill operational pointer audits.
+用于新增、移动或重命名文档类别，检查重复位置、source 冲突，或审计 Agent/Skill operational pointer。
 
 ## When NOT to Use
 
-Do not use for document content completeness, traceability semantics, ordinary generation or application code.
+不得用于文档内容完整性、traceability 语义、普通文档生成或应用代码。
 
 ## Contract
 
-Resolve all path/owner/lifecycle/input/contributor facts by Artifact ID from `GOVERNANCE_INDEX`; do not make this Skill another registry.
+所有 path/owner/lifecycle/input/contributor 事实都必须通过 Artifact ID 从 `GOVERNANCE_INDEX` 解析；不得让本 Skill 成为另一套 registry。
 
 ## Inputs
 
-Relevant Artifact IDs/records, current tree, affected Agent/Skill definitions, referenced resources and requested routing decision.
+相关 Artifact ID/record、当前目录树、受影响的 Agent/Skill 定义、被引用的 resource，以及请求的路由决策。
 
 ## Outputs
 
-Proposed contract change or audit finding identifying duplicates, stale refs and operational pointers. Only the owning Governance Contract edit can establish a path.
+输出拟议的 contract change 或审计发现项，标识重复位置、过期引用和 operational pointer。只有对 owning Governance Contract 的编辑才能建立 path。
 
 ## Process
 
-1. Classify the artifact and resolve its current contract record.
-2. Check source collisions and active versus historical references.
-3. Verify Agent/Skill references use Artifact IDs; allow exact path/command only when explicitly marked `Derived operational pointer` and contract-aligned.
-4. Route content or traceability changes to their methods.
-5. Validate the owning contract and active definitions.
+1. 对 Artifact 进行分类，并解析其当前 contract record。
+2. 检查 source 冲突以及 active reference 与 historical reference。
+3. 必须验证 Agent/Skill reference 使用 Artifact ID；只有明确标记为 `Derived operational pointer` 且与 contract 对齐时，才可以使用精确 path/command。
+4. 将 content 或 traceability 变更路由给对应 method。
+5. 验证 owning contract 和 active definition。
 
 ## Red Flags
 
-Path established only in a Skill/Agent; duplicate canonical locations; legacy fallback; copied owner/lifecycle/dependencies; unregistered template treated as authority.
+以下情况属于危险信号：path 只在 Skill/Agent 中建立；存在重复 canonical location；保留 legacy fallback；复制 owner/lifecycle/dependencies；将未注册 Template 当作 authority。
 
 ## Verification
 
-Each active Artifact resolves uniquely; operational pointers match the contract; historical paths are not active sources; no non-owning layer claims governance authority.
+必须确认每个 active Artifact 都能唯一解析、operational pointer 与 contract 一致、historical path 未被作为 active source，并且没有 non-owning layer 声称拥有 governance authority。
