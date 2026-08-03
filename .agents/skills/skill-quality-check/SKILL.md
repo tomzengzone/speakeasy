@@ -9,14 +9,6 @@ description: Use when：项目本地 Skill 定义、直接链接的 Skill 资源
 
 审查活动 Skill 是否只包含可复用的当前状态方法、是否具有清晰的触发条件，以及是否与 Governance Contract 权威事实保持职责分离。
 
-## When to Use
-
-修改 `SKILL.md`、其直接链接的 Skill 资源、Skill 质量标准或 Skill 校验器后使用。
-
-## When NOT to Use
-
-不用于审查应用行为、应用代码质量、普通文档，也不用于审查活动治理图之外已退役或仅供历史使用的 package。
-
 ## Contract
 
 这是用于 `SKILL_DEFINITION`、`SKILL_RESOURCE` 和 `SKILL_QUALITY_STANDARD` 的方法 Skill。治理事实必须通过 Artifact ID 解析；除非明确要求生成受治理报告，否则检查结果仅在当前任务中临时有效。
@@ -33,7 +25,7 @@ description: Use when：项目本地 Skill 定义、直接链接的 Skill 资源
 
 1. 根据活动方法 Skill 及其直接链接的资源确定检查范围，不扫描整个 Skill 目录作为默认范围。
 2. 通过 `SKILL_DEFINITION` 解析并运行其 `validation_command`。
-   Derived operational pointer：`python scripts/validate_agent_skills.py`。
+   Derived operational pointer（SKILL_DEFINITION.validation_command）：`python scripts/validate_agent_skills.py`。
 3. 解析当前任务适用的 Gate；如果命中 `G-INDEPENDENT-CHECK`，由 Gate 选择的独立 checker 必须返回 `pass`，最终检查结果才可以为 `pass`；校验器证据不得替代独立检查。
 4. 检查触发条件、必需的方法章节、边界明确的输入/输出、危险信号和可执行的验证方法。
 5. 检查 Skill 的自然语言、技术标识符、规范性用词和术语一致性是否符合 `SKILL_QUALITY_STANDARD`；不得在本 Skill 中复制具体语言规则。

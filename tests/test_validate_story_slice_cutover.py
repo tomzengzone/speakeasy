@@ -59,12 +59,14 @@ class StorySliceCutoverValidationTest(unittest.TestCase):
             for path in collect_current_definition_paths(ROOT)
         }
         self.assertIn(".codex/agents/product_manager.toml", definitions)
+        self.assertIn(".codex/agents/traceability.toml", definitions)
         self.assertIn(".agents/skills/requirement-refine/SKILL.md", definitions)
         self.assertIn(
             ".agents/skills/capability-registry-develop/references/structural-change-gates.md",
             definitions,
         )
         self.assertNotIn("docs/product/user_stories.md", definitions)
+        self.assertNotIn(".agents/skills/document-traceability-check/SKILL.md", definitions)
 
     def test_retired_route_is_rejected(self) -> None:
         temp, root = self.fixture()
@@ -75,6 +77,74 @@ class StorySliceCutoverValidationTest(unittest.TestCase):
         path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
         errors, _ = validate_cutover(root)
         self.assertTrue(any("retired Artifact remains routed" in error for error in errors))
+
+    def test_retired_document_path_skill_is_rejected(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        skill = root / ".agents/skills/document-path-governance/SKILL.md"
+        skill.parent.mkdir(parents=True, exist_ok=True)
+        skill.write_text("retired method\n", encoding="utf-8")
+
+        errors, _ = validate_cutover(root)
+
+        self.assertTrue(any("retired Skill remains discoverable: document-path-governance" in error for error in errors))
+
+    def test_retired_document_content_contract_skill_is_rejected(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        skill = root / ".agents/skills/document-content-contract/SKILL.md"
+        skill.parent.mkdir(parents=True, exist_ok=True)
+        skill.write_text("retired method\n", encoding="utf-8")
+
+        errors, _ = validate_cutover(root)
+
+        self.assertTrue(any("retired Skill remains discoverable: document-content-contract" in error for error in errors))
+
+    def test_retired_document_traceability_skill_is_rejected(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        skill = root / ".agents/skills/document-traceability-check/SKILL.md"
+        skill.parent.mkdir(parents=True, exist_ok=True)
+        skill.write_text("retired method\n", encoding="utf-8")
+
+        errors, _ = validate_cutover(root)
+
+        self.assertTrue(any("retired Skill remains discoverable: document-traceability-check" in error for error in errors))
+
+    def test_retired_document_governance_skill_is_rejected(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        skill = root / ".agents/skills/document-governance/SKILL.md"
+        skill.parent.mkdir(parents=True, exist_ok=True)
+        skill.write_text("retired method\n", encoding="utf-8")
+
+        errors, _ = validate_cutover(root)
+
+        self.assertTrue(any("retired Skill remains discoverable: document-governance" in error for error in errors))
+
+    def test_retired_traceability_workflow_role_is_rejected(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        actors = root / "docs/process/governance/actors.json"
+        data = json.loads(actors.read_text(encoding="utf-8"))
+        data["actors"].append({"actor_id": "traceability-authority", "kind": "workflow-role"})
+        actors.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+
+        errors, _ = validate_cutover(root)
+
+        self.assertTrue(any("retired actor remains registered: traceability-authority" in error for error in errors))
+
+    def test_retired_document_governance_actor_is_rejected(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        actors = root / "docs/process/governance/actors.json"
+        data = json.loads(actors.read_text(encoding="utf-8"))
+        data["actors"].append({"actor_id": "documentation-governance", "kind": "agent"})
+        actors.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+
+        errors, _ = validate_cutover(root)
+
+        self.assertTrue(any("retired actor remains registered: documentation-governance" in error for error in errors))
 
     def test_active_legacy_pointer_is_rejected(self) -> None:
         temp, root = self.fixture()
@@ -101,6 +171,52 @@ class StorySliceCutoverValidationTest(unittest.TestCase):
         path.write_text(before + "canonical path: docs/example.md\n" + '"""' + closing, encoding="utf-8")
         errors, _ = validate_cutover(root)
         self.assertTrue(any("backend.toml" in error and "restate" in error for error in errors))
+
+    def test_derived_canonical_path_pointer_must_match_contract(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        path = root / "docs/process/workflow.md"
+        path.write_text(
+            path.read_text(encoding="utf-8")
+            + "\nDerived operational pointer（IMPLEMENTATION_REPORT.canonical_path）："
+            + "`docs/reports/not-the-contract-path.md`。\n",
+            encoding="utf-8",
+        )
+
+        errors, _ = validate_cutover(root)
+
+        self.assertTrue(any("IMPLEMENTATION_REPORT.canonical_path does not match contract" in error for error in errors))
+
+    def test_derived_validation_command_pointer_must_match_contract(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        path = root / "docs/process/workflow.md"
+        path.write_text(
+            path.read_text(encoding="utf-8")
+            + "\nDerived operational pointer（PROJECT_AGENT_INSTRUCTIONS.validation_command）："
+            + "`python scripts/not-the-contract-validator.py`。\n",
+            encoding="utf-8",
+        )
+
+        errors, _ = validate_cutover(root)
+
+        self.assertTrue(
+            any("PROJECT_AGENT_INSTRUCTIONS.validation_command does not match contract" in error for error in errors)
+        )
+
+    def test_derived_pointer_must_reference_registered_artifact(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        path = root / "docs/process/workflow.md"
+        path.write_text(
+            path.read_text(encoding="utf-8")
+            + "\nDerived operational pointer（UNKNOWN_ARTIFACT.canonical_path）：`docs/example.md`。\n",
+            encoding="utf-8",
+        )
+
+        errors, _ = validate_cutover(root)
+
+        self.assertTrue(any("references unknown Artifact UNKNOWN_ARTIFACT" in error for error in errors))
 
     def test_retired_pointer_in_direct_linked_resource_is_rejected(self) -> None:
         temp, root = self.fixture()

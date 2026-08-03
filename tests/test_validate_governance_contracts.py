@@ -40,10 +40,23 @@ class GovernanceContractValidationTest(unittest.TestCase):
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / rel, destination)
 
+        contract_root = ROOT / "docs/process/governance"
+        index = json.loads((contract_root / "index.json").read_text(encoding="utf-8"))
+        for shard in sorted(set(index["artifact_routes"].values())):
+            data = json.loads((contract_root / shard).read_text(encoding="utf-8"))
+            for row in data.get("artifacts", []):
+                canonical_path = row["canonical_path"]
+                if "{" in canonical_path:
+                    continue
+                source = ROOT / canonical_path
+                destination = target / canonical_path
+                if not destination.exists():
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(source, destination)
+
     def test_repository_contracts_are_valid(self):
         errors, _warnings, metrics = validate_repository(ROOT)
         self.assertEqual([], errors)
-        self.assertEqual("candidate", metrics["governance_status"])
         self.assertEqual(62, metrics["artifacts"])
         self.assertEqual(14, metrics["gates"])
         self.assertEqual(5, metrics["workflow_exchanges"])
@@ -73,56 +86,45 @@ class GovernanceContractValidationTest(unittest.TestCase):
         self.assertIn("non-behavior", story_map_index["applicability"])
         self.assertEqual("artifacts/product.json", index["artifact_routes"]["STORY_MAP_INDEX"])
 
-    def test_invalid_governance_status_is_rejected(self):
+    def test_missing_literal_canonical_artifact_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
             target = Path(temp)
             self.copy_governance_fixture(target)
-            index = target / "docs/process/governance/index.json"
-            data = json.loads(index.read_text(encoding="utf-8"))
-            data["status"] = "ready-ish"
-            index.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-            errors, _warnings, _metrics = validate_repository(target)
-            self.assertTrue(any("unsupported governance status" in error for error in errors))
+            (target / "docs/product/vision.md").unlink()
 
-    def test_candidate_content_rejects_global_active_status(self):
+            errors, _warnings, _metrics = validate_repository(target)
+
+            self.assertTrue(any("PRODUCT_VISION canonical path does not exist" in error for error in errors))
+
+    def test_canonical_path_must_be_normalized(self):
         with tempfile.TemporaryDirectory() as temp:
             target = Path(temp)
             self.copy_governance_fixture(target)
-            index = target / "docs/process/governance/index.json"
-            data = json.loads(index.read_text(encoding="utf-8"))
-            data["status"] = "active"
-            index.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-            errors, _warnings, _metrics = validate_repository(target)
-            self.assertTrue(any("unsupported governance status: active" in error for error in errors))
+            product = target / "docs/process/governance/artifacts/product.json"
+            data = json.loads(product.read_text(encoding="utf-8"))
+            vision = next(row for row in data["artifacts"] if row["artifact_id"] == "PRODUCT_VISION")
+            vision["canonical_path"] = "docs/product/./vision.md"
+            product.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
 
-    def test_candidate_status_accepts_without_a_git_repository(self):
+            errors, _warnings, _metrics = validate_repository(target)
+
+            self.assertTrue(any("PRODUCT_VISION canonical path must be normalized" in error for error in errors))
+
+    def test_canonical_path_casefold_collision_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
             target = Path(temp)
             self.copy_governance_fixture(target)
-            errors, _warnings, _metrics = validate_repository(target)
-            self.assertEqual([], [error for error in errors if "committed Git" in error or "worktree differs" in error])
+            product = target / "docs/process/governance/artifacts/product.json"
+            data = json.loads(product.read_text(encoding="utf-8"))
+            rows = {row["artifact_id"]: row for row in data["artifacts"]}
+            rows["PRODUCT_ROADMAP"]["canonical_path"] = rows["PRODUCT_VISION"]["canonical_path"].upper()
+            product.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
 
-    def test_candidate_status_accepts_an_approved_dirty_worktree(self):
-        with tempfile.TemporaryDirectory() as temp:
-            target = Path(temp)
-            self.copy_governance_fixture(target)
-            git_run = {
-                "cwd": target,
-                "check": True,
-                "stdout": subprocess.DEVNULL,
-                "stderr": subprocess.DEVNULL,
-            }
-            subprocess.run(["git", "init", "-q"], **git_run)
-            subprocess.run(["git", "config", "user.email", "governance-test@example.invalid"], **git_run)
-            subprocess.run(["git", "config", "user.name", "Governance Test"], **git_run)
-            subprocess.run(["git", "add", "."], **git_run)
-            subprocess.run(["git", "commit", "-qm", "candidate governance baseline"], **git_run)
-            workflow = target / "docs/process/workflow.md"
-            workflow.write_text(workflow.read_text(encoding="utf-8") + "\n本地批准候选变更。\n", encoding="utf-8")
             errors, _warnings, _metrics = validate_repository(target)
-            self.assertEqual([], [error for error in errors if "worktree differs" in error])
 
-    def test_candidate_status_rejects_tracked_cache_files(self):
+            self.assertTrue(any("canonical path collision after normalization" in error for error in errors))
+
+    def test_governance_hygiene_rejects_tracked_cache_files(self):
         with tempfile.TemporaryDirectory() as temp:
             target = Path(temp)
             self.copy_governance_fixture(target)
@@ -140,7 +142,7 @@ class GovernanceContractValidationTest(unittest.TestCase):
             subprocess.run(["git", "config", "user.name", "Governance Test"], **git_run)
             subprocess.run(["git", "add", "."], **git_run)
             subprocess.run(["git", "add", "-f", cache.relative_to(target).as_posix()], **git_run)
-            subprocess.run(["git", "commit", "-qm", "candidate baseline with cache"], **git_run)
+            subprocess.run(["git", "commit", "-qm", "governance baseline with cache"], **git_run)
             errors, _warnings, _metrics = validate_repository(target)
             self.assertTrue(any("governance commit contains tracked cache files" in error for error in errors))
 
@@ -400,7 +402,6 @@ class GovernanceContractValidationTest(unittest.TestCase):
             "product_object_governance_change": False,
             "architecture_governance_change": False,
             "software_component_governance_change": False,
-            "documentation_governance_change": False,
             "meta_governance_change": False,
             "product_object_semantic_risk": False,
             "software_architecture_semantic_risk": False,
@@ -441,8 +442,11 @@ class GovernanceContractValidationTest(unittest.TestCase):
         self.assertEqual("ephemeral", exchanges["EX-FR-DOWNSTREAM"]["lifecycle"])
         self.assertIn("FUNCTIONAL_REQUIREMENT_CATALOG", exchanges["EX-FR-DOWNSTREAM"]["source_artifacts"])
         self.assertIn("test-case-development", exchanges["EX-FR-DOWNSTREAM"]["consumers"])
+        self.assertIn("traceability", exchanges["EX-FR-DOWNSTREAM"]["consumers"])
         self.assertIn("TEST_CASE_CATALOG", exchanges["EX-TEST-DOWNSTREAM"]["source_artifacts"])
+        self.assertIn("traceability", exchanges["EX-TEST-DOWNSTREAM"]["consumers"])
         self.assertIn("TRACEABILITY", exchanges["EX-TRACEABILITY-REVIEW"]["source_artifacts"])
+        self.assertEqual("traceability", exchanges["EX-TRACEABILITY-REVIEW"]["producer"])
         for shard in (ROOT / "docs/process/governance/artifacts").glob("*.json"):
             artifact_data = json.loads(shard.read_text(encoding="utf-8"))
             for artifact in artifact_data["artifacts"]:
@@ -502,33 +506,34 @@ class GovernanceContractValidationTest(unittest.TestCase):
             errors, _warnings, _metrics = validate_repository(target)
             self.assertTrue(any("must resolve Artifact ownership" in error for error in errors))
 
-    def test_method_skill_owner_boundaries_use_handoffs(self):
+    def test_method_and_agent_owner_boundaries_use_handoffs(self):
         requirements = (ROOT / ".agents/skills/requirement-refine/SKILL.md").read_text(encoding="utf-8")
         test_case = (ROOT / ".agents/skills/test-case-generate/SKILL.md").read_text(encoding="utf-8")
-        traceability = (ROOT / ".agents/skills/document-traceability-check/SKILL.md").read_text(encoding="utf-8")
+        traceability = load_toml(ROOT / ".codex/agents/traceability.toml", [])["developer_instructions"]
         self.assertIn("source_vs_ids", requirements)
-        self.assertIn("Markdown presentation of supplied values", requirements)
+        self.assertIn("对已提供完整值的 Markdown 规范化结果", requirements)
         self.assertIn("treating this template as content authority", requirements)
         self.assertIn("每个 Test Case 只有一种带类型的直接上游", test_case)
         self.assertIn("TC 执行结果属于 CI evidence", test_case)
-        self.assertIn("投影是只读派生结果", traceability)
+        self.assertIn("Modify only the derived projection", traceability)
+        self.assertIn("Never create, infer, or repair direct edges", traceability)
 
     def test_skill_validator_accepts_progressive_disclosure_layout(self):
         errors, warnings = validate_skills(ROOT)
         self.assertEqual([], errors)
-        self.assertEqual([], [warning for warning in warnings if "governance status is candidate" not in warning])
+        self.assertEqual([], [warning for warning in warnings if "runtime files above advisory" not in warning])
 
     def test_skill_validator_accepts_description_without_negative_trigger_phrase(self):
         with tempfile.TemporaryDirectory() as temp:
             target = Path(temp)
             self.copy_governance_fixture(target)
-            skill = target / ".agents/skills/document-traceability-check/SKILL.md"
+            skill = target / ".agents/skills/test-case-generate/SKILL.md"
             text = skill.read_text(encoding="utf-8")
-            original_description = "description: Use when：Story/VS/FR/Engineering Contract/Test Case 的追溯关系和派生覆盖需要独立审计。不适用于编写事实归属方持有的事实。"
+            original_description = "description: Use when：已批准 FR、发生变化的 Engineering Contract，或正在实现的 Vertical Slice 需要稳定的 FR-TC、Contract-TC 或 VS-TC 设计。不适用于只需执行测试的场景。"
             self.assertIn(original_description, text)
             text = text.replace(
                 original_description,
-                "description: Use when：Story/VS/FR/Engineering Contract/Test Case 的追溯关系和派生覆盖需要独立审计，并需要报告完整性、唯一性或悬空 ID 发现项。",
+                "description: Use when：已批准 FR、发生变化的 Engineering Contract，或正在实现的 Vertical Slice 需要稳定的 FR-TC、Contract-TC 或 VS-TC 设计，并需要明确 oracle、selector 和执行层级。",
             )
             skill.write_text(text, encoding="utf-8")
 
@@ -536,8 +541,8 @@ class GovernanceContractValidationTest(unittest.TestCase):
 
             self.assertFalse(
                 any(
-                    "document-traceability-check\\SKILL.md description" in error
-                    or "document-traceability-check/SKILL.md description" in error
+                    "test-case-generate\\SKILL.md description" in error
+                    or "test-case-generate/SKILL.md description" in error
                     for error in errors
                 )
             )
@@ -578,7 +583,7 @@ class GovernanceContractValidationTest(unittest.TestCase):
             skill.write_text(text, encoding="utf-8")
             errors, warnings = validate_skills(target)
             self.assertEqual([], errors)
-            self.assertEqual([], [warning for warning in warnings if "governance status is candidate" not in warning])
+            self.assertEqual([], [warning for warning in warnings if "runtime files above advisory" not in warning])
 
     def test_scenario_practice_instance_lives_in_boundary_registry(self):
         workflow = (ROOT / "docs/process/workflow.md").read_text(encoding="utf-8")
@@ -603,7 +608,7 @@ class GovernanceContractValidationTest(unittest.TestCase):
             ".agents/skills/capability-registry-develop/assets/ready-gate-output.template.md",
             ".agents/skills/story-map-develop/scripts/validate_story_map.py",
         ]
-        self.assertEqual([], check_paths(ROOT, paths, "documentation-governance", governed_only=True))
+        self.assertEqual([], check_paths(ROOT, paths, "product-object-governance-change", governed_only=True))
 
     def test_duplicate_owner_route_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -662,23 +667,23 @@ class GovernanceContractValidationTest(unittest.TestCase):
     def test_governance_metadata_requires_actor_and_supports_multiple_scopes(self):
         actors, scopes = parse_governance_metadata(
             "Change summary\n\nGovernance-Actor: ux-review\n"
-            "Governance-Actor: documentation-governance\n"
+            "Governance-Actor: product-object-governance-change\n"
             "Governance-Scope: quality-finding\n"
             "Governance-Scope: markdown-sections\n"
         )
-        self.assertEqual(["ux-review", "documentation-governance"], actors)
+        self.assertEqual(["ux-review", "product-object-governance-change"], actors)
         self.assertEqual(["quality-finding", "markdown-sections"], scopes)
         with self.assertRaises(ValueError):
             parse_governance_metadata("Governance-Scope: quality-finding")
 
     def test_multi_actor_change_authorizes_each_path_independently(self):
-        paths = [".codex/agents/frontend.toml", "scripts/validate_governance_contracts.py"]
+        paths = ["AGENTS.md", "scripts/validate_governance_contracts.py"]
         self.assertEqual(
             [],
             check_authorized_changes(
                 ROOT,
                 paths,
-                ["documentation-governance", "product-object-governance-change"],
+                ["codex-root", "product-object-governance-change"],
                 [],
                 "HEAD",
                 governed_only=True,
@@ -821,6 +826,61 @@ class GovernanceContractValidationTest(unittest.TestCase):
         ]:
             self.assertNotIn(mechanical_duty, instructions)
         self.assertEqual([], errors)
+
+    def test_traceability_is_a_direct_native_agent_owner(self):
+        actors = json.loads((ROOT / "docs/process/governance/actors.json").read_text(encoding="utf-8"))["actors"]
+        actor_by_id = {item["actor_id"]: item for item in actors}
+        self.assertEqual("agent", actor_by_id["traceability"]["kind"])
+        self.assertEqual(".codex/agents/traceability.toml", actor_by_id["traceability"]["definition"])
+        self.assertNotIn("traceability-authority", actor_by_id)
+
+        product = json.loads(
+            (ROOT / "docs/process/governance/artifacts/product.json").read_text(encoding="utf-8")
+        )["artifacts"]
+        traceability = next(item for item in product if item["artifact_id"] == "TRACEABILITY")
+        self.assertEqual("traceability", traceability["accountable_owner"])
+        self.assertNotIn("method_skill", traceability)
+
+        intents = json.loads((ROOT / "docs/process/governance/intents.json").read_text(encoding="utf-8"))["intents"]
+        direct_upstream = next(item for item in intents if item["intent_id"] == "INT-DIRECT-UPSTREAM")
+        self.assertEqual("traceability", direct_upstream["accountable_owner"])
+        self.assertFalse((ROOT / ".agents/skills/document-traceability-check/SKILL.md").exists())
+        self.assertEqual([], check_paths(ROOT, ["docs/quality/traceability.md"], "traceability"))
+        self.assertTrue(check_paths(ROOT, ["docs/product/functional_requirements.md"], "traceability"))
+
+    def test_document_governance_runtime_is_retired(self):
+        self.assertFalse((ROOT / ".codex/agents/documentation_governance.toml").exists())
+        self.assertFalse((ROOT / ".agents/skills/document-governance/SKILL.md").exists())
+
+        actors = json.loads((ROOT / "docs/process/governance/actors.json").read_text(encoding="utf-8"))["actors"]
+        self.assertNotIn("documentation-governance", {item["actor_id"] for item in actors})
+
+        governance = json.loads(
+            (ROOT / "docs/process/governance/artifacts/governance.json").read_text(encoding="utf-8")
+        )["artifacts"]
+        artifact_by_id = {item["artifact_id"]: item for item in governance}
+        for artifact_id in [
+            "SKILL_QUALITY_STANDARD",
+            "AGENT_DEFINITION",
+            "SKILL_DEFINITION",
+            "SKILL_RESOURCE",
+            "GOVERNANCE_CONTRACT_ROOT",
+            "GOVERNANCE_ARTIFACT_SHARD",
+            "SKILL_VALIDATOR",
+            "DOCUMENT_LANGUAGE_VALIDATOR",
+        ]:
+            self.assertEqual("product-object-governance-change", artifact_by_id[artifact_id]["accountable_owner"])
+
+        gates = json.loads((ROOT / "docs/process/governance/gates/core.json").read_text(encoding="utf-8"))["gates"]
+        document_language = next(item for item in gates if item["gate_id"] == "G-DOCUMENT-LANGUAGE")
+        self.assertEqual("codex-root", document_language["exception_owner"])
+
+        exchanges = json.loads(
+            (ROOT / "docs/process/governance/exchanges.json").read_text(encoding="utf-8")
+        )["exchanges"]
+        skill_review = next(item for item in exchanges if item["exchange_id"] == "EX-SKILL-QUALITY-REVIEW")
+        self.assertEqual("product-object-governance-change", skill_review["producer"])
+        self.assertEqual(["codex-root"], skill_review["consumers"])
 
     def test_product_governance_checker_mechanical_duty_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:

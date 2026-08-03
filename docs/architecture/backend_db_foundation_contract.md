@@ -5,7 +5,7 @@ Proposed - P0/P0.1 共同技术前置。
 
 提议状态 - 本文件定义 P0/P0.1 共同技术前置，尚需完成复核后才能作为实现输入。
 
-本文定义 P0 商业化订阅上线准备与 P0.1 表达自动化训练闭环共享的后端、数据库和契约基础边界。它不是业务 Capability，不新增用户可见范围，不替代 Domain Schema、API Contract/OpenAPI、AI Runtime、UX、QA 或 DevOps 后续产物。本文通过 `document-traceability-check` 和 Product Object Governance Check Agent 复核前，不得作为实现开工依据。
+本文定义 P0 商业化订阅上线准备与 P0.1 表达自动化训练闭环共享的后端、数据库和契约基础边界。它不是业务 Capability，不新增用户可见范围，不替代 Domain Schema、API Contract/OpenAPI、AI Runtime、UX、QA 或 DevOps 后续产物。本文通过 `traceability` Agent 的派生追溯复核和 Product Object Governance Check Agent 复核前，不得作为实现开工依据。
 
 ## 架构范围模式
 `increment` 范围内的 cross-increment foundation contract。覆盖两个已接受增量：
@@ -314,7 +314,7 @@ Flutter 只拥有：
 - planner：训练 planner。
 - learning evidence：学习证据。
 
-Domain Schema 通过 `document-traceability-check` 和 Product Object Governance Check Agent 后，才能进入 API Contract / OpenAPI。之后才允许进入 AI Runtime、UX、QA、DevOps 分步契约补齐。最后才进入代码实现。
+Domain Schema 通过 `traceability` Agent 的派生追溯复核和 Product Object Governance Check Agent 后，才能进入 API Contract / OpenAPI。之后才允许进入 AI Runtime、UX、QA、DevOps 分步契约补齐。最后才进入代码实现。
 
 ## Foundation Acceptance Checklist / Foundation 验收清单
 本文件作为下游输入前，必须满足：
@@ -327,5 +327,5 @@ Domain Schema 通过 `document-traceability-check` 和 Product Object Governance
 - 已覆盖用户、权益、用量、训练 session、学习证据的服务端事实源边界。
 - 已明确 omitted scope。
 - 已明确不修改 Flutter 业务代码、不创建后端工程、不写 migration、不写 OpenAPI 实体文件。
-- 已通过 `document-traceability-check`。
+- 已通过 `traceability` Agent 的派生追溯复核。
 - 已通过 Product Object Governance Check Agent。

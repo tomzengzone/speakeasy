@@ -9,14 +9,6 @@ description: Use when creating, triaging, updating, or linking repository issues
 
 Use issues as optional coordination containers while linking, not duplicating, current owning facts.
 
-## When to Use
-
-Use for defect tracking, implementation slices, blockers, follow-ups, PR coordination or stable evidence links.
-
-## When NOT to Use
-
-Do not use to decide product scope/priority, approve Story/VS/FR, define Contract/TC, replace reports, or bypass a Gate.
-
 ## Contract
 
 Method skill for `ISSUE_TRACKING`. Resolve governance facts by Artifact ID; Product Manager classification precedes issue authoring.

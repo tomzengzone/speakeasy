@@ -20,8 +20,20 @@ RETIRED_ARTIFACTS = {
     "SPEC_AC_RETIREMENT_VALIDATOR", "SPEC_AC_RETIREMENT_VALIDATOR_TEST",
 }
 RETIRED_GATES = {"G-SPEC", "G-AC-TC"}
-RETIRED_ACTORS = {"product-spec-authority", "acceptance-authority"}
-RETIRED_METHODS = {"feature-spec-generate", "acceptance-criteria-generate"}
+RETIRED_ACTORS = {
+    "product-spec-authority",
+    "acceptance-authority",
+    "traceability-authority",
+    "documentation-governance",
+}
+RETIRED_METHODS = {
+    "feature-spec-generate",
+    "acceptance-criteria-generate",
+    "document-path-governance",
+    "document-content-contract",
+    "document-traceability-check",
+    "document-governance",
+}
 PLANNING_INPUTS = {"STAGE_SCOPE", "INCREMENT_DEFINITION", "PRODUCT_ROADMAP"}
 ENGINEERING_LINEAGE_DOCS = (
     "docs/architecture/system_overview.md",
@@ -46,6 +58,10 @@ STORY_SECTION = re.compile(r"^##\s+\d+\..*?[（(](CAP-[A-Z][A-Z0-9-]*)\s*/")
 USER_STORY_ID = re.compile(r"^US-([A-Z][A-Z0-9-]*)-\d{3}$")
 VERTICAL_SLICE_ID = re.compile(
     r"^VS-([A-Z][A-Z0-9-]*)-\d{3}-[1-9]\d*$"
+)
+DERIVED_OPERATIONAL_POINTER = re.compile(
+    r"Derived operational pointer[（(]([A-Z][A-Z0-9_-]*)\."
+    r"(canonical_path|validation_command)[）)]\s*[：:]\s*`([^`\r\n]+)`"
 )
 
 
@@ -304,8 +320,6 @@ def validate_cutover(root: Path = ROOT, *, check_adr: bool = True, check_story_m
     except (OSError, json.JSONDecodeError, KeyError) as exc:
         return [f"cannot load governance graph: {exc}"], {}
 
-    if index.get("status") != "candidate":
-        errors.append("candidate content must keep governance index status=candidate")
     routes = set(index.get("artifact_routes", {}))
     gates = set(index.get("gate_routes", {}))
     for required in (
@@ -354,11 +368,36 @@ def validate_cutover(root: Path = ROOT, *, check_adr: bool = True, check_story_m
         r"(?:canonical path|accountable owner|lifecycle|direct inputs?)\s*(?:is|are|:)",
         re.I,
     )
+    retired_runtime_markers = {
+        "docs/product/base/",
+        "docs/product/increments/",
+        *RETIRED_METHODS,
+    }
     for path in active_text_paths:
         if not path.is_file() or path.suffix.lower() not in {".md", ".toml"}:
             continue
         for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-            for marker in ("docs/product/base/", "docs/product/increments/", "feature-spec-generate", "acceptance-criteria-generate"):
+            pointer_matches = list(DERIVED_OPERATIONAL_POINTER.finditer(line))
+            if "Derived operational pointer（" in line and "{ARTIFACT_ID}" not in line and not pointer_matches:
+                errors.append(
+                    f"{path.relative_to(root)}:{line_number} has malformed Derived operational pointer"
+                )
+            for match in pointer_matches:
+                artifact_id, field, pointer_value = match.groups()
+                artifact = artifacts.get(artifact_id)
+                if artifact is None:
+                    errors.append(
+                        f"{path.relative_to(root)}:{line_number} Derived operational pointer "
+                        f"references unknown Artifact {artifact_id}"
+                    )
+                    continue
+                contract_value = artifact.get(field)
+                if pointer_value != contract_value:
+                    errors.append(
+                        f"{path.relative_to(root)}:{line_number} Derived operational pointer "
+                        f"{artifact_id}.{field} does not match contract: {pointer_value!r} != {contract_value!r}"
+                    )
+            for marker in sorted(retired_runtime_markers):
                 if marker in line and not negative_context.search(line):
                     errors.append(
                         f"{path.relative_to(root)}:{line_number} contains retired positive runtime pointer: {marker}"

@@ -5,7 +5,7 @@
 本次只切换来源链，不改变本文的工程行为、架构结论或已接受实现事实。当前产品 lineage 仅由适用的 approved FR 解析；Engineering Artifact 之间的 direct/conditional inputs 和适用 Gate 继续仅由 Governance Contract 解析。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
 
 ## 状态
-Proposed - whole-app architecture。本文基于 PM execution brief 进入第二轮架构产物更新，必须在 `document-traceability-check` 和 Product Object Governance Check Agent 通过后，才能作为下游实现依据。
+Proposed - whole-app architecture。本文基于 PM execution brief 进入第二轮架构产物更新，必须在 `traceability` Agent 完成派生追溯复核且 Product Object Governance Check Agent 通过后，才能作为下游实现依据。
 
 完整 SWC 拓扑、稳定 `SWC-FLOW-*` 和局部变更参考基准在 `docs/architecture/software_component_architecture.md`。本文保留 whole-app 系统范围、覆盖矩阵、选型和跨域架构结论。
 
@@ -118,12 +118,12 @@ Proposed - whole-app architecture。本文基于 PM execution brief 进入第二
 - P0 commercial subscription：Domain Schema、API Contract、Architecture/Security、UX、QA/Test Plan、DevOps/Release。
 - P0 commercial AI provider hardening：Media/Storage/API/Security、AI Runtime sandbox matrix、Cost Dashboard、Retention/Deletion、QA/Test Plan、DevOps/Release。
 - P0.1 training：Training domain model、AI prompt/schema、dialogue state machine、screen spec、planner tests。
-- `document-traceability-check` 和 Product Object Governance Check Agent 均返回 pass。
+- `traceability` Agent 的派生追溯复核和 Product Object Governance Check Agent 均返回 pass。
 
 - P0 commercial subscription：需要补齐 Domain Schema、API Contract、Architecture/Security、UX、QA/Test Plan、DevOps/Release。
 - P0 commercial AI provider hardening：需要补齐 Media/Storage/API/Security、AI Runtime sandbox matrix、Cost Dashboard、Retention/Deletion、QA/Test Plan、DevOps/Release。
 - P0.1 training：需要补齐 Training domain model、AI prompt/schema、dialogue state machine、screen spec、planner tests。
-- `document-traceability-check` 和 Product Object Governance Check Agent 都必须返回 pass。
+- `traceability` Agent 的派生追溯复核和 Product Object Governance Check Agent 都必须返回 pass。
 
 ## P0.1 Training Increment Architecture Gate
 

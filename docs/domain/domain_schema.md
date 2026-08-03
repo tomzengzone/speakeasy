@@ -12,7 +12,7 @@ Proposed - Domain Schema Baseline + P0/P0.1/P0.2 Extension。
 
 本文补齐 Product Base accepted domain baseline，并在同一领域模型中挂接 P0 商业化订阅上线准备、P0.1 表达自动化训练扩展和 P0.2 目标自动带练扩展。本文不是 API Contract，不定义 request/response shape；不是数据库 migration，不写 SQL；不是 Flutter 或 backend 实现计划。
 
-本文写入并通过 `document-traceability-check` 与 Product Object Governance Check Agent 前，不得作为实现开工依据。
+本文写入并通过 `traceability` Agent 的派生追溯复核与 Product Object Governance Check Agent 前，不得作为实现开工依据。
 
 ## Scope Classification
 

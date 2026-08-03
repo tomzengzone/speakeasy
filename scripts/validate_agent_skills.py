@@ -10,8 +10,6 @@ SKILLS_ROOT = ROOT / ".agents" / "skills"
 
 REQUIRED_SKILL_SECTIONS = [
     "## Overview",
-    "## When to Use",
-    "## When NOT to Use",
     "## Contract",
     "## Inputs",
     "## Outputs",
@@ -92,7 +90,6 @@ def validate_skills(root=ROOT):
                     errors.append(f"{skill_md.relative_to(root)} description must include 'Use when'")
 
             check_file_contains(root, skill_md, skill_text, REQUIRED_SKILL_SECTIONS, errors)
-
             extra_md = sorted(p for p in skill_dir.glob("*.md") if p.name != "SKILL.md")
             for path in extra_md:
                 errors.append(f"{path.relative_to(root)} is an unsupported top-level skill document")
@@ -112,7 +109,14 @@ def validate_skills(root=ROOT):
                     if "references/" in linked_path.read_text(encoding="utf-8"):
                         errors.append(f"{linked_path.relative_to(root)} must not route to another reference")
 
-        for retired in ("feature-spec-generate", "acceptance-criteria-generate"):
+        for retired in (
+            "feature-spec-generate",
+            "acceptance-criteria-generate",
+            "document-path-governance",
+            "document-content-contract",
+            "document-traceability-check",
+            "document-governance",
+        ):
             if (skills_root / retired / "SKILL.md").exists():
                 errors.append(f"retired Skill remains discoverable: {retired}")
 

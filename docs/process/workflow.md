@@ -115,5 +115,6 @@ python3 scripts/check_document_language.py --scope changed --include-worktree
 - Product Manager 决定产品分类、Story/VS 与 FR 的产品事实和批准状态。
 - Requirement Development 仅在 Product Manager 决定使用 FR 时，按已批准 VS 贡献 FR，不改变产品方向，也不要求每个 implementing VS 都有 FR。
 - Test Case Development 设计 FR/Contract/VS 分层 TC，不发明产品行为。
+- `traceability` Agent 在相关 Story/FR/Engineering Contract/TC 输入稳定后重建派生投影；direct edge 缺口必须返回 accountable source owner 修复后再生成。
 - System Architect 与专业 owner 只在对应工程事实或风险边界变化时介入。
 - 根 Codex 负责最短安全执行路径、验证和交接；独立 checker 保持只读。

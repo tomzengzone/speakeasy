@@ -22,7 +22,9 @@
 - Route stable product scope and product-object decisions to `product_manager`.
 - Route architecture boundaries, public API direction, persistence topology, cross-layer design, and significant technical trade-offs to `system_architect`.
 - Route implementation to the matching `backend`, `frontend`, `ai_runtime`, or `devops` specialist when that specialization is useful.
-- Route domain artifacts, requirements, test design, UX, QA evidence, and documentation governance to their matching specialist only when those artifacts actually change.
+- Route `TRACEABILITY` projection rebuilds and derived coverage reviews to `traceability`; direct-edge corrections return to the accountable source owner.
+- Route domain artifacts, requirements, test design, UX, and QA evidence to their matching specialist only when those artifacts actually change.
+- Route approved workflow, Gate, Agent, Skill, and Governance Contract definition changes to `product_object_governance_change`.
 - Use `product_object_governance_check` and `software_architecture_governance_check` only for applicable independent semantic review. Review agents remain read-only.
 
 ## Skills and governance

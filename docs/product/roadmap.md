@@ -86,7 +86,7 @@ Canonical scope：
 下一工件：
 - 订阅闭环本地 Domain/API/Architecture/UX/QA/DevOps 门禁和自动化复测已完成；下一步是补齐 TC-COM-012/015/019/021/022 的外部/native/store/release evidence。
 - AI provider 生产化本地 architecture/backend/QA/ops/security gates 已完成；2026-06-03 controlled-live evidence-prep passed and wrote a sanitized local report；下一步是补齐 `DASHSCOPE_AI_SANDBOX_EVIDENCE_REF`、object-storage lifecycle、cost dashboard approval 和 retention/privacy external evidence。
-- 每个剩余外部门禁完成后，仍需进入 Product Object Governance Check、Documentation Governance 和独立质量复核。
+- 每个剩余外部门禁完成后，仍需进入 Product Object Governance Check 和独立质量复核。
 
 ## Now: P0 商业 AI Provider 生产化加固（paid AI voice 发布阻塞）
 目标：把 P0.1 已实现的本地可测 DashScope adapter 边界，补齐为生产 paid AI voice 可用的媒体、缓存、真实 provider、成本和数据策略能力。该路线不改变 P0.1 训练体验目标；它负责回答“AI 能力能不能安全、可控成本、可审计地对真实用户开放”。

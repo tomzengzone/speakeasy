@@ -9,14 +9,6 @@ description: Use when：已批准 FR、发生变化的 Engineering Contract，�
 
 设计分层且可执行的 Test Case；每个 Test Case 只有一种带类型的直接上游，并具有可复用且自包含的测试判定依据。
 
-## When to Use
-
-用于存在已批准 FR 时的 FR-TC 设计、Engineering Contract 事实变更、选定 VS 的全链路覆盖，或者需要稳定回归测试判定依据的缺陷。
-
-## When NOT to Use
-
-不得用于运行现有测试、存储 CI 结果、发明行为，或者弥补不完整或未批准的 VS/FR。
-
 ## Contract
 
 这是 `TEST_CASE_CATALOG` 的 method Skill。治理事实必须通过 Artifact ID 解析。TC 执行结果属于 CI evidence，不属于该 Catalog。

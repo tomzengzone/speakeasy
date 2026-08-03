@@ -9,14 +9,6 @@ description: Use when：已完成的实现或治理工作需要持久记录工�
 
 创建可审计的交付记录，但不得复制产品、工程、测试或治理权威事实。
 
-## When to Use
-
-只有在已知变更文件和验证结果，并且用户或适用 contract 要求持久化实现报告时才使用。
-
-## When NOT to Use
-
-不得用于探索性或无变更工作、验证完成之前，或者临时任务摘要已经足够的场景。
-
 ## Contract
 
 这是 `IMPLEMENTATION_REPORT` 的 method Skill。必须从 `GOVERNANCE_INDEX` 解析 path、lifecycle、contributor 字段和 validation command。
@@ -31,7 +23,7 @@ description: Use when：已完成的实现或治理工作需要持久记录工�
 
 ## Derived operational pointer
 
-需要持久化报告时，解析得到的 `IMPLEMENTATION_REPORT` contract 当前指向 `docs/reports/implementation_report.md`；写入前必须对照 contract 验证该指针。
+Derived operational pointer（IMPLEMENTATION_REPORT.canonical_path）：`docs/reports/implementation_report.md`。需要持久化报告时，写入前必须对照 contract 验证该指针。
 
 ## Process
 

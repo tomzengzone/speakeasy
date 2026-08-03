@@ -9,14 +9,6 @@ description: Use when：已批准的 Vertical Slice，或存在时适用的已�
 
 在 API、后端、AI 或 UI 工作依赖领域与持久化事实之前，先使这些事实稳定下来。
 
-## When to Use
-
-用于共享或持久化实体、关系、生命周期转换、不变量、事实归属或迁移事实发生变化的场景。
-
-## When NOT to Use
-
-不得用于标签/布局变化、数据事实未变化或产品行为尚未批准的场景。
-
 ## Contract
 
 这是 `DOMAIN_SCHEMA` 和 `DOMAIN_MODEL` 的 method Skill；`ENTITY_RELATIONSHIP` 是相关 Artifact。治理事实必须通过 Artifact ID 解析。选定的已批准 VS 是产品上游；存在适用的已批准 FR 时，FR 提供需求追溯关系。Architecture/API 是工程上下文。

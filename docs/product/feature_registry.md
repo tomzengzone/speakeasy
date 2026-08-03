@@ -6,7 +6,7 @@ Active v2 - 本文是 Product Manager 管理的当前唯一 active Capability Re
 ## 治理入口
 - Product Manager 拥有本文中的 Capability / Sub-capability 产品事实、业务边界取舍和批准权。
 - 创建、修改、拆分、合并、废弃、映射或 ready gate 使用 `.agents/skills/capability-registry-develop/SKILL.md`；未经 Product Manager 批准的 proposal 不写入本文。
-- Canonical path、schema、文档类别、内容边界或 source-of-truth 规则变化进入 Documentation Governance 和 Product Object Governance Change / Check 流程。
+- Canonical path、schema、文档类别、内容边界或 source-of-truth 规则变化进入 Product Object Governance Change / Check 流程。
 - Registry 变更不自动创建或批量改写 Story、stage、increment、requirements、spec、AC、TC、架构或 evidence；受影响对象先进入 impact inventory，再由各自 owning workflow 处理。
 
 ## 注册边界

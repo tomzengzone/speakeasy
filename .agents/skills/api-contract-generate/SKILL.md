@@ -9,14 +9,6 @@ description: Use when：已批准的 Vertical Slice，或存在时适用的已�
 
 定义稳定的 API 行为，使客户端、服务端和测试可以独立实现。
 
-## When to Use
-
-用于路由、请求、响应、认证、稳定错误、兼容性或机器可读 schema 事实发生变化的场景。
-
-## When NOT to Use
-
-不得用于仅涉及实现内部细节、API 事实未变化或产品行为尚未批准的场景。
-
 ## Contract
 
 这是 `API_CONTRACT` 的 method Skill；`OPENAPI` 是配套的机器可读 Artifact。所有治理事实必须通过 Artifact ID 解析。选定的已批准 VS 是产品上游；存在适用的已批准 FR 时，FR 提供需求追溯关系。Domain Schema 是条件性工程上下文。

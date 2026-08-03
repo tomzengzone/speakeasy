@@ -9,14 +9,6 @@ description: Use when：已批准的 Vertical Slice，或存在时适用的已�
 
 在实现之前定义用户可见的 screen 行为和状态转换。
 
-## When to Use
-
-用于新增或变更 screen flow、用户可见状态，或者 API/AI contract 消费方式发生变化的场景。
-
-## When NOT to Use
-
-不得用于只修改文案、图标或间距，screen 行为未变化，或者产品行为尚未批准的场景。
-
 ## Contract
 
 这是 `SCREEN_SPEC` 的 method Skill；User Flow 和 Usability Checklist 保留各自的 Artifact 事实归属。治理事实必须通过 Artifact ID 解析。选定的已批准 VS 是产品上游；存在适用的已批准 FR 时，FR 提供需求追溯关系。API/LLM contract 是条件性工程输入。

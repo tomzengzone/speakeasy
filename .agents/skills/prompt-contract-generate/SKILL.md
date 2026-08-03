@@ -9,14 +9,6 @@ description: Use when：已批准的 Vertical Slice，或存在时适用的已�
 
 约束 AI runtime 行为，使结构化输出、prompt、fallback 和 evaluation 保持安全且可测试。
 
-## When to Use
-
-用于面向 LLM 的产品行为，或者结构化输出、fallback、安全性或 evaluation 配置发生变化的场景。
-
-## When NOT to Use
-
-不得用于确定性/静态行为、AI contract 未变化的 provider 接线工作，或产品行为尚未批准的场景。
-
 ## Contract
 
 这是 `PROMPT_CONTRACT`、`LLM_OUTPUT_SCHEMA` 和 `AI_EVAL_CASES` 的 method Skill；相关 fallback/dialogue Artifact 保留各自的事实归属。治理事实必须通过 Artifact ID 解析。选定的已批准 VS 是产品上游；存在适用的已批准 FR 时，FR 提供需求追溯关系。

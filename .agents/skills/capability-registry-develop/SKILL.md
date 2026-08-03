@@ -9,14 +9,6 @@ description: Use when：Product Manager 需要创建、变更、拆分、合并�
 
 提出由 PM 持有的 V2 Capability/Sub-capability 事实建议并执行质量门检查。本 Skill 提供方法和发现项；Product Manager 持有产品事实和审批权。
 
-## When to Use
-
-用于候选归属、Capability/Sub-capability 新增或边界变更、拆分/合并/弃用建议、V1-to-V2 映射、格式检查，以及 `CAPABILITY_REGISTRY` 就绪门审查。
-
-## When NOT to Use
-
-不得用于 Story/Slice 行为、交付规划、FR/Spec/AC/TC、技术 contract、实现、测试，或者 registry path/source-of-truth 变更。这些事项必须路由给持有相应事实的 workflow。
-
 ## Contract
 
 - 这是 `CAPABILITY_REGISTRY` 的 method Skill；path 和事实归属必须通过 governance index 解析。

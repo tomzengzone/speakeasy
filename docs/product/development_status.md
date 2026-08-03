@@ -75,7 +75,7 @@ Product Manager Agent
 - P0 `commercial-subscription-readiness` 是商业软件功能补齐和付费发布阻塞 stage；完成实现、验收、追溯、测试、发布和外部门禁后，才允许 Product Manager 批准商业发布口径。
 - P0.1 `p0-1-expression-automation-training` increment 是 next value-experience delivery slice；完成实现、验收、追溯、测试和报告后，才允许由 Product Manager 批准 merge back 到 Product Base。
 - 2026-06-03 复测结论：P0.1 TC-P01-013/014 本地关闭；P0.1 Product Base/production hardening TC-P01-021 through TC-P01-031 已有本地 passed evidence，可作为设计确认后的 Product Base 合入复核输入；TC-COM-AI-004 controlled-live evidence-prep 报告已生成；所有 strict external/native/store/release evidence blockers 仍不得关闭。
-- 后续每个多步骤产品、需求、工作流或文档治理任务，每一步完成后必须由独立 checker agent 审查是否符合预期、是否偏离、是否存在非预期变更。
+- 后续每个多步骤产品、需求、工作流或治理定义变更任务，每一步完成后必须由独立 checker agent 审查是否符合预期、是否偏离、是否存在非预期变更。
 
 ## 当前已实现能力判断
 | 能力 | 当前状态 | 证据 | 产品判断 |
@@ -139,7 +139,7 @@ Product Manager Agent
 11. 后续不应直接进入代码实现，除非对应 increment spec 已被验收标准和相关契约承接，且 traceability 中的 contract gaps 已补齐或明确不适用。
 12. 2026-05-25 Product Manager 已撤回不符合全量范围要求的商业化架构草案和技术栈 ADR，避免后续开发误用为 source of truth。
 13. 2026-05-25 Product Manager 复盘结论：前一次架构任务失败的根因不是漏写某个功能，而是缺少“全量架构范围模式、源文档清单、feature/stage 覆盖矩阵、市场方案对比、遗漏范围分类和追溯检查”这些通用门禁。
-14. 2026-05-25 已将该类问题抽象为通用治理规则，更新 Product Manager、System Architect、Codex Root、document-traceability-check、skill-quality-check 和 skill quality standard；后续全量架构任务必须先通过 coverage gate，再允许形成技术栈推荐或 ADR。
+14. 2026-05-25 已将该类问题抽象为通用治理规则；当前由 Product Manager、System Architect、Codex Root、`traceability` Agent、`skill-quality-check` 和 skill quality standard 承接。后续全量架构任务必须先完成派生追溯复核并通过适用 coverage gate，再允许形成技术栈推荐或 ADR。
 15. 2026-05-28 Product Manager 已建立 MVP backend-first stage：`docs/product/stages/mvp-backend-foundation.md`。
 16. 2026-05-28 Product Manager 已将 MVP backend stage 拆成 6 个 increments：`mvp-backend-foundation-auth`、`mvp-backend-onboarding-content`、`mvp-backend-practice-ai`、`mvp-backend-learning-memory`、`mvp-backend-membership-boundary`、`mvp-backend-client-qa-release`。
 17. 2026-05-29 六个 MVP backend increments 已完成实现、测试和报告证据，`MVP-SI-001` 到 `MVP-SI-014` 均在 `docs/product/stages/mvp-backend-foundation.md` 中闭环。

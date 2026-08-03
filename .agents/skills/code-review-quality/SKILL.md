@@ -9,14 +9,6 @@ description: Use when code, docs, or workflow changes need a quality review for 
 
 Provide a review gate that finds concrete defects and quality risks before a change is accepted.
 
-## When to Use
-
-Use when an increment, refactor, generated change, release, or explicit review request needs a risk gate.
-
-## When NOT to Use
-
-Do not use for formatting-only work, unimplemented changes, or requirement clarification.
-
 ## Contract
 
 - Method skill for review evidence; persistent `QUALITY_REPORT` ownership, contributor records, routes, and mutable fields resolve from `docs/process/governance/index.json`.

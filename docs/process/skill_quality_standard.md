@@ -22,7 +22,7 @@ Active Skill 集合只包含由 routed Artifact 的 `method_skill` 引用的 pac
 
 - Canonical path、accountable owner、contributor scope、lifecycle、Artifact direct/conditional inputs 和 Gate routing 只能由 Governance Contract 定义。
 - Skill 通过 Artifact/Gate ID 解析 contract，不复制上述字段或维护第二张 registry。
-- 执行所必需的精确路径/命令只有在标记为 `Derived operational pointer` 且能与 contract 校验一致时才允许出现；它不是 authority。
+- 执行所必需的精确路径/命令只有在标记为 `Derived operational pointer` 且能与 contract 校验一致时才允许出现；实例必须使用 `Derived operational pointer（{ARTIFACT_ID}.{canonical_path|validation_command}）：` 加反引号值的格式，它不是 authority。
 - Agent 只定义角色、权限、专业边界和 handoff；Workflow 只定义顺序与决策点；Template 只定义字段/版式。
 - Governance Contract 以外的冲突副本必须删除，而不是建立兼容层。
 
@@ -37,11 +37,9 @@ description: Use when：说明 Skill 的功能及具体触发场景。
 ---
 ```
 
-目录名使用 lowercase kebab-case，frontmatter `name` 与目录名一致。`description` 必须清晰说明 Skill 的功能及具体触发场景。运行时正文至少包含：
+目录名使用 lowercase kebab-case，frontmatter `name` 与目录名一致。`description` 是 Skill discovery 和初步路由的唯一字段，必须独立说明主要触发条件，并在必要时说明关键排除项；正文不得补充或重新定义路由条件。运行时正文至少包含：
 
 - `## Overview`
-- `## When to Use`
-- `## When NOT to Use`
 - `## Contract`
 - `## Inputs`
 - `## Outputs`

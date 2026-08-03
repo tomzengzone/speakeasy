@@ -9,19 +9,6 @@ description: Use when：已批准并进入实现准备的 Vertical Slice 需要�
 
 将已批准 Vertical Slice 中实现前必须唯一确定、但不得放入用户闭环叙事的 Feature 级规则提炼为 Feature Requirement（FR-RS）。FR-RS 只定义产品行为和工程影响交接，不决定工程实现方案。对象是否为实现准入必需项由适用 Workflow/Gate 决定，不得在对象名称前增加 `mandatory`。
 
-## When to Use
-
-在以下任一情形使用：
-
-- 选定的已批准 VS 进入实现准备，需要建立可测试的 FR-RS；
-- 已有 FR-RS 的规则、状态、生命周期、边界或工程影响分类变更；
-- 一个 FR-RS 包含不同审批边界、生命周期、变更风险或测试判定依据，需要拆分；
-- 事实归属方已提供完整字段，只需进行 `Markdown presentation of supplied values`。
-
-## When NOT to Use
-
-不得用于 draft/unapproved VS、Capability 分类、Stage/Increment 规划、行为不变代码工作、产品事实审批、Engineering Contract 设计、Test Case 设计、实现或发布决策。缺少必要的产品决策时必须返回歧义清单，不得从 Capability 名称、工程文档、测试或代码反推并补造产品行为。
-
 ## Contract
 
 执行前必须通过 Artifact/Gate ID 解析适用 Governance Contract。Story/VS 和明确 PM 决策是 FR-RS 语义输入；Capability/Sub-capability 只用于分类，不是行为来源。Engineering Contract 持有存储、API、签名与加密、组件、部署和其他实现事实；FR-RS 只记录必须交接的工程影响类别与约束目标。本 Skill 不复制 canonical path、owner、lifecycle、dependency、contributor scope 或 Gate routing。
@@ -80,4 +67,4 @@ description: Use when：已批准并进入实现准备的 Vertical Slice 需要�
 - 任何缺失或冲突的产品事实已作为歧义交接，没有被自行补全；
 - 仅做 Markdown 规范化时，输出与已提供值逐字段一致。
 
-实际生成或规范化 Catalog 记录时，必须从该 Artifact 的 Governance Contract 记录解析并运行当前 `validation_command`。仅修改或审查本 Skill 定义时，必须改为从 `SKILL_DEFINITION` 与适用 Gate 解析验证；Derived operational pointer：`python scripts/validate_agent_skills.py`。
+实际生成或规范化 Catalog 记录时，必须从该 Artifact 的 Governance Contract 记录解析并运行当前 `validation_command`。仅修改或审查本 Skill 定义时，必须改为从 `SKILL_DEFINITION` 与适用 Gate 解析验证；Derived operational pointer（SKILL_DEFINITION.validation_command）：`python scripts/validate_agent_skills.py`。

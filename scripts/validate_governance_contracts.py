@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import fnmatch
 import json
+import posixpath
 import re
 import subprocess
 import sys
@@ -56,13 +57,14 @@ SKILL_CONTRACT_OWNER_ASSIGNMENT = re.compile(
     r"\baccountable owners?\s*(?:\bis\b|\bare\b|:)|\bis accountable\b|\bowned by\b|\bowns\b[^\n]{0,120}`[A-Z][A-Z0-9_-]+`",
     re.I,
 )
+CANONICAL_PATH_PLACEHOLDER = re.compile(r"\{[a-z_]+\}")
 REQUIRED_NATIVE_AGENT_FIELDS = {"name", "description", "developer_instructions"}
 READ_ONLY_NATIVE_AGENTS = {
     "product_object_governance_check",
     "software_architecture_governance_check",
 }
-RETIRED_NATIVE_AGENT_NAMES = {"evidence_reviewer"}
-RETIRED_ACTOR_IDS = {"evidence-reviewer"}
+RETIRED_NATIVE_AGENT_NAMES = {"evidence_reviewer", "documentation_governance"}
+RETIRED_ACTOR_IDS = {"evidence-reviewer", "traceability-authority", "documentation-governance"}
 EXPECTED_INDEPENDENT_SEMANTIC_TRIGGERS = {
     "product_object_semantic_risk",
     "software_architecture_semantic_risk",
@@ -104,7 +106,6 @@ EXPECTED_INDEPENDENT_VALIDATION_EVIDENCE_POLICY = {
         "checker must not rerun validators"
     ),
 }
-ALLOWED_GOVERNANCE_STATUSES = {"candidate"}
 RETIRED_RUNTIME_PATH_PATTERNS = (
     "scripts/project_agent_runner.py",
     "scripts/run_governance_ab.py",
@@ -196,19 +197,6 @@ def _git_tree_paths(root: Path, revision: str) -> set[str] | None:
     return {line.strip().replace("\\", "/") for line in result.stdout.splitlines() if line.strip()}
 
 
-def _git_file_text(root: Path, revision: str, relative_path: str) -> str | None:
-    result = subprocess.run(
-        ["git", "show", f"{revision}:{relative_path}"],
-        cwd=root,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        check=False,
-    )
-    return result.stdout if result.returncode == 0 else None
-
-
 def _git_changed_paths(root: Path, old_revision: str, new_revision: str) -> set[str] | None:
     result = subprocess.run(
         ["git", "diff", "--name-only", old_revision, new_revision],
@@ -240,26 +228,13 @@ def _git_dirty_baseline_paths(root: Path) -> list[str] | None:
     return [line.rstrip() for line in result.stdout.splitlines() if line.strip()]
 
 
-def _governance_status_at(root: Path, revision: str) -> object | None:
-    raw = _git_file_text(root, revision, "docs/process/governance/index.json")
-    if raw is None:
-        return None
-    try:
-        return json.loads(raw).get("status")
-    except json.JSONDecodeError:
-        return None
-
-
 def _matches_retired_runtime_path(path: str) -> bool:
     normalized = path.replace("\\", "/")
     return any(fnmatch.fnmatchcase(normalized, pattern) for pattern in RETIRED_RUNTIME_PATH_PATTERNS)
 
 
-def validate_governance_activation(root: Path, status: object) -> list[str]:
+def validate_governance_hygiene(root: Path) -> list[str]:
     errors: list[str] = []
-    if status not in ALLOWED_GOVERNANCE_STATUSES:
-        return [f"unsupported governance status: {status}"]
-
     for pattern in RETIRED_RUNTIME_PATH_PATTERNS:
         for path in root.glob(pattern):
             if path.is_file():
@@ -282,10 +257,10 @@ def validate_repository(root: Path) -> tuple[list[str], list[str], dict]:
     index = load_json(contract_root / "index.json", errors)
     if errors:
         return errors, warnings, {}
-    allowed_index = {"schema_version", "status", "policy", "actor_registry", "artifact_routes", "gate_routes", "intent_registry", "exception_registry", "exchange_registry"}
+    allowed_index = {"schema_version", "policy", "actor_registry", "artifact_routes", "gate_routes", "intent_registry", "exception_registry", "exchange_registry"}
     if set(index) != allowed_index:
         errors.append("governance index must be routing-only")
-    errors.extend(validate_governance_activation(root, index.get("status")))
+    errors.extend(validate_governance_hygiene(root))
 
     policy = load_json(contract_root / index.get("policy", ""), errors)
     if "Contract 只收窄权限" not in policy.get("permission_rule", ""):
@@ -415,7 +390,7 @@ def validate_repository(root: Path) -> tuple[list[str], list[str], dict]:
         errors.append("skill quality standard must not restate actor-to-Artifact ownership; use the Artifact contract")
 
     artifacts: dict[str, dict] = {}
-    paths: dict[str, str] = {}
+    normalized_paths: dict[str, tuple[str, str]] = {}
     artifact_routes = index.get("artifact_routes", {})
     artifact_shards: dict[str, str] = {}
     explicit_required_inputs: dict[str, list[str]] = {}
@@ -442,9 +417,38 @@ def validate_repository(root: Path) -> tuple[list[str], list[str], dict]:
             artifacts[aid] = item
             artifact_shards[aid] = shard
             path = item["canonical_path"]
-            if path in paths:
-                errors.append(f"duplicate canonical path: {path} ({paths[path]}, {aid})")
-            paths[path] = aid
+            if not isinstance(path, str) or not path:
+                errors.append(f"artifact {aid} canonical path must be a non-empty string")
+                continue
+            normalized_path = posixpath.normpath(path.replace("\\", "/"))
+            path_parts = normalized_path.split("/")
+            path_is_normalized = not (
+                path != normalized_path
+                or "\\" in path
+                or normalized_path.startswith("/")
+                or normalized_path == "."
+                or ".." in path_parts
+                or re.match(r"^[A-Za-z]:", normalized_path)
+            )
+            if not path_is_normalized:
+                errors.append(
+                    f"artifact {aid} canonical path must be normalized repository-relative POSIX path: {path}"
+                )
+            collision_key = normalized_path.casefold()
+            if collision_key in normalized_paths:
+                previous_id, previous_path = normalized_paths[collision_key]
+                errors.append(
+                    "canonical path collision after normalization: "
+                    f"{previous_path} ({previous_id}) and {path} ({aid})"
+                )
+            else:
+                normalized_paths[collision_key] = (aid, path)
+            if (
+                path_is_normalized
+                and not CANONICAL_PATH_PLACEHOLDER.search(path)
+                and not (root / normalized_path).is_file()
+            ):
+                errors.append(f"artifact {aid} canonical path does not exist: {path}")
     if set(artifact_routes) != set(artifacts):
         errors.append("artifact ID-to-shard routes do not match loaded artifacts")
     for aid, shard in artifact_routes.items():
@@ -731,7 +735,6 @@ def validate_repository(root: Path) -> tuple[list[str], list[str], dict]:
     if oversized:
         warnings.append(f"runtime files above advisory 1500-token proxy: {len(oversized)}")
     metrics = {
-        "governance_status": index.get("status"),
         "artifacts": len(artifacts),
         "actors": len(actors),
         "gates": len(gates),

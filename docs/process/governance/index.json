@@ -1,6 +1,5 @@
 {
   "schema_version": "1.0",
-  "status": "candidate",
   "policy": "policy.json",
   "actor_registry": "actors.json",
   "exchange_registry": "exchanges.json",
