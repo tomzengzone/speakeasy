@@ -8,6 +8,8 @@ import 'package:speakeasy/features/training/training_session_loop_page.dart';
 import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/services/storage_service.dart';
 
+import '../../support/hive_test_support.dart';
+
 void main() {
   late Directory hiveDir;
 
@@ -24,9 +26,7 @@ void main() {
   });
 
   tearDownAll(() async {
-    if (await hiveDir.exists()) {
-      await hiveDir.delete(recursive: true);
-    }
+    await deleteHiveTestDirectory(hiveDir);
   });
 
   testWidgets('TC-P01-029 loop actions call backend instead of local planner', (
@@ -52,7 +52,7 @@ void main() {
         child: MaterialApp(
           home: TrainingSessionLoopPage(
             sceneId: 'job_interview',
-            levelCode: 'beginner',
+            levelCode: 'A2',
             backendAdapter: adapter,
           ),
         ),
@@ -115,7 +115,7 @@ void main() {
         child: MaterialApp(
           home: TrainingSessionLoopPage(
             sceneId: 'job_interview',
-            levelCode: 'beginner',
+            levelCode: 'A2',
             backendAdapter: adapter,
           ),
         ),
@@ -164,7 +164,7 @@ Map<String, dynamic> _sessionEnvelope() {
       'user_id': '22222222-2222-2222-2222-222222222222',
       'scenario_id': 'job_interview',
       'scenario_version_id': '33333333-3333-3333-3333-333333333333',
-      'level_code': 'L1',
+      'level_code': 'A2',
       'status': 'ready',
       'current_step_key': 'opening',
       'current_micro_action': 'SayOne',

@@ -32,7 +32,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('当前为免费版'), findsOneWidget);
-    expect(find.textContaining('L3 高级场景'), findsOneWidget);
+    expect(find.text('B2 场景'), findsOneWidget);
     expect(find.text('离线学习包'), findsNothing);
     expect(find.text('专属学习报告'), findsNothing);
   });

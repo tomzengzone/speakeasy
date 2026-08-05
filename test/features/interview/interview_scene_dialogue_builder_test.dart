@@ -12,7 +12,7 @@ void main() {
     );
 
     final List<InterviewSceneDialogueTurn> turns =
-        buildInterviewSceneDialogueTurns(graph, 'beginner');
+        buildInterviewSceneDialogueTurns(graph, 'A2');
 
     expect(turns.length, greaterThan(4));
     expect(turns.first.role, InterviewSceneDialogueRole.interviewer);
@@ -30,7 +30,7 @@ void main() {
       );
 
       final List<InterviewSceneDialogueTurn> turns =
-          buildInterviewSceneDialogueTurns(graph, 'beginner');
+          buildInterviewSceneDialogueTurns(graph, 'A2');
 
       expect(turns.length, greaterThan(4));
       expect(

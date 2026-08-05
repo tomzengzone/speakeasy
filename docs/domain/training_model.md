@@ -2,7 +2,7 @@
 
 ## PR-003 current lineage
 
-本次只切换来源链，不改变本文的领域对象、生命周期、不变量、持久化边界或已接受实现事实。当前产品上游仅由适用的 approved FR 解析；文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability 或 Increment SWC Allocation 引用均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+当前训练内容等级由 approved `VS-CONTENT-001-1`、`VS-CONTENT-002-1` 与 `FR-CONTENT-001`、`FR-CONTENT-002` 约束，并切换为严格 CEFR；本次不改变训练生命周期、mastery `L0-L5` 或 hint `L1-L4`/既有支架阶梯。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability 或 Increment SWC Allocation 引用均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
 
 ## 状态
 Proposed - P0.1 Domain Gate Ready；2026-06-03 commercial production-hardening domain addendum added.
@@ -43,12 +43,13 @@ Proposed - P0.1 Domain Gate Ready；2026-06-03 commercial production-hardening d
 - Learning evidence 的最终写入必须由应用规则执行；AI 输出不能直接改变最终掌握状态。
 - 语音是默认主路径；文本只作为 ASR 失败、麦克风拒绝或调试兜底。
 - Local-first state 只允许作为本地草稿、demo 或可恢复 fallback；Product Base 合入和商业生产训练必须由后端 Training API 拥有 session、turn、planner decision、evidence handoff 和审计事实，除非 release/Product Base 状态显式 blocked。
+- `TrainingSession.level_code`、`TrainingContentMapping.level_code` 及其引用的 ScenarioLevel / TargetExpression 等级必须是同一个合法 `CefrLevel`（`A1`、`A2`、`B1`、`B2`、`C1`、`C2`）；entitlement 只 gate access，不改变等级含义。
 
 ## Entities
 
 | Entity | Owner | 关键字段 | 不变量 |
 | --- | --- | --- | --- |
-| `TrainingSession` | Training Planner domain | `training_session_id`, `user_id`, `scene_id`, `level_code`, `scenario_version_id`, `status`, `current_action_step_key`, `current_micro_action_type`, `started_at`, `completed_at` | 一个 active session 必须绑定一个用户、一个官方可用场景、一个等级和一个已发布内容版本；缺少 reviewed training mapping 的场景不得创建 production session。 |
+| `TrainingSession` | Training Planner domain | `training_session_id`, `user_id`, `scenario_id`, `level_code`, `scenario_version_id`, `status`, `current_action_step_key`, `current_micro_action_type`, `started_at`, `completed_at` | 一个 active session 必须绑定一个用户、一个官方可用场景、一个合法 CEFR ScenarioLevel 和一个已发布内容版本；session、mapping、target expressions 的 CEFR 必须一致；缺少 reviewed training mapping 的场景不得创建 production session。 |
 | `ActionChainStep` | Content + Training Planner domain | `step_key`, `scene_id`, `scenario_version_id`, `order_index`, `learner_task`, `success_condition`, `target_expression_ids` | P0.1 step 集合固定为开场、说明目的、表达观点、回应追问、确认下一步、结束；缺少资产标注时允许本地映射，但必须可追溯。 |
 | `MicroAction` | Training Planner domain | `micro_action_type`, `target_expression_id`, `prompt_ref`, `pass_signal_rule`, `fallback_rule` | 当前类型只能是 `ListenOne`, `ChooseOne`, `SayOne`, `ShadowOne`, `FillOne`, `ContinueUnderPrompt`；一次只允许一个 active micro-action。 |
 | `TrainingTurn` | Training Planner domain | `training_turn_id`, `training_session_id`, `micro_action_type`, `input_mode`, `transcript_ref`, `audio_ref`, `answer_text`, `result`, `created_at` | 每次用户尝试形成一条 turn；ASR 失败不能直接写成表达失败，只能进入重录、文本兜底或可恢复错误。 |
@@ -58,7 +59,7 @@ Proposed - P0.1 Domain Gate Ready；2026-06-03 commercial production-hardening d
 | `TrainingFeedback` | AI Gateway + Training domain | `feedback_id`, `source_turn_id`, `ai_result_ref_id`, `completion_signal`, `task_signal`, `pronunciation_signal_ref`, `suggestion_text`, `validation_status` | 反馈可以使用 LLM 候选和评分信号，但通过/失败必须结合表达完成度和场景任务完成度；发音低分不能单独阻断。 |
 | `LearningEvidenceCandidate` | Learning Evidence domain | `candidate_id`, `source_turn_id`, `source_feedback_id`, `evidence_type`, `target_expression_id`, `confidence`, `status`, `reject_reason` | 候选证据不能直接改 mastery；必须被 evidence rules 接受、拒绝或合并去重。 |
 | `TrainingRecap` | Training + Learning Evidence domain | `recap_id`, `training_session_id`, `summary`, `evidence_refs`, `next_focus`, `status` | recap 是用户可见结果；即使 evidence 写回失败，也不得丢失已可见 recap。 |
-| `TrainingContentMapping` | Content + Training Planner domain | `mapping_version`, `scenario_version_id`, `action_chain_version`, `step_key`, `target_expression_ids`, `review_status` | 生产训练只能使用 reviewed mapping；缺失映射必须进入 recoverable/blocked 状态，不得生成未审核场景内容。 |
+| `TrainingContentMapping` | Content + Training Planner domain | `mapping_version`, `scenario_id`, `scenario_version_id`, `level_code`, `action_chain_version`, `step_key`, `target_expression_ids`, `review_status` | `level_code` 必须为合法 CEFR，并与 ScenarioLevel、TrainingSession 及全部 target expressions 一致；生产训练只能使用 reviewed mapping；缺失映射必须进入 recoverable/blocked 状态，不得生成未审核场景内容或跨等级 fallback。 |
 | `TrainingMetricEvent` | Training + Ops domain | `event_id`, `training_session_id`, `event_type`, `status`, `provider_family`, `latency_bucket`, `fallback_reason`, `schema_version` | 指标必须脱敏；不得包含 provider secret、raw audio、full transcript、raw provider payload 或完整 signed URL。 |
 
 ## Lifecycle State Machines
@@ -132,6 +133,8 @@ Rules:
 | --- | --- | --- | --- | --- |
 | `User` | starts/resumes | `TrainingSession` | 1 -> many | 同用户同场景同等级可恢复一个未完成 session。 |
 | `TrainingSession` | references | `ScenarioVersion` | many -> 1 | 所有训练证据必须能追溯到内容版本。 |
+| `TrainingSession` | targets | `ScenarioLevel` | many -> 1 | session 的 `scenario_id + level_code` 必须解析到同一 CEFR 内容轨道；entitlement 拒绝只阻断访问，不改写轨道。 |
+| `TrainingSession` | uses | `TrainingContentMapping` | many -> 1 reviewed mapping version | mapping 的 scenario/version/CEFR 必须与 session 完全一致；不存在时进入 blocked/recoverable 状态。 |
 | `TrainingSession` | progresses through | `ActionChainStep` | 1 -> ordered many | 当前 step 是 planner 输入，不由 LLM 自由决定。 |
 | `ActionChainStep` | targets | `TargetExpression` | many -> many | 缺失目标表达时只能进入可恢复错误或本地映射，不得生成任意场景内容。 |
 | `TrainingSession` | contains | `TrainingTurn` | 1 -> many | Turn 顺序稳定；重放需要幂等键或本地 attempt id。 |
@@ -151,6 +154,7 @@ Rules:
 | Existing backend | 当前 Product Base backend 的 `PracticeSession`、`PracticeTurn`、`LearningEvidence` 可复用，但不足以自动关闭 P0.1 生产训练事实源；必须有 Training-specific controller/service/repository 或明确的复用映射和测试。 |
 | AI output | `AIResultRef` 和 structured feedback 只保存 schema-valid、脱敏、可追溯字段；raw provider payload 不能作为 UI 或 evidence 的事实源。 |
 | Account deletion | 若 P0.1 数据被本地或服务端持久化，必须纳入账号删除、本地清理、AI/media retention 和 redacted audit 策略。 |
+| CEFR one-time cutover | 按 `L1 -> A2`、`L2 -> B1`、`L3 -> B2` 一次性迁移 `TrainingContentMapping.level_code` 与 `TrainingSession.level_code`，并与 `domain_schema.md` 所列其他七类实体在同一 cutover 校验。迁移保留 mapping/session ID、版本、状态和历史引用；运行期禁止 legacy alias、fallback、双写或跨等级内容回退。当前仅 `A2`、`B1`、`B2` 有训练资产，`A1`、`C1`、`C2` 必须返回明确 unavailable/empty 边界。 |
 
 ## Production Hardening Domain Addendum
 
@@ -158,7 +162,7 @@ Rules:
 | --- | --- |
 | Training API source of truth | Product Base/production mode must persist authenticated `TrainingSession`, `TrainingTurn`, `PlannerDecision`, `HintState`, `TrainingRecap` and evidence handoff state on the server. Local draft may be resumed or synced, but cannot overwrite accepted server facts without version and owner checks. |
 | Idempotency and authorization | `TrainingTurn` creation uses idempotency key plus session owner scope. Replays cannot duplicate turns, evidence writes, usage charges, provider calls or metric events. |
-| Versioned training content | `TrainingContentMapping` links each session to reviewed `scenario_version_id`, `action_chain_version`, `step_key` and stable target expressions. Mapping drift requires explicit migration, backward-compatible replay or blocked status. |
+| Versioned training content | `TrainingContentMapping` links each session to reviewed `scenario_id`, `scenario_version_id`, strict CEFR `level_code`, `action_chain_version`, `step_key` and stable target expressions. Mapping drift requires explicit migration, replay against the same retained CEFR mapping, or blocked status; legacy-level compatibility is forbidden. |
 | Planner replay | `PlannerDecision` stores rule version, normalized input snapshot refs, AI candidate refs where used, selected next action, hint level and reason code so Backend/QA can reproduce the decision from fixtures. |
 | Evidence rule trace | Accepted evidence stores deterministic rule trace and source turn; rejected or merged duplicate candidates remain auditable but must not update final mastery projections. |
 | Media and AI pipeline | `TrainingTurn.audio_ref` must be a trusted backend media ref in production. Provider failures become typed fallback and must release or settle usage reservations according to auditable AI Gateway rules. |
@@ -168,7 +172,7 @@ Rules:
 
 - Training API source of truth：Product Base/production mode 必须在 server 持久化 authenticated `TrainingSession`、`TrainingTurn`、`PlannerDecision`、`HintState`、`TrainingRecap` 和 evidence handoff state。Local draft 可以恢复或同步，但没有 version 和 owner checks 时不得覆盖 accepted server facts。
 - Idempotency and authorization：创建 `TrainingTurn` 必须使用 idempotency key 加 session owner scope。Replay 不得重复创建 turns、evidence writes、usage charges、provider calls 或 metric events。
-- Versioned training content：`TrainingContentMapping` 将每个 session 关联到 reviewed `scenario_version_id`、`action_chain_version`、`step_key` 和 stable target expressions。Mapping drift 必须通过显式 migration、backward-compatible replay 或 blocked status 处理。
+- Versioned training content：`TrainingContentMapping` 将每个 session 关联到 reviewed `scenario_id`、`scenario_version_id`、严格 CEFR `level_code`、`action_chain_version`、`step_key` 和 stable target expressions。Mapping drift 必须通过显式 migration、基于同一保留 CEFR mapping 的 replay 或 blocked status 处理；不得保留 legacy-level compatibility。
 - Planner replay：`PlannerDecision` 必须保存 rule version、normalized input snapshot refs、使用到的 AI candidate refs、selected next action、hint level 和 reason code，使 Backend/QA 能通过 fixtures 复现决策。
 - Evidence rule trace：Accepted evidence 必须保存 deterministic rule trace 和 source turn；rejected 或 merged duplicate candidates 仍可审计，但不得更新最终 mastery projections。
 - Media and AI pipeline：production 中 `TrainingTurn.audio_ref` 必须是可信 backend media ref。Provider failures 必须转成 typed fallback，并按照可审计的 AI Gateway rules release 或 settle usage reservations。
@@ -178,11 +182,11 @@ Rules:
 
 | Area | 下游要求 |
 | --- | --- |
-| Domain tests | 覆盖 `TrainingSession` 状态、action chain fallback、micro-action pass/fallback、hint ladder、pressure check、evidence candidate acceptance/rejection。 |
+| Domain tests | 覆盖 `TrainingSession` 状态、session/mapping/expression CEFR 一致性、legacy 值拒绝、A1/C1/C2 无训练内容、A2/B1/B2 reviewed mapping、一次性 migration、action chain fallback、micro-action pass/fallback、hint ladder、pressure check、evidence candidate acceptance/rejection；并证明 mastery/hint namespace 未被迁移。 |
 | AI runtime | 输出 schema 必须支持 `completion_signal`、`task_signal`、`suggestion`、`retry_hint`、`pressure_prompt_candidate`，且不能直接写 mastery。 |
 | UX | 训练页必须能呈现一个 micro-action、当前 hint、录音/文本兜底、feedback、pressure check 和 recap。 |
 | Architecture | 必须决定复用现有 `InterviewPracticeSession`/`interview_engine` 还是拆新 training planner 模块；Product Base/production mode 还必须落在后端 Training source-of-truth boundary。 |
-| Backend/API | OpenAPI Training family、Learning Evidence、Media/AI Gateway 和 deletion/retention contracts 必须覆盖 `P01-FR-012` through `P01-FR-017`。 |
+| Backend/API | OpenAPI Training family、Learning Evidence、Media/AI Gateway 和 deletion/retention contracts 必须覆盖 `P01-FR-012` through `P01-FR-017`；所有 training `level_code` 输入/输出使用严格 CEFR，legacy 值 typed rejection，不得静默映射。 |
 | Ops/Release | 指标、feature flag、kill switch、provider fallback 和 paid AI release blockers 必须能把 local pass、Product Base merge 和 commercial release 明确分开。 |
 | QA | `AC-P01-001` 到 `AC-P01-019` 必须映射到稳定 `TC-P01-*`，缺口只能使用明确例外。 |
 

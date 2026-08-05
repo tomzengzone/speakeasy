@@ -30,7 +30,7 @@ class UserScenarioStateControllerTest extends BackendIntegrationTestSupport {
             .content("""
                 {
                   "schema_version": 1,
-                  "target_level": "L2",
+                  "target_level": "B1",
                   "set_current": true
                 }
                 """))
@@ -44,8 +44,8 @@ class UserScenarioStateControllerTest extends BackendIntegrationTestSupport {
   @Test
   void setCurrentScenarioAndLevelAffectSubsequentHomeSummary() throws Exception {
     AuthTokens tokens = loginPhone("+8613800138091");
-    join(tokens, "job_interview", "L1");
-    join(tokens, "onboarding_introduction", "L1");
+    join(tokens, "job_interview", "A2");
+    join(tokens, "onboarding_introduction", "A2");
 
     mvc.perform(patch("/user/scenarios/current")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
@@ -54,18 +54,18 @@ class UserScenarioStateControllerTest extends BackendIntegrationTestSupport {
                 {
                   "schema_version": 1,
                   "scenario_id": "onboarding_introduction",
-                  "target_level": "L3"
+                  "target_level": "B2"
                 }
                 """))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.state.scenario_id").value("onboarding_introduction"))
-        .andExpect(jsonPath("$.state.target_level").value("L3"))
+        .andExpect(jsonPath("$.state.target_level").value("B2"))
         .andExpect(jsonPath("$.state.current").value(true));
 
     mvc.perform(get("/home/summary").header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.summary.current_scenario.scenario_id").value("onboarding_introduction"))
-        .andExpect(jsonPath("$.summary.current_scenario.target_level").value("L3"))
+        .andExpect(jsonPath("$.summary.current_scenario.target_level").value("B2"))
         .andExpect(jsonPath("$.summary.joined_scenarios[*].scenario_id",
             containsInAnyOrder("job_interview", "onboarding_introduction")));
   }
@@ -73,7 +73,7 @@ class UserScenarioStateControllerTest extends BackendIntegrationTestSupport {
   @Test
   void removingCurrentScenarioClearsItFromHomeSummary() throws Exception {
     AuthTokens tokens = loginPhone("+8613800138092");
-    join(tokens, "job_interview", "L1");
+    join(tokens, "job_interview", "A2");
 
     mvc.perform(delete("/user/scenarios/job_interview")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))

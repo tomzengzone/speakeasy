@@ -9,8 +9,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ID_RE = re.compile(r"`((?:US|VS|FR|TC)-[A-Z0-9-]+)`")
-STORY_ROW_RE = re.compile(r"^\|\s*`((?:US|VS)-[A-Z0-9-]+)`\s*\|")
+STORY_ITEM_ID = re.compile(r"^(?:US|VS)-[A-Z0-9]+(?:-[A-Z0-9]+)*$")
+STORY_COLUMNS = ["Id", "description", "Status"]
+STORY_STATUSES = {"draft", "approved"}
 SOURCE_KEYS = {"source_fr_id", "source_contract_id", "source_vs_id"}
 TC_REQUIRED = {"type", "layer", "scope", "selector", "script_path", "command", "Given", "When", "Then", "Boundary/negative"}
 EXECUTION_RESULT_KEYS = {
@@ -37,26 +38,79 @@ def _ids(value: str, prefix: str) -> list[str]:
     return re.findall(rf"`({re.escape(prefix)}-[A-Z0-9-]+)`", value)
 
 
-def parse_story_map(text: str) -> tuple[set[str], dict[str, str], set[str]]:
+def _table_cells(line: str) -> list[str]:
+    return [cell.strip() for cell in line.strip().strip("|").split("|")]
+
+
+def _unquote(value: str) -> str:
+    return value[1:-1] if value.startswith("`") and value.endswith("`") else value
+
+
+def parse_story_map(
+    text: str, source: str = "STORY_MAP",
+) -> tuple[set[str], dict[str, str], set[str], list[str]]:
     approved_stories: set[str] = set()
     approved_vs: set[str] = set()
     parent_by_vs: dict[str, str] = {}
+    first_seen: dict[str, int] = {}
+    errors: list[str] = []
     current_story: str | None = None
-    for line in text.splitlines():
-        ids = ID_RE.findall(line)
-        if not ids:
+    story_rows = 0
+    valid_headers = 0
+
+    for number, line in enumerate(text.splitlines(), 1):
+        if not line.lstrip().startswith("|"):
             continue
-        item_id = ids[0]
-        approved = bool(re.search(r"\|\s*`approved`\s*\|", line))
+        cells = _table_cells(line)
+        if cells and cells[0] == "Id":
+            if cells != STORY_COLUMNS:
+                errors.append(
+                    f"{source}:{number}: Story/VS table must have columns "
+                    f"{' | '.join(STORY_COLUMNS)}"
+                )
+            else:
+                valid_headers += 1
+            continue
+        if not cells:
+            continue
+        item_id = _unquote(cells[0])
+        if not STORY_ITEM_ID.fullmatch(item_id):
+            continue
+        story_rows += 1
+        if len(cells) != 3:
+            errors.append(f"{source}:{number}: Story/VS row must have 3 columns")
+            continue
+        if item_id in first_seen:
+            errors.append(
+                f"duplicate Story/Slice ID {item_id}: "
+                f"{source}:{first_seen[item_id]} and {source}:{number}"
+            )
+            continue
+        first_seen[item_id] = number
+
+        status = _unquote(cells[2])
+        if status not in STORY_STATUSES:
+            errors.append(f"{source}:{number}: unsupported Story/VS status {status!r}")
+        approved = status == "approved"
         if item_id.startswith("US-"):
             current_story = item_id
             if approved:
                 approved_stories.add(item_id)
-        elif item_id.startswith("VS-") and current_story:
+        elif current_story:
             parent_by_vs[item_id] = current_story
             if approved:
                 approved_vs.add(item_id)
-    return approved_stories, parent_by_vs, approved_vs
+        else:
+            errors.append(f"{source}:{number}: {item_id} has no parent User Story above it")
+            if approved:
+                approved_vs.add(item_id)
+
+    if story_rows and not valid_headers:
+        errors.append(
+            f"{source}: Story/VS rows require the three-column header "
+            f"{' | '.join(STORY_COLUMNS)}"
+        )
+    return approved_stories, parent_by_vs, approved_vs, errors
 
 
 def _active_artifact(root: Path, artifact_id: str) -> dict:
@@ -73,63 +127,16 @@ def _active_artifact(root: Path, artifact_id: str) -> dict:
     return {**defaults, **matches[0]}
 
 
-def discover_story_shards(root: Path = ROOT) -> list[Path]:
-    """Expand the active STORY_MAP canonical template into its existing shards."""
+def resolve_story_map(root: Path = ROOT) -> Path:
+    """Resolve the single canonical STORY_MAP document from its active contract."""
     root = root.resolve()
     canonical = str(_active_artifact(root, "STORY_MAP").get("canonical_path", ""))
-    token = "{capability_prefix}"
-    if token not in canonical or canonical.count(token) != 1:
-        raise ValueError(
-            "STORY_MAP canonical_path must contain exactly one {capability_prefix} placeholder"
-        )
-    pattern = canonical.replace(token, "*")
-    return sorted(path for path in root.glob(pattern) if path.is_file())
-
-
-def parse_story_shards(
-    paths: list[Path], root: Path,
-) -> tuple[set[str], dict[str, str], set[str], list[str]]:
-    approved_stories: set[str] = set()
-    approved_vs: set[str] = set()
-    parent_by_vs: dict[str, str] = {}
-    first_seen: dict[str, tuple[Path, int]] = {}
-    errors: list[str] = []
-
-    for path in paths:
-        current_story: str | None = None
-        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-            match = STORY_ROW_RE.match(line)
-            if not match:
-                continue
-            item_id = match.group(1)
-            location = (path, number)
-            if item_id in first_seen:
-                first_path, first_number = first_seen[item_id]
-                errors.append(
-                    f"duplicate Story/Slice ID {item_id}: "
-                    f"{first_path.relative_to(root)}:{first_number} and "
-                    f"{path.relative_to(root)}:{number}"
-                )
-                continue
-            first_seen[item_id] = location
-
-            approved = bool(re.search(r"\|\s*`approved`\s*\|", line))
-            if item_id.startswith("US-"):
-                current_story = item_id
-                if approved:
-                    approved_stories.add(item_id)
-            else:
-                if current_story:
-                    parent_by_vs[item_id] = current_story
-                else:
-                    errors.append(
-                        f"{path.relative_to(root)}:{number}: "
-                        f"{item_id} has no parent User Story in its shard"
-                    )
-                if approved:
-                    approved_vs.add(item_id)
-
-    return approved_stories, parent_by_vs, approved_vs, errors
+    if not canonical or "{" in canonical or "}" in canonical:
+        raise ValueError("STORY_MAP canonical_path must be one literal document path")
+    path = root / canonical.replace("\\", "/")
+    if not path.is_file():
+        raise ValueError(f"canonical STORY_MAP document does not exist: {canonical}")
+    return path
 
 
 def _active_engineering_contract_ids(root: Path) -> set[str]:
@@ -190,16 +197,18 @@ def validate_delivery(root: Path = ROOT) -> tuple[list[str], dict]:
     tc_text = paths["tc"].read_text(encoding="utf-8")
     trace_text = paths["trace"].read_text(encoding="utf-8")
     try:
-        story_shards = discover_story_shards(root)
+        story_map = resolve_story_map(root)
     except (OSError, json.JSONDecodeError, KeyError, ValueError) as exc:
-        errors.append(f"cannot resolve canonical STORY_MAP shards: {exc}")
-        story_shards = []
-    if not story_shards:
-        errors.append("canonical STORY_MAP template resolved no story shards")
-    approved_stories, parent_by_vs, approved_vs, story_errors = parse_story_shards(
-        story_shards, root
-    )
-    errors.extend(story_errors)
+        errors.append(f"cannot resolve canonical STORY_MAP document: {exc}")
+        story_map = None
+    if story_map is None:
+        approved_stories, parent_by_vs, approved_vs = set(), {}, set()
+    else:
+        story_source = story_map.relative_to(root).as_posix()
+        approved_stories, parent_by_vs, approved_vs, story_errors = parse_story_map(
+            story_map.read_text(encoding="utf-8"), story_source
+        )
+        errors.extend(story_errors)
     frs = _records(fr_text, "FR")
     tcs = _records(tc_text, "TC")
     try:
@@ -306,7 +315,7 @@ def validate_delivery(root: Path = ROOT) -> tuple[list[str], dict]:
                 errors.append(f"traceability lacks co-located VS/VS-TC row for {vs_id} -> {tc_id}")
 
     metrics = {
-        "story_shards": len(story_shards),
+        "story_map_documents": int(story_map is not None),
         "approved_stories": len(approved_stories), "approved_vertical_slices": len(approved_vs),
         "functional_requirements": len(frs), "test_cases": len(tcs),
         "vertical_slices_with_frs": sum(bool(frs_by_vs.get(vs)) for vs in approved_vs),

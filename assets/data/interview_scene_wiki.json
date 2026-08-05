@@ -25,122 +25,122 @@
   },
   "phases": [
     {
-      "id": "L1",
-      "title": "L1 入门",
+      "id": "A2",
+      "title": "A2 基础",
       "nodeIds": [
-        "L1_01",
-        "L1_02",
-        "L1_03",
-        "L1_04",
-        "L1_05",
-        "L1_06",
-        "L1_07",
-        "L1_08",
-        "L1_09",
-        "L1_10",
-        "L1_11",
-        "L1_12",
-        "L1_13"
+        "A2_01",
+        "A2_02",
+        "A2_03",
+        "A2_04",
+        "A2_05",
+        "A2_06",
+        "A2_07",
+        "A2_08",
+        "A2_09",
+        "A2_10",
+        "A2_11",
+        "A2_12",
+        "A2_13"
       ]
     },
     {
-      "id": "L2",
-      "title": "L2 进阶",
+      "id": "B1",
+      "title": "B1 中级",
       "nodeIds": [
-        "L2_01",
-        "L2_02",
-        "L2_03",
-        "L2_04",
-        "L2_05",
-        "L2_06",
-        "L2_07",
-        "L2_08",
-        "L2_09",
-        "L2_10",
-        "L2_11",
-        "L2_12",
-        "L2_13"
+        "B1_01",
+        "B1_02",
+        "B1_03",
+        "B1_04",
+        "B1_05",
+        "B1_06",
+        "B1_07",
+        "B1_08",
+        "B1_09",
+        "B1_10",
+        "B1_11",
+        "B1_12",
+        "B1_13"
       ]
     },
     {
-      "id": "L3",
-      "title": "L3 精通",
+      "id": "B2",
+      "title": "B2 中高级",
       "nodeIds": [
-        "L3_01",
-        "L3_02",
-        "L3_03",
-        "L3_04",
-        "L3_05",
-        "L3_06",
-        "L3_07",
-        "L3_08",
-        "L3_09",
-        "L3_10",
-        "L3_11",
-        "L3_12",
-        "L3_13"
+        "B2_01",
+        "B2_02",
+        "B2_03",
+        "B2_04",
+        "B2_05",
+        "B2_06",
+        "B2_07",
+        "B2_08",
+        "B2_09",
+        "B2_10",
+        "B2_11",
+        "B2_12",
+        "B2_13"
       ]
     }
   ],
   "tracks": [
     {
-      "id": "L1",
-      "title": "L1 入门",
-      "targetLevel": "beginner",
+      "id": "A2",
+      "title": "A2 基础",
+      "targetLevel": "A2",
       "nodeIds": [
-        "L1_01",
-        "L1_02",
-        "L1_03",
-        "L1_04",
-        "L1_05",
-        "L1_06",
-        "L1_07",
-        "L1_08",
-        "L1_09",
-        "L1_10",
-        "L1_11",
-        "L1_12",
-        "L1_13"
+        "A2_01",
+        "A2_02",
+        "A2_03",
+        "A2_04",
+        "A2_05",
+        "A2_06",
+        "A2_07",
+        "A2_08",
+        "A2_09",
+        "A2_10",
+        "A2_11",
+        "A2_12",
+        "A2_13"
       ]
     },
     {
-      "id": "L2",
-      "title": "L2 进阶",
-      "targetLevel": "intermediate",
+      "id": "B1",
+      "title": "B1 中级",
+      "targetLevel": "B1",
       "nodeIds": [
-        "L2_01",
-        "L2_02",
-        "L2_03",
-        "L2_04",
-        "L2_05",
-        "L2_06",
-        "L2_07",
-        "L2_08",
-        "L2_09",
-        "L2_10",
-        "L2_11",
-        "L2_12",
-        "L2_13"
+        "B1_01",
+        "B1_02",
+        "B1_03",
+        "B1_04",
+        "B1_05",
+        "B1_06",
+        "B1_07",
+        "B1_08",
+        "B1_09",
+        "B1_10",
+        "B1_11",
+        "B1_12",
+        "B1_13"
       ]
     },
     {
-      "id": "L3",
-      "title": "L3 精通",
-      "targetLevel": "advanced",
+      "id": "B2",
+      "title": "B2 中高级",
+      "targetLevel": "B2",
       "nodeIds": [
-        "L3_01",
-        "L3_02",
-        "L3_03",
-        "L3_04",
-        "L3_05",
-        "L3_06",
-        "L3_07",
-        "L3_08",
-        "L3_09",
-        "L3_10",
-        "L3_11",
-        "L3_12",
-        "L3_13"
+        "B2_01",
+        "B2_02",
+        "B2_03",
+        "B2_04",
+        "B2_05",
+        "B2_06",
+        "B2_07",
+        "B2_08",
+        "B2_09",
+        "B2_10",
+        "B2_11",
+        "B2_12",
+        "B2_13"
       ]
     }
   ],
@@ -149,129 +149,129 @@
       "slot": 1,
       "label": "开场感谢",
       "levels": {
-        "L1": "L1_01",
-        "L2": "L2_01",
-        "L3": "L3_01"
+        "A2": "A2_01",
+        "B1": "B1_01",
+        "B2": "B2_01"
       }
     },
     {
       "slot": 2,
       "label": "当前职位",
       "levels": {
-        "L1": "L1_02",
-        "L2": "L2_02",
-        "L3": "L3_02"
+        "A2": "A2_02",
+        "B1": "B1_02",
+        "B2": "B2_02"
       }
     },
     {
       "slot": 3,
       "label": "经验领域",
       "levels": {
-        "L1": "L1_03",
-        "L2": "L2_03",
-        "L3": "L3_03"
+        "A2": "A2_03",
+        "B1": "B1_03",
+        "B2": "B2_03"
       }
     },
     {
       "slot": 4,
       "label": "经历成就",
       "levels": {
-        "L1": "L1_04",
-        "L2": "L2_04",
-        "L3": "L3_04"
+        "A2": "A2_04",
+        "B1": "B1_04",
+        "B2": "B2_04"
       }
     },
     {
       "slot": 5,
       "label": "问题解决",
       "levels": {
-        "L1": "L1_05",
-        "L2": "L2_05",
-        "L3": "L3_05"
+        "A2": "A2_05",
+        "B1": "B1_05",
+        "B2": "B2_05"
       }
     },
     {
       "slot": 6,
       "label": "优势说明",
       "levels": {
-        "L1": "L1_06",
-        "L2": "L2_06",
-        "L3": "L3_06"
+        "A2": "A2_06",
+        "B1": "B1_06",
+        "B2": "B2_06"
       }
     },
     {
       "slot": 7,
       "label": "压力回应",
       "levels": {
-        "L1": "L1_07",
-        "L2": "L2_07",
-        "L3": "L3_07"
+        "A2": "A2_07",
+        "B1": "B1_07",
+        "B2": "B2_07"
       }
     },
     {
       "slot": 8,
       "label": "求职动机",
       "levels": {
-        "L1": "L1_08",
-        "L2": "L2_08",
-        "L3": "L3_08"
+        "A2": "A2_08",
+        "B1": "B1_08",
+        "B2": "B2_08"
       }
     },
     {
       "slot": 9,
       "label": "职业规划",
       "levels": {
-        "L1": "L1_09",
-        "L2": "L2_09",
-        "L3": "L3_09"
+        "A2": "A2_09",
+        "B1": "B1_09",
+        "B2": "B2_09"
       }
     },
     {
       "slot": 10,
       "label": "反向提问",
       "levels": {
-        "L1": "L1_10",
-        "L2": "L2_10",
-        "L3": "L3_10"
+        "A2": "A2_10",
+        "B1": "B1_10",
+        "B2": "B2_10"
       }
     },
     {
       "slot": 11,
       "label": "后续流程",
       "levels": {
-        "L1": "L1_11",
-        "L2": "L2_11",
-        "L3": "L3_11"
+        "A2": "A2_11",
+        "B1": "B1_11",
+        "B2": "B2_11"
       }
     },
     {
       "slot": 12,
       "label": "应对难题",
       "levels": {
-        "L1": "L1_12",
-        "L2": "L2_12",
-        "L3": "L3_12"
+        "A2": "A2_12",
+        "B1": "B1_12",
+        "B2": "B2_12"
       }
     },
     {
       "slot": 13,
       "label": "结束致谢",
       "levels": {
-        "L1": "L1_13",
-        "L2": "L2_13",
-        "L3": "L3_13"
+        "A2": "A2_13",
+        "B1": "B1_13",
+        "B2": "B2_13"
       }
     }
   ],
   "nodes": [
     {
-      "id": "L1_01",
+      "id": "A2_01",
       "targetText": "Thank you for having me. I'm excited to be here today.",
       "intent": "开场表达感谢与积极态度",
       "naturalTiming": "面试官打完招呼后",
       "dependencies": [],
-      "level": "L1",
-      "targetLevel": "beginner",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 1,
       "isRescue": false,
       "tag": "自我介绍",
@@ -460,7 +460,7 @@
         },
         "transferTasks": [
           {
-            "id": "L1_01_transfer_1",
+            "id": "A2_01_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -468,7 +468,7 @@
             "prompt": "Could you include both thanks and a positive attitude?"
           },
           {
-            "id": "L1_01_transfer_2",
+            "id": "A2_01_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -476,7 +476,7 @@
             "prompt": "Hiring manager live interview; use the expression for 开场感谢."
           },
           {
-            "id": "L1_01_transfer_3",
+            "id": "A2_01_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -516,14 +516,14 @@
       },
       "previousIds": [],
       "nextIds": [
-        "L1_02"
+        "A2_02"
       ],
       "equivalentIds": [
-        "L2_01",
-        "L3_01"
+        "B1_01",
+        "B2_01"
       ],
       "slots": [],
-      "phaseId": "L1",
+      "phaseId": "A2",
       "capability": {
         "primaryIntent": "professional_opening",
         "subSkills": [
@@ -653,7 +653,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -724,15 +724,15 @@
       }
     },
     {
-      "id": "L1_02",
+      "id": "A2_02",
       "targetText": "I'm currently working as a designer at a growing company.",
       "intent": "说明当前职位",
       "naturalTiming": "自我介绍阶段",
       "dependencies": [
-        "L1_01"
+        "A2_01"
       ],
-      "level": "L1",
-      "targetLevel": "beginner",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 2,
       "isRescue": false,
       "tag": "自我介绍",
@@ -922,7 +922,7 @@
         },
         "transferTasks": [
           {
-            "id": "L1_02_transfer_1",
+            "id": "A2_02_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -930,7 +930,7 @@
             "prompt": "Could you include your current role and company?"
           },
           {
-            "id": "L1_02_transfer_2",
+            "id": "A2_02_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -938,7 +938,7 @@
             "prompt": "Hiring manager live interview; use the expression for 当前职位."
           },
           {
-            "id": "L1_02_transfer_3",
+            "id": "A2_02_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -977,14 +977,14 @@
         "L4": "I'm currently working as a designer at a growing company. —— \"Growing company\" sounds more polished than \"small company\" while still staying simple. Learners should replace the role and company type with their real facts. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L1_01"
+        "A2_01"
       ],
       "nextIds": [
-        "L1_03"
+        "A2_03"
       ],
       "equivalentIds": [
-        "L2_02",
-        "L3_02"
+        "B1_02",
+        "B2_02"
       ],
       "slots": [
         {
@@ -996,7 +996,7 @@
           "example": "growing company"
         }
       ],
-      "phaseId": "L1",
+      "phaseId": "A2",
       "capability": {
         "primaryIntent": "role_summary",
         "subSkills": [
@@ -1120,7 +1120,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -1190,15 +1190,15 @@
       }
     },
     {
-      "id": "L1_03",
+      "id": "A2_03",
       "targetText": "I have three years of experience in marketing, mainly working on content campaigns.",
       "intent": "陈述工作年限与领域",
       "naturalTiming": "自我介绍阶段",
       "dependencies": [
-        "L1_02"
+        "A2_02"
       ],
-      "level": "L1",
-      "targetLevel": "beginner",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 3,
       "isRescue": false,
       "tag": "自我介绍",
@@ -1388,7 +1388,7 @@
         },
         "transferTasks": [
           {
-            "id": "L1_03_transfer_1",
+            "id": "A2_03_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -1396,7 +1396,7 @@
             "prompt": "Could you include your years of experience and your field?"
           },
           {
-            "id": "L1_03_transfer_2",
+            "id": "A2_03_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -1404,7 +1404,7 @@
             "prompt": "Hiring manager live interview; use the expression for 经验领域."
           },
           {
-            "id": "L1_03_transfer_3",
+            "id": "A2_03_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -1443,14 +1443,14 @@
         "L4": "I have three years of experience in marketing, mainly working on content campaigns. —— A field alone can sound thin. Adding one focus area makes the answer more interview-ready without making it long. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L1_02"
+        "A2_02"
       ],
       "nextIds": [
-        "L1_04"
+        "A2_04"
       ],
       "equivalentIds": [
-        "L2_03",
-        "L3_03"
+        "B1_03",
+        "B2_03"
       ],
       "slots": [
         {
@@ -1462,7 +1462,7 @@
           "example": "three years"
         }
       ],
-      "phaseId": "L1",
+      "phaseId": "A2",
       "capability": {
         "primaryIntent": "experience_summary",
         "subSkills": [
@@ -1586,7 +1586,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -1657,15 +1657,15 @@
       }
     },
     {
-      "id": "L1_04",
+      "id": "A2_04",
       "targetText": "In my last role, I helped my team deliver a key project on time.",
       "intent": "用案例展示执行力",
       "naturalTiming": "经历提问阶段",
       "dependencies": [
-        "L1_03"
+        "A2_03"
       ],
-      "level": "L1",
-      "targetLevel": "beginner",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 4,
       "isRescue": false,
       "tag": "经历阐述",
@@ -1673,7 +1673,7 @@
       "question": "Tell me about one project or achievement from your previous work.",
       "followupQuestion": "Could you mention the action you took and the result?",
       "meaning": "在上一份工作中，我帮团队按时完成了一个大项目。",
-      "usage": "面试官问你\"Can you tell me about a time you contributed to a team?\"时使用。对面试官说。这是L1级别最简单的\"举例说明\"句式。",
+      "usage": "面试官问你\"Can you tell me about a time you contributed to a team?\"时使用。对面试官说。这是A2级别最简单的\"举例说明\"句式。",
       "pragmaticNote": "\"Deliver a key project\" sounds more professional than \"finish a big project\" and still remains easy to say.",
       "hooks": [
         {
@@ -1860,7 +1860,7 @@
         },
         "transferTasks": [
           {
-            "id": "L1_04_transfer_1",
+            "id": "A2_04_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -1868,7 +1868,7 @@
             "prompt": "Could you mention the action you took and the result?"
           },
           {
-            "id": "L1_04_transfer_2",
+            "id": "A2_04_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -1876,7 +1876,7 @@
             "prompt": "Hiring manager live interview; use the expression for 经历成就."
           },
           {
-            "id": "L1_04_transfer_3",
+            "id": "A2_04_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -1916,17 +1916,17 @@
         "L4": "In my last role, I helped my team deliver a key project on time. —— \"Deliver a key project\" sounds more professional than \"finish a big project\" and still remains easy to say. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L1_03"
+        "A2_03"
       ],
       "nextIds": [
-        "L1_05"
+        "A2_05"
       ],
       "equivalentIds": [
-        "L2_04",
-        "L3_04"
+        "B1_04",
+        "B2_04"
       ],
       "slots": [],
-      "phaseId": "L1",
+      "phaseId": "A2",
       "capability": {
         "primaryIntent": "achievement_storytelling",
         "subSkills": [
@@ -2055,7 +2055,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -2127,15 +2127,15 @@
       }
     },
     {
-      "id": "L1_05",
+      "id": "A2_05",
       "targetText": "I found a workflow problem and helped the team make the process faster.",
       "intent": "展示问题解决能力",
       "naturalTiming": "经历提问阶段",
       "dependencies": [
-        "L1_04"
+        "A2_04"
       ],
-      "level": "L1",
-      "targetLevel": "beginner",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 5,
       "isRescue": false,
       "tag": "经历阐述",
@@ -2143,7 +2143,7 @@
       "question": "Can you describe a problem you solved at work and what changed afterward?",
       "followupQuestion": "Could you include the problem, your action, and the improvement?",
       "meaning": "我解决了团队里的一个问题，让我们的工作变得更快了。",
-      "usage": "回答\"Tell me about a challenge you overcame\"时使用。L1级别最简化的问题解决表达。对面试官说。",
+      "usage": "回答\"Tell me about a challenge you overcame\"时使用。A2级别最简化的问题解决表达。对面试官说。",
       "pragmaticNote": "A problem-solving answer should include what was wrong and what improved. Keep the first version simple.",
       "hooks": [
         {
@@ -2330,7 +2330,7 @@
         },
         "transferTasks": [
           {
-            "id": "L1_05_transfer_1",
+            "id": "A2_05_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -2338,7 +2338,7 @@
             "prompt": "Could you include the problem, your action, and the improvement?"
           },
           {
-            "id": "L1_05_transfer_2",
+            "id": "A2_05_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -2346,7 +2346,7 @@
             "prompt": "Hiring manager live interview; use the expression for 问题解决."
           },
           {
-            "id": "L1_05_transfer_3",
+            "id": "A2_05_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -2385,17 +2385,17 @@
         "L4": "I found a workflow problem and helped the team make the process faster. —— A problem-solving answer should include what was wrong and what improved. Keep the first version simple. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L1_04"
+        "A2_04"
       ],
       "nextIds": [
-        "L1_06"
+        "A2_06"
       ],
       "equivalentIds": [
-        "L2_05",
-        "L3_05"
+        "B1_05",
+        "B2_05"
       ],
       "slots": [],
-      "phaseId": "L1",
+      "phaseId": "A2",
       "capability": {
         "primaryIntent": "problem_solving_impact",
         "subSkills": [
@@ -2524,7 +2524,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -2595,15 +2595,15 @@
       }
     },
     {
-      "id": "L1_06",
+      "id": "A2_06",
       "targetText": "One of my strengths is explaining complex ideas in a simple way.",
       "intent": "展示核心软技能",
       "naturalTiming": "能力提问阶段",
       "dependencies": [
-        "L1_05"
+        "A2_05"
       ],
-      "level": "L1",
-      "targetLevel": "beginner",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 6,
       "isRescue": false,
       "tag": "优势说明",
@@ -2611,7 +2611,7 @@
       "question": "What would you say is one of your key strengths?",
       "followupQuestion": "Could you name one specific strength rather than a general quality?",
       "meaning": "我擅长用简单的方式解释难懂的事情。",
-      "usage": "回答\"What are your strengths\"时使用。L1级别的软技能展示。对面试官说。",
+      "usage": "回答\"What are your strengths\"时使用。A2级别的软技能展示。对面试官说。",
       "pragmaticNote": "This avoids the vague \"I'm a good communicator\" and gives the strength a clearer professional shape.",
       "hooks": [
         {
@@ -2798,7 +2798,7 @@
         },
         "transferTasks": [
           {
-            "id": "L1_06_transfer_1",
+            "id": "A2_06_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -2806,7 +2806,7 @@
             "prompt": "Could you name one specific strength rather than a general quality?"
           },
           {
-            "id": "L1_06_transfer_2",
+            "id": "A2_06_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -2814,7 +2814,7 @@
             "prompt": "Hiring manager live interview; use the expression for 优势说明."
           },
           {
-            "id": "L1_06_transfer_3",
+            "id": "A2_06_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -2853,17 +2853,17 @@
         "L4": "One of my strengths is explaining complex ideas in a simple way. —— This avoids the vague \"I'm a good communicator\" and gives the strength a clearer professional shape. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L1_05"
+        "A2_05"
       ],
       "nextIds": [
-        "L1_07"
+        "A2_07"
       ],
       "equivalentIds": [
-        "L2_06",
-        "L3_06"
+        "B1_06",
+        "B2_06"
       ],
       "slots": [],
-      "phaseId": "L1",
+      "phaseId": "A2",
       "capability": {
         "primaryIntent": "strength_positioning",
         "subSkills": [
@@ -2986,7 +2986,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -3057,15 +3057,15 @@
       }
     },
     {
-      "id": "L1_07",
+      "id": "A2_07",
       "targetText": "I stay focused under pressure by prioritizing the most important tasks first.",
       "intent": "展示抗压能力",
       "naturalTiming": "能力提问阶段",
       "dependencies": [
-        "L1_06"
+        "A2_06"
       ],
-      "level": "L1",
-      "targetLevel": "beginner",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 7,
       "isRescue": false,
       "tag": "压力回应",
@@ -3073,7 +3073,7 @@
       "question": "How do you usually handle pressure at work?",
       "followupQuestion": "Could you explain how pressure affects your focus or working style?",
       "meaning": "我能在压力下很好地工作。",
-      "usage": "回答\"How do you handle stress/pressure at work\"时使用。L1级别的抗压能力展示。对面试官说。",
+      "usage": "回答\"How do you handle stress/pressure at work\"时使用。A2级别的抗压能力展示。对面试官说。",
       "pragmaticNote": "\"I can work well under pressure\" is too generic. Adding a method makes it sound more credible.",
       "hooks": [
         {
@@ -3159,7 +3159,7 @@
         "firstResponse": "First acknowledge one thing the learner did right, then coach only the highest-value improvement for \"展示抗压能力\".",
         "ifTooShort": "Ask one focused follow-up that helps the learner add the missing idea for \"压力回应\"; do not give a full model answer first.",
         "ifGrammarIssue": "Correct gently with this pattern when relevant: \"I can work good under pressure.\" -> \"I can work **well** under pressure.\" because 修饰动词\"work\"用副词\"well\"，不用形容词\"good\".",
-        "ifUnnatural": "Upgrade the wording using the pragmatic note: 正式度中等偏低。\"Work well under pressure\"是面试中的经典短句，几乎是模板化的说法——但L1阶段先掌握这个简单版本，后续等级再加解释和细节。",
+        "ifUnnatural": "Upgrade the wording using the pragmatic note: 正式度中等偏低。\"Work well under pressure\"是面试中的经典短句，几乎是模板化的说法——但A2阶段先掌握这个简单版本，后续等级再加解释和细节。",
         "ifStuck": "Use the hint ladder gradually. Start here: 面试官问你能不能扛住压力，你用一句话说\"我在压力下工作得很好\"。",
         "retryInstruction": "After feedback, invite one short retry of the improved sentence before moving to the next topic.",
         "schemaVersion": 2,
@@ -3255,7 +3255,7 @@
         },
         "transferTasks": [
           {
-            "id": "L1_07_transfer_1",
+            "id": "A2_07_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -3263,7 +3263,7 @@
             "prompt": "Could you explain how pressure affects your focus or working style?"
           },
           {
-            "id": "L1_07_transfer_2",
+            "id": "A2_07_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -3271,7 +3271,7 @@
             "prompt": "Hiring manager live interview; use the expression for 压力回应."
           },
           {
-            "id": "L1_07_transfer_3",
+            "id": "A2_07_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -3310,17 +3310,17 @@
         "L4": "I stay focused under pressure by prioritizing the most important tasks first. —— \"I can work well under pressure\" is too generic. Adding a method makes it sound more credible. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L1_06"
+        "A2_06"
       ],
       "nextIds": [
-        "L1_08"
+        "A2_08"
       ],
       "equivalentIds": [
-        "L2_07",
-        "L3_07"
+        "B1_07",
+        "B2_07"
       ],
       "slots": [],
-      "phaseId": "L1",
+      "phaseId": "A2",
       "capability": {
         "primaryIntent": "pressure_response",
         "subSkills": [
@@ -3443,7 +3443,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -3513,15 +3513,15 @@
       }
     },
     {
-      "id": "L1_08",
+      "id": "A2_08",
       "targetText": "I'm looking for a role where I can contribute and continue to grow.",
       "intent": "表达求职动机",
       "naturalTiming": "动机提问阶段",
       "dependencies": [
-        "L1_07"
+        "A2_07"
       ],
-      "level": "L1",
-      "targetLevel": "beginner",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 8,
       "isRescue": false,
       "tag": "岗位认知",
@@ -3529,7 +3529,7 @@
       "question": "What are you looking for in your next role?",
       "followupQuestion": "Could you connect your motivation to growth or the role itself?",
       "meaning": "我想要一份能学到更多东西并获得成长的工作。",
-      "usage": "回答\"Why are you looking for a new job\"或\"What are you looking for in your next role\"时使用。L1级别的求职动机表达。对面试官说。",
+      "usage": "回答\"Why are you looking for a new job\"或\"What are you looking for in your next role\"时使用。A2级别的求职动机表达。对面试官说。",
       "pragmaticNote": "\"Learn and grow\" alone can sound student-like. Pair it with contribution to sound more mature.",
       "hooks": [
         {
@@ -3711,7 +3711,7 @@
         },
         "transferTasks": [
           {
-            "id": "L1_08_transfer_1",
+            "id": "A2_08_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -3719,7 +3719,7 @@
             "prompt": "Could you connect your motivation to growth or the role itself?"
           },
           {
-            "id": "L1_08_transfer_2",
+            "id": "A2_08_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -3727,7 +3727,7 @@
             "prompt": "Hiring manager live interview; use the expression for 求职动机."
           },
           {
-            "id": "L1_08_transfer_3",
+            "id": "A2_08_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -3766,17 +3766,17 @@
         "L4": "I'm looking for a role where I can contribute and continue to grow. —— \"Learn and grow\" alone can sound student-like. Pair it with contribution to sound more mature. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L1_07"
+        "A2_07"
       ],
       "nextIds": [
-        "L1_09"
+        "A2_09"
       ],
       "equivalentIds": [
-        "L2_08",
-        "L3_08"
+        "B1_08",
+        "B2_08"
       ],
       "slots": [],
-      "phaseId": "L1",
+      "phaseId": "A2",
       "capability": {
         "primaryIntent": "role_motivation",
         "subSkills": [
@@ -3900,7 +3900,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -3970,15 +3970,15 @@
       }
     },
     {
-      "id": "L1_09",
+      "id": "A2_09",
       "targetText": "In the next few years, I hope to take on more responsibility and grow into a team lead role.",
       "intent": "回答职业规划",
       "naturalTiming": "规划提问阶段",
       "dependencies": [
-        "L1_08"
+        "A2_08"
       ],
-      "level": "L1",
-      "targetLevel": "beginner",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 9,
       "isRescue": false,
       "tag": "职业规划",
@@ -3986,7 +3986,7 @@
       "question": "Where do you see yourself in the next five years?",
       "followupQuestion": "Could you make your five-year plan a little more concrete?",
       "meaning": "五年内，我希望能成为一名团队负责人。",
-      "usage": "回答\"Where do you see yourself in five years\"时使用。L1级别的职业规划表达。对面试官说。",
+      "usage": "回答\"Where do you see yourself in five years\"时使用。A2级别的职业规划表达。对面试官说。",
       "pragmaticNote": "A career plan should sound ambitious but realistic. \"More responsibility\" is safer than promising a title too early.",
       "hooks": [
         {
@@ -4168,7 +4168,7 @@
         },
         "transferTasks": [
           {
-            "id": "L1_09_transfer_1",
+            "id": "A2_09_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -4176,7 +4176,7 @@
             "prompt": "Could you make your five-year plan a little more concrete?"
           },
           {
-            "id": "L1_09_transfer_2",
+            "id": "A2_09_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -4184,7 +4184,7 @@
             "prompt": "Hiring manager live interview; use the expression for 职业规划."
           },
           {
-            "id": "L1_09_transfer_3",
+            "id": "A2_09_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -4223,14 +4223,14 @@
         "L4": "In the next few years, I hope to take on more responsibility and grow into a team lead role. —— A career plan should sound ambitious but realistic. \"More responsibility\" is safer than promising a title too early. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L1_08"
+        "A2_08"
       ],
       "nextIds": [
-        "L1_10"
+        "A2_10"
       ],
       "equivalentIds": [
-        "L2_09",
-        "L3_09"
+        "B1_09",
+        "B2_09"
       ],
       "slots": [
         {
@@ -4238,7 +4238,7 @@
           "example": "team lead"
         }
       ],
-      "phaseId": "L1",
+      "phaseId": "A2",
       "capability": {
         "primaryIntent": "career_planning",
         "subSkills": [
@@ -4361,7 +4361,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -4432,15 +4432,15 @@
       }
     },
     {
-      "id": "L1_10",
+      "id": "A2_10",
       "targetText": "What does a typical day look like in this role?",
       "intent": "反向提问（日常职责）",
       "naturalTiming": "反问环节",
       "dependencies": [
-        "L1_09"
+        "A2_09"
       ],
-      "level": "L1",
-      "targetLevel": "beginner",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 10,
       "isRescue": false,
       "tag": "反问提问",
@@ -4629,7 +4629,7 @@
         },
         "transferTasks": [
           {
-            "id": "L1_10_transfer_1",
+            "id": "A2_10_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -4637,7 +4637,7 @@
             "prompt": "Could you ask about the work someone in this role does day to day?"
           },
           {
-            "id": "L1_10_transfer_2",
+            "id": "A2_10_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -4645,7 +4645,7 @@
             "prompt": "Hiring manager live interview; use the expression for 反向提问."
           },
           {
-            "id": "L1_10_transfer_3",
+            "id": "A2_10_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -4684,17 +4684,17 @@
         "L4": "What does a typical day look like in this role? —— \"Typical day\" and \"role\" sound more polished than \"normal day\" and \"job\" in an interview. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L1_09"
+        "A2_09"
       ],
       "nextIds": [
-        "L1_11"
+        "A2_11"
       ],
       "equivalentIds": [
-        "L2_10",
-        "L3_10"
+        "B1_10",
+        "B2_10"
       ],
       "slots": [],
-      "phaseId": "L1",
+      "phaseId": "A2",
       "capability": {
         "primaryIntent": "candidate_questioning",
         "subSkills": [
@@ -4818,7 +4818,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -4888,15 +4888,15 @@
       }
     },
     {
-      "id": "L1_11",
+      "id": "A2_11",
       "targetText": "What are the next steps in the hiring process?",
       "intent": "询问后续流程",
       "naturalTiming": "反问环节",
       "dependencies": [
-        "L1_10"
+        "A2_10"
       ],
-      "level": "L1",
-      "targetLevel": "beginner",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 11,
       "isRescue": false,
       "tag": "反问提问",
@@ -5086,7 +5086,7 @@
         },
         "transferTasks": [
           {
-            "id": "L1_11_transfer_1",
+            "id": "A2_11_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -5094,7 +5094,7 @@
             "prompt": "Could you ask about the next step in the hiring process?"
           },
           {
-            "id": "L1_11_transfer_2",
+            "id": "A2_11_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -5102,7 +5102,7 @@
             "prompt": "Hiring manager live interview; use the expression for 后续流程."
           },
           {
-            "id": "L1_11_transfer_3",
+            "id": "A2_11_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -5140,18 +5140,18 @@
         "L4": "What are the next steps in the hiring process? —— This is a standard, professional closing question. Keep the tone curious, not impatient. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L1_10"
+        "A2_10"
       ],
       "nextIds": [
-        "L1_12",
-        "L1_13"
+        "A2_12",
+        "A2_13"
       ],
       "equivalentIds": [
-        "L2_11",
-        "L3_11"
+        "B1_11",
+        "B2_11"
       ],
       "slots": [],
-      "phaseId": "L1",
+      "phaseId": "A2",
       "capability": {
         "primaryIntent": "candidate_questioning",
         "subSkills": [
@@ -5274,7 +5274,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -5344,13 +5344,13 @@
       }
     },
     {
-      "id": "L1_12",
+      "id": "A2_12",
       "targetText": "I haven't had direct experience with that yet, but I'm confident I can learn it quickly.",
       "intent": "诚实承认不足+积极态度",
       "naturalTiming": "遇到难题时",
       "dependencies": [],
-      "level": "L1",
-      "targetLevel": "beginner",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 12,
       "isRescue": true,
       "tag": "劣势应答",
@@ -5540,7 +5540,7 @@
         },
         "transferTasks": [
           {
-            "id": "L1_12_transfer_1",
+            "id": "A2_12_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -5548,7 +5548,7 @@
             "prompt": "Could you be honest about the gap and still show you are willing to learn?"
           },
           {
-            "id": "L1_12_transfer_2",
+            "id": "A2_12_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -5556,7 +5556,7 @@
             "prompt": "Hiring manager live interview; use the expression for 应对难题."
           },
           {
-            "id": "L1_12_transfer_3",
+            "id": "A2_12_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -5597,11 +5597,11 @@
       "previousIds": [],
       "nextIds": [],
       "equivalentIds": [
-        "L2_12",
-        "L3_12"
+        "B1_12",
+        "B2_12"
       ],
       "slots": [],
-      "phaseId": "L1",
+      "phaseId": "A2",
       "capability": {
         "primaryIntent": "growth_mindset_gap",
         "subSkills": [
@@ -5726,7 +5726,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -5797,15 +5797,15 @@
       }
     },
     {
-      "id": "L1_13",
+      "id": "A2_13",
       "targetText": "Thank you for your time. I enjoyed our conversation and I'm excited about the role.",
       "intent": "结束致谢",
       "naturalTiming": "面试收尾",
       "dependencies": [
-        "L1_11"
+        "A2_11"
       ],
-      "level": "L1",
-      "targetLevel": "beginner",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 13,
       "isRescue": false,
       "tag": "反问提问",
@@ -5995,7 +5995,7 @@
         },
         "transferTasks": [
           {
-            "id": "L1_13_transfer_1",
+            "id": "A2_13_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -6003,7 +6003,7 @@
             "prompt": "Could you close with thanks and a positive note about the conversation?"
           },
           {
-            "id": "L1_13_transfer_2",
+            "id": "A2_13_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -6011,7 +6011,7 @@
             "prompt": "Hiring manager live interview; use the expression for 结束致谢."
           },
           {
-            "id": "L1_13_transfer_3",
+            "id": "A2_13_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -6050,15 +6050,15 @@
         "L4": "Thank you for your time. I enjoyed our conversation and I'm excited about the role. —— A closing answer should leave warmth and interest, not just say goodbye. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L1_11"
+        "A2_11"
       ],
       "nextIds": [],
       "equivalentIds": [
-        "L2_13",
-        "L3_13"
+        "B1_13",
+        "B2_13"
       ],
       "slots": [],
-      "phaseId": "L1",
+      "phaseId": "A2",
       "capability": {
         "primaryIntent": "professional_closing",
         "subSkills": [
@@ -6182,7 +6182,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -6253,13 +6253,13 @@
       }
     },
     {
-      "id": "L2_01",
+      "id": "B1_01",
       "targetText": "Thank you for making the time. I've been looking forward to this conversation.",
       "intent": "开场表达感谢与期待",
       "naturalTiming": "面试官打完招呼后",
       "dependencies": [],
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 1,
       "isRescue": false,
       "tag": "自我介绍",
@@ -6267,7 +6267,7 @@
       "question": "Hi, welcome. Thanks for coming in today. How would you respond at the start of the interview?",
       "followupQuestion": "Could you include both thanks and a positive attitude?",
       "meaning": "感谢您的邀请。我一直很期待这次对话。",
-      "usage": "面试开场时使用。比L1_01更正式，用\"invitation\"替换\"having me\"，用\"looking forward to\"替换\"excited\"。对面试官说。",
+      "usage": "面试开场时使用。比A2_01更正式，用\"invitation\"替换\"having me\"，用\"looking forward to\"替换\"excited\"。对面试官说。",
       "pragmaticNote": "This sounds prepared and professional without feeling over-rehearsed.",
       "hooks": [
         {
@@ -6449,7 +6449,7 @@
         },
         "transferTasks": [
           {
-            "id": "L2_01_transfer_1",
+            "id": "B1_01_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -6457,7 +6457,7 @@
             "prompt": "Could you include both thanks and a positive attitude?"
           },
           {
-            "id": "L2_01_transfer_2",
+            "id": "B1_01_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -6465,7 +6465,7 @@
             "prompt": "Hiring manager live interview; use the expression for 开场感谢."
           },
           {
-            "id": "L2_01_transfer_3",
+            "id": "B1_01_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -6505,14 +6505,14 @@
       },
       "previousIds": [],
       "nextIds": [
-        "L2_02"
+        "B1_02"
       ],
       "equivalentIds": [
-        "L1_01",
-        "L3_01"
+        "A2_01",
+        "B2_01"
       ],
       "slots": [],
-      "phaseId": "L2",
+      "phaseId": "B1",
       "capability": {
         "primaryIntent": "professional_opening",
         "subSkills": [
@@ -6642,7 +6642,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -6713,15 +6713,15 @@
       }
     },
     {
-      "id": "L2_02",
+      "id": "B1_02",
       "targetText": "I'm currently a product designer at a growing tech company, focusing on mobile user experience.",
       "intent": "说明当前高级职位及专注领域",
       "naturalTiming": "自我介绍阶段",
       "dependencies": [
-        "L2_01"
+        "B1_01"
       ],
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 2,
       "isRescue": false,
       "tag": "自我介绍",
@@ -6729,7 +6729,7 @@
       "question": "Could you start by telling me what you currently do and where you work?",
       "followupQuestion": "Could you include your current role and company?",
       "meaning": "我目前是XYZ的高级设计师，专注于移动产品的用户体验。",
-      "usage": "回答\"Tell me about yourself\"时的自我介绍首句。比L1_02多了\"where I focus on\"从句，展示专注领域。对面试官说。",
+      "usage": "回答\"Tell me about yourself\"时的自我介绍首句。比A2_02多了\"where I focus on\"从句，展示专注领域。对面试官说。",
       "pragmaticNote": "This is interview-ready because it gives identity, environment, and scope in one sentence.",
       "hooks": [
         {
@@ -6907,7 +6907,7 @@
         },
         "transferTasks": [
           {
-            "id": "L2_02_transfer_1",
+            "id": "B1_02_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -6915,7 +6915,7 @@
             "prompt": "Could you include your current role and company?"
           },
           {
-            "id": "L2_02_transfer_2",
+            "id": "B1_02_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -6923,7 +6923,7 @@
             "prompt": "Hiring manager live interview; use the expression for 当前职位."
           },
           {
-            "id": "L2_02_transfer_3",
+            "id": "B1_02_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -6962,14 +6962,14 @@
         "L4": "I'm currently a product designer at a growing tech company, focusing on mobile user experience. —— This is interview-ready because it gives identity, environment, and scope in one sentence. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L2_01"
+        "B1_01"
       ],
       "nextIds": [
-        "L2_03"
+        "B1_03"
       ],
       "equivalentIds": [
-        "L1_02",
-        "L3_02"
+        "A2_02",
+        "B2_02"
       ],
       "slots": [
         {
@@ -6981,7 +6981,7 @@
           "example": "tech company"
         }
       ],
-      "phaseId": "L2",
+      "phaseId": "B1",
       "capability": {
         "primaryIntent": "role_summary",
         "subSkills": [
@@ -7105,7 +7105,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -7176,15 +7176,15 @@
       }
     },
     {
-      "id": "L2_03",
+      "id": "B1_03",
       "targetText": "I have over five years of experience in digital marketing, with a focus on content strategy and campaign performance.",
       "intent": "陈述年限并点明专长",
       "naturalTiming": "自我介绍阶段",
       "dependencies": [
-        "L2_02"
+        "B1_02"
       ],
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 3,
       "isRescue": false,
       "tag": "自我介绍",
@@ -7192,7 +7192,7 @@
       "question": "How much experience do you have, and what field is it in?",
       "followupQuestion": "Could you include your years of experience and your field?",
       "meaning": "我在数字营销领域有超过五年的经验，专攻内容策略。",
-      "usage": "自我介绍中补充年限和专业方向。比L1_03多了\"over\"（超过）和\"specializing in\"（专攻）。对面试官说。",
+      "usage": "自我介绍中补充年限和专业方向。比A2_03多了\"over\"（超过）和\"specializing in\"（专攻）。对面试官说。",
       "pragmaticNote": "Adding a focus area makes the background easier for an interviewer to evaluate.",
       "hooks": [
         {
@@ -7375,7 +7375,7 @@
         },
         "transferTasks": [
           {
-            "id": "L2_03_transfer_1",
+            "id": "B1_03_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -7383,7 +7383,7 @@
             "prompt": "Could you include your years of experience and your field?"
           },
           {
-            "id": "L2_03_transfer_2",
+            "id": "B1_03_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -7391,7 +7391,7 @@
             "prompt": "Hiring manager live interview; use the expression for 经验领域."
           },
           {
-            "id": "L2_03_transfer_3",
+            "id": "B1_03_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -7430,14 +7430,14 @@
         "L4": "I have over five years of experience in digital marketing, with a focus on content strategy and campaign performance. —— Adding a focus area makes the background easier for an interviewer to evaluate. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L2_02"
+        "B1_02"
       ],
       "nextIds": [
-        "L2_04"
+        "B1_04"
       ],
       "equivalentIds": [
-        "L1_03",
-        "L3_03"
+        "A2_03",
+        "B2_03"
       ],
       "slots": [
         {
@@ -7449,7 +7449,7 @@
           "example": "over five years"
         }
       ],
-      "phaseId": "L2",
+      "phaseId": "B1",
       "capability": {
         "primaryIntent": "experience_summary",
         "subSkills": [
@@ -7573,7 +7573,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -7645,15 +7645,15 @@
       }
     },
     {
-      "id": "L2_04",
+      "id": "B1_04",
       "targetText": "In my previous role, I led a cross-functional project that launched two weeks ahead of schedule.",
       "intent": "用STAR法则展示领导力",
       "naturalTiming": "经历提问阶段",
       "dependencies": [
-        "L2_03"
+        "B1_03"
       ],
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 4,
       "isRescue": false,
       "tag": "经历阐述",
@@ -7844,7 +7844,7 @@
         },
         "transferTasks": [
           {
-            "id": "L2_04_transfer_1",
+            "id": "B1_04_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -7852,7 +7852,7 @@
             "prompt": "Could you mention the action you took and the result?"
           },
           {
-            "id": "L2_04_transfer_2",
+            "id": "B1_04_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -7860,7 +7860,7 @@
             "prompt": "Hiring manager live interview; use the expression for 经历成就."
           },
           {
-            "id": "L2_04_transfer_3",
+            "id": "B1_04_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -7899,14 +7899,14 @@
         "L4": "In my previous role, I led a cross-functional project that launched two weeks ahead of schedule. —— The answer is stronger when it includes ownership and a clear result, even if the result is simple. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L2_03"
+        "B1_03"
       ],
       "nextIds": [
-        "L2_05"
+        "B1_05"
       ],
       "equivalentIds": [
-        "L1_04",
-        "L3_04"
+        "A2_04",
+        "B2_04"
       ],
       "slots": [
         {
@@ -7914,7 +7914,7 @@
           "example": "two weeks"
         }
       ],
-      "phaseId": "L2",
+      "phaseId": "B1",
       "capability": {
         "primaryIntent": "achievement_storytelling",
         "subSkills": [
@@ -8043,7 +8043,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -8115,15 +8115,15 @@
       }
     },
     {
-      "id": "L2_05",
+      "id": "B1_05",
       "targetText": "I identified a workflow bottleneck and implemented a change that cut turnaround time by 30%.",
       "intent": "展示问题解决能力（带量化结果）",
       "naturalTiming": "经历提问阶段",
       "dependencies": [
-        "L2_04"
+        "B1_04"
       ],
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 5,
       "isRescue": false,
       "tag": "经历阐述",
@@ -8309,7 +8309,7 @@
         },
         "transferTasks": [
           {
-            "id": "L2_05_transfer_1",
+            "id": "B1_05_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -8317,7 +8317,7 @@
             "prompt": "Could you include the problem, your action, and the improvement?"
           },
           {
-            "id": "L2_05_transfer_2",
+            "id": "B1_05_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -8325,7 +8325,7 @@
             "prompt": "Hiring manager live interview; use the expression for 问题解决."
           },
           {
-            "id": "L2_05_transfer_3",
+            "id": "B1_05_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -8364,17 +8364,17 @@
         "L4": "I identified a workflow bottleneck and implemented a change that cut turnaround time by 30%. —— A metric makes the answer more credible. If the learner has no metric, ask for a simple before/after result. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L2_04"
+        "B1_04"
       ],
       "nextIds": [
-        "L2_06"
+        "B1_06"
       ],
       "equivalentIds": [
-        "L1_05",
-        "L3_05"
+        "A2_05",
+        "B2_05"
       ],
       "slots": [],
-      "phaseId": "L2",
+      "phaseId": "B1",
       "capability": {
         "primaryIntent": "problem_solving_impact",
         "subSkills": [
@@ -8503,7 +8503,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -8573,15 +8573,15 @@
       }
     },
     {
-      "id": "L2_06",
+      "id": "B1_06",
       "targetText": "A key strength of mine is translating complex ideas into clear next steps for different stakeholders.",
       "intent": "展示核心软技能",
       "naturalTiming": "能力提问阶段",
       "dependencies": [
-        "L2_05"
+        "B1_05"
       ],
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 6,
       "isRescue": false,
       "tag": "优势说明",
@@ -8589,7 +8589,7 @@
       "question": "What would you say is one of your key strengths?",
       "followupQuestion": "Could you name one specific strength rather than a general quality?",
       "meaning": "我的核心优势之一是我能够清晰地传达复杂的想法。",
-      "usage": "回答\"What are your strengths\"时使用。比L1_06更正式，用\"One of my key strengths is\"替代\"I'm good at\"。对面试官说。",
+      "usage": "回答\"What are your strengths\"时使用。比A2_06更正式，用\"One of my key strengths is\"替代\"I'm good at\"。对面试官说。",
       "pragmaticNote": "This sounds more useful than just saying \"I'm a good communicator\" because it shows the business value.",
       "hooks": [
         {
@@ -8771,7 +8771,7 @@
         },
         "transferTasks": [
           {
-            "id": "L2_06_transfer_1",
+            "id": "B1_06_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -8779,7 +8779,7 @@
             "prompt": "Could you name one specific strength rather than a general quality?"
           },
           {
-            "id": "L2_06_transfer_2",
+            "id": "B1_06_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -8787,7 +8787,7 @@
             "prompt": "Hiring manager live interview; use the expression for 优势说明."
           },
           {
-            "id": "L2_06_transfer_3",
+            "id": "B1_06_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -8826,17 +8826,17 @@
         "L4": "A key strength of mine is translating complex ideas into clear next steps for different stakeholders. —— This sounds more useful than just saying \"I'm a good communicator\" because it shows the business value. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L2_05"
+        "B1_05"
       ],
       "nextIds": [
-        "L2_07"
+        "B1_07"
       ],
       "equivalentIds": [
-        "L1_06",
-        "L3_06"
+        "A2_06",
+        "B2_06"
       ],
       "slots": [],
-      "phaseId": "L2",
+      "phaseId": "B1",
       "capability": {
         "primaryIntent": "strength_positioning",
         "subSkills": [
@@ -8959,7 +8959,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -9029,15 +9029,15 @@
       }
     },
     {
-      "id": "L2_07",
+      "id": "B1_07",
       "targetText": "When deadlines are tight, I stay calm by breaking the work into priorities and communicating risks early.",
       "intent": "展示抗压能力（带解释）",
       "naturalTiming": "能力提问阶段",
       "dependencies": [
-        "L2_06"
+        "B1_06"
       ],
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 7,
       "isRescue": false,
       "tag": "压力回应",
@@ -9045,7 +9045,7 @@
       "question": "How do you usually handle pressure at work?",
       "followupQuestion": "Could you explain how pressure affects your focus or working style?",
       "meaning": "我在压力下工作得很好——紧张的截止日期其实帮助我保持专注。",
-      "usage": "回答\"How do you handle pressure\"时使用。比L1_07多了\"tight deadlines actually help me stay focused\"的解释，展示你不是硬扛压力，而是有方法利用它。对面试官说。",
+      "usage": "回答\"How do you handle pressure\"时使用。比A2_07多了\"tight deadlines actually help me stay focused\"的解释，展示你不是硬扛压力，而是有方法利用它。对面试官说。",
       "pragmaticNote": "This answers how the learner handles pressure, not just whether they can.",
       "hooks": [
         {
@@ -9227,7 +9227,7 @@
         },
         "transferTasks": [
           {
-            "id": "L2_07_transfer_1",
+            "id": "B1_07_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -9235,7 +9235,7 @@
             "prompt": "Could you explain how pressure affects your focus or working style?"
           },
           {
-            "id": "L2_07_transfer_2",
+            "id": "B1_07_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -9243,7 +9243,7 @@
             "prompt": "Hiring manager live interview; use the expression for 压力回应."
           },
           {
-            "id": "L2_07_transfer_3",
+            "id": "B1_07_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -9282,17 +9282,17 @@
         "L4": "When deadlines are tight, I stay calm by breaking the work into priorities and communicating risks early. —— This answers how the learner handles pressure, not just whether they can. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L2_06"
+        "B1_06"
       ],
       "nextIds": [
-        "L2_08"
+        "B1_08"
       ],
       "equivalentIds": [
-        "L1_07",
-        "L3_07"
+        "A2_07",
+        "B2_07"
       ],
       "slots": [],
-      "phaseId": "L2",
+      "phaseId": "B1",
       "capability": {
         "primaryIntent": "pressure_response",
         "subSkills": [
@@ -9415,7 +9415,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -9486,15 +9486,15 @@
       }
     },
     {
-      "id": "L2_08",
+      "id": "B1_08",
       "targetText": "I'm looking for a role where I can contribute from my current experience while continuing to grow.",
       "intent": "表达求职动机（更正式）",
       "naturalTiming": "动机提问阶段",
       "dependencies": [
-        "L2_07"
+        "B1_07"
       ],
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 8,
       "isRescue": false,
       "tag": "岗位认知",
@@ -9502,7 +9502,7 @@
       "question": "What are you looking for in your next role?",
       "followupQuestion": "Could you connect your motivation to growth or the role itself?",
       "meaning": "我正在寻找一个能发挥我的技能并继续职业成长的角色。",
-      "usage": "回答\"Why are you looking for a new role\"时使用。比L1_08更正式，用\"looking for a role\"替代\"want a job\"，用\"professionally\"限定成长领域。对面试官说。",
+      "usage": "回答\"Why are you looking for a new role\"时使用。比A2_08更正式，用\"looking for a role\"替代\"want a job\"，用\"professionally\"限定成长领域。对面试官说。",
       "pragmaticNote": "This keeps growth motivation mature by balancing what the candidate gives and what they want to learn.",
       "hooks": [
         {
@@ -9680,7 +9680,7 @@
         },
         "transferTasks": [
           {
-            "id": "L2_08_transfer_1",
+            "id": "B1_08_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -9688,7 +9688,7 @@
             "prompt": "Could you connect your motivation to growth or the role itself?"
           },
           {
-            "id": "L2_08_transfer_2",
+            "id": "B1_08_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -9696,7 +9696,7 @@
             "prompt": "Hiring manager live interview; use the expression for 求职动机."
           },
           {
-            "id": "L2_08_transfer_3",
+            "id": "B1_08_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -9735,17 +9735,17 @@
         "L4": "I'm looking for a role where I can contribute from my current experience while continuing to grow. —— This keeps growth motivation mature by balancing what the candidate gives and what they want to learn. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L2_07"
+        "B1_07"
       ],
       "nextIds": [
-        "L2_09"
+        "B1_09"
       ],
       "equivalentIds": [
-        "L1_08",
-        "L3_08"
+        "A2_08",
+        "B2_08"
       ],
       "slots": [],
-      "phaseId": "L2",
+      "phaseId": "B1",
       "capability": {
         "primaryIntent": "role_motivation",
         "subSkills": [
@@ -9869,7 +9869,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -9939,15 +9939,15 @@
       }
     },
     {
-      "id": "L2_09",
+      "id": "B1_09",
       "targetText": "Over the next few years, I want to grow into a role where I can lead projects and mentor junior teammates.",
       "intent": "回答职业规划（带具体方向）",
       "naturalTiming": "规划提问阶段",
       "dependencies": [
-        "L2_08"
+        "B1_08"
       ],
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 9,
       "isRescue": false,
       "tag": "职业规划",
@@ -9955,7 +9955,7 @@
       "question": "Where do you see yourself in the next five years?",
       "followupQuestion": "Could you make your five-year plan a little more concrete?",
       "meaning": "在未来五年内，我希望承担更多的领导职责，并帮助指导初级团队成员。",
-      "usage": "回答\"Where do you see yourself in five years\"时使用。比L1_09更具体，不仅说\"做团队领导\"，而是说\"承担领导职责+带新人\"。对面试官说。",
+      "usage": "回答\"Where do you see yourself in five years\"时使用。比A2_09更具体，不仅说\"做团队领导\"，而是说\"承担领导职责+带新人\"。对面试官说。",
       "pragmaticNote": "This gives ambition without sounding unrealistic or title-obsessed.",
       "hooks": [
         {
@@ -10133,7 +10133,7 @@
         },
         "transferTasks": [
           {
-            "id": "L2_09_transfer_1",
+            "id": "B1_09_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -10141,7 +10141,7 @@
             "prompt": "Could you make your five-year plan a little more concrete?"
           },
           {
-            "id": "L2_09_transfer_2",
+            "id": "B1_09_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -10149,7 +10149,7 @@
             "prompt": "Hiring manager live interview; use the expression for 职业规划."
           },
           {
-            "id": "L2_09_transfer_3",
+            "id": "B1_09_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -10188,17 +10188,17 @@
         "L4": "Over the next few years, I want to grow into a role where I can lead projects and mentor junior teammates. —— This gives ambition without sounding unrealistic or title-obsessed. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L2_08"
+        "B1_08"
       ],
       "nextIds": [
-        "L2_10"
+        "B1_10"
       ],
       "equivalentIds": [
-        "L1_09",
-        "L3_09"
+        "A2_09",
+        "B2_09"
       ],
       "slots": [],
-      "phaseId": "L2",
+      "phaseId": "B1",
       "capability": {
         "primaryIntent": "career_planning",
         "subSkills": [
@@ -10321,7 +10321,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -10392,15 +10392,15 @@
       }
     },
     {
-      "id": "L2_10",
+      "id": "B1_10",
       "targetText": "Could you tell me what a typical day in this role looks like?",
       "intent": "反向提问（职责细节）",
       "naturalTiming": "反问环节",
       "dependencies": [
-        "L2_09"
+        "B1_09"
       ],
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 10,
       "isRescue": false,
       "tag": "反问提问",
@@ -10408,7 +10408,7 @@
       "question": "Do you have a question for me about the day-to-day responsibilities of this role?",
       "followupQuestion": "Could you ask about the work someone in this role does day to day?",
       "meaning": "您能多告诉我一些关于这个岗位日常职责的信息吗？",
-      "usage": "反向提问阶段使用。比L1_10更正式，用\"Could you tell me\"替代\"What does...look like\"。对面试官说。",
+      "usage": "反向提问阶段使用。比A2_10更正式，用\"Could you tell me\"替代\"What does...look like\"。对面试官说。",
       "pragmaticNote": "This is more polished than asking about a \"normal day\" and shows practical curiosity.",
       "hooks": [
         {
@@ -10587,7 +10587,7 @@
         },
         "transferTasks": [
           {
-            "id": "L2_10_transfer_1",
+            "id": "B1_10_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -10595,7 +10595,7 @@
             "prompt": "Could you ask about the work someone in this role does day to day?"
           },
           {
-            "id": "L2_10_transfer_2",
+            "id": "B1_10_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -10603,7 +10603,7 @@
             "prompt": "Hiring manager live interview; use the expression for 反向提问."
           },
           {
-            "id": "L2_10_transfer_3",
+            "id": "B1_10_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -10642,17 +10642,17 @@
         "L4": "Could you tell me what a typical day in this role looks like? —— This is more polished than asking about a \"normal day\" and shows practical curiosity. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L2_09"
+        "B1_09"
       ],
       "nextIds": [
-        "L2_11"
+        "B1_11"
       ],
       "equivalentIds": [
-        "L1_10",
-        "L3_10"
+        "A2_10",
+        "B2_10"
       ],
       "slots": [],
-      "phaseId": "L2",
+      "phaseId": "B1",
       "capability": {
         "primaryIntent": "candidate_questioning",
         "subSkills": [
@@ -10776,7 +10776,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -10846,15 +10846,15 @@
       }
     },
     {
-      "id": "L2_11",
+      "id": "B1_11",
       "targetText": "Could you share what the next steps in the hiring process will be?",
       "intent": "询问后续流程（更正式）",
       "naturalTiming": "反问环节",
       "dependencies": [
-        "L2_10"
+        "B1_10"
       ],
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 11,
       "isRescue": false,
       "tag": "反问提问",
@@ -10862,7 +10862,7 @@
       "question": "Before we wrap up, what would you like to ask about the hiring process?",
       "followupQuestion": "Could you ask about the next step in the hiring process?",
       "meaning": "招聘流程的下一步是什么？",
-      "usage": "反向提问阶段使用。比L1_11更正式，用\"in the hiring process\"替代\"after this interview\"。对面试官说。",
+      "usage": "反向提问阶段使用。比A2_11更正式，用\"in the hiring process\"替代\"after this interview\"。对面试官说。",
       "pragmaticNote": "The phrasing is professional because it asks for process clarity without sounding pushy.",
       "hooks": [
         {
@@ -11035,7 +11035,7 @@
         },
         "transferTasks": [
           {
-            "id": "L2_11_transfer_1",
+            "id": "B1_11_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -11043,7 +11043,7 @@
             "prompt": "Could you ask about the next step in the hiring process?"
           },
           {
-            "id": "L2_11_transfer_2",
+            "id": "B1_11_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -11051,7 +11051,7 @@
             "prompt": "Hiring manager live interview; use the expression for 后续流程."
           },
           {
-            "id": "L2_11_transfer_3",
+            "id": "B1_11_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -11089,18 +11089,18 @@
         "L4": "Could you share what the next steps in the hiring process will be? —— The phrasing is professional because it asks for process clarity without sounding pushy. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L2_10"
+        "B1_10"
       ],
       "nextIds": [
-        "L2_12",
-        "L2_13"
+        "B1_12",
+        "B1_13"
       ],
       "equivalentIds": [
-        "L1_11",
-        "L3_11"
+        "A2_11",
+        "B2_11"
       ],
       "slots": [],
-      "phaseId": "L2",
+      "phaseId": "B1",
       "capability": {
         "primaryIntent": "candidate_questioning",
         "subSkills": [
@@ -11223,7 +11223,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -11292,13 +11292,13 @@
       }
     },
     {
-      "id": "L2_12",
+      "id": "B1_12",
       "targetText": "I haven't had direct exposure to that yet, but I'm a quick learner and would be eager to build that skill.",
       "intent": "诚实承认不足+成长意愿",
       "naturalTiming": "遇到难题时",
       "dependencies": [],
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 12,
       "isRescue": true,
       "tag": "劣势应答",
@@ -11306,7 +11306,7 @@
       "question": "Suppose I ask about an area you do not know well. How would you respond honestly and positively?",
       "followupQuestion": "Could you be honest about the gap and still show you are willing to learn?",
       "meaning": "我没有直接的相关经验，但我学得很快，而且很愿意培养这项技能。",
-      "usage": "面试中被问到不熟悉的领域时使用。比L1_12更正式，用\"direct experience\"替代\"know much about\"，用\"eager to develop\"替代\"can learn\"。对面试官说。",
+      "usage": "面试中被问到不熟悉的领域时使用。比A2_12更正式，用\"direct experience\"替代\"know much about\"，用\"eager to develop\"替代\"can learn\"。对面试官说。",
       "pragmaticNote": "\"Direct exposure\" is a professional way to acknowledge a gap without underselling yourself.",
       "hooks": [
         {
@@ -11484,7 +11484,7 @@
         },
         "transferTasks": [
           {
-            "id": "L2_12_transfer_1",
+            "id": "B1_12_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -11492,7 +11492,7 @@
             "prompt": "Could you be honest about the gap and still show you are willing to learn?"
           },
           {
-            "id": "L2_12_transfer_2",
+            "id": "B1_12_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -11500,7 +11500,7 @@
             "prompt": "Hiring manager live interview; use the expression for 应对难题."
           },
           {
-            "id": "L2_12_transfer_3",
+            "id": "B1_12_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -11541,11 +11541,11 @@
       "previousIds": [],
       "nextIds": [],
       "equivalentIds": [
-        "L1_12",
-        "L3_12"
+        "A2_12",
+        "B2_12"
       ],
       "slots": [],
-      "phaseId": "L2",
+      "phaseId": "B1",
       "capability": {
         "primaryIntent": "growth_mindset_gap",
         "subSkills": [
@@ -11670,7 +11670,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -11741,15 +11741,15 @@
       }
     },
     {
-      "id": "L2_13",
+      "id": "B1_13",
       "targetText": "Thank you for taking the time to speak with me today. I enjoyed learning more about the role, and I'm even more interested now.",
       "intent": "结束致谢（表达兴趣加深）",
       "naturalTiming": "面试收尾",
       "dependencies": [
-        "L2_11"
+        "B1_11"
       ],
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 13,
       "isRescue": false,
       "tag": "反问提问",
@@ -11757,7 +11757,7 @@
       "question": "We are wrapping up now. What would you like to say to close the conversation?",
       "followupQuestion": "Could you close with thanks and a positive note about the conversation?",
       "meaning": "感谢您今天抽出时间与我交谈。我非常享受我们的对话，而且对这个岗位更加期待了。",
-      "usage": "面试结束时使用。比L1_13多了两个层次：用\"taking the time\"替代\"your time\"更有温度，加了\"even more excited\"表达面试后兴趣加深。对面试官说。",
+      "usage": "面试结束时使用。比A2_13多了两个层次：用\"taking the time\"替代\"your time\"更有温度，加了\"even more excited\"表达面试后兴趣加深。对面试官说。",
       "pragmaticNote": "A strong close makes the candidate sound engaged without being overly eager.",
       "hooks": [
         {
@@ -11935,7 +11935,7 @@
         },
         "transferTasks": [
           {
-            "id": "L2_13_transfer_1",
+            "id": "B1_13_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -11943,7 +11943,7 @@
             "prompt": "Could you close with thanks and a positive note about the conversation?"
           },
           {
-            "id": "L2_13_transfer_2",
+            "id": "B1_13_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -11951,7 +11951,7 @@
             "prompt": "Hiring manager live interview; use the expression for 结束致谢."
           },
           {
-            "id": "L2_13_transfer_3",
+            "id": "B1_13_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -11990,15 +11990,15 @@
         "L4": "Thank you for taking the time to speak with me today. I enjoyed learning more about the role, and I'm even more interested now. —— A strong close makes the candidate sound engaged without being overly eager. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L2_11"
+        "B1_11"
       ],
       "nextIds": [],
       "equivalentIds": [
-        "L1_13",
-        "L3_13"
+        "A2_13",
+        "B2_13"
       ],
       "slots": [],
-      "phaseId": "L2",
+      "phaseId": "B1",
       "capability": {
         "primaryIntent": "professional_closing",
         "subSkills": [
@@ -12124,7 +12124,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -12195,13 +12195,13 @@
       }
     },
     {
-      "id": "L3_01",
+      "id": "B2_01",
       "targetText": "I really appreciate you making the time. I've been looking forward to learning more about the team and the role.",
       "intent": "高情商开场，展现对公司的了解与期待",
       "naturalTiming": "面试官打完招呼后",
       "dependencies": [],
-      "level": "L3",
-      "targetLevel": "advanced",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 1,
       "isRescue": false,
       "tag": "自我介绍",
@@ -12209,7 +12209,7 @@
       "question": "Hi, welcome. Thanks for coming in today. How would you respond at the start of the interview?",
       "followupQuestion": "Could you include both thanks and a positive attitude?",
       "meaning": "非常感谢您抽出时间。我听说过很多关于这个团队的好评，终于见到您了。",
-      "usage": "高情商面试开场。比L2_01多了\"heard great things about the team\"——展示你做了功课，同时对面试官表达了个人化的尊重。对面试官说。",
+      "usage": "高情商面试开场。比B1_01多了\"heard great things about the team\"——展示你做了功课，同时对面试官表达了个人化的尊重。对面试官说。",
       "pragmaticNote": "This sounds senior because it is warm but not overly flattering.",
       "hooks": [
         {
@@ -12387,7 +12387,7 @@
         },
         "transferTasks": [
           {
-            "id": "L3_01_transfer_1",
+            "id": "B2_01_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -12395,7 +12395,7 @@
             "prompt": "Could you include both thanks and a positive attitude?"
           },
           {
-            "id": "L3_01_transfer_2",
+            "id": "B2_01_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -12403,7 +12403,7 @@
             "prompt": "Hiring manager live interview; use the expression for 开场感谢."
           },
           {
-            "id": "L3_01_transfer_3",
+            "id": "B2_01_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -12443,14 +12443,14 @@
       },
       "previousIds": [],
       "nextIds": [
-        "L3_02"
+        "B2_02"
       ],
       "equivalentIds": [
-        "L1_01",
-        "L2_01"
+        "A2_01",
+        "B1_01"
       ],
       "slots": [],
-      "phaseId": "L3",
+      "phaseId": "B2",
       "capability": {
         "primaryIntent": "professional_opening",
         "subSkills": [
@@ -12580,7 +12580,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -12651,15 +12651,15 @@
       }
     },
     {
-      "id": "L3_02",
+      "id": "B2_02",
       "targetText": "For the past four years, I've been leading UX work for a flagship mobile product, combining hands-on design with mentoring junior teammates.",
       "intent": "精炼概述经历，同时展示领导力",
       "naturalTiming": "自我介绍阶段",
       "dependencies": [
-        "L3_01"
+        "B2_01"
       ],
-      "level": "L3",
-      "targetLevel": "advanced",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 2,
       "isRescue": false,
       "tag": "自我介绍",
@@ -12845,7 +12845,7 @@
         },
         "transferTasks": [
           {
-            "id": "L3_02_transfer_1",
+            "id": "B2_02_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -12853,7 +12853,7 @@
             "prompt": "Could you include your current role and company?"
           },
           {
-            "id": "L3_02_transfer_2",
+            "id": "B2_02_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -12861,7 +12861,7 @@
             "prompt": "Hiring manager live interview; use the expression for 当前职位."
           },
           {
-            "id": "L3_02_transfer_3",
+            "id": "B2_02_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -12900,14 +12900,14 @@
         "L4": "For the past four years, I've been leading UX work for a flagship mobile product, combining hands-on design with mentoring junior teammates. —— This is a senior-level role summary. It should be personalized to the learner's actual role, scope, and team impact. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L3_01"
+        "B2_01"
       ],
       "nextIds": [
-        "L3_03"
+        "B2_03"
       ],
       "equivalentIds": [
-        "L1_02",
-        "L2_02"
+        "A2_02",
+        "B1_02"
       ],
       "slots": [
         {
@@ -12919,7 +12919,7 @@
           "example": "past four years"
         }
       ],
-      "phaseId": "L3",
+      "phaseId": "B2",
       "capability": {
         "primaryIntent": "role_summary",
         "subSkills": [
@@ -13043,7 +13043,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -13115,15 +13115,15 @@
       }
     },
     {
-      "id": "L3_03",
+      "id": "B2_03",
       "targetText": "My background started in content marketing, and over time I've expanded into growth strategy and campaign analytics.",
       "intent": "展示职业成长路径的广度",
       "naturalTiming": "自我介绍阶段",
       "dependencies": [
-        "L3_02"
+        "B2_02"
       ],
-      "level": "L3",
-      "targetLevel": "advanced",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 3,
       "isRescue": false,
       "tag": "自我介绍",
@@ -13131,7 +13131,7 @@
       "question": "How much experience do you have, and what field is it in?",
       "followupQuestion": "Could you include your years of experience and your field?",
       "meaning": "我的背景根植于内容营销，但随着时间推移，我已拓展到增长策略和营销活动分析领域。",
-      "usage": "自我介绍中展示职业成长路径的广度。比L2_03的\"specializing in\"多了\"从A拓展到B\"的动态感。对面试官说。",
+      "usage": "自我介绍中展示职业成长路径的广度。比B1_03的\"specializing in\"多了\"从A拓展到B\"的动态感。对面试官说。",
       "pragmaticNote": "This tells a career story rather than listing a field. It is useful for senior candidates.",
       "hooks": [
         {
@@ -13309,7 +13309,7 @@
         },
         "transferTasks": [
           {
-            "id": "L3_03_transfer_1",
+            "id": "B2_03_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -13317,7 +13317,7 @@
             "prompt": "Could you include your years of experience and your field?"
           },
           {
-            "id": "L3_03_transfer_2",
+            "id": "B2_03_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -13325,7 +13325,7 @@
             "prompt": "Hiring manager live interview; use the expression for 经验领域."
           },
           {
-            "id": "L3_03_transfer_3",
+            "id": "B2_03_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -13364,14 +13364,14 @@
         "L4": "My background started in content marketing, and over time I've expanded into growth strategy and campaign analytics. —— This tells a career story rather than listing a field. It is useful for senior candidates. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L3_02"
+        "B2_02"
       ],
       "nextIds": [
-        "L3_04"
+        "B2_04"
       ],
       "equivalentIds": [
-        "L1_03",
-        "L2_03"
+        "A2_03",
+        "B1_03"
       ],
       "slots": [
         {
@@ -13379,7 +13379,7 @@
           "example": "marketing"
         }
       ],
-      "phaseId": "L3",
+      "phaseId": "B2",
       "capability": {
         "primaryIntent": "experience_summary",
         "subSkills": [
@@ -13504,7 +13504,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -13575,15 +13575,15 @@
       }
     },
     {
-      "id": "L3_04",
+      "id": "B2_04",
       "targetText": "I led a cross-functional launch that finished two weeks ahead of schedule and later became the playbook for similar projects.",
       "intent": "展示变革性领导力与影响力",
       "naturalTiming": "经历提问阶段",
       "dependencies": [
-        "L3_03"
+        "B2_03"
       ],
-      "level": "L3",
-      "targetLevel": "advanced",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 4,
       "isRescue": false,
       "tag": "经历阐述",
@@ -13591,7 +13591,7 @@
       "question": "Tell me about one project or achievement from your previous work.",
       "followupQuestion": "Could you mention the action you took and the result?",
       "meaning": "我主导了一项跨部门计划，不仅提前两周完成截止日期，还成为了公司如今处理大规模上线的蓝本。",
-      "usage": "展示变革性领导力与影响力。比L2_04多了\"became a blueprint\"——不仅完成了项目，还改变了公司的工作方式。对面试官说。",
+      "usage": "展示变革性领导力与影响力。比B1_04多了\"became a blueprint\"——不仅完成了项目，还改变了公司的工作方式。对面试官说。",
       "pragmaticNote": "The strongest version shows impact beyond one project: it changed how the team works.",
       "hooks": [
         {
@@ -13769,7 +13769,7 @@
         },
         "transferTasks": [
           {
-            "id": "L3_04_transfer_1",
+            "id": "B2_04_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -13777,7 +13777,7 @@
             "prompt": "Could you mention the action you took and the result?"
           },
           {
-            "id": "L3_04_transfer_2",
+            "id": "B2_04_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -13785,7 +13785,7 @@
             "prompt": "Hiring manager live interview; use the expression for 经历成就."
           },
           {
-            "id": "L3_04_transfer_3",
+            "id": "B2_04_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -13824,14 +13824,14 @@
         "L4": "I led a cross-functional launch that finished two weeks ahead of schedule and later became the playbook for similar projects. —— The strongest version shows impact beyond one project: it changed how the team works. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L3_03"
+        "B2_03"
       ],
       "nextIds": [
-        "L3_05"
+        "B2_05"
       ],
       "equivalentIds": [
-        "L1_04",
-        "L2_04"
+        "A2_04",
+        "B1_04"
       ],
       "slots": [
         {
@@ -13839,7 +13839,7 @@
           "example": "two weeks"
         }
       ],
-      "phaseId": "L3",
+      "phaseId": "B2",
       "capability": {
         "primaryIntent": "achievement_storytelling",
         "subSkills": [
@@ -13968,7 +13968,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -14038,15 +14038,15 @@
       }
     },
     {
-      "id": "L3_05",
+      "id": "B2_05",
       "targetText": "I noticed our review process was slowing delivery, so I redesigned the workflow and cut turnaround time by roughly a third.",
       "intent": "展示系统性思维与量化贡献",
       "naturalTiming": "经历提问阶段",
       "dependencies": [
-        "L3_04"
+        "B2_04"
       ],
-      "level": "L3",
-      "targetLevel": "advanced",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 5,
       "isRescue": false,
       "tag": "经历阐述",
@@ -14054,7 +14054,7 @@
       "question": "Can you describe a problem you solved at work and what changed afterward?",
       "followupQuestion": "Could you include the problem, your action, and the improvement?",
       "meaning": "我注意到我们的审核流程造成了瓶颈——所以我重新设计了端到端的工作流，最终将交付时间缩短了三分之一，每月为团队节省了约50个小时。",
-      "usage": "展示系统性思维与量化贡献。比L2_05多了\"end-to-end\"和两组量化数据。对面试官说。",
+      "usage": "展示系统性思维与量化贡献。比B1_05多了\"end-to-end\"和两组量化数据。对面试官说。",
       "pragmaticNote": "This sounds strong because it shows systems thinking, not just one-time problem solving.",
       "hooks": [
         {
@@ -14232,7 +14232,7 @@
         },
         "transferTasks": [
           {
-            "id": "L3_05_transfer_1",
+            "id": "B2_05_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -14240,7 +14240,7 @@
             "prompt": "Could you include the problem, your action, and the improvement?"
           },
           {
-            "id": "L3_05_transfer_2",
+            "id": "B2_05_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -14248,7 +14248,7 @@
             "prompt": "Hiring manager live interview; use the expression for 问题解决."
           },
           {
-            "id": "L3_05_transfer_3",
+            "id": "B2_05_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -14287,14 +14287,14 @@
         "L4": "I noticed our review process was slowing delivery, so I redesigned the workflow and cut turnaround time by roughly a third. —— This sounds strong because it shows systems thinking, not just one-time problem solving. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L3_04"
+        "B2_04"
       ],
       "nextIds": [
-        "L3_06"
+        "B2_06"
       ],
       "equivalentIds": [
-        "L1_05",
-        "L2_05"
+        "A2_05",
+        "B1_05"
       ],
       "slots": [
         {
@@ -14302,7 +14302,7 @@
           "example": "a third"
         }
       ],
-      "phaseId": "L3",
+      "phaseId": "B2",
       "capability": {
         "primaryIntent": "problem_solving_impact",
         "subSkills": [
@@ -14431,7 +14431,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -14502,15 +14502,15 @@
       }
     },
     {
-      "id": "L3_06",
+      "id": "B2_06",
       "targetText": "I'd say my strongest suit is turning technical ideas into language that helps non-technical stakeholders make decisions.",
       "intent": "展示跨部门影响力",
       "naturalTiming": "能力提问阶段",
       "dependencies": [
-        "L3_05"
+        "B2_05"
       ],
-      "level": "L3",
-      "targetLevel": "advanced",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 6,
       "isRescue": false,
       "tag": "优势说明",
@@ -14518,7 +14518,7 @@
       "question": "What would you say is one of your key strengths?",
       "followupQuestion": "Could you name one specific strength rather than a general quality?",
       "meaning": "我最大的优势是将技术概念转化为能让非技术利益相关者产生共鸣的语言——这在为项目争取支持方面一直很关键。",
-      "usage": "展示跨部门影响力。比L2_06多了\"resonates with\"和\"getting buy-in\"——不只展示能力，还展示这个能力带来的组织影响。对面试官说。",
+      "usage": "展示跨部门影响力。比B1_06多了\"resonates with\"和\"getting buy-in\"——不只展示能力，还展示这个能力带来的组织影响。对面试官说。",
       "pragmaticNote": "A senior strength answer should show how the strength helps others make progress.",
       "hooks": [
         {
@@ -14696,7 +14696,7 @@
         },
         "transferTasks": [
           {
-            "id": "L3_06_transfer_1",
+            "id": "B2_06_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -14704,7 +14704,7 @@
             "prompt": "Could you name one specific strength rather than a general quality?"
           },
           {
-            "id": "L3_06_transfer_2",
+            "id": "B2_06_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -14712,7 +14712,7 @@
             "prompt": "Hiring manager live interview; use the expression for 优势说明."
           },
           {
-            "id": "L3_06_transfer_3",
+            "id": "B2_06_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -14751,17 +14751,17 @@
         "L4": "I'd say my strongest suit is turning technical ideas into language that helps non-technical stakeholders make decisions. —— A senior strength answer should show how the strength helps others make progress. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L3_05"
+        "B2_05"
       ],
       "nextIds": [
-        "L3_07"
+        "B2_07"
       ],
       "equivalentIds": [
-        "L1_06",
-        "L2_06"
+        "A2_06",
+        "B1_06"
       ],
       "slots": [],
-      "phaseId": "L3",
+      "phaseId": "B2",
       "capability": {
         "primaryIntent": "strength_positioning",
         "subSkills": [
@@ -14884,7 +14884,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -14954,15 +14954,15 @@
       }
     },
     {
-      "id": "L3_07",
+      "id": "B2_07",
       "targetText": "When the stakes are high, I try to stay calm, clarify priorities, and keep the team focused on the biggest risk first.",
       "intent": "展示成熟的抗压心态与方法论",
       "naturalTiming": "能力提问阶段",
       "dependencies": [
-        "L3_06"
+        "B2_06"
       ],
-      "level": "L3",
-      "targetLevel": "advanced",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 7,
       "isRescue": false,
       "tag": "压力回应",
@@ -14970,7 +14970,7 @@
       "question": "How do you usually handle pressure at work?",
       "followupQuestion": "Could you explain how pressure affects your focus or working style?",
       "meaning": "我在高风险时刻表现最佳。一点压力能让我的专注力更敏锐，而我也学会了通过着眼大局来保持冷静。",
-      "usage": "展示成熟的抗压心态与方法论。比L2_07多了\"when the stakes are high\"和\"keeping the bigger picture in mind\"——不只是\"我能抗压\"，而是\"我为什么能抗压、我怎么做到的\"。对面试官说。",
+      "usage": "展示成熟的抗压心态与方法论。比B1_07多了\"when the stakes are high\"和\"keeping the bigger picture in mind\"——不只是\"我能抗压\"，而是\"我为什么能抗压、我怎么做到的\"。对面试官说。",
       "pragmaticNote": "This avoids the cliché of \"I work well under pressure\" by showing the actual operating method.",
       "hooks": [
         {
@@ -15148,7 +15148,7 @@
         },
         "transferTasks": [
           {
-            "id": "L3_07_transfer_1",
+            "id": "B2_07_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -15156,7 +15156,7 @@
             "prompt": "Could you explain how pressure affects your focus or working style?"
           },
           {
-            "id": "L3_07_transfer_2",
+            "id": "B2_07_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -15164,7 +15164,7 @@
             "prompt": "Hiring manager live interview; use the expression for 压力回应."
           },
           {
-            "id": "L3_07_transfer_3",
+            "id": "B2_07_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -15203,17 +15203,17 @@
         "L4": "When the stakes are high, I try to stay calm, clarify priorities, and keep the team focused on the biggest risk first. —— This avoids the cliché of \"I work well under pressure\" by showing the actual operating method. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L3_06"
+        "B2_06"
       ],
       "nextIds": [
-        "L3_08"
+        "B2_08"
       ],
       "equivalentIds": [
-        "L1_07",
-        "L2_07"
+        "A2_07",
+        "B1_07"
       ],
       "slots": [],
-      "phaseId": "L3",
+      "phaseId": "B2",
       "capability": {
         "primaryIntent": "pressure_response",
         "subSkills": [
@@ -15337,7 +15337,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -15409,15 +15409,15 @@
       }
     },
     {
-      "id": "L3_08",
+      "id": "B2_08",
       "targetText": "I'm looking for a role that stretches me, where I can contribute from day one while learning from a strong team.",
       "intent": "表达成熟的求职动机",
       "naturalTiming": "动机提问阶段",
       "dependencies": [
-        "L3_07"
+        "B2_07"
       ],
-      "level": "L3",
-      "targetLevel": "advanced",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 8,
       "isRescue": false,
       "tag": "岗位认知",
@@ -15425,7 +15425,7 @@
       "question": "What are you looking for in your next role?",
       "followupQuestion": "Could you connect your motivation to growth or the role itself?",
       "meaning": "我正处于一个寻找能让我突破自我的角色的阶段——一个既能巩固所学，又能从优秀团队那里学到新技能的地方。",
-      "usage": "表达成熟的求职动机。比L2_08多了\"stretches me\"和\"pick up new skills from a strong team\"——不只是\"我想成长\"，而是\"我想被挑战、想从强者身上学\"。对面试官说。",
+      "usage": "表达成熟的求职动机。比B1_08多了\"stretches me\"和\"pick up new skills from a strong team\"——不只是\"我想成长\"，而是\"我想被挑战、想从强者身上学\"。对面试官说。",
       "pragmaticNote": "This balances ambition and humility. It sounds more mature than simply saying you want to learn.",
       "hooks": [
         {
@@ -15603,7 +15603,7 @@
         },
         "transferTasks": [
           {
-            "id": "L3_08_transfer_1",
+            "id": "B2_08_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -15611,7 +15611,7 @@
             "prompt": "Could you connect your motivation to growth or the role itself?"
           },
           {
-            "id": "L3_08_transfer_2",
+            "id": "B2_08_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -15619,7 +15619,7 @@
             "prompt": "Hiring manager live interview; use the expression for 求职动机."
           },
           {
-            "id": "L3_08_transfer_3",
+            "id": "B2_08_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -15658,17 +15658,17 @@
         "L4": "I'm looking for a role that stretches me, where I can contribute from day one while learning from a strong team. —— This balances ambition and humility. It sounds more mature than simply saying you want to learn. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L3_07"
+        "B2_07"
       ],
       "nextIds": [
-        "L3_09"
+        "B2_09"
       ],
       "equivalentIds": [
-        "L1_08",
-        "L2_08"
+        "A2_08",
+        "B1_08"
       ],
       "slots": [],
-      "phaseId": "L3",
+      "phaseId": "B2",
       "capability": {
         "primaryIntent": "role_motivation",
         "subSkills": [
@@ -15792,7 +15792,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -15863,15 +15863,15 @@
       }
     },
     {
-      "id": "L3_09",
+      "id": "B2_09",
       "targetText": "Longer term, I'd like to grow into a role where I shape strategy and help develop other people on the team.",
       "intent": "展示长远视野与人才发展观",
       "naturalTiming": "规划提问阶段",
       "dependencies": [
-        "L3_08"
+        "B2_08"
       ],
-      "level": "L3",
-      "targetLevel": "advanced",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 9,
       "isRescue": false,
       "tag": "职业规划",
@@ -15879,7 +15879,7 @@
       "question": "Where do you see yourself in the next five years?",
       "followupQuestion": "Could you make your five-year plan a little more concrete?",
       "meaning": "五年后，我希望处于一个制定战略和培养下一代人才的位置——那种大局观与人才发展的结合真的很吸引我。",
-      "usage": "展示长远视野与人才发展观。比L2_09多了\"shaping strategy\"\"bringing up the next generation\"和\"that combination...really appeals to me\"。对面试官说。",
+      "usage": "展示长远视野与人才发展观。比B1_09多了\"shaping strategy\"\"bringing up the next generation\"和\"that combination...really appeals to me\"。对面试官说。",
       "pragmaticNote": "This sounds ambitious but credible because it is framed as a direction, not a guaranteed title.",
       "hooks": [
         {
@@ -16057,7 +16057,7 @@
         },
         "transferTasks": [
           {
-            "id": "L3_09_transfer_1",
+            "id": "B2_09_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -16065,7 +16065,7 @@
             "prompt": "Could you make your five-year plan a little more concrete?"
           },
           {
-            "id": "L3_09_transfer_2",
+            "id": "B2_09_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -16073,7 +16073,7 @@
             "prompt": "Hiring manager live interview; use the expression for 职业规划."
           },
           {
-            "id": "L3_09_transfer_3",
+            "id": "B2_09_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -16112,17 +16112,17 @@
         "L4": "Longer term, I'd like to grow into a role where I shape strategy and help develop other people on the team. —— This sounds ambitious but credible because it is framed as a direction, not a guaranteed title. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L3_08"
+        "B2_08"
       ],
       "nextIds": [
-        "L3_10"
+        "B2_10"
       ],
       "equivalentIds": [
-        "L1_09",
-        "L2_09"
+        "A2_09",
+        "B1_09"
       ],
       "slots": [],
-      "phaseId": "L3",
+      "phaseId": "B2",
       "capability": {
         "primaryIntent": "career_planning",
         "subSkills": [
@@ -16245,7 +16245,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -16316,15 +16316,15 @@
       }
     },
     {
-      "id": "L3_10",
+      "id": "B2_10",
       "targetText": "If we fast-forward six months, what would make you say this person was a great hire?",
       "intent": "高质量反问，展现对成功的关注",
       "naturalTiming": "反问环节",
       "dependencies": [
-        "L3_09"
+        "B2_09"
       ],
-      "level": "L3",
-      "targetLevel": "advanced",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 10,
       "isRescue": false,
       "tag": "反问提问",
@@ -16332,7 +16332,7 @@
       "question": "Do you have a question for me about the day-to-day responsibilities of this role?",
       "followupQuestion": "Could you ask about the work someone in this role does day to day?",
       "meaning": "我很好奇——如果能快进六个月，这个岗位的人做到了什么会让你觉得\"我们招到了对的人\"？",
-      "usage": "高质量反向提问。比L2_10多了\"fast-forward\"和\"made a great hire\"——不仅问期望，还用假设场景让面试官想象成功的画面。对面试官说。",
+      "usage": "高质量反向提问。比B1_10多了\"fast-forward\"和\"made a great hire\"——不仅问期望，还用假设场景让面试官想象成功的画面。对面试官说。",
       "pragmaticNote": "This is a strong candidate question because it uncovers expectations and shows performance mindset.",
       "hooks": [
         {
@@ -16510,7 +16510,7 @@
         },
         "transferTasks": [
           {
-            "id": "L3_10_transfer_1",
+            "id": "B2_10_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -16518,7 +16518,7 @@
             "prompt": "Could you ask about the work someone in this role does day to day?"
           },
           {
-            "id": "L3_10_transfer_2",
+            "id": "B2_10_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -16526,7 +16526,7 @@
             "prompt": "Hiring manager live interview; use the expression for 反向提问."
           },
           {
-            "id": "L3_10_transfer_3",
+            "id": "B2_10_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -16565,14 +16565,14 @@
         "L4": "If we fast-forward six months, what would make you say this person was a great hire? —— This is a strong candidate question because it uncovers expectations and shows performance mindset. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L3_09"
+        "B2_09"
       ],
       "nextIds": [
-        "L3_11"
+        "B2_11"
       ],
       "equivalentIds": [
-        "L1_10",
-        "L2_10"
+        "A2_10",
+        "B1_10"
       ],
       "slots": [
         {
@@ -16580,7 +16580,7 @@
           "example": "six months"
         }
       ],
-      "phaseId": "L3",
+      "phaseId": "B2",
       "capability": {
         "primaryIntent": "candidate_questioning",
         "subSkills": [
@@ -16704,7 +16704,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -16775,15 +16775,15 @@
       }
     },
     {
-      "id": "L3_11",
+      "id": "B2_11",
       "targetText": "I'd love to know what the rest of the process looks like, and whether there's anything else I can share to support the decision.",
       "intent": "主动提供进一步信息",
       "naturalTiming": "反问环节",
       "dependencies": [
-        "L3_10"
+        "B2_10"
       ],
-      "level": "L3",
-      "targetLevel": "advanced",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 11,
       "isRescue": false,
       "tag": "反问提问",
@@ -16791,7 +16791,7 @@
       "question": "Before we wrap up, what would you like to ask about the hiring process?",
       "followupQuestion": "Could you ask about the next step in the hiring process?",
       "meaning": "我想多了解一下后续流程——另外如果我这边还有什么能帮助你们做决定的，也请告诉我。",
-      "usage": "主动提供进一步信息。比L2_11多了\"if there's anything else I can share on my end\"——不仅问流程，还主动提供帮助。对面试官说。",
+      "usage": "主动提供进一步信息。比B1_11多了\"if there's anything else I can share on my end\"——不仅问流程，还主动提供帮助。对面试官说。",
       "pragmaticNote": "This is proactive without sounding pushy because it offers useful follow-up material.",
       "hooks": [
         {
@@ -16969,7 +16969,7 @@
         },
         "transferTasks": [
           {
-            "id": "L3_11_transfer_1",
+            "id": "B2_11_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -16977,7 +16977,7 @@
             "prompt": "Could you ask about the next step in the hiring process?"
           },
           {
-            "id": "L3_11_transfer_2",
+            "id": "B2_11_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -16985,7 +16985,7 @@
             "prompt": "Hiring manager live interview; use the expression for 后续流程."
           },
           {
-            "id": "L3_11_transfer_3",
+            "id": "B2_11_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -17024,18 +17024,18 @@
         "L4": "I'd love to know what the rest of the process looks like, and whether there's anything else I can share to support the decision. —— This is proactive without sounding pushy because it offers useful follow-up material. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L3_10"
+        "B2_10"
       ],
       "nextIds": [
-        "L3_12",
-        "L3_13"
+        "B2_12",
+        "B2_13"
       ],
       "equivalentIds": [
-        "L1_11",
-        "L2_11"
+        "A2_11",
+        "B1_11"
       ],
       "slots": [],
-      "phaseId": "L3",
+      "phaseId": "B2",
       "capability": {
         "primaryIntent": "candidate_questioning",
         "subSkills": [
@@ -17160,7 +17160,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -17231,13 +17231,13 @@
       }
     },
     {
-      "id": "L3_12",
+      "id": "B2_12",
       "targetText": "I haven't gone deep on that area yet, but it's something I've been tracking, and I'd be excited to build it with the right support.",
       "intent": "诚实而有策略地应对知识盲区",
       "naturalTiming": "遇到难题时",
       "dependencies": [],
-      "level": "L3",
-      "targetLevel": "advanced",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 12,
       "isRescue": true,
       "tag": "劣势应答",
@@ -17245,7 +17245,7 @@
       "question": "Suppose I ask about an area you do not know well. How would you respond honestly and positively?",
       "followupQuestion": "Could you be honest about the gap and still show you are willing to learn?",
       "meaning": "那个领域我实际上还没有机会深入，但它一直在我的关注范围内，如果有合适的支持我会很期待去掌握它。",
-      "usage": "诚实而有策略地应对知识盲区。比L2_12多了\"on my radar\"和\"with the right support\"——不只是\"我能学\"，而是\"我一直在关注\"+\"给我支持我就能上手\"。对面试官说。",
+      "usage": "诚实而有策略地应对知识盲区。比B1_12多了\"on my radar\"和\"with the right support\"——不只是\"我能学\"，而是\"我一直在关注\"+\"给我支持我就能上手\"。对面试官说。",
       "pragmaticNote": "This is a more senior gap answer because it shows awareness instead of pretending expertise.",
       "hooks": [
         {
@@ -17423,7 +17423,7 @@
         },
         "transferTasks": [
           {
-            "id": "L3_12_transfer_1",
+            "id": "B2_12_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -17431,7 +17431,7 @@
             "prompt": "Could you be honest about the gap and still show you are willing to learn?"
           },
           {
-            "id": "L3_12_transfer_2",
+            "id": "B2_12_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -17439,7 +17439,7 @@
             "prompt": "Hiring manager live interview; use the expression for 应对难题."
           },
           {
-            "id": "L3_12_transfer_3",
+            "id": "B2_12_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -17480,11 +17480,11 @@
       "previousIds": [],
       "nextIds": [],
       "equivalentIds": [
-        "L1_12",
-        "L2_12"
+        "A2_12",
+        "B1_12"
       ],
       "slots": [],
-      "phaseId": "L3",
+      "phaseId": "B2",
       "capability": {
         "primaryIntent": "growth_mindset_gap",
         "subSkills": [
@@ -17610,7 +17610,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -17682,15 +17682,15 @@
       }
     },
     {
-      "id": "L3_13",
+      "id": "B2_13",
       "targetText": "Thanks again for the conversation. It reinforced my interest in the role, and I'm happy to share anything else that would be helpful.",
       "intent": "自信收尾，保持主动",
       "naturalTiming": "面试收尾",
       "dependencies": [
-        "L3_11"
+        "B2_11"
       ],
-      "level": "L3",
-      "targetLevel": "advanced",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 13,
       "isRescue": false,
       "tag": "反问提问",
@@ -17698,7 +17698,7 @@
       "question": "We are wrapping up now. What would you like to say to close the conversation?",
       "followupQuestion": "Could you close with thanks and a positive note about the conversation?",
       "meaning": "再次感谢这次愉快的对话——它让我对这个岗位更加期待了。我会留意后续进展，如果还需要我提供任何信息，请随时联系我。",
-      "usage": "自信收尾，保持主动。比L2_13多了\"only reinforced\"\"keep an eye out for\"\"don't hesitate to reach out\"——不只表达感谢，还主动跟进了两件事。对面试官说。",
+      "usage": "自信收尾，保持主动。比B1_13多了\"only reinforced\"\"keep an eye out for\"\"don't hesitate to reach out\"——不只表达感谢，还主动跟进了两件事。对面试官说。",
       "pragmaticNote": "This closes confidently without sounding scripted or overly eager.",
       "hooks": [
         {
@@ -17876,7 +17876,7 @@
         },
         "transferTasks": [
           {
-            "id": "L3_13_transfer_1",
+            "id": "B2_13_transfer_1",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -17884,7 +17884,7 @@
             "prompt": "Could you close with thanks and a positive note about the conversation?"
           },
           {
-            "id": "L3_13_transfer_2",
+            "id": "B2_13_transfer_2",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -17892,7 +17892,7 @@
             "prompt": "Hiring manager live interview; use the expression for 结束致谢."
           },
           {
-            "id": "L3_13_transfer_3",
+            "id": "B2_13_transfer_3",
             "when": [
               "target_completed",
               "ready_for_transfer"
@@ -17931,15 +17931,15 @@
         "L4": "Thanks again for the conversation. It reinforced my interest in the role, and I'm happy to share anything else that would be helpful. —— This closes confidently without sounding scripted or overly eager. 再用你自己的信息说一遍。"
       },
       "previousIds": [
-        "L3_11"
+        "B2_11"
       ],
       "nextIds": [],
       "equivalentIds": [
-        "L1_13",
-        "L2_13"
+        "A2_13",
+        "B1_13"
       ],
       "slots": [],
-      "phaseId": "L3",
+      "phaseId": "B2",
       "capability": {
         "primaryIntent": "professional_closing",
         "subSkills": [
@@ -18065,7 +18065,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -18137,19 +18137,19 @@
     }
   ],
   "flow": [
-    "L1_01",
-    "L1_02",
-    "L1_03",
-    "L1_04",
-    "L1_05",
-    "L1_06",
-    "L1_07",
-    "L1_08",
-    "L1_09",
-    "L1_10",
-    "L1_11",
-    "L1_12",
-    "L1_13"
+    "A2_01",
+    "A2_02",
+    "A2_03",
+    "A2_04",
+    "A2_05",
+    "A2_06",
+    "A2_07",
+    "A2_08",
+    "A2_09",
+    "A2_10",
+    "A2_11",
+    "A2_12",
+    "A2_13"
   ],
   "transitionPolicy": {
     "afterEvery": 2,

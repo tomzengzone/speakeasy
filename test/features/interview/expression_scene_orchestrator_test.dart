@@ -15,15 +15,15 @@ void main() {
 
     final List<String> planned = orchestrator.plannedNodeIds(
       graph: graph,
-      targetLevel: 'beginner',
+      targetLevel: 'A2',
       mode: ExpressionScenePracticeMode.newLesson,
       learnerStates: const <ExpressionSceneLearnerNodeState>[
-        ExpressionSceneLearnerNodeState(nodeId: 'L1_01', mastered: true),
+        ExpressionSceneLearnerNodeState(nodeId: 'A2_01', mastered: true),
       ],
     );
 
-    expect(planned.first, 'L1_02');
-    expect(planned, isNot(contains('L1_01')));
+    expect(planned.first, 'A2_02');
+    expect(planned, isNot(contains('A2_01')));
   });
 
   test('orchestrator prioritizes due review nodes', () async {
@@ -36,20 +36,20 @@ void main() {
 
     final List<String> planned = orchestrator.plannedNodeIds(
       graph: graph,
-      targetLevel: 'beginner',
+      targetLevel: 'A2',
       mode: ExpressionScenePracticeMode.review,
       learnerStates: const <ExpressionSceneLearnerNodeState>[
-        ExpressionSceneLearnerNodeState(nodeId: 'L1_01', mastered: true),
+        ExpressionSceneLearnerNodeState(nodeId: 'A2_01', mastered: true),
         ExpressionSceneLearnerNodeState(
-          nodeId: 'L1_06',
+          nodeId: 'A2_06',
           mastered: true,
           due: true,
         ),
       ],
     );
 
-    expect(planned.first, 'L1_06');
-    expect(planned, isNot(contains('L1_01')));
+    expect(planned.first, 'A2_06');
+    expect(planned, isNot(contains('A2_01')));
   });
 
   test(
@@ -64,17 +64,17 @@ void main() {
 
       final List<String> planned = orchestrator.plannedNodeIds(
         graph: graph,
-        targetLevel: 'beginner',
+        targetLevel: 'A2',
         mode: ExpressionScenePracticeMode.newLesson,
         learnerStates: const <ExpressionSceneLearnerNodeState>[
-          ExpressionSceneLearnerNodeState(nodeId: 'L1_01', mastered: true),
-          ExpressionSceneLearnerNodeState(nodeId: 'L1_05', prepared: true),
+          ExpressionSceneLearnerNodeState(nodeId: 'A2_01', mastered: true),
+          ExpressionSceneLearnerNodeState(nodeId: 'A2_05', prepared: true),
         ],
       );
 
-      expect(planned.first, 'L1_05');
-      expect(planned, contains('L1_05'));
-      expect(planned, isNot(contains('L1_01')));
+      expect(planned.first, 'A2_05');
+      expect(planned, contains('A2_05'));
+      expect(planned, isNot(contains('A2_01')));
     },
   );
 
@@ -90,18 +90,18 @@ void main() {
 
       final List<String> planned = orchestrator.plannedNodeIds(
         graph: graph,
-        targetLevel: 'beginner',
+        targetLevel: 'A2',
         mode: ExpressionScenePracticeMode.newLesson,
         learnerStates: const <ExpressionSceneLearnerNodeState>[
-          ExpressionSceneLearnerNodeState(nodeId: 'L1_01', mastered: true),
-          ExpressionSceneLearnerNodeState(nodeId: 'L1_05', prepared: true),
-          ExpressionSceneLearnerNodeState(nodeId: 'L1_06', weak: true),
+          ExpressionSceneLearnerNodeState(nodeId: 'A2_01', mastered: true),
+          ExpressionSceneLearnerNodeState(nodeId: 'A2_05', prepared: true),
+          ExpressionSceneLearnerNodeState(nodeId: 'A2_06', weak: true),
         ],
       );
 
-      expect(planned.first, 'L1_06');
-      expect(planned[1], 'L1_05');
-      expect(planned, isNot(contains('L1_01')));
+      expect(planned.first, 'A2_06');
+      expect(planned[1], 'A2_05');
+      expect(planned, isNot(contains('A2_01')));
     },
   );
 
@@ -110,7 +110,7 @@ void main() {
         ExpressionSceneGraph.fromInterviewSceneGraph(
           await loadInterviewSceneGraph(),
         );
-    final ExpressionSceneNode node = graph.nodeById('L1_01')!;
+    final ExpressionSceneNode node = graph.nodeById('A2_01')!;
     const ExpressionSceneOrchestrator orchestrator =
         ExpressionSceneOrchestrator();
 
@@ -133,8 +133,8 @@ void main() {
         ExpressionSceneGraph.fromInterviewSceneGraph(
           await loadInterviewSceneGraph(),
         );
-    final ExpressionSceneNode delayed = graph.nodeById('L1_01')!;
-    final ExpressionSceneNode current = graph.nodeById('L1_03')!;
+    final ExpressionSceneNode delayed = graph.nodeById('A2_01')!;
+    final ExpressionSceneNode current = graph.nodeById('A2_03')!;
     const ExpressionSceneOrchestrator orchestrator =
         ExpressionSceneOrchestrator();
 
@@ -161,12 +161,12 @@ void main() {
 
       final ExpressionSceneNavigationState state = orchestrator.navigationState(
         graph: graph,
-        targetLevel: 'beginner',
-        currentNodeId: 'L1_02',
-        roundNodeIds: const <String>['L1_02', 'L1_06'],
-        masteredNodeIds: const <String>{'L1_01'},
-        preparedNodeIds: const <String>{'L1_05'},
-        dueNodeIds: const <String>{'L1_06'},
+        targetLevel: 'A2',
+        currentNodeId: 'A2_02',
+        roundNodeIds: const <String>['A2_02', 'A2_06'],
+        masteredNodeIds: const <String>{'A2_01'},
+        preparedNodeIds: const <String>{'A2_05'},
+        dueNodeIds: const <String>{'A2_06'},
         weakNodeIds: const <String>{},
       );
 
@@ -179,7 +179,7 @@ void main() {
         state.nodes
             .firstWhere(
               (ExpressionSceneNavigationNodeState item) =>
-                  item.node.id == 'L1_05',
+                  item.node.id == 'A2_05',
             )
             .prepared,
         isTrue,
@@ -188,7 +188,7 @@ void main() {
         state.nodes
             .firstWhere(
               (ExpressionSceneNavigationNodeState item) =>
-                  item.node.id == 'L1_06',
+                  item.node.id == 'A2_06',
             )
             .inRound,
         isTrue,

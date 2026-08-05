@@ -1,8 +1,8 @@
 # API Contract / API 契约
 
-## PR-003 current lineage
+## Current lineage and compatibility decision
 
-本次只切换来源链，不改变本文的 API 行为、错误语义、兼容性或已接受实现事实。当前产品 lineage 仅由适用的 approved FR 解析；Engineering Artifact 之间的 direct/conditional inputs 和适用 Gate 继续仅由 Governance Contract 解析。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+当前产品 lineage 由适用的 approved VS 与 FR 解析；Engineering Artifact 之间的 direct/conditional inputs 和适用 Gate 继续仅由 Governance Contract 解析。`CONTENT-CEFR-API-001` 是当前 active compatibility decision；文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述仅为 historical provenance，不是当前 authority、prerequisite 或 fallback。
 
 ## 状态
 
@@ -34,6 +34,8 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | Entity relationship | `docs/domain/entity_relationship.md` | ownership、cardinality、cross-domain references |
 | Foundation contract | `docs/architecture/backend_db_foundation_contract.md` | OpenAPI source-of-truth、generated Dart client、server fact boundary |
 | Path governance and traceability findings | `docs/reports/quality_report.md` | OpenAPI path decision and Product Base/P0/P0.1 eligibility |
+| Approved content browsing and course-detail behavior | `docs/product/story_map.md` (`VS-CONTENT-001-1`, `VS-CONTENT-002-1`) | 已发布可见内容、真实空状态、课程基本信息与严格 CEFR 等级边界 |
+| Approved content requirements | `docs/product/functional_requirements.md` (`FR-CONTENT-001`, `FR-CONTENT-002`) | CEFR 六值约束、一次性等级迁移、课程/内容版本一致性与失败语义 |
 
 ## Scope Classification / 范围分类
 
@@ -45,7 +47,8 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | P0.1 expression automation training<br>P0.1 表达自动化训练 | Implementation-level paths allowed where server-backed behavior is required<br>仅在需要服务端支撑的行为上允许实现级 path | Approved increment artifacts exist; local-only behavior must not be over-promoted<br>已有获批增量产物；纯本地行为不能被提升为服务端产品能力 |
 | P0.2 goal-driven learning autopilot<br>P0.2 目标驱动学习 autopilot | Implementation-level paths allowed for goal intake, diagnostic summary, backplan, daily plan, next action, autopilot control, reminder eligibility/outbox, recovery replan, item-policy decision, mastery transition audit, progress forecast and checkpoint operations<br>允许为 goal intake、diagnostic summary、backplan、daily plan、next action、autopilot control、reminder eligibility/outbox、recovery replan、item-policy decision、mastery transition audit、progress forecast、checkpoint 操作定义实现级 path | Owning P0.2 increments, including Followup-B, have requirements/spec/AC/TC/traceability and P02 policy gates<br>P0.2 归属增量（含 Followup-B）已有 requirements/spec/AC/TC/traceability 和 P02 policy gate |
 | P1 notebook/scoring/content expansion<br>P1 笔记/评分/内容扩展 | Deferred boundary only<br>仅保留 deferred boundary | Roadmap/future V2 Capability boundary only<br>仅属于 roadmap/future V2 Capability 边界 |
-| P2 A1-C2/CMS/content production<br>P2 A1-C2/CMS/内容生产 | Deferred boundary only<br>仅保留 deferred boundary | Roadmap/future V2 Capability boundary only<br>仅属于 roadmap/future V2 Capability 边界 |
+| Existing content/scenario CEFR contract<br>现有内容/场景 CEFR 契约 | Active compatibility decision for existing API fields and `ScenarioLevel` paths<br>现有 API 字段与 `ScenarioLevel` path 的当前兼容性决策 | Approved `VS-CONTENT-001-1`, `VS-CONTENT-002-1`, `FR-CONTENT-001`, `FR-CONTENT-002` |
+| Richer Course/CMS/content production<br>更丰富的 Course/CMS/内容生产 | Deferred boundary only<br>仅保留 deferred boundary | Current change does not introduce a richer Course resource, CMS workflow, or six-level content coverage commitment<br>本次不新增更丰富的 Course 资源、CMS 工作流，也不承诺六个等级均有内容 |
 
 ## Contract Rules / 契约规则
 
@@ -67,7 +70,7 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | --- | --- | --- | --- |
 | Auth / Identity<br>认证/身份 | `Auth`, `User` | Product Base FR-001, FR-010; P0 FR-COM-004, FR-COM-005, FR-COM-008 | In OpenAPI<br>已进入 OpenAPI |
 | Onboarding<br>新手引导 | `Onboarding` | Product Base FR-002 | In OpenAPI, including assessment and route creation<br>已进入 OpenAPI，覆盖评估和路线创建 |
-| Scenario / Content<br>场景/内容 | `Scenario`, `Home` | Product Base FR-003, FR-004, FR-005; P0.1 P01-FR-001, P01-FR-002 | In OpenAPI, including official content, user scenario state, and home summary<br>已进入 OpenAPI，覆盖官方内容、用户场景状态和首页摘要 |
+| Scenario / Content<br>场景/内容 | `Scenario`, `Home` | `VS-CONTENT-001-1`, `VS-CONTENT-002-1`; `FR-CONTENT-001`, `FR-CONTENT-002`; existing Product Base/P0.1 sources | In OpenAPI, including official content, `ScenarioLevel`, user scenario state, home summary, and the active strict-CEFR compatibility decision; richer Course/CMS paths remain deferred<br>已进入 OpenAPI，覆盖官方内容、`ScenarioLevel`、用户场景状态、首页摘要和当前严格 CEFR 兼容性决策；更丰富的 Course/CMS path 仍延后 |
 | Product Base practice<br>Product Base 练习 | `Practice` | Product Base FR-007, FR-008, FR-009; `mvp-backend-practice-ai` MVP-SI-008/MVP-SI-009 | In OpenAPI, including start/resume/get/turn/complete, recoverable provider failure, and summary candidate input<br>已进入 OpenAPI，覆盖 start/resume/get/turn/complete、可恢复 provider failure 和 summary candidate input |
 | P0.1 training planner<br>P0.1 训练 planner | `Training`, `Planner` | P0.1 P01-FR-001..P01-FR-017 | In OpenAPI; Product Base/production readiness blocked until backend Training implementation, tests and rollout gates close `P01-GAP-009` through `P01-GAP-014` or are explicitly marked blocked<br>已进入 OpenAPI；在 backend Training 实现、测试和 rollout gate 关闭 `P01-GAP-009` 到 `P01-GAP-014` 或明确标记 blocked 前，Product Base/production readiness 仍被阻断 |
 | P0.2 goal autopilot<br>P0.2 目标 autopilot | `Goal Autopilot` | P0.2 P02-DIAG-FR-001..007, P02-PLAN-FR-001..008, P02-AUTO-FR-001..008, P02-FUB-FR-001..008 | In OpenAPI for deterministic local implementation, including Followup-B control/planner/memory hardening; high-cost AI/provider, commercial release and official-score claims remain governed by P02/P0 gates<br>已为确定性本地实现进入 OpenAPI，包含 Followup-B control/planner/memory 加固；高成本 AI/provider、商业发布和 official-score claims 仍受 P02/P0 gate 约束 |
@@ -225,6 +228,49 @@ P02-API-001 through P02-FUB-API-006 gate result: P0.2 implementation-level endpo
 
 P02-API-001 到 P02-FUB-API-006 门禁结论：P0.2 实现级 endpoint 只允许出现在 `Goal Autopilot` family 内，并且只覆盖确定性本地事实源行为。Followup-B 允许 control、reminder eligibility/outbox、recovery、item-policy 和 audit 契约；paid AI depth、external scoring evidence、commercial release 和 official-score equivalence 仍由 P02-PG-001 到 P02-PG-005 以及 P0 commercial gate 管控。
 
+## CONTENT-CEFR-API-001 Strict CEFR Cutover / 严格 CEFR 切换
+
+归属产品行为：`VS-CONTENT-001-1`、`VS-CONTENT-002-1`；适用的已批准需求：`FR-CONTENT-001`、`FR-CONTENT-002`。
+
+### Boundary Semantics / 边界语义
+
+- 现有 API path 与 JSON 字段名保持不变。本决策只改变既有 `LevelCode` 边界的值契约，不新增 endpoint family。
+- `LevelCode` 只接受 `A1`、`A2`、`B1`、`B2`、`C1`、`C2`。所有引用该组件的既有 request、response、path parameter、catalog list、user target、onboarding output、scenario-state、practice-session 和 training-session 字段均适用此规则。
+- 单个 Course、`ScenarioLevel` 或 content track 只有一个 CEFR 值；主题级 `Scenario` 可以包含零个或多个不同 CEFR 等级的 track。
+- 合法 CEFR 值不表示该等级一定存在已发布内容。`A1`、`C1`、`C2` 当前可以没有迁移后的内容；请求集合时 API 必须返回真实空集合，请求特定但不存在的 `ScenarioLevel` 时必须返回 `RESOURCE_NOT_FOUND`，不得替换为最接近的可用等级。
+- 当前可执行内容边界仍是既有 `ScenarioLevel` family，包括 `/scenarios/{scenario_id}/levels/{level_code}` 及其现有 catalog、onboarding、home、practice 和 training 消费方。更丰富的 Course resource、course-detail endpoint family、CMS workflow 和完整六级内容库存不在本次范围内。
+
+### Compatibility And Migration / 兼容性与迁移
+
+- 这是 `/v1` 与 `schema_version: 1` 下开发阶段的协同破坏性切换。OpenAPI、已持久化的 API-facing fact、backend validation、generated Dart client、手写 Flutter adapter、bundled content、fixture 和 test 必须作为同一个候选版本一起切换；不支持新旧 binary 混用。
+- 一次性数据映射仅为 `L1`→`A2`、`L2`→`B1`、`L3`→`B2`。`beginner`、`intermediate`、`advanced` 不参与映射；若持久化数据中仍存在这些异常值，迁移必须失败并在数据所有者明确处理后重试，不得自动猜测其 CEFR 等级。
+- 切换后，`L1`、`L2`、`L3`、`beginner`、`intermediate`、`advanced` 均为非法 API 值。Backend 与 Flutter 不得把它们作为 alias 接受、规范化、用作 fallback default、双格式读取或 dual-write；替代旧 `L1` default 的新默认值为 `A2`。
+- 非法旧值或未知等级输入返回 `SCHEMA_VALIDATION_FAILED`；合法 CEFR 等级没有匹配的已发布资源时，按上述定义返回对应的空集合或 `RESOURCE_NOT_FOUND`。
+- `GoalMasteryLevel`（`L0` 至 `L5`）与 hint/scaffolding level type 是独立契约，本次保持不变；不得因本次切换重写其 schema、persistence、example 或 transition rule。
+- 回滚必须按整个候选版本执行：数据库 snapshot/migration state、OpenAPI、backend、generated client、Flutter bundle 和 content asset 必须一起恢复到互相兼容的版本。Runtime compatibility code 不是回滚机制。
+
+### Downstream Contract Handoff / 下游契约交接
+
+| 边界 | 必需后续工作 |
+| --- | --- |
+| `OPENAPI` | 将 `LevelCode` 改为六个 CEFR 值；更新所有 reference、inline enum、example 和 validation evidence，不改变既有 path 或 JSON 字段名。 |
+| Persistence | 为 user profile、onboarding assessment、learning route、user scenario state、scenario level、target expression、practice session、training content mapping 和 training session storage 中 API-facing 等级事实增加一条向前 Flyway migration，并增加严格 CEFR constraint；既有已执行 migration 保持为历史事实。 |
+| Backend | 替换 L1-L3 validator 与 default，删除 beginner/intermediate/advanced normalization，并严格区分“合法但无可用内容”与“非法输入”。 |
+| Flutter | 重新生成 `lib/generated/api/`，更新 `.openapi-sha256`，删除手写 alias/fallback，原子迁移或清理仅开发环境使用的本地 key，并更新 bundled content reference。 |
+| Content assets | 按已批准映射重写活跃 track 值和所有携带等级的 reference，保持引用完整性，不虚构 A1/C1/C2 内容。 |
+
+### Required Contract-TC Evidence / 必需 Contract-TC 证据
+
+本决策创建的每个测试用例必须使用 `source_contract_id: API_CONTRACT`，在 scope 或 selector 中标识 `CONTENT-CEFR-API-001`，并至少覆盖：
+
+- 六个 CEFR 值在代表性的 request、response 与 path 边界均通过 schema 校验；
+- 所有旧值和 alias 均以 `SCHEMA_VALIDATION_FAILED` 被拒绝，不发生 normalization 或 fallback；
+- 合法等级没有已发布内容时返回所定义的空集合/不存在结果，不替换为其他等级；
+- 一次性 persistence 与 content migration 在所有 API-facing 等级事实上执行 `L1`→`A2`、`L2`→`B1`、`L3`→`B2`，并保持内容引用完整性；
+- OpenAPI 与 generated Dart client drift check 对同一个六值契约给出一致结果；
+- Flutter storage migration 在严格 reader 运行前原子清理携带旧课程等级或旧 node ID 的开发期本地数据，失败时不推进 migration version；
+- mastery `L0`-`L5` 与 hint/scaffolding 契约的语义保持不变。
+
 ## Error Model / 错误模型
 
 OpenAPI component / OpenAPI 组件：`ErrorResponse`。
@@ -350,14 +396,14 @@ The following are intentionally excluded from implementation-level OpenAPI until
 
 - P1 notebook/vocabulary arbitrary phrase lookup and notes.
 - P1 productized scoring card and scoring rubric.
-- P1/P2 expanded scenario packages, CEFR mapping, CMS/content production workflow.
-- P2 full A1-C2 content system.
+- Richer Course resources and course-detail endpoint families beyond the current `ScenarioLevel` boundary.
+- Expanded scenario packages, CMS/content production workflow, and guaranteed content coverage at every CEFR level.
 - Public user-generated scenario/community workflows.
 
 - P1 notebook/vocabulary 任意短语查询和笔记。
 - P1 产品化 scoring card 和 scoring rubric。
-- P1/P2 扩展 scenario package、CEFR mapping、CMS/content production workflow。
-- P2 完整 A1-C2 content system。
+- 超出当前 `ScenarioLevel` 边界的更丰富 Course 资源和课程详情 endpoint family。
+- 扩展 scenario package、CMS/content production workflow，以及六个 CEFR 等级均有内容的覆盖承诺。
 - 公开用户生成 scenario/community workflow。
 
 OpenAPI may reserve tags or extension metadata for these boundaries, but must not expose executable request/response schemas for them in this stage.
@@ -375,10 +421,11 @@ Implementation may not start until:
 - `npm run check:openapi-contract` passes for examples, traceability, 4XX responses, and deferred-boundary rules.
 - `npm run check:dart-client-drift` passes for generated Dart client drift.
 - `npm run check:api-contract` passes as the combined local gate.
-- OpenAPI paths map to Product Base stable behavior, P0 approved increment, or P0.1 approved increment.
+- OpenAPI paths and value contracts map to approved product behavior, including `VS-CONTENT-001-1`, `VS-CONTENT-002-1`, `FR-CONTENT-001`, and `FR-CONTENT-002` for `CONTENT-CEFR-API-001`.
 - Each implementation-level endpoint defines auth, request, response, errors, examples, and traceability metadata.
 - Payment, usage, deletion and turn replay define idempotency behavior.
-- P0.2 Goal Autopilot paths remain limited to the approved owning P0.2 increments, including Followup-B, and P02 policy gates; P1/P2 remain deferred unless a new Product Manager-approved increment is added.
+- P0.2 Goal Autopilot paths remain limited to the approved owning P0.2 increments, including Followup-B, and P02 policy gates; richer Course/CMS paths remain deferred, while the existing `ScenarioLevel` CEFR value contract is active.
+- Contract-TC evidence for `CONTENT-CEFR-API-001` proves strict six-value validation, legacy rejection, empty/not-found behavior, migration integrity, generated-client agreement, and mastery/hint isolation.
 - Product Object Governance Check returns pass after OpenAPI generation.
 
 - `docs/architecture/openapi/speakeasy-api.yaml` 已存在，并且能按 OpenAPI 解析。
@@ -386,10 +433,11 @@ Implementation may not start until:
 - `npm run check:openapi-contract` 针对 examples、traceability、4XX responses 和 deferred-boundary rules 通过。
 - `npm run check:dart-client-drift` 针对 generated Dart client drift 通过。
 - `npm run check:api-contract` 作为组合本地门禁通过。
-- OpenAPI path 能映射到 Product Base stable behavior、P0 approved increment 或 P0.1 approved increment。
+- OpenAPI path 与值契约能映射到 approved product behavior；`CONTENT-CEFR-API-001` 映射到 `VS-CONTENT-001-1`、`VS-CONTENT-002-1`、`FR-CONTENT-001` 和 `FR-CONTENT-002`。
 - 每个实现级 endpoint 都定义 auth、request、response、errors、examples 和 traceability metadata。
 - Payment、usage、deletion 和 turn replay 都定义 idempotency behavior。
-- P0.2 Goal Autopilot path 必须限定在已批准的 P0.2 归属增量（含 Followup-B）和 P02 policy gate 内；除非新增 Product Manager 批准的增量，否则 P1/P2 保持 deferred。
+- P0.2 Goal Autopilot path 必须限定在已批准的 P0.2 归属增量（含 Followup-B）和 P02 policy gate 内；更丰富的 Course/CMS path 保持 deferred，既有 `ScenarioLevel` 的 CEFR 值契约已 active。
+- `CONTENT-CEFR-API-001` 的 Contract-TC 必须证明严格六值校验、旧值拒绝、空/不存在语义、迁移完整性、generated client 一致性，以及 mastery/hint 隔离。
 - OpenAPI 生成后，Product Object Governance Check 返回 pass。
 
 ## P0.2 Followup-E Speaking Diagnostic Production API Contract / P0.2 Followup-E 口语诊断生产 API 契约

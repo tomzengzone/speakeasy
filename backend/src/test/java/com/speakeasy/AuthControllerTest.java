@@ -129,7 +129,7 @@ class AuthControllerTest {
                   "schema_version": 1,
                   "display_name": "Updated Name",
                   "avatar_ref": "assets/images/avatars/default_avatar_2.png",
-                  "target_level": "L2",
+                  "target_level": "B1",
                   "daily_minutes": 15,
                   "reminder_enabled": true,
                   "reminder_time": "09:30"
@@ -138,7 +138,7 @@ class AuthControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.user.display_name").value("Updated Name"))
         .andExpect(jsonPath("$.user.avatar_ref").value("assets/images/avatars/default_avatar_2.png"))
-        .andExpect(jsonPath("$.user.target_level").value("L2"))
+        .andExpect(jsonPath("$.user.target_level").value("B1"))
         .andExpect(jsonPath("$.user.daily_minutes").value(15));
 
     mvc.perform(patch("/user/me")

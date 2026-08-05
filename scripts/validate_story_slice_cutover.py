@@ -18,6 +18,7 @@ RETIRED_ARTIFACTS = {
     "INCREMENT_TRACEABILITY", "INCREMENT_SWC_ALLOCATION",
     "SPEC_AC_RETIREMENT_MANIFEST", "SPEC_AC_RETIREMENT_SCHEMA",
     "SPEC_AC_RETIREMENT_VALIDATOR", "SPEC_AC_RETIREMENT_VALIDATOR_TEST",
+    "STORY_MAP_INDEX",
 }
 RETIRED_GATES = {"G-SPEC", "G-AC-TC"}
 RETIRED_ACTORS = {
@@ -52,12 +53,6 @@ ENGINEERING_LINEAGE_DOCS = (
     "docs/ai_runtime/ai_eval_cases.md",
     "docs/ai_runtime/dialogue_state_machine.md",
     "docs/ux/screen_spec.md",
-)
-CAPABILITY_ID = re.compile(r"^CAP-[A-Z][A-Z0-9-]*$")
-STORY_SECTION = re.compile(r"^##\s+\d+\..*?[（(](CAP-[A-Z][A-Z0-9-]*)\s*/")
-USER_STORY_ID = re.compile(r"^US-([A-Z][A-Z0-9-]*)-\d{3}$")
-VERTICAL_SLICE_ID = re.compile(
-    r"^VS-([A-Z][A-Z0-9-]*)-\d{3}-[1-9]\d*$"
 )
 DERIVED_OPERATIONAL_POINTER = re.compile(
     r"Derived operational pointer[（(]([A-Z][A-Z0-9_-]*)\."
@@ -201,112 +196,19 @@ def validate_story_map(root: Path) -> list[str]:
     try:
         index = _json(root / GOVERNANCE / "index.json")
         artifacts = _load_artifacts(root, index)
-        story_template = str(artifacts["STORY_MAP"]["canonical_path"])
-        index_canonical = str(artifacts["STORY_MAP_INDEX"]["canonical_path"])
+        story_map = artifacts["STORY_MAP"]
     except (OSError, json.JSONDecodeError, KeyError) as exc:
         return [f"cannot resolve Story Map contracts: {exc}"]
 
-    token = "{capability_prefix}"
-    if story_template.count(token) != 1:
-        return ["STORY_MAP canonical_path must contain exactly one {capability_prefix} placeholder"]
-    if "{" in index_canonical:
-        errors.append("STORY_MAP_INDEX canonical_path must be a single navigation document")
-
-    path = _repo_path(root, index_canonical)
-    text = path.read_text(encoding="utf-8") if path.is_file() else ""
-    head = "\n".join(text.splitlines()[:70])
-    for marker in (
-        "STORY_MAP_INDEX", "导航", "approved User Story",
-        "approved Child Vertical Slice", "Functional Requirement ID when present",
-    ):
-        if marker not in head:
-            errors.append(f"Story Map index header missing marker: {marker}")
-    forbidden = (
-        "docs/product/user_stories.md", "docs/product/base/", "Increment Requirements",
-        "-> Spec ID", "-> AC ID", "G-SPEC", "G-AC-TC",
-    )
-    for marker in forbidden:
-        if marker in head:
-            errors.append(f"Story Map index header contains retired active source/delivery marker: {marker}")
-    if "planning-only" not in head and "只组织交付" not in head:
-        errors.append("Story Map index must classify Stage/Increment as planning-only")
-    if re.search(r"^###\s+(?:US|VS)-|^\|\s*`(?:US|VS)-", text, re.M):
-        errors.append("STORY_MAP_INDEX must not contain Story/VS rows")
-
-    registry = root / "docs/product/feature_registry.md"
-    prefixes: set[str] = set()
-    if registry.is_file():
-        for line in registry.read_text(encoding="utf-8").splitlines():
-            if not line.startswith("|"):
-                continue
-            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
-            if len(cells) != 12:
-                continue
-            capability = cells[0].strip("`")
-            prefix = cells[10].strip("`")
-            if CAPABILITY_ID.fullmatch(capability) and prefix == capability.removeprefix("CAP-"):
-                prefixes.add(prefix)
-    if not prefixes:
-        errors.append("Capability Registry exposes no Story Map shard prefixes")
-
-    expected = {
-        story_template.replace(token, prefix).replace("\\", "/") for prefix in prefixes
-    }
-    discovered_paths = _expand_canonical_path(root, story_template)
-    discovered = {path.relative_to(root).as_posix() for path in discovered_paths}
-    listed = {
-        f"docs/product/{relative}"
-        for relative in re.findall(
-            r"\]\((?:\./|docs/product/)?(user_stories/user_story_CAP_[A-Z0-9-]+\.md)\)",
-            text,
-        )
-    }
-    for missing in sorted(expected - discovered):
-        errors.append(f"expected Story Map shard is missing: {missing}")
-    for unindexed in sorted(discovered - listed):
-        errors.append(f"Story Map shard is absent from STORY_MAP_INDEX navigation: {unindexed}")
-    for stale in sorted(listed - expected):
-        errors.append(f"STORY_MAP_INDEX lists an unexpected Story Map shard: {stale}")
-
-    seen_story_ids: dict[str, Path] = {}
-    for shard in discovered_paths:
-        shard_text = shard.read_text(encoding="utf-8")
-        sections = [
-            match for line in shard_text.splitlines()
-            if (match := STORY_SECTION.match(line))
-        ]
-        prefix = shard.stem.removeprefix("user_story_CAP_")
-        expected_capability = f"CAP-{prefix}"
-        if len(sections) != 1 or sections[0].group(1) != expected_capability:
-            errors.append(
-                f"{shard.relative_to(root)} must contain exactly its {expected_capability} section"
-            )
-        for number, line in enumerate(shard_text.splitlines(), 1):
-            if not re.match(r"^\|\s*`(?:US|VS)-", line):
-                continue
-            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
-            if len(cells) != 5:
-                errors.append(f"{shard.relative_to(root)}:{number} Story/VS row must have 5 columns")
-                continue
-            story_id = cells[0].strip("`")
-            match = USER_STORY_ID.fullmatch(story_id) or VERTICAL_SLICE_ID.fullmatch(story_id)
-            primary = cells[3].strip("`")
-            if not match or match.group(1) != prefix:
-                errors.append(
-                    f"{shard.relative_to(root)}:{number} {story_id} does not match shard prefix {prefix}"
-                )
-            if primary != expected_capability:
-                errors.append(
-                    f"{shard.relative_to(root)}:{number} primary {primary} "
-                    f"does not match {expected_capability}"
-                )
-            if story_id in seen_story_ids:
-                errors.append(
-                    f"duplicate Story/VS ID {story_id} across "
-                    f"{seen_story_ids[story_id].relative_to(root)} and {shard.relative_to(root)}"
-                )
-            else:
-                seen_story_ids[story_id] = shard
+    if "STORY_MAP_INDEX" in index.get("artifact_routes", {}) or "STORY_MAP_INDEX" in artifacts:
+        errors.append("retired STORY_MAP_INDEX must not be active")
+    if story_map.get("canonical_path") != "docs/product/story_map.md":
+        errors.append("STORY_MAP canonical_path must be docs/product/story_map.md")
+    if story_map.get("required_direct_inputs") or story_map.get("conditional_inputs"):
+        errors.append("STORY_MAP must not require Capability or other Artifact inputs")
+    path = _repo_path(root, str(story_map.get("canonical_path", "")))
+    if not path.is_file():
+        errors.append("canonical STORY_MAP document is missing: docs/product/story_map.md")
     return errors
 
 
@@ -323,7 +225,7 @@ def validate_cutover(root: Path = ROOT, *, check_adr: bool = True, check_story_m
     routes = set(index.get("artifact_routes", {}))
     gates = set(index.get("gate_routes", {}))
     for required in (
-        "STORY_MAP", "STORY_MAP_INDEX", "FUNCTIONAL_REQUIREMENT_CATALOG",
+        "STORY_MAP", "FUNCTIONAL_REQUIREMENT_CATALOG",
         "TEST_CASE_CATALOG", "TRACEABILITY",
     ):
         if required not in routes:

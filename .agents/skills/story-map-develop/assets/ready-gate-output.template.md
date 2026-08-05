@@ -1,50 +1,29 @@
-# Ready Gate 输出模板
+# 就绪审查输出模板
 
-用于输出可直接落到当前 story map 的 proposal 或 finding。
+用于用户明确要求 User Story 或 Child Vertical Slice 就绪审查结果时的可选输出版式。
 
 ```text
-Assumptions:
-- scope mode: capability | story | slice-review | ready-gate
-- source inventory: user-authorized draft proposal | PM-provided behavior | existing canonical facts | legacy evidence | registry boundary only
-- capability boundary source
-- inherited non-goals / boundary notes
-
 Target:
-- capability section
-- User Story ID or proposed ID
-- affected Child Vertical Slice IDs
+- User Story: <Id or proposed Id>
+- Child Vertical Slices: <Ids or proposed Ids>
 
-Row-level Source Coverage:
-- <Row ID> -> user-authorized draft proposal | PM-provided behavior | existing canonical fact | proposed ambiguity
+Result:
+- pass | fail
 
-Omitted Scope:
-- provider / SLA / approval rule / governance conclusion / downstream artifact not decided in this run
+Blocking Findings:
+- none | <最小阻塞项及受影响记录>
 
-Story Map Rows:
-- 使用 user-story-card.template.md 或 vertical-slice-card.template.md 的五列表格结构。
+Non-blocking Findings:
+- none | <不阻塞批准的改进项>
 
-Boundary Note:
-- none | 需要写入 story map 的就近边界说明
+Proposed Story Map Rows:
+- none | <使用三列表格输出可直接持久化的记录>
 
-Ready Gate Finding:
-- result: pass | fail
-- gate: draft structural | narrative quality | approval semantic | combined
-- narrative finding
-- business information density finding
-- sibling differentiation finding
-- source authority and row coverage finding
-- split / ambiguity / boundary finding
-- capability mapping finding
-- omitted-scope finding
-- missing information, if any
+Unresolved Decisions:
+- none | <仍需 Product Manager 决定的产品行为>
 
-PM Approval Required:
-- yes；只有 Product Manager 可以把 `draft` 改为 `approved` 或承诺下游消费。
+Approval Status:
+- draft | approved
 ```
 
-输出规则：
-
-- 不输出 expanded metadata card。
-- 不输出 FR、spec、pass/fail AC、TC、contract、implementation plan、code、priority、roadmap 或 release decision。
-- Story map 级结构 pass 不代表所有 `draft` 行通过 approval semantic gate。
-- 输入不足时输出 ambiguity finding，不用通用成功/失败句式补齐未知产品行为。
+该模板只组织审查结果，不增加 Story Map 字段或建立新的 Gate。

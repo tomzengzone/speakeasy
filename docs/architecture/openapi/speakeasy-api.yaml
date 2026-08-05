@@ -3661,9 +3661,12 @@ components:
     LevelCode:
       type: string
       enum:
-      - L1
-      - L2
-      - L3
+      - A1
+      - A2
+      - B1
+      - B2
+      - C1
+      - C2
     ScenarioId:
       type: string
       enum:
@@ -4013,7 +4016,9 @@ components:
         schema_version:
           $ref: '#/components/schemas/SchemaVersion'
         target_level:
-          $ref: '#/components/schemas/LevelCode'
+          default: A2
+          allOf:
+          - $ref: '#/components/schemas/LevelCode'
         set_current:
           type: boolean
           default: true
@@ -4028,7 +4033,9 @@ components:
         scenario_id:
           $ref: '#/components/schemas/ScenarioId'
         target_level:
-          $ref: '#/components/schemas/LevelCode'
+          default: A2
+          allOf:
+          - $ref: '#/components/schemas/LevelCode'
     UserScenarioStateResponse:
       type: object
       required:
@@ -4156,9 +4163,12 @@ components:
           type: string
           nullable: true
           enum:
-          - L1
-          - L2
-          - L3
+          - A1
+          - A2
+          - B1
+          - B2
+          - C1
+          - C2
         label:
           type: string
     DialogueAsset:
@@ -8078,7 +8088,7 @@ components:
           display_name: Sample Name
           avatar_ref: assets/images/avatars/default_avatar_1.png
           locale: zh-CN
-          target_level: L1
+          target_level: A2
           daily_minutes: 1
           account_status: active
           onboarding_status: incomplete
@@ -8106,7 +8116,7 @@ components:
           display_name: Sample Name
           avatar_ref: assets/images/avatars/default_avatar_1.png
           locale: zh-CN
-          target_level: L1
+          target_level: A2
           daily_minutes: 1
           account_status: active
           onboarding_status: incomplete
@@ -8116,7 +8126,7 @@ components:
         schema_version: 1
         display_name: Sample Name
         avatar_ref: assets/images/avatars/default_avatar_1.png
-        target_level: L1
+        target_level: A2
         daily_minutes: 1
         reminder_enabled: true
         reminder_time: 09:00
@@ -8137,7 +8147,7 @@ components:
         goal_direction: job_interview
         pain_points:
         - sample
-        output_level: L1
+        output_level: A2
         daily_minutes: 1
     OnboardingAssessmentResponseExample:
       summary: submitOnboardingAssessment response 200 example
@@ -8145,7 +8155,7 @@ components:
         schema_version: 1
         route:
           current_scenario_id: job_interview
-          target_level: L1
+          target_level: A2
           scenario_ids:
           - job_interview
     ScenarioListResponseExample:
@@ -8159,7 +8169,7 @@ components:
           tags:
           - sample
           levels:
-          - L1
+          - A2
           status: available
           access:
             allowed: true
@@ -8175,7 +8185,7 @@ components:
           tags:
           - sample
           levels:
-          - L1
+          - A2
           status: available
           access:
             allowed: true
@@ -8188,7 +8198,7 @@ components:
       value:
         schema_version: 1
         scenario_id: job_interview
-        level_code: L1
+        level_code: A2
         dialogue_assets:
         - dialogue_asset_id: dialogue_asset_id_sample
           role: system
@@ -8211,14 +8221,14 @@ components:
       summary: joinScenario request example
       value:
         schema_version: 1
-        target_level: L2
+        target_level: B1
         set_current: true
     CurrentScenarioRequestExample:
       summary: setCurrentScenario request example
       value:
         schema_version: 1
         scenario_id: onboarding_introduction
-        target_level: L2
+        target_level: B1
     UserScenarioStateResponseExample:
       summary: user scenario state response example
       value:
@@ -8227,20 +8237,20 @@ components:
           scenario_id: onboarding_introduction
           state: joined
           current: true
-          target_level: L2
+          target_level: B1
           updated_at: '2026-05-26T12:00:00Z'
         home_summary:
           onboarding_status: complete
           current_scenario:
             scenario_id: onboarding_introduction
             title: 入职介绍
-            target_level: L2
+            target_level: B1
             current: true
             version: 2026.05-mvp-seed
           joined_scenarios:
           - scenario_id: onboarding_introduction
             title: 入职介绍
-            target_level: L2
+            target_level: B1
             current: true
             version: 2026.05-mvp-seed
           review_status: not_available
@@ -8249,7 +8259,7 @@ components:
           next_action:
             action_type: start_practice
             scenario_id: onboarding_introduction
-            level_code: L2
+            level_code: B1
             label: 开始当前场景练习
     UserScenarioRemovedResponseExample:
       summary: removeScenario response example
@@ -8259,7 +8269,7 @@ components:
           scenario_id: job_interview
           state: removed
           current: false
-          target_level: L1
+          target_level: A2
           updated_at: '2026-05-26T12:00:00Z'
         home_summary:
           onboarding_status: complete
@@ -8279,13 +8289,13 @@ components:
           current_scenario:
             scenario_id: job_interview
             title: 英语面试
-            target_level: L1
+            target_level: A2
             current: true
             version: 2026.05-mvp-seed
           joined_scenarios:
           - scenario_id: job_interview
             title: 英语面试
-            target_level: L1
+            target_level: A2
             current: true
             version: 2026.05-mvp-seed
           review_status: not_available
@@ -8294,14 +8304,14 @@ components:
           next_action:
             action_type: start_practice
             scenario_id: job_interview
-            level_code: L1
+            level_code: A2
             label: 开始当前场景练习
     StartSessionRequestExample:
       summary: startPracticeSession request example
       value:
         schema_version: 1
         scenario_id: job_interview
-        level_code: L1
+        level_code: A2
         resume_existing: true
     PracticeSessionResponseExample:
       summary: startPracticeSession response 200 example
@@ -8310,7 +8320,7 @@ components:
         session:
           session_id: session_id_sample
           scenario_id: job_interview
-          level_code: L1
+          level_code: A2
           status: active
           current_turn_index: 1
           messages:
@@ -9226,7 +9236,7 @@ components:
         session:
           session_id: session_id_sample
           scenario_id: job_interview
-          level_code: L1
+          level_code: A2
           status: loading
           current_action_step_id: current_action_step_id_sample
           current_micro_action: ListenOne

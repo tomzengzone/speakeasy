@@ -110,7 +110,7 @@ class FoundationResponseContractTest {
         .andExpect(jsonPath("$.schema_version").value(1))
         .andExpect(jsonPath("$.user.user_id").value(tokens.userId()))
         .andExpect(jsonPath("$.user.display_name").value("Phone User"))
-        .andExpect(jsonPath("$.user.target_level").value("L1"))
+        .andExpect(jsonPath("$.user.target_level").value("A2"))
         .andExpect(jsonPath("$.user.daily_minutes").value(10))
         .andExpect(jsonPath("$.user.created_at").doesNotExist())
         .andExpect(jsonPath("$.user.updated_at").doesNotExist())

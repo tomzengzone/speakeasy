@@ -16,7 +16,7 @@ permissions:
   contents: read
 
 env:
-  FLUTTER_VERSION: "3.x"
+  FLUTTER_VERSION: "3.44.8"
   JAVA_VERSION: "17"
   APP_API_BASE_URL: ${{ secrets.APP_API_BASE_URL }}
 

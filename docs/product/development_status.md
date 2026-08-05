@@ -82,7 +82,7 @@ Product Manager Agent
 | --- | --- | --- | --- |
 | 登录、首评、首页 | 已实现前端主流程 | `lib/main.dart`, `lib/core/bootstrap/app_root.dart`, `lib/pages/onboarding_page.dart`, `lib/pages/home_page.dart` | 作为 Product Base 稳定能力保留 |
 | 官方场景资产 | 已有 2 个真实场景 | `assets/data/interview_scene_catalog.json`, `assets/data/interview_scene_wikis/` | 后续先扩展场景包，不承诺任意场景 |
-| 场景等级 | 已有 L1/L2/L3 | `assets/data/interview_scene_wikis/*.json` | 后续再映射到 CEFR A1-C2 |
+| 场景等级 | 已统一为 CEFR A1/A2/B1/B2/C1/C2；当前资产覆盖 A2/B1/B2，A1/C1/C2 允许为空 | `assets/data/interview_scene_wikis/*.json` | 当前不等于完整六级内容覆盖 |
 | 听力热身/跟读 | 已实现 | `lib/features/interview/interview_scene_listening_page.dart` | 进入口语训练前的输入环节 |
 | 推荐表达队列 | 已实现 | `lib/features/interview/expression_daily_queue_coordinator.dart` | 后续接入训练 planner |
 | 表达练习 | 已实现多种任务 | `lib/features/interview/interview_expression_learning_page.dart` | 可复用为 FSI micro-drill |
@@ -110,7 +110,7 @@ Product Manager Agent
 | 跨天自动组织训练、复习和场景复现 | 接受，拆成 daily planner、cross-session pressure ladder、mastery ladder | P0.2 |
 | 任意短语/单词查询并加笔记 | 接受，但不阻塞训练闭环 | P1 |
 | 发音和表达评分 | 基础能力进入 P0，完整评分体系进入 P1 | P0.1/P1 |
-| A1-C2 情景库和语料库 | 接受为长期内容战略，先从场景包扩展开始 | P1/P2 |
+| 完整 A1-C2 情景库和语料库 | 接受为长期内容战略，先从场景包扩展开始 | P1/P2 |
 | 任意场景 | 暂不作为近期承诺，先做官方场景包 | Later |
 | 商业化订阅上线准备 | 接受，作为付费发布阻塞增量；不替代 P0.1 训练闭环 | P0 |
 | 订阅权益后端 | 接受，Apple/Google 校验和权益持久化必须服务端负责 | P0 |
@@ -240,12 +240,12 @@ Product Manager Agent
 
 ### Later - 暂不进入当前实现
 - P1 笔记本与评分产品化：只保留 backlog，不进入当前实现。
-- P1 场景包扩展和 P2 A1-C2 内容体系：只保留内容战略，不进入当前实现。
+- P1 场景包扩展和 P2 完整 A1-C2 内容体系：只保留内容战略，不进入当前实现。
 - 任意场景、公开社区、真人导师市场、课程市场：继续 Not Now。
 
 ## 风险与边界
 - 当前只有 2 个真实官方场景，内容规模不足以支撑“任意场景”承诺。
-- 当前 L1/L2/L3 不等同于完整 CEFR A1-C2，需要单独设计映射。
+- 当前课程与场景等级已统一为 CEFR 六级分类，但资产仅覆盖 A2/B1/B2，A1/C1/C2 允许为空，尚不构成完整六级内容覆盖。
 - 语音能力虽已接入并有 deterministic provider 自动化证据，但真实 LLM/ASR/TTS provider 可用性、音频权限、失败兜底和评分稳定性仍需外部门禁。
 - 文档和部分中文静态内容存在编码显示风险，进入新阶段前应作为质量项处理。
 - 训练 Agent 必须有确定性状态机，不能只依赖自由 LLM 对话。

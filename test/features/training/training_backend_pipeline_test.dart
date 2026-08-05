@@ -83,7 +83,7 @@ Map<String, dynamic> _turnEnvelope() {
       'user_id': 'user-1',
       'scenario_id': 'job_interview',
       'scenario_version_id': 'server-version-1',
-      'level_code': 'L1',
+      'level_code': 'A2',
       'status': 'ready',
       'current_turn_index': 1,
       'current_step_key': 'explain_purpose',

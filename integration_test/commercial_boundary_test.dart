@@ -33,7 +33,7 @@ void main() {
       find.byKey(const ValueKey<String>('membership_free_gate_banner')),
       findsOneWidget,
     );
-    expect(find.textContaining('L3 高级场景'), findsWidgets);
+    expect(find.textContaining('B2 场景'), findsWidgets);
     expect(find.text('离线学习包'), findsNothing);
     expect(find.text('专属学习报告'), findsNothing);
   });
@@ -50,7 +50,7 @@ void main() {
     expect(PaymentConfig.normalizePlanId(''), PaymentConfig.freePlanId);
   });
 
-  test('TC-COM-020 非付费用户额度/权益耗尽时 L3 场景保持锁定', () {
+  test('TC-COM-020 非付费用户额度/权益耗尽时 B2 场景保持锁定', () {
     expect(
       CommercialScenarioGate.canAccess(
         targetLevel: CommercialScenarioGate.proTargetLevel,

@@ -1433,15 +1433,15 @@ class ApiClient {
 
   static String _legacyPracticeLevelCode(SceneSpec? sceneSpec) {
     if (sceneSpec == null) {
-      return 'L1';
+      return 'A2';
     }
     if (sceneSpec.pressureLevel >= 4 || sceneSpec.followupDepth >= 4) {
-      return 'L3';
+      return 'B2';
     }
     if (sceneSpec.pressureLevel >= 3 || sceneSpec.followupDepth >= 3) {
-      return 'L2';
+      return 'B1';
     }
-    return 'L1';
+    return 'A2';
   }
 
   static String _legacyPracticeTurnKey(String sessionId, String text) {

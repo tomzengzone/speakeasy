@@ -2,7 +2,7 @@
 
 ## PR-003 current lineage
 
-本次只切换来源链，不改变本文的实体、字段、不变量、持久化边界或已接受实现事实。当前产品上游仅由适用的 approved FR 解析；文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability 或 Increment SWC Allocation 引用均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+当前内容等级事实由 approved `VS-CONTENT-001-1`、`VS-CONTENT-002-1` 与 `FR-CONTENT-001`、`FR-CONTENT-002` 共同约束：场景内容轨道与课程适用等级切换为严格 CEFR。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability 或 Increment SWC Allocation 引用均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
 
 ## 状态
 
@@ -22,12 +22,14 @@ Proposed - Domain Schema Baseline + P0/P0.1/P0.2 Extension。
 | P0 extension | subscription、purchase、entitlement、usage、account deletion、commercial audit、production identity hardening、AI provider operations | In scope |
 | P0.1 extension | training session、training turn、planner decision、action chain step、micro-action、hint state、pressure check、learning evidence hardening | In scope |
 | P0.2 extension | goal profile、diagnostic、backplan、daily plan、autopilot control、notification eligibility、recovery planner、item-level memory、L0-L5 transition、forecast、checkpoint | In scope |
-| Explicit deferred | P1 notebook/评分产品化、P2 A1-C2/CMS、任意场景生成 | Out of scope |
+| Explicit deferred | P1 notebook/评分产品化、richer Course aggregate/CMS、任意场景生成 | Out of scope |
 
 ## Source Inventory
 
 | 来源 | 路径 | 用途 |
 | --- | --- | --- |
+| Approved content Story / Vertical Slice | `docs/product/story_map.md` (`US-CONTENT-001` / `VS-CONTENT-001-1`, `US-CONTENT-002` / `VS-CONTENT-002-1`) | 内容主题、课程摘要与课程详情的 approved product behavior |
+| Approved content FR | `docs/product/functional_requirements.md` (`FR-CONTENT-001`, `FR-CONTENT-002`) | CEFR 值域、课程版本一致性、空状态/失败边界与一次性切换约束 |
 | Product Base requirements | `docs/product/base/requirements.md` | 稳定 FR 和非目标 |
 | Product Base spec | `docs/product/base/spec.md` | 稳定 flow、状态和模块影响 |
 | Product Base acceptance | `docs/product/base/acceptance.md` | 可观察验收边界 |
@@ -54,6 +56,7 @@ Proposed - Domain Schema Baseline + P0/P0.1/P0.2 Extension。
 - JSONB 只能作为 provider raw payload 摘要、audit details、低频扩展字段或第三方事件原文索引，不得替代核心领域对象。
 - 每个持久化事实必须能追溯到 Product Base 或 P0/P0.1/P0.2 increment。
 - API boundary recommendation 只说明后续 API family 和契约关注点，不定义 request/response shape。
+- 内容适用等级使用独立的 `CefrLevel` 值对象，终态值域严格为 `A1`、`A2`、`B1`、`B2`、`C1`、`C2`；它不改变内部 mastery `L0-L5`，也不改变 HintState 既有 hint `L1-L4`/支架阶梯语义。
 
 ## Product Base Accepted Domain
 
@@ -63,26 +66,47 @@ Proposed - Domain Schema Baseline + P0/P0.1/P0.2 Extension。
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | User | Identity domain | user_id, display_name, avatar_ref, locale, level, account_status, created_at | 用户是所有学习、订阅、用量和删除任务的根；账号删除后不得继续产生新学习事实 | 需要 `identity_*` 组表；删除需支持 hard delete/anonymize/retain-for-audit | 后续由 Auth/User API 暴露当前用户和资料更新，不在本文定义 shape | 登录门禁、退出、注销、本地清理、账号状态测试 | Product Base FR-001, FR-010；P0 FR-COM-004, FR-COM-008 |
 | AuthIdentity | Identity domain | auth_identity_id, user_id, provider, provider_subject, linked_at, status | 一个 User 可绑定多个登录身份；生产登录不得依赖 demo flow | 需要唯一约束 provider + provider_subject；测试登录需 release gate 可识别 | Auth API 负责登录、refresh、logout、社交登录绑定 | 微信/Apple/手机号/邮箱登录失败和生产配置门禁测试 | Product Base FR-001；P0 FR-COM-004, FR-COM-005 |
-| UserProfile | Identity domain | user_id, nickname, target_level, daily_minutes, reminder_enabled, reminder_time, theme | 个人资料和偏好不直接决定权益；每日分钟数只作为偏好 | 可与 User 分表或 profile 表；本地缓存上线后需同步策略 | User/Profile API 后续细化，Flutter 可缓存展示 | 编辑资料、提醒、主题、个人中心展示测试 | Product Base FR-002, FR-010 |
-| OnboardingAssessment | Onboarding domain | assessment_id, user_id, goal_direction, pain_points, output_level, daily_minutes, completed_at | 缺少目标方向、表达卡点或输出水平时不得完成 | 需要记录首评结果与完成时间；可支持后续重评版本 | User/Onboarding API 后续细化 | 首评阻止逻辑、场景映射、日常服务非真实场景测试 | Product Base FR-002 |
-| LearningRoute | Onboarding + Content domain | route_id, user_id, scenario_ids, current_scenario_id, target_level, source_assessment_id | 只允许写入当前真实官方场景；工作沟通映射到 `onboarding_introduction`；日常服务只能形成空路线或无可练场景状态 | 需要用户到场景/等级的当前关系；避免把文案方向写成场景资产 | Scenario/User route API 后续细化 | 英语面试、入职介绍、工作沟通映射和日常服务排除测试 | Product Base FR-002, FR-003 |
-| UserScenarioState | Onboarding + Content domain | user_scenario_state_id, user_id, scenario_id, state, current_flag, target_level, joined_at, updated_at | 用户加入、移除、设为当前和切换等级的服务端事实；移除场景不得继续作为 current scene | 需要 user + scenario 唯一约束；home summary 和练习入口只能读取 active/joined 状态 | User scenario state 与 home summary API 后续细化 | 加入/移除/current/level 切换、首页空状态和下一步建议测试 | Product Base FR-002, FR-003, FR-005 |
+| UserProfile | Identity domain | user_id, nickname, target_level, daily_minutes, reminder_enabled, reminder_time, theme | `target_level` 缺省或为单个合法 `CefrLevel`；个人资料和偏好不直接决定权益；每日分钟数只作为偏好 | 可与 User 分表或 profile 表；本地缓存上线后需同步策略；既有非空等级参与一次性 CEFR migration | User/Profile API 后续细化，Flutter 可缓存展示；等级输入/输出只接受 CEFR | 编辑资料、CEFR 值域拒绝、提醒、主题、个人中心展示测试 | Product Base FR-002, FR-010；FR-CONTENT-001, FR-CONTENT-002 |
+| OnboardingAssessment | Onboarding domain | assessment_id, user_id, goal_direction, pain_points, output_level, daily_minutes, completed_at | `output_level` 必须为单个合法 `CefrLevel`；缺少目标方向、表达卡点或输出水平时不得完成 | 需要记录首评结果与完成时间；可支持后续重评版本；既有等级参与一次性 CEFR migration | User/Onboarding API 后续细化；等级输入/输出只接受 CEFR | 首评阻止、CEFR 值域拒绝、场景映射、日常服务非真实场景测试 | Product Base FR-002；FR-CONTENT-001, FR-CONTENT-002 |
+| LearningRoute | Onboarding + Content domain | route_id, user_id, scenario_ids, current_scenario_id, target_level, source_assessment_id | `target_level` 必须为单个合法 `CefrLevel`；只允许写入当前真实官方场景；工作沟通映射到 `onboarding_introduction`；日常服务只能形成空路线或无可练场景状态 | 需要用户到场景/等级的当前关系；避免把文案方向写成场景资产；既有等级参与一次性 CEFR migration | Scenario/User route API 后续细化；等级输入/输出只接受 CEFR | CEFR 路由映射与拒绝、英语面试、入职介绍、工作沟通映射和日常服务排除测试 | Product Base FR-002, FR-003；FR-CONTENT-001, FR-CONTENT-002 |
+| UserScenarioState | Onboarding + Content domain | user_scenario_state_id, user_id, scenario_id, state, current_flag, target_level, joined_at, updated_at | `target_level` 必须为单个合法 `CefrLevel` 并选择同一 Scenario 的一个 ScenarioLevel；用户加入、移除、设为当前和切换等级的服务端事实；移除场景不得继续作为 current scene | 需要 user + scenario 唯一约束；home summary 和练习入口只能读取 active/joined 状态；既有等级参与一次性 CEFR migration | User scenario state 与 home summary API 后续细化；等级输入/输出只接受 CEFR | 加入/移除/current/CEFR 切换、非法等级拒绝、首页空状态和下一步建议测试 | Product Base FR-002, FR-003, FR-005；FR-CONTENT-001, FR-CONTENT-002 |
 
 ### Official Scenario Library
 
 | Entity | Owner | 关键字段 | 生命周期 / 不变量 | Persistence / migration implication | API boundary recommendation | Test impact | Traceability note |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Scenario | Content / Scenario domain | scenario_id, slug, title, summary, category, status | 当前真实官方场景只承认 `job_interview` 和 `onboarding_introduction`；不得隐式创建第三场景 | 需要 `content_*` 组表或受审核 bundled asset 迁移路径 | Scenario API 后续提供列表和详情；本文不定义 response | 场景目录、搜索、筛选、真实场景边界测试 | Product Base FR-003；P0.1 P01-FR-001 |
+| Scenario | Content / Scenario domain | scenario_id, slug, title, summary, category, status | Scenario 是主题，不是单等级对象；一个已发布主题可有零个或多个不同 CEFR 的 ScenarioLevel，缺少可见内容轨道时仍可形成真实空状态；当前真实官方场景只承认 `job_interview` 和 `onboarding_introduction` | 需要 `content_*` 组表或受审核 bundled asset 迁移路径；不得为填补空等级而伪造内容 | Scenario API 后续提供完整已发布可见主题集合和详情；本文不定义 response | 场景目录完整性、空主题、搜索、筛选、真实场景边界测试 | Product Base FR-003；P0.1 P01-FR-001；VS-CONTENT-001-1；FR-CONTENT-001 |
 | ScenarioVersion | Content / Scenario domain | scenario_version_id, scenario_id, version, content_status, published_at | 练习、训练和证据必须引用可追踪内容版本 | 需要内容版本表；支持后续内容变更和回归 | Scenario content API 后续暴露版本标识 | 内容版本变化不破坏会话恢复测试 | Product Base FR-003；Architecture content boundary |
-| ScenarioLevel | Content / Scenario domain | scenario_level_id, scenario_id, level_code, target_level, expression_count | 当前 L1/L2/L3 是资产等级，不等同完整 A1-C2 | 需要场景等级关系和唯一约束 scenario + level | Scenario API 后续按场景/等级取内容 | 等级切换影响热身、推荐表达、场景模拟测试 | Product Base FR-003 |
-| TargetExpression | Content / Learning domain | target_expression_id, scenario_version_id, level_code, text, meaning_cn, tags, usage_note | 表达是练习、收藏、复习、掌握和训练目标的稳定引用 | 需要稳定 ID 和 normalized_text；不得只靠文本匹配 | Scenario/Training/Learning API 后续引用表达 ID | 表达队列、收藏去重、命中目标表达测试 | Product Base FR-005, FR-006, FR-008；P0.1 P01-FR-003 |
-| DialogueAsset | Content / Scenario domain | dialogue_asset_id, scenario_version_id, level_code, role, text, audio_ref, order_index | 听力热身和示范输入只引用审核内容；音频缺失需可恢复 | 可作为内容表或 asset manifest；音频引用不得保存 provider secret | Scenario content API 后续提供可播放引用 | 播放、切句、循环、音频失败降级测试 | Product Base FR-004 |
+| ScenarioLevel | Content / Scenario domain | scenario_level_id, scenario_id, level_code, target_level, expression_count | `level_code` 与 `target_level` 必须相等且均为同一个合法 `CefrLevel`；同一 Scenario 的 CEFR 唯一；当前资产仅有 `A2`、`B1`、`B2`，`A1`、`C1`、`C2` 当前无内容 | 保留唯一约束 scenario + level；稳定 ID 不因一次性值迁移改变；迁移后加 CEFR 值域与字段一致性约束 | Scenario API 后续按场景/CEFR 取内容；必须拒绝 legacy level | CEFR 唯一/一致性、A2/B1/B2 内容、A1/C1/C2 空状态、非法 legacy 值拒绝测试 | Product Base FR-003；VS-CONTENT-001-1；FR-CONTENT-001, FR-CONTENT-002 |
+| TargetExpression | Content / Learning domain | target_expression_id, scenario_version_id, level_code, text, meaning_cn, tags, usage_note | `level_code` 必须为单个合法 `CefrLevel`，并与所属场景版本中的 ScenarioLevel 轨道一致；表达是练习、收藏、复习、掌握和训练目标的稳定引用 | 需要稳定 ID 和 normalized_text；不得只靠文本匹配；既有等级参与一次性 CEFR migration | Scenario/Training/Learning API 后续引用表达 ID 并只接受 CEFR | 表达 CEFR 一致性、队列、收藏去重、命中目标表达、legacy 值拒绝测试 | Product Base FR-005, FR-006, FR-008；P0.1 P01-FR-003；FR-CONTENT-001 |
+| DialogueAsset | Content / Scenario domain | dialogue_asset_id, scenario_version_id, level_code, role, text, audio_ref, order_index | `level_code` 必须为单个合法 `CefrLevel` 并匹配内容轨道；听力热身和示范输入只引用审核内容；音频缺失需可恢复 | 可作为内容表或 asset manifest；音频引用不得保存 provider secret；若存在持久化 legacy 值必须按同一 cutover 规则迁移 | Scenario content API 后续提供可播放引用并只接受 CEFR | CEFR 内容轨道、播放、切句、循环、音频失败降级测试 | Product Base FR-004；FR-CONTENT-001 |
+
+### Approved Course Concept And Current Implementation Boundary
+
+`Course` 已由 `VS-CONTENT-001-1`、`VS-CONTENT-002-1`、`FR-CONTENT-001`、`FR-CONTENT-002` 确立为产品概念：同一已发布课程及版本必须具有稳定身份、非空英文标题、非空中文简介、唯一一个 `CefrLevel`、大于零且携带单位的典型完成时长，并在所有入口保持同一版本解析。背景图是可选信息，不属于课程成立条件。
+
+当前 backend persistence 只有 `Scenario` / `ScenarioVersion` / `ScenarioLevel` 内容轨道，没有可承载上述全部事实的 richer `Course` aggregate。`ScenarioLevel` 继续表示“某一 Scenario 下的单一 CEFR 内容轨道”，不得被重命名或假装成完整 Course，也不得凭空补造 course title、duration、publication version 或 visibility。未来若引入 richer Course aggregate，必须显式关联一个 Scenario、一个版本和唯一一个 `CefrLevel`，并由后续 Architecture/API/Backend contract 决定持久化拓扑；本次不授权创建 Course 表、Course migration 或双写关系。
+
+### Approved Content CEFR Cutover
+
+| Cutover fact | Domain contract |
+| --- | --- |
+| Canonical enum | 内容与学习目标相关等级终态只允许 `A1`、`A2`、`B1`、`B2`、`C1`、`C2`。`L1`、`L2`、`L3` 在切换完成后均为非法输入、非法持久值和非法输出。 |
+| One-time value rewrite | 仅以 `L1 -> A2`、`L2 -> B1`、`L3 -> B2` 完成一次性数据迁移；这是 migration rule，不是运行期 alias、fallback 或兼容解释。 |
+| Persistence coverage | 必须在同一 cutover 中覆盖 `UserProfile.target_level`、`OnboardingAssessment.output_level`、`LearningRoute.target_level`、`UserScenarioState.target_level`、`ScenarioLevel.level_code`、`ScenarioLevel.target_level`、`TargetExpression.level_code`、`PracticeSession.level_code`、`TrainingContentMapping.level_code`、`TrainingSession.level_code`。 |
+| Referential preservation | 迁移只改等级值并保留稳定 ID、owner、内容/会话版本、状态和审计引用；不得删除历史 session、复制内容轨道或建立 legacy/CEFR 双份记录。 |
+| ScenarioLevel consistency | 每条记录迁移后必须满足 `level_code = target_level`；同一 Scenario 中 `(scenario_id, level_code)` 唯一。Scenario 本身可有零个或多个不同 CEFR 轨道，不受“单一等级”约束。 |
+| Current content coverage | 当前 authored assets 只覆盖 `A2`、`B1`、`B2`；`A1`、`C1`、`C2` 必须作为无内容处理，不得回退到邻近等级或 legacy asset。 |
+| Entitlement boundary | Entitlement 只决定某一主题、内容轨道、课程或训练入口是否可访问；它不改变 CEFR 的值或含义，不得把付费层级解释为 CEFR，也不得把一个 CEFR 映射成另一个。 |
+| Namespace isolation | 本切换不修改 mastery `L0-L5`，也不修改 hint `L1-L4` 及其既有支架语义；任何迁移或校验必须按字段/类型定位，禁止全局替换字面量。 |
+| API impact | 所有相关 request、response、path/query 值和 generated client enum 必须使用严格 CEFR；legacy `L1`/`L2`/`L3` 必须得到 typed validation rejection，不能被静默转换。Course catalog/detail contract 仍需单独定义 approved Course 的身份、版本、必备信息、可选背景图和空状态/失败边界。 |
+| Test / Contract-TC impact | 必须证明九类持久化实体完整迁移、重复执行安全、迁移后无 legacy 值、ScenarioLevel 双字段一致、API 拒绝 legacy、A1/C1/C2 真实空状态、A2/B1/B2 可解析、entitlement 不改写等级、mastery/hint 未被误迁移。Contract-TC 与稳定 TC 的新增/更新由其 owning artifact 完成。 |
 
 ### Listening / Shadowing / Scoring
 
 | Entity | Owner | 关键字段 | 生命周期 / 不变量 | Persistence / migration implication | API boundary recommendation | Test impact | Traceability note |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| ListeningWarmup | Training domain | warmup_id, user_id, scenario_id, level_code, current_dialogue_id, mode, status | 只围绕当前场景和等级；状态可恢复 | 可本地缓存，服务端上线后可作为 training activity | Training/Scenario API 可后续承接，不在本文定义 shape | 播放、暂停、上一句、下一句、循环、模式切换测试 | Product Base FR-004 |
+| ListeningWarmup | Training domain | warmup_id, user_id, scenario_id, level_code, current_dialogue_id, mode, status | `level_code` 必须为单个合法 `CefrLevel` 并匹配场景内容轨道；只围绕当前场景和等级；状态可恢复 | 可本地缓存，服务端上线后可作为 training activity；持久化实现不得保留 legacy level | Training/Scenario API 可后续承接并只接受 CEFR，不在本文定义 shape | CEFR 值域、播放、暂停、上一句、下一句、循环、模式切换测试 | Product Base FR-004；FR-CONTENT-001 |
 | ShadowingAttempt | Training + AI Gateway domain | attempt_id, user_id, target_dialogue_id, audio_ref, transcript_ref, completeness_score, score_signal_id, status | ASR/评分失败不得阻断完整度反馈；发音评分不可用时可降级 | 需要音频/转写引用和短期 retention；score signal 独立建模 | AI Gateway/Training API 后续处理 ASR/评分边界 | 跟读录音、ASR 失败、评分不可用测试 | Product Base FR-004；`CAP-COACH-03` |
 | ScoreSignal | AI Gateway + Training domain | score_signal_id, source_type, source_id, provider, score_kind, value, confidence, status | 分数是反馈信号，不单独决定长期掌握或 P0.1 通过 | 需要 provider usage 关联和 schema_version；低置信度可标记 | AI/Feedback API 后续细化；不得由客户端伪造最终信号 | 发音、完整度、语法评分可用/不可用测试 | Product Base FR-004, FR-008；P0.1 P01-FR-007 |
 
@@ -99,7 +123,7 @@ Proposed - Domain Schema Baseline + P0/P0.1/P0.2 Extension。
 
 | Entity | Owner | 关键字段 | 生命周期 / 不变量 | Persistence / migration implication | API boundary recommendation | Test impact | Traceability note |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| PracticeSession | Training Session domain | practice_session_id, user_id, scenario_id, level_code, status, current_turn_index, started_at, completed_at | Product Base 会话支持开始、恢复、完成、中断；同场景同等级可恢复未完成会话 | `mvp-backend-practice-ai` 已落地 session 表；完成后清理活跃恢复状态 | Practice API 负责 session start/resume/get/complete | 会话恢复、完成清理、错误状态测试 | Product Base FR-007, FR-009；MVP-SI-008 |
+| PracticeSession | Training Session domain | practice_session_id, user_id, scenario_id, level_code, status, current_turn_index, started_at, completed_at | `level_code` 必须为单个合法 `CefrLevel` 并解析到同一 Scenario 的 ScenarioLevel；Product Base 会话支持开始、恢复、完成、中断；同场景同等级可恢复未完成会话 | `mvp-backend-practice-ai` 已落地 session 表；既有 active 与 historical session 均参与一次性 CEFR migration，稳定 session ID 和状态不变 | Practice API 负责 session start/resume/get/complete 并只接受/返回 CEFR | CEFR migration、legacy 拒绝、会话恢复、完成清理、错误状态测试 | Product Base FR-007, FR-009；MVP-SI-008；FR-CONTENT-001 |
 | DialogueTurn | Training Session domain | dialogue_turn_id, session_id, role, text, audio_ref, transcript_ref, turn_index, idempotency_key, created_at | 每个 turn 必须属于一个 session；用户提交后可关联反馈和证据；同 session 幂等键不得重复创建 turn | `mvp-backend-practice-ai` 已落地 turn 表；音频/转写 retention 由 Security/DevOps 后续细化 | Practice turn API 提交 turn，并由幂等键保护 replay | 录音、转写提交、消息播放、turn 顺序测试 | Product Base FR-007, FR-008；MVP-SI-008 |
 | CoachFeedback | AI Gateway + Training domain | feedback_id, source_turn_id, feedback_type, summary, suggestion_ref, score_signal_id, validation_status, provider_status | 教练反馈必须来自有效 turn 或 deterministic fallback；invalid provider schema 不得成为 successful feedback；不可直接写最终 mastery | `mvp-backend-practice-ai` 已落地 feedback 表；敏感正文需脱敏策略 | AI feedback / Practice turn API 返回结构化反馈 | 教练反馈、建议、下一问题、服务失败 fallback 测试 | Product Base FR-008；MVP-SI-006, MVP-SI-009 |
 | Correction | Learning Evidence domain | correction_id, source_turn_id, issue_type, original_text, improved_text, explanation, status | Correction 必须引用 DialogueTurn；可成为学习证据候选 | 需要 source turn 外键和去重规则 | Learning/Training API 后续可查询或沉淀 | 纠错展示、薄弱记录、个人素材写入测试 | Product Base FR-008, FR-009 |
@@ -193,7 +217,7 @@ P0-AI-ARCH-001 结论：Domain Schema 对 `commercial-ai-provider-hardening` 的
 
 | Entity | Owner | 关键字段 | 生命周期 / 不变量 | Persistence / migration implication | API boundary recommendation | Test impact | Traceability note |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| TrainingSession | Training Planner domain | training_session_id, user_id, scenario_id, level_code, status, current_action_step_id, current_micro_action, started_at, completed_at | P0.1 session 内训练事实；只限两个官方场景；不承诺跨天长期调度 | 需要 `training_*` session 表；可从 PracticeSession 迁移或并行建模 | Training API 后续负责创建、恢复、完成；本文不定义 payload | 官方场景入口、恢复、完成、abandon、error 测试 | P0.1 P01-FR-001, P01-FR-010 |
+| TrainingSession | Training Planner domain | training_session_id, user_id, scenario_id, level_code, status, current_action_step_id, current_micro_action, started_at, completed_at | `level_code` 必须为单个合法 `CefrLevel` 并解析到同一 Scenario 的 ScenarioLevel；P0.1 session 内训练事实；只限两个官方场景；不承诺跨天长期调度 | 需要 `training_*` session 表；既有 active 与 historical session 均参与一次性 CEFR migration，稳定 session ID 和状态不变 | Training API 后续负责创建、恢复、完成并只接受/返回 CEFR；本文不定义 payload | CEFR migration、legacy 拒绝、官方场景入口、恢复、完成、abandon、error 测试 | P0.1 P01-FR-001, P01-FR-010；FR-CONTENT-001 |
 | TrainingTurn | Training Planner domain | training_turn_id, training_session_id, user_action, transcript_ref, audio_ref, result, created_at | 每次 micro-action 尝试形成可追踪 turn；ASR 失败不能直接判定不会 | 需要 turn 表和 source refs；与 provider usage 可关联 | Training turn API 后续提交 turn 和幂等规则 | 录音、重录、文本兜底、ASR 失败测试 | P0.1 P01-FR-003, P01-FR-006, P01-FR-007 |
 | ActionChainStep | Content + Training Planner domain | action_chain_step_id, scenario_version_id, step_key, learner_task, success_condition, order_index | 当前 P0.1 step 限定为开场、说明目的、表达观点、回应追问、确认下一步、结束 | 需要内容版本关联；缺失显式标注时可本地映射但需可追踪 | Scenario/Training API 后续暴露 step 引用 | action chain mapping、缺失标注 fallback 测试 | P0.1 P01-FR-002 |
 | MicroAction | Training Planner domain | micro_action_id, action_type, target_expression_id, prompt_ref, pass_signal_rule, fallback_rule | 一次只呈现一个主要动作；必须有通过信号或重试路径 | 可作为枚举/配置 + session 引用；P0.2 后续扩展 | Training planner API 后续返回下一动作引用，不定义 shape | 听一句、选一个、回一句、跟一句、补一句、追问继续说测试 | P0.1 P01-FR-003 |
@@ -332,7 +356,7 @@ P0.2-DOM-001 结论：Domain Schema 现在覆盖 P0.2 planned increments（含 F
 | --- | --- |
 | `identity_*` | User、AuthIdentity、UserProfile、OnboardingAssessment、LearningRoute、AccountLifecycle |
 | `content_*` | Scenario、ScenarioVersion、ScenarioLevel、TargetExpression、DialogueAsset、ActionChainStep |
-| `training_*` | PracticeSession、DialogueTurn、ListeningWarmup、ShadowingAttempt、TrainingSession、TrainingTurn、PlannerDecision、HintState、PressureCheck、TrainingRecap |
+| `training_*` | PracticeSession、DialogueTurn、ListeningWarmup、ShadowingAttempt、TrainingContentMapping、TrainingSession、TrainingTurn、PlannerDecision、HintState、PressureCheck、TrainingRecap |
 | `learning_*` | FavoriteExpression、SavedExpression、LearningEvidence、LearningEvidenceCandidate、EvidenceRuleTrace、MasteryRecord、ReviewItem、SessionSummary、LearningHistoryEntry |
 | `goal_*` | GoalProfile、SupportedGoalMatrixDecision、DiagnosticAssessment、WeeklyBackplan、DailyTrainingPlan、PlanItem、PlannerDecisionAudit、ProgressForecast、OutcomeCheckpoint、UserAutopilotControl、NotificationEligibilityDecision、NotificationOutboxRecord、RecoveryPlanDecision、MemoryItemPolicyState、MasteryTransitionDecision、PlannerReplayAudit、GoalAutopilotMetricEvent |
 | `commerce_*` | SubscriptionPlan、Purchase、Subscription、EntitlementSnapshot、EntitlementRule、PaymentProviderEvent |
@@ -348,7 +372,7 @@ P0.2-DOM-001 结论：Domain Schema 现在覆盖 P0.2 planned increments（含 F
 | Domain | 后续 API Contract 输入 |
 | --- | --- |
 | Identity / Onboarding | Auth、User profile、Onboarding、Account deletion family |
-| Scenario / Content | Scenario list/detail/version/level/content family |
+| Scenario / Content | Scenario list/detail/version/CEFR-level/content family；后续 Course catalog/detail contract 需承接稳定 course/version 与必备信息，但当前不假定 Course persistence |
 | Product Base training | Practice or Training session family，需支持 start/resume/turn/complete |
 | Learning memory | Learning evidence、mastery、review、favorites/history family |
 | Commerce / Entitlement | Subscription verify/restore/provider event、Entitlement query/refresh family |
@@ -398,6 +422,7 @@ Owning increment: `docs/product/increments/mvp-backend-membership-boundary/`.
 | Scope | Required test direction |
 | --- | --- |
 | Product Base accepted domain | 保持启动门禁、首评、双场景、听力热身、表达队列、收藏、语音会话、学习沉淀、个人中心回归测试。 |
+| Content CEFR cutover | 增加九类实体一次性 migration、CEFR 约束、ScenarioLevel 双字段一致、legacy API 拒绝、A1/C1/C2 空内容、A2/B1/B2 资产、entitlement 语义隔离和 mastery/hint namespace 回归测试。 |
 | P0 commercial | 增加购买、恢复、无效凭据、退款/过期/撤销、权益刷新、用量额度、账号注销、商业文案一致、release gate 测试。 |
 | P0.1 training | 增加 action chain、micro-action、planner decision、hint ladder、pressure check、ASR fallback、AI schema fallback、learning evidence write-back 测试。 |
 | P0.2 goal autopilot | 增加 goal intake、diagnostic、backplan、daily plan、autopilot control、quiet-hours eligibility、notification outbox、recovery replan、item-level memory、L0-L5 transition、replay audit、forecast、checkpoint、partial/unsupported 降级和 policy gate 测试。 |
@@ -414,7 +439,7 @@ Owning increment: `docs/product/increments/mvp-backend-membership-boundary/`.
 | UX screen spec | 由 UX/Screen Spec 阶段负责。 |
 | QA test case detail / DevOps release workflow | 由 QA / DevOps 阶段负责。 |
 | P1 notebook、评分产品化、更多场景包 | Future stage。 |
-| P2 A1-C2、CMS、内容生产工具 | Future stage。 |
+| Richer Course persistence、CMS、内容生产工具 | Approved Course 产品概念已定义；具体 aggregate/table topology 与生产工具仍由后续 Architecture/API/Backend 决定。 |
 | 旧 `E:/ZhenChe/APP/speakeasy_backend` | 不作为当前目标架构依据。 |
 
 ## Downstream Handoff
@@ -423,6 +448,7 @@ Owning increment: `docs/product/increments/mvp-backend-membership-boundary/`.
 
 - 本文实体清单、状态机和事实源边界。
 - `docs/domain/entity_relationship.md` 的 ownership 与 cardinality。
+- approved content CEFR cutover、当前 `ScenarioLevel` 实现边界与 future richer Course aggregate handoff。
 - `docs/architecture/backend_db_foundation_contract.md` 的 OpenAPI source-of-truth 和 generated Dart client policy。
 - P0/P0.1 traceability 中列出的 contract gaps。
 

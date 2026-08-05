@@ -1,6 +1,7 @@
 package com.speakeasy.content;
 
 import com.speakeasy.common.ApiException;
+import com.speakeasy.common.CefrLevel;
 import com.speakeasy.commerce.EntitlementGateService;
 import com.speakeasy.identity.LearningRoute;
 import com.speakeasy.identity.LearningRouteRepository;
@@ -76,32 +77,33 @@ public class OnboardingContentService {
       UUID userId, String goalDirection, List<String> painPoints, String outputLevel, int dailyMinutes) {
     Instant now = Instant.now(clock);
     UserAccount user = requireUser(userId);
+    String cefrOutputLevel = CefrLevel.require(outputLevel, "output_level");
     OnboardingAssessment assessment = assessments.save(new OnboardingAssessment(
         UUID.randomUUID(),
         userId,
         goalDirection,
         String.join("|", painPoints),
-        outputLevel,
+        cefrOutputLevel,
         dailyMinutes,
         now));
     user.completeOnboarding(now);
     profiles.findById(userId)
-        .orElseGet(() -> profiles.save(new UserProfile(userId, user.getDisplayName(), outputLevel, dailyMinutes, now)))
-        .update(outputLevel, dailyMinutes, null, null, now);
+        .orElseGet(() -> profiles.save(new UserProfile(userId, user.getDisplayName(), cefrOutputLevel, dailyMinutes, now)))
+        .update(cefrOutputLevel, dailyMinutes, null, null, now);
 
     String scenarioId = ROUTE_MAP.get(goalDirection);
     if (scenarioId == null) {
-      return new AssessmentResult(new RouteView(null, outputLevel, List.of()));
+      return new AssessmentResult(new RouteView(null, cefrOutputLevel, List.of()));
     }
 
     requireOfficialScenario(scenarioId);
-    joinScenarioInternal(userId, scenarioId, outputLevel, true, now);
+    joinScenarioInternal(userId, scenarioId, cefrOutputLevel, true, now);
     LearningRoute route = routes.findFirstByUserIdOrderByUpdatedAtDesc(userId)
-        .orElseGet(() -> new LearningRoute(UUID.randomUUID(), userId, scenarioId, outputLevel, assessment.getAssessmentId(), now));
-    route.updateCurrentScenario(scenarioId, outputLevel, now);
+        .orElseGet(() -> new LearningRoute(UUID.randomUUID(), userId, scenarioId, cefrOutputLevel, assessment.getAssessmentId(), now));
+    route.updateCurrentScenario(scenarioId, cefrOutputLevel, now);
     route.linkAssessment(assessment.getAssessmentId());
     routes.save(route);
-    return new AssessmentResult(new RouteView(scenarioId, outputLevel, joinedScenarioIds(userId)));
+    return new AssessmentResult(new RouteView(scenarioId, cefrOutputLevel, joinedScenarioIds(userId)));
   }
 
   @Transactional(readOnly = true)
@@ -119,26 +121,32 @@ public class OnboardingContentService {
   @Transactional(readOnly = true)
   public LevelContentView getScenarioLevel(UUID userId, String scenarioId, String levelCode) {
     requireUser(userId);
-    entitlementGateService.requireScenarioLevel(userId, scenarioId, levelCode);
+    String cefrLevel = CefrLevel.require(levelCode, "level_code");
+    entitlementGateService.requireScenarioLevel(userId, scenarioId, cefrLevel);
     ScenarioVersion version = latestPublishedVersion(scenarioId);
-    levels.findByScenarioIdAndLevelCode(scenarioId, levelCode)
+    levels.findByScenarioIdAndLevelCode(scenarioId, cefrLevel)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Scenario level was not found."));
     List<TargetExpressionView> targetExpressions =
-        expressions.findByScenarioVersionIdAndLevelCodeOrderByTextAsc(version.getScenarioVersionId(), levelCode).stream()
+        expressions.findByScenarioVersionIdAndLevelCodeOrderByTextAsc(version.getScenarioVersionId(), cefrLevel).stream()
             .map(expression -> new TargetExpressionView(
                 expression.getTargetExpressionId().toString(),
                 expression.getText(),
                 expression.getMeaningCn(),
                 tags(expression.getTags())))
             .toList();
-    return new LevelContentView(scenarioId, levelCode, targetExpressions);
+    return new LevelContentView(scenarioId, cefrLevel, targetExpressions);
   }
 
   @Transactional
   public UserScenarioStateResult joinScenario(UUID userId, String scenarioId, String targetLevel, Boolean setCurrent) {
     Instant now = Instant.now(clock);
     requireUser(userId);
-    UserScenarioState state = joinScenarioInternal(userId, scenarioId, normalizeLevel(targetLevel), setCurrent == null || setCurrent, now);
+    UserScenarioState state = joinScenarioInternal(
+        userId,
+        scenarioId,
+        CefrLevel.defaultIfBlank(targetLevel, "target_level"),
+        setCurrent == null || setCurrent,
+        now);
     return stateResult(userId, state);
   }
 
@@ -148,7 +156,7 @@ public class OnboardingContentService {
     requireUser(userId);
     requireOfficialScenario(scenarioId);
     UserScenarioState state = userScenarios.findByUserIdAndScenarioId(userId, scenarioId)
-        .orElseGet(() -> new UserScenarioState(UUID.randomUUID(), userId, scenarioId, "L1", now));
+        .orElseGet(() -> new UserScenarioState(UUID.randomUUID(), userId, scenarioId, CefrLevel.DEFAULT, now));
     boolean wasCurrent = state.isCurrent();
     state.remove(now);
     userScenarios.save(state);
@@ -165,7 +173,8 @@ public class OnboardingContentService {
   public UserScenarioStateResult setCurrentScenario(UUID userId, String scenarioId, String targetLevel) {
     Instant now = Instant.now(clock);
     requireUser(userId);
-    UserScenarioState state = joinScenarioInternal(userId, scenarioId, normalizeLevel(targetLevel), true, now);
+    UserScenarioState state = joinScenarioInternal(
+        userId, scenarioId, CefrLevel.defaultIfBlank(targetLevel, "target_level"), true, now);
     return stateResult(userId, state);
   }
 
@@ -199,6 +208,8 @@ public class OnboardingContentService {
   private UserScenarioState joinScenarioInternal(
       UUID userId, String scenarioId, String targetLevel, boolean setCurrent, Instant now) {
     requireOfficialScenario(scenarioId);
+    levels.findByScenarioIdAndLevelCode(scenarioId, targetLevel)
+        .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Scenario level was not found."));
     UserScenarioState state = userScenarios.findByUserIdAndScenarioId(userId, scenarioId)
         .orElseGet(() -> new UserScenarioState(UUID.randomUUID(), userId, scenarioId, targetLevel, now));
     state.join(targetLevel, now);
@@ -294,10 +305,6 @@ public class OnboardingContentService {
     return users.findById(userId)
         .filter(user -> !"deleted".equals(user.getAccountStatus()) && !"disabled".equals(user.getAccountStatus()))
         .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "User is not active."));
-  }
-
-  private String normalizeLevel(String targetLevel) {
-    return targetLevel == null || targetLevel.isBlank() ? "L1" : targetLevel;
   }
 
   private List<String> tags(String tags) {

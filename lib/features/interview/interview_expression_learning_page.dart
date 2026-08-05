@@ -11,6 +11,7 @@ import 'package:speakeasy/features/interview/expression_shadow_scoring.dart';
 import 'package:speakeasy/features/interview/interview_engine.dart';
 import 'package:speakeasy/features/interview/interview_models.dart';
 import 'package:speakeasy/features/interview/interview_wiki_store.dart';
+import 'package:speakeasy/models/cefr_level.dart';
 import 'package:speakeasy/models/storage_models.dart';
 import 'package:speakeasy/services/audio_service.dart';
 import 'package:speakeasy/services/storage_service.dart';
@@ -1443,11 +1444,7 @@ const Color _expressionLine = Color(0xFFE8E4DB);
 const Color _expressionGold = Color(0xFFC99A4A);
 
 String _levelLabel(String targetLevel) {
-  return switch (targetLevel) {
-    'intermediate' || 'L2' => 'L2 进阶',
-    'advanced' || 'L3' => 'L3 精通',
-    _ => 'L1 入门',
-  };
+  return cefrLevelLabel(targetLevel, fieldName: 'targetLevel');
 }
 
 List<String> _warmupPersonalHints(InterviewUserGrowthWiki wiki) {

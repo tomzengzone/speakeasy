@@ -2,13 +2,13 @@
 
 ## PR-003 current lineage
 
-本次只切换治理来源链，不改变下列跨切面工程边界、API、模块责任或已接受实现事实。当前产品 lineage 来自 approved Story/VS，以及存在时的 approved FR；测试 lineage 来自 typed TC。Artifact inputs、owner 与适用 Gate 仅由 Governance Contract 解析。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+本次只切换治理来源链，不改变下列跨切面工程边界、API、模块责任或已接受实现事实。产品事实源链由 Capability Registry、Story Map 和存在时的 FR Catalog 分层共同构成；其中行为 lineage 来自 approved Story/VS，以及存在时通过 `source_vs_ids` 关联的 approved FR，Capability Registry 是不与 Story/VS 建立直接边的独立分类与边界事实层。测试 lineage 来自 typed TC。Artifact inputs、owner 与适用 Gate 仅由 Governance Contract 解析。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
 
 ## 目的
 
 本注册表记录项目中容易被局部实现绕过的跨切面能力边界。它用于约束实现计划、代码审查和后续验证：当一个需求触及已登记能力时，实施方必须复用授权入口，不得重新发明事实源、网关、上传链路或状态裁决规则。
 
-本文件是治理注册表，不替代 Story Map、FR Catalog、TC Catalog、canonical derived traceability、Engineering Contract、实现报告、测试报告、质量报告或发布证据。
+本文件是治理注册表，不替代 Capability Registry、Story Map、FR Catalog、TC Catalog、canonical derived traceability、Engineering Contract、实现报告、测试报告、质量报告或发布证据。
 
 ## 使用规则
 
@@ -28,7 +28,7 @@
 | XCB-004 | 会员权益、额度和商业事实 | Backend Commerce/Entitlement/Usage | Entitlement、subscription、usage API family | Flutter 本地判定最终权益、额度、账单、退款或商业发布状态；AI/provider 创建权益事实 | entitlement tests、quota/cost downgrade tests、release gate evidence | Backend + DevOps / QA |
 | XCB-005 | Goal Autopilot 目标、诊断、预测和 checkpoint 事实 | Backend Goal Autopilot domain | Goal Autopilot API family and deterministic policies | Flutter 本地推断最终 goal 状态、ETA、claim guard、diagnostic mode、confidence band；LLM/provider 直接写持久状态 | backend policy tests、projection tests、low-confidence downgrade tests、claim guard tests | Backend + Frontend + AI Runtime / QA |
 | XCB-006 | 数据保留、导出、删除和审计 | Backend data governance / Ops | Account deletion、retention、export、redacted audit paths | 新表或新媒体事实不接入删除/导出/retention；日志、报告或 API 暴露 raw audio、raw transcript、provider payload、secret 或完整 signed URL | account deletion tests、export redaction tests、retention job tests、log/report redaction review | Backend + DevOps / QA |
-| XCB-007 | Product source of truth 与 issue tracking | Product Manager / current product Artifacts | Story Map、FR Catalog、TC Catalog、derived traceability、issue-management tracking | 用 issue、PR、报告或实现代码替代 Story/VS/FR、typed TC、derived traceability 或 release evidence | issue body Artifact-ID links、traceability check、quality review | Product Manager + Product Object Governance Change / Check |
+| XCB-007 | Product source of truth 与 issue tracking | Product Manager / current product Artifacts | Capability Registry、Story Map、FR Catalog、TC Catalog、derived traceability、issue-management tracking | 用 issue、PR、报告或实现代码替代 Capability 边界、Story/VS/FR、typed TC、derived traceability 或 release evidence；建立 Capability -> Story/VS 直接边 | issue body Artifact-ID links、traceability check、quality review | Product Manager + Product Object Governance Change / Check |
 | XCB-008 | 场景练习与共享运行时复用 | Software Component Architecture / SWC Catalog | `FE-SCENARIO-PRACTICE`、`FE-PRACTICE-RUNTIME`、`SWC-FLOW-SCENARIO-PRACTICE-RUNTIME` | 为同一交互主干新建重复 session、voice、message、TTS、history 或 recovery runtime；绕过既有共享组件和 Flow | 当前 SWC/Flow 引用、受影响 Contract-TC、复用与禁止边界证据 | Frontend + System Architect / Software Architecture Governance Check |
 
 ## XCB-001 详细说明：统一音频上传主干与业务消费边界
@@ -398,12 +398,14 @@ XCB-006 not-applicable exception: table=<table>; owner=<owner>; safe_fields=<saf
 
 ### 统一产品对象治理主干
 
-产品范围、产品事实、测试设计、实现证据、发布证据和 issue tracking 必须按当前产品对象治理主干分层：
+产品范围、产品事实、测试设计、实现证据、发布证据和 issue tracking 必须按当前产品对象治理主干分层。产品事实源链由 Capability Registry、Story Map 和存在时的 FR Catalog 分层共同构成，不存在覆盖整条链的单一产品事实源：
 
 ```text
 用户想法或问题
--> Product Manager 分类 Capability/Sub-capability
--> approved Story -> approved Child VS -> approved FR when present
+-> Product Manager 维护适用的分层产品事实
+   CAPABILITY_REGISTRY: Capability / Sub-capability classification and boundary facts
+   STORY_MAP: approved User Story -> approved Child Vertical Slice
+   FUNCTIONAL_REQUIREMENT_CATALOG when present: approved Child VS -> approved FR (`source_vs_ids`)
 -> FR-TC when an FR exists / affected Contract-TC / VS-TC
 -> canonical derived traceability
 -> Codex Root 路由实现或审核
@@ -411,14 +413,14 @@ XCB-006 not-applicable exception: table=<table>; owner=<owner>; safe_fields=<saf
 -> issue 只作为 tracking container 链接上述 source of truth
 ```
 
-Issue、PR、代码、报告和 agent 输出都不能替代 Product Manager 分类、Story/VS/FR、typed TC、derived traceability 或 release decision。
+Capability Registry 与 Story Map 之间不存在直接 lineage：Capability 不决定 Story Map 分片、Story/VS 编号、Story 归属或影响筛选。Issue、PR、代码、报告和 agent 输出都不能替代 Capability 分类与边界事实、Story/VS/FR、typed TC、derived traceability 或 release decision。
 
 ### 授权治理入口
 
 | 治理场景 | 授权入口 | 业务语义 |
 | --- | --- | --- |
-| 产品范围与优先级 | Product Manager、Capability Registry、roadmap/planning Artifacts | 决定当前做什么、延期什么和 Capability classification；planning 不定义行为 |
-| 产品事实 | Story Map 与 FR Catalog | 持有 approved Story/VS，以及存在时可包含多个独立规则、不变量、边界或失败条件的 approved FR |
+| 产品范围与优先级 | Product Manager、roadmap/planning Artifacts | 决定当前做什么和延期什么；planning 不定义行为 |
+| 产品事实源链 | Capability Registry、Story Map 与存在时的 FR Catalog | Capability Registry 独立持有 Capability/Sub-capability 分类与边界事实；Story Map 只持有 approved User Story、Child VS 与 VS-to-Story；FR Catalog 持有从 approved VS 提炼并通过 `source_vs_ids` 建立直接上游的 approved FR。任一 Artifact 都不是整条链的唯一来源 |
 | 测试与追溯 | TC Catalog 与 canonical derived traceability | 持有 typed oracle/direct edge，并从 owning sources 投影完整 join |
 | 工作流治理 | `WORKFLOW`、`SKILL_QUALITY_STANDARD`、本注册表 Artifact | 规定方法顺序与跨切面边界；治理事实由 Governance Contract 解析 |
 | Issue tracking | `issue-management`、repository issues | 跟踪协调、链接 Artifact IDs 和证据，不拥有产品事实 |
@@ -427,7 +429,8 @@ Issue、PR、代码、报告和 agent 输出都不能替代 Product Manager 分�
 ### 当前实现状态和 legacy/planned 说明
 
 - 当前 workflow 明确 Product Manager 负责产品决策，Codex Root 负责路由，issue-management 只做 tracking。
-- `issue-management` 要求 issue 不得替代 Story/VS/FR、typed TC、traceability 或 release evidence。
+- `issue-management` 要求 issue 不得替代 Capability 分类与边界事实、Story/VS/FR、typed TC、traceability 或 release evidence。
+- Capability Registry 与 Story Map 是独立产品事实层，不存在 Capability 驱动的 Story Map 分片、Story/VS 编号、Story 归属、影响筛选或 traceability 直接边。
 - XCB-001..XCB-006 的治理表只能作为 implementation plan 和 review 的边界约束，不能直接声明需求完成、release ready 或 Product Base merge。
 - 当前工作树存在非本步骤的治理/脚本改动时，审核必须区分当前步骤范围和既有 residual risk。
 - Followup-E 当前仍是 planning/contract evidence only；任何 issue 或跟踪项都不得把它标成 implemented、tested 或 release-approved。
@@ -436,6 +439,7 @@ Issue、PR、代码、报告和 agent 输出都不能替代 Product Manager 分�
 
 - 不得用 issue、PR、实现代码、测试通过、报告摘要或 agent 口头结论替代 Product Manager 的产品决策。
 - 不得把 Capability、Stage、Increment、Work Package 或 change request 当成产品行为 source。
+- 不得用 Capability 组织 Story Map 文件、生成 Story/VS 编号、声明 Story 归属、执行 Story/VS 影响筛选或建立 `Capability -> Story/VS` 直接边。
 - 不得用本注册表补写 Story/VS/FR、typed TC、实现报告、质量报告或发布证据。
 - 不得在缺少 VS-TC、受影响 Contract-TC、现有 FR 的 FR-TC、当前 derived traceability 分支或 CI evidence 时声明 done；零 FR 本身不是缺口。
 - 不得把 local deterministic pass 写成 commercial release approval、paid AI external evidence pass 或 Product Base merge approval。
@@ -444,8 +448,10 @@ Issue、PR、代码、报告和 agent 输出都不能替代 Product Manager 分�
 
 | 模块 | 责任 | 不允许 |
 | --- | --- | --- |
-| Product Manager | 分类请求、维护 Story/VS/FR 与 planning priority | 写详细实现、测试、API schema 或被 issue/PR 替代 |
-| Story Map / FR Catalog | 承载 approved Story/VS，以及存在时的 approved FR | 接收交付批次、执行状态或工程 schema |
+| Product Manager | 维护各自独立的 Capability 边界、Story/VS、存在时的 FR 与 planning priority | 写详细实现、测试、API schema，或用 Capability 代替 Story/VS 叙事与拆分 |
+| Capability Registry | 承载 Capability/Sub-capability 分类与边界事实 | 承载或映射 Story/VS，组织 Story Map 分片，决定 Story/VS 编号、归属或影响筛选 |
+| Story Map | 只承载 approved User Story、Child VS 与 VS-to-Story 直接关系 | 保存 Capability 映射、交付批次、执行状态或工程 schema |
+| FR Catalog | 承载存在时的 approved FR，并通过 `source_vs_ids` 直接引用 approved VS | 从 Capability 或 Story 推导 FR lineage，或复制 Story/VS 叙事与工程 schema |
 | TC Catalog / Traceability | 承载 typed oracle/direct edge 与 derived full-chain projection | 新增产品行为、复制运行状态或覆盖 owning edge |
 | Codex Root | 检查产品对象门禁并路由 specialist agents | 决定产品优先级，或绕过 missing VS/VS-TC、受影响 Contract/Contract-TC、现有 FR lineage/FR-TC gate |
 | Issue Management | 创建/更新 tracking issue、链接 source-of-truth、建议 label/status | 决定产品范围、优先级、完成状态或 release readiness |

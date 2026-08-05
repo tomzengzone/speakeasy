@@ -1,5 +1,6 @@
 import 'package:speakeasy/features/interview/interview_engine.dart';
 import 'package:speakeasy/features/interview/interview_models.dart';
+import 'package:speakeasy/models/cefr_level.dart';
 import 'package:speakeasy/services/storage_service.dart';
 
 class InterviewWikiStore {
@@ -406,7 +407,11 @@ class InterviewWikiStore {
           ),
         ) ??
         const <String, String>{};
-    return _normalizeTargetLevel(preferences[_resolvedSceneId]);
+    final String? storedLevel = preferences[_resolvedSceneId];
+    if (storedLevel == null || storedLevel.isEmpty) {
+      return defaultCefrLevel;
+    }
+    return requireCefrLevel(storedLevel, fieldName: 'targetLevel');
   }
 
   Future<void> saveSelectedTargetLevel(String targetLevel) async {
@@ -420,7 +425,10 @@ class InterviewWikiStore {
         ) ??
         <String, String>{};
     final Map<String, String> next = Map<String, String>.from(current);
-    next[_resolvedSceneId] = _normalizeTargetLevel(targetLevel);
+    next[_resolvedSceneId] = requireCefrLevel(
+      targetLevel,
+      fieldName: 'targetLevel',
+    );
     await StorageService.instance.saveObject<Map<String, String>>(
       _levelPreferencesKey,
       next,
@@ -1835,14 +1843,4 @@ class InterviewWikiStore {
         .where((String token) => token.length > 3 && !stopWords.contains(token))
         .toSet();
   }
-}
-
-String _normalizeTargetLevel(String? raw) {
-  final String value = raw?.trim() ?? '';
-  return switch (value) {
-    'L1' || 'beginner' => 'beginner',
-    'L2' || 'intermediate' => 'intermediate',
-    'L3' || 'advanced' => 'advanced',
-    _ => 'beginner',
-  };
 }

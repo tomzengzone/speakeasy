@@ -1,6 +1,7 @@
 package com.speakeasy.api;
 
 import com.speakeasy.common.SchemaResponse;
+import com.speakeasy.common.CefrLevel;
 import com.speakeasy.content.OnboardingContentService;
 import com.speakeasy.security.CurrentUser;
 import jakarta.validation.Valid;
@@ -87,18 +88,18 @@ public class OnboardingContentController {
       @NotNull @Min(1) @Max(1) Integer schemaVersion,
       @NotBlank @Pattern(regexp = "job_interview|onboarding_introduction|work_communication|daily_service") String goalDirection,
       @NotNull @Size(min = 1) List<@NotBlank String> painPoints,
-      @NotBlank @Pattern(regexp = "L1|L2|L3") String outputLevel,
+      @NotBlank @Pattern(regexp = CefrLevel.REGEXP) String outputLevel,
       @NotNull @Min(1) Integer dailyMinutes) {}
 
   public record UserScenarioStateRequest(
       @NotNull @Min(1) @Max(1) Integer schemaVersion,
-      @Pattern(regexp = "L1|L2|L3") String targetLevel,
+      @Pattern(regexp = CefrLevel.REGEXP) String targetLevel,
       Boolean setCurrent) {}
 
   public record CurrentScenarioRequest(
       @NotNull @Min(1) @Max(1) Integer schemaVersion,
       @NotBlank @Pattern(regexp = "job_interview|onboarding_introduction") String scenarioId,
-      @Pattern(regexp = "L1|L2|L3") String targetLevel) {}
+      @Pattern(regexp = CefrLevel.REGEXP) String targetLevel) {}
 
   public record OnboardingAssessmentResponse(int schemaVersion, LearningRouteDto route) implements SchemaResponse {
     static OnboardingAssessmentResponse from(OnboardingContentService.AssessmentResult result) {

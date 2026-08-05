@@ -1200,7 +1200,7 @@ class _SubscriptionPanel extends StatelessWidget {
                   Text(
                     isPro
                         ? '$planLabel · 查看权益与账单'
-                        : '解锁 L3 高级场景、完整句型库和更高 AI 练习额度',
+                        : '解锁 B2 场景、完整句型库和更高 AI 练习额度',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(

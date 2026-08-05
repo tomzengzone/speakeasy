@@ -3,6 +3,7 @@ package com.speakeasy.practice;
 import com.speakeasy.ai.AiGatewayService;
 import com.speakeasy.commerce.EntitlementGateService;
 import com.speakeasy.common.ApiException;
+import com.speakeasy.common.CefrLevel;
 import com.speakeasy.content.ScenarioLevelRepository;
 import com.speakeasy.content.ScenarioRepository;
 import com.speakeasy.identity.UserAccount;
@@ -58,16 +59,18 @@ public class PracticeService {
   @Transactional
   public PracticeSessionView startOrResume(UUID userId, String scenarioId, String levelCode, boolean resumeExisting) {
     requireUser(userId);
-    requireOfficialScenarioLevel(scenarioId, levelCode);
-    entitlementGateService.requireScenarioLevel(userId, scenarioId, levelCode);
+    String cefrLevel = CefrLevel.require(levelCode, "level_code");
+    requireOfficialScenarioLevel(scenarioId, cefrLevel);
+    entitlementGateService.requireScenarioLevel(userId, scenarioId, cefrLevel);
     if (resumeExisting) {
       var existing = sessions.findFirstByUserIdAndScenarioIdAndLevelCodeAndStatusInOrderByUpdatedAtDesc(
-          userId, scenarioId, levelCode, RECOVERABLE_STATUSES);
+          userId, scenarioId, cefrLevel, RECOVERABLE_STATUSES);
       if (existing.isPresent()) {
         return sessionView(existing.get());
       }
     }
-    PracticeSession session = sessions.save(new PracticeSession(UUID.randomUUID(), userId, scenarioId, levelCode, Instant.now(clock)));
+    PracticeSession session = sessions.save(
+        new PracticeSession(UUID.randomUUID(), userId, scenarioId, cefrLevel, Instant.now(clock)));
     return sessionView(session);
   }
 

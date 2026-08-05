@@ -38,9 +38,9 @@ class ScenarioSeedVersioningTest extends BackendIntegrationTestSupport {
       assertThat(version.orElseThrow().getVersion()).isEqualTo("2026.05-mvp-seed");
       assertThat(levels.findByScenarioIdOrderByLevelCodeAsc(scenarioId))
           .extracting(com.speakeasy.content.ScenarioLevel::getLevelCode)
-          .containsExactly("L1", "L2", "L3");
+          .containsExactly("A2", "B1", "B2");
       assertThat(expressions.findByScenarioVersionIdAndLevelCodeOrderByTextAsc(
-              version.orElseThrow().getScenarioVersionId(), "L1"))
+              version.orElseThrow().getScenarioVersionId(), "A2"))
           .hasSize(2);
     }
   }

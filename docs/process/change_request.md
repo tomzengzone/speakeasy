@@ -7,8 +7,8 @@
 - id
 - date
 - requester
-- primary capability or approved no-Primary classification
-- affected capabilities
+- primary capability impact or approved no-Primary classification
+- affected capability impact
 - change summary
 - reason
 - scope impact
@@ -30,7 +30,7 @@
 
 ## 规则
 被接受的变更请求必须先更新相关源文档，之后才能开始实现。
-新变更请求必须复制 owning product object 已批准的 V2 Primary/Affected Capability 分类；若采用 no-Primary，必须保留理由和完整 Affected Capability list。变更请求不得声明或修改 registry 分类，缺失或冲突时路由 Product Manager + `capability-registry-develop`。以下历史条目中的 `affected feature` 字段作为当时记录保留，不作为新模板。
+新变更请求必须根据该请求自身的 change summary 和 scope impact，对照当前 Capability Registry 独立记录 Primary/Affected Capability impact；这是 Change Request 的影响分类，不是 Story/VS 的属性。不得从 Story/VS 的文件位置、历史 ID 前缀或正文复制、推导 Capability impact，也不得借变更请求声明或修改 Registry 分类。采用 no-Primary 时必须保留理由和完整 Affected Capability impact；分类缺失或与 Registry 边界冲突时路由 Product Manager + `capability-registry-develop`。以下历史条目中的 `affected feature` 字段作为当时记录保留，不作为新模板。
 
 ## CR-20260607-001 P0.2 生产级音频优先口语诊断
 

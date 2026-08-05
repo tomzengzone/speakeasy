@@ -113,6 +113,8 @@ RETIRED_RUNTIME_PATH_PATTERNS = (
     "codex/templates/agent_runner_packet.template.md",
     "codex/templates/pm_orchestrator_brief.template.md",
     ".agents/skills/*/SPEC.md",
+    ".agents/skills/story-map-develop/scripts/validate_story_map.py",
+    "tests/test_validate_story_map_skill.py",
     "docs/process/governance/ab_corpus.json",
 )
 ACTIVE_BASELINE_FILES = (

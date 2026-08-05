@@ -1,5 +1,6 @@
 import 'package:speakeasy/features/training/training_contract.dart';
 import 'package:speakeasy/generated/api/speakeasy_api.dart';
+import 'package:speakeasy/models/cefr_level.dart';
 import 'package:speakeasy/services/api_client.dart';
 
 enum TrainingBackendOperation {
@@ -179,8 +180,7 @@ class TrainingBackendAdapter {
     int? clientStateVersion,
     String fallbackUserId = '',
   }) async {
-    final String? trustedAudioRef =
-        audioRef == null || audioRef.trim().isEmpty
+    final String? trustedAudioRef = audioRef == null || audioRef.trim().isEmpty
         ? null
         : _normalizeTrustedAudioRef(audioRef);
     final Map<String, dynamic> response = await _transport(
@@ -538,12 +538,7 @@ TrainingRecap _recapFromJson(Map<String, dynamic>? json) {
 }
 
 String _backendLevelCode(String levelCode) {
-  return switch (levelCode.trim()) {
-    'beginner' => 'L1',
-    'intermediate' => 'L2',
-    'advanced' => 'L3',
-    String value => value,
-  };
+  return requireCefrLevel(levelCode, fieldName: 'levelCode');
 }
 
 TrainingSessionStatus _sessionStatus(String key) {

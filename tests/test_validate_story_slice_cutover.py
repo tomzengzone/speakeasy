@@ -42,7 +42,8 @@ class StorySliceCutoverValidationTest(unittest.TestCase):
     def test_graph_is_route_derived_and_excludes_historical_state(self) -> None:
         graph = {path.relative_to(ROOT).as_posix() for path in collect_candidate_authority_graph(ROOT)}
         self.assertIn("docs/process/governance/index.json", graph)
-        self.assertIn("docs/product/user_stories/user_story_CAP_TRAIN.md", graph)
+        self.assertIn("docs/product/story_map.md", graph)
+        self.assertFalse(any(path.startswith("docs/product/user_stories/") for path in graph))
         self.assertIn(".agents/skills/requirement-refine/SKILL.md", graph)
         self.assertIn(".codex/agents/backend.toml", graph)
         self.assertIn(
@@ -242,43 +243,44 @@ class StorySliceCutoverValidationTest(unittest.TestCase):
         errors, _ = validate_cutover(root)
         self.assertTrue(any("missing current-decision marker" in error for error in errors))
 
-    def test_story_map_legacy_source_is_rejected(self) -> None:
+    def test_story_map_must_use_single_canonical_document(self) -> None:
         temp, root = self.fixture()
         self.addCleanup(temp.cleanup)
-        path = root / "docs/product/story_map.md"
-        text = "当前来源：`docs/product/user_stories.md`。\n" + path.read_text(encoding="utf-8")
-        path.write_text(text, encoding="utf-8")
+        path = root / "docs/process/governance/artifacts/product.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        story_map = next(row for row in data["artifacts"] if row["artifact_id"] == "STORY_MAP")
+        story_map["canonical_path"] = "docs/product/user_stories/{story_id}.md"
+        path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
         errors, _ = validate_cutover(root)
-        self.assertTrue(any("Story Map index header contains retired" in error for error in errors))
+        self.assertTrue(any("canonical_path must be docs/product/story_map.md" in error for error in errors))
 
-    def test_missing_story_map_shard_is_rejected(self) -> None:
+    def test_missing_canonical_story_map_is_rejected(self) -> None:
         temp, root = self.fixture()
         self.addCleanup(temp.cleanup)
-        (root / "docs/product/user_stories/user_story_CAP_TRAIN.md").unlink()
+        (root / "docs/product/story_map.md").unlink()
         errors, _ = validate_cutover(root)
-        self.assertTrue(any("expected Story Map shard is missing" in error for error in errors))
+        self.assertTrue(any("canonical STORY_MAP document is missing" in error for error in errors))
 
-    def test_story_map_shard_rejects_wrong_primary_capability(self) -> None:
+    def test_story_map_rejects_capability_input_dependency(self) -> None:
         temp, root = self.fixture()
         self.addCleanup(temp.cleanup)
-        path = root / "docs/product/user_stories/user_story_CAP_ACC.md"
-        text = path.read_text(encoding="utf-8").replace(
-            "| `CAP-ACC` | — |", "| `CAP-LEVEL` | — |", 1,
-        )
-        path.write_text(text, encoding="utf-8")
+        path = root / "docs/process/governance/artifacts/product.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        story_map = next(row for row in data["artifacts"] if row["artifact_id"] == "STORY_MAP")
+        story_map["required_direct_inputs"] = ["CAPABILITY_REGISTRY"]
+        path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
         errors, _ = validate_cutover(root)
-        self.assertTrue(any("primary CAP-LEVEL does not match CAP-ACC" in error for error in errors))
+        self.assertTrue(any("STORY_MAP must not require Capability" in error for error in errors))
 
-    def test_story_map_shard_rejects_simple_vertical_slice_id(self) -> None:
+    def test_retired_story_map_index_route_is_rejected(self) -> None:
         temp, root = self.fixture()
         self.addCleanup(temp.cleanup)
-        path = root / "docs/product/user_stories/user_story_CAP_ACC.md"
-        text = path.read_text(encoding="utf-8").replace(
-            "VS-ACC-001-1", "VS-ACC-001", 1,
-        )
-        path.write_text(text, encoding="utf-8")
+        path = root / "docs/process/governance/index.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        data["artifact_routes"]["STORY_MAP_INDEX"] = "artifacts/product.json"
+        path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
         errors, _ = validate_cutover(root)
-        self.assertTrue(any("VS-ACC-001 does not match shard prefix ACC" in error for error in errors))
+        self.assertTrue(any("retired Artifact remains routed: STORY_MAP_INDEX" in error for error in errors))
 
     def test_missing_engineering_lineage_marker_is_rejected(self) -> None:
         temp, root = self.fixture()

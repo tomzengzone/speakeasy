@@ -1,22 +1,63 @@
-# Story 和 Slice 就绪门
+# User Story 和 Child Vertical Slice 就绪参考
 
-只有记录创建、语义重写、拆分/合并或批准就绪工作才可以读取本 reference。
+仅在创建、语义重写、拆分、合并或批准 User Story/Child Vertical Slice 时读取本 reference。
 
-## Story 和 Slice 语义
+## 语义边界
 
-- 一个 Story 表达一个用户价值场景。其 description 必须清楚说明参与者、上下文、产品对象、目标/操作和可见结果。独立旅程或主要结果应该拆分。
-- 一个 Child Slice 是 Story 下用户可以感知的最小交付闭环。必须说明触发条件、操作、业务对象、决策/状态影响、可见结果，以及任何会改变决策的例外。
-- 只有触发条件、结果、状态影响、业务决策或可独立验证价值不同时，才应该拆分同级 Slice；不得按照 CRUD 标签或通用 loading/save/retry 脚手架拆分。
+- User Story 是一个连贯用户价值场景的父级容器。其 `description` 必须说明用户、使用情境、业务对象、用户目标和可见价值；它不是页面、模块、需求清单或实现任务。
+- Child Vertical Slice 是 User Story 下可独立交付、可独立验证、形成端到端路径并产生可观察用户或业务价值的最小增量。它应该覆盖兑现该价值所需的产品边界，但不要求机械涉及每个技术层。
+- 只有界定用户结果所必需的选择、状态含义、作用范围或关键恢复事实可以保留在 Child Vertical Slice 叙事中。详细字段规则、UI 呈现与交互规则、接口与持久化规则、技术任务、测试任务和单条验收条件应该进入适用的下游 Artifact 或实现工作，不得成为 sibling Child Vertical Slice。
+
+## 拆分判断
+
+- 只有用户情境、业务决策、可见结果、状态影响或可独立交付的价值不同时，才应该拆分 sibling Child Vertical Slice。
+- 每个 sibling 必须在不依赖另一个 sibling 的前提下产生基本价值，并具有自己的端到端验证路径。
+- 同一结果的校验、加载、保存、失败提示和恢复通常保留在同一个 Child Vertical Slice。只有异常或恢复形成独立用户决策和独立价值时才应该拆分。
+- Child Vertical Slice 应该足够小，可以在一次正常交付迭代内完成；若仍过大，优先按用户选择、业务规则差异、对象范围或可独立结果继续纵向拆分，不得按技术层水平拆分。
+- 一个 Child Vertical Slice 若包含多个可分别交付的主要结果，应该继续拆分；若拆分后的某行单独不产生价值，应该合并回能够兑现价值的 sibling。
+
+## 就绪检查
+
+User Story 就绪必须同时满足：
+
+1. 用户、情境、目标和可见价值明确。
+2. 只表达一个连贯的用户价值场景。
+3. Child Vertical Slice 共同兑现 Story 承诺的价值，不引入新的独立旅程。
+
+Child Vertical Slice 就绪必须同时满足：
+
+1. 触发或入口、业务对象、用户选择或业务决策、状态影响和可见结果足以支持端到端验证。
+2. 单独完成即可产生可观察的用户或业务价值。
+3. 可以独立交付和验证，不依赖 sibling 才能形成基本价值。
+4. 颗粒度适合一次正常交付迭代。
+5. 不是技术层、实现任务、字段规则或验收条件。
+6. 关键边界已明确；会改变产品行为的未知项被显式保留为未决决策。
 
 ## 信息与权威边界
 
-每个新增或重写的 Slice 必须包含至少两个无法从 Capability 名称推导的具体产品事实，例如对象、选择、状态含义、范围差异、交接、例外或数据边界。移除产品名词后如果只剩通用动词，必须返回歧义发现项。
+Story Map 只持有 User Story 和 Child Vertical Slice 层的产品叙事。缺失行为必须保留为未决决策，不得从 Capability 名称、下游 Artifact 或通用成功/失败模式推断，也不得复制其他事实层正文来制造完整性。
 
-持久化前，必须在当前任务或审查证据中声明范围模式、目标记录、来源清单、遗漏范围、非目标和未解决决策；这些是批准输入，不是额外的 Story Map 列。每条记录必须分类为 `draft proposal`、`PM-provided behavior`、`existing canonical fact` 或 `proposed ambiguity`。受影响的 Capability ID 必须标识真实的跨 Capability 影响或 `none`；registry 记录只提供分类边界，不得提供缺失的行为。
+普通 `draft` 只需要说明目标、已知价值或结果、必要的拆分理由和实际存在的未决决策。只有批准、语义重写、外部事实导入、事实冲突或高风险边界变化时，才需要在当前任务证据中记录适用的来源和影响范围；不得要求逐行来源分类，也不得为此增加 Story Map 字段或新 Gate。
+
+## 正反例
+
+符合颗粒度的示例：
+
+- `US-0042`：订阅即将到期的用户希望比较可用方案并延续会员权益，避免服务中断。
+- `VS-0042-1`：用户在到期提醒中选择月度方案并完成付款后，订阅有效期延长，会员权益立即保持可用；付款未完成时保留原状态并给出继续完成的路径。
+- `VS-0042-2`：符合条件的用户选择年度方案并使用已有优惠后，可以在确认总价后完成续订，订阅状态和优惠使用结果对用户可见。
+
+不符合颗粒度的示例：
+
+- “校验优惠码格式并显示错误”是字段规则或验收条件，不是独立价值增量。
+- “实现续订 API 并写入数据库”是水平技术任务，不是端到端用户价值。
+- “付款时显示 loading 并禁用按钮”是交互细节，不是 Child Vertical Slice。
+- “查询方案、编辑订单、保存付款并处理所有通知”包含多个可能独立的主要结果，需要按可交付价值重新判断边界。
 
 ## 就绪决定
 
-- 结构：`US-<Prefix>-<NNN>` 必须唯一；按 Story 分组的 `VS-<Prefix>-<Story NNN>-<Child N>` ID（例如 `VS-CONTENT-001-1`）必须唯一；VS 的 Story 编号必须与父级 Story 一致，并具有五列、正确的 Capability 章节、一个父级且没有下游字段。
-- 叙事：Story 必须包含场景/对象/操作/结果；Slice 必须包含触发条件/对象/决策/结果；同级 Slice 必须具有独立价值。
-- 权威边界：来源覆盖、遗漏范围、非目标、未解决决策和 Capability 映射必须在当前任务或审查证据中明确；不得为此增加额外的 Story Map 字段，且 `draft` 不代表批准。
-- 校验：针对本次修改范围运行 `python .agents/skills/story-map-develop/scripts/validate_story_map.py --capability <CAP-ID>`，然后运行适用的 contract、language 和 checker Gate。
+- User Story `Id` 使用四位中性序号 `US-<NNNN>`；Child Vertical Slice `Id` 使用 `VS-<NNNN>-<N>`，其中 `<NNNN>` 与父级一致，`<N>` 是不带前导零的正自然数。所有 `Id` 必须唯一。
+- Child Vertical Slice 必须嵌套在唯一 User Story 下，父子关系不使用重复字段表达。
+- 记录表只包含 `Id`、`description` 和 `Status`；Capability 不决定文件、ID 或映射列。
+- `draft` 表示尚未批准，不代表语义不完整；只有满足上述就绪检查且产品语义已确认时，Product Manager 才可以将其设为 `approved`。
+- 发现缺失产品决策、sibling 重叠、水平切片或不能独立产生价值时，就绪结果必须为 `fail` 并说明最小阻塞项。

@@ -120,7 +120,7 @@ Feature Spec Generate Skill（功能规格生成技能）
 | 用户门禁 | unauthenticated, authenticated-not-onboarded, authenticated-onboarded | 决定登录页、首评页或首页。 |
 | 首评 | incomplete, complete | 缺少关键选择时保持 incomplete。 |
 | 场景选择 | no-scene, scene-joined, current-scene-selected | 影响首页与练习入口。 |
-| 场景等级 | L1, L2, L3 | 当前资产等级，不等同完整 CEFR A1-C2。 |
+| 场景等级 | A1, A2, B1, B2, C1, C2 | 课程与场景统一使用 CEFR 六级分类；当前资产覆盖 A2/B1/B2，A1/C1/C2 允许为空，尚不等于完整六级内容覆盖。 |
 | 推荐表达 | empty, queued, in-progress, completed | 队列来自复习、薄弱和变体。 |
 | 收藏 | not-favorited, favorited | 稳定 ID 去重。 |
 | 语音会话 | idle, recording, submitting, feedback, recoverable-error, completed | 主路径为语音作答。 |

@@ -113,6 +113,13 @@ def dart_source_text(target):
     return "\n".join(path.read_text(encoding="utf-8") for path in sorted(target.rglob("*.dart")))
 
 
+def generated_level_code_values(generated_text):
+    enum_match = re.search(r"enum\s+LevelCode\s*\{(?P<body>.*?)\n\}", generated_text, re.DOTALL)
+    if not enum_match:
+        return None
+    return re.findall(r"^[ \t]*[a-z][A-Za-z0-9_]*\('([^']+)'\)[,;]", enum_match.group("body"), re.MULTILINE)
+
+
 def handwritten_path_literals(path):
     if not path.exists():
         return set()
@@ -170,6 +177,17 @@ def main():
                     "generated Dart client is missing OpenAPI path templates: "
                     + ", ".join(missing_paths[:12])
                     + (" ..." if len(missing_paths) > 12 else "")
+                )
+            openapi_level_codes = (((spec.get("components") or {}).get("schemas") or {}).get("LevelCode") or {}).get("enum")
+            generated_level_codes = generated_level_code_values(generated_text)
+            if not openapi_level_codes:
+                errors.append("OpenAPI components.schemas.LevelCode must define an enum")
+            elif generated_level_codes is None:
+                errors.append("generated Dart client is missing typed LevelCode enum")
+            elif generated_level_codes != openapi_level_codes:
+                errors.append(
+                    "generated Dart LevelCode values do not match OpenAPI: "
+                    + f"generated={generated_level_codes}, openapi={openapi_level_codes}"
                 )
     else:
         if mode != "pre_client_generation_gate":

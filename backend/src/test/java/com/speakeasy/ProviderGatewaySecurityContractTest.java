@@ -68,7 +68,7 @@ class ProviderGatewaySecurityContractTest extends BackendIntegrationTestSupport 
   @Test
   void serverSideGatewayWorksWithoutClientSecret() throws Exception {
     AuthTokens tokens = loginPhone("+8613800138201");
-    String sessionId = startSession(tokens, "job_interview", "L1");
+    String sessionId = startSession(tokens, "job_interview", "A2");
 
     mvc.perform(post("/ai/coach-turn")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))

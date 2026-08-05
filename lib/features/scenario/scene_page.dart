@@ -61,6 +61,7 @@ class ScenePage extends StatefulWidget {
   @override
   State<ScenePage> createState() => _ScenePageState();
 }
+
 class _ScenePageState extends State<ScenePage> {
   final SceneAuxiliaryCoordinator _sceneAuxiliaryCoordinator =
       const SceneAuxiliaryCoordinator();
@@ -796,14 +797,14 @@ class _ScenePageState extends State<ScenePage> {
     try {
       await _speechToText.listen(
         onResult: _handleHomeSpeechResult,
-        localeId: _homeSpeechLocaleId,
-        listenFor: const Duration(minutes: 1),
-        pauseFor: const Duration(seconds: 3),
         listenOptions: SpeechListenOptions(
           partialResults: true,
           cancelOnError: true,
           listenMode: ListenMode.dictation,
           autoPunctuation: true,
+          localeId: _homeSpeechLocaleId,
+          listenFor: const Duration(minutes: 1),
+          pauseFor: const Duration(seconds: 3),
         ),
       );
     } catch (error) {
@@ -933,14 +934,14 @@ class _ScenePageState extends State<ScenePage> {
       }
       await _speechToText.listen(
         onResult: _handleChatSpeechResult,
-        localeId: _chatSpeechLocaleId,
-        listenFor: const Duration(minutes: 1),
-        pauseFor: const Duration(seconds: 2),
         listenOptions: SpeechListenOptions(
           partialResults: true,
           cancelOnError: false,
           listenMode: ListenMode.dictation,
           autoPunctuation: false,
+          localeId: _chatSpeechLocaleId,
+          listenFor: const Duration(minutes: 1),
+          pauseFor: const Duration(seconds: 2),
         ),
       );
     } catch (error) {

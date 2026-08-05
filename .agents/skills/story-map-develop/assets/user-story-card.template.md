@@ -1,26 +1,19 @@
-# User Story 表格模板
+# User Story 输出模板
 
-用于 `STORY_MAP` 的单个 Capability 分片；路径与所有权通过 Governance Contract 解析。保持现行五列结构，不新增 metadata 列。
+用于输出一个 User Story 及其嵌套的 Child Vertical Slice。路径通过 Governance Contract 解析。
 
 ```md
-### US-<CAP>-<NNN> - <title>
+### US-0042 - <title>
 
-| Id | description | Status | Primary Capability ID | Affected Capability IDs |
-| --- | --- | --- | --- | --- |
-| `US-<CAP>-<NNN>` | <用自然叙事说明 actor、具体场景、业务对象、用户目标及可见价值；可使用“作为……我希望……”检查语义，但不要求固定句式。> | `draft` | `CAP-<PRIMARY>` | `CAP-<AFFECTED-1>`, `CAP-<AFFECTED-2>` |
+| Id | description | Status |
+| --- | --- | --- |
+| `US-0042` | <用自然叙事说明用户、具体情境、业务对象、目标和可见价值。> | `draft` |
 
 Child Vertical Slices:
 
-| Id | description | Status | Primary Capability ID | Affected Capability IDs |
-| --- | --- | --- | --- | --- |
-| `VS-<CAP>-<STORY-NNN>-<CHILD-N>` | <one user-perceivable delivery loop> | `draft` | `CAP-<PRIMARY>` | `CAP-<AFFECTED>` |
+| Id | description | Status |
+| --- | --- | --- |
+| `VS-0042-1` | <说明触发或入口、业务对象、用户选择或业务决策、状态影响和可见结果。> | `draft` |
 ```
 
-检查：
-
-- `description` 是唯一产品语义源。
-- 标题命名用户要完成的业务目标，不以页面、模块或字段集合代替价值。
-- Child Slices 应共同兑现 Story 的价值，不引入 Story 未承诺的新旅程。
-- 没有 affected capability 时写 `none`。
-- Non-goals、source、共享 assumption 或边界冲突写在文档级说明或就近 `Boundary note`。
-- 不增加 Actor、Scenario、Outcome、Parent Story 等重复列。
+父子关系由文档嵌套位置表达；模板不增加 Capability、Parent 或下游 Artifact 列。

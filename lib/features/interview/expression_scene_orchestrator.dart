@@ -1,4 +1,5 @@
 import 'package:speakeasy/features/interview/interview_models.dart';
+import 'package:speakeasy/models/cefr_level.dart';
 
 enum ExpressionScenePracticeMode { review, newLesson }
 
@@ -47,27 +48,18 @@ class ExpressionSceneGraph {
   }
 
   List<String> nodeIdsForLevel(String targetLevel) {
-    final String normalizedLevel = _normalizeExpressionSceneLevel(targetLevel);
+    final String level = requireCefrLevel(
+      targetLevel,
+      fieldName: 'targetLevel',
+    );
     for (final ExpressionSceneTrack track in tracks) {
-      if (track.targetLevel == normalizedLevel || track.id == normalizedLevel) {
+      if (track.targetLevel == level || track.id == level) {
         return track.nodeIds
             .where((String id) => nodeById(id) != null)
             .toList(growable: false);
       }
     }
-    final String trackId = switch (normalizedLevel) {
-      'advanced' => 'L3',
-      'intermediate' => 'L2',
-      _ => 'L1',
-    };
-    for (final ExpressionSceneTrack track in tracks) {
-      if (track.id == trackId) {
-        return track.nodeIds
-            .where((String id) => nodeById(id) != null)
-            .toList(growable: false);
-      }
-    }
-    return nodes.map((ExpressionSceneNode node) => node.id).toList();
+    return const <String>[];
   }
 }
 
@@ -464,13 +456,4 @@ class ExpressionSceneOrchestrator {
         .where((String id) => id.trim().isNotEmpty && seen.add(id))
         .toList(growable: false);
   }
-}
-
-String _normalizeExpressionSceneLevel(String value) {
-  final String normalized = value.trim();
-  return switch (normalized) {
-    'L2' || 'intermediate' => 'intermediate',
-    'L3' || 'advanced' => 'advanced',
-    _ => 'beginner',
-  };
 }

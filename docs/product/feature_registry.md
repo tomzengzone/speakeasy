@@ -1,7 +1,7 @@
 # APP 功能注册表
 
 ## 状态
-Active v2 - 本文是 Product Manager 管理的当前唯一 active Capability Registry。下游 artifact 需要记录 capability classification 时，只使用本文 active V2 `Capability ID` / `Sub-capability ID`；产品行为仍以已批准 User Story / Vertical Slice 及其直接下游为来源。V1 已冻结到 `docs/product/baselines/feature-registry-v1-20260701.md`，只用于历史追溯，不再作为 active、compatibility 或新增下游 source of truth。
+Active v2 - 本文是 Product Manager 管理的当前唯一 active Capability Registry，只在 Capability/Sub-capability 分类与边界事实这一层具有该唯一性。完整产品事实源链还包括 Story Map 持有的 User Story / Child Vertical Slice 用户闭环语义，以及存在时由 FR Catalog 持有的 Feature Requirement 规则、边界和失败语义；本文不是整条产品事实源链的唯一来源。其他 Artifact 只有在自身契约要求引用业务分类边界时才使用本文 active V2 `Capability ID` / `Sub-capability ID`；Story/VS 不记录 Capability classification、ownership 或映射。V1 已冻结到 `docs/product/baselines/feature-registry-v1-20260701.md`，只用于历史追溯，不再作为 active、compatibility 或新增下游 source of truth。
 
 ## 治理入口
 - Product Manager 拥有本文中的 Capability / Sub-capability 产品事实、业务边界取舍和批准权。
@@ -13,7 +13,8 @@ Active v2 - 本文是 Product Manager 管理的当前唯一 active Capability Re
 - Feature capability 是稳定商业学习类 APP 的长期业务能力，不是交付阶段、用户旅程步骤、技术基础设施、Domain、SWC、provider 运营或实现切片。
 - Onboarding / first-run journey 不能作为顶层 capability；它应拆解映射到账号资料、当前水平画像、学习目标偏好、学习计划、触达留存等稳定业务能力。
 - `server-backed-learning-foundation`、`ai-provider-operations` 不再作为顶层业务 capability；它们只作为架构、数据、AI runtime、运营、发布或旧能力映射支撑。
-- 本注册表只登记稳定功能域、边界、一级子能力、相邻能力、下游文档前缀和旧能力映射；不写需求正文、spec、AC、TC、实现任务、测试证据或发布证据。
+- 本注册表只登记稳定功能域、边界、一级子能力、相邻能力、下游文档命名空间和旧能力映射；不写 Story/VS 行为、需求正文、Engineering Contract、测试用例、实现任务、测试证据或发布证据。
+- `Downstream document prefix` 仅为仍按业务能力域组织的下游文档保留命名空间，不表示 Story/VS 的分类或归属，不得用于 Story Map 文件划分、新增 US/VS ID 或 US/VS mapping。
 
 ## 术语表
 
@@ -30,23 +31,26 @@ Active v2 - 本文是 Product Manager 管理的当前唯一 active Capability Re
 ## 关系模型
 
 ```text
-Capability ID
--> Sub-capability ID
--> Story / Vertical Slice classification and ownership
+Capability Registry
+-> Capability / Sub-capability classification and boundary facts
 
-Stage Scope ID
+Story Map
+-> User Story
+-> nested Child Vertical Slice
+
+approved Child Vertical Slice
+-> Functional Requirement when durable rules, invariants, boundaries or failure semantics need extraction
+
+approved Child Vertical Slice + applicable Functional Requirement
+-> affected Engineering Contracts when applicable
+-> typed FR / Contract / VS Test Cases
+-> implementation and verification evidence
+
+Stage Scope
 -> Increment delivery commitment
-
-Story / Vertical Slice
--> FR
--> Spec
--> AC
--> TC
--> SWC/API/Domain/AI/UX when applicable
--> Evidence
 ```
 
-Capability / Sub-capability 是稳定分类，Stage Scope / Increment 是交付结构，Story / Vertical Slice 才是行为来源。完整分类、交付和 evidence join 只在 owning Product Base 或 increment `traceability.md` 中维护。
+Capability Registry、Story Map 和存在时的 Functional Requirement Catalog 分别持有产品事实源链中的分类边界、用户价值闭环和可复用规则事实；它们通过明确引用协同，但 Story/VS 不按 Capability 分类、归属或文件前缀组织。Engineering Contract、Test Case 与实现证据从 approved VS 及适用 FR 派生，不构成产品事实层的串行替代关系。Stage Scope / Increment 只组织交付，完整 evidence join 由适用的 owning traceability 投影维护。
 
 ## CAP-ACC - 账号、身份资料与隐私
 

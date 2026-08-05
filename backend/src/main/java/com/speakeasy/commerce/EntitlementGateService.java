@@ -38,7 +38,7 @@ public class EntitlementGateService {
 
   @Transactional(readOnly = true)
   public void requireScenarioLevel(UUID userId, String scenarioId, String levelCode) {
-    if (!"L3".equals(levelCode)) {
+    if (!"B2".equals(levelCode)) {
       return;
     }
     EntitlementSnapshot entitlement = currentEntitlement(userId);

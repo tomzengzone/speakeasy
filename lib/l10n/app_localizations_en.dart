@@ -369,7 +369,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'You want to sound more natural and polished';
 
   @override
-  String get levelBeginner => 'Beginner';
+  String get levelBeginner => 'A2 Foundation';
 
   @override
   String get levelBeginnerDesc =>
@@ -383,14 +383,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can say simple sentences but lack fluency';
 
   @override
-  String get levelIntermediate => 'Intermediate';
+  String get levelIntermediate => 'B1 Intermediate';
 
   @override
   String get levelIntermediateDesc =>
       'You can handle daily conversation but sound unnatural';
 
   @override
-  String get levelAdvanced => 'Advanced';
+  String get levelAdvanced => 'B2 Upper-intermediate';
 
   @override
   String get levelAdvancedDesc =>

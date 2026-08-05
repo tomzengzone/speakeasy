@@ -16,6 +16,7 @@ import 'package:speakeasy/features/interview/interview_llm_scheduler.dart';
 import 'package:speakeasy/features/interview/interview_models.dart';
 import 'package:speakeasy/features/interview/interview_wiki_store.dart';
 import 'package:speakeasy/models/app_models.dart';
+import 'package:speakeasy/models/cefr_level.dart';
 import 'package:speakeasy/services/api_client.dart';
 import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/services/audio_service.dart';
@@ -48,7 +49,7 @@ class InterviewPracticePage extends StatefulWidget {
   const InterviewPracticePage({
     super.key,
     this.sceneId = defaultInterviewSceneId,
-    this.targetLevel = 'beginner',
+    this.targetLevel = defaultCefrLevel,
     this.initialNodeId = '',
     this.entitlementProjection,
     this.llmScheduler,
@@ -574,7 +575,7 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
     super.initState();
     _llmScheduler = widget.llmScheduler ?? InterviewLlmScheduler();
     _wikiStore = InterviewWikiStore(sceneId: widget.sceneId);
-    _runtimeTargetLevel = _normalizeSceneMapTargetLevel(widget.targetLevel);
+    _runtimeTargetLevel = _requireSceneMapTargetLevel(widget.targetLevel);
     unawaited(_bootstrap());
   }
 
@@ -785,8 +786,8 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
     }
     final InterviewExpressionNode? node = sceneGraph.nodeById(nodeId);
     if (node == null ||
-        _normalizeSceneMapTargetLevel(node.targetLevel) !=
-            _normalizeSceneMapTargetLevel(session.targetLevel)) {
+        _requireSceneMapTargetLevel(node.targetLevel) !=
+            _requireSceneMapTargetLevel(session.targetLevel)) {
       return;
     }
     final List<String> planned = session.plannedStages
@@ -3439,7 +3440,7 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
         normalizedExpression.contains('role')) {
       score += 18;
     }
-    if (expression.level == 'beginner') {
+    if (expression.level == 'A2') {
       score -= 2;
     }
     return score;
@@ -4709,7 +4710,7 @@ class _InterviewPracticePageState extends State<InterviewPracticePage> {
   }
 
   Future<void> _switchToTargetLevel(String targetLevel) async {
-    final String normalizedLevel = _normalizeSceneMapTargetLevel(targetLevel);
+    final String normalizedLevel = _requireSceneMapTargetLevel(targetLevel);
     if (!CommercialScenarioGate.canAccess(
       targetLevel: normalizedLevel,
       entitlement: _entitlementProjection(context),
@@ -6621,7 +6622,7 @@ class _SceneMapPageState extends State<_SceneMapPage> {
   @override
   void initState() {
     super.initState();
-    _selectedTargetLevel = _normalizeSceneMapTargetLevel(
+    _selectedTargetLevel = _requireSceneMapTargetLevel(
       widget.session.targetLevel,
     );
   }
@@ -6633,7 +6634,7 @@ class _SceneMapPageState extends State<_SceneMapPage> {
     final List<_SceneTargetLevelOption> levelOptions = _sceneTargetLevelOptions(
       sceneGraph,
     );
-    final String activeTargetLevel = _normalizeSceneMapTargetLevel(
+    final String activeTargetLevel = _requireSceneMapTargetLevel(
       session.targetLevel,
     );
     final String selectedTargetLevel =
@@ -7032,33 +7033,13 @@ class _SceneTargetLevelOption {
   final String title;
   final int expressionCount;
 
-  String get shortLabel {
-    final String trimmedTitle = title.trim();
-    if (trimmedTitle.startsWith('L1')) {
-      return 'L1';
-    }
-    if (trimmedTitle.startsWith('L2')) {
-      return 'L2';
-    }
-    if (trimmedTitle.startsWith('L3')) {
-      return 'L3';
-    }
-    return switch (targetLevel) {
-      'intermediate' => 'L2',
-      'advanced' => 'L3',
-      _ => 'L1',
-    };
-  }
+  String get shortLabel => targetLevel;
 }
 
 List<_SceneTargetLevelOption> _sceneTargetLevelOptions(
   InterviewSceneGraph sceneGraph,
 ) {
-  const List<String> targetLevels = <String>[
-    'beginner',
-    'intermediate',
-    'advanced',
-  ];
+  const List<String> targetLevels = <String>['A2', 'B1', 'B2'];
   final List<_SceneTargetLevelOption> options = <_SceneTargetLevelOption>[];
   for (final String targetLevel in targetLevels) {
     final InterviewSceneTrack? track = _sceneTrackForTargetLevel(
@@ -7081,86 +7062,45 @@ List<_SceneTargetLevelOption> _sceneTargetLevelOptions(
       ),
     );
   }
-  if (options.isNotEmpty) {
-    return options;
-  }
-  final String fallbackLevel = _normalizeSceneMapTargetLevel('');
-  return <_SceneTargetLevelOption>[
-    _SceneTargetLevelOption(
-      targetLevel: fallbackLevel,
-      title: _fallbackTargetLevelTitle(fallbackLevel),
-      expressionCount: sceneGraph.flowNodeIdsForLevel(fallbackLevel).length,
-    ),
-  ];
+  return options;
 }
 
 InterviewSceneTrack? _sceneTrackForTargetLevel(
   InterviewSceneGraph sceneGraph,
   String targetLevel,
 ) {
-  final String normalizedLevel = _normalizeSceneMapTargetLevel(targetLevel);
+  final String level = _requireSceneMapTargetLevel(targetLevel);
   for (final InterviewSceneTrack track in sceneGraph.tracks) {
-    if (track.targetLevel == normalizedLevel || track.id == normalizedLevel) {
-      return track;
-    }
-  }
-  final String trackId = switch (normalizedLevel) {
-    'intermediate' => 'L2',
-    'advanced' => 'L3',
-    _ => 'L1',
-  };
-  for (final InterviewSceneTrack track in sceneGraph.tracks) {
-    if (track.id == trackId) {
+    if (track.targetLevel == level || track.id == level) {
       return track;
     }
   }
   return null;
 }
 
-String _normalizeSceneMapTargetLevel(String targetLevel) {
-  final String normalizedLevel = targetLevel.trim();
-  return switch (normalizedLevel) {
-    'L2' || 'intermediate' => 'intermediate',
-    'L3' || 'advanced' => 'advanced',
-    _ => 'beginner',
-  };
+String _requireSceneMapTargetLevel(String targetLevel) {
+  return requireCefrLevel(targetLevel, fieldName: 'targetLevel');
 }
 
 String _sceneTargetLevelTitle(
   InterviewSceneGraph? sceneGraph,
   String targetLevel,
 ) {
-  final String normalizedLevel = _normalizeSceneMapTargetLevel(targetLevel);
+  final String level = _requireSceneMapTargetLevel(targetLevel);
   if (sceneGraph != null) {
     for (final InterviewSceneTrack track in sceneGraph.tracks) {
-      if (track.targetLevel == normalizedLevel || track.id == normalizedLevel) {
+      if (track.targetLevel == level || track.id == level) {
         return track.title.isEmpty
-            ? _fallbackTargetLevelTitle(normalizedLevel)
-            : track.title;
-      }
-    }
-    final String trackId = switch (normalizedLevel) {
-      'intermediate' => 'L2',
-      'advanced' => 'L3',
-      _ => 'L1',
-    };
-    for (final InterviewSceneTrack track in sceneGraph.tracks) {
-      if (track.id == trackId) {
-        return track.title.isEmpty
-            ? _fallbackTargetLevelTitle(normalizedLevel)
+            ? _fallbackTargetLevelTitle(level)
             : track.title;
       }
     }
   }
-  return _fallbackTargetLevelTitle(normalizedLevel);
+  return _fallbackTargetLevelTitle(level);
 }
 
 String _fallbackTargetLevelTitle(String targetLevel) {
-  return switch (targetLevel) {
-    'intermediate' => 'L2 进阶',
-    'advanced' => 'L3 精通',
-    _ => 'L1 入门',
-  };
+  return cefrLevelLabel(targetLevel, fieldName: 'targetLevel');
 }
 
 class _SceneNodeTile extends StatelessWidget {

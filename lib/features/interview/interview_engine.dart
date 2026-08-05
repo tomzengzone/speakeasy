@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import 'package:speakeasy/features/interview/expression_scene_orchestrator.dart';
 import 'package:speakeasy/features/interview/interview_models.dart';
+import 'package:speakeasy/models/cefr_level.dart';
 
 const List<String> interviewTags = <String>[
   '自我介绍',
@@ -405,7 +406,7 @@ Role behavior:
 - Stay in interviewer mode during the interview round.
 - Ask one interview question at a time.
 - Follow a coherent interview flow from opening to wrap-up.
-- Be beginner-friendly and patient.
+- Be learner-friendly and patient.
 - Prioritize helping the user speak, not testing grammar perfection.
 - Behave like a calm private speaking coach: acknowledge one useful part, fix one high-value issue, then invite a retry when coaching is needed.
 - Use the scene Wiki coach context when available: rubric, coach moves, speech focus, realistic contexts, and personalization cues.
@@ -1074,7 +1075,7 @@ class InterviewPracticeEngine {
 
   InterviewNextRoundMode roundModeForMasteredExpressions(
     List<InterviewPersonalWikiExpression> masteredWikiExpressions, {
-    String targetLevel = 'beginner',
+    String targetLevel = 'A2',
   }) {
     final List<InterviewExpression> activeExpressions =
         _expressionsForTargetLevel(targetLevel);
@@ -1122,21 +1123,17 @@ class InterviewPracticeEngine {
   }
 
   List<InterviewExpression> _expressionsForTargetLevel(String targetLevel) {
-    final String normalizedLevel = targetLevel.trim().isEmpty
-        ? 'beginner'
-        : targetLevel.trim();
+    final String level = requireCefrLevel(
+      targetLevel,
+      fieldName: 'targetLevel',
+    );
     final List<InterviewExpression> exactLevel = _library.expressions
         .where(
           (InterviewExpression item) =>
-              item.id.isNotEmpty && item.level == normalizedLevel,
+              item.id.isNotEmpty && item.level == level,
         )
         .toList(growable: false);
-    if (exactLevel.isNotEmpty) {
-      return exactLevel;
-    }
-    return _library.expressions
-        .where((InterviewExpression item) => item.id.isNotEmpty)
-        .toList(growable: false);
+    return exactLevel;
   }
 
   List<InterviewPersonalWikiExpression> _dueReviewWikiExpressions(
@@ -1293,7 +1290,7 @@ class InterviewPracticeEngine {
     String jobFamily = 'general',
     String mode = 'full_mock',
     String userTier = 'newbie',
-    String targetLevel = 'beginner',
+    String targetLevel = 'A2',
     InterviewNextRoundMode roundMode = InterviewNextRoundMode.newLesson,
     List<InterviewPersonalWikiExpression> masteredWikiExpressions =
         const <InterviewPersonalWikiExpression>[],

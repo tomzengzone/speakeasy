@@ -1,6 +1,7 @@
 package com.speakeasy.api;
 
 import com.speakeasy.common.SchemaResponse;
+import com.speakeasy.common.CefrLevel;
 import com.speakeasy.practice.PracticeService;
 import com.speakeasy.security.CurrentUser;
 import jakarta.validation.Valid;
@@ -67,7 +68,7 @@ public class PracticeController {
   public record StartSessionRequest(
       @NotNull @Min(1) @Max(1) Integer schemaVersion,
       @NotBlank @Pattern(regexp = "job_interview|onboarding_introduction") String scenarioId,
-      @NotBlank @Pattern(regexp = "L1|L2|L3") String levelCode,
+      @NotBlank @Pattern(regexp = CefrLevel.REGEXP) String levelCode,
       Boolean resumeExisting) {}
 
   public record SubmitTurnRequest(

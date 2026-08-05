@@ -10,7 +10,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from validate_story_slice_delivery import discover_story_shards, validate_delivery  # noqa: E402
+from validate_story_slice_delivery import (  # noqa: E402
+    parse_story_map,
+    resolve_story_map,
+    validate_delivery,
+)
 
 
 class StorySliceDeliveryValidationTest(unittest.TestCase):
@@ -27,16 +31,26 @@ class StorySliceDeliveryValidationTest(unittest.TestCase):
             target = root / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / relative, target)
-        for source in discover_story_shards(ROOT):
-            target = root / source.relative_to(ROOT)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, target)
+        source = resolve_story_map(ROOT)
+        target = root / source.relative_to(ROOT)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+        target.write_text(
+            """# Story Map
+
+| Id | description | Status |
+| --- | --- | --- |
+| `US-TRAIN-001` | approved test Story | `approved` |
+| `VS-TRAIN-001-1` | approved test Slice | `approved` |
+""",
+            encoding="utf-8",
+        )
         return temp, root
 
     def test_repository_catalogs_validate(self) -> None:
         errors, metrics = validate_delivery(ROOT)
         self.assertEqual([], errors)
-        self.assertEqual(len(discover_story_shards(ROOT)), metrics["story_shards"])
+        self.assertEqual(1, metrics["story_map_documents"])
         self.assertEqual(1, metrics["vertical_slices_with_frs"])
         self.assertEqual(1, metrics["fr_tc_coverage"])
         self.assertEqual(1, metrics["vs_tc_coverage"])
@@ -103,48 +117,94 @@ class StorySliceDeliveryValidationTest(unittest.TestCase):
         errors, _ = validate_delivery(root)
         self.assertTrue(any("FR-TRAIN-001 has no Rule content" in error for error in errors))
 
-    def test_missing_story_shard_breaks_approved_vs_lineage(self) -> None:
+    def test_missing_story_map_breaks_approved_vs_lineage(self) -> None:
         temp, root = self.fixture()
         self.addCleanup(temp.cleanup)
-        (root / "docs/product/user_stories/user_story_CAP_TRAIN.md").unlink()
+        resolve_story_map(root).unlink()
         errors, _ = validate_delivery(root)
+        self.assertTrue(any("cannot resolve canonical STORY_MAP document" in error for error in errors))
         self.assertTrue(any("missing or unapproved VS VS-TRAIN-001-1" in error for error in errors))
 
-    def test_duplicate_id_across_story_shards_is_rejected(self) -> None:
+    def test_duplicate_story_or_slice_id_is_rejected(self) -> None:
         temp, root = self.fixture()
         self.addCleanup(temp.cleanup)
-        source = root / "docs/product/user_stories/user_story_CAP_TRAIN.md"
+        source = resolve_story_map(root)
         duplicate = next(
             line for line in source.read_text(encoding="utf-8").splitlines()
             if line.startswith("| `US-TRAIN-001`")
         )
-        target = root / "docs/product/user_stories/user_story_CAP_ACC.md"
-        target.write_text(target.read_text(encoding="utf-8") + f"\n{duplicate}\n", encoding="utf-8")
+        source.write_text(source.read_text(encoding="utf-8") + f"\n{duplicate}\n", encoding="utf-8")
         errors, _ = validate_delivery(root)
         self.assertTrue(any("duplicate Story/Slice ID US-TRAIN-001" in error for error in errors))
 
-    def test_story_shards_do_not_inherit_parent_across_files(self) -> None:
+    def test_vertical_slice_requires_a_story_above_it(self) -> None:
         temp, root = self.fixture()
         self.addCleanup(temp.cleanup)
-        path = root / "docs/product/user_stories/user_story_CAP_ACC.md"
-        orphan = "| `VS-ACC-999-1` | orphan | `draft` | `CAP-ACC` | — |"
-        text = path.read_text(encoding="utf-8").replace(
-            "\n### US-ACC-001", f"\n{orphan}\n\n### US-ACC-001", 1,
+        path = resolve_story_map(root)
+        text = (
+            "| Id | description | Status |\n"
+            "| --- | --- | --- |\n"
+            "| `VS-999` | orphan | `draft` |\n\n"
+            + path.read_text(encoding="utf-8")
         )
         path.write_text(text, encoding="utf-8")
         errors, _ = validate_delivery(root)
-        self.assertTrue(any("VS-ACC-999-1 has no parent User Story" in error for error in errors))
+        self.assertTrue(any("VS-999 has no parent User Story above it" in error for error in errors))
 
-    def test_approved_vs_requires_approved_story_in_its_shard(self) -> None:
+    def test_approved_vs_requires_approved_story_parent(self) -> None:
         temp, root = self.fixture()
         self.addCleanup(temp.cleanup)
-        path = root / "docs/product/user_stories/user_story_CAP_TRAIN.md"
-        text = path.read_text(encoding="utf-8").replace(
-            "| `approved` | `CAP-TRAIN` |", "| `draft` | `CAP-TRAIN` |", 1,
+        path = resolve_story_map(root)
+        lines = path.read_text(encoding="utf-8").splitlines()
+        story_line = next(
+            index for index, line in enumerate(lines)
+            if line.startswith("| `US-TRAIN-001`")
         )
+        lines[story_line] = lines[story_line].replace("`approved`", "`draft`", 1)
+        text = "\n".join(lines) + "\n"
         path.write_text(text, encoding="utf-8")
         errors, _ = validate_delivery(root)
         self.assertTrue(any("VS-TRAIN-001-1 has no unique approved Story parent" in error for error in errors))
+
+    def test_story_map_accepts_existing_and_neutral_opaque_ids(self) -> None:
+        text = """| Id | description | Status |
+| --- | --- | --- |
+| `US-ACC-001` | existing Story | `draft` |
+| `VS-TRAIN-999-8` | existing Slice ID is not decoded | `draft` |
+| `US-001` | neutral Story | `approved` |
+| `VS-002` | neutral Slice | `approved` |
+"""
+
+        approved_stories, parents, approved_vs, errors = parse_story_map(text)
+
+        self.assertEqual([], errors)
+        self.assertEqual({"US-001"}, approved_stories)
+        self.assertEqual(
+            {"VS-TRAIN-999-8": "US-ACC-001", "VS-002": "US-001"},
+            parents,
+        )
+        self.assertEqual({"VS-002"}, approved_vs)
+
+    def test_story_map_rejects_non_three_column_rows(self) -> None:
+        text = """| Id | description | Status | Primary Capability ID |
+| --- | --- | --- | --- |
+| `US-001` | story | `draft` | `CAP-ACC` |
+"""
+
+        _stories, _parents, _slices, errors = parse_story_map(text)
+
+        self.assertTrue(any("must have columns Id | description | Status" in error for error in errors))
+        self.assertTrue(any("Story/VS row must have 3 columns" in error for error in errors))
+
+    def test_story_map_rejects_unsupported_status(self) -> None:
+        text = """| Id | description | Status |
+| --- | --- | --- |
+| `US-001` | story | `ready` |
+"""
+
+        _stories, _parents, _slices, errors = parse_story_map(text)
+
+        self.assertTrue(any("unsupported Story/VS status 'ready'" in error for error in errors))
 
     def test_fr_requires_direct_approved_vs_lineage(self) -> None:
         temp, root = self.fixture()

@@ -22,16 +22,15 @@
 
 ## 产品与交付轴
 
-产品事实链固定为：
+产品事实源链按事实层协作：
 
 ```text
-Capability/Sub-capability classification
--> approved User Story
--> approved Child Vertical Slice
--> Functional Requirement when present
+Capability Registry: Capability/Sub-capability boundary facts
+Story Map: approved User Story -> approved Child Vertical Slice
+FR Catalog when present: approved Child Vertical Slice -> Functional Requirement
 ```
 
-Capability Registry 只定义稳定业务边界和分类。Story Map 保存 Story 到 Capability、Child VS 到 Story 的直接关系。FR Catalog 中 FR 只通过 `source_vs_ids` 直接引用 approved VS。Stage、Roadmap、Increment、Work Package 和 PR 是 planning/delivery metadata，不定义产品行为，也不作为 FR、TC 或 Engineering Contract 的上游。
+这是分层的产品事实源链，不是由某一个 Artifact 独占的单一事实源。Capability Registry 持有稳定业务边界和分类事实；Story Map 持有 approved Story/Child Vertical Slice 的用户闭环语义及 Child Vertical Slice 到 Story 的直接父子关系，不保存 Story/Vertical Slice 到 Capability 的映射；FR Catalog 在 FR 存在时持有从 approved Vertical Slice 提炼出的规则、不变量、边界和失败语义，并只通过 `source_vs_ids` 直接引用 approved Vertical Slice。任何一层都不得被描述为整条产品事实源链的唯一来源。Stage、Roadmap、Increment、Work Package 和 PR 是 planning/delivery metadata，不定义产品行为，也不作为 FR、TC 或 Engineering Contract 的上游。
 
 交付轴选择 approved VS，并在 FR 存在时选择适用的 approved FR；工程事实变化时同步受影响 Engineering Contract。Issue/PR 只记录本次选择、范围、风险、状态与证据链接，不复制产品、Contract 或测试事实。
 
@@ -42,7 +41,7 @@ Capability Registry 只定义稳定业务边界和分类。Story Map 保存 Stor
 ```text
 idea/change intake
 -> G-PRODUCT-CLASSIFICATION
--> Capability/Sub-capability classification（边界变化时进入 G-REGISTRY）
+-> 用户价值场景与产品范围确认（Capability 边界事实变化时才进入 G-REGISTRY）
 -> Story 与 Child VS 完整、approved
 -> FR 存在时进入 G-FR，验证 approved 状态与直接 VS lineage
 -> G-TC：VS-TC；FR 存在时增加 FR-TC，Contract 事实变化时增加 Contract-TC
@@ -84,7 +83,7 @@ API、OpenAPI、Domain、Persistence、AI structured output、Prompt/fallback、
 
 ## Gates
 
-- `G-PRODUCT-CLASSIFICATION`：识别 change type、primary/affected Capability 与是否发生产品事实变化。
+- `G-PRODUCT-CLASSIFICATION`：识别 change type、用户价值场景、范围、非目标与是否发生产品事实变化；不生成 Story/Vertical Slice 到 Capability 的映射。
 - `G-REGISTRY`：仅 Capability/Sub-capability 边界事实变化时执行。
 - `G-INCREMENT-SCOPE`：仅 planning scope/batch 变化时执行；其结果不进入产品/Contract/TC lineage。
 - `G-FR`：仅在 FR 存在时验证其 approved 状态、非空直接 VS lineage 与 Capability/Sub-capability classification；FR 可包含多个独立规则、不变量、边界或失败条件。

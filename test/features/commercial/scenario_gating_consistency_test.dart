@@ -15,6 +15,8 @@ import 'package:speakeasy/services/audio_service.dart';
 import 'package:speakeasy/services/auth_service.dart';
 import 'package:speakeasy/services/storage_service.dart';
 
+import '../../support/hive_test_support.dart';
+
 class _StaticSessionLifecycleCoordinator extends SessionLifecycleCoordinator {
   _StaticSessionLifecycleCoordinator(this.memberPlan)
     : super(
@@ -117,12 +119,15 @@ void main() {
 
   late Directory hiveDir;
 
-  setUp(() async {
+  setUpAll(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     hiveDir = await Directory.systemTemp.createTemp(
       'speakeasy_commercial_scenario_gate_',
     );
     await StorageService.instance.init(hivePath: hiveDir.path);
+  });
+
+  setUp(() async {
     await StorageService.instance.remove('interview_personal_wiki_expressions');
     await StorageService.instance.remove('interview_compiled_wiki');
     await StorageService.instance.remove('interview_user_growth_wiki');
@@ -130,10 +135,8 @@ void main() {
     await StorageService.instance.remove('interview_useful_wiki_items');
   });
 
-  tearDown(() async {
-    if (await hiveDir.exists()) {
-      await hiveDir.delete(recursive: true);
-    }
+  tearDownAll(() async {
+    await deleteHiveTestDirectory(hiveDir);
   });
 
   Future<AppSession> sessionForPlan(String memberPlan) async {
@@ -145,7 +148,7 @@ void main() {
   Future<void> pumpPractice(
     WidgetTester tester, {
     required String memberPlan,
-    String targetLevel = 'beginner',
+    String targetLevel = 'A2',
     CommercialEntitlementProjection? entitlementProjection,
   }) async {
     await tester.binding.setSurfaceSize(const Size(1200, 800));
@@ -196,7 +199,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 320));
   }
 
-  testWidgets('TC-COM-010 免费用户训练入口阻断 L3 高级场景', (WidgetTester tester) async {
+  testWidgets('TC-COM-010 免费用户训练入口阻断 B2 场景', (WidgetTester tester) async {
     await pumpPractice(
       tester,
       memberPlan: 'free',
@@ -207,7 +210,7 @@ void main() {
     expect(find.text('点击说话'), findsNothing);
   });
 
-  testWidgets('TC-COM-010 免费用户场景导航展示同一 L3 锁定状态', (WidgetTester tester) async {
+  testWidgets('TC-COM-010 免费用户场景导航展示同一 B2 锁定状态', (WidgetTester tester) async {
     await pumpPractice(tester, memberPlan: 'free');
 
     expect(find.text('点击说话'), findsOneWidget);
@@ -218,7 +221,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.byKey(const ValueKey<String>('scene_map_level_advanced')),
+      find.byKey(const ValueKey<String>('scene_map_level_B2')),
       findsOneWidget,
     );
     expect(find.text(CommercialScenarioGate.lockedBadge), findsOneWidget);
@@ -252,7 +255,7 @@ void main() {
     expect(find.text(CommercialScenarioGate.lockedMessage), findsNothing);
   });
 
-  testWidgets('TC-COM-010 Pro 用户列表、详情和训练入口一致解锁 L3', (
+  testWidgets('TC-COM-010 Pro 用户列表、详情和训练入口一致解锁 B2', (
     WidgetTester tester,
   ) async {
     await pumpPractice(
@@ -266,9 +269,7 @@ void main() {
       find.byKey(const ValueKey<String>('scene_map_level_dropdown')),
     );
     await tester.pumpAndSettle();
-    await tester.tap(
-      find.byKey(const ValueKey<String>('scene_map_level_advanced')),
-    );
+    await tester.tap(find.byKey(const ValueKey<String>('scene_map_level_B2')));
     for (int i = 0; i < 30; i += 1) {
       await tester.pump(const Duration(milliseconds: 100));
       if (find

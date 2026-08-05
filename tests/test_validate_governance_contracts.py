@@ -57,34 +57,27 @@ class GovernanceContractValidationTest(unittest.TestCase):
     def test_repository_contracts_are_valid(self):
         errors, _warnings, metrics = validate_repository(ROOT)
         self.assertEqual([], errors)
-        self.assertEqual(62, metrics["artifacts"])
+        self.assertEqual(61, metrics["artifacts"])
         self.assertEqual(14, metrics["gates"])
         self.assertEqual(5, metrics["workflow_exchanges"])
         self.assertEqual(4, metrics["evidence_artifact_references"])
         self.assertGreater(metrics["artifact_validation_commands"], 0)
-        self.assertEqual(24, metrics["artifact_required_input_contracts"])
+        self.assertEqual(22, metrics["artifact_required_input_contracts"])
         self.assertEqual(13, metrics["artifact_conditional_input_contracts"])
 
-    def test_story_map_uses_capability_shards_with_navigation_index(self):
+    def test_story_map_is_one_capability_independent_canonical_artifact(self):
         contract_root = ROOT / "docs/process/governance"
         index = json.loads((contract_root / "index.json").read_text(encoding="utf-8"))
         product = json.loads((contract_root / "artifacts/product.json").read_text(encoding="utf-8"))
         artifacts = {item["artifact_id"]: item for item in product["artifacts"]}
 
-        self.assertEqual(
-            "docs/product/user_stories/user_story_CAP_{capability_prefix}.md",
-            artifacts["STORY_MAP"]["canonical_path"],
-        )
-        story_map_index = artifacts["STORY_MAP_INDEX"]
-        self.assertEqual("docs/product/story_map.md", story_map_index["canonical_path"])
-        self.assertEqual("product-manager", story_map_index["accountable_owner"])
-        self.assertEqual(
-            ["CAPABILITY_REGISTRY", "STORY_MAP"],
-            story_map_index["required_direct_inputs"],
-        )
-        self.assertIn("navigation", story_map_index["applicability"])
-        self.assertIn("non-behavior", story_map_index["applicability"])
-        self.assertEqual("artifacts/product.json", index["artifact_routes"]["STORY_MAP_INDEX"])
+        story_map = artifacts["STORY_MAP"]
+        self.assertEqual("docs/product/story_map.md", story_map["canonical_path"])
+        self.assertEqual("product-manager", story_map["accountable_owner"])
+        self.assertNotIn("required_direct_inputs", story_map)
+        self.assertNotIn("conditional_inputs", story_map)
+        self.assertNotIn("STORY_MAP_INDEX", artifacts)
+        self.assertNotIn("STORY_MAP_INDEX", index["artifact_routes"])
 
     def test_missing_literal_canonical_artifact_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -163,6 +156,8 @@ class GovernanceContractValidationTest(unittest.TestCase):
                 "codex/templates/agent_runner_packet.template.md",
                 "codex/templates/pm_orchestrator_brief.template.md",
                 ".agents/skills/code-review-quality/SPEC.md",
+                ".agents/skills/story-map-develop/scripts/validate_story_map.py",
+                "tests/test_validate_story_map_skill.py",
                 "docs/process/governance/ab_corpus.json",
             ]
             for relative in retired_paths:
@@ -606,7 +601,7 @@ class GovernanceContractValidationTest(unittest.TestCase):
         paths = [
             ".agents/skills/capability-registry-develop/references/structural-change-gates.md",
             ".agents/skills/capability-registry-develop/assets/ready-gate-output.template.md",
-            ".agents/skills/story-map-develop/scripts/validate_story_map.py",
+            ".agents/skills/story-map-develop/references/ready-gates.md",
         ]
         self.assertEqual([], check_paths(ROOT, paths, "product-object-governance-change", governed_only=True))
 
@@ -844,6 +839,8 @@ class GovernanceContractValidationTest(unittest.TestCase):
         intents = json.loads((ROOT / "docs/process/governance/intents.json").read_text(encoding="utf-8"))["intents"]
         direct_upstream = next(item for item in intents if item["intent_id"] == "INT-DIRECT-UPSTREAM")
         self.assertEqual("traceability", direct_upstream["accountable_owner"])
+        self.assertIn("Story Map owns VS-to-Story", direct_upstream["canonical_statement"])
+        self.assertNotIn("Story-to-Capability", direct_upstream["canonical_statement"])
         self.assertFalse((ROOT / ".agents/skills/document-traceability-check/SKILL.md").exists())
         self.assertEqual([], check_paths(ROOT, ["docs/quality/traceability.md"], "traceability"))
         self.assertTrue(check_paths(ROOT, ["docs/product/functional_requirements.md"], "traceability"))

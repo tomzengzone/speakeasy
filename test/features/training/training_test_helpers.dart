@@ -3,7 +3,7 @@ import 'package:speakeasy/features/training/training_contract.dart';
 TrainingSessionState p01TrainingSession({
   String userId = 'user-1',
   String sceneId = 'job_interview',
-  String levelCode = 'beginner',
+  String levelCode = 'A2',
   TrainingSessionStatus status = TrainingSessionStatus.ready,
   TrainingActionStep currentStep = TrainingActionStep.opening,
   TrainingMicroAction currentMicroAction = TrainingMicroAction.sayOne,

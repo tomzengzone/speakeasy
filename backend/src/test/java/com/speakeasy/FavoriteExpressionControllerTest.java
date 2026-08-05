@@ -75,7 +75,7 @@ class FavoriteExpressionControllerTest extends BackendIntegrationTestSupport {
                   "schema_version": 1,
                   "goal_direction": "job_interview",
                   "pain_points": ["opening"],
-                  "output_level": "L1",
+                  "output_level": "A2",
                   "daily_minutes": 10
                 }
                 """))

@@ -1,11 +1,36 @@
 // Generated from docs/architecture/openapi/speakeasy-api.yaml.
 // Do not edit without updating docs/architecture/openapi/dart-client-drift-manifest.json.
 
+enum LevelCode {
+  a1('A1'),
+  a2('A2'),
+  b1('B1'),
+  b2('B2'),
+  c1('C1'),
+  c2('C2');
+
+  const LevelCode(this.wireValue);
+
+  final String wireValue;
+
+  static LevelCode? tryParse(Object? value) {
+    if (value is! String) {
+      return null;
+    }
+    for (final LevelCode level in LevelCode.values) {
+      if (level.wireValue == value) {
+        return level;
+      }
+    }
+    return null;
+  }
+}
+
 class SpeakeasyApiContract {
   const SpeakeasyApiContract._();
 
   static const String openApiSha256 =
-      '44739a588708eb47e82707680c0ab0dbada178530abe12a4c7525750f8e35cd5';
+      '19d04f5e836340c01ec2fb69dc3af9084639cd2a3e85568d60c485c646c38bec';
 
   static const List<String> pathTemplates = <String>[
     '/achievements/status',

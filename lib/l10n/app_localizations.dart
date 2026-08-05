@@ -755,7 +755,7 @@ abstract class AppLocalizations {
   /// No description provided for @levelBeginner.
   ///
   /// In en, this message translates to:
-  /// **'Beginner'**
+  /// **'A2 Foundation'**
   String get levelBeginner;
 
   /// No description provided for @levelBeginnerDesc.
@@ -779,7 +779,7 @@ abstract class AppLocalizations {
   /// No description provided for @levelIntermediate.
   ///
   /// In en, this message translates to:
-  /// **'Intermediate'**
+  /// **'B1 Intermediate'**
   String get levelIntermediate;
 
   /// No description provided for @levelIntermediateDesc.
@@ -791,7 +791,7 @@ abstract class AppLocalizations {
   /// No description provided for @levelAdvanced.
   ///
   /// In en, this message translates to:
-  /// **'Advanced'**
+  /// **'B2 Upper-intermediate'**
   String get levelAdvanced;
 
   /// No description provided for @levelAdvancedDesc.

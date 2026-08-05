@@ -1082,12 +1082,12 @@ class AppSession extends ChangeNotifier {
 
   String _outputLevelFromAssessmentLevel(int level) {
     if (level <= 1) {
-      return 'L1';
+      return 'A2';
     }
     if (level == 2) {
-      return 'L2';
+      return 'B1';
     }
-    return 'L3';
+    return 'B2';
   }
 
   void _applyUserJson(Map<String, dynamic> json) {

@@ -1,6 +1,7 @@
 package com.speakeasy.identity;
 
 import com.speakeasy.common.ApiException;
+import com.speakeasy.common.CefrLevel;
 import com.speakeasy.ops.AccountDeletionJobRepository;
 import com.speakeasy.security.CurrentUser;
 import com.speakeasy.security.TokenHasher;
@@ -151,12 +152,13 @@ public class AuthService {
   private UserAccount createUser(String provider, String providerSubject, String defaultDisplayName, Instant now) {
     UserAccount user = users.save(new UserAccount(UUID.randomUUID(), defaultDisplayName, now));
     identities.save(new AuthIdentity(UUID.randomUUID(), user.getUserId(), provider, providerSubject, now));
-    profiles.save(new UserProfile(user.getUserId(), user.getDisplayName(), "L1", 10, now));
+    profiles.save(new UserProfile(user.getUserId(), user.getDisplayName(), CefrLevel.DEFAULT, 10, now));
     return user;
   }
 
   private UserProfile ensureProfile(UUID userId, String displayName, Instant now) {
-    return profiles.findById(userId).orElseGet(() -> profiles.save(new UserProfile(userId, displayName, "L1", 10, now)));
+    return profiles.findById(userId)
+        .orElseGet(() -> profiles.save(new UserProfile(userId, displayName, CefrLevel.DEFAULT, 10, now)));
   }
 
   private IssuedTokens issueTokens() {

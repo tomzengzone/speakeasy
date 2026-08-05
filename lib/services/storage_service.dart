@@ -17,7 +17,20 @@ class StorageService {
 
   static const String _boxName = 'speakeasy_storage';
   static const String _migrationVersionKey = '_storage_migration_version';
-  static const int _migrationVersion = 1;
+  static const int _sharedPreferencesMigrationVersion = 1;
+  static const int _migrationVersion = 2;
+
+  static const String _interviewActiveSessionKey = 'interview_active_session';
+  static const Set<String> _cefrCutoverStorageKeys = <String>{
+    'favorite_expressions',
+    'interview_personal_wiki_expressions',
+    'interview_compiled_wiki',
+    'interview_user_growth_wiki',
+    'interview_dismissed_wiki_items',
+    'interview_useful_wiki_items',
+    'interview_expression_learning_progress',
+    'interview_scene_level_preferences',
+  };
 
   static const String _userPreferencesKey = 'user_preferences';
   static const String _notificationSettingsKey = 'notification_settings';
@@ -50,9 +63,8 @@ class StorageService {
     _box = await Hive.openBox<dynamic>(_boxName);
     if (migrateFromSharedPreferences) {
       await _migrateFromSharedPreferences();
-    } else {
-      await _box.put(_migrationVersionKey, _migrationVersion);
     }
+    await _migrateCefrCutoverStorage();
     _initialized = true;
   }
 
@@ -366,7 +378,7 @@ class StorageService {
 
   Future<void> _migrateFromSharedPreferences() async {
     final int version = (_box.get(_migrationVersionKey) as int?) ?? 0;
-    if (version >= _migrationVersion) {
+    if (version >= _sharedPreferencesMigrationVersion) {
       return;
     }
 
@@ -374,10 +386,10 @@ class StorageService {
     try {
       prefs = await SharedPreferences.getInstance();
     } on MissingPluginException {
-      await _box.put(_migrationVersionKey, _migrationVersion);
+      await _box.put(_migrationVersionKey, _sharedPreferencesMigrationVersion);
       return;
     } on PlatformException {
-      await _box.put(_migrationVersionKey, _migrationVersion);
+      await _box.put(_migrationVersionKey, _sharedPreferencesMigrationVersion);
       return;
     }
 
@@ -460,6 +472,31 @@ class StorageService {
       }
     }
 
+    await _box.put(_migrationVersionKey, _sharedPreferencesMigrationVersion);
+  }
+
+  Future<void> _migrateCefrCutoverStorage() async {
+    final int version = (_box.get(_migrationVersionKey) as int?) ?? 0;
+    if (version >= _migrationVersion) {
+      return;
+    }
+
+    final List<dynamic> keysToDelete = _box.keys
+        .where((dynamic rawKey) {
+          if (rawKey is! String) {
+            return false;
+          }
+          return _cefrCutoverStorageKeys.contains(rawKey) ||
+              rawKey == _interviewActiveSessionKey ||
+              rawKey.startsWith('${_interviewActiveSessionKey}_');
+        })
+        .toList(growable: false);
+
+    // The batch is idempotent, and the version advances only after every
+    // level- or node-dependent record has been cleared successfully.
+    if (keysToDelete.isNotEmpty) {
+      await _box.deleteAll(keysToDelete);
+    }
     await _box.put(_migrationVersionKey, _migrationVersion);
   }
 

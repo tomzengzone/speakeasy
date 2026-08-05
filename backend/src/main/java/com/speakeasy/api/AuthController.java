@@ -1,6 +1,7 @@
 package com.speakeasy.api;
 
 import com.speakeasy.common.SchemaResponse;
+import com.speakeasy.common.CefrLevel;
 import com.speakeasy.identity.AuthService;
 import com.speakeasy.identity.IdentityService;
 import com.speakeasy.ops.AccountDeletionService;
@@ -114,7 +115,7 @@ public class AuthController {
       @NotNull @Min(1) @Max(1) Integer schemaVersion,
       String displayName,
       String avatarRef,
-      String targetLevel,
+      @Pattern(regexp = CefrLevel.REGEXP) String targetLevel,
       @Min(1) Integer dailyMinutes,
       Boolean reminderEnabled,
       @Pattern(regexp = "^([01][0-9]|2[0-3]):[0-5][0-9]$") String reminderTime) {}

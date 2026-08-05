@@ -34,7 +34,7 @@ class TrainingContentVersioningTest extends BackendIntegrationTestSupport {
                 {
                   "schema_version": 1,
                   "scenario_id": "onboarding_introduction",
-                  "level_code": "L2",
+                  "level_code": "B1",
                   "resume_existing": false
                 }
                 """))
@@ -53,7 +53,7 @@ class TrainingContentVersioningTest extends BackendIntegrationTestSupport {
     assertThat(trainingSessions.findAll().get(0).getActionChainVersion())
         .isEqualTo(TrainingPlannerService.ACTION_CHAIN_VERSION);
     assertThat(trainingContentMappings.findByScenarioVersionIdAndLevelCodeAndReviewStatusOrderByOrderIndexAsc(
-            published.getScenarioVersionId(), "L2", "reviewed"))
+            published.getScenarioVersionId(), "B1", "reviewed"))
         .hasSize(6)
         .allSatisfy(mapping -> {
           assertThat(mapping.getScenarioId()).isEqualTo("onboarding_introduction");

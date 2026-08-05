@@ -156,7 +156,7 @@ Future<void> completeOnboardingThroughUi(WidgetTester tester) async {
 Future<void> prepareDefaultLearningRouteFixture() async {
   await InterviewWikiStore(
     sceneId: 'job_interview',
-  ).saveSelectedTargetLevel('beginner');
+  ).saveSelectedTargetLevel('A2');
   await StorageService.instance.saveInterviewHomeSceneSelection(
     const InterviewHomeSceneSelectionStorageModel(
       selectedSceneIds: <String>['job_interview'],

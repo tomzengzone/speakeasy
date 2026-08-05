@@ -30,14 +30,14 @@ class OnboardingRouteResponseContractTest extends BackendIntegrationTestSupport 
                   "schema_version": 1,
                   "goal_direction": "job_interview",
                   "pain_points": ["opening", "follow-up"],
-                  "output_level": "L1",
+                  "output_level": "A2",
                   "daily_minutes": 10
                 }
                 """))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.schema_version").value(1))
         .andExpect(jsonPath("$.route.current_scenario_id").value("job_interview"))
-        .andExpect(jsonPath("$.route.target_level").value("L1"))
+        .andExpect(jsonPath("$.route.target_level").value("A2"))
         .andExpect(jsonPath("$.route.scenario_ids[0]").value("job_interview"))
         .andExpect(jsonPath("$.assessment_id").doesNotExist())
         .andExpect(jsonPath("$.route.route_id").doesNotExist())
@@ -58,7 +58,7 @@ class OnboardingRouteResponseContractTest extends BackendIntegrationTestSupport 
                   "schema_version": 1,
                   "goal_direction": "job_interview",
                   "pain_points": ["opening"],
-                  "output_level": "L2",
+                  "output_level": "B1",
                   "daily_minutes": 12
                 }
                 """))
@@ -68,6 +68,6 @@ class OnboardingRouteResponseContractTest extends BackendIntegrationTestSupport 
     mvc.perform(get("/home/summary").header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.summary.current_scenario.scenario_id").value("job_interview"))
-        .andExpect(jsonPath("$.summary.current_scenario.target_level").value("L2"));
+        .andExpect(jsonPath("$.summary.current_scenario.target_level").value("B1"));
   }
 }

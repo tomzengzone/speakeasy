@@ -2,7 +2,7 @@
 
 ## PR-003 current lineage
 
-本次只切换来源链，不改变本文的实体关系、约束或已接受实现事实。当前产品上游仅由适用的 approved FR 解析；文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability 或 Increment SWC Allocation 引用均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+当前内容等级关系由 approved `VS-CONTENT-001-1`、`VS-CONTENT-002-1` 与 `FR-CONTENT-001`、`FR-CONTENT-002` 约束，并按严格 CEFR 更新。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability 或 Increment SWC Allocation 引用均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
 
 ## 状态
 
@@ -15,7 +15,7 @@ Proposed - Domain Schema Baseline + P0/P0.1/P0.2 Extension companion document。
 ## Relationship Principles
 
 - User 是账号、学习、订阅、用量、删除和审计链路的根实体。
-- Scenario / ScenarioVersion / TargetExpression 是官方内容和训练目标的稳定引用。
+- Scenario 是主题并可拥有零个或多个不同 CEFR 的 ScenarioLevel；ScenarioVersion / ScenarioLevel / TargetExpression 是官方内容和训练目标的稳定引用。
 - PracticeSession 保留 Product Base 语音场景模拟语义；TrainingSession 是 P0.1 训练型 Agent 的更严格 session 内训练事实。
 - LearningEvidence 是学习沉淀的核心事实；LLM 只能产生 candidate，accepted evidence 必须由 deterministic evidence rules 写入。
 - Subscription / EntitlementSnapshot / UsageLedger 是 P0 商业化可信边界，不能由 Flutter 本地状态最终决定。
@@ -29,9 +29,11 @@ flowchart LR
   User["User"] --> Identity["AuthIdentity / UserProfile / OnboardingAssessment"]
   User --> Route["LearningRoute"]
   User --> UserScenarioState["UserScenarioState"]
-  Route --> Scenario["Scenario / ScenarioVersion / ScenarioLevel"]
+  Route --> Scenario["Scenario"]
   UserScenarioState --> Scenario
-  Scenario --> Expression["TargetExpression / DialogueAsset / ActionChainStep"]
+  Scenario --> ScenarioVersion["ScenarioVersion"]
+  Scenario --> ScenarioLevel["ScenarioLevel"]
+  ScenarioVersion --> Expression["TargetExpression / DialogueAsset / ActionChainStep"]
 
   User --> Practice["PracticeSession / DialogueTurn"]
   Practice --> Feedback["CoachFeedback / Correction / ScoreSignal"]
@@ -73,9 +75,11 @@ flowchart LR
 | LearningRoute | selects | Scenario | many -> many via route items | Content domain | 当前可选真实场景为 `job_interview`、`onboarding_introduction`。 |
 | User | owns | UserScenarioState | 1 -> many | Onboarding + Content backend | 加入、移除、设为当前和等级切换的服务端事实源；user + scenario 必须唯一。 |
 | UserScenarioState | selects | Scenario | many -> 1 | Content domain | 只能引用两个 Product Base 官方场景；移除状态不得作为 current scene。 |
+| UserScenarioState | targets | ScenarioLevel | many -> 1 selected track | Onboarding + Content backend | `target_level` 必须是同一 Scenario 的合法 CEFR；entitlement 可拒绝访问，但不得改写所选 CEFR。 |
 | Scenario | has | ScenarioVersion | 1 -> many | Content domain | 练习和证据应引用版本，避免内容漂移。 |
-| ScenarioVersion | has | ScenarioLevel | 1 -> many | Content domain | 当前 L1/L2/L3，不等同完整 A1-C2。 |
+| Scenario | has | ScenarioLevel | 1 -> 0..many | Content domain | Scenario 是多等级主题；同一 `(scenario_id, CEFR)` 唯一。当前仅 `A2`、`B1`、`B2` 有资产，`A1`、`C1`、`C2` 可无轨道/内容。 |
 | ScenarioVersion | has | TargetExpression | 1 -> many | Content domain | 表达需要稳定 ID。 |
+| ScenarioLevel | classifies | TargetExpression | 1 -> 0..many per ScenarioVersion | Content domain | `TargetExpression.level_code` 必须匹配同一 Scenario 的 ScenarioLevel；不得 fallback 到其他 CEFR。 |
 | ScenarioVersion | has | DialogueAsset | 1 -> many | Content domain | 听力热身和示范输入来源。 |
 | ScenarioVersion | has | ActionChainStep | 1 -> many | Content + Training domain | Product Base 草案已有 action chain；P0.1 强化为 planner 输入。 |
 | User | joins | Scenario | many -> many via UserScenarioState | Content + Identity domain | 加入、移除、设为当前影响首页和练习入口。 |
@@ -96,6 +100,13 @@ flowchart LR
 | LearningEvidence | may create | ReviewItem | 1 -> many | Review domain | 收藏本身不等于自动复习，必须有规则。 |
 | User | owns | LearningHistoryEntry | 1 -> many | Profile / Learning domain | 历史删除是用户历史管理，不等同账号删除。 |
 
+### Content CEFR And Course Boundary
+
+- `CefrLevel` 是内容等级值对象，严格值域为 `A1`、`A2`、`B1`、`B2`、`C1`、`C2`；它与 mastery `L0-L5`、hint `L1-L4` 属于不同 namespace。
+- `L1 -> A2`、`L2 -> B1`、`L3 -> B2` 只用于一次性迁移 `UserProfile`、`OnboardingAssessment`、`LearningRoute`、`UserScenarioState`、`ScenarioLevel`、`TargetExpression`、`PracticeSession`、`TrainingContentMapping`、`TrainingSession` 的等级字段。迁移保留稳定 ID 与关系，运行期不保留 alias、fallback 或双写边。
+- `ScenarioLevel.level_code = ScenarioLevel.target_level` 是强不变量。任一引用 ScenarioLevel 的 session、mapping 或 target expression 必须使用同一 CEFR。
+- `Course` 是 approved product concept，但当前不是 persisted aggregate；`ScenarioLevel` 只是 Scenario 的 CEFR 内容轨道。未来 richer Course aggregate 需要 `Scenario 1 -> 0..many Course`、stable Course/version identity 和每个 Course 唯一 CEFR，但其具体持久化关系由后续 Architecture/API/Backend contract 决定，本关系图不创建虚构的现行 Course 边。
+
 ## P0 Commercial Relationships
 
 | From | Relationship | To | Cardinality | Owner / source of truth | Notes |
@@ -105,7 +116,7 @@ flowchart LR
 | Purchase | creates or updates | Subscription | many -> 0..1 active projection | Commerce backend | provider transaction id 去重。 |
 | Subscription | produces | EntitlementSnapshot | 1 -> many | Entitlement backend | 当前 snapshot 是客户端展示缓存来源。 |
 | EntitlementSnapshot | evaluates | EntitlementRule | many -> many | Entitlement backend | 规则可引用 feature_key、quota、scenario scope。 |
-| EntitlementRule | may gate | Scenario | many -> many | Entitlement + Content domain | 如果场景包是权益，场景列表/详情/训练入口必须一致。 |
+| EntitlementRule | may gate | Scenario / ScenarioLevel / future Course access | many -> many | Entitlement + Content domain | 列表、详情、训练入口的访问判断必须一致；gating 不改变 CEFR 值或含义。 |
 | EntitlementRule | may gate | AI/provider usage | many -> many | Entitlement + Usage domain | 高成本能力先过权益和用量。 |
 | User | owns | UsageLedger | 1 -> many | Usage Control backend | 按 usage family 和周期聚合。 |
 | UsageLedger | has | UsageReservation | 1 -> many | Usage Control backend | reserve 必须 commit/release/expire。 |
@@ -133,7 +144,7 @@ flowchart LR
 | --- | --- | --- | --- | --- | --- |
 | User | starts/resumes | TrainingSession | 1 -> many | Training Planner domain | P0.1 session 只限两个官方场景。 |
 | TrainingSession | references | ScenarioVersion | many -> 1 | Content domain | 内容版本必须可追溯。 |
-| TrainingSession | targets | ScenarioLevel | many -> 1 | Content domain | 当前训练等级来自用户选择。 |
+| TrainingSession | targets | ScenarioLevel | many -> 1 | Content domain | `scenario_id + level_code` 必须解析为同一合法 CEFR 内容轨道，并与 reviewed TrainingContentMapping 一致。 |
 | TrainingSession | progresses through | ActionChainStep | many -> many ordered | Content + Training domain | step 限定为开场、说明目的、表达观点、回应追问、确认下一步、结束。 |
 | ActionChainStep | uses | TargetExpression | many -> many | Content domain | 当前 step 可有目标表达或表达簇。 |
 | TrainingSession | contains | TrainingTurn | 1 -> many | Training Planner domain | 每次 micro-action 尝试形成 turn。 |
@@ -294,7 +305,7 @@ Owning increment：`commercial-ai-provider-hardening`。这些关系是 `P0-AI-A
 | Session owns turns | PracticeSession/TrainingSession 拥有 DialogueTurn/TrainingTurn；turn 不拥有 session。 |
 | Evidence references source | LearningEvidence 引用 source turn/attempt/correction，但不拥有 source。 |
 | Mastery is aggregate | MasteryRecord 由 evidence 更新，不反向拥有 evidence。 |
-| Entitlement gates access, not content truth | EntitlementRule 可限制场景或 AI 能力访问，但不改变 Scenario 内容本身。 |
+| Entitlement gates access, not content truth or CEFR meaning | EntitlementRule 可限制 Scenario、ScenarioLevel、future Course 或 AI 能力访问，但不改变内容事实，不将付费层级解释为 CEFR，也不把一个 CEFR 改写成另一个。 |
 | Usage records consumption, not provider truth | ProviderUsageEvent 记录调用事实和成本，不保存 provider secret 或完整 raw payload。 |
 | Media refs are server facts | MediaAsset 负责 provider-accessible ref；客户端本地路径、裸 URL 或对象存储内部 key 都不是生产 ASR 事实。 |
 | Cache metadata is not user text | TtsCacheEntry 只保存 normalized text hash/model/voice/language/media ref，不保存完整敏感文本。 |
@@ -309,7 +320,7 @@ Owning increment：`commercial-ai-provider-hardening`。这些关系是 `P0-AI-A
 | API family | Relationship inputs needed |
 | --- | --- |
 | Auth / User | User、AuthIdentity、UserProfile、AccountLifecycle、AccountDeletionJob |
-| Scenario | Scenario、ScenarioVersion、ScenarioLevel、TargetExpression、DialogueAsset、ActionChainStep |
+| Scenario / Content | Scenario、ScenarioVersion、ScenarioLevel、TargetExpression、DialogueAsset、ActionChainStep；Course catalog/detail 仅承接 approved concept，不假定现行 Course persistence |
 | Training / Practice | PracticeSession、DialogueTurn、TrainingSession、TrainingTurn、MicroAction、PlannerDecision、HintState、PressureCheck |
 | Learning / Review | LearningEvidence、EvidenceRuleTrace、MasteryRecord、ReviewItem、FavoriteExpression、SavedExpression、SessionSummary |
 | Subscription / Entitlement | SubscriptionPlan、Purchase、Subscription、EntitlementSnapshot、EntitlementRule、PaymentProviderEvent |
@@ -325,7 +336,8 @@ API Contract/OpenAPI 阶段必须从这些关系定义 authentication、authoriz
 | Relationship area | Required test focus |
 | --- | --- |
 | User -> gate -> onboarding -> route | 启动门禁、首评完成条件、场景映射和日常服务排除。 |
-| Scenario -> level -> expression -> practice | 双官方场景、等级切换、表达队列、听力热身和语音练习回归。 |
+| Scenario -> CEFR track -> expression -> practice/training | Scenario 0..* CEFR 轨道、ScenarioLevel 双字段一致、A2/B1/B2 资产、A1/C1/C2 真实空内容、legacy 值拒绝、九实体迁移、表达队列、听力热身和会话恢复。 |
+| Entitlement -> content access | entitlement 可 gate 访问但不改写 CEFR；同一内容在列表、详情、practice/training 入口语义一致。 |
 | Session -> turn -> feedback -> evidence | 会话恢复、turn 顺序、反馈失败、证据写回和 recap 保留。 |
 | Provider gateway -> feedback fallback | provider timeout/unavailable/invalid schema 只能产出 typed fallback 或明确失败，不能写伪成功反馈。 |
 | Favorite / saved expression -> review | 收藏去重、取消收藏、收藏不自动生成复习任务。 |
@@ -352,5 +364,5 @@ API Contract/OpenAPI 阶段必须从这些关系定义 authentication、authoriz
 | MasteryRecord -> L0/L1/L2/L3/L4/L5 ladder | Followup-B 已定义 planned MasteryTransitionDecision；完整持久化实现、迁移和 UI 解释仍待 implementation gate。 |
 | NotebookItem -> VocabularyLookup -> arbitrary phrase notes | P1 `CAP-NOTE` expansion boundary。 |
 | ScoreSignal -> ProductizedScoringRubric -> performance card | P1 scoring productization。 |
-| ScenarioPackage -> CMSContentWorkflow -> CEFRMapping | P1/P2 content expansion and CMS。 |
+| Scenario -> richer Course aggregate -> CMSContentWorkflow | Course 产品概念已 approved；aggregate persistence、CMS 与内容生产拓扑仍待后续 Architecture/API/Backend contract。CEFR 值域本身不再 deferred。 |
 | PublicUserScenario -> community sharing | Not now / non-goal。 |

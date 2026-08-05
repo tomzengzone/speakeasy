@@ -12,16 +12,15 @@
 
 ### 产品事实链
 
-当前产品事实链为：
+当前产品事实源链由以下分层事实共同构成；这些层之间不建立 `Capability -> Story/VS` 直接边：
 
 ```text
-Capability / Sub-capability classification
--> approved User Story
--> approved Child Vertical Slice
--> Functional Requirement when present
+CAPABILITY_REGISTRY: Capability / Sub-capability classification and boundary facts
+STORY_MAP: approved User Story -> approved Child Vertical Slice
+FUNCTIONAL_REQUIREMENT_CATALOG (Functional Requirement when present): approved Child Vertical Slice -> approved FR (`source_vs_ids`)
 ```
 
-`STORY_MAP` Artifact 是 User Story 与嵌套 Child Vertical Slice 的唯一当前产品事实来源，可由 Governance Contract 注册的 Capability 分片共同承载；导航索引不拥有行为语义。Story 直接归属 Capability，Child VS 直接归属 Story。Product Manager 按 implementing VS 决定是否创建 FR，零 FR 不会仅因缺少 FR 而阻止交付。FR 存在时只通过 `source_vs_ids` 直接引用 approved VS，并可包含多个独立规则、不变量、边界或失败条件。Capability 与 Sub-capability 只用于分类、编号和影响筛选，不从名称或描述推导行为，也不成为第二条 lineage。
+产品事实源链由 `CAPABILITY_REGISTRY`、`STORY_MAP` 和存在时的 `FUNCTIONAL_REQUIREMENT_CATALOG` 分层共同构成，没有任何单个 Artifact 是整条链的唯一产品事实来源。`CAPABILITY_REGISTRY` 独立持有 Capability / Sub-capability 的分类与边界事实，不作为 Story 或 VS 的直接上游，不决定 Story Map 的文件组织、Story/VS 编号、归属或影响筛选。`STORY_MAP` 只持有 User Story、嵌套 Child Vertical Slice 语义和 VS-to-Story 直接关系；Child VS 直接归属于其父 Story。Product Manager 按 implementing VS 决定是否创建 FR，零 FR 不会仅因缺少 FR 而阻止交付。FR 存在时只通过 `source_vs_ids` 直接引用 approved VS，并持有从该 VS 提炼出的规则、不变量、边界或失败条件。
 
 Stage、Roadmap、Increment、Work Package 与 PR 只组织时间、优先级、批次和交付状态，不定义产品行为，也不作为 FR、TC 或 Engineering Contract 的权威上游。
 
@@ -42,15 +41,15 @@ FR 存在时，每条 approved FR 必须有适用的最低成本 FR-TC，或具�
 Canonical traceability 是只读、完整、可重建的投影，不拥有直接边：
 
 ```text
-Story Map: Capability/Sub-capability -> Story -> VS
-FR Catalog when FR exists: VS -> FR
+Story Map: Story -> VS
+FR Catalog when FR exists: VS -> FR (`source_vs_ids`)
 Engineering Contract when FR exists: FR -> affected Contract
 TC Catalog when FR exists: FR -> FR-TC
 TC Catalog: Contract -> Contract-TC
 TC Catalog: VS -> VS-TC
 ```
 
-Traceability 连接 selector 和稳定 evidence link，并在 FR 存在时从 VS/FR owning edge 派生 VS-TC 对适用 FR 的 coverage join。没有 FR 时不生成 FR、FR-TC 或对应 coverage join；VS-TC 不重复保存 FR ID 集合。投影不一致时修复 owning source 后重新生成，不得在 traceability 中覆盖关系。执行结果只由绑定 exact commit SHA 的 CI 或测试系统保存。
+Capability Registry 不定义或提供 `Capability -> Story/VS` traceability 直接边，也不作为 Story/VS lineage 的祖先。Traceability 连接 selector 和稳定 evidence link，并在 FR 存在时从 VS/FR owning edge 派生 VS-TC 对适用 FR 的 coverage join。没有 FR 时不生成 FR、FR-TC 或对应 coverage join；VS-TC 不重复保存 FR ID 集合。投影不一致时修复 owning source 后重新生成，不得在 traceability 中覆盖关系。执行结果只由绑定 exact commit SHA 的 CI 或测试系统保存。
 
 ### Engineering Contract 与治理责任
 

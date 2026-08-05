@@ -733,7 +733,7 @@ Learning state based only on reproduced Wiki expressions:
 Learner turns:
 $turnBlock
 
-Write a short bilingual review in 2 bullets. Do not mention grammar scores. Be direct and beginner-friendly. Keep it under 70 words.
+Write a short bilingual review in 2 bullets. Do not mention grammar scores. Be direct and learner-friendly. Keep it under 70 words.
 ''';
   }
 

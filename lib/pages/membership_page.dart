@@ -57,7 +57,7 @@ class _MembershipPageState extends State<MembershipPage> {
   static const _proFeatures = <_MemberFeature>[
     _MemberFeature(
       icon: Icons.all_inclusive_rounded,
-      title: '高级场景 L3',
+      title: 'B2 场景',
       desc: '解锁高级场景和完整练习路径',
     ),
     _MemberFeature(
@@ -88,10 +88,10 @@ class _MembershipPageState extends State<MembershipPage> {
   ];
 
   static const _compareItems = <({String label, bool free, bool pro})>[
-    (label: '基础场景与 L1-L2 练习', free: true, pro: true),
+    (label: 'A2-B1 场景练习', free: true, pro: true),
     (label: '每日 3 次训练会话', free: true, pro: true),
     (label: '学习进度追踪', free: true, pro: true),
-    (label: '高级 L3 场景', free: false, pro: true),
+    (label: 'B2 场景', free: false, pro: true),
     (label: '完整句型库（500+）', free: false, pro: true),
     (label: '更高 AI/ASR/TTS/评分额度', free: false, pro: true),
     (label: '每日 50 次训练会话', free: false, pro: true),
@@ -695,7 +695,7 @@ class _EntitlementNotice extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  '可使用基础场景与每日基础 AI 练习额度。订阅后解锁 L3 高级场景和更高 AI 练习额度。',
+                  '可使用 A2-B1 场景与每日基础 AI 练习额度。订阅后解锁 B2 场景和更高 AI 练习额度。',
                   style: TextStyle(
                     fontSize: 12,
                     color: textSecondary,

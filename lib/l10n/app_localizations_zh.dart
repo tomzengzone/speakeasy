@@ -356,7 +356,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get goalDescSpeakBetter => '想让表达更地道自然';
 
   @override
-  String get levelBeginner => '入门';
+  String get levelBeginner => 'A2 基础';
 
   @override
   String get levelBeginnerDesc => '日常单词认识，但很难开口说';
@@ -368,13 +368,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get levelElementaryDesc => '能说简单句子，但不够流利';
 
   @override
-  String get levelIntermediate => '中级';
+  String get levelIntermediate => 'B1 中级';
 
   @override
   String get levelIntermediateDesc => '可以日常交流，但表达不自然';
 
   @override
-  String get levelAdvanced => '高级';
+  String get levelAdvanced => 'B2 中高级';
 
   @override
   String get levelAdvancedDesc => '表达流利，想进一步提升地道度';
