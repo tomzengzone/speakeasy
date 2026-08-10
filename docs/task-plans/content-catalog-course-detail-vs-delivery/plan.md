@@ -2,10 +2,10 @@
 schema_version: 1
 task_id: content-catalog-course-detail-vs-delivery
 title: Content 全景架构基线与课程目录/详情顺序交付
-status: in_progress
+status: completed
 delivery_target: local
 created_at: 2026-08-07T10:57:42+08:00
-updated_at: 2026-08-10T22:10:10+08:00
+updated_at: 2026-08-10T22:23:10+08:00
 ---
 # Content 全景架构基线与课程目录/详情顺序交付
 
@@ -159,8 +159,10 @@ PR-001 至 PR-006 均已完成并获用户验收；架构、领域、API/Contrac
 Flutter、相关 Spring Course/Scenario、API/治理 gates 已通过；独立 code quality 为 APPROVE，DevOps 本地
 实现门为 PASS。用户已验收 revision 2，PR-007 implementation commit 已绑定 draft PR #9。全量 Maven
 的 3 个范围外失败和无产品设备的 canonical integration 命令已在 PR 卡片如实记录；生产 rollout 保持
-BLOCKED，未执行 merge、部署或 release。
+BLOCKED，未执行 merge、部署或 release。用户已于 2026-08-10 确认总任务验收，任务状态已转为
+`completed`。
 
 ## Next Approval Required
 
-七个 PR 单元均已完成并获验收；等待用户单独确认整体任务验收。确认前 task 保持 `in_progress`。
+无。总任务已完成；合并、部署、生产 migration 与 release 仍需另行授权，并继续受 PR-007 中列明的
+生产 rollout 前提约束。
