@@ -58,6 +58,10 @@ DERIVED_OPERATIONAL_POINTER = re.compile(
     r"Derived operational pointer[（(]([A-Z][A-Z0-9_-]*)\."
     r"(canonical_path|validation_command)[）)]\s*[：:]\s*`([^`\r\n]+)`"
 )
+CURRENT_LINEAGE_HEADING = re.compile(
+    r"^[ \t]{0,3}#{1,6}[ \t]+(?:PR-\d+[ \t]+)?current[ \t]+lineage\b[^\r\n]*$",
+    re.IGNORECASE | re.MULTILINE,
+)
 
 
 def _json(path: Path) -> dict:
@@ -331,8 +335,8 @@ def validate_cutover(root: Path = ROOT, *, check_adr: bool = True, check_story_m
         path = root / relative
         if not path.is_file():
             errors.append(f"surviving Engineering Artifact is missing: {relative}")
-        elif "PR-003 current lineage" not in path.read_text(encoding="utf-8")[:1800]:
-            errors.append(f"{relative} lacks the PR-003 current-lineage marker")
+        elif not CURRENT_LINEAGE_HEADING.search(path.read_text(encoding="utf-8")[:1800]):
+            errors.append(f"{relative} lacks a current-lineage heading in the first 1800 characters")
 
     graph = collect_candidate_authority_graph(root)
     metrics = {

@@ -22,8 +22,6 @@ class StorySliceDeliveryValidationTest(unittest.TestCase):
         temp = tempfile.TemporaryDirectory()
         root = Path(temp.name)
         for relative in (
-            "docs/product/functional_requirements.md",
-            "docs/quality/test_cases.md", "docs/quality/traceability.md",
             "docs/process/governance/index.json",
             "docs/process/governance/artifacts/engineering.json",
             "docs/process/governance/artifacts/product.json",
@@ -45,15 +43,92 @@ class StorySliceDeliveryValidationTest(unittest.TestCase):
 """,
             encoding="utf-8",
         )
+        (root / "docs/product/functional_requirements.md").write_text(
+            """# Functional Requirements
+
+## FR-TRAIN / CAP-TRAIN-06 训练闭环展示状态
+
+### FR-TRAIN-001 — 完成练习后的闭环展示
+
+- Status: `approved`
+- source_vs_ids: `VS-TRAIN-001-1`
+- primary_capability_id: `CAP-TRAIN`
+- primary_sub_capability_id: `CAP-TRAIN-06`
+- Rule: 学习者结束练习后，系统必须展示练习总结和后续学习入口。
+
+## 维护规则
+""",
+            encoding="utf-8",
+        )
+        quality = root / "docs/quality"
+        quality.mkdir(parents=True, exist_ok=True)
+        (quality / "test_cases.md").write_text(
+            """# Test Cases
+
+## FR-TC
+
+### TC-FR-TRAIN-001 — 训练闭环展示验证
+
+- type: `FR-TC`
+- source_fr_id: `FR-TRAIN-001`
+- layer: `widget`
+- scope: `CAP-TRAIN/CAP-TRAIN-06`
+- selector: `training_recap_panel`
+- script_path: `test/features/training/training_recap_test.dart`
+- command: `flutter test test/features/training/training_recap_test.dart`
+- Given: 学习者已进入一轮练习。
+- When: 学习者结束练习。
+- Then: 展示练习总结和后续学习入口。
+- Boundary/negative: 无可用结果时不得生成总结结论。
+
+## Contract-TC
+
+当前基线没有 Contract-TC。
+
+## VS-TC
+
+### TC-VS-TRAIN-001-1 — 训练闭环全链路验证
+
+- type: `VS-TC`
+- source_vs_id: `VS-TRAIN-001-1`
+- layer: `integration-e2e`
+- scope: `selected VS user-visible training loop`
+- selector: `training_session_view -> training_recap_panel`
+- script_path: `integration_test/training_loop_test.dart`
+- command: `flutter test integration_test/training_loop_test.dart`
+- Given: 学习者已进入一轮练习。
+- When: 学习者完成或结束练习。
+- Then: 展示练习总结和后续学习入口。
+- Boundary/negative: 失败时不得错误推进进度。
+""",
+            encoding="utf-8",
+        )
+        (quality / "traceability.md").write_text(
+            """# Canonical Traceability
+
+- Projection: `derived-read-only`
+
+| Story | Vertical Slice | Functional Requirement | FR-TC |
+| --- | --- | --- | --- |
+| `US-TRAIN-001` | `VS-TRAIN-001-1` | `FR-TRAIN-001` | `TC-FR-TRAIN-001` |
+
+| Vertical Slice | VS-TC |
+| --- | --- |
+| `VS-TRAIN-001-1` | `TC-VS-TRAIN-001-1` |
+""",
+            encoding="utf-8",
+        )
         return temp, root
 
     def test_repository_catalogs_validate(self) -> None:
         errors, metrics = validate_delivery(ROOT)
         self.assertEqual([], errors)
         self.assertEqual(1, metrics["story_map_documents"])
-        self.assertEqual(1, metrics["vertical_slices_with_frs"])
-        self.assertEqual(1, metrics["fr_tc_coverage"])
-        self.assertEqual(1, metrics["vs_tc_coverage"])
+        self.assertGreater(metrics["approved_stories"], 0)
+        self.assertGreater(metrics["approved_vertical_slices"], 0)
+        self.assertEqual(metrics["functional_requirements"], metrics["fr_tc_coverage"])
+        self.assertEqual(metrics["approved_vertical_slices"], metrics["vs_tc_coverage"])
+        self.assertLessEqual(metrics["vertical_slices_with_frs"], metrics["approved_vertical_slices"])
 
     def test_approved_implementing_vs_with_zero_frs_passes(self) -> None:
         temp, root = self.fixture()

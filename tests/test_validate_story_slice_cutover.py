@@ -282,13 +282,37 @@ class StorySliceCutoverValidationTest(unittest.TestCase):
         errors, _ = validate_cutover(root)
         self.assertTrue(any("retired Artifact remains routed: STORY_MAP_INDEX" in error for error in errors))
 
-    def test_missing_engineering_lineage_marker_is_rejected(self) -> None:
+    def test_old_engineering_lineage_heading_is_rejected_even_if_body_mentions_current_lineage(self) -> None:
         temp, root = self.fixture()
         self.addCleanup(temp.cleanup)
         path = root / "docs/architecture/system_overview.md"
-        path.write_text(path.read_text(encoding="utf-8").replace("PR-003 current lineage", "old lineage", 1), encoding="utf-8")
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                "## PR-003 current lineage",
+                "## Old lineage\n\nThe current lineage remains documented in this paragraph.",
+                1,
+            ),
+            encoding="utf-8",
+        )
         errors, _ = validate_cutover(root)
         self.assertTrue(any("system_overview.md lacks" in error for error in errors))
+
+    def test_current_lineage_heading_without_pr_prefix_is_accepted(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        path = root / "docs/architecture/system_overview.md"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                "## PR-003 current lineage",
+                "## CURRENT LINEAGE and implementation decision",
+                1,
+            ),
+            encoding="utf-8",
+        )
+
+        errors, _ = validate_cutover(root)
+
+        self.assertFalse(any("system_overview.md lacks" in error for error in errors))
 
 
 if __name__ == "__main__":
