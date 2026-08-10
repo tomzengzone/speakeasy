@@ -22,6 +22,9 @@ server:
     context-path: /v1
 
 speakeasy:
+  content:
+    course-read:
+      enabled: ${SPEAKEASY_CONTENT_COURSE_READ_ENABLED:true}
   goal-autopilot:
     runtime:
       enabled: ${SPEAKEASY_GOAL_AUTOPILOT_RUNTIME_ENABLED:true}

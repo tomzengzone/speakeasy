@@ -30,6 +30,12 @@ Proposed - global SWC architecture baseline. 本文是全局软件组件架构�
 - `docs/architecture/data_flow.md` 或 `docs/architecture/module_boundary.md` 中继承的全局规则；
 - 如果本次变更改变稳定 SWC 拓扑或新增稳定 SWC，必须先更新本文和 `swc_catalog.md`，或记录明确的 proposed/legacy-compatible 迁移理由。
 
+## Content Revision Authority Boundary
+
+- 当前 Content 架构只以已批准的 `US-CONTENT-001`、`US-CONTENT-002` 及适用 `FR-CONTENT-001`、`FR-CONTENT-002` 为规范输入。
+- `US-CONTENT-003` 至 `US-CONTENT-012` 全部保持 draft。下方 Architecture Coverage Matrix 只预分类复用边界与未来 impact check，不授权 endpoint、字段、状态、表、provider、验收或实现。
+- Course/CourseVersion 是既有 Content / Scenario bounded context 内的一等稳定身份；`Course != Scenario`，`ScenarioLevel` 保持既有含义。后续 CourseContentBinding 可连接 CourseVersion 与匹配的 ScenarioVersion + ScenarioLevel，但其字段、基数、表与 API 必须等待相应 Engineering Contract。
+
 ## System-Level Responsibility Allocation
 | Layer | Owns | Must not own |
 | --- | --- | --- |
@@ -43,7 +49,7 @@ Proposed - global SWC architecture baseline. 本文是全局软件组件架构�
 ```text
 FE-BOOTSTRAP-ROUTING
   -> FE-API-CLIENT
-  -> feature frontend SWCs
+  -> feature frontend SWCs, including FE-CONTENT
       -> BE-API-CONTROLLERS
           -> backend application/domain SWCs
               -> DB-* SWCs
@@ -56,6 +62,7 @@ FE-BOOTSTRAP-ROUTING
 
 规则：
 - 当存在 OpenAPI contract 时，Frontend feature SWC 只能通过 `FE-API-CLIENT` 调用 backend。
+- `FE-CONTENT` 只拥有 catalog/detail UI orchestration，必须复用 `FE-API-CLIENT` 与 `FE-LOCAL-CACHE`；不得创建 feature-local Course DTO/client/store/version resolver。
 - `FE-PRACTICE-RUNTIME` 只拥有可复用 frontend mechanics；`FE-SCENARIO-PRACTICE` 拥有 official scenario practice domain logic；`FE-LEGACY-SCENARIO-SANDBOX` 保持 non-main-flow。
 - Backend controller 必须委托给 service/domain SWC；不得绕过 domain、usage、entitlement、media、AI gateway、audit、retention 或 data-governance boundary。
 - DB SWC 只能通过 owning backend service/repository 访问，不允许 direct cross-domain write。
@@ -65,6 +72,7 @@ FE-BOOTSTRAP-ROUTING
 | Flow ID | Flow | Stable SWC sequence | Canonical source |
 | --- | --- | --- | --- |
 | SWC-FLOW-AUTH-PROFILE | Login/profile/session bootstrap | `FE-BOOTSTRAP-ROUTING -> FE-AUTH-PROFILE -> FE-API-CLIENT -> BE-API-CONTROLLERS -> BE-IDENTITY -> DB-IDENTITY-CONTENT -> response -> FE-LOCAL-CACHE/display` | `module_boundary.md`, `api_contract.md` |
+| SWC-FLOW-CONTENT-CATALOG | Approved catalog and version-pinned Course detail | `FE-CONTENT -> FE-API-CLIENT -> BE-API-CONTROLLERS -> BE-CONTENT-SCENARIO -> (DB-IDENTITY-CONTENT; BE-COMMERCE-ENTITLEMENT visibility decision when applicable) -> exact-version response or typed failure -> FE-CONTENT -> FE-LOCAL-CACHE/display` | `data_flow.md` Approved Content Catalog And Version-Pinned Detail Flow; `module_boundary.md` Content Catalog And Course Detail Boundary |
 | SWC-FLOW-SUBSCRIPTION-ENTITLEMENT | Purchase, restore, entitlement refresh | `FE-COMMERCIAL -> FE-API-CLIENT -> BE-API-CONTROLLERS -> BE-COMMERCE-ENTITLEMENT -> DB-COMMERCE-USAGE -> BE-OPS-AUDIT-DELETION -> response -> FE-COMMERCIAL display cache` | `data_flow.md` P0 Subscription Purchase / Restore Flow |
 | SWC-FLOW-USAGE-AI | Usage-gated AI/ASR/TTS/scoring call | `feature FE SWC -> FE-API-CLIENT -> BE-API-CONTROLLERS -> BE-USAGE-CONTROL -> BE-AI-GATEWAY -> AI-* provider -> BE-AI-OPS -> BE-USAGE-CONTROL commit/release -> response -> feature FE SWC` | `data_flow.md` P0 Commercial Usage Flow |
 | SWC-FLOW-MEDIA-AUDIO-UPLOAD | Trusted audio upload and provider-readable ref | `FE-AUDIO-PLATFORM -> FE-API-CLIENT -> BE-API-CONTROLLERS -> BE-MEDIA-STORAGE -> DB-AI-MEDIA-OPS/object storage -> BE-AI-GATEWAY -> AI provider -> BE-AI-OPS -> response -> FE-AUDIO-PLATFORM/feature UI` | `data_flow.md` P0 Commercial AI Provider Hardening Flow |
@@ -73,6 +81,35 @@ FE-BOOTSTRAP-ROUTING
 | SWC-FLOW-GOAL-AUTOPILOT | Goal profile, diagnostic, planning and projection | `FE-GOAL-AUTOPILOT -> FE-API-CLIENT -> BE-API-CONTROLLERS -> BE-GOAL-AUTOPILOT -> BE-LEARNING/BE-USAGE-CONTROL/BE-AI-GATEWAY/BE-MEDIA-STORAGE as needed -> DB-GOAL-AUTOPILOT -> response -> FE-GOAL-AUTOPILOT` | `data_flow.md` P0.2 Followup-E Speaking Diagnostic Audio Flow and goal docs |
 | SWC-FLOW-ACCOUNT-DELETION | Account deletion and data lifecycle | `FE-AUTH-PROFILE -> FE-API-CLIENT -> BE-API-CONTROLLERS -> BE-IDENTITY -> BE-OPS-AUDIT-DELETION -> owning backend SWCs -> DB-* cleanup/anonymization -> response -> FE-AUTH-PROFILE/local cache clear` | `data_flow.md` Account Deletion And Data Retention Flow |
 | SWC-FLOW-OBSERVABILITY | Request, audit, metrics and release evidence | `FE-API-CLIENT/request_id -> BE-API-CONTROLLERS -> owning backend SWC -> BE-OPS-AUDIT-DELETION/BE-AI-OPS -> OPS-RELEASE-GATES` | `data_flow.md` Observability Flow |
+
+## Architecture Coverage Matrix For Draft Content Stories
+
+本矩阵逐行覆盖 `US-CONTENT-003` 至 `US-CONTENT-012`，且每行均包含八类架构判定。所有行的 current authority 都是 draft compatibility only；任何行都不能被视为批准的产品或实现契约。
+
+| Story | Current authority | Owning SWC(s) | Course/CourseVersion relation | Stable reference category consumed / produced | Runtime facts Course must not own | Future Engineering Contract Artifact types | Classification | Concrete ADR / global architecture review trigger |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `US-CONTENT-003` | Draft compatibility only; no implementation authority | `FE-CONTENT`, `BE-CONTENT-SCENARIO`, `BE-PRACTICE`, `BE-TRAINING`, `BE-LEARNING` | Future approved curriculum/navigation references may be versioned under CourseVersion; learner route/progress remains external | Consumes Course/CourseVersion and authored navigation refs; produces only Practice/Training/Learning-owner projection refs | Per-user stage availability, practice/training progress, completion, recommendation or next-action truth | `DOMAIN_MODEL`, `API_CONTRACT`, `SCREEN_SPEC`, `USER_FLOW`, `DATA_FLOW` | `fits-baseline` | Global review if Course identity semantics change, progress ownership moves into Content, or navigation requires a new cross-SWC atomic transaction; otherwise local impact check plus corresponding Contract increment |
+| `US-CONTENT-004` | Draft compatibility only; no implementation authority | `FE-CONTENT`, `FE-SCENARIO-PRACTICE`, `BE-PRACTICE`, `BE-AI-GATEWAY` | CourseVersion may supply immutable launch context through CourseContentBinding to matching ScenarioVersion + ScenarioLevel | Consumes Course/CourseVersion/content-binding refs; produces Practice-owned session/turn refs and AI-schema refs | Practice session, opener, message, turn, hint, transcript or coach state | `DOMAIN_MODEL`, `API_CONTRACT`, `PROMPT_CONTRACT`, `LLM_OUTPUT_SCHEMA`, `AI_FALLBACK`, `DIALOGUE_STATE_MACHINE`, `SCREEN_SPEC`, `DATA_FLOW` | `fits-baseline` | Global review if Course becomes practice runtime owner, launch requires a new Content/Practice transaction, stable binding identity changes, or a new AI/security boundary is introduced; otherwise local impact check plus corresponding Contract increment |
+| `US-CONTENT-005` | Draft compatibility only; no implementation authority | `FE-SCENARIO-PRACTICE`, `FE-PRACTICE-RUNTIME`, `FE-AUDIO-PLATFORM`, `BE-PRACTICE`, `BE-AI-GATEWAY`, `BE-MEDIA-STORAGE` | CourseVersion is immutable contextual reference only; dialogue runtime remains Practice-owned | Consumes Course/version/binding refs; produces Practice session/turn, trusted media and AI-schema refs | Conversation state, recordings, transcripts, generated replies, feedback, score or provider state | `DOMAIN_MODEL`, `API_CONTRACT`, `PROMPT_CONTRACT`, `LLM_OUTPUT_SCHEMA`, `AI_FALLBACK`, `DIALOGUE_STATE_MACHINE`, `SCREEN_SPEC`, `DATA_FLOW` | `fits-baseline` | Global review if a new provider/storage/security boundary appears, Content and Practice require atomic writes, or a third dialogue/audio runtime is proposed; otherwise local impact check plus corresponding Contract increment |
+| `US-CONTENT-006` | Draft compatibility only; no implementation authority | `FE-CONTENT`, `FE-SCENARIO-PRACTICE`, `BE-PRACTICE`, `BE-LEARNING` | Completion/evidence may reference CourseVersion, but CourseVersion does not own either fact | Consumes Course/CourseVersion and Practice summary refs; produces only Learning-owner evidence/projection refs | Challenge completion, session summary, learning evidence, mastery, progress or next recommendation | `DOMAIN_MODEL`, `API_CONTRACT`, `SCREEN_SPEC`, `USER_FLOW`, `DATA_FLOW` | `fits-baseline` | Global review if Course accepts evidence/progress as owned facts or completion requires a new atomic Content/Practice/Learning transaction; otherwise local impact check plus corresponding Contract increment |
+| `US-CONTENT-007` | Draft compatibility only; no implementation authority | `FE-CONTENT`, `BE-CONTENT-SCENARIO`, `BE-LEARNING` | A future approved authored teaching sequence may be rooted and versioned by CourseVersion; its structure is not defined now | Consumes Course/CourseVersion; may later produce authored curriculum/content refs while consuming Learning-owner progress/evidence refs | Learner position, mastery, review schedule, completion or adaptive route truth | `DOMAIN_MODEL`, `API_CONTRACT`, `SCREEN_SPEC`, `USER_FLOW`, `DATA_FLOW` | `fits-baseline` | Global review if stable Course/version identity changes, authored sequence ownership crosses SWCs, or runtime progress moves into Content; otherwise local impact check plus corresponding Contract increment |
+| `US-CONTENT-008` | Draft compatibility only; no implementation authority | `FE-CONTENT`, `BE-CONTENT-SCENARIO`, `BE-MEDIA-STORAGE`, `BE-LEARNING` | Future vocabulary content may be an authored reference under CourseVersion/CourseContentBinding | Consumes Course/version and vocabulary-occurrence refs; produces Content-owned authored refs while consuming Media and Learning refs | Playback state, media lifecycle, learner vocabulary progress, evidence, mastery or review state | `DOMAIN_MODEL`, `API_CONTRACT`, `SCREEN_SPEC`, `DATA_FLOW` | `fits-baseline` | Global review if vocabulary lacks stable versioned identity, creates another knowledge store, or introduces a new provider/storage/security boundary; otherwise local impact check plus corresponding Contract increment |
+| `US-CONTENT-009` | Draft compatibility only; no implementation authority | `FE-CONTENT`, `BE-CONTENT-SCENARIO`, `BE-MEDIA-STORAGE`, `BE-LEARNING` | Future expression content may be an authored reference under CourseVersion/CourseContentBinding | Consumes Course/version, expression and dialogue-occurrence refs; produces Content-owned authored refs while consuming Media and Learning refs | Usage attempts, playback cursor, progress, evidence, mastery or review truth | `DOMAIN_MODEL`, `API_CONTRACT`, `SCREEN_SPEC`, `DATA_FLOW` | `fits-baseline` | Global review if expression identity conflicts with reviewed-content reuse, ownership crosses SWCs, or a new provider/storage/security boundary is needed; otherwise local impact check plus corresponding Contract increment |
+| `US-CONTENT-010` | Draft compatibility only; no implementation authority | `FE-CONTENT`, `FE-AUDIO-PLATFORM`, `BE-CONTENT-SCENARIO`, `BE-MEDIA-STORAGE`, `BE-LEARNING` | CourseVersion may reference an immutable authored dialogue sequence; playback/progress remains outside Course | Consumes Course/version, dialogue-sequence/segment and trusted media refs; produces only playback intents and Learning-owner projection refs | Playback cursor, listened/completed status, media lifecycle, progress or evidence | `DOMAIN_MODEL`, `API_CONTRACT`, `SCREEN_SPEC`, `DATA_FLOW` | `fits-baseline` | Global review if streaming adds a provider/storage/security boundary, playback completion needs a cross-SWC atomic transaction, or dialogue identity cannot remain version-pinned; otherwise local impact check plus corresponding Contract increment |
+| `US-CONTENT-011` | Draft compatibility only; no implementation authority | `FE-CONTENT`, `FE-AUDIO-PLATFORM`, `BE-CONTENT-SCENARIO`, `BE-MEDIA-STORAGE`, `BE-LEARNING` | CourseVersion may reference immutable sentence/dialogue content; text, translation and highlight refs remain authored Content facts | Consumes Course/version, dialogue-segment/translation/highlight and trusted media refs; produces stable authored refs and Learning-owner projection refs | Per-user view mode, playback state, progress, evidence, media lifecycle or runtime highlighting state | `DOMAIN_MODEL`, `API_CONTRACT`, `SCREEN_SPEC`, `DATA_FLOW` | `fits-baseline` | Global review if stable dialogue/sentence identity changes, another content store is introduced, or media/security ownership crosses SWCs; otherwise local impact check plus corresponding Contract increment |
+| `US-CONTENT-012` | Draft compatibility only; no implementation authority | `FE-CONTENT`, `FE-PRACTICE-RUNTIME`, `FE-AUDIO-PLATFORM`, `BE-PRACTICE`, `BE-AI-GATEWAY`, `BE-MEDIA-STORAGE`, `BE-LEARNING` | CourseVersion supplies immutable sentence/content context only; shadowing runtime remains Practice/AI/Media/Learning-owned | Consumes Course/version, sentence and trusted media refs; produces Practice attempt, transcript/score candidate and Learning evidence refs | Recording, transcript, pronunciation score, attempt, retry, progress, evidence, provider or media lifecycle | `DOMAIN_MODEL`, `API_CONTRACT`, `PROMPT_CONTRACT`, `LLM_OUTPUT_SCHEMA`, `AI_FALLBACK`, `SCREEN_SPEC`, `DATA_FLOW` | `fits-baseline` | Global review if a new scoring/provider/storage/privacy boundary appears, attempt/evidence ownership moves into Course, or atomic Content/Practice/Learning writes are required; otherwise local impact check plus corresponding Contract increment |
+
+## Content Global Architecture Review Triggers
+
+An approved successor to any matrix row requires a new ADR or global architecture review before implementation when at least one condition is true：
+- stable Course/CourseVersion identity or version-resolution semantics change；
+- an authored or runtime fact changes owning SWC；
+- a new cross-SWC transaction, atomicity or compensation boundary is required；
+- a new provider、storage、security 或 privacy boundary is introduced；
+- the design conflicts with an existing reuse rule, creates a forbidden duplicate, or bypasses `FE-API-CLIENT`、`FE-LOCAL-CACHE`、backend owner、AI Gateway 或 Media Storage；
+- CourseContentBinding can no longer preserve the relation to matching ScenarioVersion + ScenarioLevel without changing global topology。
+
+When none of these triggers is hit, the owning architect records a local impact check against the applicable matrix row and increments only the corresponding Engineering Contract Artifact(s). The local check never changes a draft Story into approved authority.
 
 ## Increment Delta Rules
 `docs/product/increments/<increment-id>/swc_allocation.md` 不是完整架构，而是相对于本文 baseline 的 delta。
@@ -91,6 +128,8 @@ Increment allocation 必须：
 3. `docs/architecture/swc_catalog.md`，用于确认具体 SWC ID、code path、responsibility、owned data、test 和 forbidden bypass。
 4. `docs/architecture/module_boundary.md` 与 `docs/architecture/data_flow.md`，用于确认 cross-boundary facts 和 business flow rules。
 5. Domain Schema、OpenAPI、AI runtime、UX、test case library、release gates 以及当前代码/migration，用于确认 source-of-truth 细节。
+
+对于 `US-CONTENT-003` 至 `US-CONTENT-012` 的获批后续行为，还必须先读取本文件对应矩阵行并记录 trigger 判定。没有触发 `Content Global Architecture Review Triggers` 时，只更新受影响的 Engineering Contract；触发任一条件时，先更新全局架构基线或新增 ADR，再允许实现。
 
 如果局部设计与本文 baseline 冲突，实现不得开始，直到满足以下任一条件：
 - global baseline 已更新并通过 Software Architecture Governance Check；

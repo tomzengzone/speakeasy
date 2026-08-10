@@ -2,9 +2,13 @@
   "mode": "generated_client_drift",
   "openapi_path": "docs/architecture/openapi/speakeasy-api.yaml",
   "target_directory": "lib/generated/api",
-  "generator": "project-local OpenAPI Dart path registry",
-  "openapi_sha256": "19d04f5e836340c01ec2fb69dc3af9084639cd2a3e85568d60c485c646c38bec",
-  "status": "Generated Dart OpenAPI boundary is committed under lib/generated/api and pinned by .openapi-sha256. Active MVP backend calls must use generated path constants or be listed as explicit handwritten client exceptions.",
+  "generator": "python scripts/check_openapi_dart_drift.py --write",
+  "generated_files": [
+    "lib/generated/api/speakeasy_api.dart",
+    "lib/generated/api/.openapi-sha256"
+  ],
+  "openapi_sha256": "dedd35a32a86c5e5a2b6a6c28cc167a1eb9c2e1accfaf861f7401de6efe3a49b",
+  "status": "Generated Dart OpenAPI boundary is committed under lib/generated/api with path constants, typed enums, and strict Scenario/Course catalog and error DTO decoders. The catalog DTO section is reproducibly generated and drift-checked by the project-local script, while the whole boundary remains pinned by .openapi-sha256. Active MVP backend calls must use generated path constants or be listed as explicit handwritten client exceptions.",
   "handwritten_client_exceptions": {
     "/user/stats": "Legacy local learning-stats sync retained until frontend migrates to learning history/report APIs.",
     "/user/stats/session": "Legacy local learning-stats sync retained until frontend migrates practice completion to /practice and /learning evidence APIs.",

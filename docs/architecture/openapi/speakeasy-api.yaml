@@ -29,6 +29,8 @@ tags:
   description: Assessment and initial learning route.
 - name: Scenario
   description: Official scenario content and levels.
+- name: Course
+  description: Learner-visible course catalog and exact published course versions.
 - name: Home
   description: Server-backed home summary and learning entry state.
 - name: Practice
@@ -407,28 +409,46 @@ paths:
       tags:
       - Scenario
       operationId: listScenarios
-      summary: List official scenarios visible to current user.
+      summary: List published official scenarios visible to the current learner.
+      description: When query and category are both omitted, returns every published and visible theme ordered by scenario_id ascending. Themes with zero visible courses remain in the result. Optional filters only narrow that authenticated publication and visibility projection; no match is a successful empty list.
       x-traceability:
         product_objects:
         - product-base
         - p0-commercial-readiness
+        - US-CONTENT-001
+        - VS-CONTENT-001-1
         requirements:
         - FR-003
         - FR-COM-007
+        - FR-CONTENT-001
+        contracts:
+        - CONTENT-COURSE-CATALOG-API-001
       parameters:
+      - $ref: '#/components/parameters/IfNoneMatch'
       - name: query
         in: query
         required: false
+        description: Optional search filter applied after authentication, publication, and visibility projection. Omit with category to request all published and visible themes.
         schema:
           type: string
       - name: category
         in: query
         required: false
+        description: Optional category filter applied after authentication, publication, and visibility projection. Omit with query to request all published and visible themes.
         schema:
           type: string
       responses:
         '200':
-          description: Scenario list.
+          description: Complete matching scenario projection ordered by scenario_id ascending; zero-course themes are not filtered.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ContentETag'
+            Cache-Control:
+              $ref: '#/components/headers/PrivateNoCache'
+            Vary:
+              $ref: '#/components/headers/VaryAuthorization'
+            X-Request-Id:
+              $ref: '#/components/headers/ResponseRequestId'
           content:
             application/json:
               schema:
@@ -436,15 +456,107 @@ paths:
               examples:
                 default:
                   $ref: '#/components/examples/ScenarioListResponseExample'
+        '304':
+          $ref: '#/components/responses/ContentNotModified'
         '401':
-          description: Authentication required.
+          $ref: '#/components/responses/Unauthenticated'
+        '503':
+          $ref: '#/components/responses/ContentReadUnavailable'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /scenarios/{scenario_id}/courses:
+    get:
+      tags:
+      - Course
+      operationId: listScenarioCourses
+      summary: List current published courses visible under a scenario.
+      description: Returns every current published and learner-visible Course summary for the scenario, deterministically ordered by Content-owned Course.sort_order. A 200 response with courses set to an empty array is a true zero-course result, never a query, dependency, binding, or integrity failure.
+      x-traceability:
+        product_objects:
+        - US-CONTENT-001
+        - VS-CONTENT-001-1
+        requirements:
+        - FR-CONTENT-001
+        contracts:
+        - CONTENT-COURSE-CATALOG-API-001
+      parameters:
+      - $ref: '#/components/parameters/ScenarioId'
+      - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Complete visible course projection ordered by Course.sort_order; an empty courses array is a successful true empty result.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ContentETag'
+            Cache-Control:
+              $ref: '#/components/headers/PrivateNoCache'
+            Vary:
+              $ref: '#/components/headers/VaryAuthorization'
+            X-Request-Id:
+              $ref: '#/components/headers/ResponseRequestId'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/CourseListResponse'
               examples:
                 default:
-                  $ref: '#/components/examples/ErrorResponseExample'
+                  $ref: '#/components/examples/CourseListResponseExample'
+        '304':
+          $ref: '#/components/responses/ContentNotModified'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/ContentNotFound'
+        '503':
+          $ref: '#/components/responses/ContentReadUnavailable'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /courses/{course_id}/versions/{course_version_id}:
+    get:
+      tags:
+      - Course
+      operationId: getCourseVersionDetail
+      summary: Get an exact current published course version.
+      description: Resolves the requested course_id and course_version_id as an exact current published, visible CourseVersion with its validated binding. Missing, unpublished, invisible, or mismatched identities never fall back to a latest version, another course, another bound content version, or a neighboring CEFR level.
+      x-traceability:
+        product_objects:
+        - US-CONTENT-002
+        - VS-CONTENT-002-1
+        requirements:
+        - FR-CONTENT-002
+        contracts:
+        - CONTENT-COURSE-CATALOG-API-001
+      parameters:
+      - $ref: '#/components/parameters/CourseId'
+      - $ref: '#/components/parameters/CourseVersionId'
+      - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Exact current published and visible course version with its validated content binding.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ContentETag'
+            Cache-Control:
+              $ref: '#/components/headers/PrivateNoCache'
+            Vary:
+              $ref: '#/components/headers/VaryAuthorization'
+            X-Request-Id:
+              $ref: '#/components/headers/ResponseRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseDetailResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/CourseDetailResponseExample'
+        '304':
+          $ref: '#/components/responses/ContentNotModified'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/ContentNotFound'
+        '503':
+          $ref: '#/components/responses/ContentReadUnavailable'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /scenarios/{scenario_id}:
@@ -3439,6 +3551,13 @@ components:
       required: false
       schema:
         type: string
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      description: Learner-private opaque validator from a previous response. Authentication and publication/visibility are revalidated before a matching validator can produce 304.
+      schema:
+        type: string
     ScenarioId:
       name: scenario_id
       in: path
@@ -3448,6 +3567,18 @@ components:
         enum:
         - job_interview
         - onboarding_introduction
+    CourseId:
+      name: course_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/CourseId'
+    CourseVersionId:
+      name: course_version_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/CourseVersionId'
     LevelCode:
       name: level_code
       in: path
@@ -3502,7 +3633,76 @@ components:
       required: true
       schema:
         type: string
+  headers:
+    ContentETag:
+      description: Learner-private opaque representation validator. It never contains a raw user id, entitlement payload, or secret; request_id and other per-call metadata do not participate in its representation fingerprint.
+      required: true
+      schema:
+        type: string
+      example: '"content-sample-validator"'
+    PrivateNoCache:
+      description: Required learner-private cache policy for content reads.
+      required: true
+      schema:
+        type: string
+        enum:
+        - 'private, no-cache'
+      example: 'private, no-cache'
+    VaryAuthorization:
+      description: Required authentication-context cache isolation.
+      required: true
+      schema:
+        type: string
+        enum:
+        - Authorization
+      example: Authorization
+    ResponseRequestId:
+      description: Unique request identifier for this authenticated call, including a 304 response.
+      required: true
+      schema:
+        type: string
+      example: req_content_sample
+    RetryAfter:
+      description: Optional delay in seconds before retrying the temporarily unavailable content read.
+      schema:
+        type: integer
+        minimum: 0
+      example: 5
   responses:
+    ContentNotModified:
+      description: Representation unchanged after the server reauthenticates the learner and revalidates current publication and visibility. No response body is returned; cached content is never itself publication or visibility authority.
+      headers:
+        ETag:
+          $ref: '#/components/headers/ContentETag'
+        Cache-Control:
+          $ref: '#/components/headers/PrivateNoCache'
+        Vary:
+          $ref: '#/components/headers/VaryAuthorization'
+        X-Request-Id:
+          $ref: '#/components/headers/ResponseRequestId'
+    ContentNotFound:
+      description: Requested content is unavailable. Missing, unpublished, invisible, and mismatched identities intentionally share this privacy-safe response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              $ref: '#/components/examples/ContentNotFoundErrorExample'
+    ContentReadUnavailable:
+      description: Content query, dependency, binding, or data-integrity failure prevented a complete safe read. The failure is retryable and is never converted to an empty or partial success.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+        X-Request-Id:
+          $ref: '#/components/headers/ResponseRequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              $ref: '#/components/examples/ContentReadUnavailableErrorExample'
     BadRequest:
       description: Bad request.
       content:
@@ -3640,8 +3840,14 @@ components:
             request_id:
               type: string
             details:
-              type: object
-              additionalProperties: true
+              $ref: '#/components/schemas/ErrorDetails'
+    ErrorDetails:
+      type: object
+      properties:
+        retryable:
+          type: boolean
+          description: Stable client-consumable retry signal when the error contract defines retry behavior.
+      additionalProperties: true
     ErrorCode:
       type: string
       enum:
@@ -3655,6 +3861,7 @@ components:
       - IDEMPOTENCY_CONFLICT
       - SCHEMA_VALIDATION_FAILED
       - PROVIDER_UNAVAILABLE
+      - CONTENT_READ_UNAVAILABLE
       - DELETE_IN_PROGRESS
       - RESOURCE_NOT_FOUND
       - CONFLICT
@@ -3672,6 +3879,21 @@ components:
       enum:
       - job_interview
       - onboarding_introduction
+    CourseId:
+      type: string
+      format: uuid
+    CourseVersionId:
+      type: string
+      format: uuid
+    CourseContentBindingId:
+      type: string
+      format: uuid
+    ScenarioVersionId:
+      type: string
+      format: uuid
+    ScenarioLevelId:
+      type: string
+      format: uuid
     AuthSessionResponse:
       type: object
       required:
@@ -3909,14 +4131,114 @@ components:
       type: object
       required:
       - schema_version
+      - request_id
       - scenarios
       properties:
         schema_version:
           $ref: '#/components/schemas/SchemaVersion'
+        request_id:
+          type: string
         scenarios:
           type: array
           items:
             $ref: '#/components/schemas/ScenarioSummary'
+    CourseListResponse:
+      type: object
+      required:
+      - schema_version
+      - request_id
+      - scenario_id
+      - courses
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        request_id:
+          type: string
+        scenario_id:
+          $ref: '#/components/schemas/ScenarioId'
+        courses:
+          type: array
+          description: Current published and visible Course summaries in deterministic Content-owned Course.sort_order.
+          items:
+            $ref: '#/components/schemas/CourseSummary'
+    CourseDetailResponse:
+      type: object
+      required:
+      - schema_version
+      - request_id
+      - course
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        request_id:
+          type: string
+        course:
+          $ref: '#/components/schemas/CourseDetail'
+    CourseContentBindingRef:
+      type: object
+      required:
+      - course_content_binding_id
+      - scenario_version_id
+      - scenario_level_id
+      properties:
+        course_content_binding_id:
+          $ref: '#/components/schemas/CourseContentBindingId'
+        scenario_version_id:
+          $ref: '#/components/schemas/ScenarioVersionId'
+        scenario_level_id:
+          $ref: '#/components/schemas/ScenarioLevelId'
+    CourseSummary:
+      type: object
+      required:
+      - course_id
+      - course_version_id
+      - title_en
+      - summary_zh
+      - level_code
+      - content_binding_ref
+      properties:
+        course_id:
+          $ref: '#/components/schemas/CourseId'
+        course_version_id:
+          $ref: '#/components/schemas/CourseVersionId'
+        title_en:
+          type: string
+          minLength: 1
+          pattern: '.*\S.*'
+        summary_zh:
+          type: string
+          minLength: 1
+          pattern: '.*\S.*'
+        level_code:
+          $ref: '#/components/schemas/LevelCode'
+        content_binding_ref:
+          $ref: '#/components/schemas/CourseContentBindingRef'
+    TypicalDuration:
+      type: object
+      required:
+      - value
+      - unit
+      properties:
+        value:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+        unit:
+          type: string
+          minLength: 1
+          pattern: '.*\S.*'
+    CourseDetail:
+      allOf:
+      - $ref: '#/components/schemas/CourseSummary'
+      - type: object
+        required:
+        - typical_duration
+        properties:
+          typical_duration:
+            $ref: '#/components/schemas/TypicalDuration'
+          background_asset_ref:
+            type: string
+            nullable: true
     ScenarioResponse:
       type: object
       required:
@@ -8072,6 +8394,22 @@ components:
           details:
             field: schema_version
             reason: Unsupported schema version.
+    ContentNotFoundErrorExample:
+      summary: Privacy-safe unavailable content response
+      value:
+        error:
+          code: RESOURCE_NOT_FOUND
+          message: Content resource is unavailable.
+          request_id: req_content_not_found_sample
+    ContentReadUnavailableErrorExample:
+      summary: Retryable content read failure
+      value:
+        error:
+          code: CONTENT_READ_UNAVAILABLE
+          message: Content is temporarily unavailable.
+          request_id: req_content_unavailable_sample
+          details:
+            retryable: true
     PhoneLoginRequestExample:
       summary: loginPhone request example
       value:
@@ -8162,6 +8500,7 @@ components:
       summary: listScenarios response 200 example
       value:
         schema_version: 1
+        request_id: req_scenario_list_sample
         scenarios:
         - scenario_id: job_interview
           title: Sample Name
@@ -8174,6 +8513,41 @@ components:
           access:
             allowed: true
             reason_code: ENTITLEMENT_REQUIRED
+    CourseListResponseExample:
+      summary: listScenarioCourses response 200 contract sample
+      value:
+        schema_version: 1
+        request_id: req_course_list_sample
+        scenario_id: job_interview
+        courses:
+        - course_id: 11111111-1111-4111-8111-111111111111
+          course_version_id: 22222222-2222-4222-8222-222222222222
+          title_en: Sample-only Course
+          summary_zh: 仅用于机器契约展示的虚构示例课程。
+          level_code: A2
+          content_binding_ref:
+            course_content_binding_id: 33333333-3333-4333-8333-333333333333
+            scenario_version_id: 44444444-4444-4444-8444-444444444444
+            scenario_level_id: 55555555-5555-4555-8555-555555555555
+    CourseDetailResponseExample:
+      summary: getCourseVersionDetail response 200 contract sample
+      value:
+        schema_version: 1
+        request_id: req_course_detail_sample
+        course:
+          course_id: 11111111-1111-4111-8111-111111111111
+          course_version_id: 22222222-2222-4222-8222-222222222222
+          title_en: Sample-only Course
+          summary_zh: 仅用于机器契约展示的虚构示例课程。
+          level_code: A2
+          content_binding_ref:
+            course_content_binding_id: 33333333-3333-4333-8333-333333333333
+            scenario_version_id: 44444444-4444-4444-8444-444444444444
+            scenario_level_id: 55555555-5555-4555-8555-555555555555
+          typical_duration:
+            value: 1.5
+            unit: sample_units
+          background_asset_ref: null
     ScenarioResponseExample:
       summary: getScenario response 200 example
       value:

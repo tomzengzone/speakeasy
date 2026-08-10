@@ -2,7 +2,7 @@
 
 ## Current lineage and compatibility decision
 
-当前产品 lineage 由适用的 approved VS 与 FR 解析；Engineering Artifact 之间的 direct/conditional inputs 和适用 Gate 继续仅由 Governance Contract 解析。`CONTENT-CEFR-API-001` 是当前 active compatibility decision；文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述仅为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+当前产品 lineage 由适用的 approved VS 与 FR 解析；Engineering Artifact 之间的 direct/conditional inputs 和适用 Gate 继续仅由 Governance Contract 解析。`CONTENT-CEFR-API-001` 与 `CONTENT-COURSE-CATALOG-API-001` 是当前 active compatibility decisions；文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述仅为 historical provenance，不是当前 authority、prerequisite 或 fallback。
 
 ## 状态
 
@@ -36,6 +36,8 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | Path governance and traceability findings | `docs/reports/quality_report.md` | OpenAPI path decision and Product Base/P0/P0.1 eligibility |
 | Approved content browsing and course-detail behavior | `docs/product/story_map.md` (`VS-CONTENT-001-1`, `VS-CONTENT-002-1`) | 已发布可见内容、真实空状态、课程基本信息与严格 CEFR 等级边界 |
 | Approved content requirements | `docs/product/functional_requirements.md` (`FR-CONTENT-001`, `FR-CONTENT-002`) | CEFR 六值约束、一次性等级迁移、课程/内容版本一致性与失败语义 |
+| First-class Course architecture decision | `docs/architecture/adr/0008-first-class-course-version.md` | Course/Scenario 身份分离、SWC 复用、精确版本读取、灰度与回滚边界 |
+| Content Course domain model | `docs/domain/content_model.md` | Course/CourseVersion/binding 身份、发布、不变量、类型化结果与 API 交接 |
 
 ## Scope Classification / 范围分类
 
@@ -48,7 +50,8 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | P0.2 goal-driven learning autopilot<br>P0.2 目标驱动学习 autopilot | Implementation-level paths allowed for goal intake, diagnostic summary, backplan, daily plan, next action, autopilot control, reminder eligibility/outbox, recovery replan, item-policy decision, mastery transition audit, progress forecast and checkpoint operations<br>允许为 goal intake、diagnostic summary、backplan、daily plan、next action、autopilot control、reminder eligibility/outbox、recovery replan、item-policy decision、mastery transition audit、progress forecast、checkpoint 操作定义实现级 path | Owning P0.2 increments, including Followup-B, have requirements/spec/AC/TC/traceability and P02 policy gates<br>P0.2 归属增量（含 Followup-B）已有 requirements/spec/AC/TC/traceability 和 P02 policy gate |
 | P1 notebook/scoring/content expansion<br>P1 笔记/评分/内容扩展 | Deferred boundary only<br>仅保留 deferred boundary | Roadmap/future V2 Capability boundary only<br>仅属于 roadmap/future V2 Capability 边界 |
 | Existing content/scenario CEFR contract<br>现有内容/场景 CEFR 契约 | Active compatibility decision for existing API fields and `ScenarioLevel` paths<br>现有 API 字段与 `ScenarioLevel` path 的当前兼容性决策 | Approved `VS-CONTENT-001-1`, `VS-CONTENT-002-1`, `FR-CONTENT-001`, `FR-CONTENT-002` |
-| Richer Course/CMS/content production<br>更丰富的 Course/CMS/内容生产 | Deferred boundary only<br>仅保留 deferred boundary | Current change does not introduce a richer Course resource, CMS workflow, or six-level content coverage commitment<br>本次不新增更丰富的 Course 资源、CMS 工作流，也不承诺六个等级均有内容 |
+| Course catalog and version-pinned detail<br>Course 目录与版本固定详情 | Active additive API decision for approved catalog/detail only<br>仅为已批准目录/详情启用 additive API 决策 | Approved `VS-CONTENT-001-1`, `VS-CONTENT-002-1`, `FR-CONTENT-001`, `FR-CONTENT-002`; no inventory commitment<br>依据已批准 001/002，且不承诺具体库存 |
+| Remaining Course/CMS/content production<br>其余 Course/CMS/内容生产 | Deferred boundary only<br>仅保留 deferred boundary | CMS/authoring、具体库存、A1/C1/C2 Course 承诺和 003-012 runtime/endpoints 未获批准 |
 
 ## Contract Rules / 契约规则
 
@@ -70,7 +73,7 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | --- | --- | --- | --- |
 | Auth / Identity<br>认证/身份 | `Auth`, `User` | Product Base FR-001, FR-010; P0 FR-COM-004, FR-COM-005, FR-COM-008 | In OpenAPI<br>已进入 OpenAPI |
 | Onboarding<br>新手引导 | `Onboarding` | Product Base FR-002 | In OpenAPI, including assessment and route creation<br>已进入 OpenAPI，覆盖评估和路线创建 |
-| Scenario / Content<br>场景/内容 | `Scenario`, `Home` | `VS-CONTENT-001-1`, `VS-CONTENT-002-1`; `FR-CONTENT-001`, `FR-CONTENT-002`; existing Product Base/P0.1 sources | In OpenAPI, including official content, `ScenarioLevel`, user scenario state, home summary, and the active strict-CEFR compatibility decision; richer Course/CMS paths remain deferred<br>已进入 OpenAPI，覆盖官方内容、`ScenarioLevel`、用户场景状态、首页摘要和当前严格 CEFR 兼容性决策；更丰富的 Course/CMS path 仍延后 |
+| Scenario / Content<br>场景/内容 | `Scenario`, `Home` | `VS-CONTENT-001-1`, `VS-CONTENT-002-1`; `FR-CONTENT-001`, `FR-CONTENT-002`; existing Product Base/P0.1 sources | In OpenAPI for existing official content, `ScenarioLevel`, user scenario state and home summary; approved Course catalog/detail is the active additive contract increment, while remaining Course/CMS paths stay deferred<br>现有官方内容、`ScenarioLevel`、用户场景状态与首页摘要已进入 OpenAPI；已批准 Course 目录/详情为当前 additive contract increment，其余 Course/CMS path 仍延后 |
 | Product Base practice<br>Product Base 练习 | `Practice` | Product Base FR-007, FR-008, FR-009; `mvp-backend-practice-ai` MVP-SI-008/MVP-SI-009 | In OpenAPI, including start/resume/get/turn/complete, recoverable provider failure, and summary candidate input<br>已进入 OpenAPI，覆盖 start/resume/get/turn/complete、可恢复 provider failure 和 summary candidate input |
 | P0.1 training planner<br>P0.1 训练 planner | `Training`, `Planner` | P0.1 P01-FR-001..P01-FR-017 | In OpenAPI; Product Base/production readiness blocked until backend Training implementation, tests and rollout gates close `P01-GAP-009` through `P01-GAP-014` or are explicitly marked blocked<br>已进入 OpenAPI；在 backend Training 实现、测试和 rollout gate 关闭 `P01-GAP-009` 到 `P01-GAP-014` 或明确标记 blocked 前，Product Base/production readiness 仍被阻断 |
 | P0.2 goal autopilot<br>P0.2 目标 autopilot | `Goal Autopilot` | P0.2 P02-DIAG-FR-001..007, P02-PLAN-FR-001..008, P02-AUTO-FR-001..008, P02-FUB-FR-001..008 | In OpenAPI for deterministic local implementation, including Followup-B control/planner/memory hardening; high-cost AI/provider, commercial release and official-score claims remain governed by P02/P0 gates<br>已为确定性本地实现进入 OpenAPI，包含 Followup-B control/planner/memory 加固；高成本 AI/provider、商业发布和 official-score claims 仍受 P02/P0 gate 约束 |
@@ -238,7 +241,7 @@ P02-API-001 到 P02-FUB-API-006 门禁结论：P0.2 实现级 endpoint 只允许
 - `LevelCode` 只接受 `A1`、`A2`、`B1`、`B2`、`C1`、`C2`。所有引用该组件的既有 request、response、path parameter、catalog list、user target、onboarding output、scenario-state、practice-session 和 training-session 字段均适用此规则。
 - 单个 Course、`ScenarioLevel` 或 content track 只有一个 CEFR 值；主题级 `Scenario` 可以包含零个或多个不同 CEFR 等级的 track。
 - 合法 CEFR 值不表示该等级一定存在已发布内容。`A1`、`C1`、`C2` 当前可以没有迁移后的内容；请求集合时 API 必须返回真实空集合，请求特定但不存在的 `ScenarioLevel` 时必须返回 `RESOURCE_NOT_FOUND`，不得替换为最接近的可用等级。
-- 当前可执行内容边界仍是既有 `ScenarioLevel` family，包括 `/scenarios/{scenario_id}/levels/{level_code}` 及其现有 catalog、onboarding、home、practice 和 training 消费方。更丰富的 Course resource、course-detail endpoint family、CMS workflow 和完整六级内容库存不在本次范围内。
+- 既有 `ScenarioLevel` family 继续 active，包括 `/scenarios/{scenario_id}/levels/{level_code}` 及其现有 catalog、onboarding、home、practice 和 training 消费方；`CONTENT-COURSE-CATALOG-API-001` 另外批准 additive Course catalog/detail。其余 Course endpoint、CMS workflow 和完整六级内容库存仍不在当前范围内。
 
 ### Compatibility And Migration / 兼容性与迁移
 
@@ -271,6 +274,93 @@ P02-API-001 到 P02-FUB-API-006 门禁结论：P0.2 实现级 endpoint 只允许
 - Flutter storage migration 在严格 reader 运行前原子清理携带旧课程等级或旧 node ID 的开发期本地数据，失败时不推进 migration version；
 - mastery `L0`-`L5` 与 hint/scaffolding 契约的语义保持不变。
 
+## CONTENT-COURSE-CATALOG-API-001 Course Catalog And Version-Pinned Detail / Course 目录与版本固定详情
+
+归属产品行为：`VS-CONTENT-001-1`、`VS-CONTENT-002-1`；适用的已批准需求：`FR-CONTENT-001`、`FR-CONTENT-002`。本决策是 additive、active API compatibility decision，只批准学习者主题全集、主题下 Course summary 和精确版本 Course detail；它不把 Task Plan、OpenAPI example 或实现 seed 提升为 authored content 权威。
+
+### Authority And Ownership / 权威与所有权
+
+- `Scenario` 仍是官方主题身份；`Course`、`CourseVersion` 与 `CourseContentBinding` 是同一 Content bounded context 内的一等 authored facts。`Course != Scenario`，且不得把 `ScenarioLevel` 重命名、复制或解释为 Course/CourseVersion alias。
+- Publication 是 Content fact。当前学习者 visibility 是服务端读取投影，可以消费 entitlement decision，但 Course response、cache 或 Content persistence 不得复制 entitlement truth 或 per-user visibility truth。
+- `BE-CONTENT-SCENARIO` 负责 publication、visibility orchestration 与 exact-version/binding resolution；`FE-CONTENT` 必须经 `FE-API-CLIENT` 消费 generated DTO，并只把 `FE-LOCAL-CACHE` 用于展示/恢复上下文。
+- 读取投影遇到单条 published Course 的 binding/快照完整性故障时，必须使本次读取整体失败；不得省略损坏项后返回看似完整的集合。
+
+### Endpoint Semantics / Endpoint 语义
+
+三个读取操作都要求 authenticated learner context，均为只读且不使用 `Idempotency-Key`：
+
+| Method / path | Success contract / 成功契约 | Stable order / 稳定顺序 | Empty and unavailable / 空与不可用 |
+| --- | --- | --- | --- |
+| `GET /scenarios` | 返回全部 published 且对当前学习者 visible 的官方主题。已发布可见主题是否入选不得依赖其是否存在 visible Course。 | 按稳定 `scenario_id` 升序。 | 没有匹配主题时为 `200` 与真实空 `scenarios`；读取故障不得伪装成空。 |
+| `GET /scenarios/{scenario_id}/courses` | 返回该主题下全部 current published 且对当前学习者 visible 的 Course summaries。 | 按 Content-owned、同主题唯一的 `Course.sort_order` 升序；相同候选中不得用 per-user state 重排。`sort_order` 只用于服务端排序，不是必需响应字段。 | 真实零 Course 为 `200` 与 `courses: []`；主题不存在、未发布或不可见统一为 privacy-safe `404`；查询、依赖或数据完整性故障为 typed retryable `503`。 |
+| `GET /courses/{course_id}/versions/{course_version_id}` | 同时 exact-match `course_id` 与 `course_version_id`，返回请求的 exact current published、visible CourseVersion 及其经过校验的 binding。 | 单资源，无集合排序。 | Course/version 缺失、未发布、不可见或 version 不属于所给 Course 时统一为 privacy-safe `404`；binding/依赖/完整性故障为 typed retryable `503`。 |
+
+`GET /scenarios` 现有可选 `query` 与 `category` 参数为兼容性过滤输入。approved “全部”视图必须同时省略这两个参数；省略时服务端不得应用隐式 category、search、entitlement tier 或 Course-existence filter，因而不会遗漏任何 published+visible theme。参数存在时，只能在认证、publication 与 visibility 投影之后缩小结果，结果仍按 `scenario_id` 升序；无匹配仍是成功空集合。
+
+### Success Envelope And Course Fields / 成功包络与 Course 字段
+
+- 三个操作的每个 `200` JSON body 都必须在顶层包含常量 `schema_version: 1` 和本次调用唯一的 `request_id`。`GET /scenarios` 保留既有主题集合字段；Course list 另外返回 path 对应的 `scenario_id` 与 `courses`；detail 返回单个 `course`。
+- Course summary 必须包含 `course_id`、`course_version_id`、非空 `title_en`、非空 `summary_zh`、严格六值之一的 `level_code`，以及安全稳定的 `content_binding_ref`。
+- `content_binding_ref` 必须至少携带稳定 `course_content_binding_id`、`scenario_version_id` 与 `scenario_level_id`；三者只用于精确 authored-content reference，不得暴露内部存储位置、signed URL、entitlement、用户状态或 runtime identity。`level_code` 必须与该 binding 指向的 `ScenarioLevel` CEFR 一致。
+- Course detail 复用同一 Course summary 表示，并增加 `typical_duration` 与 nullable `background_asset_ref`。`typical_duration.value` 必须大于零，`typical_duration.unit` 必须 `trim` 后非空；`background_asset_ref = null` 不影响成功读取，也不得触发替代 Course/version/media。
+- `slug`、`sort_order`、entitlement decision、stage/progress/session/turn/evidence/AI/media/scoring 等 runtime facts 都不是本决策的必需响应字段；本决策不批准通过扩展字段复制这些事实。`sort_order` 仅是上述内部确定性排序输入。
+- List 返回的 `course_id`、`course_version_id` 与 `content_binding_ref` 必须可以原样用于 detail resolution。服务端绝不 fallback 到 `latest`、其他 Course、其他 ScenarioVersion/ScenarioLevel 或相邻 CEFR。
+
+### Privacy-Safe Errors And Internal Outcomes / 隐私安全错误与内部结果
+
+| External result / 外部结果 | Applies when / 适用情形 | Recovery / 恢复 |
+| --- | --- | --- |
+| `UNAUTHENTICATED` / `401` | 缺少、失效或不可接受的 learner authentication。 | 重新认证后重试。 |
+| `RESOURCE_NOT_FOUND` / `404` | 请求的 theme、Course 或 exact CourseVersion 缺失、未发布、不可见，或 Course/version identity 不匹配。 | 返回不可用状态；不得探测 entitlement 或资源存在性。 |
+| `CONTENT_READ_UNAVAILABLE` / `503` | Content query/repository/依赖失败，或 `binding_missing`、`binding_cardinality_violation`、`binding_scenario_mismatch`、`binding_cefr_mismatch`、`bound_content_unavailable` 等读取完整性失败。 | `ErrorResponse.error.details.retryable = true`；保留上下文并按退避策略重试。 |
+
+- 不存在与不可见必须在外部状态、code、message shape 和缓存行为上收敛；这些读取不得以 `FORBIDDEN` 或 `ENTITLEMENT_REQUIRED` 暴露受保护 Course/theme 是否存在。
+- 服务端内部仍须保留 `theme_not_found` / `theme_not_published` / `theme_not_visible`、`course_not_found`、`course_version_not_found`、`course_version_not_published`、`course_not_visible` 及各 binding/dependency 类型化 outcome，用于授权审计、可靠性指标和排障；外部响应不得包含该内部 reason、原始 SQL/provider detail 或 entitlement payload。
+- 任何查询/依赖故障、部分读取或 binding 完整性失败都不得转换成 `200` 空集合、替代版本或部分成功。
+
+### Learner-Private Validation Cache / 学习者私有校验缓存
+
+- 三个内容读取的 `200` 响应必须返回 learner-specific opaque `ETag`、`Cache-Control: private, no-cache`，并以 `Vary: Authorization` 或等价的认证上下文隔离阻止共享缓存和跨用户复用。
+- ETag 输入至少绑定标准化 method/path/query、当前 learner 的 visibility projection identity/revision，以及响应中全部 exact authored version/binding refs；detail 必须绑定请求的 exact `course_id` + `course_version_id`，集合必须绑定有序的 theme/CourseVersion/binding projection。ETag 不得包含或暴露 raw user id、entitlement payload 或 secret。
+- `request_id`、trace id 和时间戳等每次调用元数据不参与 representation fingerprint，否则不得用它们破坏稳定条件请求；新的 `200` body 仍为本次调用生成新的 `request_id`。
+- 收到 `If-None-Match` 时，backend 必须先重新认证并重新计算 publication/visibility projection，再决定是否返回 `304`。`304` 必须传播本次 `X-Request-Id`；缓存的 ETag 或 body 从来不是 publication/visibility truth，登出、换用户或授权上下文变化后不得复用。
+
+### Compatibility, Operations And Rollback / 兼容、运维与回滚
+
+- `GET /scenarios/{scenario_id}/courses`、`GET /courses/{course_id}/versions/{course_version_id}` 及其 schema 是 additive；`GET /scenarios` 保留既有 path、可选 query parameters 和已存在字段，只增加 approved “全部”语义、`request_id` 与缓存约束。能忽略未知字段的现有客户端继续兼容。
+- Rollout 采用 backend-first：服务端可以先以关闭的新 route/feature entry 部署，但 OpenAPI、generated Dart path/type registry、hash 和 drift manifest 必须在同一候选中更新并通过 gate 后，Flutter 才能启用入口。
+- Rollback 关闭两个新 route 与 learner entry，失效相应私有 cache，并继续保留既有 `GET /scenarios`、`ScenarioLevel`、practice/training flow 和 additive Course 数据；不得执行破坏性 down migration。
+- 不建立 `ScenarioLevel` alias、legacy Course path、dual-read、dual-write 或以现有 ScenarioLevel 合成 Course 的兼容轨道。回滚不依赖 runtime reinterpretation。
+- 观测必须按 `request_id` 区分成功、真实空、privacy-safe unavailable、integrity failure 与 dependency failure，只记录脱敏/散列 Course/version/binding refs；不得记录 authored response body、raw entitlement、用户 runtime payload 或 provider secret。
+
+### OpenAPI And Generated Client Handoff / OpenAPI 与生成客户端交接
+
+`OPENAPI` / backend owner 必须在下游可消费本决策前完成以下同步；本节定义语义，不复制机器 schema：
+
+- 更新 `GET /scenarios` 的认证、无过滤全集、排序、`request_id`、private ETag/cache headers、typed `503` 与 `VS-CONTENT-001-1` / `FR-CONTENT-001` traceability；保留 `query` / `category` 为可选过滤。
+- 新增两个 Course path，定义上述成功 envelope、summary/detail/binding-ref、empty、privacy-safe `404`、`CONTENT_READ_UNAVAILABLE` / `503`、cache headers、examples 与 operation-level `x-traceability`，同时引用 `CONTENT-COURSE-CATALOG-API-001` 和适用的 001/002 VS/FR。
+- 在共享 `ErrorCode` 注册 `CONTENT_READ_UNAVAILABLE`，并把 retryable detail 表达为 generated client 可稳定消费的 typed value；不得复用 `PROVIDER_UNAVAILABLE` 掩盖 Content query/integrity failure。
+- 同候选重新生成 `lib/generated/api/`，更新 path/type registry、`.openapi-sha256` 与 drift manifest；新的 Course catalog/detail path、generated registry 或任何未登记 client path 均不得使用 `/cards`。既有 handwritten client 的 `/cards` 与 `/cards/{card_id}/state` 只能作为 drift manifest 中显式登记的 legacy exception 保留，不得解释为 Course API 或用于实现本决策；同时不得新增 latest-version convenience path、Course-level legacy alias 或未登记 DTO。
+
+### Required Contract-TC Handoff / 必需 Contract-TC 交接
+
+后续 `TEST_CASE_CATALOG` owner 为本决策创建的每条 Contract-TC 必须只有 `source_contract_id: API_CONTRACT` 这一条 direct source edge，并以 `CONTENT-COURSE-CATALOG-API-001/<selector>` 标识稳定 selector。至少覆盖：
+
+| Selector suffix / selector 后缀 | Required evidence / 必需证据 |
+| --- | --- |
+| `scenario-all` | authenticated 无过滤调用返回完整 published+visible theme 集合，按 `scenario_id` 升序，保留零 visible Course theme；显式过滤不改变 “全部”语义。 |
+| `course-list` | 全部 current published+visible summaries 按唯一 `Course.sort_order` 排序；真实零课程为 `200 courses: []`，失败不伪装为空。 |
+| `course-detail` | detail 的必备字段、正值时长、非空单位、nullable background 与 list/detail 表示一致。 |
+| `exact-version` | Course/version exact-match；missing/unpublished/invisible/mismatch 均 privacy-safe `404`，绝不 latest/其他 Course/相邻 CEFR fallback。 |
+| `binding-integrity` | stable binding/scenario-version/scenario-level refs 正确；missing/cardinality/scenario/CEFR/bound-content failure 均 typed retryable `503` 且不部分成功。 |
+| `schema-and-errors` | 三类 `200` body 的 `schema_version: 1` / `request_id`、strict CEFR、`RESOURCE_NOT_FOUND` 与 `CONTENT_READ_UNAVAILABLE` schema/example 一致。 |
+| `privacy-visibility` | publication 与 visibility owner 分离；不存在/不可见外部收敛，内部 typed outcome 可观测但不泄漏 entitlement/resource existence。 |
+| `private-etag` | ETag 绑定 learner projection、normalized request 与 exact versions；`private, no-cache`、条件重验证、跨用户/换授权不复用，cache 不成为 publication/visibility truth。 |
+| `generated-drift` | OpenAPI、generated Dart path/type/hash/manifest 同候选一致；新的 Course catalog/detail path、generated registry 与未登记 client path 不使用 `/cards`。既有 `/cards` 仅按 drift manifest 的显式 legacy handwritten exception 保留，且不得解释为 Course API 或实现本决策；无 latest fallback 或 `ScenarioLevel` alias。 |
+| `compatibility-rollback` | additive backend-first/route-off rollout 与入口回滚保留既有 ScenarioLevel API；无 dual-read/dual-write/down migration。Task Plan seed/count 不被接受为 content authority。 |
+
+本 Contract-TC handoff 不替代现有 `CONTENT-CEFR-API-001` 回归，也不授权 TC owner 修改产品、领域或 API 事实。
+
 ## Error Model / 错误模型
 
 OpenAPI component / OpenAPI 组件：`ErrorResponse`。
@@ -287,6 +377,7 @@ OpenAPI component / OpenAPI 组件：`ErrorResponse`。
 | `IDEMPOTENCY_CONFLICT` | 幂等键重复但参数不一致 | 409 |
 | `SCHEMA_VALIDATION_FAILED` | 请求或 AI/provider 输出 schema 无效 | 422 |
 | `PROVIDER_UNAVAILABLE` | AI/ASR/TTS/评分/支付 provider 不可用 | 503 |
+| `CONTENT_READ_UNAVAILABLE` | Content 查询/依赖或 authored binding 完整性暂时无法安全解析；可重试且不得降级为空/替代内容 | 503 |
 | `DELETE_IN_PROGRESS` | 账号删除任务处理中 | 409 |
 | `RESOURCE_NOT_FOUND` | 指定资源不存在或不属于当前用户 | 404 |
 | `CONFLICT` | 当前状态不允许该操作 | 409 |
@@ -396,14 +487,14 @@ The following are intentionally excluded from implementation-level OpenAPI until
 
 - P1 notebook/vocabulary arbitrary phrase lookup and notes.
 - P1 productized scoring card and scoring rubric.
-- Richer Course resources and course-detail endpoint families beyond the current `ScenarioLevel` boundary.
-- Expanded scenario packages, CMS/content production workflow, and guaranteed content coverage at every CEFR level.
+- Course endpoint families beyond the active approved catalog/version-pinned detail contract, including draft 003-012 runtime endpoints.
+- Expanded scenario packages, concrete Course inventory commitments, CMS/authoring/content production workflow, and guaranteed content coverage at every CEFR level, including A1/C1/C2 Course commitments.
 - Public user-generated scenario/community workflows.
 
 - P1 notebook/vocabulary 任意短语查询和笔记。
 - P1 产品化 scoring card 和 scoring rubric。
-- 超出当前 `ScenarioLevel` 边界的更丰富 Course 资源和课程详情 endpoint family。
-- 扩展 scenario package、CMS/content production workflow，以及六个 CEFR 等级均有内容的覆盖承诺。
+- 超出当前已批准目录/版本固定详情契约的 Course endpoint family，包括 draft 003-012 runtime endpoint。
+- 扩展 scenario package、具体 Course 库存承诺、CMS/authoring/content production workflow，以及包括 A1/C1/C2 Course 在内的六级覆盖承诺。
 - 公开用户生成 scenario/community workflow。
 
 OpenAPI may reserve tags or extension metadata for these boundaries, but must not expose executable request/response schemas for them in this stage.
@@ -421,11 +512,11 @@ Implementation may not start until:
 - `npm run check:openapi-contract` passes for examples, traceability, 4XX responses, and deferred-boundary rules.
 - `npm run check:dart-client-drift` passes for generated Dart client drift.
 - `npm run check:api-contract` passes as the combined local gate.
-- OpenAPI paths and value contracts map to approved product behavior, including `VS-CONTENT-001-1`, `VS-CONTENT-002-1`, `FR-CONTENT-001`, and `FR-CONTENT-002` for `CONTENT-CEFR-API-001`.
+- OpenAPI paths and value contracts map to approved product behavior, including `VS-CONTENT-001-1`, `VS-CONTENT-002-1`, `FR-CONTENT-001`, and `FR-CONTENT-002` for both active `CONTENT-CEFR-API-001` and `CONTENT-COURSE-CATALOG-API-001` decisions.
 - Each implementation-level endpoint defines auth, request, response, errors, examples, and traceability metadata.
 - Payment, usage, deletion and turn replay define idempotency behavior.
-- P0.2 Goal Autopilot paths remain limited to the approved owning P0.2 increments, including Followup-B, and P02 policy gates; richer Course/CMS paths remain deferred, while the existing `ScenarioLevel` CEFR value contract is active.
-- Contract-TC evidence for `CONTENT-CEFR-API-001` proves strict six-value validation, legacy rejection, empty/not-found behavior, migration integrity, generated-client agreement, and mastery/hint isolation.
+- P0.2 Goal Autopilot paths remain limited to the approved owning P0.2 increments, including Followup-B, and P02 policy gates; approved Course catalog/detail is active, remaining Course/CMS paths stay deferred, and the existing `ScenarioLevel` CEFR value contract remains active.
+- Contract-TC evidence for `CONTENT-CEFR-API-001` proves strict six-value validation, legacy rejection, empty/not-found behavior, migration integrity, generated-client agreement, and mastery/hint isolation; evidence for `CONTENT-COURSE-CATALOG-API-001` proves list/detail/schema/error/privacy/ETag/binding/exact-version/generated-drift and rollback behavior.
 - Product Object Governance Check returns pass after OpenAPI generation.
 
 - `docs/architecture/openapi/speakeasy-api.yaml` 已存在，并且能按 OpenAPI 解析。
@@ -433,11 +524,11 @@ Implementation may not start until:
 - `npm run check:openapi-contract` 针对 examples、traceability、4XX responses 和 deferred-boundary rules 通过。
 - `npm run check:dart-client-drift` 针对 generated Dart client drift 通过。
 - `npm run check:api-contract` 作为组合本地门禁通过。
-- OpenAPI path 与值契约能映射到 approved product behavior；`CONTENT-CEFR-API-001` 映射到 `VS-CONTENT-001-1`、`VS-CONTENT-002-1`、`FR-CONTENT-001` 和 `FR-CONTENT-002`。
+- OpenAPI path 与值契约能映射到 approved product behavior；`CONTENT-CEFR-API-001` 与 `CONTENT-COURSE-CATALOG-API-001` 都映射到 `VS-CONTENT-001-1`、`VS-CONTENT-002-1`、`FR-CONTENT-001` 和 `FR-CONTENT-002`。
 - 每个实现级 endpoint 都定义 auth、request、response、errors、examples 和 traceability metadata。
 - Payment、usage、deletion 和 turn replay 都定义 idempotency behavior。
-- P0.2 Goal Autopilot path 必须限定在已批准的 P0.2 归属增量（含 Followup-B）和 P02 policy gate 内；更丰富的 Course/CMS path 保持 deferred，既有 `ScenarioLevel` 的 CEFR 值契约已 active。
-- `CONTENT-CEFR-API-001` 的 Contract-TC 必须证明严格六值校验、旧值拒绝、空/不存在语义、迁移完整性、generated client 一致性，以及 mastery/hint 隔离。
+- P0.2 Goal Autopilot path 必须限定在已批准的 P0.2 归属增量（含 Followup-B）和 P02 policy gate 内；已批准 Course 目录/详情 active，其余 Course/CMS path 保持 deferred，既有 `ScenarioLevel` 的 CEFR 值契约继续 active。
+- `CONTENT-CEFR-API-001` 的 Contract-TC 必须证明严格六值校验、旧值拒绝、空/不存在语义、迁移完整性、generated client 一致性和 mastery/hint 隔离；`CONTENT-COURSE-CATALOG-API-001` 的 Contract-TC 必须证明 list/detail/schema/error/privacy/ETag/binding/exact-version/generated-drift 与回滚语义。
 - OpenAPI 生成后，Product Object Governance Check 返回 pass。
 
 ## P0.2 Followup-E Speaking Diagnostic Production API Contract / P0.2 Followup-E 口语诊断生产 API 契约

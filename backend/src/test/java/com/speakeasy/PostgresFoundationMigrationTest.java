@@ -46,7 +46,8 @@ class PostgresFoundationMigrationTest {
           new PostgreSQLContainer("postgres:15")
               .withDatabaseName("speakeasy_test")
               .withUsername("speakeasy")
-              .withPassword("speakeasy");
+              .withPassword("speakeasy")
+              .withImagePullPolicy(imageName -> false);
       postgres.start();
       return Optional.of(new ContainerPostgresTarget(postgres));
     } catch (RuntimeException | Error ignored) {
@@ -130,6 +131,9 @@ class PostgresFoundationMigrationTest {
               "scenarios",
               "scenario_versions",
               "scenario_levels",
+              "content_course",
+              "content_course_version",
+              "content_course_content_binding",
               "target_expressions",
               "subscription_plans",
               "purchases",
@@ -140,6 +144,16 @@ class PostgresFoundationMigrationTest {
               "payment_provider_events",
               "account_deletion_jobs",
               "audit_logs");
+      assertThat(countRows(connection, "content_course")).isZero();
+      assertThat(countRows(connection, "content_course_version")).isZero();
+      assertThat(countRows(connection, "content_course_content_binding")).isZero();
+    }
+  }
+
+  private long countRows(Connection connection, String tableName) throws SQLException {
+    try (ResultSet result = connection.createStatement().executeQuery("SELECT COUNT(*) FROM " + tableName)) {
+      result.next();
+      return result.getLong(1);
     }
   }
 

@@ -1,8 +1,10 @@
 from pathlib import Path
+import argparse
 import hashlib
 import json
 import re
 import sys
+from textwrap import dedent
 
 import yaml
 
@@ -10,6 +12,9 @@ import yaml
 SPEC_PATH = Path("docs/architecture/openapi/speakeasy-api.yaml")
 MANIFEST_PATH = Path("docs/architecture/openapi/dart-client-drift-manifest.json")
 DEFAULT_TARGET = Path("lib/generated/api")
+GENERATED_DART = DEFAULT_TARGET / "speakeasy_api.dart"
+CATALOG_SECTION_START = "// BEGIN GENERATED CONTENT CATALOG DTOs"
+CATALOG_SECTION_END = "// END GENERATED CONTENT CATALOG DTOs"
 METHODS = {"get", "put", "post", "delete", "patch", "head", "options", "trace"}
 DART_RESERVED = {
     "abstract",
@@ -120,6 +125,522 @@ def generated_level_code_values(generated_text):
     return re.findall(r"^[ \t]*[a-z][A-Za-z0-9_]*\('([^']+)'\)[,;]", enum_match.group("body"), re.MULTILINE)
 
 
+def require_catalog_contract(spec):
+    schemas = (spec.get("components") or {}).get("schemas") or {}
+    expected = {
+        "ScenarioListResponse": {
+            "required": {"schema_version", "request_id", "scenarios"},
+            "properties": {"schema_version", "request_id", "scenarios"},
+        },
+        "ScenarioSummary": {
+            "required": {"scenario_id", "title", "status", "access"},
+            "properties": {"scenario_id", "title", "summary", "tags", "levels", "status", "access"},
+        },
+        "AccessState": {
+            "required": {"allowed"},
+            "properties": {"allowed", "reason_code"},
+        },
+        "CourseListResponse": {
+            "required": {"schema_version", "request_id", "scenario_id", "courses"},
+            "properties": {"schema_version", "request_id", "scenario_id", "courses"},
+        },
+        "CourseSummary": {
+            "required": {
+                "course_id",
+                "course_version_id",
+                "title_en",
+                "summary_zh",
+                "level_code",
+                "content_binding_ref",
+            },
+            "properties": {
+                "course_id",
+                "course_version_id",
+                "title_en",
+                "summary_zh",
+                "level_code",
+                "content_binding_ref",
+            },
+        },
+        "CourseContentBindingRef": {
+            "required": {"course_content_binding_id", "scenario_version_id", "scenario_level_id"},
+            "properties": {"course_content_binding_id", "scenario_version_id", "scenario_level_id"},
+        },
+        "ErrorResponse": {
+            "required": {"error"},
+            "properties": {"error"},
+        },
+        "ErrorDetails": {
+            "required": set(),
+            "properties": {"retryable"},
+        },
+    }
+    errors = []
+    for name, signature in expected.items():
+        schema = schemas.get(name)
+        if not isinstance(schema, dict):
+            errors.append(f"missing catalog schema: {name}")
+            continue
+        required = set(schema.get("required") or [])
+        properties = set((schema.get("properties") or {}).keys())
+        if required != signature["required"]:
+            errors.append(f"{name}.required changed: {sorted(required)}")
+        if properties != signature["properties"]:
+            errors.append(f"{name}.properties changed: {sorted(properties)}")
+
+    scenario_values = (schemas.get("ScenarioId") or {}).get("enum")
+    if scenario_values != ["job_interview", "onboarding_introduction"]:
+        errors.append(f"ScenarioId enum changed: {scenario_values}")
+    scenario_status = (((schemas.get("ScenarioSummary") or {}).get("properties") or {}).get("status") or {}).get("enum")
+    if scenario_status != ["available", "hidden"]:
+        errors.append(f"ScenarioSummary.status enum changed: {scenario_status}")
+    access_reasons = (((schemas.get("AccessState") or {}).get("properties") or {}).get("reason_code") or {}).get("enum")
+    if access_reasons != ["ENTITLEMENT_REQUIRED", "SUBSCRIPTION_EXPIRED", "USAGE_LIMIT_EXCEEDED", None]:
+        errors.append(f"AccessState.reason_code enum changed: {access_reasons}")
+
+    refs = {
+        ("ScenarioListResponse", "scenarios", "items"): "#/components/schemas/ScenarioSummary",
+        ("ScenarioSummary", "scenario_id", None): "#/components/schemas/ScenarioId",
+        ("ScenarioSummary", "access", None): "#/components/schemas/AccessState",
+        ("CourseListResponse", "courses", "items"): "#/components/schemas/CourseSummary",
+        ("CourseListResponse", "scenario_id", None): "#/components/schemas/ScenarioId",
+        ("CourseSummary", "course_id", None): "#/components/schemas/CourseId",
+        ("CourseSummary", "course_version_id", None): "#/components/schemas/CourseVersionId",
+        ("CourseSummary", "level_code", None): "#/components/schemas/LevelCode",
+        ("CourseSummary", "content_binding_ref", None): "#/components/schemas/CourseContentBindingRef",
+        ("CourseContentBindingRef", "course_content_binding_id", None): "#/components/schemas/CourseContentBindingId",
+        ("CourseContentBindingRef", "scenario_version_id", None): "#/components/schemas/ScenarioVersionId",
+        ("CourseContentBindingRef", "scenario_level_id", None): "#/components/schemas/ScenarioLevelId",
+    }
+    for (schema_name, property_name, nested), expected_ref in refs.items():
+        prop = (((schemas.get(schema_name) or {}).get("properties") or {}).get(property_name) or {})
+        actual_ref = (prop.get(nested) or {}).get("$ref") if nested else prop.get("$ref")
+        if actual_ref != expected_ref:
+            errors.append(f"{schema_name}.{property_name} ref changed: {actual_ref}")
+    for schema_name in (
+        "CourseId",
+        "CourseVersionId",
+        "CourseContentBindingId",
+        "ScenarioVersionId",
+        "ScenarioLevelId",
+    ):
+        schema = schemas.get(schema_name) or {}
+        if schema.get("type") != "string" or schema.get("format") != "uuid":
+            errors.append(f"{schema_name} must remain a string with format uuid")
+    return errors
+
+
+def generated_catalog_section():
+    return dedent(
+        r'''
+        // BEGIN GENERATED CONTENT CATALOG DTOs
+        // Generated by scripts/check_openapi_dart_drift.py --write.
+
+        enum ScenarioId {
+          jobInterview('job_interview'),
+          onboardingIntroduction('onboarding_introduction');
+
+          const ScenarioId(this.wireValue);
+
+          final String wireValue;
+
+          static ScenarioId parse(Object? value) {
+            for (final ScenarioId item in ScenarioId.values) {
+              if (item.wireValue == value) {
+                return item;
+              }
+            }
+            throw FormatException('Invalid ScenarioId: $value');
+          }
+        }
+
+        enum ScenarioStatus {
+          available('available'),
+          hidden('hidden');
+
+          const ScenarioStatus(this.wireValue);
+
+          final String wireValue;
+
+          static ScenarioStatus parse(Object? value) {
+            for (final ScenarioStatus item in ScenarioStatus.values) {
+              if (item.wireValue == value) {
+                return item;
+              }
+            }
+            throw FormatException('Invalid ScenarioStatus: $value');
+          }
+        }
+
+        enum AccessReasonCode {
+          entitlementRequired('ENTITLEMENT_REQUIRED'),
+          subscriptionExpired('SUBSCRIPTION_EXPIRED'),
+          usageLimitExceeded('USAGE_LIMIT_EXCEEDED');
+
+          const AccessReasonCode(this.wireValue);
+
+          final String wireValue;
+
+          static AccessReasonCode? parseNullable(Object? value) {
+            if (value == null) {
+              return null;
+            }
+            for (final AccessReasonCode item in AccessReasonCode.values) {
+              if (item.wireValue == value) {
+                return item;
+              }
+            }
+            throw FormatException('Invalid AccessReasonCode: $value');
+          }
+        }
+
+        Map<String, Object?> _catalogMap(Object? value, String field) {
+          if (value is! Map) {
+            throw FormatException('$field must be an object');
+          }
+          final Map<String, Object?> result = <String, Object?>{};
+          for (final MapEntry<Object?, Object?> entry in value.entries) {
+            if (entry.key is! String) {
+              throw FormatException('$field contains a non-string key');
+            }
+            result[entry.key! as String] = entry.value;
+          }
+          return result;
+        }
+
+        String _catalogString(
+          Map<String, Object?> json,
+          String field, {
+          bool nonEmpty = false,
+        }) {
+          final Object? value = json[field];
+          if (value is! String || (nonEmpty && value.trim().isEmpty)) {
+            throw FormatException(
+              '$field must be${nonEmpty ? ' a non-empty' : ''} string',
+            );
+          }
+          return value;
+        }
+
+        String? _catalogOptionalString(Map<String, Object?> json, String field) {
+          if (!json.containsKey(field)) {
+            return null;
+          }
+          final Object? value = json[field];
+          if (value is! String) {
+            throw FormatException('$field must be a string when present');
+          }
+          return value;
+        }
+
+        bool _catalogBool(Map<String, Object?> json, String field) {
+          final Object? value = json[field];
+          if (value is! bool) {
+            throw FormatException('$field must be a boolean');
+          }
+          return value;
+        }
+
+        List<Object?> _catalogList(Map<String, Object?> json, String field) {
+          final Object? value = json[field];
+          if (value is! List) {
+            throw FormatException('$field must be an array');
+          }
+          return value.cast<Object?>();
+        }
+
+        String _catalogUuid(Map<String, Object?> json, String field) {
+          final String value = _catalogString(json, field);
+          if (!RegExp(
+            r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+          ).hasMatch(value)) {
+            throw FormatException('$field must be a UUID');
+          }
+          return value;
+        }
+
+        int _catalogSchemaVersion(Map<String, Object?> json) {
+          final Object? value = json['schema_version'];
+          if (value != 1) {
+            throw FormatException('schema_version must be 1');
+          }
+          return 1;
+        }
+
+        class ErrorDetails {
+          const ErrorDetails({required this.values, this.retryable});
+
+          final Map<String, Object?> values;
+          final bool? retryable;
+
+          factory ErrorDetails.fromJson(Object? value) {
+            final Map<String, Object?> json = _catalogMap(value, 'error.details');
+            final Object? retryable = json['retryable'];
+            if (retryable != null && retryable is! bool) {
+              throw const FormatException('error.details.retryable must be a boolean');
+            }
+            return ErrorDetails(
+              values: Map<String, Object?>.unmodifiable(json),
+              retryable: retryable as bool?,
+            );
+          }
+        }
+
+        class ApiError {
+          const ApiError({
+            required this.code,
+            required this.message,
+            required this.requestId,
+            this.details,
+          });
+
+          final ErrorCode code;
+          final String message;
+          final String requestId;
+          final ErrorDetails? details;
+
+          factory ApiError.fromJson(Object? value) {
+            final Map<String, Object?> json = _catalogMap(value, 'error');
+            final ErrorCode? code = ErrorCode.tryParse(json['code']);
+            if (code == null) {
+              throw FormatException('Invalid ErrorCode: ${json['code']}');
+            }
+            return ApiError(
+              code: code,
+              message: _catalogString(json, 'message'),
+              requestId: _catalogString(json, 'request_id'),
+              details: json['details'] == null
+                  ? null
+                  : ErrorDetails.fromJson(json['details']),
+            );
+          }
+        }
+
+        class ErrorResponse {
+          const ErrorResponse({required this.error});
+
+          final ApiError error;
+
+          factory ErrorResponse.fromJson(Object? value) {
+            final Map<String, Object?> json = _catalogMap(value, 'response');
+            return ErrorResponse(error: ApiError.fromJson(json['error']));
+          }
+        }
+
+        class AccessState {
+          const AccessState({required this.allowed, this.reasonCode});
+
+          final bool allowed;
+          final AccessReasonCode? reasonCode;
+
+          factory AccessState.fromJson(Object? value) {
+            final Map<String, Object?> json = _catalogMap(value, 'access');
+            return AccessState(
+              allowed: _catalogBool(json, 'allowed'),
+              reasonCode: AccessReasonCode.parseNullable(json['reason_code']),
+            );
+          }
+        }
+
+        class ScenarioSummary {
+          const ScenarioSummary({
+            required this.scenarioId,
+            required this.title,
+            required this.status,
+            required this.access,
+            this.summary,
+            this.tags,
+            this.levels,
+          });
+
+          final ScenarioId scenarioId;
+          final String title;
+          final ScenarioStatus status;
+          final AccessState access;
+          final String? summary;
+          final List<String>? tags;
+          final List<LevelCode>? levels;
+
+          factory ScenarioSummary.fromJson(Object? value) {
+            final Map<String, Object?> json = _catalogMap(value, 'scenario');
+            return ScenarioSummary(
+              scenarioId: ScenarioId.parse(json['scenario_id']),
+              title: _catalogString(json, 'title'),
+              status: ScenarioStatus.parse(json['status']),
+              access: AccessState.fromJson(json['access']),
+              summary: _catalogOptionalString(json, 'summary'),
+              tags: !json.containsKey('tags')
+                  ? null
+                  : List<String>.unmodifiable(
+                      _catalogList(json, 'tags').map((Object? item) {
+                        if (item is! String) {
+                          throw const FormatException('tags must contain strings');
+                        }
+                        return item;
+                      }),
+                    ),
+              levels: !json.containsKey('levels')
+                  ? null
+                  : List<LevelCode>.unmodifiable(
+                      _catalogList(json, 'levels').map(LevelCode.tryParse).map((
+                        LevelCode? item,
+                      ) {
+                        if (item == null) {
+                          throw const FormatException(
+                            'levels contains an invalid LevelCode',
+                          );
+                        }
+                        return item;
+                      }),
+                    ),
+            );
+          }
+        }
+
+        class ScenarioListResponse {
+          const ScenarioListResponse({
+            required this.schemaVersion,
+            required this.requestId,
+            required this.scenarios,
+          });
+
+          final int schemaVersion;
+          final String requestId;
+          final List<ScenarioSummary> scenarios;
+
+          factory ScenarioListResponse.fromJson(Object? value) {
+            final Map<String, Object?> json = _catalogMap(value, 'response');
+            return ScenarioListResponse(
+              schemaVersion: _catalogSchemaVersion(json),
+              requestId: _catalogString(json, 'request_id'),
+              scenarios: List<ScenarioSummary>.unmodifiable(
+                _catalogList(json, 'scenarios').map(ScenarioSummary.fromJson),
+              ),
+            );
+          }
+        }
+
+        class CourseContentBindingRef {
+          const CourseContentBindingRef({
+            required this.courseContentBindingId,
+            required this.scenarioVersionId,
+            required this.scenarioLevelId,
+          });
+
+          final String courseContentBindingId;
+          final String scenarioVersionId;
+          final String scenarioLevelId;
+
+          factory CourseContentBindingRef.fromJson(Object? value) {
+            final Map<String, Object?> json = _catalogMap(value, 'content_binding_ref');
+            return CourseContentBindingRef(
+              courseContentBindingId: _catalogUuid(json, 'course_content_binding_id'),
+              scenarioVersionId: _catalogUuid(json, 'scenario_version_id'),
+              scenarioLevelId: _catalogUuid(json, 'scenario_level_id'),
+            );
+          }
+        }
+
+        class CourseSummary {
+          const CourseSummary({
+            required this.courseId,
+            required this.courseVersionId,
+            required this.titleEn,
+            required this.summaryZh,
+            required this.levelCode,
+            required this.contentBindingRef,
+          });
+
+          final String courseId;
+          final String courseVersionId;
+          final String titleEn;
+          final String summaryZh;
+          final LevelCode levelCode;
+          final CourseContentBindingRef contentBindingRef;
+
+          factory CourseSummary.fromJson(Object? value) {
+            final Map<String, Object?> json = _catalogMap(value, 'course');
+            final LevelCode? levelCode = LevelCode.tryParse(json['level_code']);
+            if (levelCode == null) {
+              throw FormatException('Invalid LevelCode: ${json['level_code']}');
+            }
+            return CourseSummary(
+              courseId: _catalogUuid(json, 'course_id'),
+              courseVersionId: _catalogUuid(json, 'course_version_id'),
+              titleEn: _catalogString(json, 'title_en', nonEmpty: true),
+              summaryZh: _catalogString(json, 'summary_zh', nonEmpty: true),
+              levelCode: levelCode,
+              contentBindingRef: CourseContentBindingRef.fromJson(
+                json['content_binding_ref'],
+              ),
+            );
+          }
+        }
+
+        class CourseListResponse {
+          const CourseListResponse({
+            required this.schemaVersion,
+            required this.requestId,
+            required this.scenarioId,
+            required this.courses,
+          });
+
+          final int schemaVersion;
+          final String requestId;
+          final ScenarioId scenarioId;
+          final List<CourseSummary> courses;
+
+          factory CourseListResponse.fromJson(Object? value) {
+            final Map<String, Object?> json = _catalogMap(value, 'response');
+            return CourseListResponse(
+              schemaVersion: _catalogSchemaVersion(json),
+              requestId: _catalogString(json, 'request_id'),
+              scenarioId: ScenarioId.parse(json['scenario_id']),
+              courses: List<CourseSummary>.unmodifiable(
+                _catalogList(json, 'courses').map(CourseSummary.fromJson),
+              ),
+            );
+          }
+        }
+        // END GENERATED CONTENT CATALOG DTOs
+        '''
+    ).strip()
+
+
+def write_generated_catalog_section():
+    if not GENERATED_DART.exists():
+        raise ValueError(f"missing generated Dart entrypoint: {GENERATED_DART}")
+    source = GENERATED_DART.read_text(encoding="utf-8")
+    section = generated_catalog_section()
+    if CATALOG_SECTION_START in source or CATALOG_SECTION_END in source:
+        pattern = re.compile(
+            re.escape(CATALOG_SECTION_START) + r".*?" + re.escape(CATALOG_SECTION_END),
+            re.DOTALL,
+        )
+        if len(pattern.findall(source)) != 1:
+            raise ValueError("generated catalog DTO markers are incomplete or duplicated")
+        updated = pattern.sub(section, source)
+    else:
+        anchor = "class SpeakeasyApiContract {"
+        if anchor not in source:
+            raise ValueError("cannot locate SpeakeasyApiContract insertion point")
+        updated = source.replace(anchor, section + "\n\n" + anchor, 1)
+    GENERATED_DART.write_text(updated, encoding="utf-8", newline="\n")
+
+
+def generated_catalog_drift(generated_text):
+    pattern = re.compile(
+        re.escape(CATALOG_SECTION_START) + r".*?" + re.escape(CATALOG_SECTION_END),
+        re.DOTALL,
+    )
+    matches = pattern.findall(generated_text)
+    if len(matches) != 1:
+        return "generated Dart client is missing one canonical catalog DTO section"
+    if matches[0] != generated_catalog_section():
+        return "generated catalog DTO drift detected; run: python scripts/check_openapi_dart_drift.py --write"
+    return None
+
+
 def handwritten_path_literals(path):
     if not path.exists():
         return set()
@@ -133,9 +654,15 @@ def handwritten_path_literals(path):
     return literals
 
 
-def main():
+def main(write=False):
     errors = []
     spec = load_spec()
+    errors.extend(require_catalog_contract(spec))
+    if write and not errors:
+        try:
+            write_generated_catalog_section()
+        except ValueError as error:
+            errors.append(str(error))
     current_hash = sha256(SPEC_PATH)
     openapi_paths = set(path_templates(spec))
 
@@ -169,6 +696,9 @@ def main():
             errors.append("generated Dart client directory exists but contains no Dart files")
         else:
             generated_text = dart_source_text(target)
+            catalog_drift = generated_catalog_drift(generated_text)
+            if catalog_drift:
+                errors.append(catalog_drift)
             if current_hash not in generated_text:
                 errors.append("generated Dart client does not embed the current OpenAPI hash")
             missing_paths = [path for path in sorted(openapi_paths) if path not in generated_text]
@@ -253,4 +783,11 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--write",
+        action="store_true",
+        help="regenerate the deterministic Dart content catalog DTO section",
+    )
+    args = parser.parse_args()
+    sys.exit(main(write=args.write))

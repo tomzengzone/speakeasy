@@ -53,6 +53,97 @@ Every new screen must define:
 - 状态：idle, submitting, analyzing, feedback_shown, retry_needed, completed, error。
 - 主要动作：提交学习者当前轮回答。
 
+## Content Catalog And Version-Pinned Course Detail Screens
+
+本节只细化 `VS-CONTENT-001-1`、`VS-CONTENT-002-1` 与适用的 `FR-CONTENT-001`、`FR-CONTENT-002`。数据只来自 `GET /scenarios`、`GET /scenarios/{scenario_id}/courses` 和 `GET /courses/{course_id}/versions/{course_version_id}`；现有 Scenario/Practice 导航与 ExpressionCard 数据不能作为 Course screen 或 Course 数据的替代来源。
+
+### Shared Content Browsing Rules
+
+- Data ownership: publication、visibility、集合完整性、顺序、Course/CourseVersion identity 与 authored fields 均由 Content API 响应决定；Flutter 只保存同一 learner/auth context 内的选中主题、列表滚动位置、精确 `course_id + course_version_id` 和恢复所需的已知浏览上下文。客户端 cache 不是 publication 或 visibility 事实源。
+- Collection semantics: “全部主题”调用 `GET /scenarios` 时省略 `query` 和 `category`；主题与课程顺序原样采用 API 顺序，客户端不得隐藏、补齐或按 learner state 重排。
+- Empty and failure: 只有成功 `200` 的空集合才显示真实空状态。`CONTENT_READ_UNAVAILABLE` / `503` 显示可重试错误并保留同一 learner/auth context 的已知选择与返回位置，不得伪装为空或展示部分成功。
+- Authentication and privacy: `401` 进入重新认证路径。`404` 统一显示“内容暂不可用”，不解释不存在、未发布或不可见，也不提供探测动作。登出、切换用户、`404` 或认证上下文变化时，清除旧 learner-specific body；ETag/`304` 不作为用户可见概念。
+- Version pinning: Course list 传出的 `course_id + course_version_id` 必须原样进入 detail；不得请求或展示 latest version、其他 Course、其他 ScenarioLevel 或相邻 CEFR 作为 fallback。
+- Navigation scope: 本轮 Course detail 只从当前 catalog 的 Course summary card 进入。其他课程入口保留未来兼容 seam，但本轮不实现。详情页不提供“开始学习”或任何训练动作；唯一导航动作是返回并恢复同一主题、列表与滚动上下文。
+- Accessibility: 三屏使用语义 heading、list 与 card/button；焦点顺序与视觉顺序一致，支持 dynamic text 与足够对比度，状态不只依赖颜色。loading/error 使用适度的 live region，retry 完成后焦点返回更新区域，交互目标至少满足平台最小触控尺寸；装饰背景从 semantics tree 排除。
+
+### Content Asset Catalog
+
+- Purpose: 让学习者从 Content 资产入口浏览全部已发布且对当前学习者可见的官方场景主题，并选择一个主题继续比较 Course。
+- Entry points: learner-facing `content_asset_entry`。该入口与 legacy Scenario/Practice 入口可以并存，但不得复用 legacy 本地列表冒充 Content catalog。
+- Primary user action: 选择一个 `theme_card`，进入该主题的 Course summary list。
+- Core components: 页面 heading、`content_theme_catalog` 语义列表、`theme_card` 交互项、loading/empty/error region、retry control。
+- Data ownership: `GET /scenarios` 的无过滤成功响应拥有主题成员与顺序；客户端只持有当前选择与同一认证上下文内的恢复状态。
+- API dependency: authenticated `GET /scenarios`，不传 `query` 或 `category`。
+- Visible feedback and copy: loading 显示“正在加载内容主题”；成功空集显示“暂时没有可浏览的官方主题”；可重试失败显示“内容主题暂时无法加载，请重试”；`401` 显示“登录状态已失效，请重新登录”。
+- Accessibility: 页面 heading 先于主题列表；每个 `theme_card` 是单一可聚焦操作并具有可理解名称；列表数量变化由非打断式 live region 宣告；retry 后焦点回到主题列表或错误标题。
+- Stable selectors: `content_asset_entry`（screen root）、`content_theme_catalog`（主题列表）、`theme_card`（每个主题操作）；状态与恢复控件使用 `content_catalog_loading`、`content_catalog_empty`、`content_catalog_error`、`content_catalog_retry`。
+- Requirement mapping: `FR-CONTENT-001`; `VS-CONTENT-001-1`。
+
+| State | User sees | Primary action | Next states |
+| --- | --- | --- | --- |
+| `catalog_loading` | 首次加载说明与 skeleton；不显示伪主题 | 等待或离开 | `catalog_loaded`, `catalog_true_empty`, `catalog_retryable_error`, `catalog_unauthenticated` |
+| `catalog_loaded` | API 返回的完整有序主题列表，包括零可见 Course 的主题 | 选择主题 | Scenario Course List |
+| `catalog_true_empty` | `200 scenarios: []` 对应的真实空说明 | 返回 | terminal |
+| `catalog_refreshing` | 同一 learner/auth context 的已知主题上下文，并明确标记正在刷新 | 等待或离开 | `catalog_loaded`, `catalog_true_empty`, `catalog_retryable_error`, `catalog_unauthenticated` |
+| `catalog_retryable_error` | 错误说明与 retry；同一认证上下文中保留已知列表，否则只显示错误面板 | 重试 | `catalog_loading`, `catalog_refreshing` |
+| `catalog_unauthenticated` | 登录失效说明；旧 learner-specific body 已清除 | 重新认证 | `catalog_loading` |
+
+### Scenario Course List
+
+- Purpose: 在保留选中主题上下文的前提下，展示该主题下全部 current published 且对当前学习者可见的 Course summaries，供学习者比较候选方向。
+- Entry points: Content Asset Catalog 中的 `theme_card`；必须携带 API 返回的原始 `scenario_id`。
+- Primary user action: 选择一个 Course summary card，使用该卡片携带的精确 `course_id + course_version_id` 打开详情。
+- Core components: 选中主题 heading、返回主题目录控件、`selected_theme_course_summaries` region、`course_summary_list`、`course_summary_card`、loading/true-empty/error region、retry control。
+- Data ownership: `GET /scenarios/{scenario_id}/courses` 拥有 Course 成员、`Course.sort_order` 投影顺序和 summary fields。每张卡片必须可定位非空 `title_en`、非空 `summary_zh` 与唯一 `level_code`；`course_id`、`course_version_id` 作为导航与测试 data 保留，不作为主视觉内容。
+- API dependency: authenticated `GET /scenarios/{scenario_id}/courses`；不得用 `/cards`、ScenarioLevel 或其他本地数据合成 Course summaries。
+- Visible feedback and copy: loading 显示“正在加载课程”；成功空集显示“该主题暂时没有可浏览的课程”；`503` 显示“课程暂时无法加载，请重试”；`404` 显示“内容暂不可用”；`401` 引导重新认证。
+- Recovery and return: `503` 保留同一 learner/auth context 的主题选择、已知列表与滚动位置并提供 retry；`404`、登出或换用户清除旧 Course body。返回主题目录时保持之前的主题目录滚动上下文；从 detail 返回时恢复当前主题、列表滚动位置与先前聚焦的卡片。
+- Accessibility: 主题 heading 描述当前列表；Course summaries 使用语义 list/card，标题为卡片可理解名称，简介和 CEFR 具有明确 reading order；长文本与 dynamic text 不截断关键字段；retry 后焦点回到更新后的列表或错误标题。
+- Stable selectors: `selected_theme_course_summaries`（选中主题内容 region）、`course_summary_list`（Course 列表）、`course_summary_card`（每条 summary 的交互根）。为既有 FR-TC，`course_card` 作为同一 `course_summary_card` 节点的兼容定位键保留，不表示第二种组件。字段与状态可使用 `course_summary_title_en`、`course_summary_zh`、`course_summary_level_code`、`course_list_loading`、`course_list_empty`、`course_list_error`、`course_list_retry`。
+- Requirement mapping: `FR-CONTENT-001`; `VS-CONTENT-001-1`。
+
+| State | User sees | Primary action | Next states |
+| --- | --- | --- | --- |
+| `course_list_loading` | 选中主题保持可见，Course 区域显示加载状态 | 等待或返回 | `course_list_loaded`, `course_list_true_empty`, `course_list_retryable_error`, `course_list_unavailable`, `course_list_unauthenticated` |
+| `course_list_loaded` | API 返回的完整有序 summaries；每张卡片展示 title、summary 与唯一 CEFR | 打开精确 CourseVersion | Exact Course Version Detail |
+| `course_list_true_empty` | `200 courses: []` 对应的真实空说明，主题仍保留 | 返回主题目录 | Content Asset Catalog |
+| `course_list_refreshing` | 同一 learner/auth context 的已知列表标记为正在刷新 | 等待或返回 | `course_list_loaded`, `course_list_true_empty`, `course_list_retryable_error`, `course_list_unavailable` |
+| `course_list_retryable_error` | `503` 错误、retry 和已知主题/列表上下文；不把失败显示为空 | 重试 | `course_list_loading`, `course_list_refreshing` |
+| `course_list_unavailable` | privacy-safe `404` 文案；旧 Course body 已清除 | 返回主题目录 | Content Asset Catalog |
+| `course_list_unauthenticated` | 登录失效说明；旧 learner-specific body 已清除 | 重新认证 | `course_list_loading` |
+
+### Exact Course Version Detail
+
+- Purpose: 展示学习者刚从 Course summary card 选中的同一 CourseVersion 基本信息与典型投入，使其完成阅读和适配判断。
+- Entry points: 本轮只接受 Scenario Course List 的 `course_summary_card`，并原样携带 `course_id + course_version_id`。其他入口只保留未来兼容 seam，不在当前 screen 中启用。
+- Primary user action: 阅读 `course_detail_header` 中的同版本信息并作出个人判断；本轮唯一页面动作是返回同一 Course list 上下文。
+- Core components: 装饰背景层、返回控件、`course_detail_header`、英文标题、中文简介、唯一 CEFR、正值典型时长及单位、loading/unavailable/error region、retry control。
+- Data ownership: authenticated `GET /courses/{course_id}/versions/{course_version_id}` 的 exact success response 拥有详情。header 的 title、summary、CEFR、Course/version/binding 必须与来源 summary 一致；`course_id` 和 `course_version_id` 只作为导航/测试 data，不作为主视觉。
+- API dependency: `GET /courses/{course_id}/versions/{course_version_id}`。不得请求 latest、其他 Course、其他版本、其他 ScenarioLevel 或相邻 CEFR 作为 fallback。
+- Loaded variants: `background_asset_ref` 有值时只作不妨碍正文对比度的装饰背景；为 null 时使用中性/装饰性背景。两种情况都必须完整展示 title、summary、CEFR 与 `typical_duration.value > 0` 加非空 unit；null 不显示损坏图标、不阻断正文，也不暗示缺失内容。
+- Visible feedback and copy: loading 显示“正在加载课程信息”；`503` 显示“课程信息暂时无法加载，请重试”；privacy-safe `404` 只显示“内容暂不可用”；`401` 引导重新认证。不得暴露资源是否存在、发布或可见的内部原因。
+- Recovery and return: `503` 保留精确 identity、来源主题、列表滚动位置与返回路径；同一认证上下文中已成功显示过的同一 exact detail 只能以“刷新失败”的非权威状态暂留。`404`、登出、换用户或认证上下文变化时立即清除旧 detail body。返回后恢复选中主题、列表滚动位置与先前聚焦卡片。
+- Accessibility: `course_detail_header` 为页面主 heading region；title、summary、CEFR 与 duration 的语义/焦点顺序稳定并支持 dynamic text；背景从 semantics tree 排除，正文对比度不依赖背景；error live region 宣告一次，retry 后焦点回到 header 或错误标题。
+- Stable selectors: `course_detail_header`（detail 信息根）、`course_detail_title_en`、`course_detail_summary_zh`、`course_detail_level_code`、`course_detail_duration`、`course_detail_back`、`course_detail_loading`、`course_detail_unavailable`、`course_detail_error`、`course_detail_retry`。
+- Requirement mapping: `FR-CONTENT-002`; `VS-CONTENT-002-1`。
+
+| State | User sees | Primary action | Next states |
+| --- | --- | --- | --- |
+| `course_detail_loading` | 精确 CourseVersion 的加载说明；不显示替代内容 | 等待或返回 | `course_detail_loaded`, `course_detail_loaded_no_background`, `course_detail_retryable_error`, `course_detail_unavailable`, `course_detail_unauthenticated` |
+| `course_detail_loaded` | 同版本 title、summary、CEFR、duration 与装饰背景 | 阅读或返回 | Scenario Course List |
+| `course_detail_loaded_no_background` | 同版本全部必备信息与中性装饰背景 | 阅读或返回 | Scenario Course List |
+| `course_detail_refreshing` | 同一 learner/auth context 的同一 exact detail 明确标记为正在刷新 | 等待或返回 | loaded variants, `course_detail_retryable_error`, `course_detail_unavailable` |
+| `course_detail_retryable_error` | `503` 错误与 retry；保留来源列表上下文，不展示替代 Course/version | 重试或返回 | `course_detail_loading`, `course_detail_refreshing`, Scenario Course List |
+| `course_detail_unavailable` | privacy-safe `404` 文案；旧 detail body 已清除 | 返回同一列表 | Scenario Course List |
+| `course_detail_unauthenticated` | 登录失效说明；旧 learner-specific body 已清除 | 重新认证 | `course_detail_loading` |
+
+### Content Scope Non-goals
+
+- 不增加学习路线、阶段、训练、AI、media、scoring、progress、CMS 或 authored inventory 管理。
+- 不增加“开始学习”CTA，不把阅读判断解释为学习已开始，也不把 Task Plan seed 或 OpenAPI example 当成内容权威。
+- 不复用 legacy ExpressionCard、`/cards` 或 ScenarioLevel 来模拟 Course/CourseVersion，也不改变既有 Scenario/Practice flow。
+
 ## P0.1 Expression Automation Training Screen
 
 Owning increment: `p0-1-expression-automation-training`。

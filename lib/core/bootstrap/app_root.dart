@@ -6,6 +6,7 @@ import 'package:speakeasy/l10n/l10n.dart';
 import 'package:speakeasy/pages/home_page.dart';
 import 'package:speakeasy/pages/login_page.dart';
 import 'package:speakeasy/pages/onboarding_page.dart';
+import 'package:speakeasy/services/api_client.dart';
 import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/services/audio_service.dart';
 import 'package:speakeasy/services/content_repository.dart';
@@ -15,10 +16,12 @@ class SpeakEasyAppRoot extends StatelessWidget {
     super.key,
     required this.session,
     required this.audioService,
+    this.courseCatalogApi = const ApiClientCourseCatalogApi(),
   });
 
   final AppSession session;
   final AudioService audioService;
+  final CourseCatalogApi courseCatalogApi;
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +72,7 @@ class SpeakEasyAppRoot extends StatelessWidget {
             },
       );
     }
-    return const SpeakEasyHomePage();
+    return SpeakEasyHomePage(courseCatalogApi: courseCatalogApi);
   }
 }
 

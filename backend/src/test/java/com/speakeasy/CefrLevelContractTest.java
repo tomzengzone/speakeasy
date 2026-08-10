@@ -7,22 +7,30 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.speakeasy.commerce.EntitlementSnapshot;
+import com.speakeasy.content.CourseTestFixture;
+import java.time.Instant;
+import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class CefrLevelContractTest extends BackendIntegrationTestSupport {
+  @Autowired JdbcTemplate jdbc;
+
   @ParameterizedTest
   @ValueSource(strings = {"A1", "A2", "B1", "B2", "C1", "C2"})
   void assessmentAcceptsEveryCefrLevel(String levelCode) throws Exception {
@@ -78,6 +86,34 @@ class CefrLevelContractTest extends BackendIntegrationTestSupport {
 
   private static Stream<Arguments> unavailableCefrLevels() {
     return Stream.of(Arguments.of("A1"), Arguments.of("C1"), Arguments.of("C2"));
+  }
+
+  @Test
+  void courseCatalogKeepsStrictCefrValuesWithoutPlaceholderTracks() throws Exception {
+    CourseTestFixture.restore(jdbc);
+    try {
+      AuthTokens tokens = loginPhone("+8613900350000");
+      entitlements.save(new EntitlementSnapshot(
+          UUID.randomUUID(),
+          UUID.fromString(tokens.userId()),
+          "pro",
+          "{\"basic_scenarios\":true,\"advanced_scenarios\":true,\"ai_feedback\":true}",
+          "{}",
+          Instant.now()));
+
+      mvc.perform(get("/scenarios/job_interview/courses")
+              .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+              .header("X-Request-Id", "req_course_cefr"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.courses.length()").value(3))
+          .andExpect(jsonPath("$.courses[*].level_code", org.hamcrest.Matchers.contains("A2", "B1", "B2")));
+    } finally {
+      try {
+        CourseTestFixture.clear(jdbc);
+      } finally {
+        CourseTestFixture.restoreScenarioFacts(jdbc);
+      }
+    }
   }
 
   @ParameterizedTest

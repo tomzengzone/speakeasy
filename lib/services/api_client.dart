@@ -10,6 +10,63 @@ import 'package:speakeasy/models/learning_stats_model.dart';
 import 'package:speakeasy/models/storage_models.dart';
 import 'package:speakeasy/services/storage_service.dart';
 
+typedef ContentGet = Future<Map<String, dynamic>> Function(String path);
+
+enum ContentApiFailureKind {
+  unauthenticated,
+  notFound,
+  retryable,
+  nonRetryable,
+  invalidResponse,
+}
+
+class ContentApiFailure implements Exception {
+  const ContentApiFailure({
+    required this.kind,
+    required this.message,
+    this.requestId,
+  });
+
+  final ContentApiFailureKind kind;
+  final String message;
+  final String? requestId;
+
+  @override
+  String toString() => 'ContentApiFailure($kind, $message)';
+}
+
+abstract interface class CourseCatalogApi {
+  Future<ScenarioListResponse> listContentThemes();
+
+  Future<CourseListResponse> listScenarioCourses(ScenarioId scenarioId);
+}
+
+class ApiClientCourseCatalogApi implements CourseCatalogApi {
+  const ApiClientCourseCatalogApi() : _get = null;
+
+  const ApiClientCourseCatalogApi.withTransport(ContentGet get) : _get = get;
+
+  final ContentGet? _get;
+
+  @override
+  Future<ScenarioListResponse> listContentThemes() {
+    return ApiClient._readContent(
+      SpeakeasyApiPaths.scenarios,
+      ScenarioListResponse.fromJson,
+      transport: _get,
+    );
+  }
+
+  @override
+  Future<CourseListResponse> listScenarioCourses(ScenarioId scenarioId) {
+    return ApiClient._readContent(
+      SpeakeasyApiPaths.scenarioCourses(scenarioId.wireValue),
+      CourseListResponse.fromJson,
+      transport: _get,
+    );
+  }
+}
+
 class ApiClient {
   static String? _pendingAccountDeletionKey;
 
@@ -119,6 +176,73 @@ class ApiClient {
         )
         .timeout(const Duration(seconds: 15));
     return _decodeResponse(response);
+  }
+
+  static Future<T> _readContent<T>(
+    String path,
+    T Function(Object? value) decode, {
+    ContentGet? transport,
+  }) async {
+    late final Map<String, dynamic> response;
+    try {
+      response = await (transport ?? _get)(path);
+    } on ContentApiFailure {
+      rethrow;
+    } catch (_) {
+      throw const ContentApiFailure(
+        kind: ContentApiFailureKind.retryable,
+        message: '内容获取失败，请稍后重试',
+      );
+    }
+
+    final int? statusCode = (response['_httpStatus'] as num?)?.toInt();
+    if (statusCode != null && (statusCode < 200 || statusCode >= 300)) {
+      throw _contentFailure(response, statusCode);
+    }
+    try {
+      return decode(response);
+    } on FormatException catch (error) {
+      throw ContentApiFailure(
+        kind: ContentApiFailureKind.invalidResponse,
+        message: error.message.toString(),
+      );
+    } catch (_) {
+      throw const ContentApiFailure(
+        kind: ContentApiFailureKind.invalidResponse,
+        message: '内容响应格式无效',
+      );
+    }
+  }
+
+  static ContentApiFailure _contentFailure(
+    Map<String, dynamic> response,
+    int statusCode,
+  ) {
+    ApiError? apiError;
+    try {
+      apiError = ErrorResponse.fromJson(response).error;
+    } on FormatException {
+      apiError = null;
+    }
+
+    final ContentApiFailureKind kind;
+    if (statusCode == 401 || apiError?.code == ErrorCode.unauthenticated) {
+      kind = ContentApiFailureKind.unauthenticated;
+    } else if (statusCode == 404 ||
+        apiError?.code == ErrorCode.resourceNotFound) {
+      kind = ContentApiFailureKind.notFound;
+    } else if (apiError?.details?.retryable == true || statusCode >= 500) {
+      kind = ContentApiFailureKind.retryable;
+    } else {
+      kind = ContentApiFailureKind.nonRetryable;
+    }
+    return ContentApiFailure(
+      kind: kind,
+      message: apiError?.message.trim().isNotEmpty == true
+          ? apiError!.message
+          : '内容获取失败（$statusCode）',
+      requestId: apiError?.requestId,
+    );
   }
 
   static Future<Map<String, dynamic>> _post(

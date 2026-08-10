@@ -18,6 +18,8 @@ Proposed - whole-app architecture。本文基于 PM execution brief 进入第二
 | Product Base | `docs/product/base/` | 稳定 MVP 能力和回归边界 |
 | Product Base traceability | `docs/product/base/traceability.md` | 已实现 Flutter 能力事实、代码证据和测试证据 |
 | V2 Capability registry | `docs/product/feature_registry.md` | 稳定 Capability、一级 Sub-capability、Legacy Mapping 和长期业务边界；不作为行为输入 |
+| Content Catalog / Course Detail approved scope | `docs/product/story_map.md` 中 `US-CONTENT-001`、`US-CONTENT-002` 及其已批准 VS；适用的 `FR-CONTENT-001`、`FR-CONTENT-002` | 当前 Content 架构的唯一规范产品输入；只授权完整 published/visible collection 与按稳定 Course/CourseVersion 身份打开详情的语义，不授权具体库存 |
+| Content future compatibility | `docs/product/story_map.md` 中 `US-CONTENT-003` 至 `US-CONTENT-012` | 仅用于兼容性和影响检查；全部保持 draft，不授权 endpoint、字段、状态、表、provider、验收或实现 |
 | Roadmap / status | `docs/product/roadmap.md`, `docs/product/development_status.md` | P0/P0.1 并行主线和 P0.2/P1/P2 边界 |
 | P0 商业化 | `docs/product/stages/p0-commercial-readiness.md`, `docs/product/increments/commercial-subscription-readiness/`, `docs/product/increments/commercial-ai-provider-hardening/` | 订阅、权益、账号、AI provider 生产化、合规、风控和发布门禁 |
 | P0.1 训练闭环 | `docs/product/stages/p0-1-expression-automation.md`, `docs/product/increments/p0-1-expression-automation-training/` | session 内训练 planner、micro-action、hint、pressure check |
@@ -30,8 +32,25 @@ Proposed - whole-app architecture。本文基于 PM execution brief 进入第二
 - Product Base：启动/登录/首评、官方双场景、听力热身、推荐表达、收藏、语音场景模拟、学习沉淀、个人中心、会员入口。
 - Product Base traceability：Flutter APP 已具备 TTS、录音、ASR/转写、LLM 教练反馈、基础评分、个人 Wiki、Apple IAP 前端雏形；尚无真实商业订阅闭环、后端权益事实、生产账号闭环和数据库迁移。
 - Active stages：P0 商业化订阅上线准备；P0.1 session 内表达自动化训练闭环。
+- Approved Content scope：仅 `US-CONTENT-001`、`US-CONTENT-002` 及适用的已批准 FR 进入当前架构；它们授权完整 published/visible collection 与 version-pinned detail 语义，不授权具体 Course inventory。架构不定义课程数量、标题或时长；真实库存必须来自 owning approved product/content source，且不承诺 A1-C2 或 A1/C1/C2 覆盖。
+- Draft Content compatibility：`US-CONTENT-003` 至 `US-CONTENT-012` 仅进入架构覆盖矩阵；它们不定义当前 API、领域字段、运行时状态、存储、provider 或验收行为。
 - Planned/future boundaries：P0.2 跨 session 训练编排和记忆引擎；P1 笔记本、评分产品化、场景包扩展；P2 A1-C2 内容体系和 CMS。
 - Commercial/release constraints：付费发布前必须具备服务端权益、支付校验、用量风控、账号删除、AI provider 生产化、审计日志、发布密钥、商店审核材料、测试矩阵和回滚路径。
+
+## Product Platform and Validation Boundary
+
+- Windows desktop 不是产品发布、打包、验收或 Gate 目标；Windows 开发主机仍可执行平台无关的 Dart、Flutter 和 Python 验证。
+- `flutter build windows`、`flutter test -d windows`、Windows CMake/NuGet 和 Windows plugin smoke 均为 non-applicable，不得作为 Vertical Slice、`G-TEST` 或 `G-RELEASE` 的通过条件或阻断证据。
+- 默认选择能够证明相同行为的最低成本平台无关测试层级；只有已批准产品范围明确包含某个平台专属行为时，才要求对应平台构建或设备测试。
+
+## Content 001/002 Global Architecture Position
+
+- `Course` 是学习者可见、可稳定引用的课程单位；`CourseVersion` 是其不可变、可发布的版本身份。二者位于既有 Content / Scenario bounded context 内，但 `Course` 不等于 `Scenario`，也不得以 `ScenarioLevel` 充当别名。
+- `FE-CONTENT` 负责目录与按版本详情的前端编排，复用 `FE-API-CLIENT` 和 `FE-LOCAL-CACHE`；`BE-CONTENT-SCENARIO` 负责已发布、可见的 authored Course/CourseVersion 事实；`DB-IDENTITY-CONTENT` 是后续经 Domain 与 migration 契约批准后的持久化落点。
+- 后续 `CourseContentBinding` 可把一个 CourseVersion 关联到匹配的 `ScenarioVersion` 与 `ScenarioLevel`；本轮不定义字段、表或 endpoint，也不改变 Scenario/ScenarioVersion/ScenarioLevel 现有语义。
+- Practice、Training、Learning、AI 与 Media 继续拥有 session、turn、attempt、progress、evidence、recording、transcript、score、provider 和 media lifecycle 等运行时事实；Content/Course 不复制这些事实。
+- 目录必须区分真实空内容与失败，详情必须按稳定 Course ID + CourseVersion identity 精确解析且不得静默替换为 latest。缓存只保留展示/恢复上下文，不成为发布、可见性或版本事实源。
+- `US-CONTENT-003` 至 `US-CONTENT-012` 仍是 draft compatibility input；其逐项 SWC 归属、稳定引用类别和全局评审触发器以 `software_component_architecture.md` 的十行矩阵为准。
 
 ## 能力 / 阶段 / 增量覆盖矩阵
 | 对象类型 | 产品对象 | 前端模块 | 后端限界上下文 | 数据所有权 | API 契约 | AI runtime | 安全 / 合规 | 测试 / 发布门禁 | 覆盖结果 |
@@ -41,7 +60,7 @@ Proposed - whole-app architecture。本文基于 PM execution brief 进入第二
 | Capability | `CAP-LEVEL` | onboarding assessment、oral assessment、level/profile surfaces | Learner Profile, Assessment | OnboardingAssessment, LearnerLevelProfile, ScoreSignal refs | assessment/profile API family | AI/评分只产候选信号，等级与置信度由确定性规则接受 | 测评数据最小化、claim guard | 首评/复测/低置信降级测试 | Product Base baseline; P0.2 speaking diagnostic planned |
 | Capability | `CAP-INTENT` | onboarding goal/preference、profile settings | Intent, Preference | GoalProfile, learning preferences, availability constraints | profile/goal/preference API family | AI 不拥有目标或偏好最终事实 | 偏好和目标隐私、变更审计 | 目标录入、修改、暂停和恢复测试 | Product Base partial; P0.2 extension planned |
 | Capability | `CAP-PLAN` | home next-action、plan/checkpoint/queue surfaces | Planning, Review Scheduling | LearningRoute, PlanVersion, DailyPlan, ReviewSchedule, PracticeQueueItem, ReviewItem | `/review/due`, `/review/result`, `/training/tasks`, plan/checkpoint API family | LLM 可生成候选；计划版本、重算和调度由规则裁决 | 防止无来源计划项和越权内容 | plan/replan/review/checkpoint tests | P0.1 session-local support; P0.2 planned |
-| Capability | `CAP-CONTENT` | home catalog、scenario/course pages、bundled assets | Content, Scenario | Scenario, ScenarioLevel, ScenarioVersion, ContentVersion, Course, TrainingObject, TrainingFlow | `/scenarios`, `/scenarios/{id}`, content/catalog API family | Prompt 只引用已审核、可追踪版本内容 | 内容版本、版权、付费内容 gate | 双场景回归、内容版本审核 | Product Base covered; P1/P2 expansion deferred |
+| Capability | `CAP-CONTENT` | `FE-CONTENT` catalog 与 version-pinned detail；现有 scenario/practice surfaces | Content / Scenario | Scenario、ScenarioVersion、ScenarioLevel；一等 Course/CourseVersion；后续 CourseContentBinding | 仅声明 future approved Content/Course contract family；本轮不定义 path 或 schema | Prompt 只可消费已审核、稳定引用的内容；Course 不拥有 AI runtime | 服务端发布/可见性裁决、版本不可静默替换、内容版权 | 001/002 后续 Contract-TC 与回归；003-012 仅做影响检查 | Approved 001/002 architecture baseline; 003-012 draft-only compatibility |
 | Capability | `CAP-PRACTICE` | listening page、audio service、interview practice page、practice engine/scheduler/runtime | Practice Session, AI Gateway | PracticeSession, DialogueTurn, PracticeAttempt, ShadowingAttempt, AudioAssetRef | `/training/shadowing`, `/ai/transcribe`, `/ai/pronunciation`, `/training/sessions`, `/training/sessions/{id}/turns` | schema validation、ASR/LLM fallback | 音频/转写保护、provider secret 后端化 | turn/session recovery、audio fallback、schema tests | Product Base covered; runtime refactor and provider hardening active/planned |
 | Capability | `CAP-TRAIN` | training session、micro-action、hint/pressure UI | Training Planner, Training Runtime | TrainingSession, ActionChainStep, MicroAction, HintState, PlannerDecision | `/training/planner/next`, `/training/evidence`, training session/hint API family | prompt/schema 只产候选；节奏和状态由确定性 planner 裁决 | LLM 不直接写掌握状态 | planner unit、widget、AI eval | P0.1 in-scope blocker |
 | Capability | `CAP-COACH` | feedback、correction、score explanation UI | Coach/Assessment, AI Gateway | ScoreSignal, FeedbackRecord, Correction | `/ai/pronunciation`, `/ai/feedback`, feedback/assessment API family | 结构化评分、纠错、解释和 fallback | provider cost、滥用控制、claim guard | score unavailable、invalid schema、explanation tests | Product Base baseline; production hardening pending |
@@ -73,6 +92,9 @@ Proposed - whole-app architecture。本文基于 PM execution brief 进入第二
 | Explicitly deferred | P0.2 跨 session、跨天、跨场景训练编排和完整 L0-L5 | P0.1 只负责 session 内训练接管 |
 | Explicitly deferred | P1 笔记本、任意短语/单词查询、评分产品化、3-5 个场景包 | 不阻塞 P0/P0.1 当前主线 |
 | Explicitly deferred | P2 A1-C2 内容体系、CMS、内容生产工具 | 需要内容治理和运营能力后置 |
+| Draft compatibility only | `US-CONTENT-003` 至 `US-CONTENT-012` 的路线状态、挑战、对话、结算、教学、词汇/表达、播放、逐句与跟读行为 | 未批准，不得从架构矩阵推导 endpoint、字段、状态、表、provider、验收或实现 |
+| Non-goal | 用 `ScenarioLevel` 代替 Course/CourseVersion，或让 Course 持有 session、turn、progress、evidence、media、AI 等运行时事实 | 破坏稳定课程身份与既有 Practice/Training/Learning/AI/Media ownership |
+| Explicitly deferred | 通用 CMS、任意内容创作后台和完整 A1-C2 库存 | 需要独立产品批准、内容治理与新的 Engineering Contract |
 | Non-goal | 任意场景生成、公开社区、真人导师市场、课程市场 | 已被 roadmap 明确排除 |
 | Non-goal | 把商业 gating 作为 P0.1 训练闭环前置条件 | P0 商业化与 P0.1 训练价值体验并行 |
 | In-scope blocker | 后端工程、PostgreSQL schema、OpenAPI、AI schema、商业测试矩阵、release secrets gate、AI media lifecycle、persistent TTS cache、DashScope evidence、cost dashboard、AI data retention | 需要在实现前补齐下游契约 |
@@ -106,6 +128,7 @@ Proposed - whole-app architecture。本文基于 PM execution brief 进入第二
 ## Architecture Summary
 - Frontend：Flutter 保持现有主流程，新增或收敛训练 session UI、付费墙、权益刷新、超限态、账号删除反馈；本地存储只作为缓存和离线兜底。
 - Backend：以 modular monolith 建立 Identity、Commerce/Entitlement、Usage Control、Content/Scenario、Training Planner、Learning Evidence、AI Gateway、Admin/Ops 上下文。
+- Content：在既有 Content / Scenario 边界内引入一等 Course/CourseVersion；通过后续 CourseContentBinding 复用 ScenarioVersion + ScenarioLevel，不复制 Practice、Training、Learning、AI 或 Media 运行时事实。
 - Database：PostgreSQL 保存用户、订阅、权益、用量、训练 session、学习证据、审计和删除任务；通过 migration 管控 schema 演进。
 - API：OpenAPI-first，Dart client generated，所有跨层变更先更新契约。
 - AI runtime：LLM、ASR、TTS、评分全部通过后端可信边界，schema validation 和 fallback 先于 UI 渲染；paid AI voice 还必须具备对象存储上传、持久化 TTS cache、真实 provider evidence、成本看板和数据保留删除证据。
@@ -174,6 +197,7 @@ P0-COM-ARCH-001 结论：stage 级架构覆盖矩阵已建立；它允许进入�
 - `docs/architecture/adr/0002-whole-app-architecture-stack.md`
 - `docs/architecture/adr/0003-server-owned-entitlement-and-usage.md`
 - `docs/architecture/adr/0004-deterministic-training-planner-ai-boundary.md`
+- `docs/architecture/adr/0008-first-class-course-version.md`
 
 ## External Reference Notes
 - Spring Boot Actuator provides production observability and management endpoints, and Spring documents OpenTelemetry/Micrometer integration.

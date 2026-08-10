@@ -10,6 +10,64 @@ open app -> onboarding -> scenario list -> scenario detail -> practice -> correc
 read prompt -> answer -> receive feedback -> retry or continue -> complete scenario -> review summary
 ```
 
+## Content 001/002 目录与精确版本详情流程
+
+```text
+content_asset_entry
+  -> GET /scenarios without query/category
+  -> content_theme_catalog shows every published+visible theme in API order
+  -> learner selects theme_card
+  -> GET /scenarios/{scenario_id}/courses
+  -> selected_theme_course_summaries shows every current published+visible summary in API order
+  -> learner compares title_en / summary_zh / one CEFR on course_summary_card
+  -> card carries exact course_id + course_version_id
+  -> GET /courses/{course_id}/versions/{course_version_id}
+  -> course_detail_header shows the same version title / summary / CEFR / positive duration and unit
+  -> learner reads and judges fit/time
+  -> back restores the same selected theme, course list scroll position and focused card
+```
+
+## Content 真实空、失败与恢复流程
+
+```text
+GET /scenarios returns 200 scenarios: []
+  -> show true catalog empty state
+
+published+visible theme returns 200 courses: []
+  -> retain theme_card in catalog
+  -> show true course-list empty state
+  -> return to the same theme catalog context
+
+catalog or course read returns CONTENT_READ_UNAVAILABLE / 503
+  -> do not show empty or partial success
+  -> retain known selection/list context only for the same learner/auth context
+  -> show retry
+  -> retry the same request
+  -> success replaces the state; repeated failure keeps recovery available
+
+any content read returns 401
+  -> clear learner-specific body
+  -> re-authenticate
+  -> retry in the new authenticated context
+```
+
+## Content 精确版本不可用与返回流程
+
+```text
+course_summary_card provides exact course_id + course_version_id
+  -> exact detail request only; no latest/other-course/adjacent-CEFR fallback
+  -> 200: show loaded detail, including neutral decorative background when background_asset_ref is null
+  -> CONTENT_READ_UNAVAILABLE / 503: retain source theme/list/scroll return context and offer retry
+  -> privacy-safe 404: clear old detail body and show "内容暂不可用" without probing why
+  -> back restores the same course list context
+
+logout / learner switch / authentication-context change
+  -> clear prior learner-specific catalog, list and detail bodies
+  -> cached body or ETag never becomes visibility truth
+```
+
+Content 001/002 只覆盖浏览与阅读判断；不增加开始学习动作、学习阶段、训练、AI、media、scoring、CMS workflow 或 authored inventory 行为，其他 Course 入口只保留未来兼容 seam。
+
 ## P0.1 Expression Automation Training Flow
 ```text
 official scene detail / resume entry

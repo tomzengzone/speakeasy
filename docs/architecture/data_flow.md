@@ -16,6 +16,35 @@ SWC 级完整拓扑、稳定 `SWC-FLOW-*` 和局部变更参考基准在 `docs/a
 - 所有高成本 provider 调用先经过 entitlement/usage check。
 - 学习证据写回必须保留 rule trace，不由 LLM 自由文本直接修改最终掌握状态。
 
+## Approved Content Catalog And Version-Pinned Detail Flow
+
+Authority boundary：本流只承接已批准的 `US-CONTENT-001`、`US-CONTENT-002` 及适用的 `FR-CONTENT-001`、`FR-CONTENT-002`。`US-CONTENT-003` 至 `US-CONTENT-012` 全部保持 draft，只作为未来兼容性 seam；本流不为它们定义 endpoint、payload 字段、UI/领域状态、表、provider 或验收。
+
+```text
+FE-CONTENT requests the authenticated catalog through FE-API-CLIENT
+  -> BE-API-CONTROLLERS authenticates, validates and propagates request/trace identity
+  -> BE-CONTENT-SCENARIO reads published theme and CourseVersion facts through DB-IDENTITY-CONTENT
+  -> when visibility rules apply, BE-CONTENT-SCENARIO consumes an existing BE-COMMERCE-ENTITLEMENT decision without owning entitlement truth
+  -> backend returns the complete visible theme set and Course summaries, preserving a published theme with zero visible Courses
+  -> FE-CONTENT renders catalog, real-empty or typed failure; FE-LOCAL-CACHE may retain last-known display context only
+  -> learner selects a stable Course identity and an exact CourseVersion identity
+  -> BE-CONTENT-SCENARIO resolves that exact version and, after future contract approval, its CourseContentBinding to a matching ScenarioVersion + ScenarioLevel
+  -> backend returns the exact published detail or a typed unavailable/failure result; it never substitutes latest
+  -> FE-CONTENT renders the version-pinned detail and keys recovery cache by stable Course/CourseVersion identity
+```
+
+Facts and seams：
+- `Course` 是稳定的学习者可见内容单位，`CourseVersion` 是不可变发布身份；`Course != Scenario`，`ScenarioLevel` 保持既有 CEFR/场景轨道语义。
+- 后续 `CourseContentBinding` 只提供稳定 authored-content 关联；本轮不定义其字段、基数、存储或 API schema。本架构不定义 Course inventory 的数量、标题或时长；真实库存必须来自 owning approved product/content source。001/002 只授权完整 published/visible collection 与 detail semantics，不授权具体库存，也不承诺 A1-C2 或 A1/C1/C2 覆盖。
+- Practice、Training、Learning、AI、Media 继续分别拥有 session/turn/attempt、planner、progress/evidence、provider、recording/transcript/score/media lifecycle；Content 只产出或消费稳定 reference，不接收这些 runtime facts。
+- 003-012 后续获批时，可消费 Course/CourseVersion、CourseContentBinding、ScenarioVersion/ScenarioLevel 和其他 owner 产出的稳定 reference；必须先通过 `software_component_architecture.md` 的逐行 impact check，并新增适用 Engineering Contract。
+
+Failure, security and operations：
+- empty 与 failure 必须区分；读取失败不得伪造空目录，版本不可用不得静默降级到 latest，缓存不得覆盖服务端 publication/visibility facts。
+- 服务端执行认证、发布与可见性裁决；不可见资源不应通过错误差异、缓存键或日志泄漏。日志只记录 request/trace identity、结果类别和经脱敏的 Course/version reference，不记录 raw content 或用户 runtime payload。
+- rollout 采用后续 additive contract/migration、backend-first compatibility 和 feature flag；rollback 关闭新 catalog/detail read path 与入口、保留 additive data，继续使用既有 Scenario/practice/training 流，不执行破坏性 down migration 或 ScenarioLevel reinterpretation。
+- 本节是高层架构流，不是 API、Domain、migration、UX 或测试契约；具体重试、缓存期限、错误码和字段由后续相应 Engineering Contract 定义。
+
 ## P0 Subscription Purchase / Restore Flow
 ```text
 Flutter membership/paywall

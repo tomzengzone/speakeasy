@@ -22,6 +22,26 @@
 - [ ] 空状态包含有用的下一步。
 - [ ] MVP 范围不会引入隐藏工作流。
 
+## Content Catalog And Version-Pinned Course Detail
+
+- [ ] `content_asset_entry` 的“全部主题”请求省略 `query` 与 `category`，页面完整呈现 API 返回的 published+visible themes，并保持 API 顺序。
+- [ ] 零可见 Course 的已发布可见主题仍显示在 `content_theme_catalog`；选择后看到明确的真实空状态，而不是主题消失。
+- [ ] `selected_theme_course_summaries` 完整呈现 API 返回的 current published+visible summaries，并保持服务端 `Course.sort_order` 投影顺序，不按 learner state 重排。
+- [ ] 只有成功 `200` 空集合显示空状态；`CONTENT_READ_UNAVAILABLE` / `503` 显示错误和 retry，且不伪装为空或部分成功。
+- [ ] 可重试 catalog/list/detail 失败在同一 learner/auth context 内保留选中主题、已知列表、滚动位置和安全返回路径。
+- [ ] `401`、privacy-safe `404`、登出、换用户或认证上下文变化会清除旧 learner-specific body；文案不泄漏内容存在性、发布状态或可见性原因。
+- [ ] 每个 `course_summary_card` 可定位非空 `title_en`、非空 `summary_zh` 和唯一 A1/A2/B1/B2/C1/C2；`course_id + course_version_id` 只作为导航/测试 data，不成为主视觉。
+- [ ] Course detail 只使用来源卡片的精确 `course_id + course_version_id`；不存在 latest、其他 Course、其他版本、ScenarioLevel 或相邻 CEFR fallback。
+- [ ] `course_detail_header` 展示与来源 summary 一致的 title、summary、CEFR，以及正值时长和非空单位。
+- [ ] `background_asset_ref = null` 是正常 loaded 变体：显示中性/装饰性背景，不出现损坏图标，不阻断必备信息，也不暗示缺失内容。
+- [ ] 从 detail 返回会恢复同一主题、Course list 滚动位置与先前聚焦卡片；详情页没有“开始学习”或训练动作。
+- [ ] heading、list、card/button semantics、焦点顺序、dynamic text、对比度与非仅颜色表达在 catalog/list/detail 三屏一致可用。
+- [ ] loading/error 由适度 live region 宣告；retry 后焦点进入更新后的列表/header 或错误标题；所有操作满足平台最小触控目标。
+- [ ] 装饰背景从 semantics tree 排除，正文在有图和无图两种 loaded 变体中都保持足够对比度。
+- [ ] 稳定 selector 保持可定位：`content_asset_entry`、`content_theme_catalog`、`theme_card`、`selected_theme_course_summaries`、`course_summary_list`、`course_summary_card`、`course_detail_header`；既有 `course_card` 只作为同一 summary card 节点的兼容定位键。
+- [ ] UI 不向学习者暴露 ETag/`304`，不把 cache 当成 publication/visibility truth，也不把 Task Plan seed 或 OpenAPI example 当成 authored content。
+- [ ] 本轮不引入学习路线、阶段、训练、AI、media、scoring、CMS、authored inventory 管理或其他 Course 入口实现。
+
 ## P0 Commercial
 
 - [ ] Membership page shows server entitlement state and does not rely on local `memberPlan` as final truth.

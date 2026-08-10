@@ -22,7 +22,7 @@ SWC 级完整拓扑、稳定 `SWC-FLOW-*` 和局部变更参考基准在 `docs/a
 | Identity | Backend | 登录、token、用户资料、社交登录回调、测试登录发布关闭、账号删除入口 | 不决定训练计划或订阅权益内容 |
 | Commerce / Entitlement | Backend | Apple/Google 校验、订阅状态、权益快照、退款/过期/宽限期、恢复购买 | 不把客户端本地 memberPlan 当事实 |
 | Usage Control | Backend | AI/ASR/TTS/评分用量、quota、速率限制、滥用检测、用量账本 | 不由 Flutter 前端单独扣减高成本用量 |
-| Content / Scenario | Product + Backend | 官方场景、等级、内容版本、场景包 gating | 不承诺任意场景生成或 CMS 当前落地 |
+| Content / Scenario | Product + Backend | 官方 Scenario/ScenarioVersion/ScenarioLevel；一等 Course/CourseVersion authored 与 published facts；目录可见性投影；后续 CourseContentBinding | 不承诺任意场景生成、通用 CMS 当前落地，且不拥有 practice/training/learning/AI/media 运行时事实 |
 | Training Planner | Backend/domain, with frontend state rendering | session 内 action chain、micro-action、hint、retry、pressure check、planner decision | 不承担 P0.2 跨天长期调度 |
 | Learning Evidence | Backend/domain, frontend cache | 学习证据、掌握/薄弱、复习项、个人素材、summary | LLM 不直接写最终 mastery |
 | AI Gateway | Backend | LLM/ASR/TTS/评分 provider routing、schema validation、fallback、成本观测 | 不暴露 provider keys 给客户端 |
@@ -36,6 +36,7 @@ SWC 级完整拓扑、稳定 `SWC-FLOW-*` 和局部变更参考基准在 `docs/a
 | --- | --- | --- |
 | Bootstrap/routing | `lib/main.dart`, `lib/core/bootstrap/`, `lib/core/routing/` | 继续负责门禁路由和启动状态；生产账号策略由后端/API 契约决定 |
 | Login/onboarding/profile | `lib/pages/login_page.dart`, `onboarding_page.dart`, `profile_page.dart` | 展示和收集用户输入；token、账号删除、测试登录发布 gate 由后端和 release gate 控制 |
+| Content catalog/course detail | target `lib/features/content/`, `lib/application/content/` | 归属 `FE-CONTENT`；只编排已批准 001/002 的目录、Course summary 与 version-pinned detail，复用 `FE-API-CLIENT` 和 `FE-LOCAL-CACHE`；不得复制 DTO/client/cache/version resolver，也不得拥有 practice、training、learning、AI 或 media runtime |
 | Scenario practice main flow | `lib/features/interview/` during migration | 当前主练习流程，归属 `FE-SCENARIO-PRACTICE`；保留面试/onboarding 表达图谱、mastery、wiki、queue、reviewed content、listening/shadowing；物理路径暂为 legacy-compatible，不再把 `interview` 作为新 SWC 语义 |
 | Practice runtime | target `lib/application/practice_runtime/`; migration source `lib/application/scene/` | 归属 `FE-PRACTICE-RUNTIME`；只承载可复用 frontend mechanics：session recovery、voice capture shell、message loop、TTS/playback、hint shell、feedback recorder、practice history recorder；不得拥有表达图谱、最终 mastery、Training source of truth 或 provider facts |
 | Legacy scenario sandbox | `lib/features/scenario/` | 归属 `FE-LEGACY-SCENARIO-SANDBOX`；旧版通用场景 sandbox，legacy / non-main-flow，只允许维护和复用 runtime adapter，禁止新增主流程功能 |
@@ -62,13 +63,37 @@ api layer
 | User / auth session | Backend Identity | 保存短期 token 和展示 profile cache |
 | Subscription / entitlement | Backend Commerce | 展示 entitlement snapshot，发起刷新和购买 |
 | Usage / quota | Backend Usage Control | 展示剩余额度和超限态 |
-| Scenario content | Backend or bundled reviewed assets during transition | 展示已审核内容；缓存内容版本 |
+| Scenario / Course content | `BE-CONTENT-SCENARIO`；后续持久化归属 `DB-IDENTITY-CONTENT` | 展示已审核、已发布且可见的 Scenario/Course 内容；缓存必须以稳定 Course/CourseVersion identity 为键，且不得成为发布、可见性或版本事实源 |
 | Training session | Backend Training source of truth only | 渲染后端当前状态；后端不可用时关闭入口或展示服务不可用 |
 | Learning evidence / mastery | Backend Learning Evidence when synced; local baseline during transition | 只缓存和展示，不直接覆盖最终事实 |
 | Media assets / audio_ref | Backend Media Storage | Flutter 上传录音并保存返回的 media id/audio_ref；不得生成生产 ASR ref |
 | TTS cache metadata | Backend Media Cache | Flutter 只消费可播放 media ref 和 cache status，不读取 cache key |
 | AI provider metrics/evidence | Backend AI Ops | Flutter 不访问；PM/Ops 通过受限 admin API 查看脱敏指标 |
 | Provider raw payload | Backend audit/provider tables | 不保存完整敏感 provider payload |
+
+## Content Catalog And Course Detail Boundary
+
+本节只承接已批准的 `US-CONTENT-001`、`US-CONTENT-002` 及适用 FR。`US-CONTENT-003` 至 `US-CONTENT-012` 仍是 draft compatibility input；不得从本节推导可执行 endpoint、字段、状态、表、provider 或验收。
+
+| Owner | Owns | Forbidden duplicates / runtime facts |
+| --- | --- | --- |
+| `FE-CONTENT` | 目录与详情 UI 编排、稳定 Course/CourseVersion 选择、loading、真实空内容、typed failure 和 last-known display context | 不复制 `FE-API-CLIENT`、generated DTO、`FE-LOCAL-CACHE`、Course repository 或 version resolver；不拥有 session、turn、attempt、progress、evidence、recording、transcript、score 或 provider state |
+| `BE-CONTENT-SCENARIO` | authored/published Scenario、ScenarioVersion、ScenarioLevel、Course、CourseVersion；服务端可见性编排；后续 CourseContentBinding resolution | 不创建第二套 Course store/service；不把 entitlement、practice、training、learning、AI 或 media facts 纳入 Content；不把 `ScenarioLevel` 解释为 Course |
+| `BE-COMMERCE-ENTITLEMENT` | 若可见性规则适用，提供既有 entitlement decision input | 不拥有 Course metadata、CourseVersion 或 Content publication facts；Content 不复制 entitlement truth |
+| `DB-IDENTITY-CONTENT` | 在 Domain Model、migration 和 API contract 后续批准后，承载 Content owner 的 additive persistence | 本轮不定义表；禁止 frontend/direct cross-domain write，禁止持久化 runtime session/progress/evidence/provider facts |
+| Practice / Training / Learning / AI / Media owners | 分别继续拥有 session/turn/attempt、planner、progress/evidence、prompt/provider、recording/transcript/score/media lifecycle | 不复制 Course/CourseVersion authored 或 publication truth；只能消费稳定 Course/version/content reference |
+
+Identity rules：
+- `Course` 是稳定的学习者可见课程单位，`CourseVersion` 是其不可变发布版本；`Course != Scenario`，现有 `ScenarioLevel` 保留其 CEFR/场景轨道语义。
+- 后续 `CourseContentBinding` 把一个 CourseVersion 关联到匹配的 `ScenarioVersion` 与 `ScenarioLevel`。本轮不定义 binding 字段、基数、表或 API schema；这些必须由后续 Domain Model 与 API Contract 决定。
+- 本架构不定义 Course inventory 的数量、标题或时长；真实库存必须来自 owning approved product/content source。已批准 001/002 只授权完整 published/visible collection 与 detail semantics，不授权具体库存，也不承诺 A1-C2 或 A1/C1/C2 覆盖。
+
+Failure and operational rules：
+- catalog 的真实空内容与读取失败必须可区分；published theme 可保留零 Course，不得用伪造内容掩盖空状态。
+- detail 必须精确解析请求的 CourseVersion；不可用时返回 typed failure，不得静默切换 latest 或把 `ScenarioLevel` 当替代版本。
+- 前端缓存只可保留 last-known display context；服务端 publication 与 visibility decision 仍是事实源。
+- 观测传播 request/trace identity、结果类别与匿名化 Course/version reference；不记录 raw authored content、用户音频、transcript 或 provider secret。
+- rollout 使用后续 additive contract/migration 与 feature flag；rollback 关闭新 catalog/detail 读取入口并保留 additive data，不回写或重解释现有 ScenarioLevel/practice/training 数据。
 
 ## AI Runtime Boundary
 - Prompt/schema 由 `docs/ai_runtime/` 定义并经 eval 验证。
@@ -159,6 +184,8 @@ Boundary result for `P0-AI-ARCH-001`: API, domain and security ownership are sep
 ## Cross-Boundary Rules
 - 新 API 必须先更新 `docs/architecture/api_contract.md` 或后续 OpenAPI source。
 - 新持久化事实必须先更新 domain schema 和 migration 计划。
+- Course/CourseVersion 或 CourseContentBinding 的新事实必须由 Content owner 落地，并先完成相应 Domain Model、API Contract 和 migration decision；其他 SWC 只能持稳定 reference。
+- `US-CONTENT-003` 至 `US-CONTENT-012` 在批准后必须先执行 `software_component_architecture.md` 的逐行 impact check；未触发全局评审条件时仅增加对应 Engineering Contract，触发时先完成全局架构评审或 ADR。
 - 新 AI 输出字段必须先更新 prompt/schema/eval。
 - 新付费权益必须先更新 Commerce/Entitlement、UX、QA 和 release gate。
 - 任何跨边界实现必须在 implementation report 中列出 changed files、validation commands、test gaps 和 residual risks。

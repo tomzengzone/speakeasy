@@ -22,7 +22,8 @@ Proposed - Domain Schema Baseline + P0/P0.1/P0.2 Extension。
 | P0 extension | subscription、purchase、entitlement、usage、account deletion、commercial audit、production identity hardening、AI provider operations | In scope |
 | P0.1 extension | training session、training turn、planner decision、action chain step、micro-action、hint state、pressure check、learning evidence hardening | In scope |
 | P0.2 extension | goal profile、diagnostic、backplan、daily plan、autopilot control、notification eligibility、recovery planner、item-level memory、L0-L5 transition、forecast、checkpoint | In scope |
-| Explicit deferred | P1 notebook/评分产品化、richer Course aggregate/CMS、任意场景生成 | Out of scope |
+| Approved Content 001/002 domain | `Course`、`CourseVersion`、`CourseContentBinding` 的一等身份、版本固定读取、发布事实、与既有 Scenario 内容轨道的绑定及 additive persistence contract | In scope |
+| Explicit deferred | P1 notebook/评分产品化、通用 CMS、具体 Course inventory、任意场景生成，以及 `US-CONTENT-003` 至 `US-CONTENT-012` 的运行时领域事实 | Out of scope |
 
 ## Source Inventory
 
@@ -30,6 +31,8 @@ Proposed - Domain Schema Baseline + P0/P0.1/P0.2 Extension。
 | --- | --- | --- |
 | Approved content Story / Vertical Slice | `docs/product/story_map.md` (`US-CONTENT-001` / `VS-CONTENT-001-1`, `US-CONTENT-002` / `VS-CONTENT-002-1`) | 内容主题、课程摘要与课程详情的 approved product behavior |
 | Approved content FR | `docs/product/functional_requirements.md` (`FR-CONTENT-001`, `FR-CONTENT-002`) | CEFR 值域、课程版本一致性、空状态/失败边界与一次性切换约束 |
+| Accepted Content architecture | `docs/architecture/adr/0008-first-class-course-version.md` 及其 PR-001 architecture baseline | `Course != Scenario`、SWC ownership、精确版本解析、binding seam、additive migration 与安全回滚边界 |
+| Content domain model | `docs/domain/content_model.md` | `Course`、`CourseVersion`、`CourseContentBinding` 的专项身份、生命周期、不变量、持久化与后续契约交接 |
 | Product Base requirements | `docs/product/base/requirements.md` | 稳定 FR 和非目标 |
 | Product Base spec | `docs/product/base/spec.md` | 稳定 flow、状态和模块影响 |
 | Product Base acceptance | `docs/product/base/acceptance.md` | 可观察验收边界 |
@@ -54,9 +57,10 @@ Proposed - Domain Schema Baseline + P0/P0.1/P0.2 Extension。
 - 服务端是用户、权益、用量、训练 session、学习证据、账号删除和审计的最终事实源；Flutter 本地状态只能作为展示缓存、离线兜底或会话草稿。
 - LLM、ASR、TTS、评分 provider 只产生候选反馈或信号；最终训练推进、权益判断、用量扣减、学习证据写入和掌握更新必须由 deterministic domain rules 裁决。
 - JSONB 只能作为 provider raw payload 摘要、audit details、低频扩展字段或第三方事件原文索引，不得替代核心领域对象。
-- 每个持久化事实必须能追溯到 Product Base 或 P0/P0.1/P0.2 increment。
+- 每个持久化事实必须能追溯到当前 approved Story/Vertical Slice、适用 approved FR，或其 owning Product Base / P0/P0.1/P0.2 source；Task Plan 示例本身不是 authored content authority。
 - API boundary recommendation 只说明后续 API family 和契约关注点，不定义 request/response shape。
 - 内容适用等级使用独立的 `CefrLevel` 值对象，终态值域严格为 `A1`、`A2`、`B1`、`B2`、`C1`、`C2`；它不改变内部 mastery `L0-L5`，也不改变 HintState 既有 hint `L1-L4`/支架阶梯语义。
+- Course publication 是 Content authored fact；“对当前学习者可见”是服务端读取投影，可消费 Entitlement owner 的 decision input，但不得在 `Course`、`CourseVersion` 或 `CourseContentBinding` 中保存 per-user visibility/entitlement truth。
 
 ## Product Base Accepted Domain
 
@@ -81,11 +85,17 @@ Proposed - Domain Schema Baseline + P0/P0.1/P0.2 Extension。
 | TargetExpression | Content / Learning domain | target_expression_id, scenario_version_id, level_code, text, meaning_cn, tags, usage_note | `level_code` 必须为单个合法 `CefrLevel`，并与所属场景版本中的 ScenarioLevel 轨道一致；表达是练习、收藏、复习、掌握和训练目标的稳定引用 | 需要稳定 ID 和 normalized_text；不得只靠文本匹配；既有等级参与一次性 CEFR migration | Scenario/Training/Learning API 后续引用表达 ID 并只接受 CEFR | 表达 CEFR 一致性、队列、收藏去重、命中目标表达、legacy 值拒绝测试 | Product Base FR-005, FR-006, FR-008；P0.1 P01-FR-003；FR-CONTENT-001 |
 | DialogueAsset | Content / Scenario domain | dialogue_asset_id, scenario_version_id, level_code, role, text, audio_ref, order_index | `level_code` 必须为单个合法 `CefrLevel` 并匹配内容轨道；听力热身和示范输入只引用审核内容；音频缺失需可恢复 | 可作为内容表或 asset manifest；音频引用不得保存 provider secret；若存在持久化 legacy 值必须按同一 cutover 规则迁移 | Scenario content API 后续提供可播放引用并只接受 CEFR | CEFR 内容轨道、播放、切句、循环、音频失败降级测试 | Product Base FR-004；FR-CONTENT-001 |
 
-### Approved Course Concept And Current Implementation Boundary
+### First-Class Course Aggregate And Persistence Contract
 
-`Course` 已由 `VS-CONTENT-001-1`、`VS-CONTENT-002-1`、`FR-CONTENT-001`、`FR-CONTENT-002` 确立为产品概念：同一已发布课程及版本必须具有稳定身份、非空英文标题、非空中文简介、唯一一个 `CefrLevel`、大于零且携带单位的典型完成时长，并在所有入口保持同一版本解析。背景图是可选信息，不属于课程成立条件。
+本节承接 `VS-CONTENT-001-1`、`VS-CONTENT-002-1`、`FR-CONTENT-001`、`FR-CONTENT-002` 与 ADR 0008；专项生命周期、关系、typed failure 和持久化约束见 `docs/domain/content_model.md`。
 
-当前 backend persistence 只有 `Scenario` / `ScenarioVersion` / `ScenarioLevel` 内容轨道，没有可承载上述全部事实的 richer `Course` aggregate。`ScenarioLevel` 继续表示“某一 Scenario 下的单一 CEFR 内容轨道”，不得被重命名或假装成完整 Course，也不得凭空补造 course title、duration、publication version 或 visibility。未来若引入 richer Course aggregate，必须显式关联一个 Scenario、一个版本和唯一一个 `CefrLevel`，并由后续 Architecture/API/Backend contract 决定持久化拓扑；本次不授权创建 Course 表、Course migration 或双写关系。
+| Entity | Owner | 稳定身份与关键字段 | 生命周期 / 不变量 | Persistence / migration implication | API boundary recommendation | Test impact | Traceability note |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Course | Content / Scenario domain；backend `BE-CONTENT-SCENARIO` | `course_id`（稳定 UUID）、`scenario_id`、`slug`、`sort_order`、`created_at` | Course 是学习者可见课程的跨版本身份，且 `Course != Scenario`；每个 Course 恰好属于一个 Scenario；`course_id`、`scenario_id`、`slug` 跨版本稳定，`sort_order` 是 Content-owned 稳定目录顺序；Course 本身不持有 publication 或 per-user visibility truth | `DB-IDENTITY-CONTENT` additive 新增 Course persistence；`scenario_id` 非空 FK，`slug` 唯一且非空，`sort_order >= 0`，同 Scenario 的 sort order 唯一；不重写或双写 Scenario/ScenarioLevel；账号删除不删除 authored Course | 后续 Course catalog/detail API 使用稳定 `course_id`，目录排序由服务端投影；本文不定义 payload | 稳定身份、所属 Scenario、slug/order 唯一性、账号删除隔离 | `VS-CONTENT-001-1`；`FR-CONTENT-001`；ADR 0008 |
+| CourseVersion | Content / Scenario domain；backend `BE-CONTENT-SCENARIO` | `course_version_id`（稳定 UUID）、`course_id`、`version_key`、`title_en`、`summary_zh`、`cefr_level`、`duration_value`、`duration_unit`、`background_asset_ref?`、`publication_status`、`published_at?`、`superseded_at?` | 每个版本恰好属于一个 Course；`version_key` trim 后非空、同 Course 唯一且不从时间/展示文案推导；`draft -> published -> superseded`，其他转换禁止；同 Course 至多一个当前 `published` 版本；发布后 version key、authored snapshot 与 binding 不可变；标题/简介 trim 后非空，CEFR 仅六值，duration 正值且 unit 非空，背景图可空且不阻止发布或读取；发布时绑定的 ScenarioVersion 必须按 Content owner 规则处于可发布读取状态 | additive 版本表；非空 Course FK；`(course_id, version_key)` 唯一并检查 trim 后非空；字段 check；对当前 `published` 状态建立每 Course 至多一个的条件唯一约束；发布事务保留历史版本和稳定 ID，rollback 保留 additive data | 目录只选当前 published 版本；详情必须携带并精确解析 Course/CourseVersion identity，不得替换 latest/其他版本；不可见、未发布、binding 不一致或 bound content unavailable 均为 typed failure | 必填/check、version key、单一当前发布版本、bound content availability、状态转换、发布后不可变、exact-version 无 fallback、可选背景图 | `VS-CONTENT-001-1`、`VS-CONTENT-002-1`；`FR-CONTENT-001`、`FR-CONTENT-002`；ADR 0008 |
+| CourseContentBinding | Content / Scenario domain；backend `BE-CONTENT-SCENARIO` | `course_content_binding_id`（稳定 UUID）、`course_version_id`、`scenario_version_id`、`scenario_level_id`、`created_at` | 每个 CourseVersion 在任一已提交状态恰好一个 binding；binding 的 ScenarioVersion 与 ScenarioLevel 必须和 Course 属于同一 Scenario，且 ScenarioLevel 的 `level_code = target_level = CourseVersion.cefr_level`；CourseVersion 发布时 ScenarioVersion 必须按其 Content owner 规则可发布读取；发布后禁止 rebind；不一致或不可用时 typed failure，不能替换 Course/version/level | additive binding 表；三个非空 FK；`course_version_id` 唯一确保至多一个 binding；CourseVersion + binding 原子创建确保至少一个；基础 FK/unique/index 由 DB 保证，跨行 Scenario/CEFR 与 bound-content availability 由 Content domain 在同一事务校验并交给 Contract-TC 证明 | API 不暴露 binding 为另一套内容身份；由 Content resolver 将 exact CourseVersion 解析为既有 ScenarioVersion + ScenarioLevel stable refs；失败结果需 typed | 恰好一个 binding、同 Scenario/CEFR、bound content unavailable、发布后 rebind 拒绝、引用缺失/不一致 typed failure、事务回滚 | `FR-CONTENT-002`；ADR 0008 |
+
+`ScenarioLevel` 仍唯一表达“一个 Scenario 下的单一 CEFR 内容轨道”，不删除、不重命名、不复制为 Course，也不改变 mastery `L0-L5` 或 hint `L1-L4`。本契约只支持由 owning approved content source 授权的 authored inventory；Task Plan 中的 seed 描述不是内容 source of truth，不在此列出或承诺任何具体 Course 数量、标题、时长或 CEFR 覆盖。初始 authored data 在 PR-005 前必须另有 canonical content authority。
 
 ### Approved Content CEFR Cutover
 
@@ -99,7 +109,7 @@ Proposed - Domain Schema Baseline + P0/P0.1/P0.2 Extension。
 | Current content coverage | 当前 authored assets 只覆盖 `A2`、`B1`、`B2`；`A1`、`C1`、`C2` 必须作为无内容处理，不得回退到邻近等级或 legacy asset。 |
 | Entitlement boundary | Entitlement 只决定某一主题、内容轨道、课程或训练入口是否可访问；它不改变 CEFR 的值或含义，不得把付费层级解释为 CEFR，也不得把一个 CEFR 映射成另一个。 |
 | Namespace isolation | 本切换不修改 mastery `L0-L5`，也不修改 hint `L1-L4` 及其既有支架语义；任何迁移或校验必须按字段/类型定位，禁止全局替换字面量。 |
-| API impact | 所有相关 request、response、path/query 值和 generated client enum 必须使用严格 CEFR；legacy `L1`/`L2`/`L3` 必须得到 typed validation rejection，不能被静默转换。Course catalog/detail contract 仍需单独定义 approved Course 的身份、版本、必备信息、可选背景图和空状态/失败边界。 |
+| API impact | 所有相关 request、response、path/query 值和 generated client enum 必须使用严格 CEFR；legacy `L1`/`L2`/`L3` 必须得到 typed validation rejection，不能被静默转换。后续 Course catalog/detail API Contract 必须消费本文与 `content_model.md` 已定义的身份、版本、必备信息、可选背景图和 typed failure，不得重新定义领域语义。 |
 | Test / Contract-TC impact | 必须证明九类持久化实体完整迁移、重复执行安全、迁移后无 legacy 值、ScenarioLevel 双字段一致、API 拒绝 legacy、A1/C1/C2 真实空状态、A2/B1/B2 可解析、entitlement 不改写等级、mastery/hint 未被误迁移。Contract-TC 与稳定 TC 的新增/更新由其 owning artifact 完成。 |
 
 ### Listening / Shadowing / Scoring
@@ -340,14 +350,16 @@ P0.2-DOM-001 结论：Domain Schema 现在覆盖 P0.2 planned increments（含 F
 
 | Invariant | 说明 |
 | --- | --- |
-| Stable IDs | User、Scenario、ScenarioVersion、TargetExpression、Session、Evidence 必须有稳定 ID，不能只靠展示文本连接。 |
+| Stable IDs | User、Scenario、ScenarioVersion、Course、CourseVersion、CourseContentBinding、TargetExpression、Session、Evidence 必须有稳定 ID，不能只靠展示文本连接。 |
+| Course exact-version integrity | 每个 CourseVersion 恰好属于一个 Course，并通过恰好一个 binding 关联同一 Scenario 的 ScenarioVersion 与 ScenarioLevel；Scenario/CEFR 不一致必须 typed failure，禁止替换其他 Course、version 或 level。 |
+| Content publication and visibility | CourseVersion publication 是 Content fact；当前学习者可见性是服务端读取投影，可消费 entitlement decision，但 Course 聚合不保存 per-user entitlement/visibility truth。 |
 | Source refs | Correction、CoachFeedback、ScoreSignal、LearningEvidence 必须能追溯到 source turn、attempt、review 或 rule trace。 |
 | Client cache boundary | Flutter 可缓存 entitlement、profile、scenario、session draft、learning summary；不得作为权益、用量、最终 evidence 的事实源。 |
 | Payment truth | Purchase、Subscription、EntitlementSnapshot 只能由服务端校验和 provider event 产生或变更。 |
 | Usage truth | UsageLedger 和 UsageReservation 只能由服务端可信边界写入。 |
 | AI truth boundary | AIResultRef 和 LearningEvidenceCandidate 是候选输入；PlannerDecision 和 EvidenceRuleTrace 才能解释最终推进。 |
 | Autopilot control truth | UserAutopilotControl、NotificationEligibilityDecision、RecoveryPlanDecision、MemoryItemPolicyState、MasteryTransitionDecision 和 PlannerReplayAudit 必须由服务端 deterministic rules 写入；Flutter 和 AI 输出不得写最终控制、提醒、复习计划、mastery transition 或 goal completion。 |
-| Deletion boundary | AccountDeletionJob 必须处理用户资料、学习数据、收藏、会话、证据、音频/转写引用；AuditLog 只保留最小脱敏字段。 |
+| Deletion boundary | AccountDeletionJob 必须处理用户资料、学习数据、收藏、会话、证据、音频/转写引用；AuditLog 只保留最小脱敏字段。Course/CourseVersion/binding 是非用户 authored Content，不随账号删除。 |
 | Product boundary | P0.1 不得新增第三官方场景、跨天调度或完整 L0-L5；P0 不得把未实现权益作为付费承诺。 |
 
 ## Persistence And Migration Implications
@@ -355,7 +367,7 @@ P0.2-DOM-001 结论：Domain Schema 现在覆盖 P0.2 planned increments（含 F
 | Domain group | Persistence direction |
 | --- | --- |
 | `identity_*` | User、AuthIdentity、UserProfile、OnboardingAssessment、LearningRoute、AccountLifecycle |
-| `content_*` | Scenario、ScenarioVersion、ScenarioLevel、TargetExpression、DialogueAsset、ActionChainStep |
+| `content_*` | Scenario、ScenarioVersion、ScenarioLevel、Course、CourseVersion、CourseContentBinding、TargetExpression、DialogueAsset、ActionChainStep；Course 三对象由 `BE-CONTENT-SCENARIO` 通过 `DB-IDENTITY-CONTENT` additive persistence 持有 |
 | `training_*` | PracticeSession、DialogueTurn、ListeningWarmup、ShadowingAttempt、TrainingContentMapping、TrainingSession、TrainingTurn、PlannerDecision、HintState、PressureCheck、TrainingRecap |
 | `learning_*` | FavoriteExpression、SavedExpression、LearningEvidence、LearningEvidenceCandidate、EvidenceRuleTrace、MasteryRecord、ReviewItem、SessionSummary、LearningHistoryEntry |
 | `goal_*` | GoalProfile、SupportedGoalMatrixDecision、DiagnosticAssessment、WeeklyBackplan、DailyTrainingPlan、PlanItem、PlannerDecisionAudit、ProgressForecast、OutcomeCheckpoint、UserAutopilotControl、NotificationEligibilityDecision、NotificationOutboxRecord、RecoveryPlanDecision、MemoryItemPolicyState、MasteryTransitionDecision、PlannerReplayAudit、GoalAutopilotMetricEvent |
@@ -372,7 +384,7 @@ P0.2-DOM-001 结论：Domain Schema 现在覆盖 P0.2 planned increments（含 F
 | Domain | 后续 API Contract 输入 |
 | --- | --- |
 | Identity / Onboarding | Auth、User profile、Onboarding、Account deletion family |
-| Scenario / Content | Scenario list/detail/version/CEFR-level/content family；后续 Course catalog/detail contract 需承接稳定 course/version 与必备信息，但当前不假定 Course persistence |
+| Scenario / Content | Scenario list/detail/version/CEFR-level/content family；Course catalog/detail contract 必须承接稳定 Course/CourseVersion、精确版本解析、必备/可选信息、完整 published/visible 投影与 typed failure，并以 `content_model.md` 为领域输入 |
 | Product Base training | Practice or Training session family，需支持 start/resume/turn/complete |
 | Learning memory | Learning evidence、mastery、review、favorites/history family |
 | Commerce / Entitlement | Subscription verify/restore/provider event、Entitlement query/refresh family |
@@ -423,6 +435,7 @@ Owning increment: `docs/product/increments/mvp-backend-membership-boundary/`.
 | --- | --- |
 | Product Base accepted domain | 保持启动门禁、首评、双场景、听力热身、表达队列、收藏、语音会话、学习沉淀、个人中心回归测试。 |
 | Content CEFR cutover | 增加九类实体一次性 migration、CEFR 约束、ScenarioLevel 双字段一致、legacy API 拒绝、A1/C1/C2 空内容、A2/B1/B2 资产、entitlement 语义隔离和 mastery/hint namespace 回归测试。 |
+| Content Course aggregate | 增加 Course/CourseVersion/binding 稳定身份、恰好一个 binding、同 Scenario/CEFR、必备字段、单一当前 published version、发布后不可变、exact-version typed failure、可选背景图、visibility 投影、账号删除隔离和 additive rollback 的 Contract-TC。 |
 | P0 commercial | 增加购买、恢复、无效凭据、退款/过期/撤销、权益刷新、用量额度、账号注销、商业文案一致、release gate 测试。 |
 | P0.1 training | 增加 action chain、micro-action、planner decision、hint ladder、pressure check、ASR fallback、AI schema fallback、learning evidence write-back 测试。 |
 | P0.2 goal autopilot | 增加 goal intake、diagnostic、backplan、daily plan、autopilot control、quiet-hours eligibility、notification outbox、recovery replan、item-level memory、L0-L5 transition、replay audit、forecast、checkpoint、partial/unsupported 降级和 policy gate 测试。 |
@@ -439,7 +452,7 @@ Owning increment: `docs/product/increments/mvp-backend-membership-boundary/`.
 | UX screen spec | 由 UX/Screen Spec 阶段负责。 |
 | QA test case detail / DevOps release workflow | 由 QA / DevOps 阶段负责。 |
 | P1 notebook、评分产品化、更多场景包 | Future stage。 |
-| Richer Course persistence、CMS、内容生产工具 | Approved Course 产品概念已定义；具体 aggregate/table topology 与生产工具仍由后续 Architecture/API/Backend 决定。 |
+| 通用 CMS、内容生产工具、具体 Course inventory | Course aggregate 与 additive persistence contract 已定义；创作/审核后台、具体库存、标题/时长和 CEFR 覆盖仍需各自 owning approved product/content source，Task Plan seed 不是该 source。 |
 | 旧 `E:/ZhenChe/APP/speakeasy_backend` | 不作为当前目标架构依据。 |
 
 ## Downstream Handoff
@@ -448,7 +461,7 @@ Owning increment: `docs/product/increments/mvp-backend-membership-boundary/`.
 
 - 本文实体清单、状态机和事实源边界。
 - `docs/domain/entity_relationship.md` 的 ownership 与 cardinality。
-- approved content CEFR cutover、当前 `ScenarioLevel` 实现边界与 future richer Course aggregate handoff。
+- approved content CEFR cutover、`ScenarioLevel` 保留边界，以及 `content_model.md` 的 Course/CourseVersion/CourseContentBinding exact-version 与 additive persistence contract。
 - `docs/architecture/backend_db_foundation_contract.md` 的 OpenAPI source-of-truth 和 generated Dart client policy。
 - P0/P0.1 traceability 中列出的 contract gaps。
 

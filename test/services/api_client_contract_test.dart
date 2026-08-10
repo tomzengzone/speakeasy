@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:speakeasy/generated/api/speakeasy_api.dart';
+import 'package:speakeasy/services/api_client.dart';
 
 void main() {
   test('generated OpenAPI Dart boundary pins the canonical hash', () {
@@ -18,6 +19,14 @@ void main() {
     ).readAsStringSync().trim();
 
     expect(manifest['mode'], 'generated_client_drift');
+    expect(
+      manifest['generator'],
+      'python scripts/check_openapi_dart_drift.py --write',
+    );
+    expect(manifest['generated_files'], <String>[
+      'lib/generated/api/speakeasy_api.dart',
+      'lib/generated/api/.openapi-sha256',
+    ]);
     expect(SpeakeasyApiContract.openApiSha256, marker);
     expect(manifest['openapi_sha256'], marker);
   });
@@ -34,6 +43,8 @@ void main() {
         '/user/deletion-status',
         '/onboarding/assessment',
         '/scenarios',
+        '/scenarios/{scenario_id}/courses',
+        '/courses/{course_id}/versions/{course_version_id}',
         '/practice/sessions',
         '/expressions/queue',
         '/learning/evidence',
@@ -60,6 +71,215 @@ void main() {
         '/ai/pronunciation',
       ]),
     );
+  });
+
+  test('generated Course paths encode identifiers safely', () {
+    expect(
+      SpeakeasyApiPaths.scenarioCourses('scenario/with space'),
+      '/scenarios/scenario%2Fwith%20space/courses',
+    );
+    expect(
+      SpeakeasyApiPaths.courseVersion('course/1', 'version 2'),
+      '/courses/course%2F1/versions/version%202',
+    );
+  });
+
+  test('generated type registry covers the Course read contract', () {
+    expect(
+      SpeakeasyApiContract.courseSchemaNames,
+      containsAll(<String>[
+        'CourseId',
+        'CourseVersionId',
+        'CourseContentBindingId',
+        'ScenarioVersionId',
+        'ScenarioLevelId',
+        'CourseContentBindingRef',
+        'CourseSummary',
+        'TypicalDuration',
+        'CourseDetail',
+        'CourseListResponse',
+        'CourseDetailResponse',
+      ]),
+    );
+    expect(
+      SpeakeasyApiContract.schemaPropertyTypes['ErrorDetails.retryable'],
+      'bool?',
+    );
+    expect(
+      ErrorCode.tryParse('CONTENT_READ_UNAVAILABLE'),
+      ErrorCode.contentReadUnavailable,
+    );
+    expect(ErrorCode.values.map((ErrorCode code) => code.wireValue), <String>[
+      'UNAUTHENTICATED',
+      'FORBIDDEN',
+      'ENTITLEMENT_REQUIRED',
+      'USAGE_LIMIT_EXCEEDED',
+      'INVALID_RECEIPT',
+      'PRODUCT_MISMATCH',
+      'SUBSCRIPTION_EXPIRED',
+      'IDEMPOTENCY_CONFLICT',
+      'SCHEMA_VALIDATION_FAILED',
+      'PROVIDER_UNAVAILABLE',
+      'CONTENT_READ_UNAVAILABLE',
+      'DELETE_IN_PROGRESS',
+      'RESOURCE_NOT_FOUND',
+      'CONFLICT',
+    ]);
+    expect(ErrorCode.tryParse('content_read_unavailable'), isNull);
+    expect(ErrorCode.tryParse(false), isNull);
+    expect(LevelCode.values.map((LevelCode level) => level.wireValue), <String>[
+      'A1',
+      'A2',
+      'B1',
+      'B2',
+      'C1',
+      'C2',
+    ]);
+  });
+
+  test('generated catalog DTOs decode exact typed identities and CEFR', () {
+    final ScenarioListResponse themes = ScenarioListResponse.fromJson(
+      <String, Object?>{
+        'schema_version': 1,
+        'request_id': 'request-themes',
+        'scenarios': <Object?>[
+          <String, Object?>{
+            'scenario_id': 'job_interview',
+            'title': '求职面试',
+            'summary': '准备常见面试沟通',
+            'levels': <Object?>['A1', 'C2'],
+            'status': 'available',
+            'access': <String, Object?>{'allowed': true},
+          },
+        ],
+      },
+    );
+    final CourseListResponse courses = CourseListResponse.fromJson(
+      <String, Object?>{
+        'schema_version': 1,
+        'request_id': 'request-courses',
+        'scenario_id': 'job_interview',
+        'courses': <Object?>[
+          <String, Object?>{
+            'course_id': '11111111-1111-4111-8111-111111111111',
+            'course_version_id': '22222222-2222-4222-8222-222222222222',
+            'title_en': 'Interview Foundations',
+            'summary_zh': '建立面试表达基础',
+            'level_code': 'C1',
+            'content_binding_ref': <String, Object?>{
+              'course_content_binding_id':
+                  '33333333-3333-4333-8333-333333333333',
+              'scenario_version_id': '44444444-4444-4444-8444-444444444444',
+              'scenario_level_id': '55555555-5555-4555-8555-555555555555',
+            },
+          },
+        ],
+      },
+    );
+
+    expect(themes.scenarios.single.scenarioId, ScenarioId.jobInterview);
+    expect(themes.scenarios.single.levels, <LevelCode>[
+      LevelCode.a1,
+      LevelCode.c2,
+    ]);
+    expect(courses.courses.single.levelCode, LevelCode.c1);
+    expect(
+      courses.courses.single.courseVersionId,
+      '22222222-2222-4222-8222-222222222222',
+    );
+    expect(
+      CourseListResponse.fromJson(<String, Object?>{
+        'schema_version': 1,
+        'request_id': 'uuid-v7',
+        'scenario_id': 'job_interview',
+        'courses': <Object?>[
+          <String, Object?>{
+            'course_id': '018f3f4e-7b5d-7cc0-98c4-d4b4ce52f700',
+            'course_version_id': '018f3f4e-7b5d-8cc0-98c4-d4b4ce52f701',
+            'title_en': 'Modern UUID course',
+            'summary_zh': '接受契约允许的 UUID 版本',
+            'level_code': 'B2',
+            'content_binding_ref': <String, Object?>{
+              'course_content_binding_id':
+                  '018f3f4e-7b5d-6cc0-98c4-d4b4ce52f702',
+              'scenario_version_id': '018f3f4e-7b5d-7cc0-98c4-d4b4ce52f703',
+              'scenario_level_id': '018f3f4e-7b5d-8cc0-98c4-d4b4ce52f704',
+            },
+          },
+        ],
+      }).courses.single.courseId,
+      '018f3f4e-7b5d-7cc0-98c4-d4b4ce52f700',
+    );
+    expect(
+      () => CourseListResponse.fromJson(<String, Object?>{
+        'schema_version': 1,
+        'request_id': 'legacy-level',
+        'scenario_id': 'job_interview',
+        'courses': <Object?>[
+          <String, Object?>{
+            'course_id': '11111111-1111-4111-8111-111111111111',
+            'course_version_id': '22222222-2222-4222-8222-222222222222',
+            'title_en': 'Legacy',
+            'summary_zh': '旧等级不可接受',
+            'level_code': 'L3',
+            'content_binding_ref': <String, Object?>{
+              'course_content_binding_id':
+                  '33333333-3333-4333-8333-333333333333',
+              'scenario_version_id': '44444444-4444-4444-8444-444444444444',
+              'scenario_level_id': '55555555-5555-4555-8555-555555555555',
+            },
+          },
+        ],
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('typed Course catalog adapter owns paths and error semantics', () async {
+    final List<String> requestedPaths = <String>[];
+    final ApiClientCourseCatalogApi api =
+        ApiClientCourseCatalogApi.withTransport((String path) async {
+          requestedPaths.add(path);
+          if (path == SpeakeasyApiPaths.scenarios) {
+            return <String, dynamic>{
+              '_httpStatus': 200,
+              'schema_version': 1,
+              'request_id': 'themes',
+              'scenarios': <Object?>[],
+            };
+          }
+          return <String, dynamic>{
+            '_httpStatus': 503,
+            'error': <String, Object?>{
+              'code': 'CONTENT_READ_UNAVAILABLE',
+              'message': 'temporarily unavailable',
+              'request_id': 'courses',
+              'details': <String, Object?>{'retryable': true},
+            },
+          };
+        });
+
+    expect((await api.listContentThemes()).scenarios, isEmpty);
+    await expectLater(
+      api.listScenarioCourses(ScenarioId.jobInterview),
+      throwsA(
+        isA<ContentApiFailure>()
+            .having(
+              (ContentApiFailure failure) => failure.kind,
+              'kind',
+              ContentApiFailureKind.retryable,
+            )
+            .having(
+              (ContentApiFailure failure) => failure.requestId,
+              'requestId',
+              'courses',
+            ),
+      ),
+    );
+    expect(requestedPaths, <String>[
+      '/scenarios',
+      '/scenarios/job_interview/courses',
+    ]);
   });
 
   test('ApiClient no longer references pre-OpenAPI active MVP paths', () {

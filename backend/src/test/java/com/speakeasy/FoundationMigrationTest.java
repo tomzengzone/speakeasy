@@ -49,6 +49,9 @@ class FoundationMigrationTest {
             "scenarios",
             "scenario_versions",
             "scenario_levels",
+            "content_course",
+            "content_course_version",
+            "content_course_content_binding",
             "target_expressions",
             "subscription_plans",
             "purchases",
@@ -72,6 +75,9 @@ class FoundationMigrationTest {
             "goal_planner_replay_audits",
             "goal_progress_forecasts",
             "goal_outcome_checkpoints");
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM content_course", Long.class)).isZero();
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM content_course_version", Long.class)).isZero();
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM content_course_content_binding", Long.class)).isZero();
   }
 
   @Test
