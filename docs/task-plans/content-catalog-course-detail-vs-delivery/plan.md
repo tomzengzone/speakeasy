@@ -5,7 +5,7 @@ title: Content 全景架构基线与课程目录/详情顺序交付
 status: in_progress
 delivery_target: local
 created_at: 2026-08-07T10:57:42+08:00
-updated_at: 2026-08-10T22:01:57+08:00
+updated_at: 2026-08-10T22:10:10+08:00
 ---
 # Content 全景架构基线与课程目录/详情顺序交付
 
@@ -141,7 +141,15 @@ updated_at: 2026-08-10T22:01:57+08:00
 
 ## Overall Evidence
 
-尚无。只有七个 PR 单元全部完成、各自获得用户验收、整体命令通过且用户确认任务验收后填写。
+- PR-001 至 PR-007 全部完成并分别获得用户验收；PR-007 implementation commit 为
+  `5692899e6f6d563e96ff749075b497425a4dc9f6`，远程交付位于 draft PR
+  [#9](https://github.com/tomzengzone/speakeasy/pull/9)。
+- 最终 Flutter 全量 295/295、PR-007 目标测试、相关 Spring Course/Scenario 19/19、OpenAPI、Dart drift、
+  Story/Slice、文档语言、静态检查和独立 quality/QA/DevOps 本地门通过。
+- 已记录且局限于范围外/环境的偏差：全量 Maven 308 项有 3 项非 Content 失败；当前主机无适用产品设备
+  执行 canonical integration test；PowerShell 下 npm 聚合脚本使用 POSIX env 语法，但等价子 gate 全通过。
+- 未执行 merge、生产 migration、部署或 release；生产 rollout 继续受 PR-007 卡片列明的 artifact、正式内容
+  库存、观测阈值与 staged cohort 前提阻断。
 
 ## Current Summary
 
@@ -149,9 +157,10 @@ PR-001 至 PR-006 均已完成并获用户验收；架构、领域、API/Contrac
 课程目录已顺序交付。PR-007 revision 2 已获批准并完成本地实现：exact-detail generated DTO/API seam、
 版本固定详情、全 identity 防替换、错误恢复、可访问性、入口回退和脱敏观测均已落地。目标与全量
 Flutter、相关 Spring Course/Scenario、API/治理 gates 已通过；独立 code quality 为 APPROVE，DevOps 本地
-实现门为 PASS。全量 Maven 的 3 个范围外失败、无产品设备的 canonical integration 命令和未生成 exact
-commit 均已在 PR 卡片如实记录；生产 rollout 保持 BLOCKED，未执行 commit、push、部署或 release。
+实现门为 PASS。用户已验收 revision 2，PR-007 implementation commit 已绑定 draft PR #9。全量 Maven
+的 3 个范围外失败和无产品设备的 canonical integration 命令已在 PR 卡片如实记录；生产 rollout 保持
+BLOCKED，未执行 merge、部署或 release。
 
 ## Next Approval Required
 
-等待用户验收 PR-007 revision 2。验收后仍不得自动完成总任务；必须再请求用户确认整体任务验收。
+七个 PR 单元均已完成并获验收；等待用户单独确认整体任务验收。确认前 task 保持 `in_progress`。
