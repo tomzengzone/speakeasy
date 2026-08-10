@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'package:speakeasy/config/app_config.dart';
 import 'package:speakeasy/generated/api/speakeasy_api.dart';
 import 'package:speakeasy/services/api_client.dart';
+
+import 'course_detail_page.dart';
 
 typedef CourseSummarySelection =
     void Function(String courseId, String courseVersionId);
@@ -14,11 +17,15 @@ class ContentCatalogPage extends StatefulWidget {
     required this.api,
     required this.onReauthenticate,
     this.onCourseSelected,
+    this.enableCourseDetail,
+    this.detailObserver = logCourseDetailObservation,
   });
 
   final CourseCatalogApi api;
   final Future<void> Function() onReauthenticate;
   final CourseSummarySelection? onCourseSelected;
+  final bool? enableCourseDetail;
+  final CourseDetailObserver detailObserver;
 
   @override
   State<ContentCatalogPage> createState() => _ContentCatalogPageState();
@@ -89,6 +96,9 @@ class _ContentCatalogPageState extends State<ContentCatalogPage> {
           theme: theme,
           onReauthenticate: widget.onReauthenticate,
           onCourseSelected: widget.onCourseSelected,
+          enableCourseDetail:
+              widget.enableCourseDetail ?? AppConfig.enableContentCourseDetail,
+          detailObserver: widget.detailObserver,
         ),
       ),
     );
@@ -231,12 +241,16 @@ class ScenarioCourseListPage extends StatefulWidget {
     required this.api,
     required this.theme,
     required this.onReauthenticate,
+    required this.enableCourseDetail,
+    required this.detailObserver,
     this.onCourseSelected,
   });
 
   final CourseCatalogApi api;
   final ScenarioSummary theme;
   final Future<void> Function() onReauthenticate;
+  final bool enableCourseDetail;
+  final CourseDetailObserver detailObserver;
   final CourseSummarySelection? onCourseSelected;
 
   @override
@@ -247,6 +261,7 @@ class _ScenarioCourseListPageState extends State<ScenarioCourseListPage> {
   final FocusNode _courseRegionFocusNode = FocusNode(
     debugLabel: 'course list updated region',
   );
+  final Map<String, FocusNode> _courseCardFocusNodes = <String, FocusNode>{};
   List<CourseSummary>? _courses;
   ContentApiFailure? _failure;
   bool _loading = false;
@@ -260,7 +275,21 @@ class _ScenarioCourseListPageState extends State<ScenarioCourseListPage> {
   @override
   void dispose() {
     _courseRegionFocusNode.dispose();
+    for (final FocusNode focusNode in _courseCardFocusNodes.values) {
+      focusNode.dispose();
+    }
     super.dispose();
+  }
+
+  String _courseKey(CourseSummary course) =>
+      '${course.courseId}:${course.courseVersionId}';
+
+  FocusNode _courseFocusNode(CourseSummary course) {
+    final String key = _courseKey(course);
+    return _courseCardFocusNodes.putIfAbsent(
+      key,
+      () => FocusNode(debugLabel: 'course card $key'),
+    );
   }
 
   Future<void> _retry() async {
@@ -304,6 +333,28 @@ class _ScenarioCourseListPageState extends State<ScenarioCourseListPage> {
           _courses = null;
         }
       });
+    }
+  }
+
+  Future<void> _openCourse(CourseSummary course) async {
+    final FocusNode courseFocusNode = _courseFocusNode(course);
+    final CourseSummarySelection? onCourseSelected = widget.onCourseSelected;
+    if (onCourseSelected != null) {
+      onCourseSelected(course.courseId, course.courseVersionId);
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => CourseDetailPage(
+          api: widget.api,
+          sourceCourse: course,
+          onReauthenticate: widget.onReauthenticate,
+          observer: widget.detailObserver,
+        ),
+      ),
+    );
+    if (mounted) {
+      courseFocusNode.requestFocus();
     }
   }
 
@@ -412,12 +463,10 @@ class _ScenarioCourseListPageState extends State<ScenarioCourseListPage> {
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
                     key: const ValueKey<String>('course_card'),
-                    onTap: widget.onCourseSelected == null
-                        ? null
-                        : () => widget.onCourseSelected!(
-                            course.courseId,
-                            course.courseVersionId,
-                          ),
+                    focusNode: _courseFocusNode(course),
+                    onTap: widget.enableCourseDetail
+                        ? () => unawaited(_openCourse(course))
+                        : null,
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(

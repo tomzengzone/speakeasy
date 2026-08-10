@@ -190,42 +190,66 @@ void main() {
     );
   });
 
-  testWidgets('production AppRoot and Home preserve typed catalog wiring', (
-    WidgetTester tester,
-  ) async {
-    final AppSession session = (await tester.runAsync(_onboardedSession))!;
-    final AudioService audioService = AudioService();
-    addTearDown(session.dispose);
+  testWidgets(
+    'production AppRoot traverses Home, catalog, and exact Course detail',
+    (WidgetTester tester) async {
+      final AppSession session = (await tester.runAsync(_onboardedSession))!;
+      final AudioService audioService = AudioService();
+      addTearDown(session.dispose);
 
-    await tester.pumpWidget(
-      SpeakEasyAppRoot(
-        session: session,
-        audioService: audioService,
-        courseCatalogApi: _FakeCourseCatalogApi(),
-      ),
-    );
-    await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpWidget(
+        SpeakEasyAppRoot(
+          session: session,
+          audioService: audioService,
+          courseCatalogApi: _FakeCourseCatalogApi(),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
 
-    final Finder entry = find.byKey(
-      const ValueKey<String>('content_asset_entry'),
-    );
-    expect(entry, findsOneWidget);
-    await tester.tap(entry);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(
-      find.byKey(const ValueKey<String>('content_theme_catalog')),
-      findsOneWidget,
-    );
+      final Finder entry = find.byKey(
+        const ValueKey<String>('content_asset_entry'),
+      );
+      expect(entry, findsOneWidget);
+      await tester.tap(entry);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(
+        find.byKey(const ValueKey<String>('content_theme_catalog')),
+        findsOneWidget,
+      );
 
-    await tester.tap(
-      find.byKey(const ValueKey<String>('theme_card:job_interview')),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('Interview Foundations'), findsOneWidget);
-    expect(find.text('A1'), findsOneWidget);
-  });
+      await tester.tap(
+        find.byKey(const ValueKey<String>('theme_card:job_interview')),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(
+        find.byKey(const ValueKey<String>('course_summary_title_en')),
+        findsNWidgets(2),
+      );
+      expect(find.text('A1'), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>(
+            'course_summary_card:11111111-1111-4111-8111-111111111111:'
+            '21111111-1111-4111-8111-111111111111',
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(
+        find.byKey(const ValueKey<String>('course_detail_header')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('course_detail_title_en')),
+        findsOneWidget,
+      );
+      expect(find.text('45 minutes'), findsOneWidget);
+    },
+  );
 }
 
 Widget _catalogApp(
@@ -306,6 +330,38 @@ class _FakeCourseCatalogApi implements CourseCatalogApi {
             ],
     );
   }
+
+  @override
+  Future<CourseDetailResponse> getCourseVersionDetail(
+    String courseId,
+    String courseVersionId,
+  ) async {
+    if (courseId != '11111111-1111-4111-8111-111111111111' ||
+        courseVersionId != '21111111-1111-4111-8111-111111111111') {
+      throw const ContentApiFailure(
+        kind: ContentApiFailureKind.notFound,
+        message: 'not found',
+        requestId: 'detail-not-found',
+      );
+    }
+    return const CourseDetailResponse(
+      schemaVersion: 1,
+      requestId: 'detail',
+      course: CourseDetail(
+        courseId: '11111111-1111-4111-8111-111111111111',
+        courseVersionId: '21111111-1111-4111-8111-111111111111',
+        titleEn: 'Interview Foundations',
+        summaryZh: '建立面试表达基础',
+        levelCode: LevelCode.a1,
+        contentBindingRef: CourseContentBindingRef(
+          courseContentBindingId: '33333333-3333-4333-8333-333333333333',
+          scenarioVersionId: '44444444-4444-4444-8444-444444444444',
+          scenarioLevelId: '55555555-5555-4555-8555-555555555555',
+        ),
+        typicalDuration: TypicalDuration(value: 45, unit: 'minutes'),
+      ),
+    );
+  }
 }
 
 class _LockedCatalogApi implements CourseCatalogApi {
@@ -339,6 +395,14 @@ class _LockedCatalogApi implements CourseCatalogApi {
       scenarioId: scenarioId,
       courses: const <CourseSummary>[],
     );
+  }
+
+  @override
+  Future<CourseDetailResponse> getCourseVersionDetail(
+    String courseId,
+    String courseVersionId,
+  ) {
+    throw UnimplementedError('Locked themes cannot open Course detail');
   }
 }
 

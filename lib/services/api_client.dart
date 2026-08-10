@@ -39,6 +39,11 @@ abstract interface class CourseCatalogApi {
   Future<ScenarioListResponse> listContentThemes();
 
   Future<CourseListResponse> listScenarioCourses(ScenarioId scenarioId);
+
+  Future<CourseDetailResponse> getCourseVersionDetail(
+    String courseId,
+    String courseVersionId,
+  );
 }
 
 class ApiClientCourseCatalogApi implements CourseCatalogApi {
@@ -62,6 +67,18 @@ class ApiClientCourseCatalogApi implements CourseCatalogApi {
     return ApiClient._readContent(
       SpeakeasyApiPaths.scenarioCourses(scenarioId.wireValue),
       CourseListResponse.fromJson,
+      transport: _get,
+    );
+  }
+
+  @override
+  Future<CourseDetailResponse> getCourseVersionDetail(
+    String courseId,
+    String courseVersionId,
+  ) {
+    return ApiClient._readContent(
+      SpeakeasyApiPaths.courseVersion(courseId, courseVersionId),
+      CourseDetailResponse.fromJson,
       transport: _get,
     );
   }

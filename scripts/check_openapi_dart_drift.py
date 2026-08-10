@@ -144,6 +144,10 @@ def require_catalog_contract(spec):
             "required": {"schema_version", "request_id", "scenario_id", "courses"},
             "properties": {"schema_version", "request_id", "scenario_id", "courses"},
         },
+        "CourseDetailResponse": {
+            "required": {"schema_version", "request_id", "course"},
+            "properties": {"schema_version", "request_id", "course"},
+        },
         "CourseSummary": {
             "required": {
                 "course_id",
@@ -165,6 +169,10 @@ def require_catalog_contract(spec):
         "CourseContentBindingRef": {
             "required": {"course_content_binding_id", "scenario_version_id", "scenario_level_id"},
             "properties": {"course_content_binding_id", "scenario_version_id", "scenario_level_id"},
+        },
+        "TypicalDuration": {
+            "required": {"value", "unit"},
+            "properties": {"value", "unit"},
         },
         "ErrorResponse": {
             "required": {"error"},
@@ -204,6 +212,7 @@ def require_catalog_contract(spec):
         ("ScenarioSummary", "access", None): "#/components/schemas/AccessState",
         ("CourseListResponse", "courses", "items"): "#/components/schemas/CourseSummary",
         ("CourseListResponse", "scenario_id", None): "#/components/schemas/ScenarioId",
+        ("CourseDetailResponse", "course", None): "#/components/schemas/CourseDetail",
         ("CourseSummary", "course_id", None): "#/components/schemas/CourseId",
         ("CourseSummary", "course_version_id", None): "#/components/schemas/CourseVersionId",
         ("CourseSummary", "level_code", None): "#/components/schemas/LevelCode",
@@ -227,6 +236,29 @@ def require_catalog_contract(spec):
         schema = schemas.get(schema_name) or {}
         if schema.get("type") != "string" or schema.get("format") != "uuid":
             errors.append(f"{schema_name} must remain a string with format uuid")
+
+    course_detail = schemas.get("CourseDetail") or {}
+    course_detail_parts = course_detail.get("allOf") or []
+    if len(course_detail_parts) != 2 or course_detail_parts[0].get("$ref") != "#/components/schemas/CourseSummary":
+        errors.append("CourseDetail must extend CourseSummary through allOf")
+    else:
+        detail_extension = course_detail_parts[1]
+        detail_required = set(detail_extension.get("required") or [])
+        detail_properties = set((detail_extension.get("properties") or {}).keys())
+        if detail_required != {"typical_duration"}:
+            errors.append(f"CourseDetail.required changed: {sorted(detail_required)}")
+        if detail_properties != {"typical_duration", "background_asset_ref"}:
+            errors.append(f"CourseDetail.properties changed: {sorted(detail_properties)}")
+        duration_ref = ((detail_extension.get("properties") or {}).get("typical_duration") or {}).get("$ref")
+        if duration_ref != "#/components/schemas/TypicalDuration":
+            errors.append(f"CourseDetail.typical_duration ref changed: {duration_ref}")
+        background = (detail_extension.get("properties") or {}).get("background_asset_ref") or {}
+        if background.get("type") != "string" or background.get("nullable") is not True:
+            errors.append("CourseDetail.background_asset_ref must remain a nullable string")
+
+    duration_value = (((schemas.get("TypicalDuration") or {}).get("properties") or {}).get("value") or {})
+    if duration_value.get("type") != "number" or duration_value.get("exclusiveMinimum") is not True:
+        errors.append("TypicalDuration.value must remain a positive number")
     return errors
 
 
@@ -329,6 +361,25 @@ def generated_catalog_section():
           final Object? value = json[field];
           if (value is! String) {
             throw FormatException('$field must be a string when present');
+          }
+          return value;
+        }
+
+        String? _catalogNullableString(Map<String, Object?> json, String field) {
+          final Object? value = json[field];
+          if (value == null) {
+            return null;
+          }
+          if (value is! String) {
+            throw FormatException('$field must be a string or null');
+          }
+          return value;
+        }
+
+        num _catalogPositiveNumber(Map<String, Object?> json, String field) {
+          final Object? value = json[field];
+          if (value is! num || value <= 0) {
+            throw FormatException('$field must be a positive number');
           }
           return value;
         }
@@ -599,6 +650,73 @@ def generated_catalog_section():
               courses: List<CourseSummary>.unmodifiable(
                 _catalogList(json, 'courses').map(CourseSummary.fromJson),
               ),
+            );
+          }
+        }
+
+        class TypicalDuration {
+          const TypicalDuration({required this.value, required this.unit});
+
+          final num value;
+          final String unit;
+
+          factory TypicalDuration.fromJson(Object? value) {
+            final Map<String, Object?> json = _catalogMap(value, 'typical_duration');
+            return TypicalDuration(
+              value: _catalogPositiveNumber(json, 'value'),
+              unit: _catalogString(json, 'unit', nonEmpty: true),
+            );
+          }
+        }
+
+        class CourseDetail extends CourseSummary {
+          const CourseDetail({
+            required super.courseId,
+            required super.courseVersionId,
+            required super.titleEn,
+            required super.summaryZh,
+            required super.levelCode,
+            required super.contentBindingRef,
+            required this.typicalDuration,
+            this.backgroundAssetRef,
+          });
+
+          final TypicalDuration typicalDuration;
+          final String? backgroundAssetRef;
+
+          factory CourseDetail.fromJson(Object? value) {
+            final Map<String, Object?> json = _catalogMap(value, 'course');
+            final CourseSummary summary = CourseSummary.fromJson(json);
+            return CourseDetail(
+              courseId: summary.courseId,
+              courseVersionId: summary.courseVersionId,
+              titleEn: summary.titleEn,
+              summaryZh: summary.summaryZh,
+              levelCode: summary.levelCode,
+              contentBindingRef: summary.contentBindingRef,
+              typicalDuration: TypicalDuration.fromJson(json['typical_duration']),
+              backgroundAssetRef: _catalogNullableString(json, 'background_asset_ref'),
+            );
+          }
+        }
+
+        class CourseDetailResponse {
+          const CourseDetailResponse({
+            required this.schemaVersion,
+            required this.requestId,
+            required this.course,
+          });
+
+          final int schemaVersion;
+          final String requestId;
+          final CourseDetail course;
+
+          factory CourseDetailResponse.fromJson(Object? value) {
+            final Map<String, Object?> json = _catalogMap(value, 'response');
+            return CourseDetailResponse(
+              schemaVersion: _catalogSchemaVersion(json),
+              requestId: _catalogString(json, 'request_id'),
+              course: CourseDetail.fromJson(json['course']),
             );
           }
         }

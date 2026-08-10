@@ -5,7 +5,7 @@ title: Content 全景架构基线与课程目录/详情顺序交付
 status: in_progress
 delivery_target: local
 created_at: 2026-08-07T10:57:42+08:00
-updated_at: 2026-08-10T14:51:09+08:00
+updated_at: 2026-08-10T22:01:57+08:00
 ---
 # Content 全景架构基线与课程目录/详情顺序交付
 
@@ -145,17 +145,13 @@ updated_at: 2026-08-10T14:51:09+08:00
 
 ## Current Summary
 
-已基于 approved Content 001/002、现有 draft Content 003–012 和当前领域/API/Flutter/Spring 缺口建立
-七个严格顺序 PR 单元。PR-001 revision 2 已增加 003–012 逐 US Architecture Coverage
-Matrix 交付门；创建基线 branch/HEAD 与既有脏工作树已记录。PR-001 revision 2 的六个架构产物、
-确定性验证和独立软件架构治理检查均已完成并通过，用户已明确验收；PR-001 已记录为 completed。
-PR-002、PR-003 与 PR-004 均已完成并获用户验收。PR-005 revision 5 已完成 schema-only migration、
-test-only Course fixture、Spring/JPA 读取、Commerce typed visibility、共享 request ID、private ETag、
-内部 outcome、canonical slug、固定数量集合查询及 TC001..010 oracle；生产 Course inventory 为空。
-Course 14/14、migration 4 passed/1 environment skip、CEFR/Scenario 34/34，最终 backend 308 项为
-304 passed、3 个既有范围外失败、1 skip。最终 G-SWC、G-TEST 与 code-quality 全部通过；PR-005 等待用户
-验收。PR-006 与 PR-007 仍为 planned 且未获得执行授权。
+PR-001 至 PR-006 均已完成并获用户验收；架构、领域、API/Contract、UX、Spring/Flyway 读取和 Flutter
+课程目录已顺序交付。PR-007 revision 2 已获批准并完成本地实现：exact-detail generated DTO/API seam、
+版本固定详情、全 identity 防替换、错误恢复、可访问性、入口回退和脱敏观测均已落地。目标与全量
+Flutter、相关 Spring Course/Scenario、API/治理 gates 已通过；独立 code quality 为 APPROVE，DevOps 本地
+实现门为 PASS。全量 Maven 的 3 个范围外失败、无产品设备的 canonical integration 命令和未生成 exact
+commit 均已在 PR 卡片如实记录；生产 rollout 保持 BLOCKED，未执行 commit、push、部署或 release。
 
 ## Next Approval Required
 
-等待用户验收 PR-005 revision 5；不得自动启动 PR-006。
+等待用户验收 PR-007 revision 2。验收后仍不得自动完成总任务；必须再请求用户确认整体任务验收。

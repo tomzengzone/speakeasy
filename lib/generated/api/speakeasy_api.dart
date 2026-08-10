@@ -159,6 +159,25 @@ String? _catalogOptionalString(Map<String, Object?> json, String field) {
   return value;
 }
 
+String? _catalogNullableString(Map<String, Object?> json, String field) {
+  final Object? value = json[field];
+  if (value == null) {
+    return null;
+  }
+  if (value is! String) {
+    throw FormatException('$field must be a string or null');
+  }
+  return value;
+}
+
+num _catalogPositiveNumber(Map<String, Object?> json, String field) {
+  final Object? value = json[field];
+  if (value is! num || value <= 0) {
+    throw FormatException('$field must be a positive number');
+  }
+  return value;
+}
+
 bool _catalogBool(Map<String, Object?> json, String field) {
   final Object? value = json[field];
   if (value is! bool) {
@@ -425,6 +444,73 @@ class CourseListResponse {
       courses: List<CourseSummary>.unmodifiable(
         _catalogList(json, 'courses').map(CourseSummary.fromJson),
       ),
+    );
+  }
+}
+
+class TypicalDuration {
+  const TypicalDuration({required this.value, required this.unit});
+
+  final num value;
+  final String unit;
+
+  factory TypicalDuration.fromJson(Object? value) {
+    final Map<String, Object?> json = _catalogMap(value, 'typical_duration');
+    return TypicalDuration(
+      value: _catalogPositiveNumber(json, 'value'),
+      unit: _catalogString(json, 'unit', nonEmpty: true),
+    );
+  }
+}
+
+class CourseDetail extends CourseSummary {
+  const CourseDetail({
+    required super.courseId,
+    required super.courseVersionId,
+    required super.titleEn,
+    required super.summaryZh,
+    required super.levelCode,
+    required super.contentBindingRef,
+    required this.typicalDuration,
+    this.backgroundAssetRef,
+  });
+
+  final TypicalDuration typicalDuration;
+  final String? backgroundAssetRef;
+
+  factory CourseDetail.fromJson(Object? value) {
+    final Map<String, Object?> json = _catalogMap(value, 'course');
+    final CourseSummary summary = CourseSummary.fromJson(json);
+    return CourseDetail(
+      courseId: summary.courseId,
+      courseVersionId: summary.courseVersionId,
+      titleEn: summary.titleEn,
+      summaryZh: summary.summaryZh,
+      levelCode: summary.levelCode,
+      contentBindingRef: summary.contentBindingRef,
+      typicalDuration: TypicalDuration.fromJson(json['typical_duration']),
+      backgroundAssetRef: _catalogNullableString(json, 'background_asset_ref'),
+    );
+  }
+}
+
+class CourseDetailResponse {
+  const CourseDetailResponse({
+    required this.schemaVersion,
+    required this.requestId,
+    required this.course,
+  });
+
+  final int schemaVersion;
+  final String requestId;
+  final CourseDetail course;
+
+  factory CourseDetailResponse.fromJson(Object? value) {
+    final Map<String, Object?> json = _catalogMap(value, 'response');
+    return CourseDetailResponse(
+      schemaVersion: _catalogSchemaVersion(json),
+      requestId: _catalogString(json, 'request_id'),
+      course: CourseDetail.fromJson(json['course']),
     );
   }
 }

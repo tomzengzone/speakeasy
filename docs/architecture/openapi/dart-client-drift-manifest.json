@@ -8,7 +8,7 @@
     "lib/generated/api/.openapi-sha256"
   ],
   "openapi_sha256": "dedd35a32a86c5e5a2b6a6c28cc167a1eb9c2e1accfaf861f7401de6efe3a49b",
-  "status": "Generated Dart OpenAPI boundary is committed under lib/generated/api with path constants, typed enums, and strict Scenario/Course catalog and error DTO decoders. The catalog DTO section is reproducibly generated and drift-checked by the project-local script, while the whole boundary remains pinned by .openapi-sha256. Active MVP backend calls must use generated path constants or be listed as explicit handwritten client exceptions.",
+  "status": "Generated Dart OpenAPI boundary is committed under lib/generated/api with path constants, typed enums, and strict Scenario/Course catalog, exact Course detail, and error DTO decoders. The catalog/detail DTO section is reproducibly generated and drift-checked by the project-local script, while the whole boundary remains pinned by .openapi-sha256. Active MVP backend calls must use generated path constants or be listed as explicit handwritten client exceptions.",
   "handwritten_client_exceptions": {
     "/user/stats": "Legacy local learning-stats sync retained until frontend migrates to learning history/report APIs.",
     "/user/stats/session": "Legacy local learning-stats sync retained until frontend migrates practice completion to /practice and /learning evidence APIs.",

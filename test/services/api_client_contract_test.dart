@@ -233,6 +233,75 @@ void main() {
       }),
       throwsFormatException,
     );
+
+    final CourseDetailResponse detail = CourseDetailResponse.fromJson(
+      <String, Object?>{
+        'schema_version': 1,
+        'request_id': 'request-detail',
+        'course': <String, Object?>{
+          'course_id': '11111111-1111-4111-8111-111111111111',
+          'course_version_id': '22222222-2222-4222-8222-222222222222',
+          'title_en': 'Interview Foundations',
+          'summary_zh': '建立面试表达基础',
+          'level_code': 'A2',
+          'content_binding_ref': <String, Object?>{
+            'course_content_binding_id': '33333333-3333-4333-8333-333333333333',
+            'scenario_version_id': '44444444-4444-4444-8444-444444444444',
+            'scenario_level_id': '55555555-5555-4555-8555-555555555555',
+          },
+          'typical_duration': <String, Object?>{'value': 45, 'unit': 'minutes'},
+          'background_asset_ref': null,
+        },
+      },
+    );
+    expect(detail.course.courseId, '11111111-1111-4111-8111-111111111111');
+    expect(
+      detail.course.courseVersionId,
+      '22222222-2222-4222-8222-222222222222',
+    );
+    expect(detail.course.typicalDuration.value, 45);
+    expect(detail.course.typicalDuration.unit, 'minutes');
+    expect(detail.course.backgroundAssetRef, isNull);
+    expect(
+      () => CourseDetailResponse.fromJson(<String, Object?>{
+        'schema_version': 1,
+        'request_id': 'invalid-duration',
+        'course': <String, Object?>{
+          'course_id': '11111111-1111-4111-8111-111111111111',
+          'course_version_id': '22222222-2222-4222-8222-222222222222',
+          'title_en': 'Interview Foundations',
+          'summary_zh': '建立面试表达基础',
+          'level_code': 'A2',
+          'content_binding_ref': <String, Object?>{
+            'course_content_binding_id': '33333333-3333-4333-8333-333333333333',
+            'scenario_version_id': '44444444-4444-4444-8444-444444444444',
+            'scenario_level_id': '55555555-5555-4555-8555-555555555555',
+          },
+          'typical_duration': <String, Object?>{'value': 0, 'unit': 'minutes'},
+        },
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => CourseDetailResponse.fromJson(<String, Object?>{
+        'schema_version': 1,
+        'request_id': 'invalid-duration-unit',
+        'course': <String, Object?>{
+          'course_id': '11111111-1111-4111-8111-111111111111',
+          'course_version_id': '22222222-2222-4222-8222-222222222222',
+          'title_en': 'Interview Foundations',
+          'summary_zh': '建立面试表达基础',
+          'level_code': 'A2',
+          'content_binding_ref': <String, Object?>{
+            'course_content_binding_id': '33333333-3333-4333-8333-333333333333',
+            'scenario_version_id': '44444444-4444-4444-8444-444444444444',
+            'scenario_level_id': '55555555-5555-4555-8555-555555555555',
+          },
+          'typical_duration': <String, Object?>{'value': 45, 'unit': '   '},
+        },
+      }),
+      throwsFormatException,
+    );
   });
 
   test('typed Course catalog adapter owns paths and error semantics', () async {
@@ -248,6 +317,35 @@ void main() {
               'scenarios': <Object?>[],
             };
           }
+          if (path ==
+              SpeakeasyApiPaths.courseVersion(
+                '11111111-1111-4111-8111-111111111111',
+                '22222222-2222-4222-8222-222222222222',
+              )) {
+            return <String, dynamic>{
+              '_httpStatus': 200,
+              'schema_version': 1,
+              'request_id': 'detail',
+              'course': <String, Object?>{
+                'course_id': '11111111-1111-4111-8111-111111111111',
+                'course_version_id': '22222222-2222-4222-8222-222222222222',
+                'title_en': 'Interview Foundations',
+                'summary_zh': '建立面试表达基础',
+                'level_code': 'A2',
+                'content_binding_ref': <String, Object?>{
+                  'course_content_binding_id':
+                      '33333333-3333-4333-8333-333333333333',
+                  'scenario_version_id': '44444444-4444-4444-8444-444444444444',
+                  'scenario_level_id': '55555555-5555-4555-8555-555555555555',
+                },
+                'typical_duration': <String, Object?>{
+                  'value': 45,
+                  'unit': 'minutes',
+                },
+                'background_asset_ref': null,
+              },
+            };
+          }
           return <String, dynamic>{
             '_httpStatus': 503,
             'error': <String, Object?>{
@@ -260,6 +358,11 @@ void main() {
         });
 
     expect((await api.listContentThemes()).scenarios, isEmpty);
+    final CourseDetailResponse detail = await api.getCourseVersionDetail(
+      '11111111-1111-4111-8111-111111111111',
+      '22222222-2222-4222-8222-222222222222',
+    );
+    expect(detail.course.titleEn, 'Interview Foundations');
     await expectLater(
       api.listScenarioCourses(ScenarioId.jobInterview),
       throwsA(
@@ -278,8 +381,88 @@ void main() {
     );
     expect(requestedPaths, <String>[
       '/scenarios',
+      '/courses/11111111-1111-4111-8111-111111111111/versions/22222222-2222-4222-8222-222222222222',
       '/scenarios/job_interview/courses',
     ]);
+  });
+
+  test('exact Course detail maps typed 401, 404, and 503 failures', () async {
+    const String detailPath =
+        '/courses/11111111-1111-4111-8111-111111111111/versions/'
+        '22222222-2222-4222-8222-222222222222';
+    const List<
+      ({
+        int status,
+        String code,
+        bool retryable,
+        ContentApiFailureKind expectedKind,
+      })
+    >
+    cases =
+        <
+          ({
+            int status,
+            String code,
+            bool retryable,
+            ContentApiFailureKind expectedKind,
+          })
+        >[
+          (
+            status: 401,
+            code: 'UNAUTHENTICATED',
+            retryable: false,
+            expectedKind: ContentApiFailureKind.unauthenticated,
+          ),
+          (
+            status: 404,
+            code: 'RESOURCE_NOT_FOUND',
+            retryable: false,
+            expectedKind: ContentApiFailureKind.notFound,
+          ),
+          (
+            status: 503,
+            code: 'CONTENT_READ_UNAVAILABLE',
+            retryable: true,
+            expectedKind: ContentApiFailureKind.retryable,
+          ),
+        ];
+
+    for (final testCase in cases) {
+      final String requestId = 'detail-${testCase.status}';
+      final ApiClientCourseCatalogApi api =
+          ApiClientCourseCatalogApi.withTransport((String path) async {
+            expect(path, detailPath);
+            return <String, dynamic>{
+              '_httpStatus': testCase.status,
+              'error': <String, Object?>{
+                'code': testCase.code,
+                'message': 'typed detail failure',
+                'request_id': requestId,
+                'details': <String, Object?>{'retryable': testCase.retryable},
+              },
+            };
+          });
+
+      await expectLater(
+        api.getCourseVersionDetail(
+          '11111111-1111-4111-8111-111111111111',
+          '22222222-2222-4222-8222-222222222222',
+        ),
+        throwsA(
+          isA<ContentApiFailure>()
+              .having(
+                (ContentApiFailure failure) => failure.kind,
+                'kind',
+                testCase.expectedKind,
+              )
+              .having(
+                (ContentApiFailure failure) => failure.requestId,
+                'requestId',
+                requestId,
+              ),
+        ),
+      );
+    }
   });
 
   test('ApiClient no longer references pre-OpenAPI active MVP paths', () {
