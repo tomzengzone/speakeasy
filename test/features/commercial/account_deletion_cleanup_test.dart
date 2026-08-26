@@ -45,7 +45,7 @@ void main() {
     );
     when(() => sessionCoordinator.hydrateExistingSession()).thenAnswer(
       (_) async => const ResolvedAuthenticatedSession(
-        token: 'jwt-token',
+        legacyAccessToken: 'jwt-token',
         userJson: <String, dynamic>{
           'nickname': '付费用户',
           'avatarUrl': '',

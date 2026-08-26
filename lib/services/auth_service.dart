@@ -1,20 +1,23 @@
-import 'package:speakeasy/services/api_client.dart';
+import 'package:speakeasy/core/auth/auth_credentials.dart';
 import 'package:speakeasy/models/auth_models.dart';
+import 'package:speakeasy/services/api_client.dart';
 
 typedef EmailSignIn = Future<AppUser> Function(LoginSubmission submission);
 
 class AuthSession {
   const AuthSession({
     required this.user,
-    this.token,
+    this.credentials,
     this.userJson = const <String, dynamic>{},
   });
 
   final AppUser user;
-  final String? token;
+  final AuthCredentials? credentials;
   final Map<String, dynamic> userJson;
 
-  bool get hasToken => (token ?? '').isNotEmpty;
+  String? get token => credentials?.accessToken;
+
+  bool get hasToken => credentials != null;
 }
 
 abstract class AuthApi {
@@ -76,8 +79,10 @@ class AuthService {
     }
 
     final Map<String, dynamic> data = _asMap(res['data']);
-    final String token = (data['token'] as String?) ?? '';
-    if (token.isEmpty) {
+    final AuthCredentials credentials;
+    try {
+      credentials = AuthCredentials.fromJson(data);
+    } on FormatException {
       throw Exception('登录凭证无效');
     }
 
@@ -92,7 +97,7 @@ class AuthService {
 
     return AuthSession(
       user: AppUser.fromJson(userJson),
-      token: token,
+      credentials: credentials,
       userJson: userJson,
     );
   }

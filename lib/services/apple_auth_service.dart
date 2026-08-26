@@ -4,13 +4,16 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import 'package:speakeasy/core/auth/auth_credentials.dart';
 import 'package:speakeasy/services/api_client.dart';
 
 class AppleAuthResult {
-  const AppleAuthResult({required this.token, required this.userJson});
+  const AppleAuthResult({required this.credentials, required this.userJson});
 
-  final String token;
+  final AuthCredentials credentials;
   final Map<String, dynamic> userJson;
+
+  String get token => credentials.accessToken;
 }
 
 class AppleAuthService {
@@ -59,12 +62,17 @@ class AppleAuthService {
       }
 
       final Map<String, dynamic> data = _asMap(res['data']);
-      final String token = (data['token'] as String?)?.trim() ?? '';
-      if (token.isEmpty) {
+      final AuthCredentials credentials;
+      try {
+        credentials = AuthCredentials.fromJson(data);
+      } on FormatException {
         throw Exception('服务器未返回登录凭证');
       }
 
-      return AppleAuthResult(token: token, userJson: _asMap(data['user']));
+      return AppleAuthResult(
+        credentials: credentials,
+        userJson: _asMap(data['user']),
+      );
     } on SignInWithAppleAuthorizationException catch (error) {
       if (error.code == AuthorizationErrorCode.canceled) {
         throw Exception('已取消 Apple 登录');

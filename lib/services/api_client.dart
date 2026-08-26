@@ -4,13 +4,19 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 import 'package:speakeasy/config/app_config.dart';
+import 'package:speakeasy/core/auth/auth_credentials.dart';
+import 'package:speakeasy/core/auth/secure_token_store.dart';
 import 'package:speakeasy/generated/api/speakeasy_api.dart';
 import 'package:speakeasy/models/app_models.dart';
 import 'package:speakeasy/models/learning_stats_model.dart';
-import 'package:speakeasy/models/storage_models.dart';
 import 'package:speakeasy/services/storage_service.dart';
 
 typedef ContentGet = Future<Map<String, dynamic>> Function(String path);
+typedef AuthPost =
+    Future<Map<String, dynamic>> Function(
+      String path,
+      Map<String, dynamic> body,
+    );
 
 enum ContentApiFailureKind {
   unauthenticated,
@@ -86,23 +92,43 @@ class ApiClientCourseCatalogApi implements CourseCatalogApi {
 
 class ApiClient {
   static String? _pendingAccountDeletionKey;
+  static final SecureTokenStore _secureTokenStore = SecureTokenStore();
+
+  static Future<AuthCredentials?> getCredentials() {
+    return _secureTokenStore.read();
+  }
+
+  static Future<void> saveCredentials(AuthCredentials credentials) async {
+    await _secureTokenStore.replace(credentials);
+    await StorageService.instance.clearAuthSession();
+  }
 
   static Future<String?> getToken() async {
+    final AuthCredentials? credentials = await getCredentials();
+    if (credentials != null) {
+      return credentials.accessToken;
+    }
     return StorageService.instance.getAuthSession()?.token;
   }
 
   static Future<void> saveToken(String token) async {
-    await StorageService.instance.saveAuthSession(
-      AuthSessionStorageModel(token: token, updatedAt: DateTime.now()),
-    );
+    final AuthCredentials? credentials = await getCredentials();
+    if (credentials == null) {
+      throw StateError('Complete authentication credentials are required');
+    }
+    await saveCredentials(credentials.copyWith(accessToken: token));
   }
 
   static Future<void> clearToken() async {
+    await _secureTokenStore.clear();
     await StorageService.instance.clearAuthSession();
   }
 
-  static Future<Map<String, String>> _headers({bool includeJson = true}) async {
-    final String? token = await getToken();
+  static Future<Map<String, String>> _headers({
+    bool includeJson = true,
+    bool includeAuthorization = true,
+  }) async {
+    final String? token = includeAuthorization ? await getToken() : null;
     return <String, String>{
       if (includeJson) 'Content-Type': 'application/json',
       if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
@@ -266,10 +292,13 @@ class ApiClient {
     String path,
     Map<String, dynamic> body, {
     bool allowEmpty = false,
+    bool includeAuthorization = true,
     Duration timeout = const Duration(seconds: 15),
     Map<String, String> headers = const <String, String>{},
   }) async {
-    final Map<String, String> requestHeaders = await _headers();
+    final Map<String, String> requestHeaders = await _headers(
+      includeAuthorization: includeAuthorization,
+    );
     requestHeaders.addAll(headers);
     final http.Response response = await http
         .post(
@@ -391,11 +420,30 @@ class ApiClient {
     return _authSessionEnvelope(response);
   }
 
-  static Future<Map<String, dynamic>> refreshToken() async {
-    return <String, dynamic>{
-      'code': 401,
-      'message': '本地未保存 OpenAPI refresh_token，回退到当前 access token 校验。',
-    };
+  static Future<Map<String, dynamic>> refreshToken({
+    String? refreshToken,
+    AuthPost? transport,
+  }) async {
+    final String resolvedRefreshToken =
+        (refreshToken ?? (await getCredentials())?.refreshToken ?? '').trim();
+    if (resolvedRefreshToken.isEmpty) {
+      return <String, dynamic>{
+        'code': 401,
+        'message': '本地没有可用的 refresh token。',
+      };
+    }
+
+    final Map<String, dynamic> response =
+        await (transport ??
+            (String path, Map<String, dynamic> body) => _post(
+              path,
+              body,
+              includeAuthorization: false,
+            ))(SpeakeasyApiPaths.authRefresh, <String, dynamic>{
+          'schema_version': 1,
+          'refresh_token': resolvedRefreshToken,
+        });
+    return _authSessionEnvelope(response);
   }
 
   static Future<Map<String, dynamic>> getMe() async {
@@ -1494,10 +1542,15 @@ class ApiClient {
   ) {
     _ensureSuccess(response, fallback: '登录失败');
     final Map<String, dynamic> user = _appUserJson(_asMap(response['user']));
+    final AuthCredentials credentials =
+        AuthCredentials.fromJson(<String, dynamic>{
+          'accessToken': response['access_token'],
+          'refreshToken': response['refresh_token'],
+          'expiresAt': response['expires_at'],
+        });
     return _okEnvelope(<String, dynamic>{
-      'token': (response['access_token'] as String? ?? '').trim(),
-      'refreshToken': (response['refresh_token'] as String? ?? '').trim(),
-      'expiresAt': response['expires_at'],
+      ...credentials.toJson(),
+      'token': credentials.accessToken,
       'user': user,
     });
   }

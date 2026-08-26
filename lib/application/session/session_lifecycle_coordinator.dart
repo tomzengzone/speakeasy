@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:speakeasy/core/constants/avatar_defaults.dart';
+import 'package:speakeasy/core/auth/auth_credentials.dart';
 import 'package:speakeasy/domain/auth/auth_models.dart';
 import 'package:speakeasy/models/storage_models.dart';
 import 'package:speakeasy/services/api_client.dart';
@@ -14,21 +15,22 @@ typedef WeChatSignIn = Future<WeChatAuthResult> Function();
 
 class AuthenticatedSessionPayload {
   const AuthenticatedSessionPayload({
-    required this.token,
+    required this.credentials,
     this.userJson = const <String, dynamic>{},
   });
 
-  final String token;
+  final AuthCredentials credentials;
   final Map<String, dynamic> userJson;
+
+  String get token => credentials.accessToken;
 }
 
 class SessionSignInResult {
   const SessionSignInResult.local({required this.user})
     : authenticatedSession = null;
 
-  const SessionSignInResult.authenticated({
-    required this.authenticatedSession,
-  }) : user = null;
+  const SessionSignInResult.authenticated({required this.authenticatedSession})
+    : user = null;
 
   final AppUser? user;
   final AuthenticatedSessionPayload? authenticatedSession;
@@ -38,12 +40,16 @@ class SessionSignInResult {
 
 class ResolvedAuthenticatedSession {
   const ResolvedAuthenticatedSession({
-    required this.token,
+    this.credentials,
+    this.legacyAccessToken,
     required this.userJson,
   });
 
-  final String token;
+  final AuthCredentials? credentials;
+  final String? legacyAccessToken;
   final Map<String, dynamic> userJson;
+
+  String get token => credentials?.accessToken ?? legacyAccessToken ?? '';
 }
 
 class StoredSessionSnapshot {
@@ -61,11 +67,7 @@ class StoredSessionSnapshot {
 abstract class SessionRemoteApi {
   Future<String?> getToken();
 
-  Future<void> saveToken(String token);
-
-  Future<void> clearToken();
-
-  Future<Map<String, dynamic>> refreshToken();
+  Future<Map<String, dynamic>> refreshToken(String refreshToken);
 
   Future<Map<String, dynamic>> getMe();
 
@@ -76,23 +78,37 @@ class ApiClientSessionRemoteApi implements SessionRemoteApi {
   const ApiClientSessionRemoteApi();
 
   @override
-  Future<void> clearToken() => ApiClient.clearToken();
-
-  @override
   Future<Map<String, dynamic>> getMe() => ApiClient.getMe();
 
   @override
   Future<String?> getToken() => ApiClient.getToken();
 
   @override
-  Future<Map<String, dynamic>> refreshToken() => ApiClient.refreshToken();
-
-  @override
-  Future<void> saveToken(String token) => ApiClient.saveToken(token);
+  Future<Map<String, dynamic>> refreshToken(String refreshToken) {
+    return ApiClient.refreshToken(refreshToken: refreshToken);
+  }
 
   @override
   Future<Map<String, dynamic>> testPhoneLogin(String phone) {
     return ApiClient.testPhoneLogin(phone);
+  }
+}
+
+abstract class SessionCredentialStore {
+  Future<AuthCredentials?> read();
+
+  Future<void> replace(AuthCredentials credentials);
+}
+
+class ApiClientSessionCredentialStore implements SessionCredentialStore {
+  const ApiClientSessionCredentialStore();
+
+  @override
+  Future<AuthCredentials?> read() => ApiClient.getCredentials();
+
+  @override
+  Future<void> replace(AuthCredentials credentials) {
+    return ApiClient.saveCredentials(credentials);
   }
 }
 
@@ -127,13 +143,17 @@ class SessionLifecycleCoordinator {
   SessionLifecycleCoordinator({
     required AuthService authService,
     SessionRemoteApi remoteApi = const ApiClientSessionRemoteApi(),
+    SessionCredentialStore credentialStore =
+        const ApiClientSessionCredentialStore(),
     SessionLocalStore localStore = const StorageServiceSessionLocalStore(),
   }) : _authService = authService,
        _remoteApi = remoteApi,
+       _credentialStore = credentialStore,
        _localStore = localStore;
 
   final AuthService _authService;
   final SessionRemoteApi _remoteApi;
+  final SessionCredentialStore _credentialStore;
   final SessionLocalStore _localStore;
 
   Future<SessionSignInResult> signIn(LoginSubmission submission) async {
@@ -141,7 +161,7 @@ class SessionLifecycleCoordinator {
     if (session.hasToken) {
       return SessionSignInResult.authenticated(
         authenticatedSession: AuthenticatedSessionPayload(
-          token: session.token!,
+          credentials: session.credentials!,
           userJson: session.userJson,
         ),
       );
@@ -156,7 +176,7 @@ class SessionLifecycleCoordinator {
         signIn ?? const AppleAuthService().signInWithApple;
     final AppleAuthResult result = await runner();
     return AuthenticatedSessionPayload(
-      token: result.token,
+      credentials: result.credentials,
       userJson: result.userJson,
     );
   }
@@ -168,7 +188,7 @@ class SessionLifecycleCoordinator {
         signIn ?? WeChatAuthService.instance.sendWeChatAuth;
     final WeChatAuthResult result = await runner();
     return AuthenticatedSessionPayload(
-      token: result.token,
+      credentials: result.credentials,
       userJson: result.userJson,
     );
   }
@@ -184,25 +204,28 @@ class SessionLifecycleCoordinator {
     }
 
     final Map<String, dynamic> data = _asMap(res['data']);
-    final String token = (data['token'] as String?) ?? '';
-    if (token.isEmpty) {
+    final AuthCredentials credentials;
+    try {
+      credentials = AuthCredentials.fromJson(data);
+    } on FormatException {
       throw Exception('测试登录凭证无效');
     }
 
     return AuthenticatedSessionPayload(
-      token: token,
+      credentials: credentials,
       userJson: _asMap(data['user']),
     );
   }
 
   Future<StoredSessionSnapshot> loadStoredSession() async {
+    final AuthCredentials? credentials = await _credentialStore.read();
     final AuthSessionStorageModel? authSession = _localStore.getAuthSession();
     final StoredUserProfileModel? userProfile = _localStore.getUserProfile();
     final UserPreferencesStorageModel preferences = _localStore
         .getUserPreferences();
 
     AppUser? user;
-    final String? token = authSession?.token;
+    final String? token = credentials?.accessToken ?? authSession?.token;
     if (token != null && token.isNotEmpty && userProfile != null) {
       final String nickname = userProfile.nickname.trim();
       if (nickname.isNotEmpty) {
@@ -222,33 +245,37 @@ class SessionLifecycleCoordinator {
   }
 
   Future<ResolvedAuthenticatedSession?> hydrateExistingSession() async {
-    final String? token = await _remoteApi.getToken();
+    final AuthCredentials? credentials = await _credentialStore.read();
+    final String? token =
+        credentials?.accessToken ?? await _remoteApi.getToken();
     if (token == null || token.isEmpty) {
       return null;
     }
 
-    final Map<String, dynamic> refreshRes = await _remoteApi.refreshToken();
-    if (refreshRes['code'] == 0) {
-      final Map<String, dynamic> data = _asMap(refreshRes['data']);
-      final String refreshedToken = (data['token'] as String?) ?? '';
-      final String resolvedToken = refreshedToken.isNotEmpty
-          ? refreshedToken
-          : token;
-      if (refreshedToken.isNotEmpty) {
-        await _remoteApi.saveToken(refreshedToken);
-      }
-      return ResolvedAuthenticatedSession(
-        token: resolvedToken,
-        userJson: _asMap(data['user']),
+    if (credentials != null) {
+      final Map<String, dynamic> refreshRes = await _remoteApi.refreshToken(
+        credentials.refreshToken,
       );
+      if (refreshRes['code'] == 0) {
+        final Map<String, dynamic> data = _asMap(refreshRes['data']);
+        final AuthCredentials refreshedCredentials = AuthCredentials.fromJson(
+          data,
+        );
+        await _credentialStore.replace(refreshedCredentials);
+        return ResolvedAuthenticatedSession(
+          credentials: refreshedCredentials,
+          userJson: _asMap(data['user']),
+        );
+      }
     }
 
     final Map<String, dynamic> meRes = await _remoteApi.getMe();
     if (meRes['code'] != 0) {
-      throw Exception(meRes['message'] ?? refreshRes['message']);
+      throw Exception(meRes['message'] ?? '恢复登录状态失败');
     }
     return ResolvedAuthenticatedSession(
-      token: token,
+      credentials: credentials,
+      legacyAccessToken: credentials == null ? token : null,
       userJson: _asMap(meRes['data']),
     );
   }
@@ -256,10 +283,10 @@ class SessionLifecycleCoordinator {
   Future<ResolvedAuthenticatedSession> resolveAuthenticatedSession(
     AuthenticatedSessionPayload payload,
   ) async {
-    await _remoteApi.saveToken(payload.token);
+    await _credentialStore.replace(payload.credentials);
     if (payload.userJson.isNotEmpty) {
       return ResolvedAuthenticatedSession(
-        token: payload.token,
+        credentials: payload.credentials,
         userJson: payload.userJson,
       );
     }
@@ -270,7 +297,7 @@ class SessionLifecycleCoordinator {
     }
 
     return ResolvedAuthenticatedSession(
-      token: payload.token,
+      credentials: payload.credentials,
       userJson: _asMap(meRes['data']),
     );
   }

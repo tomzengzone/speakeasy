@@ -24,6 +24,8 @@ void main() {
         'code': 0,
         'data': <String, dynamic>{
           'token': 'jwt-token',
+          'refreshToken': 'refresh-token',
+          'expiresAt': '2026-08-27T00:00:00Z',
           'user': <String, dynamic>{
             'nickname': '测试用户',
             'avatarUrl': 'https://example.com/avatar.png',
@@ -43,6 +45,11 @@ void main() {
 
     expect(session.hasToken, isTrue);
     expect(session.token, 'jwt-token');
+    expect(session.credentials!.refreshToken, 'refresh-token');
+    expect(
+      session.credentials!.expiresAt,
+      DateTime.parse('2026-08-27T00:00:00Z'),
+    );
     expect(session.user.nickname, '测试用户');
     expect(session.user.memberPlan, 'monthly');
     verify(() => api.verifySmsCode('13800138000', '123456')).called(1);
@@ -53,7 +60,11 @@ void main() {
     when(() => api.verifySmsCode('13800138000', '654321')).thenAnswer(
       (_) async => <String, dynamic>{
         'code': 0,
-        'data': <String, dynamic>{'token': 'jwt-token'},
+        'data': <String, dynamic>{
+          'token': 'jwt-token',
+          'refreshToken': 'refresh-token',
+          'expiresAt': '2026-08-27T00:00:00Z',
+        },
       },
     );
     when(() => api.getMe()).thenAnswer(
