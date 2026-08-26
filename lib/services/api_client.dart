@@ -5,10 +5,13 @@ import 'package:http/http.dart' as http;
 
 import 'package:speakeasy/config/app_config.dart';
 import 'package:speakeasy/core/auth/auth_credentials.dart';
+import 'package:speakeasy/core/auth/refresh_coordinator.dart';
 import 'package:speakeasy/core/auth/secure_token_store.dart';
+import 'package:speakeasy/core/auth/token_provider.dart';
 import 'package:speakeasy/generated/api/speakeasy_api.dart';
 import 'package:speakeasy/models/app_models.dart';
 import 'package:speakeasy/models/learning_stats_model.dart';
+import 'package:speakeasy/services/authenticated_request_executor.dart';
 import 'package:speakeasy/services/storage_service.dart';
 
 typedef ContentGet = Future<Map<String, dynamic>> Function(String path);
@@ -17,6 +20,8 @@ typedef AuthPost =
       String path,
       Map<String, dynamic> body,
     );
+
+enum _HttpMethod { get, post, put, patch, delete }
 
 enum RefreshFailureKind { authentication, infrastructure }
 
@@ -114,9 +119,24 @@ class ApiClientCourseCatalogApi implements CourseCatalogApi {
 class ApiClient {
   static String? _pendingAccountDeletionKey;
   static final SecureTokenStore _secureTokenStore = SecureTokenStore();
+  static final TokenProvider _tokenProvider = SecureTokenProvider(
+    _secureTokenStore,
+  );
+  static final RefreshCoordinator _refreshCoordinator = RefreshCoordinator(
+    tokenProvider: _tokenProvider,
+    refreshCredentials: _refreshRuntimeCredentials,
+    replaceCredentials: saveCredentials,
+  );
+  static final AuthenticatedRequestExecutor _requestExecutor =
+      AuthenticatedRequestExecutor(
+        tokenProvider: _tokenProvider,
+        refreshCoordinator: _refreshCoordinator,
+        legacyAccessToken: () async =>
+            StorageService.instance.getAuthSession()?.token,
+      );
 
   static Future<AuthCredentials?> getCredentials() {
-    return _secureTokenStore.read();
+    return _tokenProvider.getCredentials();
   }
 
   static Future<void> saveCredentials(AuthCredentials credentials) async {
@@ -143,17 +163,6 @@ class ApiClient {
   static Future<void> clearToken() async {
     await _secureTokenStore.clear();
     await StorageService.instance.clearAuthSession();
-  }
-
-  static Future<Map<String, String>> _headers({
-    bool includeJson = true,
-    bool includeAuthorization = true,
-  }) async {
-    final String? token = includeAuthorization ? await getToken() : null;
-    return <String, String>{
-      if (includeJson) 'Content-Type': 'application/json',
-      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-    };
   }
 
   static String _responseMessage(
@@ -233,13 +242,7 @@ class ApiClient {
   }
 
   static Future<Map<String, dynamic>> _get(String path) async {
-    final http.Response response = await http
-        .get(
-          Uri.parse('${AppConfig.apiBaseUrl}$path'),
-          headers: await _headers(),
-        )
-        .timeout(const Duration(seconds: 15));
-    return _decodeResponse(response);
+    return _executeRequest(method: _HttpMethod.get, path: path);
   }
 
   static Future<T> _readContent<T>(
@@ -313,36 +316,26 @@ class ApiClient {
     String path,
     Map<String, dynamic> body, {
     bool allowEmpty = false,
-    bool includeAuthorization = true,
+    AuthPolicy? authPolicy,
     Duration timeout = const Duration(seconds: 15),
     Map<String, String> headers = const <String, String>{},
   }) async {
-    final Map<String, String> requestHeaders = await _headers(
-      includeAuthorization: includeAuthorization,
+    return _executeRequest(
+      method: _HttpMethod.post,
+      path: path,
+      body: body,
+      allowEmpty: allowEmpty,
+      authPolicy: authPolicy,
+      timeout: timeout,
+      headers: headers,
     );
-    requestHeaders.addAll(headers);
-    final http.Response response = await http
-        .post(
-          Uri.parse('${AppConfig.apiBaseUrl}$path'),
-          headers: requestHeaders,
-          body: jsonEncode(body),
-        )
-        .timeout(timeout);
-    return _decodeResponse(response, allowEmpty: allowEmpty);
   }
 
   static Future<Map<String, dynamic>> _put(
     String path,
     Map<String, dynamic> body,
   ) async {
-    final http.Response response = await http
-        .put(
-          Uri.parse('${AppConfig.apiBaseUrl}$path'),
-          headers: await _headers(),
-          body: jsonEncode(body),
-        )
-        .timeout(const Duration(seconds: 15));
-    return _decodeResponse(response);
+    return _executeRequest(method: _HttpMethod.put, path: path, body: body);
   }
 
   static Future<Map<String, dynamic>> _patch(
@@ -350,16 +343,12 @@ class ApiClient {
     Map<String, dynamic> body, {
     Map<String, String> headers = const <String, String>{},
   }) async {
-    final Map<String, String> requestHeaders = await _headers();
-    requestHeaders.addAll(headers);
-    final http.Response response = await http
-        .patch(
-          Uri.parse('${AppConfig.apiBaseUrl}$path'),
-          headers: requestHeaders,
-          body: jsonEncode(body),
-        )
-        .timeout(const Duration(seconds: 15));
-    return _decodeResponse(response);
+    return _executeRequest(
+      method: _HttpMethod.patch,
+      path: path,
+      body: body,
+      headers: headers,
+    );
   }
 
   static Future<Map<String, dynamic>> _delete(
@@ -367,14 +356,55 @@ class ApiClient {
     bool allowEmpty = false,
     Map<String, String> headers = const <String, String>{},
   }) async {
-    final Map<String, String> requestHeaders = await _headers();
-    requestHeaders.addAll(headers);
-    final http.Response response = await http
-        .delete(
-          Uri.parse('${AppConfig.apiBaseUrl}$path'),
-          headers: requestHeaders,
-        )
-        .timeout(const Duration(seconds: 15));
+    return _executeRequest(
+      method: _HttpMethod.delete,
+      path: path,
+      allowEmpty: allowEmpty,
+      headers: headers,
+    );
+  }
+
+  static Future<Map<String, dynamic>> _executeRequest({
+    required _HttpMethod method,
+    required String path,
+    Map<String, dynamic>? body,
+    bool allowEmpty = false,
+    AuthPolicy? authPolicy,
+    Duration timeout = const Duration(seconds: 15),
+    Map<String, String> headers = const <String, String>{},
+  }) async {
+    final Uri uri = Uri.parse('${AppConfig.apiBaseUrl}$path');
+    final String? encodedBody = body == null ? null : jsonEncode(body);
+    final Map<String, String> requestHeaders = <String, String>{
+      'Content-Type': 'application/json',
+      ...headers,
+    };
+    final http.Response response = await _requestExecutor.execute(
+      authPolicy: authPolicy ?? AuthEndpointPolicy.forPath(path),
+      headers: requestHeaders,
+      send: (Map<String, String> resolvedHeaders) {
+        final Future<http.Response> request = switch (method) {
+          _HttpMethod.get => http.get(uri, headers: resolvedHeaders),
+          _HttpMethod.post => http.post(
+            uri,
+            headers: resolvedHeaders,
+            body: encodedBody,
+          ),
+          _HttpMethod.put => http.put(
+            uri,
+            headers: resolvedHeaders,
+            body: encodedBody,
+          ),
+          _HttpMethod.patch => http.patch(
+            uri,
+            headers: resolvedHeaders,
+            body: encodedBody,
+          ),
+          _HttpMethod.delete => http.delete(uri, headers: resolvedHeaders),
+        };
+        return request.timeout(timeout);
+      },
+    );
     return _decodeResponse(response, allowEmpty: allowEmpty);
   }
 
@@ -461,7 +491,7 @@ class ApiClient {
               (String path, Map<String, dynamic> body) => _post(
                 path,
                 body,
-                includeAuthorization: false,
+                authPolicy: AuthPolicy.none,
               ))(SpeakeasyApiPaths.authRefresh, <String, dynamic>{
             'schema_version': 1,
             'refresh_token': resolvedRefreshToken,
@@ -500,6 +530,15 @@ class ApiClient {
       }
     }
     return _authSessionEnvelope(response);
+  }
+
+  static Future<AuthCredentials> _refreshRuntimeCredentials(
+    String refreshToken,
+  ) async {
+    final Map<String, dynamic> response = await ApiClient.refreshToken(
+      refreshToken: refreshToken,
+    );
+    return AuthCredentials.fromJson(_asMap(response['data']));
   }
 
   static Future<Map<String, dynamic>> getMe() async {
