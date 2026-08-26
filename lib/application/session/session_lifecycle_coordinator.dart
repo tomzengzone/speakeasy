@@ -13,6 +13,8 @@ import 'package:speakeasy/services/wechat_auth_service.dart';
 typedef AppleSignIn = Future<AppleAuthResult> Function();
 typedef WeChatSignIn = Future<WeChatAuthResult> Function();
 
+DateTime _utcNow() => DateTime.now().toUtc();
+
 class AuthenticatedSessionPayload {
   const AuthenticatedSessionPayload({
     required this.credentials,
@@ -146,15 +148,18 @@ class SessionLifecycleCoordinator {
     SessionCredentialStore credentialStore =
         const ApiClientSessionCredentialStore(),
     SessionLocalStore localStore = const StorageServiceSessionLocalStore(),
+    DateTime Function()? now,
   }) : _authService = authService,
        _remoteApi = remoteApi,
        _credentialStore = credentialStore,
-       _localStore = localStore;
+       _localStore = localStore,
+       _now = now ?? _utcNow;
 
   final AuthService _authService;
   final SessionRemoteApi _remoteApi;
   final SessionCredentialStore _credentialStore;
   final SessionLocalStore _localStore;
+  final DateTime Function() _now;
 
   Future<SessionSignInResult> signIn(LoginSubmission submission) async {
     final AuthSession session = await _authService.signIn(submission);
@@ -252,30 +257,53 @@ class SessionLifecycleCoordinator {
       return null;
     }
 
-    if (credentials != null) {
+    if (credentials == null) {
+      return _hydrateWithCurrentAccessToken(
+        credentials: null,
+        legacyAccessToken: token,
+      );
+    }
+
+    if (!credentials.needsRefreshAt(_now())) {
+      return _hydrateWithCurrentAccessToken(credentials: credentials);
+    }
+
+    try {
       final Map<String, dynamic> refreshRes = await _remoteApi.refreshToken(
         credentials.refreshToken,
       );
-      if (refreshRes['code'] == 0) {
-        final Map<String, dynamic> data = _asMap(refreshRes['data']);
-        final AuthCredentials refreshedCredentials = AuthCredentials.fromJson(
-          data,
-        );
-        await _credentialStore.replace(refreshedCredentials);
-        return ResolvedAuthenticatedSession(
-          credentials: refreshedCredentials,
-          userJson: _asMap(data['user']),
-        );
+      if (refreshRes['code'] != 0) {
+        throw StateError('Refresh API returned an unsuccessful envelope');
       }
+      final Map<String, dynamic> data = _asMap(refreshRes['data']);
+      final AuthCredentials refreshedCredentials = AuthCredentials.fromJson(
+        data,
+      );
+      await _credentialStore.replace(refreshedCredentials);
+      return ResolvedAuthenticatedSession(
+        credentials: refreshedCredentials,
+        userJson: _asMap(data['user']),
+      );
+    } on RefreshFailure catch (failure) {
+      if (failure.kind == RefreshFailureKind.authentication ||
+          credentials.isExpiredAt(_now())) {
+        rethrow;
+      }
+      return _hydrateWithCurrentAccessToken(credentials: credentials);
     }
+  }
 
+  Future<ResolvedAuthenticatedSession> _hydrateWithCurrentAccessToken({
+    required AuthCredentials? credentials,
+    String? legacyAccessToken,
+  }) async {
     final Map<String, dynamic> meRes = await _remoteApi.getMe();
     if (meRes['code'] != 0) {
       throw Exception(meRes['message'] ?? '恢复登录状态失败');
     }
     return ResolvedAuthenticatedSession(
       credentials: credentials,
-      legacyAccessToken: credentials == null ? token : null,
+      legacyAccessToken: legacyAccessToken,
       userJson: _asMap(meRes['data']),
     );
   }

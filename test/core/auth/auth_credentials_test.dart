@@ -16,6 +16,14 @@ void main() {
     expect(credentials.expiresAt, DateTime.parse('2026-08-26T16:00:00Z'));
     expect(credentials.isExpiredAt(DateTime.utc(2026, 8, 26, 15)), isFalse);
     expect(credentials.isExpiredAt(DateTime.utc(2026, 8, 26, 16)), isTrue);
+    expect(
+      credentials.needsRefreshAt(DateTime.utc(2026, 8, 26, 15, 58)),
+      isFalse,
+    );
+    expect(
+      credentials.needsRefreshAt(DateTime.utc(2026, 8, 26, 15, 59)),
+      isTrue,
+    );
   });
 
   test('auth credentials reject any incomplete token set', () {

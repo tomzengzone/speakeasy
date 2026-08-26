@@ -11,6 +11,13 @@ class AuthCredentials {
 
   bool isExpiredAt(DateTime now) => !expiresAt.isAfter(now);
 
+  bool needsRefreshAt(
+    DateTime now, {
+    Duration skew = const Duration(minutes: 1),
+  }) {
+    return !expiresAt.isAfter(now.toUtc().add(skew));
+  }
+
   AuthCredentials copyWith({
     String? accessToken,
     String? refreshToken,

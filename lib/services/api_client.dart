@@ -18,6 +18,27 @@ typedef AuthPost =
       Map<String, dynamic> body,
     );
 
+enum RefreshFailureKind { authentication, infrastructure }
+
+class RefreshFailure implements Exception {
+  const RefreshFailure({
+    required this.kind,
+    required this.message,
+    this.httpStatus,
+    this.backendCode,
+    this.cause,
+  });
+
+  final RefreshFailureKind kind;
+  final String message;
+  final int? httpStatus;
+  final String? backendCode;
+  final Object? cause;
+
+  @override
+  String toString() => 'RefreshFailure($kind, $message)';
+}
+
 enum ContentApiFailureKind {
   unauthenticated,
   notFound,
@@ -433,16 +454,51 @@ class ApiClient {
       };
     }
 
-    final Map<String, dynamic> response =
-        await (transport ??
-            (String path, Map<String, dynamic> body) => _post(
-              path,
-              body,
-              includeAuthorization: false,
-            ))(SpeakeasyApiPaths.authRefresh, <String, dynamic>{
-          'schema_version': 1,
-          'refresh_token': resolvedRefreshToken,
-        });
+    late final Map<String, dynamic> response;
+    try {
+      response =
+          await (transport ??
+              (String path, Map<String, dynamic> body) => _post(
+                path,
+                body,
+                includeAuthorization: false,
+              ))(SpeakeasyApiPaths.authRefresh, <String, dynamic>{
+            'schema_version': 1,
+            'refresh_token': resolvedRefreshToken,
+          });
+    } on RefreshFailure {
+      rethrow;
+    } catch (error) {
+      throw RefreshFailure(
+        kind: RefreshFailureKind.infrastructure,
+        message: '刷新登录状态失败，请检查网络连接。',
+        cause: error,
+      );
+    }
+
+    final int? statusCode = (response['_httpStatus'] as num?)?.toInt();
+    if (statusCode != null && (statusCode < 200 || statusCode >= 300)) {
+      final Map<String, dynamic> error = _asMap(response['error']);
+      final String backendCode = (error['code'] as String? ?? '').trim();
+      final String backendMessage = (error['message'] as String? ?? '').trim();
+      if ((statusCode == 400 || statusCode == 401 || statusCode == 403) &&
+          backendCode == 'UNAUTHENTICATED') {
+        throw RefreshFailure(
+          kind: RefreshFailureKind.authentication,
+          message: backendMessage.isEmpty ? '登录凭证已失效。' : backendMessage,
+          httpStatus: statusCode,
+          backendCode: backendCode,
+        );
+      }
+      if (statusCode >= 500 && statusCode < 600) {
+        throw RefreshFailure(
+          kind: RefreshFailureKind.infrastructure,
+          message: backendMessage.isEmpty ? '认证服务暂时不可用。' : backendMessage,
+          httpStatus: statusCode,
+          backendCode: backendCode.isEmpty ? null : backendCode,
+        );
+      }
+    }
     return _authSessionEnvelope(response);
   }
 
