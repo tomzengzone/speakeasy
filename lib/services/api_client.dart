@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:speakeasy/config/app_config.dart';
 import 'package:speakeasy/core/auth/auth_credentials.dart';
+import 'package:speakeasy/core/auth/credential_repository.dart';
 import 'package:speakeasy/core/auth/refresh_coordinator.dart';
 import 'package:speakeasy/core/auth/secure_token_store.dart';
 import 'package:speakeasy/core/auth/token_provider.dart';
@@ -119,13 +120,18 @@ class ApiClientCourseCatalogApi implements CourseCatalogApi {
 class ApiClient {
   static String? _pendingAccountDeletionKey;
   static final SecureTokenStore _secureTokenStore = SecureTokenStore();
+  static final CredentialRepository _credentialRepository =
+      SecureCredentialRepository(
+        tokenStore: _secureTokenStore,
+        clearLegacyAuthSession: StorageService.instance.clearAuthSession,
+      );
   static final TokenProvider _tokenProvider = SecureTokenProvider(
-    _secureTokenStore,
+    _credentialRepository,
   );
   static final RefreshCoordinator _refreshCoordinator = RefreshCoordinator(
     tokenProvider: _tokenProvider,
+    credentialRepository: _credentialRepository,
     refreshCredentials: _refreshRuntimeCredentials,
-    replaceCredentials: saveCredentials,
   );
   static final AuthenticatedRequestExecutor _requestExecutor =
       AuthenticatedRequestExecutor(
@@ -140,8 +146,7 @@ class ApiClient {
   }
 
   static Future<void> saveCredentials(AuthCredentials credentials) async {
-    await _secureTokenStore.replace(credentials);
-    await StorageService.instance.clearAuthSession();
+    await _credentialRepository.replace(credentials);
   }
 
   static Future<String?> getToken() async {
@@ -152,6 +157,7 @@ class ApiClient {
     return StorageService.instance.getAuthSession()?.token;
   }
 
+  @Deprecated('Persist complete AuthCredentials through CredentialRepository.')
   static Future<void> saveToken(String token) async {
     final AuthCredentials? credentials = await getCredentials();
     if (credentials == null) {
@@ -161,8 +167,7 @@ class ApiClient {
   }
 
   static Future<void> clearToken() async {
-    await _secureTokenStore.clear();
-    await StorageService.instance.clearAuthSession();
+    await _credentialRepository.clear();
   }
 
   static String _responseMessage(
@@ -316,7 +321,7 @@ class ApiClient {
     String path,
     Map<String, dynamic> body, {
     bool allowEmpty = false,
-    AuthPolicy? authPolicy,
+    AuthPolicy authPolicy = AuthPolicy.required,
     Duration timeout = const Duration(seconds: 15),
     Map<String, String> headers = const <String, String>{},
   }) async {
@@ -369,7 +374,7 @@ class ApiClient {
     required String path,
     Map<String, dynamic>? body,
     bool allowEmpty = false,
-    AuthPolicy? authPolicy,
+    AuthPolicy authPolicy = AuthPolicy.required,
     Duration timeout = const Duration(seconds: 15),
     Map<String, String> headers = const <String, String>{},
   }) async {
@@ -380,7 +385,7 @@ class ApiClient {
       ...headers,
     };
     final http.Response response = await _requestExecutor.execute(
-      authPolicy: authPolicy ?? AuthEndpointPolicy.forPath(path),
+      authPolicy: authPolicy,
       headers: requestHeaders,
       send: (Map<String, String> resolvedHeaders) {
         final Future<http.Response> request = switch (method) {
@@ -428,7 +433,7 @@ class ApiClient {
           'phone_number': phone.trim(),
           'verification_code': code.trim(),
           'terms_accepted': true,
-        });
+        }, authPolicy: AuthPolicy.none);
     return _authSessionEnvelope(response);
   }
 
@@ -453,7 +458,7 @@ class ApiClient {
           if (authorizationCode.trim().isNotEmpty)
             'nonce': authorizationCode.trim(),
           'terms_accepted': true,
-        });
+        }, authPolicy: AuthPolicy.none);
     return _authSessionEnvelope(response);
   }
 
@@ -467,7 +472,7 @@ class ApiClient {
           'provider_token': code.trim(),
           if (state != null && state.trim().isNotEmpty) 'nonce': state.trim(),
           'terms_accepted': true,
-        });
+        }, authPolicy: AuthPolicy.none);
     return _authSessionEnvelope(response);
   }
 

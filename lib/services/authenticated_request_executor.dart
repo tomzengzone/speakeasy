@@ -3,24 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:speakeasy/core/auth/auth_credentials.dart';
 import 'package:speakeasy/core/auth/refresh_coordinator.dart';
 import 'package:speakeasy/core/auth/token_provider.dart';
-import 'package:speakeasy/generated/api/speakeasy_api.dart';
 
 enum AuthPolicy { none, required }
-
-abstract final class AuthEndpointPolicy {
-  static const Set<String> _unauthenticatedPaths = <String>{
-    SpeakeasyApiPaths.authLoginPhone,
-    SpeakeasyApiPaths.authLoginApple,
-    SpeakeasyApiPaths.authLoginWechat,
-    SpeakeasyApiPaths.authRefresh,
-  };
-
-  static AuthPolicy forPath(String path) {
-    return _unauthenticatedPaths.contains(path)
-        ? AuthPolicy.none
-        : AuthPolicy.required;
-  }
-}
 
 typedef AuthenticatedRequestSender =
     Future<http.Response> Function(Map<String, String> headers);
@@ -39,7 +23,7 @@ class AuthenticatedRequestExecutor {
   final Future<String?> Function()? _legacyAccessToken;
 
   Future<http.Response> execute({
-    required AuthPolicy authPolicy,
+    AuthPolicy authPolicy = AuthPolicy.required,
     required AuthenticatedRequestSender send,
     Map<String, String> headers = const <String, String>{},
   }) async {
@@ -87,9 +71,8 @@ class AuthenticatedRequestExecutor {
   }
 
   Map<String, String> _withoutAuthorization(Map<String, String> headers) {
-    return Map<String, String>.of(headers)
-      ..removeWhere(
-        (String name, String value) => name.toLowerCase() == 'authorization',
-      );
+    return Map<String, String>.of(headers)..removeWhere(
+      (String name, String value) => name.toLowerCase() == 'authorization',
+    );
   }
 }

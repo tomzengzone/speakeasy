@@ -5,24 +5,37 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:speakeasy/core/auth/auth_credentials.dart';
+import 'package:speakeasy/core/auth/credential_repository.dart';
 import 'package:speakeasy/core/auth/refresh_coordinator.dart';
 import 'package:speakeasy/core/auth/token_provider.dart';
-import 'package:speakeasy/generated/api/speakeasy_api.dart';
 import 'package:speakeasy/services/api_client.dart';
 import 'package:speakeasy/services/authenticated_request_executor.dart';
 
-class _MemoryTokenProvider implements TokenProvider {
+class _MemoryTokenProvider implements TokenProvider, CredentialRepository {
   _MemoryTokenProvider(this.credentials);
 
   AuthCredentials? credentials;
+  int readCount = 0;
   int replaceCount = 0;
 
   @override
-  Future<AuthCredentials?> getCredentials() async => credentials;
+  Future<AuthCredentials?> getCredentials() async {
+    readCount += 1;
+    return credentials;
+  }
 
+  @override
+  Future<AuthCredentials?> read() => getCredentials();
+
+  @override
   Future<void> replace(AuthCredentials next) async {
     replaceCount += 1;
     credentials = next;
+  }
+
+  @override
+  Future<void> clear() async {
+    credentials = null;
   }
 }
 
@@ -48,8 +61,8 @@ void main() {
   }) {
     final RefreshCoordinator coordinator = RefreshCoordinator(
       tokenProvider: provider,
+      credentialRepository: provider,
       refreshCredentials: refresh,
-      replaceCredentials: provider.replace,
       now: () => now,
     );
     return AuthenticatedRequestExecutor(
@@ -474,56 +487,47 @@ void main() {
     );
   }
 
-  test('auth endpoint policy marks login and refresh as none', () {
-    expect(
-      <String>[
-        SpeakeasyApiPaths.authLoginPhone,
-        SpeakeasyApiPaths.authLoginApple,
-        SpeakeasyApiPaths.authLoginWechat,
-        SpeakeasyApiPaths.authRefresh,
-      ].map(AuthEndpointPolicy.forPath),
-      everyElement(AuthPolicy.none),
-    );
-    expect(
-      AuthEndpointPolicy.forPath(SpeakeasyApiPaths.userMe),
-      AuthPolicy.required,
-    );
-  });
-
-  test('login requests never include Authorization', () async {
-    final AuthCredentials current = credentials(
-      accessToken: 'access-token-1',
-      refreshToken: 'refresh-token-1',
-      expiresAt: now.add(const Duration(minutes: 20)),
-    );
-    final _MemoryTokenProvider provider = _MemoryTokenProvider(current);
-    int refreshCount = 0;
-    final AuthenticatedRequestExecutor requestExecutor = executor(
-      provider: provider,
-      refresh: (String refreshToken) async {
-        refreshCount += 1;
-        throw StateError('unexpected refresh');
-      },
-    );
-
-    for (final String path in <String>[
-      SpeakeasyApiPaths.authLoginPhone,
-      SpeakeasyApiPaths.authLoginApple,
-      SpeakeasyApiPaths.authLoginWechat,
-    ]) {
-      await requestExecutor.execute(
-        authPolicy: AuthEndpointPolicy.forPath(path),
-        send: (Map<String, String> headers) async {
-          expect(headers, isNot(contains('Authorization')));
-          return http.Response('{}', 200);
+  test(
+    'explicit auth-none login skips credentials, bearer, and refresh',
+    () async {
+      final AuthCredentials current = credentials(
+        accessToken: 'access-token-1',
+        refreshToken: 'refresh-token-1',
+        expiresAt: now.add(const Duration(seconds: 30)),
+      );
+      final _MemoryTokenProvider provider = _MemoryTokenProvider(current);
+      int refreshCount = 0;
+      final AuthenticatedRequestExecutor requestExecutor = executor(
+        provider: provider,
+        refresh: (String refreshToken) async {
+          refreshCount += 1;
+          throw StateError('unexpected refresh');
         },
       );
-    }
 
-    expect(refreshCount, 0);
-  });
+      for (final String loginKind in <String>['phone', 'apple', 'wechat']) {
+        await requestExecutor.execute(
+          authPolicy: AuthPolicy.none,
+          headers: const <String, String>{
+            'authorization': 'Bearer must-not-leak',
+          },
+          send: (Map<String, String> headers) async {
+            expect(
+              headers.keys.map((String name) => name.toLowerCase()),
+              isNot(contains('authorization')),
+              reason: '$loginKind login must be unauthenticated',
+            );
+            return http.Response('{}', 200);
+          },
+        );
+      }
 
-  test('a 401 from refresh endpoint cannot recursively refresh', () async {
+      expect(provider.readCount, 0);
+      expect(refreshCount, 0);
+    },
+  );
+
+  test('explicit auth-none refresh 401 cannot recursively refresh', () async {
     final AuthCredentials current = credentials(
       accessToken: 'access-token-1',
       refreshToken: 'refresh-token-1',
@@ -541,7 +545,7 @@ void main() {
     );
 
     final http.Response response = await requestExecutor.execute(
-      authPolicy: AuthEndpointPolicy.forPath(SpeakeasyApiPaths.authRefresh),
+      authPolicy: AuthPolicy.none,
       headers: const <String, String>{'authorization': 'Bearer must-not-leak'},
       send: (Map<String, String> headers) async {
         requestCount += 1;
@@ -555,8 +559,40 @@ void main() {
 
     expect(response.statusCode, 401);
     expect(requestCount, 1);
+    expect(provider.readCount, 0);
     expect(refreshCount, 0);
   });
+
+  test(
+    'default policy remains required for a renamed public-like call',
+    () async {
+      final AuthCredentials current = credentials(
+        accessToken: 'access-token-1',
+        refreshToken: 'refresh-token-1',
+        expiresAt: now.add(const Duration(minutes: 20)),
+      );
+      final _MemoryTokenProvider provider = _MemoryTokenProvider(current);
+      int refreshCount = 0;
+      final AuthenticatedRequestExecutor requestExecutor = executor(
+        provider: provider,
+        refresh: (String refreshToken) async {
+          refreshCount += 1;
+          throw StateError('unexpected refresh');
+        },
+      );
+
+      final http.Response response = await requestExecutor.execute(
+        send: (Map<String, String> headers) async {
+          expect(headers['Authorization'], 'Bearer access-token-1');
+          return http.Response('{}', 200);
+        },
+      );
+
+      expect(response.statusCode, 200);
+      expect(provider.readCount, greaterThan(0));
+      expect(refreshCount, 0);
+    },
+  );
 
   test('legacy-only AT sends once but a 401 cannot trigger refresh', () async {
     final _MemoryTokenProvider provider = _MemoryTokenProvider(null);

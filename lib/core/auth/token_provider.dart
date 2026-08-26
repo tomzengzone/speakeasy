@@ -1,15 +1,15 @@
 import 'package:speakeasy/core/auth/auth_credentials.dart';
-import 'package:speakeasy/core/auth/secure_token_store.dart';
+import 'package:speakeasy/core/auth/credential_repository.dart';
 
 abstract interface class TokenProvider {
   Future<AuthCredentials?> getCredentials();
 }
 
 class SecureTokenProvider implements TokenProvider {
-  SecureTokenProvider(this._tokenStore);
+  SecureTokenProvider(this._credentialRepository);
 
-  final SecureTokenStore _tokenStore;
+  final CredentialRepository _credentialRepository;
 
   @override
-  Future<AuthCredentials?> getCredentials() => _tokenStore.read();
+  Future<AuthCredentials?> getCredentials() => _credentialRepository.read();
 }

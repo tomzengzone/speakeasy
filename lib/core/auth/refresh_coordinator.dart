@@ -1,26 +1,36 @@
 import 'package:speakeasy/core/auth/auth_credentials.dart';
+import 'package:speakeasy/core/auth/credential_repository.dart';
 import 'package:speakeasy/core/auth/token_provider.dart';
 
 typedef RefreshCredentials =
     Future<AuthCredentials> Function(String refreshToken);
-typedef ReplaceCredentials = Future<void> Function(AuthCredentials credentials);
+
+class CredentialContextChanged implements Exception {
+  const CredentialContextChanged();
+
+  @override
+  String toString() {
+    return 'CredentialContextChanged('
+        'credentials changed while refresh was in flight)';
+  }
+}
 
 DateTime _utcNow() => DateTime.now().toUtc();
 
 class RefreshCoordinator {
   RefreshCoordinator({
     required TokenProvider tokenProvider,
+    required CredentialRepository credentialRepository,
     required RefreshCredentials refreshCredentials,
-    required ReplaceCredentials replaceCredentials,
     DateTime Function()? now,
   }) : _tokenProvider = tokenProvider,
+       _credentialRepository = credentialRepository,
        _refreshCredentials = refreshCredentials,
-       _replaceCredentials = replaceCredentials,
        _now = now ?? _utcNow;
 
   final TokenProvider _tokenProvider;
+  final CredentialRepository _credentialRepository;
   final RefreshCredentials _refreshCredentials;
-  final ReplaceCredentials _replaceCredentials;
   final DateTime Function() _now;
 
   Future<AuthCredentials>? _inFlightRefresh;
@@ -64,7 +74,20 @@ class RefreshCoordinator {
     final AuthCredentials refreshed = await _refreshCredentials(
       current.refreshToken,
     );
-    await _replaceCredentials(refreshed);
+    final AuthCredentials? latest = await _tokenProvider.getCredentials();
+    if (!_sameCredentialGeneration(current, latest)) {
+      throw const CredentialContextChanged();
+    }
+    await _credentialRepository.replace(refreshed);
     return refreshed;
+  }
+
+  bool _sameCredentialGeneration(
+    AuthCredentials expected,
+    AuthCredentials? actual,
+  ) {
+    return actual != null &&
+        expected.accessToken == actual.accessToken &&
+        expected.refreshToken == actual.refreshToken;
   }
 }
