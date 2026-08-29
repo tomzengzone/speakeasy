@@ -24,14 +24,17 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
   private final AuthService authService;
   private final ObjectMapper objectMapper;
   private final String opsBearerTokenHash;
+  private final String opsPrincipalId;
 
   public BearerTokenAuthenticationFilter(
       AuthService authService,
       ObjectMapper objectMapper,
-      @Value("${speakeasy.ops.bearer-token:}") String opsBearerToken) {
+      @Value("${speakeasy.ops.bearer-token:}") String opsBearerToken,
+      @Value("${speakeasy.ops.principal-id:shared-ops-token}") String opsPrincipalId) {
     this.authService = authService;
     this.objectMapper = objectMapper;
     this.opsBearerTokenHash = opsBearerToken == null || opsBearerToken.isBlank() ? "" : TokenHasher.hash(opsBearerToken.trim());
+    this.opsPrincipalId = opsPrincipalId == null || opsPrincipalId.isBlank() ? "shared-ops-token" : opsPrincipalId.trim();
   }
 
   @Override
@@ -44,26 +47,26 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
     }
 
     String token = header.substring("Bearer ".length()).trim();
-    CurrentUser currentUser = authService.authenticateAccessToken(token).orElse(null);
-    if (currentUser == null) {
-      if (isOpsRequest(request) && isOpsToken(token)) {
-        UsernamePasswordAuthenticationToken authentication =
-            new UsernamePasswordAuthenticationToken("ops", token, List.of(new SimpleGrantedAuthority("ROLE_OPS")));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        filterChain.doFilter(request, response);
-        return;
-      }
-      currentUser = deletionRetryUser(request, token);
+    if (isOpsRequest(request) && isOpsToken(token)) {
+      UsernamePasswordAuthenticationToken authentication =
+          new UsernamePasswordAuthenticationToken(opsPrincipalId, null, List.of(new SimpleGrantedAuthority("ROLE_OPS")));
+      SecurityContextHolder.getContext().setAuthentication(authentication);
+      filterChain.doFilter(request, response);
+      return;
     }
+
+    AuthService.AccessTokenInspection inspection = authService.inspectAccessToken(token);
+    CurrentUser currentUser = inspection.currentUser();
+    if (currentUser == null) currentUser = deletionRetryUser(request, token);
 
     if (currentUser == null) {
       SecurityContextHolder.clearContext();
-      writeUnauthorized(request, response);
+      writeUnauthorized(request, response, inspection.code());
       return;
     }
 
     UsernamePasswordAuthenticationToken authentication =
-        new UsernamePasswordAuthenticationToken(currentUser, token, List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        new UsernamePasswordAuthenticationToken(currentUser, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
     SecurityContextHolder.getContext().setAuthentication(authentication);
     filterChain.doFilter(request, response);
   }
@@ -73,7 +76,7 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
   }
 
   private boolean isOpsRequest(HttpServletRequest request) {
-    return request.getRequestURI().contains("/admin/");
+    return request.getRequestURI().contains("/admin/") || request.getRequestURI().contains("/actuator/");
   }
 
   private CurrentUser deletionRetryUser(HttpServletRequest request, String token) {
@@ -83,11 +86,20 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
     return authService.authenticateAccountDeletionRetry(token, request.getHeader("Idempotency-Key")).orElse(null);
   }
 
-  private void writeUnauthorized(HttpServletRequest request, HttpServletResponse response) throws IOException {
+  private void writeUnauthorized(HttpServletRequest request, HttpServletResponse response, String code) throws IOException {
     response.setStatus(HttpStatus.UNAUTHORIZED.value());
     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
     String requestId = request.getHeader("X-Request-Id");
     objectMapper.writeValue(response.getOutputStream(),
-        ErrorResponse.of("UNAUTHENTICATED", "Authentication required.", requestId == null ? "unknown" : requestId));
+        ErrorResponse.of(code, messageFor(code), requestId == null ? "unknown" : requestId));
+  }
+
+  private String messageFor(String code) {
+    return switch (code) {
+      case "ACCESS_TOKEN_EXPIRED" -> "Access token has expired.";
+      case "SESSION_REVOKED" -> "Session has been revoked.";
+      case "ACCOUNT_DISABLED" -> "Account is disabled.";
+      default -> "Access token is invalid.";
+    };
   }
 }

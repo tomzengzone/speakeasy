@@ -1,0 +1,134 @@
+groups:
+  - name: speakeasy-authentication-security
+    interval: 1m
+    rules:
+      - alert: SpeakEasyAuthRefreshFailureRateHigh
+        expr: |
+          (
+            sum(increase(speakeasy_auth_refresh_total{application="speakeasy-backend",outcome="failure"}[10m]))
+            /
+            clamp_min(sum(increase(speakeasy_auth_refresh_total{application="speakeasy-backend"}[10m])), 1)
+          ) > 0.05
+          and
+          sum(increase(speakeasy_auth_refresh_total{application="speakeasy-backend"}[10m])) >= 100
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: Authentication refresh failure rate is above 5%
+          runbook_url: https://github.com/tomzengzone/speakeasy/blob/main/ops/observability/runbooks/authentication-alerts.md#refresh-failure-rate-high
+
+      - alert: SpeakEasyAuthHttp401RateHigh
+        expr: |
+          (
+            sum(increase(speakeasy_auth_http_total{application="speakeasy-backend",api_family="bearer",outcome="unauthorized"}[10m]))
+            /
+            clamp_min(sum(increase(speakeasy_auth_http_total{application="speakeasy-backend",api_family="bearer"}[10m])), 1)
+          ) > 0.03
+          and
+          sum(increase(speakeasy_auth_http_total{application="speakeasy-backend",api_family="bearer"}[10m])) >= 100
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: Backend HTTP 401 rate is above the initial 3% safety threshold
+          runbook_url: https://github.com/tomzengzone/speakeasy/blob/main/ops/observability/runbooks/authentication-alerts.md#http-401-rate-high
+
+      - alert: SpeakEasyAuthTokenReuseDetected
+        expr: |
+          sum(increase(speakeasy_auth_token_reuse_total{application="speakeasy-backend"}[5m])) >= 1
+          and
+          sum(increase(speakeasy_auth_token_reuse_total{application="speakeasy-backend"}[5m])) < 3
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: A refresh token reuse event was detected
+          runbook_url: https://github.com/tomzengzone/speakeasy/blob/main/ops/observability/runbooks/authentication-alerts.md#token-reuse-detected
+
+      - alert: SpeakEasyAuthTokenReuseBurst
+        expr: |
+          sum(increase(speakeasy_auth_token_reuse_total{application="speakeasy-backend"}[5m])) >= 3
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: At least three refresh token reuse events occurred within five minutes
+          runbook_url: https://github.com/tomzengzone/speakeasy/blob/main/ops/observability/runbooks/authentication-alerts.md#token-reuse-burst
+
+      - alert: SpeakEasyAuthSecurityOperationFailed
+        expr: |
+          sum by (operation) (
+            increase(speakeasy_auth_security_operation_total{
+              application="speakeasy-backend",
+              operation=~"session_revoke|account_disable",
+              outcome="failure"
+            }[5m])
+          ) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: Authentication security operation {{ $labels.operation }} failed
+          runbook_url: https://github.com/tomzengzone/speakeasy/blob/main/ops/observability/runbooks/authentication-alerts.md#security-operation-failed
+
+      - alert: SpeakEasyAuthAuditWriteFailed
+        expr: |
+          sum(increase(speakeasy_auth_security_operation_total{
+            application="speakeasy-backend",
+            operation="audit_write",
+            outcome="failure"
+          }[5m])) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: An authentication security audit record could not be written
+          runbook_url: https://github.com/tomzengzone/speakeasy/blob/main/ops/observability/runbooks/authentication-alerts.md#security-audit-write-failed
+
+      - alert: SpeakEasyAuthEndpointLatencyHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (
+              rate(http_server_requests_seconds_bucket{
+                application="speakeasy-backend",
+                uri=~"/(v1/)?auth(/.*)?"
+              }[5m])
+            )
+          ) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Authentication endpoint p95 latency has exceeded 500ms for ten minutes
+          runbook_url: https://github.com/tomzengzone/speakeasy/blob/main/ops/observability/runbooks/authentication-alerts.md#authentication-endpoint-latency-high
+
+      - alert: SpeakEasyAuthRateLimitBurst
+        expr: |
+          sum by (endpoint, dimension) (
+            increase(speakeasy_auth_rate_limit_total{
+              application="speakeasy-backend",
+              outcome="blocked"
+            }[5m])
+          ) >= 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Authentication rate limiting is sustained for {{ $labels.endpoint }}/{{ $labels.dimension }}
+          runbook_url: https://github.com/tomzengzone/speakeasy/blob/main/ops/observability/runbooks/authentication-alerts.md#authentication-rate-limit-burst
+
+      - alert: SpeakEasyAuthRateLimitStoreUnavailable
+        expr: |
+          sum(increase(speakeasy_auth_rate_limit_total{
+            application="speakeasy-backend",
+            dimension="store",
+            outcome="unavailable"
+          }[5m])) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: Shared authentication rate-limit storage is unavailable
+          runbook_url: https://github.com/tomzengzone/speakeasy/blob/main/ops/observability/runbooks/authentication-alerts.md#authentication-rate-limit-store-unavailable

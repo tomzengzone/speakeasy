@@ -76,7 +76,7 @@ class AdminDataDeletionControllerTest extends BackendIntegrationTestSupport {
 
     mvc.perform(get("/user/me").header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"));
+        .andExpect(jsonPath("$.error.code").value("SESSION_REVOKED"));
   }
 
   @Test

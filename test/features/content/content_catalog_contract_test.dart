@@ -24,8 +24,12 @@ void main() {
       find.byKey(const ValueKey<String>('content_theme_catalog')),
       findsOneWidget,
     );
-    expect(find.text('共 2 个主题'), findsOneWidget);
-    expect(find.byKey(const ValueKey<String>('theme_card')), findsNWidgets(2));
+    expect(find.text('共 3 个主题'), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('theme_card')), findsNWidgets(3));
+    expect(
+      find.byKey(const ValueKey<String>('theme_card:travel_planning')),
+      findsOneWidget,
+    );
 
     await tester.tap(
       find.byKey(const ValueKey<String>('theme_card:job_interview')),
@@ -56,7 +60,7 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
     await tester.tap(
-      find.byKey(const ValueKey<String>('theme_card:onboarding_introduction')),
+      find.byKey(const ValueKey<String>('theme_card:travel_planning')),
     );
     await tester.pumpAndSettle();
 
@@ -217,6 +221,10 @@ void main() {
         find.byKey(const ValueKey<String>('content_theme_catalog')),
         findsOneWidget,
       );
+      expect(
+        find.byKey(const ValueKey<String>('theme_card:travel_planning')),
+        findsOneWidget,
+      );
 
       await tester.tap(
         find.byKey(const ValueKey<String>('theme_card:job_interview')),
@@ -295,6 +303,14 @@ class _FakeCourseCatalogApi implements CourseCatalogApi {
           status: ScenarioStatus.available,
           access: const AccessState(allowed: true),
         ),
+        ScenarioSummary(
+          scenarioId: ScenarioId.parse('travel_planning'),
+          title: '旅行规划',
+          summary: '练习旅行安排沟通',
+          levels: const <LevelCode>[LevelCode.b1],
+          status: ScenarioStatus.available,
+          access: const AccessState(allowed: true),
+        ),
       ],
     );
   }
@@ -310,9 +326,8 @@ class _FakeCourseCatalogApi implements CourseCatalogApi {
       schemaVersion: 1,
       requestId: 'courses',
       scenarioId: scenarioId,
-      courses: scenarioId == ScenarioId.onboardingIntroduction
-          ? const <CourseSummary>[]
-          : <CourseSummary>[
+      courses: scenarioId == ScenarioId.jobInterview
+          ? <CourseSummary>[
               _course(
                 courseId: '11111111-1111-4111-8111-111111111111',
                 versionId: '21111111-1111-4111-8111-111111111111',
@@ -327,7 +342,8 @@ class _FakeCourseCatalogApi implements CourseCatalogApi {
                 summary: '自信应对追问',
                 level: LevelCode.c2,
               ),
-            ],
+            ]
+          : const <CourseSummary>[],
     );
   }
 

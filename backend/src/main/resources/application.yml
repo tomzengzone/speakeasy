@@ -16,12 +16,75 @@ spring:
     property-naming-strategy: SNAKE_CASE
     deserialization:
       fail-on-unknown-properties: true
+  data:
+    redis:
+      url: ${SPEAKEASY_REDIS_URL:redis://localhost:6379}
+      repositories:
+        enabled: false
 
 server:
   servlet:
     context-path: /v1
 
 speakeasy:
+  auth:
+    access-token-ttl: ${SPEAKEASY_AUTH_ACCESS_TOKEN_TTL:15m}
+    session-idle-ttl: ${SPEAKEASY_AUTH_SESSION_IDLE_TTL:30d}
+    session-absolute-ttl: ${SPEAKEASY_AUTH_SESSION_ABSOLUTE_TTL:90d}
+    providers:
+      mode: ${SPEAKEASY_AUTH_PROVIDER_MODE:disabled}
+      deterministic-enabled: false
+      timeout: ${SPEAKEASY_AUTH_PROVIDER_TIMEOUT:5s}
+      phone:
+        request-url: ${SPEAKEASY_PHONE_CODE_REQUEST_URL:}
+        verify-url: ${SPEAKEASY_PHONE_CODE_VERIFY_URL:}
+        bearer-token: ${SPEAKEASY_PHONE_VERIFICATION_TOKEN:}
+      apple:
+        client-id: ${SPEAKEASY_APPLE_CLIENT_ID:}
+        issuer: https://appleid.apple.com
+        jwk-set-uri: https://appleid.apple.com/auth/keys
+      wechat:
+        app-id: ${SPEAKEASY_WECHAT_APP_ID:}
+        app-secret: ${SPEAKEASY_WECHAT_APP_SECRET:}
+        token-url: https://api.weixin.qq.com/sns/oauth2/access_token
+    rate-limit:
+      mode: ${SPEAKEASY_AUTH_RATE_LIMIT_MODE:disabled}
+      key-secret: ${SPEAKEASY_AUTH_RATE_LIMIT_KEY_SECRET:}
+      trusted-proxy-cidrs: ${SPEAKEASY_AUTH_TRUSTED_PROXY_CIDRS:}
+      max-retry-after: 300s
+      unavailable-retry-after: 5s
+      audit-dedup-window: 15m
+      policies:
+        phone-login:
+          network: { capacity: 30, refill-tokens: 1, refill-period: 2s }
+          device: { capacity: 10, refill-tokens: 1, refill-period: 60s }
+          account: { capacity: 5, refill-tokens: 1, refill-period: 120s }
+        apple-login:
+          network: { capacity: 60, refill-tokens: 1, refill-period: 1s }
+          device: { capacity: 15, refill-tokens: 1, refill-period: 30s }
+          credential: { capacity: 5, refill-tokens: 1, refill-period: 60s }
+          account: { capacity: 10, refill-tokens: 1, refill-period: 60s }
+        wechat-login:
+          network: { capacity: 60, refill-tokens: 1, refill-period: 1s }
+          device: { capacity: 15, refill-tokens: 1, refill-period: 30s }
+          credential: { capacity: 5, refill-tokens: 1, refill-period: 60s }
+          account: { capacity: 10, refill-tokens: 1, refill-period: 60s }
+        refresh:
+          network: { capacity: 120, refill-tokens: 2, refill-period: 1s }
+          device: { capacity: 12, refill-tokens: 1, refill-period: 10s }
+          credential: { capacity: 5, refill-tokens: 1, refill-period: 30s }
+          account: { capacity: 30, refill-tokens: 1, refill-period: 5s }
+          family: { capacity: 6, refill-tokens: 1, refill-period: 30s }
+        session-management:
+          network: { capacity: 120, refill-tokens: 2, refill-period: 1s }
+          session: { capacity: 30, refill-tokens: 1, refill-period: 2s }
+          account: { capacity: 60, refill-tokens: 1, refill-period: 1s }
+        phone-code-request:
+          network: { capacity: 20, refill-tokens: 1, refill-period: 3s }
+          device: { capacity: 5, refill-tokens: 1, refill-period: 120s }
+          account: { capacity: 3, refill-tokens: 1, refill-period: 300s }
+  ops:
+    principal-id: ${SPEAKEASY_OPS_PRINCIPAL_ID:shared-ops-token}
   content:
     course-read:
       enabled: ${SPEAKEASY_CONTENT_COURSE_READ_ENABLED:true}
@@ -66,3 +129,15 @@ speakeasy:
       max-asr-bytes: ${DASHSCOPE_MAX_ASR_BYTES:10000000}
       asr-poll-attempts: ${DASHSCOPE_ASR_POLL_ATTEMPTS:6}
       request-timeout: ${DASHSCOPE_REQUEST_TIMEOUT:20s}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+    tags:
+      application: ${spring.application.name}

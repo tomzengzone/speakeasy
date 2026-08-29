@@ -37,10 +37,9 @@ description: Use when：说明 Skill 的功能及具体触发场景。
 ---
 ```
 
-目录名使用 lowercase kebab-case，frontmatter `name` 与目录名一致。`description` 是 Skill discovery 和初步路由的唯一字段，必须独立说明主要触发条件，并在必要时说明关键排除项；正文不得补充或重新定义路由条件。运行时正文至少包含：
+目录名使用 lowercase kebab-case，frontmatter `name` 与目录名一致。`description` 是 Skill discovery 和初步路由的唯一字段，必须独立说明主要触发条件，并在必要时说明关键排除项；正文不得补充或重新定义路由条件。需要集中说明 Artifact/Gate 解析或权威职责分离时，可以包含 `## Contract`；该章节不是必需章节。运行时正文至少包含：
 
 - `## Overview`
-- `## Contract`
 - `## Inputs`
 - `## Outputs`
 - `## Process`

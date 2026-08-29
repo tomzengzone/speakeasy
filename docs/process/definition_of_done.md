@@ -5,7 +5,7 @@
 ## 产品与测试
 
 - [ ] 产品行为变化已引用完整且 approved 的 Story / Child VS；Story/VS 缺口由 Product Manager 修正。
-- [ ] Selected approved VS 可以有零条 FR；FR 存在时保持 approved 状态、非空直接 VS lineage 与有效 Capability/Sub-capability classification。
+- [ ] Selected approved VS 可以有零条 FR；FR 存在时使用固定四列表格，每行保持 approved 状态、非空直接 VS lineage 与非空、可测试的 Requirement。
 - [ ] 每条当前存在且适用的 FR 有适用的最低成本 FR-TC，或有 owner、原因、影响与失效期限明确的例外；零 FR 不需要例外记录。
 - [ ] 每个实施中的 selected VS 有用户可感知的 integration/E2E VS-TC，覆盖关键失败/降级路径。
 - [ ] 三类 TC 只保存各自唯一 direct edge，并具有自包含 oracle、Given/When/Then、边界/负例、层级、scope、selector、脚本路径和执行命令。

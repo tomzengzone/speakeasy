@@ -12,6 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 STORY_ITEM_ID = re.compile(r"^(?:US|VS)-[A-Z0-9]+(?:-[A-Z0-9]+)*$")
 STORY_COLUMNS = ["Id", "description", "Status"]
 STORY_STATUSES = {"draft", "approved"}
+FR_ITEM_ID = re.compile(r"^FR-[A-Z0-9]+(?:-[A-Z0-9]+)*$")
+FR_COLUMNS = ["ID", "Status", "source_vs_ids", "Requirement"]
+FR_SOURCE_VS_IDS = re.compile(r"`VS-[A-Z0-9]+(?:-[A-Z0-9]+)*`(?:\s*,\s*`VS-[A-Z0-9]+(?:-[A-Z0-9]+)*`)*")
 SOURCE_KEYS = {"source_fr_id", "source_contract_id", "source_vs_id"}
 TC_REQUIRED = {"type", "layer", "scope", "selector", "script_path", "command", "Given", "When", "Then", "Boundary/negative"}
 EXECUTION_RESULT_KEYS = {
@@ -113,6 +116,66 @@ def parse_story_map(
     return approved_stories, parent_by_vs, approved_vs, errors
 
 
+def parse_functional_requirements(
+    text: str, source: str = "FUNCTIONAL_REQUIREMENT_CATALOG",
+) -> tuple[dict[str, dict[str, str]], list[str]]:
+    records: dict[str, dict[str, str]] = {}
+    first_seen: dict[str, int] = {}
+    errors: list[str] = []
+    valid_headers = 0
+
+    legacy_heading = re.search(r"^###\s+FR-[A-Z0-9-]+\b", text, re.M)
+    legacy_field = re.search(
+        r"^-\s+(?:source_vs_ids|Rule|Level invariant|Boundary|Cutover boundary|"
+        r"Engineering impact handoff|Approval basis|Requirement):",
+        text,
+        re.M,
+    )
+    if legacy_heading or legacy_field:
+        errors.append(f"{source}: FR records must use the fixed four-column table, not legacy heading/bullet records")
+
+    for number, line in enumerate(text.splitlines(), 1):
+        if not line.lstrip().startswith("|"):
+            continue
+        cells = _table_cells(line)
+        if cells and cells[0] == "ID":
+            if cells != FR_COLUMNS:
+                errors.append(
+                    f"{source}:{number}: FR table must have columns "
+                    f"{' | '.join(FR_COLUMNS)}"
+                )
+            else:
+                valid_headers += 1
+            continue
+        if not cells:
+            continue
+        fr_id = _unquote(cells[0])
+        if not FR_ITEM_ID.fullmatch(fr_id):
+            continue
+        if len(cells) != len(FR_COLUMNS):
+            errors.append(f"{source}:{number}: FR row must have {len(FR_COLUMNS)} columns")
+            continue
+        if fr_id in first_seen:
+            errors.append(
+                f"duplicate FR ID {fr_id}: "
+                f"{source}:{first_seen[fr_id]} and {source}:{number}"
+            )
+            continue
+        first_seen[fr_id] = number
+        records[fr_id] = {
+            "Status": cells[1],
+            "source_vs_ids": cells[2],
+            "Requirement": cells[3],
+        }
+
+    if valid_headers != 1:
+        errors.append(
+            f"{source}: FR Catalog must contain exactly one four-column table header "
+            f"{' | '.join(FR_COLUMNS)}"
+        )
+    return records, errors
+
+
 def _active_artifact(root: Path, artifact_id: str) -> dict:
     contract_root = root / "docs/process/governance"
     index = json.loads((contract_root / "index.json").read_text(encoding="utf-8"))
@@ -209,7 +272,8 @@ def validate_delivery(root: Path = ROOT) -> tuple[list[str], dict]:
             story_map.read_text(encoding="utf-8"), story_source
         )
         errors.extend(story_errors)
-    frs = _records(fr_text, "FR")
+    frs, fr_errors = parse_functional_requirements(fr_text)
+    errors.extend(fr_errors)
     tcs = _records(tc_text, "TC")
     try:
         engineering_contract_ids = _active_engineering_contract_ids(root)
@@ -219,20 +283,17 @@ def validate_delivery(root: Path = ROOT) -> tuple[list[str], dict]:
 
     frs_by_vs: dict[str, set[str]] = {vs: set() for vs in approved_vs}
     for fr_id, fields in frs.items():
-        if fields.get("Status") != "`approved`":
+        if _unquote(fields.get("Status", "")) != "approved":
             errors.append(f"{fr_id} must be approved before implementation")
         source_vs_ids = _ids(fields.get("source_vs_ids", ""), "VS")
         if not source_vs_ids:
             errors.append(f"{fr_id} must have non-empty source_vs_ids")
+        elif not FR_SOURCE_VS_IDS.fullmatch(fields["source_vs_ids"]):
+            errors.append(f"{fr_id} source_vs_ids must contain only approved VS IDs")
         if len(source_vs_ids) != len(set(source_vs_ids)):
             errors.append(f"{fr_id} repeats a source VS")
-        forbidden_lineage = set(fields) & {"source_story_id", "source_story_ids", "source_capability_id", "source_increment_id", "source_stage_id"}
-        if forbidden_lineage:
-            errors.append(f"{fr_id} contains forbidden second-lineage fields: {sorted(forbidden_lineage)}")
-        if not fields.get("Rule"):
-            errors.append(f"{fr_id} has no Rule content")
-        if not fields.get("primary_capability_id") or not fields.get("primary_sub_capability_id"):
-            errors.append(f"{fr_id} lacks Capability/Sub-capability classification")
+        if not fields.get("Requirement"):
+            errors.append(f"{fr_id} has empty Requirement content")
         for vs_id in source_vs_ids:
             if vs_id not in approved_vs:
                 errors.append(f"{fr_id} references missing or unapproved VS {vs_id}")

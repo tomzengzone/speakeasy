@@ -16,6 +16,18 @@ FUTURE_PATH_TOKENS = {
     "/vocabulary",
     "/cms",
 }
+AUTH_RATE_LIMITED_OPERATIONS = {
+    ("/auth/login/phone", "post"),
+    ("/auth/verification-codes/phone", "post"),
+    ("/auth/login/apple", "post"),
+    ("/auth/login/wechat", "post"),
+    ("/auth/refresh", "post"),
+    ("/auth/logout", "post"),
+    ("/auth/logout-others", "post"),
+    ("/auth/logout-all", "post"),
+    ("/auth/sessions", "get"),
+    ("/auth/sessions/{auth_session_id}", "delete"),
+}
 
 
 def load_spec():
@@ -113,6 +125,10 @@ def main():
                 errors.append(f"requestBody missing JSON example: {label}")
 
         responses = operation.get("responses") or {}
+        if (path, method) in AUTH_RATE_LIMITED_OPERATIONS:
+            rate_limited = responses.get("429") or responses.get(429)
+            if rate_limited != {"$ref": "#/components/responses/AuthRateLimited"}:
+                errors.append(f"authentication operation missing canonical 429 response: {label}")
         success_seen = False
         json_success_with_example = False
         for status, response in responses.items():
@@ -145,6 +161,11 @@ def main():
             for status, response in responses.items()
         ) and not json_success_with_example:
             errors.append(f"operation has no 2XX JSON response example: {label}")
+
+    refresh_request = ((spec.get("components") or {}).get("schemas") or {}).get("RefreshTokenRequest") or {}
+    refresh_properties = refresh_request.get("properties") or {}
+    if "device_id" not in refresh_properties:
+        errors.append("RefreshTokenRequest must accept optional device_id for authentication rate limiting")
 
     if errors:
         for error in errors:

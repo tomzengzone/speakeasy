@@ -237,7 +237,7 @@ class AuthControllerTest {
                 }
                 """))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"));
+        .andExpect(jsonPath("$.error.code").value("REFRESH_TOKEN_INVALID"));
   }
 
   @Test
@@ -254,6 +254,22 @@ class AuthControllerTest {
                 """))
         .andExpect(status().isUnprocessableEntity())
         .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"));
+  }
+
+  @Test
+  void phoneVerificationCodeRequestUsesTheServerProviderBoundary() throws Exception {
+    mvc.perform(post("/auth/verification-codes/phone")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "phone_number": "+8613800138005",
+                  "device_id": "install-123"
+                }
+                """))
+        .andExpect(status().isAccepted())
+        .andExpect(jsonPath("$.schema_version").value(1))
+        .andExpect(jsonPath("$.status").value("sent"));
   }
 
   private AuthTokens loginPhone(String phoneNumber) throws Exception {

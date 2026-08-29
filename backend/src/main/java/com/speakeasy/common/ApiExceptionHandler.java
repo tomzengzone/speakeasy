@@ -1,6 +1,7 @@
 package com.speakeasy.common;
 
 import jakarta.servlet.http.HttpServletRequest;
+import com.speakeasy.identity.ratelimit.AuthRateLimitException;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,17 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+  @ExceptionHandler(AuthRateLimitException.class)
+  ResponseEntity<ErrorResponse> handleAuthRateLimit(
+      AuthRateLimitException exception, HttpServletRequest request) {
+    String requestId = requestId(request);
+    return ResponseEntity.status(exception.getStatus())
+        .header("Retry-After", Long.toString(exception.getRetryAfter().toSeconds()))
+        .header("X-Request-Id", requestId)
+        .header("Cache-Control", "no-store")
+        .body(ErrorResponse.of(exception.getCode(), exception.getMessage(), requestId, exception.getDetails()));
+  }
+
   @ExceptionHandler(ApiException.class)
   ResponseEntity<ErrorResponse> handleApiException(ApiException exception, HttpServletRequest request) {
     return ResponseEntity.status(exception.getStatus())

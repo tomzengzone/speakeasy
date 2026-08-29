@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -30,6 +33,7 @@ class AppleAuthService {
     }
 
     try {
+      final String rawNonce = _randomNonce();
       final bool isAvailable = await SignInWithApple.isAvailable();
       if (!isAvailable) {
         throw Exception('当前设备暂不支持 Apple 登录');
@@ -41,6 +45,7 @@ class AppleAuthService {
               AppleIDAuthorizationScopes.email,
               AppleIDAuthorizationScopes.fullName,
             ],
+            nonce: sha256.convert(utf8.encode(rawNonce)).toString(),
           );
 
       final String authorizationCode = credential.authorizationCode.trim();
@@ -56,6 +61,7 @@ class AppleAuthService {
         email: credential.email,
         givenName: credential.givenName,
         familyName: credential.familyName,
+        nonce: rawNonce,
       );
       if (res['code'] != 0) {
         throw Exception(res['message'] ?? 'Apple 登录失败');
@@ -99,5 +105,15 @@ class AppleAuthService {
       return value.cast<String, dynamic>();
     }
     return <String, dynamic>{};
+  }
+
+  String _randomNonce() {
+    const String alphabet =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final Random random = Random.secure();
+    return List<String>.generate(
+      32,
+      (_) => alphabet[random.nextInt(alphabet.length)],
+    ).join();
   }
 }

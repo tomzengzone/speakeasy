@@ -11,7 +11,7 @@ description: Use when：Product Manager 创建、拆分、重写、审查或批�
 
 ## Contract
 
-这是 `STORY_MAP` 的 method Skill。治理事实必须通过 `GOVERNANCE_INDEX` 解析；`STORY_MAP` 持有 User Story 和 Child Vertical Slice 层的产品叙事，`CAPABILITY_REGISTRY` 持有 Capability/Sub-capability 分类与边界事实，存在时的 `FUNCTIONAL_REQUIREMENT_CATALOG` 持有从 approved Child Vertical Slice 提炼出的 Feature Requirement 规则、边界和失败语义。各 Artifact 不得替代或复制其他事实层的正文。
+这是 `STORY_MAP` 的 method Skill。治理事实必须通过 `GOVERNANCE_INDEX` 解析；`STORY_MAP` 持有 User Story 和 Child Vertical Slice 层的产品叙事，`CAPABILITY_REGISTRY` 持有 Capability/Sub-capability 分类与边界事实，存在时的 `FUNCTIONAL_REQUIREMENT_CATALOG` 持有从 approved Child Vertical Slice 提炼出的 Functional Requirement 规则、边界和失败语义。各 Artifact 不得替代或复制其他事实层的正文。
 
 ## Inputs
 

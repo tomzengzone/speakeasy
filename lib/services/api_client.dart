@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:speakeasy/config/app_config.dart';
 import 'package:speakeasy/core/auth/auth_credentials.dart';
 import 'package:speakeasy/core/auth/credential_repository.dart';
+import 'package:speakeasy/core/auth/installation_id_store.dart';
 import 'package:speakeasy/core/auth/refresh_coordinator.dart';
 import 'package:speakeasy/core/auth/secure_token_store.dart';
 import 'package:speakeasy/core/auth/token_provider.dart';
@@ -24,7 +27,30 @@ typedef AuthPost =
 
 enum _HttpMethod { get, post, put, patch, delete }
 
-enum RefreshFailureKind { authentication, infrastructure }
+enum RefreshFailureKind { authentication, rateLimited, infrastructure }
+
+enum SessionSecurityReason {
+  sessionRevoked,
+  refreshTokenExpired,
+  refreshTokenInvalid,
+  tokenReuseDetected,
+  accountDisabled,
+}
+
+class SessionSecurityFailure implements Exception {
+  const SessionSecurityFailure({
+    required this.reason,
+    required this.backendCode,
+    required this.userMessage,
+  });
+
+  final SessionSecurityReason reason;
+  final String backendCode;
+  final String userMessage;
+
+  @override
+  String toString() => 'SessionSecurityFailure($backendCode)';
+}
 
 class RefreshFailure implements Exception {
   const RefreshFailure({
@@ -43,6 +69,19 @@ class RefreshFailure implements Exception {
 
   @override
   String toString() => 'RefreshFailure($kind, $message)';
+}
+
+class RateLimitedRefreshFailure extends RefreshFailure
+    implements RefreshRateLimitSignal {
+  const RateLimitedRefreshFailure({
+    required super.message,
+    required this.retryAfter,
+    super.httpStatus,
+    super.backendCode,
+  }) : super(kind: RefreshFailureKind.rateLimited);
+
+  @override
+  final Duration retryAfter;
 }
 
 enum ContentApiFailureKind {
@@ -119,7 +158,12 @@ class ApiClientCourseCatalogApi implements CourseCatalogApi {
 
 class ApiClient {
   static String? _pendingAccountDeletionKey;
+  static final StreamController<SessionSecurityFailure>
+  _sessionSecurityFailures = StreamController<SessionSecurityFailure>.broadcast(
+    sync: true,
+  );
   static final SecureTokenStore _secureTokenStore = SecureTokenStore();
+  static final InstallationIdStore _installationIds = InstallationIdStore();
   static final CredentialRepository _credentialRepository =
       SecureCredentialRepository(
         tokenStore: _secureTokenStore,
@@ -140,6 +184,9 @@ class ApiClient {
         legacyAccessToken: () async =>
             StorageService.instance.getAuthSession()?.token,
       );
+
+  static Stream<SessionSecurityFailure> get sessionSecurityFailures =>
+      _sessionSecurityFailures.stream;
 
   static Future<AuthCredentials?> getCredentials() {
     return _tokenProvider.getCredentials();
@@ -168,6 +215,76 @@ class ApiClient {
 
   static Future<void> clearToken() async {
     await _credentialRepository.clear();
+  }
+
+  static SessionSecurityFailure? _sessionSecurityFailure(
+    Map<String, dynamic> response,
+  ) {
+    final Map<String, dynamic> error = _asMap(response['error']);
+    final ErrorCode? code = ErrorCode.tryParse(error['code']);
+    return switch (code) {
+      ErrorCode.sessionRevoked => const SessionSecurityFailure(
+        reason: SessionSecurityReason.sessionRevoked,
+        backendCode: 'SESSION_REVOKED',
+        userMessage: '此设备的登录已被退出，请重新登录。',
+      ),
+      ErrorCode.refreshTokenExpired => const SessionSecurityFailure(
+        reason: SessionSecurityReason.refreshTokenExpired,
+        backendCode: 'REFRESH_TOKEN_EXPIRED',
+        userMessage: '登录已过期，请重新登录。',
+      ),
+      ErrorCode.refreshTokenInvalid => const SessionSecurityFailure(
+        reason: SessionSecurityReason.refreshTokenInvalid,
+        backendCode: 'REFRESH_TOKEN_INVALID',
+        userMessage: '登录已失效，请重新登录。',
+      ),
+      ErrorCode.tokenReuseDetected => const SessionSecurityFailure(
+        reason: SessionSecurityReason.tokenReuseDetected,
+        backendCode: 'TOKEN_REUSE_DETECTED',
+        userMessage: '检测到登录凭证异常，为保护账号已退出登录，请重新登录。',
+      ),
+      ErrorCode.accountDisabled => const SessionSecurityFailure(
+        reason: SessionSecurityReason.accountDisabled,
+        backendCode: 'ACCOUNT_DISABLED',
+        userMessage: '账号已被禁用，如有疑问请联系支持。',
+      ),
+      _ => null,
+    };
+  }
+
+  static Future<Never> _terminateSession(SessionSecurityFailure failure) async {
+    try {
+      await clearToken();
+    } catch (_) {
+      // The AppSession listener also clears local session data.
+    }
+    _sessionSecurityFailures.add(failure);
+    throw failure;
+  }
+
+  static Future<void> _throwIfTerminalSessionResponse(
+    http.Response response,
+  ) async {
+    final String raw = response.body.trim();
+    if (raw.isEmpty) {
+      return;
+    }
+    try {
+      final dynamic decoded = jsonDecode(raw);
+      if (decoded is! Map) {
+        return;
+      }
+      final SessionSecurityFailure? failure = _sessionSecurityFailure(
+        decoded.cast<String, dynamic>(),
+      );
+      if (failure != null) {
+        await _terminateSession(failure);
+      }
+    } on SessionSecurityFailure {
+      rethrow;
+    } on FormatException {
+      return;
+    }
   }
 
   static String _responseMessage(
@@ -222,19 +339,28 @@ class ApiClient {
       if (allowEmpty &&
           response.statusCode >= 200 &&
           response.statusCode < 300) {
-        return <String, dynamic>{'code': 0};
+        return <String, dynamic>{
+          'code': 0,
+          '_httpStatus': response.statusCode,
+          '_responseHeaders': _responseHeaders(response),
+        };
       }
       throw Exception('服务器返回空响应');
     }
 
     final dynamic decoded = jsonDecode(raw);
     if (decoded is Map<String, dynamic>) {
-      return <String, dynamic>{...decoded, '_httpStatus': response.statusCode};
+      return <String, dynamic>{
+        ...decoded,
+        '_httpStatus': response.statusCode,
+        '_responseHeaders': _responseHeaders(response),
+      };
     }
     if (decoded is Map) {
       return <String, dynamic>{
         ...decoded.cast<String, dynamic>(),
         '_httpStatus': response.statusCode,
+        '_responseHeaders': _responseHeaders(response),
       };
     }
     return <String, dynamic>{
@@ -243,6 +369,14 @@ class ApiClient {
           : response.statusCode,
       'data': decoded,
       '_httpStatus': response.statusCode,
+      '_responseHeaders': _responseHeaders(response),
+    };
+  }
+
+  static Map<String, String> _responseHeaders(http.Response response) {
+    return <String, String>{
+      for (final MapEntry<String, String> header in response.headers.entries)
+        header.key.toLowerCase(): header.value,
     };
   }
 
@@ -387,7 +521,7 @@ class ApiClient {
     final http.Response response = await _requestExecutor.execute(
       authPolicy: authPolicy,
       headers: requestHeaders,
-      send: (Map<String, String> resolvedHeaders) {
+      send: (Map<String, String> resolvedHeaders) async {
         final Future<http.Response> request = switch (method) {
           _HttpMethod.get => http.get(uri, headers: resolvedHeaders),
           _HttpMethod.post => http.post(
@@ -407,32 +541,44 @@ class ApiClient {
           ),
           _HttpMethod.delete => http.delete(uri, headers: resolvedHeaders),
         };
-        return request.timeout(timeout);
+        final http.Response response = await request.timeout(timeout);
+        await _throwIfTerminalSessionResponse(response);
+        return response;
       },
     );
     return _decodeResponse(response, allowEmpty: allowEmpty);
   }
 
   static Future<Map<String, dynamic>> sendSmsCode(String phone) async {
-    return <String, dynamic>{
-      'code': 0,
-      'data': <String, dynamic>{
-        'status': 'not_required',
+    final String? installationId = await _installationId();
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.authPhoneVerificationCode,
+      <String, dynamic>{
+        'schema_version': 1,
         'phone_number': phone.trim(),
+        'device_id': ?installationId,
       },
-    };
+      authPolicy: AuthPolicy.none,
+    );
+    _ensureSuccess(response, fallback: '验证码发送失败');
+    return _okEnvelope(<String, dynamic>{
+      'status': response['status'],
+      'phoneNumber': phone.trim(),
+    });
   }
 
   static Future<Map<String, dynamic>> verifySmsCode(
     String phone,
     String code,
   ) async {
+    final Map<String, dynamic> deviceMetadata = await _loginDeviceMetadata();
     final Map<String, dynamic> response =
         await _post(SpeakeasyApiPaths.authLoginPhone, <String, dynamic>{
           'schema_version': 1,
           'phone_number': phone.trim(),
           'verification_code': code.trim(),
           'terms_accepted': true,
+          ...deviceMetadata,
         }, authPolicy: AuthPolicy.none);
     return _authSessionEnvelope(response);
   }
@@ -448,16 +594,18 @@ class ApiClient {
     String? email,
     String? givenName,
     String? familyName,
+    String? nonce,
   }) async {
+    final Map<String, dynamic> deviceMetadata = await _loginDeviceMetadata();
     final Map<String, dynamic> response =
         await _post(SpeakeasyApiPaths.authLoginApple, <String, dynamic>{
           'schema_version': 1,
           'provider_token': identityToken.trim().isNotEmpty
               ? identityToken.trim()
               : authorizationCode.trim(),
-          if (authorizationCode.trim().isNotEmpty)
-            'nonce': authorizationCode.trim(),
+          if (nonce != null && nonce.trim().isNotEmpty) 'nonce': nonce.trim(),
           'terms_accepted': true,
+          ...deviceMetadata,
         }, authPolicy: AuthPolicy.none);
     return _authSessionEnvelope(response);
   }
@@ -466,14 +614,54 @@ class ApiClient {
     required String code,
     String? state,
   }) async {
+    final Map<String, dynamic> deviceMetadata = await _loginDeviceMetadata();
     final Map<String, dynamic> response =
         await _post(SpeakeasyApiPaths.authLoginWechat, <String, dynamic>{
           'schema_version': 1,
           'provider_token': code.trim(),
           if (state != null && state.trim().isNotEmpty) 'nonce': state.trim(),
           'terms_accepted': true,
+          ...deviceMetadata,
         }, authPolicy: AuthPolicy.none);
     return _authSessionEnvelope(response);
+  }
+
+  static Future<Map<String, dynamic>> _loginDeviceMetadata() async {
+    final ({String name, String platform}) device =
+        switch (defaultTargetPlatform) {
+          TargetPlatform.iOS => (name: 'iOS device', platform: 'ios'),
+          TargetPlatform.android => (
+            name: 'Android device',
+            platform: 'android',
+          ),
+          _ => (name: 'Unknown device', platform: 'unknown'),
+        };
+    String? appVersion;
+    try {
+      final String resolvedVersion = (await PackageInfo.fromPlatform()).version
+          .trim();
+      if (resolvedVersion.isNotEmpty) {
+        appVersion = resolvedVersion;
+      }
+    } catch (_) {
+      // Optional device metadata must never block authentication.
+    }
+    final String? installationId = await _installationId();
+    return <String, dynamic>{
+      'device_id': ?installationId,
+      'device_name': device.name,
+      'platform': device.platform,
+      'app_version': ?appVersion,
+    };
+  }
+
+  static Future<String?> _installationId() async {
+    try {
+      return await _installationIds.readOrCreate();
+    } catch (_) {
+      // Installation metadata is supplemental and must not block authentication.
+      return null;
+    }
   }
 
   static Future<Map<String, dynamic>> refreshToken({
@@ -491,6 +679,7 @@ class ApiClient {
 
     late final Map<String, dynamic> response;
     try {
+      final String? installationId = await _installationId();
       response =
           await (transport ??
               (String path, Map<String, dynamic> body) => _post(
@@ -500,7 +689,10 @@ class ApiClient {
               ))(SpeakeasyApiPaths.authRefresh, <String, dynamic>{
             'schema_version': 1,
             'refresh_token': resolvedRefreshToken,
+            'device_id': ?installationId,
           });
+    } on SessionSecurityFailure {
+      rethrow;
     } on RefreshFailure {
       rethrow;
     } catch (error) {
@@ -516,6 +708,20 @@ class ApiClient {
       final Map<String, dynamic> error = _asMap(response['error']);
       final String backendCode = (error['code'] as String? ?? '').trim();
       final String backendMessage = (error['message'] as String? ?? '').trim();
+      final SessionSecurityFailure? securityFailure = _sessionSecurityFailure(
+        response,
+      );
+      if (securityFailure != null) {
+        await _terminateSession(securityFailure);
+      }
+      if (statusCode == 429 && backendCode == 'AUTH_RATE_LIMITED') {
+        throw RateLimitedRefreshFailure(
+          message: backendMessage.isEmpty ? '刷新请求过于频繁，请稍后再试。' : backendMessage,
+          retryAfter: _retryAfter(response),
+          httpStatus: statusCode,
+          backendCode: backendCode,
+        );
+      }
       if ((statusCode == 400 || statusCode == 401 || statusCode == 403) &&
           backendCode == 'UNAUTHENTICATED') {
         throw RefreshFailure(
@@ -537,6 +743,21 @@ class ApiClient {
     return _authSessionEnvelope(response);
   }
 
+  static Duration _retryAfter(Map<String, dynamic> response) {
+    final Map<String, dynamic> rawHeaders = _asMap(
+      response['_responseHeaders'],
+    );
+    String raw = '';
+    for (final MapEntry<String, dynamic> header in rawHeaders.entries) {
+      if (header.key.toLowerCase() == 'retry-after') {
+        raw = header.value?.toString().trim() ?? '';
+        break;
+      }
+    }
+    final int parsed = int.tryParse(raw) ?? 5;
+    return Duration(seconds: parsed.clamp(5, 300));
+  }
+
   static Future<AuthCredentials> _refreshRuntimeCredentials(
     String refreshToken,
   ) async {
@@ -550,6 +771,53 @@ class ApiClient {
     final Map<String, dynamic> response = await _get(SpeakeasyApiPaths.userMe);
     _ensureSuccess(response, fallback: '获取用户信息失败');
     return _okEnvelope(_appUserJson(_asMap(response['user'])));
+  }
+
+  static Future<Map<String, dynamic>> listAuthSessions() async {
+    final Map<String, dynamic> response = await _get(
+      SpeakeasyApiPaths.authSessions,
+    );
+    _ensureSuccess(response, fallback: '获取设备会话失败');
+    return response;
+  }
+
+  static Future<void> revokeAuthSession(String sessionId) async {
+    final String resolvedSessionId = sessionId.trim();
+    if (resolvedSessionId.isEmpty) {
+      throw ArgumentError.value(sessionId, 'sessionId', 'must not be empty');
+    }
+    final Map<String, dynamic> response = await _delete(
+      SpeakeasyApiPaths.authSession(resolvedSessionId),
+      allowEmpty: true,
+    );
+    _ensureSuccess(response, fallback: '退出该设备失败');
+  }
+
+  static Future<void> logoutOtherSessions() async {
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.authLogoutOthers,
+      const <String, dynamic>{},
+      allowEmpty: true,
+    );
+    _ensureSuccess(response, fallback: '退出其他设备失败');
+  }
+
+  static Future<void> logoutAllSessions() async {
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.authLogoutAll,
+      const <String, dynamic>{},
+      allowEmpty: true,
+    );
+    _ensureSuccess(response, fallback: '退出全部设备失败');
+  }
+
+  static Future<void> logoutCurrentSession() async {
+    final Map<String, dynamic> response = await _post(
+      SpeakeasyApiPaths.authLogout,
+      const <String, dynamic>{},
+      allowEmpty: true,
+    );
+    _ensureSuccess(response, fallback: '退出登录失败');
   }
 
   static Future<Map<String, dynamic>> updateMe(

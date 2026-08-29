@@ -29,7 +29,7 @@ class AccountDeletionSessionInvalidationTest extends BackendIntegrationTestSuppo
 
     mvc.perform(get("/user/me").header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"));
+        .andExpect(jsonPath("$.error.code").value("SESSION_REVOKED"));
 
     mvc.perform(post("/auth/refresh")
             .contentType(MediaType.APPLICATION_JSON)
@@ -40,6 +40,6 @@ class AccountDeletionSessionInvalidationTest extends BackendIntegrationTestSuppo
                 }
                 """.formatted(tokens.refreshToken())))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"));
+        .andExpect(jsonPath("$.error.code").value("SESSION_REVOKED"));
   }
 }

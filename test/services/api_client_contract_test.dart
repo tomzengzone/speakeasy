@@ -39,6 +39,11 @@ void main() {
         '/auth/login/apple',
         '/auth/login/wechat',
         '/auth/refresh',
+        '/auth/logout',
+        '/auth/logout-others',
+        '/auth/logout-all',
+        '/auth/sessions',
+        '/auth/sessions/{auth_session_id}',
         '/user/me',
         '/user/deletion-status',
         '/onboarding/assessment',
@@ -84,6 +89,13 @@ void main() {
     );
   });
 
+  test('generated auth session path encodes identifiers safely', () {
+    expect(
+      SpeakeasyApiPaths.authSession('session/with space'),
+      '/auth/sessions/session%2Fwith%20space',
+    );
+  });
+
   test('generated type registry covers the Course read contract', () {
     expect(
       SpeakeasyApiContract.courseSchemaNames,
@@ -111,6 +123,16 @@ void main() {
     );
     expect(ErrorCode.values.map((ErrorCode code) => code.wireValue), <String>[
       'UNAUTHENTICATED',
+      'ACCESS_TOKEN_EXPIRED',
+      'ACCESS_TOKEN_INVALID',
+      'REFRESH_TOKEN_EXPIRED',
+      'REFRESH_TOKEN_INVALID',
+      'SESSION_REVOKED',
+      'SESSION_NOT_FOUND',
+      'TOKEN_REUSE_DETECTED',
+      'ACCOUNT_DISABLED',
+      'AUTH_RATE_LIMITED',
+      'AUTH_SERVICE_UNAVAILABLE',
       'FORBIDDEN',
       'ENTITLEMENT_REQUIRED',
       'USAGE_LIMIT_EXCEEDED',
@@ -135,6 +157,39 @@ void main() {
       'C1',
       'C2',
     ]);
+  });
+
+  test('generated ScenarioId accepts future canonical values', () {
+    final ScenarioId futureScenario = ScenarioId.parse('travel_planning');
+
+    expect(futureScenario.wireValue, 'travel_planning');
+    expect(futureScenario, ScenarioId.parse('travel_planning'));
+    expect(ScenarioId.parse('a').wireValue, 'a');
+    expect(
+      ScenarioId.parse(List<String>.filled(80, 'a').join()).wireValue.length,
+      80,
+    );
+    expect(ScenarioId.jobInterview.wireValue, 'job_interview');
+    expect(
+      ScenarioId.onboardingIntroduction.wireValue,
+      'onboarding_introduction',
+    );
+
+    for (final Object? invalid in <Object?>[
+      null,
+      false,
+      '',
+      'Travel_Planning',
+      'travel-planning',
+      'travel__planning',
+      List<String>.filled(81, 'a').join(),
+    ]) {
+      expect(
+        () => ScenarioId.parse(invalid),
+        throwsFormatException,
+        reason: 'ScenarioId must reject $invalid',
+      );
+    }
   });
 
   test('generated catalog DTOs decode exact typed identities and CEFR', () {

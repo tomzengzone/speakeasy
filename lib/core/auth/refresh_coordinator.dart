@@ -5,6 +5,10 @@ import 'package:speakeasy/core/auth/token_provider.dart';
 typedef RefreshCredentials =
     Future<AuthCredentials> Function(String refreshToken);
 
+abstract interface class RefreshRateLimitSignal {
+  Duration get retryAfter;
+}
+
 class CredentialContextChanged implements Exception {
   const CredentialContextChanged();
 
@@ -34,6 +38,10 @@ class RefreshCoordinator {
   final DateTime Function() _now;
 
   Future<AuthCredentials>? _inFlightRefresh;
+  DateTime? _cooldownUntil;
+  String? _cooldownRefreshToken;
+  Object? _cooldownFailure;
+  StackTrace? _cooldownStackTrace;
 
   Future<AuthCredentials> refreshIfNeeded({
     String? failedAccessToken,
@@ -48,6 +56,8 @@ class RefreshCoordinator {
     if (failedToken.isNotEmpty && failedToken != current.accessToken) {
       return current;
     }
+
+    _throwIfCoolingDown(current);
 
     final Future<AuthCredentials>? inFlight = _inFlightRefresh;
     if (inFlight != null) {
@@ -71,23 +81,48 @@ class RefreshCoordinator {
   }
 
   Future<AuthCredentials> _refresh(AuthCredentials current) async {
-    final AuthCredentials refreshed = await _refreshCredentials(
-      current.refreshToken,
+    late final AuthCredentials refreshed;
+    try {
+      refreshed = await _refreshCredentials(current.refreshToken);
+    } on RefreshRateLimitSignal catch (failure, stackTrace) {
+      _cooldownUntil = _now().add(failure.retryAfter);
+      _cooldownRefreshToken = current.refreshToken;
+      _cooldownFailure = failure;
+      _cooldownStackTrace = stackTrace;
+      Error.throwWithStackTrace(failure, stackTrace);
+    }
+    final bool replaced = await _credentialRepository.replaceIfCurrent(
+      expected: current,
+      replacement: refreshed,
     );
-    final AuthCredentials? latest = await _tokenProvider.getCredentials();
-    if (!_sameCredentialGeneration(current, latest)) {
+    if (!replaced) {
       throw const CredentialContextChanged();
     }
-    await _credentialRepository.replace(refreshed);
+    _clearCooldown();
     return refreshed;
   }
 
-  bool _sameCredentialGeneration(
-    AuthCredentials expected,
-    AuthCredentials? actual,
-  ) {
-    return actual != null &&
-        expected.accessToken == actual.accessToken &&
-        expected.refreshToken == actual.refreshToken;
+  void _throwIfCoolingDown(AuthCredentials current) {
+    final DateTime? until = _cooldownUntil;
+    if (until == null ||
+        _cooldownRefreshToken != current.refreshToken ||
+        !_now().isBefore(until)) {
+      _clearCooldown();
+      return;
+    }
+    final Object? failure = _cooldownFailure;
+    if (failure != null) {
+      Error.throwWithStackTrace(
+        failure,
+        _cooldownStackTrace ?? StackTrace.current,
+      );
+    }
+  }
+
+  void _clearCooldown() {
+    _cooldownUntil = null;
+    _cooldownRefreshToken = null;
+    _cooldownFailure = null;
+    _cooldownStackTrace = null;
   }
 }

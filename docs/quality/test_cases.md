@@ -148,10 +148,10 @@
 - selector: `CONTENT-COURSE-CATALOG-API-001/scenario-all`
 - script_path: `backend/src/test/java/com/speakeasy/content/CourseCatalogApiContractTest.java`
 - command: `mvn -f backend/pom.xml -Dtest=CourseCatalogApiContractTest#scenarioAll test`
-- Given: 已认证学习者的服务端投影包含多个已发布可见主题，主题 ID 顺序被打乱，其中至少一个主题没有可见 Course；另有未发布或不可见主题以及可选 query/category 过滤输入。
+- Given: 已认证学习者的服务端投影包含多个已发布可见主题，主题 ID 顺序被打乱，其中包含满足公共格式但不在两个兼容常量内的 `travel_planning`，且至少一个主题没有可见 Course；另有未发布或不可见主题以及可选 query/category 过滤输入。
 - When: 分别以省略过滤参数和显式过滤参数调用 `GET /scenarios`。
-- Then: 无过滤调用恰好返回全部已发布可见主题并按 `scenario_id` 升序，零可见 Course 的主题仍保留；显式过滤只能在同一认证、发布和可见性全集上缩小结果，且不改变后续无过滤调用的全集语义。
-- Boundary/negative: 无匹配为 `200 scenarios: []`；查询、依赖、部分读取或完整性故障必须返回 typed retryable `503`，不得伪装为空、按 Course 是否存在过滤主题或使用隐式 category/search/entitlement tier。
+- Then: 无过滤调用恰好返回全部已发布可见主题并按 `scenario_id` 升序，`travel_planning` 原样返回并参与正常排序，零可见 Course 的主题仍保留；显式过滤只能在同一认证、发布和可见性全集上缩小结果，且不改变后续无过滤调用的全集语义。
+- Boundary/negative: 满足契约的新 ID 不得被旧的两值 allowlist 丢弃；无匹配为 `200 scenarios: []`；查询、依赖、部分读取或完整性故障必须返回 typed retryable `503`，不得伪装为空、按 Course 是否存在过滤主题或使用隐式 category/search/entitlement tier。
 
 ### TC-CONTRACT-CONTENT-COURSE-002 — 主题课程摘要全集、排序与真实空集
 
@@ -218,10 +218,10 @@
 - selector: `CONTENT-COURSE-CATALOG-API-001/schema-and-errors`
 - script_path: `backend/src/test/java/com/speakeasy/content/CourseCatalogSchemaContractTest.java`
 - command: `mvn -f backend/pom.xml -Dtest=CourseCatalogSchemaContractTest#schemaAndErrors test`
-- Given: 三个内容读取操作各有成功、真实空、未认证、privacy-safe unavailable、Content query/integrity failure fixture，并对 Course 等级注入六个 CEFR 值、legacy L 值和未知值。
+- Given: 三个内容读取操作各有成功、真实空、未认证、privacy-safe unavailable、Content query/integrity failure fixture；`ScenarioId` 机器契约为 `string`、`minLength: 1`、`maxLength: 80`、`^[a-z0-9]+(?:_[a-z0-9]+)*$` 且无 enum，并对 Course 等级注入六个 CEFR 值、legacy L 值和未知值。
 - When: 响应与 OpenAPI 定义的 success/error schemas 和 examples 进行契约断言。
-- Then: 每个 `200` 顶层都有常量 `schema_version: 1` 与本次调用唯一的 `request_id`，合法 Course 等级仅为 A1/A2/B1/B2/C1/C2；`401 UNAUTHENTICATED`、`404 RESOURCE_NOT_FOUND` 和 `503 CONTENT_READ_UNAVAILABLE` 的状态、code、message、request_id、typed retryable details 与 schema/example 一致。
-- Boundary/negative: legacy/未知等级必须拒绝；query、依赖、部分读取或 binding 故障不得变成 `200`、空集合、`PROVIDER_UNAVAILABLE` 或未登记错误 shape，内部 SQL/provider/entitlement detail 不得进入外部响应。
+- Then: 每个 `200` 顶层都有常量 `schema_version: 1` 与本次调用唯一的 `request_id`，合法新 `ScenarioId` 原样进入普通 Content lookup，合法 Course 等级仅为 A1/A2/B1/B2/C1/C2；`401 UNAUTHENTICATED`、`404 RESOURCE_NOT_FOUND` 和 `503 CONTENT_READ_UNAVAILABLE` 的状态、code、message、request_id、typed retryable details 与 schema/example 一致。
+- Boundary/negative: `ScenarioId` 的空值、81 位、大小写、连字符和畸形下划线分隔必须以 `SCHEMA_VALIDATION_FAILED` 拒绝；legacy/未知等级必须拒绝；query、依赖、部分读取或 binding 故障不得变成 `200`、空集合、`PROVIDER_UNAVAILABLE` 或未登记错误 shape，内部 SQL/provider/entitlement detail 不得进入外部响应。
 
 ### TC-CONTRACT-CONTENT-COURSE-007 — 发布与可见性分离及隐私安全收敛
 
@@ -260,10 +260,10 @@
 - selector: `CONTENT-COURSE-CATALOG-API-001/generated-drift`
 - script_path: `test/services/api_client_contract_test.dart`
 - command: `flutter test test/services/api_client_contract_test.dart`
-- Given: OpenAPI、generated Dart path/type registry、typed ErrorCode、hash marker 与 drift manifest 来自同一候选版本，并包含场景全集、主题课程列表和精确 CourseVersion 详情边界；既有 handwritten `/cards` 仅作为 manifest 显式登记的 legacy exception 输入。
+- Given: OpenAPI、generated Dart path/type registry、typed ErrorCode、hash marker 与 drift manifest 来自同一候选版本；`ScenarioId` 是开放且受 `1..80` 位 lowercase snake-case 格式约束的值对象，两个既有 ID 只保留为兼容常量；候选包含场景全集、主题课程列表和精确 CourseVersion 详情边界，既有 handwritten `/cards` 仅作为 manifest 显式登记的 legacy exception 输入。
 - When: Flutter API client contract test 对 operation paths、path builders、Course schemas、CEFR/ErrorCode 类型和 OpenAPI SHA-256 进行逐项比对。
-- Then: 两个新增 Course paths、参数化 builder、Course summary/detail/binding/duration/response 类型、`CONTENT_READ_UNAVAILABLE` 与严格 CEFR 均已登记，generated source、marker、manifest 和当前 OpenAPI hash 完全一致；显式登记的 legacy `/cards` 保持为非 Course API 的独立兼容例外。
-- Boundary/negative: 新 Course path/type 使用 `/cards`、未在 manifest 登记的 `/cards`、缺失或额外 path/type、旧 hash、latest-version convenience path、Course-level legacy alias、`ScenarioLevel` alias 或未登记 DTO 必须使测试失败；既有 `/cards` 只有在 manifest 显式登记且未被解释为 Course API 时可保留。
+- Then: 两个新增 Course paths、参数化 builder、Course summary/detail/binding/duration/response 类型、`CONTENT_READ_UNAVAILABLE` 与严格 CEFR 均已登记；任意格式合法的 `ScenarioId` 可无损 round-trip，生成器固定 type、长度、pattern、无 enum 及共享 parameter/schema 引用；generated source、marker、manifest 和当前 OpenAPI hash 完全一致，显式登记的 legacy `/cards` 保持为非 Course API 的独立兼容例外。
+- Boundary/negative: `ScenarioId` 退化为 enum、约束漂移、非法 ID 被接受、新 Course path/type 使用 `/cards`、未在 manifest 登记的 `/cards`、缺失或额外 path/type、旧 hash、latest-version convenience path、Course-level legacy alias、`ScenarioLevel` alias 或未登记 DTO 必须使测试失败；既有 `/cards` 只有在 manifest 显式登记且未被解释为 Course API 时可保留。
 
 ### TC-CONTRACT-CONTENT-COURSE-010 — Additive 上线、入口回滚与既有边界隔离
 

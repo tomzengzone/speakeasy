@@ -6,6 +6,11 @@ abstract interface class CredentialRepository {
 
   Future<void> replace(AuthCredentials credentials);
 
+  Future<bool> replaceIfCurrent({
+    required AuthCredentials expected,
+    required AuthCredentials replacement,
+  });
+
   Future<void> clear();
 }
 
@@ -18,19 +23,63 @@ class SecureCredentialRepository implements CredentialRepository {
 
   final SecureTokenStore _tokenStore;
   final Future<void> Function()? _clearLegacyAuthSession;
+  Future<void> _pendingOperation = Future<void>.value();
 
   @override
-  Future<AuthCredentials?> read() => _tokenStore.read();
+  Future<AuthCredentials?> read() {
+    return _serialized(_tokenStore.read);
+  }
 
   @override
-  Future<void> replace(AuthCredentials credentials) async {
+  Future<void> replace(AuthCredentials credentials) {
+    return _serialized(() => _replace(credentials));
+  }
+
+  @override
+  Future<bool> replaceIfCurrent({
+    required AuthCredentials expected,
+    required AuthCredentials replacement,
+  }) {
+    return _serialized(() async {
+      final AuthCredentials? latest = await _tokenStore.read();
+      if (!_sameCredentialGeneration(expected, latest)) {
+        return false;
+      }
+      await _replace(replacement);
+      return true;
+    });
+  }
+
+  @override
+  Future<void> clear() {
+    return _serialized(_clear);
+  }
+
+  Future<void> _replace(AuthCredentials credentials) async {
     await _tokenStore.replace(credentials);
     await _clearLegacyAuthSession?.call();
   }
 
-  @override
-  Future<void> clear() async {
+  Future<void> _clear() async {
     await _tokenStore.clear();
     await _clearLegacyAuthSession?.call();
+  }
+
+  Future<T> _serialized<T>(Future<T> Function() operation) {
+    final Future<T> result = _pendingOperation.then((_) => operation());
+    _pendingOperation = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return result;
+  }
+
+  bool _sameCredentialGeneration(
+    AuthCredentials expected,
+    AuthCredentials? actual,
+  ) {
+    return actual != null &&
+        expected.accessToken == actual.accessToken &&
+        expected.refreshToken == actual.refreshToken;
   }
 }

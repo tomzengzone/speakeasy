@@ -638,6 +638,16 @@ class _ProfilePageState extends State<ProfilePage> {
             subtitle: '已收藏 ${_favoriteItems.length} 条表达',
             onTap: () => unawaited(_openFavorites()),
           ),
+          _MenuTile(
+            key: const ValueKey<String>('profile_device_sessions_tile'),
+            icon: Icons.devices_rounded,
+            color: const Color(0xFF5A6FA8),
+            label: '设备与登录',
+            subtitle: '查看设备并管理登录状态',
+            onTap: () {
+              Navigator.of(context).pushNamed(AppRoutes.deviceSessions);
+            },
+          ),
         ],
       ),
       _MenuGroup(
@@ -782,13 +792,7 @@ class _ProfilePageState extends State<ProfilePage> {
             color: const Color(0xFFD46B6B),
             label: context.l10n.logout,
             danger: true,
-            onTap: () {
-              session.logout();
-              setState(() {
-                _activeSection = 0;
-                _showMembership = false;
-              });
-            },
+            onTap: () => unawaited(session.logout()),
           ),
         ],
       ),

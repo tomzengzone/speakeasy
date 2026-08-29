@@ -23,6 +23,7 @@ class CourseCatalogSchemaContractTest extends AbstractCourseContractTest {
   @Test
   void schemaAndErrors() throws Exception {
     assertSchemaAndRequestIdentityOnSuccessfulReads();
+    assertScenarioIdFormatValidation();
     for (String levelCode : new String[] {"A1", "A2", "B1", "B2", "C1", "C2"}) {
       assertCourseCefrValueRoundTripsAcrossThreeReads(levelCode);
     }
@@ -33,6 +34,25 @@ class CourseCatalogSchemaContractTest extends AbstractCourseContractTest {
     assertPrivacySafe404IsNotApplicableToThemeCollectionButAppliesToScopedListAndDetail();
     assertUnauthenticatedIs401ForAllThreeReads();
     assertDependencyOrIntegrityFailureIs503ForAllThreeReads();
+  }
+
+  private void assertScenarioIdFormatValidation() throws Exception {
+    AuthTokens tokens = loginPhone("+8613910050399");
+    for (String validButMissing : new String[] {"a", "a".repeat(80), "travel_planning"}) {
+      mvc.perform(get("/scenarios/" + validButMissing + "/courses")
+              .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.error.code").value("RESOURCE_NOT_FOUND"));
+    }
+    for (String invalid : new String[] {
+        "Travel_Planning", "travel-planning", "travel__planning", "a".repeat(81)
+    }) {
+      mvc.perform(get("/scenarios/" + invalid + "/courses")
+              .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"))
+          .andExpect(jsonPath("$.error.details.field").value("scenario_id"));
+    }
   }
 
   private void assertSchemaAndRequestIdentityOnSuccessfulReads() throws Exception {

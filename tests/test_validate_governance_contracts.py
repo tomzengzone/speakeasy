@@ -490,7 +490,7 @@ class GovernanceContractValidationTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             target = Path(temp)
             self.copy_governance_fixture(target)
-            skill = target / ".agents/skills/requirement-refine/SKILL.md"
+            skill = target / ".agents/skills/test-case-generate/SKILL.md"
             text = skill.read_text(encoding="utf-8")
             text = text.replace(
                 "## Inputs",
@@ -503,11 +503,28 @@ class GovernanceContractValidationTest(unittest.TestCase):
 
     def test_method_and_agent_owner_boundaries_use_handoffs(self):
         requirements = (ROOT / ".agents/skills/requirement-refine/SKILL.md").read_text(encoding="utf-8")
+        requirement_outputs = requirements.split("## Outputs", 1)[1].split("## Process", 1)[0]
+        requirement_process = requirements.split("## Process", 1)[1].split("## Stop Conditions", 1)[0]
+        requirement_template = (
+            ROOT / ".agents/skills/requirement-refine/assets/functional-requirement.template.md"
+        ).read_text(encoding="utf-8")
         test_case = (ROOT / ".agents/skills/test-case-generate/SKILL.md").read_text(encoding="utf-8")
         traceability = load_toml(ROOT / ".codex/agents/traceability.toml", [])["developer_instructions"]
         self.assertIn("source_vs_ids", requirements)
-        self.assertIn("对已提供完整值的 Markdown 规范化结果", requirements)
-        self.assertIn("treating this template as content authority", requirements)
+        self.assertNotIn("| ID | Status | source_vs_ids | Requirement |", requirement_outputs)
+        self.assertIn("独立审批、独立变更且独立验证", requirement_outputs)
+        self.assertNotIn("拆分或合并建议", requirement_outputs)
+        self.assertIn(
+            "[Functional Requirement 模板](assets/functional-requirement.template.md)",
+            requirement_process,
+        )
+        self.assertIn("实际生成或规范化 FR Catalog 时", requirement_process)
+        self.assertIn("模板只提供输出格式", requirement_process)
+        self.assertIn("| ID | Status | source_vs_ids | Requirement |", requirement_template)
+        self.assertIn("| `<FR-ID>` | `approved` | `<VS-ID>` | `<可测试的规范性需求陈述>` |", requirement_template)
+        self.assertNotIn("Title", requirement_template)
+        self.assertNotIn("Capability", requirement_template)
+        self.assertIn("将模板当作内容权威来源", requirements)
         self.assertIn("每个 Test Case 只有一种带类型的直接上游", test_case)
         self.assertIn("TC 执行结果属于 CI evidence", test_case)
         self.assertIn("Modify only the derived projection", traceability)
@@ -517,6 +534,40 @@ class GovernanceContractValidationTest(unittest.TestCase):
         errors, warnings = validate_skills(ROOT)
         self.assertEqual([], errors)
         self.assertEqual([], [warning for warning in warnings if "runtime files above advisory" not in warning])
+
+    def test_skill_validator_accepts_skill_without_contract_section(self):
+        with tempfile.TemporaryDirectory() as temp:
+            target = Path(temp)
+            self.copy_governance_fixture(target)
+            skill = target / ".agents/skills/test-case-generate/SKILL.md"
+            text = skill.read_text(encoding="utf-8")
+            section_start = text.index("\n## Contract\n")
+            next_section = text.index("\n## Inputs\n", section_start)
+            skill.write_text(text[:section_start] + text[next_section:], encoding="utf-8")
+
+            errors, _warnings = validate_skills(target)
+
+            self.assertEqual([], errors)
+
+    def test_skill_validator_still_requires_inputs_section(self):
+        with tempfile.TemporaryDirectory() as temp:
+            target = Path(temp)
+            self.copy_governance_fixture(target)
+            skill = target / ".agents/skills/test-case-generate/SKILL.md"
+            text = skill.read_text(encoding="utf-8")
+            section_start = text.index("\n## Inputs\n")
+            next_section = text.index("\n## Outputs\n", section_start)
+            skill.write_text(text[:section_start] + text[next_section:], encoding="utf-8")
+
+            errors, _warnings = validate_skills(target)
+
+            self.assertTrue(
+                any(
+                    "test-case-generate" in error
+                    and "missing required section ## Inputs" in error
+                    for error in errors
+                )
+            )
 
     def test_skill_validator_accepts_description_without_negative_trigger_phrase(self):
         with tempfile.TemporaryDirectory() as temp:

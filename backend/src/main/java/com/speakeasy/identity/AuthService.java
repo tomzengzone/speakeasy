@@ -2,7 +2,10 @@ package com.speakeasy.identity;
 
 import com.speakeasy.common.ApiException;
 import com.speakeasy.common.CefrLevel;
+import com.speakeasy.identity.provider.PhoneVerificationProvider;
+import com.speakeasy.identity.provider.SocialIdentityVerifier;
 import com.speakeasy.ops.AccountDeletionJobRepository;
+import com.speakeasy.ops.AuthAuditService;
 import com.speakeasy.security.CurrentUser;
 import com.speakeasy.security.TokenHasher;
 import java.security.SecureRandom;
@@ -12,21 +15,31 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
-  private static final Duration ACCESS_TOKEN_TTL = Duration.ofMinutes(30);
-  private static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(30);
-
   private final UserAccountRepository users;
   private final UserProfileRepository profiles;
   private final AuthIdentityRepository identities;
   private final AuthSessionRepository sessions;
+  private final AuthRefreshTokenFamilyRepository tokenFamilies;
+  private final AuthRefreshTokenRepository refreshTokens;
   private final AccountDeletionJobRepository deletionJobs;
+  private final AccountSecurityService accountSecurity;
+  private final AuthAuditService audit;
+  private final AuthMetrics metrics;
+  private final PhoneVerificationProvider phoneVerification;
+  private final SocialIdentityVerifier socialIdentities;
   private final Clock clock;
+  private final Duration accessTokenTtl;
+  private final Duration sessionIdleTtl;
+  private final Duration sessionAbsoluteTtl;
   private final SecureRandom secureRandom = new SecureRandom();
 
   public AuthService(
@@ -34,77 +47,196 @@ public class AuthService {
       UserProfileRepository profiles,
       AuthIdentityRepository identities,
       AuthSessionRepository sessions,
+      AuthRefreshTokenFamilyRepository tokenFamilies,
+      AuthRefreshTokenRepository refreshTokens,
       AccountDeletionJobRepository deletionJobs,
-      Clock clock) {
+      AccountSecurityService accountSecurity,
+      AuthAuditService audit,
+      AuthMetrics metrics,
+      @Qualifier("phoneVerificationProvider") PhoneVerificationProvider phoneVerification,
+      @Qualifier("socialIdentityVerifier") SocialIdentityVerifier socialIdentities,
+      Clock clock,
+      @Value("${speakeasy.auth.access-token-ttl:15m}") Duration accessTokenTtl,
+      @Value("${speakeasy.auth.session-idle-ttl:30d}") Duration sessionIdleTtl,
+      @Value("${speakeasy.auth.session-absolute-ttl:90d}") Duration sessionAbsoluteTtl) {
     this.users = users;
     this.profiles = profiles;
     this.identities = identities;
     this.sessions = sessions;
+    this.tokenFamilies = tokenFamilies;
+    this.refreshTokens = refreshTokens;
     this.deletionJobs = deletionJobs;
+    this.accountSecurity = accountSecurity;
+    this.audit = audit;
+    this.metrics = metrics;
+    this.phoneVerification = phoneVerification;
+    this.socialIdentities = socialIdentities;
     this.clock = clock;
+    this.accessTokenTtl = accessTokenTtl;
+    this.sessionIdleTtl = sessionIdleTtl;
+    this.sessionAbsoluteTtl = sessionAbsoluteTtl;
   }
 
   @Transactional
   public AuthSessionResult loginPhone(String phoneNumber, String verificationCode, boolean termsAccepted) {
+    return loginPhone(phoneNumber, verificationCode, termsAccepted, DeviceMetadata.unknown());
+  }
+
+  @Transactional
+  public AuthSessionResult loginPhone(
+      String phoneNumber, String verificationCode, boolean termsAccepted, DeviceMetadata device) {
     if (!termsAccepted) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "SCHEMA_VALIDATION_FAILED", "Terms must be accepted.");
     }
     if (phoneNumber == null || phoneNumber.isBlank() || verificationCode == null || verificationCode.isBlank()) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "SCHEMA_VALIDATION_FAILED", "Phone number and verification code are required.");
     }
-    return loginOrCreate("phone", phoneNumber.trim(), "Phone User");
+    String normalizedPhone = phoneNumber.trim();
+    phoneVerification.verify(normalizedPhone, verificationCode.trim());
+    return loginOrCreate("phone", TokenHasher.hash(normalizedPhone), "Phone User", device);
+  }
+
+  public void requestPhoneVerificationCode(String phoneNumber) {
+    if (phoneNumber == null || phoneNumber.isBlank()) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "SCHEMA_VALIDATION_FAILED", "Phone number is required.");
+    }
+    phoneVerification.requestCode(phoneNumber.trim());
   }
 
   @Transactional
   public AuthSessionResult loginSocial(String provider, String providerToken, boolean termsAccepted) {
+    return loginSocial(provider, providerToken, null, termsAccepted, DeviceMetadata.unknown(), identity -> {});
+  }
+
+  @Transactional
+  public AuthSessionResult loginSocial(
+      String provider, String providerToken, boolean termsAccepted, DeviceMetadata device) {
+    return loginSocial(provider, providerToken, null, termsAccepted, device, identity -> {});
+  }
+
+  @Transactional
+  public AuthSessionResult loginSocial(
+      String provider,
+      String providerToken,
+      String nonce,
+      boolean termsAccepted,
+      DeviceMetadata device,
+      Consumer<String> verifiedSubjectGate) {
     if (!termsAccepted) {
       throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "Terms must be accepted.");
     }
     if (providerToken == null || providerToken.isBlank()) {
       throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "Provider token is required.");
     }
-    return loginOrCreate(provider, TokenHasher.hash(providerToken), provider + " User");
+    SocialIdentityVerifier.VerifiedIdentity identity =
+        socialIdentities.verify(provider, providerToken, nonce);
+    verifiedSubjectGate.accept(identity.subject());
+    return loginOrCreate(
+        provider, TokenHasher.hash(identity.subject()), provider + " User", device);
   }
 
-  @Transactional
+  @Transactional(noRollbackFor = ApiException.class)
   public AuthSessionResult refresh(String refreshToken) {
+    return refresh(refreshToken, identity -> {});
+  }
+
+  @Transactional(noRollbackFor = ApiException.class)
+  public AuthSessionResult refresh(
+      String refreshToken, Consumer<RefreshRateLimitIdentity> preRotationGate) {
     if (refreshToken == null || refreshToken.isBlank()) {
-      throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "Refresh token is required.");
+      metrics.refresh("invalid");
+      throw authError("REFRESH_TOKEN_INVALID", "Refresh token is invalid.");
     }
     Instant now = Instant.now(clock);
-    AuthSession session = sessions.findByRefreshTokenHash(TokenHasher.hash(refreshToken))
-        .filter(candidate -> candidate.canRefreshAt(now))
-        .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "Refresh token is invalid."));
+    String tokenHash = TokenHasher.hash(refreshToken);
+    AuthRefreshTokenRepository.TokenLocator locator = refreshTokens.findProjectedByTokenHash(tokenHash)
+        .orElseThrow(() -> {
+          metrics.refresh("invalid");
+          return authError("REFRESH_TOKEN_INVALID", "Refresh token is invalid.");
+        });
+    preRotationGate.accept(new RefreshRateLimitIdentity(locator.getUserId(), locator.getFamilyId()));
 
-    UserAccount user = users.findById(session.getUserId())
-        .filter(candidate -> "active".equals(candidate.getAccountStatus()))
-        .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "User is not active."));
+    UserAccount user = users.findByIdForUpdate(locator.getUserId())
+        .orElseThrow(() -> authError("REFRESH_TOKEN_INVALID", "Refresh token is invalid."));
+    AuthSession session = sessions.findByIdForUpdate(locator.getSessionId())
+        .orElseThrow(() -> authError("SESSION_REVOKED", "Session has been revoked."));
+    AuthRefreshTokenFamily family = tokenFamilies.findByIdForUpdate(locator.getFamilyId())
+        .orElseThrow(() -> authError("SESSION_REVOKED", "Session has been revoked."));
+    AuthRefreshToken token = refreshTokens.findByIdForUpdate(locator.getTokenId())
+        .orElseThrow(() -> authError("REFRESH_TOKEN_INVALID", "Refresh token is invalid."));
 
-    IssuedTokens tokens = issueTokens();
-    session.rotate(TokenHasher.hash(tokens.accessToken()), TokenHasher.hash(tokens.refreshToken()), now, now.plus(ACCESS_TOKEN_TTL),
-        now.plus(REFRESH_TOKEN_TTL));
-    return new AuthSessionResult(user, ensureProfile(user.getUserId(), user.getDisplayName(), now), tokens.accessToken(),
-        tokens.refreshToken(), session.getExpiresAt());
+    if ("disabled".equals(user.getAccountStatus())) {
+      metrics.refresh("account_disabled");
+      throw authError("ACCOUNT_DISABLED", "Account is disabled.");
+    }
+    if (!"active".equals(user.getAccountStatus())) {
+      metrics.refresh("session_revoked");
+      throw authError("SESSION_REVOKED", "Session has been revoked.");
+    }
+    if ("used".equals(token.getStatus())) {
+      revokeFamilyForReuse(user, session, family, now);
+      metrics.refresh("token_reuse");
+      metrics.securityEvent("token_reuse");
+      metrics.securityOperation("token_reuse", "success");
+      audit.recordSystemEvent("auth_token_reuse_detected", user.getUserId(), session.getSessionId(),
+          "token_reuse", 1, null);
+      throw authError("TOKEN_REUSE_DETECTED", "Refresh token reuse was detected.");
+    }
+    if (!session.isActive() || !family.isActive() || !"active".equals(token.getStatus())
+        || session.getSecurityEpoch() != user.getSecurityEpoch()) {
+      metrics.refresh("session_revoked");
+      throw authError("SESSION_REVOKED", "Session has been revoked.");
+    }
+    if (token.isExpiredAt(now) || session.isSessionExpiredAt(now)) {
+      session.revoke(now, "expired");
+      family.revoke(now, "expired");
+      token.revoke(now);
+      metrics.refresh("expired");
+      throw authError("REFRESH_TOKEN_EXPIRED", "Refresh token has expired.");
+    }
+
+    IssuedTokens issued = issueTokens();
+    Instant refreshExpiresAt = minimum(now.plus(sessionIdleTtl), session.getAbsoluteExpiresAt());
+    token.markUsed(now);
+    AuthRefreshToken nextToken = new AuthRefreshToken(
+        UUID.randomUUID(), family.getFamilyId(), session.getSessionId(), user.getUserId(), token.getTokenId(),
+        TokenHasher.hash(issued.refreshToken()), now, refreshExpiresAt);
+    refreshTokens.save(nextToken);
+    session.rotate(TokenHasher.hash(issued.accessToken()), TokenHasher.hash(issued.refreshToken()), now,
+        now.plus(accessTokenTtl), refreshExpiresAt);
+    metrics.refresh("success");
+    return result(user, issued, session);
   }
 
   @Transactional
   public void logout(UUID sessionId) {
     AuthSession session = sessions.findById(sessionId)
-        .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "Session is invalid."));
-    session.revoke(Instant.now(clock));
+        .orElseThrow(() -> authError("SESSION_REVOKED", "Session has been revoked."));
+    accountSecurity.logoutCurrent(session.getUserId(), sessionId, null);
   }
 
-  @Transactional(readOnly = true)
-  public Optional<CurrentUser> authenticateAccessToken(String accessToken) {
-    if (accessToken == null || accessToken.isBlank()) {
-      return Optional.empty();
-    }
+  @Transactional
+  public AccessTokenInspection inspectAccessToken(String accessToken) {
+    if (accessToken == null || accessToken.isBlank()) return failedAccess("ACCESS_TOKEN_INVALID");
     Instant now = Instant.now(clock);
-    return sessions.findByAccessTokenHash(TokenHasher.hash(accessToken))
-        .filter(session -> session.isActiveAt(now))
-        .flatMap(session -> users.findById(session.getUserId())
-            .filter(user -> "active".equals(user.getAccountStatus()))
-            .map(user -> new CurrentUser(user.getUserId(), session.getSessionId())));
+    AuthSession session = sessions.findByAccessTokenHashForUpdate(TokenHasher.hash(accessToken)).orElse(null);
+    if (session == null) return failedAccess("ACCESS_TOKEN_INVALID");
+    UserAccount user = users.findById(session.getUserId()).orElse(null);
+    if (user == null) return failedAccess("ACCESS_TOKEN_INVALID");
+    if ("disabled".equals(user.getAccountStatus())) return failedAccess("ACCOUNT_DISABLED");
+    if (!"active".equals(user.getAccountStatus()) || !session.isActive()
+        || session.getSecurityEpoch() != user.getSecurityEpoch() || session.isSessionExpiredAt(now)) {
+      return failedAccess("SESSION_REVOKED");
+    }
+    if (session.isAccessExpiredAt(now)) return failedAccess("ACCESS_TOKEN_EXPIRED");
+    session.touch(now, sessionIdleTtl);
+    metrics.access("authenticated");
+    return new AccessTokenInspection("AUTHENTICATED", new CurrentUser(user.getUserId(), session.getSessionId()));
+  }
+
+  @Transactional
+  public Optional<CurrentUser> authenticateAccessToken(String accessToken) {
+    return Optional.ofNullable(inspectAccessToken(accessToken).currentUser());
   }
 
   @Transactional(readOnly = true)
@@ -121,32 +253,63 @@ public class AuthService {
 
   @Transactional
   public void revokeUserSessions(UUID userId) {
-    Instant now = Instant.now(clock);
-    sessions.findByUserIdAndStatus(userId, "active").forEach(session -> session.revoke(now));
+    accountSecurity.revokeUserSessions(userId, "account_deletion");
   }
 
-  private AuthSessionResult loginOrCreate(String provider, String providerSubject, String defaultDisplayName) {
+  private AuthSessionResult loginOrCreate(
+      String provider, String providerSubject, String defaultDisplayName, DeviceMetadata rawDevice) {
     Instant now = Instant.now(clock);
     UserAccount user = identities.findByProviderAndProviderSubject(provider, providerSubject)
         .flatMap(identity -> users.findById(identity.getUserId()))
         .orElseGet(() -> createUser(provider, providerSubject, defaultDisplayName, now));
 
+    if ("disabled".equals(user.getAccountStatus())) {
+      metrics.login(provider, "account_disabled");
+      throw authError("ACCOUNT_DISABLED", "Account is disabled.");
+    }
     if (!"active".equals(user.getAccountStatus())) {
-      throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "User is not active.");
+      metrics.login(provider, "rejected");
+      throw authError("SESSION_REVOKED", "Account is not active.");
     }
 
-    IssuedTokens tokens = issueTokens();
+    DeviceMetadata device = rawDevice == null ? DeviceMetadata.unknown() : rawDevice.normalized();
+    IssuedTokens issued = issueTokens();
+    UUID sessionId = UUID.randomUUID();
+    UUID familyId = UUID.randomUUID();
+    Instant absoluteExpiresAt = now.plus(sessionAbsoluteTtl);
+    Instant refreshExpiresAt = minimum(now.plus(sessionIdleTtl), absoluteExpiresAt);
     AuthSession session = new AuthSession(
-        UUID.randomUUID(),
-        user.getUserId(),
-        TokenHasher.hash(tokens.accessToken()),
-        TokenHasher.hash(tokens.refreshToken()),
-        now,
-        now.plus(ACCESS_TOKEN_TTL),
-        now.plus(REFRESH_TOKEN_TTL));
+        sessionId, user.getUserId(), TokenHasher.hash(issued.accessToken()), TokenHasher.hash(issued.refreshToken()),
+        familyId, now, now.plus(accessTokenTtl), refreshExpiresAt, absoluteExpiresAt,
+        device.deviceId(), device.deviceName(), device.platform(), device.appVersion(), user.getSecurityEpoch());
     sessions.save(session);
-    return new AuthSessionResult(user, ensureProfile(user.getUserId(), user.getDisplayName(), now), tokens.accessToken(),
-        tokens.refreshToken(), session.getExpiresAt());
+    tokenFamilies.save(new AuthRefreshTokenFamily(familyId, sessionId, user.getUserId(), now));
+    refreshTokens.save(new AuthRefreshToken(
+        UUID.randomUUID(), familyId, sessionId, user.getUserId(), null,
+        TokenHasher.hash(issued.refreshToken()), now, refreshExpiresAt));
+    audit.recordUserEvent(user.getUserId(), "auth_session_created", user.getUserId(), sessionId,
+        provider, 1, null);
+    metrics.login(provider, "success");
+    return result(user, issued, session);
+  }
+
+  private void revokeFamilyForReuse(
+      UserAccount user, AuthSession session, AuthRefreshTokenFamily family, Instant now) {
+    session.revoke(now, "token_reuse");
+    family.revoke(now, "token_reuse");
+    refreshTokens.findByFamilyIdForUpdate(family.getFamilyId()).forEach(token -> token.revoke(now));
+  }
+
+  private AccessTokenInspection failedAccess(String code) {
+    metrics.access(code.toLowerCase());
+    return new AccessTokenInspection(code, null);
+  }
+
+  private AuthSessionResult result(UserAccount user, IssuedTokens issued, AuthSession session) {
+    Instant now = Instant.now(clock);
+    return new AuthSessionResult(
+        user, ensureProfile(user.getUserId(), user.getDisplayName(), now), session.getSessionId(),
+        issued.accessToken(), issued.refreshToken(), session.getExpiresAt(), session.getRefreshExpiresAt());
   }
 
   private UserAccount createUser(String provider, String providerSubject, String defaultDisplayName, Instant now) {
@@ -171,8 +334,52 @@ public class AuthService {
     return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
   }
 
+  private static Instant minimum(Instant first, Instant second) {
+    return first.isBefore(second) ? first : second;
+  }
+
+  private static ApiException authError(String code, String message) {
+    return new ApiException(HttpStatus.UNAUTHORIZED, code, message);
+  }
+
+  public record DeviceMetadata(String deviceId, String deviceName, String platform, String appVersion) {
+    public static DeviceMetadata unknown() {
+      return new DeviceMetadata(null, "Unknown device", "unknown", null);
+    }
+
+    DeviceMetadata normalized() {
+      return new DeviceMetadata(
+          clean(deviceId, null, 120), clean(deviceName, "Unknown device", 120),
+          normalizePlatform(platform), clean(appVersion, null, 40));
+    }
+
+    private static String normalizePlatform(String value) {
+      String normalized = clean(value, "unknown", 40);
+      return switch (normalized) {
+        case "ios", "android", "unknown" -> normalized;
+        default -> "unknown";
+      };
+    }
+
+    private static String clean(String value, String fallback, int maxLength) {
+      if (value == null || value.isBlank()) return fallback;
+      String cleaned = value.trim();
+      return cleaned.substring(0, Math.min(cleaned.length(), maxLength));
+    }
+  }
+
+  public record AccessTokenInspection(String code, CurrentUser currentUser) {}
+
+  public record RefreshRateLimitIdentity(UUID userId, UUID familyId) {}
+
   public record AuthSessionResult(
-      UserAccount user, UserProfile profile, String accessToken, String refreshToken, Instant expiresAt) {}
+      UserAccount user,
+      UserProfile profile,
+      UUID sessionId,
+      String accessToken,
+      String refreshToken,
+      Instant expiresAt,
+      Instant refreshExpiresAt) {}
 
   private record IssuedTokens(String accessToken, String refreshToken) {}
 }

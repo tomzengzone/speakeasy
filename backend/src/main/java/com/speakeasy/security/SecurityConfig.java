@@ -28,12 +28,15 @@ public class SecurityConfig {
     http.csrf(AbstractHttpConfigurer::disable)
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers(HttpMethod.POST, "/auth/login/phone", "/auth/login/apple", "/auth/login/wechat", "/auth/refresh")
+            .requestMatchers(HttpMethod.POST, "/auth/login/phone", "/auth/login/apple", "/auth/login/wechat",
+                "/auth/refresh", "/auth/verification-codes/phone")
             .permitAll()
             .requestMatchers(HttpMethod.POST, "/subscriptions/webhook/apple", "/subscriptions/webhook/google")
             .permitAll()
             .requestMatchers(HttpMethod.GET, "/subscription/plans")
             .permitAll()
+            .requestMatchers("/actuator/**")
+            .hasRole("OPS")
             .requestMatchers("/admin/**")
             .hasRole("OPS")
             .anyRequest()

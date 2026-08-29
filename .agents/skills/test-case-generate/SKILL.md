@@ -24,7 +24,7 @@ FR-TC、Contract-TC 和 VS-TC 记录；每条记录包含一种带类型的直�
 ## Process
 
 1. 必须选择且仅选择一种类型：FR-TC 必须仅使用 `source_fr_id`；Contract-TC 必须仅使用 `source_contract_id`；VS-TC 必须仅使用 `source_vs_id`。
-2. 对于 FR-TC，选择可以证明所引用 FR 行为的最低成本层级；如果独立行为需要不同的测试判定依据或层级，应该增加 FR-TC。
+2. 对于 FR-TC，选择可以证明所引用 FR 行为的最低成本层级；同一原子 FR 可因验证层级或边界覆盖需要使用多个 FR-TC。若行为具有独立审批、生命周期、变更风险或测试判定依据，必须先返回 Requirement Development 拆分为不同 FR，不得用增加 FR-TC 掩盖未拆分需求。
 3. 对于 Contract-TC，选择可以证明发生变化的工程事实的 contract/integration/migration/AI-eval 或其他层级。
 4. 对于 VS-TC，在所有实际受影响的层级覆盖用户可见的 integration/E2E 闭环及其关键降级路径。
 5. 添加稳定的 selector、脚本和命令；不得包含 runtime 结果状态。

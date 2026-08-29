@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,7 @@ public class CourseCatalogService {
   private static final String PUBLISHED = "published";
   private static final String READ_UNAVAILABLE_MESSAGE = "Content is temporarily unavailable.";
   private static final String NOT_FOUND_MESSAGE = "Content resource was not found.";
+  private static final Pattern SCENARIO_ID_PATTERN = Pattern.compile("^[a-z0-9]+(?:_[a-z0-9]+)*$");
 
   private final ScenarioRepository scenarios;
   private final ScenarioVersionRepository scenarioVersions;
@@ -105,19 +107,20 @@ public class CourseCatalogService {
   @Transactional(readOnly = true)
   public CourseListView listCourses(UUID userId, String scenarioId, String requestId) {
     try {
-      requirePublishedTheme(scenarioId, requestId);
+      String canonicalScenarioId = requireCanonicalScenarioId(scenarioId, requestId);
+      requirePublishedTheme(canonicalScenarioId, requestId);
       CourseVisibilityProjection.VisibilityContext visibilityContext = visibility.current(userId);
-      if (!visibilityContext.isThemeVisible(scenarioId)) {
-        throw notFound(requestId, InternalOutcome.THEME_NOT_VISIBLE, scenarioId);
+      if (!visibilityContext.isThemeVisible(canonicalScenarioId)) {
+        throw notFound(requestId, InternalOutcome.THEME_NOT_VISIBLE, canonicalScenarioId);
       }
       List<CourseProjection> projections = currentPublishedProjections(
-          courses.findByScenarioIdOrderBySortOrderAscCourseIdAsc(scenarioId), requestId);
+          courses.findByScenarioIdOrderBySortOrderAscCourseIdAsc(canonicalScenarioId), requestId);
       List<CourseSummaryView> result = projections.stream()
-          .filter(projection -> isCourseVisible(visibilityContext, scenarioId, projection, requestId))
+          .filter(projection -> isCourseVisible(visibilityContext, canonicalScenarioId, projection, requestId))
           .map(CourseProjection::summary)
           .toList();
-      observe(requestId, result.isEmpty() ? "course_empty" : "course_success", scenarioId);
-      return new CourseListView(scenarioId, result, visibilityContext.revision());
+      observe(requestId, result.isEmpty() ? "course_empty" : "course_success", canonicalScenarioId);
+      return new CourseListView(canonicalScenarioId, result, visibilityContext.revision());
     } catch (ApiException exception) {
       throw exception;
     } catch (CourseVisibilityProjection.CourseVisibilityDependencyException exception) {
@@ -342,6 +345,21 @@ public class CourseCatalogService {
     return scenario;
   }
 
+  private String requireCanonicalScenarioId(String scenarioId, String requestId) {
+    if (scenarioId == null
+        || scenarioId.length() > 80
+        || !SCENARIO_ID_PATTERN.matcher(scenarioId).matches()) {
+      observe(requestId, InternalOutcome.SCENARIO_ID_INVALID.externalName(), scenarioId);
+      throw new CourseReadException(
+          HttpStatus.BAD_REQUEST,
+          "SCHEMA_VALIDATION_FAILED",
+          "Scenario ID format is invalid.",
+          Map.of("field", "scenario_id", "reason", "invalid_format"),
+          InternalOutcome.SCENARIO_ID_INVALID);
+    }
+    return scenarioId;
+  }
+
   private boolean matchesQuery(ThemeView theme, String query) {
     if (query == null) {
       return true;
@@ -505,6 +523,7 @@ public class CourseCatalogService {
   }
 
   enum InternalOutcome {
+    SCENARIO_ID_INVALID,
     THEME_NOT_FOUND,
     THEME_NOT_PUBLISHED,
     THEME_NOT_VISIBLE,

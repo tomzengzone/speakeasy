@@ -61,7 +61,7 @@ VS 未批准、产品行为不完整，或当前 FR 自身未批准、lineage �
 
 `TEST_CASE_CATALOG` 固定三类唯一 direct-upstream edge：
 
-- FR-TC 仅在 FR 存在时使用，只记录 `source_fr_id`，并选择能最快证明该 FR 行为的最低成本层级；FR 内独立行为需要不同 oracle 或层级时可使用多个 FR-TC。
+- FR-TC 仅在 FR 存在时使用，只记录 `source_fr_id`，并选择能最快证明该 FR 行为的最低成本层级；同一原子 FR 可因验证层级或边界覆盖需要使用多个 FR-TC。若行为具有独立审批、生命周期、变更风险或测试 oracle，必须先由 Requirement Development 拆分为不同 FR，不得用增加 FR-TC 掩盖未拆分需求。
 - Contract-TC 只记录 `source_contract_id`，覆盖实际变化的 API、Domain、Persistence、AI、UX 等边界。
 - VS-TC 只记录 `source_vs_id`，覆盖用户可感知的定向全链路和关键失败/降级路径。
 
@@ -86,7 +86,7 @@ API、OpenAPI、Domain、Persistence、AI structured output、Prompt/fallback、
 - `G-PRODUCT-CLASSIFICATION`：识别 change type、用户价值场景、范围、非目标与是否发生产品事实变化；不生成 Story/Vertical Slice 到 Capability 的映射。
 - `G-REGISTRY`：仅 Capability/Sub-capability 边界事实变化时执行。
 - `G-INCREMENT-SCOPE`：仅 planning scope/batch 变化时执行；其结果不进入产品/Contract/TC lineage。
-- `G-FR`：仅在 FR 存在时验证其 approved 状态、非空直接 VS lineage 与 Capability/Sub-capability classification；FR 可包含多个独立规则、不变量、边界或失败条件。
+- `G-FR`：仅在 FR 存在时验证固定四列表格、approved 状态、非空直接 VS lineage 与非空、可测试的 Requirement；每行 FR 是可独立审批、变更和验证的规范性需求单元。
 - `G-TC`：验证三类 TC 的唯一 direct edge、oracle、层级、selector、脚本与命令。
 - `G-CONTRACT`：验证工程事实同步和 Contract-TC。
 - `G-SWC`：仅共享拓扑、system flow 或重要复用边界变化时执行。

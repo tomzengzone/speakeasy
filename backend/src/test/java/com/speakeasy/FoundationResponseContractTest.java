@@ -95,7 +95,8 @@ class FoundationResponseContractTest {
         .andExpect(jsonPath("$.access_token", not(blankOrNullString())))
         .andExpect(jsonPath("$.refresh_token", not(blankOrNullString())))
         .andExpect(jsonPath("$.expires_at", not(blankOrNullString())))
-        .andExpect(jsonPath("$.session_id").doesNotExist())
+        .andExpect(jsonPath("$.session_id", not(blankOrNullString())))
+        .andExpect(jsonPath("$.refresh_expires_at", not(blankOrNullString())))
         .andExpect(jsonPath("$.access_token_hash").doesNotExist())
         .andExpect(jsonPath("$.refresh_token_hash").doesNotExist())
         .andExpect(jsonPath("$.issued_at").doesNotExist());

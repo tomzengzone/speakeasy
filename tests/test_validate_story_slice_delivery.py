@@ -46,15 +46,9 @@ class StorySliceDeliveryValidationTest(unittest.TestCase):
         (root / "docs/product/functional_requirements.md").write_text(
             """# Functional Requirements
 
-## FR-TRAIN / CAP-TRAIN-06 训练闭环展示状态
-
-### FR-TRAIN-001 — 完成练习后的闭环展示
-
-- Status: `approved`
-- source_vs_ids: `VS-TRAIN-001-1`
-- primary_capability_id: `CAP-TRAIN`
-- primary_sub_capability_id: `CAP-TRAIN-06`
-- Rule: 学习者结束练习后，系统必须展示练习总结和后续学习入口。
+| ID | Status | source_vs_ids | Requirement |
+| --- | --- | --- | --- |
+| `FR-TRAIN-001` | `approved` | `VS-TRAIN-001-1` | 学习者结束练习后，系统必须展示练习总结和后续学习入口。 |
 
 ## 维护规则
 """,
@@ -136,10 +130,10 @@ class StorySliceDeliveryValidationTest(unittest.TestCase):
         fr_path = root / "docs/product/functional_requirements.md"
         fr_path.write_text(
             re.sub(
-                r"\n## FR-TRAIN.*?(?=\n## 维护规则)",
+                r"^\| `FR-TRAIN-001`.*\n",
                 "",
                 fr_path.read_text(encoding="utf-8"),
-                flags=re.S,
+                flags=re.M,
             ),
             encoding="utf-8",
         )
@@ -170,27 +164,82 @@ class StorySliceDeliveryValidationTest(unittest.TestCase):
         self.assertEqual(0, metrics["vertical_slices_with_frs"])
         self.assertEqual(0, metrics["fr_tc_coverage"])
 
-    def test_fr_rule_may_contain_multiple_independent_behaviors(self) -> None:
+    def test_fr_table_rejects_extra_title_column(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        path = root / "docs/product/functional_requirements.md"
+        text = path.read_text(encoding="utf-8")
+        text = text.replace(
+            "| ID | Status | source_vs_ids | Requirement |",
+            "| ID | Title | Status | source_vs_ids | Requirement |",
+        ).replace(
+            "| --- | --- | --- | --- |",
+            "| --- | --- | --- | --- | --- |",
+            1,
+        ).replace(
+            "| `FR-TRAIN-001` | `approved` |",
+            "| `FR-TRAIN-001` | title | `approved` |",
+        )
+        path.write_text(text, encoding="utf-8")
+        errors, _ = validate_delivery(root)
+        self.assertTrue(any("FR table must have columns ID | Status | source_vs_ids | Requirement" in error for error in errors))
+        self.assertTrue(any("FR row must have 4 columns" in error for error in errors))
+
+    def test_fr_table_rejects_capability_column(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        path = root / "docs/product/functional_requirements.md"
+        text = path.read_text(encoding="utf-8")
+        text = text.replace(
+            "| ID | Status | source_vs_ids | Requirement |",
+            "| ID | Status | source_vs_ids | primary_capability_id | Requirement |",
+        ).replace(
+            "| --- | --- | --- | --- |",
+            "| --- | --- | --- | --- | --- |",
+            1,
+        ).replace(
+            "| `FR-TRAIN-001` | `approved` | `VS-TRAIN-001-1` |",
+            "| `FR-TRAIN-001` | `approved` | `VS-TRAIN-001-1` | `CAP-TRAIN` |",
+        )
+        path.write_text(text, encoding="utf-8")
+        errors, _ = validate_delivery(root)
+        self.assertTrue(any("FR table must have columns ID | Status | source_vs_ids | Requirement" in error for error in errors))
+        self.assertTrue(any("FR row must have 4 columns" in error for error in errors))
+
+    def test_existing_fr_requires_approved_status(self) -> None:
+        temp, root = self.fixture()
+        self.addCleanup(temp.cleanup)
+        path = root / "docs/product/functional_requirements.md"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace("`FR-TRAIN-001` | `approved`", "`FR-TRAIN-001` | `draft`"),
+            encoding="utf-8",
+        )
+        errors, _ = validate_delivery(root)
+        self.assertTrue(any("FR-TRAIN-001 must be approved before implementation" in error for error in errors))
+
+    def test_existing_fr_requires_requirement_content(self) -> None:
         temp, root = self.fixture()
         self.addCleanup(temp.cleanup)
         path = root / "docs/product/functional_requirements.md"
         text = path.read_text(encoding="utf-8").replace(
-            "- Rule: ",
-            "- Rule: 系统必须记录一次独立审计事件；",
-            1,
+            "| `FR-TRAIN-001` | `approved` | `VS-TRAIN-001-1` | 学习者结束练习后，系统必须展示练习总结和后续学习入口。 |",
+            "| `FR-TRAIN-001` | `approved` | `VS-TRAIN-001-1` | |",
         )
         path.write_text(text, encoding="utf-8")
         errors, _ = validate_delivery(root)
-        self.assertEqual([], errors)
+        self.assertTrue(any("FR-TRAIN-001 has empty Requirement content" in error for error in errors))
 
-    def test_existing_fr_requires_rule_content(self) -> None:
+    def test_fr_catalog_rejects_legacy_heading_and_bullet_record(self) -> None:
         temp, root = self.fixture()
         self.addCleanup(temp.cleanup)
         path = root / "docs/product/functional_requirements.md"
-        text = re.sub(r"^- Rule:.*\n", "", path.read_text(encoding="utf-8"), count=1, flags=re.M)
-        path.write_text(text, encoding="utf-8")
+        path.write_text(
+            path.read_text(encoding="utf-8")
+            + "\n### FR-LEGACY-001 — legacy\n\n- Status: `approved`\n- source_vs_ids: `VS-TRAIN-001-1`\n- Rule: legacy\n",
+            encoding="utf-8",
+        )
         errors, _ = validate_delivery(root)
-        self.assertTrue(any("FR-TRAIN-001 has no Rule content" in error for error in errors))
+        self.assertTrue(any("not legacy heading/bullet records" in error for error in errors))
 
     def test_missing_story_map_breaks_approved_vs_lineage(self) -> None:
         temp, root = self.fixture()
@@ -285,10 +334,9 @@ class StorySliceDeliveryValidationTest(unittest.TestCase):
         temp, root = self.fixture()
         self.addCleanup(temp.cleanup)
         path = root / "docs/product/functional_requirements.md"
-        path.write_text(path.read_text(encoding="utf-8").replace("- source_vs_ids: `VS-TRAIN-001-1`", "- source_story_id: `US-TRAIN-001`"), encoding="utf-8")
+        path.write_text(path.read_text(encoding="utf-8").replace("`VS-TRAIN-001-1` | 学习者", "`US-TRAIN-001` | 学习者"), encoding="utf-8")
         errors, _ = validate_delivery(root)
         self.assertTrue(any("source_vs_ids" in error for error in errors))
-        self.assertTrue(any("second-lineage" in error for error in errors))
 
     def test_vs_tc_rejects_a_second_fr_edge(self) -> None:
         temp, root = self.fixture()

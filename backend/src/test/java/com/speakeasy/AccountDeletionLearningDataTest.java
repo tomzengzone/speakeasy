@@ -99,7 +99,7 @@ class AccountDeletionLearningDataTest extends BackendIntegrationTestSupport {
     mvc.perform(get("/goal-autopilot/progress-projection")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"));
+        .andExpect(jsonPath("$.error.code").value("SESSION_REVOKED"));
   }
 
   private int count(String tableName, UUID userId) {

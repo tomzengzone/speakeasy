@@ -30,7 +30,7 @@ Test Case Catalog 保存稳定 oracle、Given/When/Then、边界/负例、测试
 
 | TC 类型 | 唯一直接上游字段 | 目的 |
 | --- | --- | --- |
-| FR-TC | `source_fr_id` | FR 存在时，在 unit/domain/service/contract/integration/widget 中选择最低成本层级证明其行为；独立行为需要不同 oracle 或层级时可使用多个 FR-TC |
+| FR-TC | `source_fr_id` | FR 存在时，在 unit/domain/service/contract/integration/widget 中选择最低成本层级证明其行为；同一原子 FR 可因验证层级或边界覆盖需要使用多个 FR-TC。若行为具有独立审批、生命周期、变更风险或测试 oracle，必须先由 Requirement Development 拆分为不同 FR，不得用增加 FR-TC 掩盖未拆分需求 |
 | Contract-TC | `source_contract_id` | 证明受影响 Architecture/SWC、API、Domain、Persistence、AI、UX 等工程事实 |
 | VS-TC | `source_vs_id` | 在受影响的真实层上验证用户可感知 integration/E2E 闭环和关键降级路径 |
 

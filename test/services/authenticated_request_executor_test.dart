@@ -34,6 +34,21 @@ class _MemoryTokenProvider implements TokenProvider, CredentialRepository {
   }
 
   @override
+  Future<bool> replaceIfCurrent({
+    required AuthCredentials expected,
+    required AuthCredentials replacement,
+  }) async {
+    final AuthCredentials? latest = credentials;
+    if (latest == null ||
+        latest.accessToken != expected.accessToken ||
+        latest.refreshToken != expected.refreshToken) {
+      return false;
+    }
+    await replace(replacement);
+    return true;
+  }
+
+  @override
   Future<void> clear() async {
     credentials = null;
   }

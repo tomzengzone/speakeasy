@@ -115,6 +115,40 @@ void main() {
     );
   });
 
+  test(
+    'refresh maps canonical 429 and Retry-After to rate-limited failure',
+    () async {
+      await expectLater(
+        ApiClient.refreshToken(
+          refreshToken: 'refresh-token',
+          transport: (String path, Map<String, dynamic> body) async {
+            return <String, dynamic>{
+              '_httpStatus': 429,
+              '_responseHeaders': <String, String>{'retry-after': '37'},
+              'error': <String, dynamic>{
+                'code': 'AUTH_RATE_LIMITED',
+                'message': 'Too many authentication requests.',
+              },
+            };
+          },
+        ),
+        throwsA(
+          isA<RateLimitedRefreshFailure>()
+              .having(
+                (RateLimitedRefreshFailure failure) => failure.kind,
+                'kind',
+                RefreshFailureKind.rateLimited,
+              )
+              .having(
+                (RateLimitedRefreshFailure failure) => failure.retryAfter,
+                'retryAfter',
+                const Duration(seconds: 37),
+              ),
+        ),
+      );
+    },
+  );
+
   test('refresh maps transport timeout to infrastructure failure', () async {
     await expectLater(
       ApiClient.refreshToken(

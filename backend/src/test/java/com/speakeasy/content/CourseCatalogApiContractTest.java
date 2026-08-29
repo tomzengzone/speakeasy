@@ -22,19 +22,25 @@ class CourseCatalogApiContractTest extends AbstractCourseContractTest {
     AuthTokens tokens = loginPhone("+8613910050001");
     CourseTestFixture.clearScenario(jdbc, "onboarding_introduction");
 
-    mvc.perform(get("/scenarios")
-            .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
-            .header("X-Request-Id", "req_course_scenario_all"))
-        .andExpect(status().isOk())
-        .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "private, no-cache"))
-        .andExpect(header().string(HttpHeaders.VARY, HttpHeaders.AUTHORIZATION))
-        .andExpect(header().string("X-Request-Id", "req_course_scenario_all"))
-        .andExpect(header().string(HttpHeaders.ETAG, not(blankOrNullString())))
-        .andExpect(jsonPath("$.schema_version").value(1))
-        .andExpect(jsonPath("$.request_id").value("req_course_scenario_all"))
-        .andExpect(jsonPath("$.scenarios.length()").value(2))
-        .andExpect(jsonPath("$.scenarios[0].scenario_id").value("job_interview"))
-        .andExpect(jsonPath("$.scenarios[1].scenario_id").value("onboarding_introduction"));
+    try {
+      insertPublishedScenario("travel_planning");
+      mvc.perform(get("/scenarios")
+              .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken()))
+              .header("X-Request-Id", "req_course_scenario_all"))
+          .andExpect(status().isOk())
+          .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "private, no-cache"))
+          .andExpect(header().string(HttpHeaders.VARY, HttpHeaders.AUTHORIZATION))
+          .andExpect(header().string("X-Request-Id", "req_course_scenario_all"))
+          .andExpect(header().string(HttpHeaders.ETAG, not(blankOrNullString())))
+          .andExpect(jsonPath("$.schema_version").value(1))
+          .andExpect(jsonPath("$.request_id").value("req_course_scenario_all"))
+          .andExpect(jsonPath("$.scenarios.length()").value(3))
+          .andExpect(jsonPath("$.scenarios[0].scenario_id").value("job_interview"))
+          .andExpect(jsonPath("$.scenarios[1].scenario_id").value("onboarding_introduction"))
+          .andExpect(jsonPath("$.scenarios[2].scenario_id").value("travel_planning"));
+    } finally {
+      removeScenario("travel_planning");
+    }
 
     mvc.perform(get("/scenarios")
             .queryParam("query", "入职")
@@ -53,6 +59,24 @@ class CourseCatalogApiContractTest extends AbstractCourseContractTest {
         .andExpect(jsonPath("$.scenarios.length()").value(0));
 
     assertScenarioAllExcludesUnpublishedAndInvisibleThemesAndFailsOnVisibilityDependency();
+  }
+
+  private void insertPublishedScenario(String scenarioId) {
+    jdbc.update(
+        "INSERT INTO scenarios (scenario_id, slug, title, summary, category, status) VALUES (?, ?, ?, ?, 'official', 'available')",
+        scenarioId,
+        scenarioId,
+        "Travel Planning",
+        "Test-only future scenario");
+    jdbc.update(
+        "INSERT INTO scenario_versions (scenario_version_id, scenario_id, version, content_status, published_at) "
+            + "VALUES ('10000000-0000-0000-0000-000000000099', ?, 'test-only-v1', 'published', CURRENT_TIMESTAMP)",
+        scenarioId);
+  }
+
+  private void removeScenario(String scenarioId) {
+    jdbc.update("DELETE FROM scenario_versions WHERE scenario_id = ?", scenarioId);
+    jdbc.update("DELETE FROM scenarios WHERE scenario_id = ?", scenarioId);
   }
 
   private void assertScenarioAllExcludesUnpublishedAndInvisibleThemesAndFailsOnVisibilityDependency()

@@ -19,11 +19,13 @@ import com.speakeasy.identity.OnboardingAssessmentRepository;
 import com.speakeasy.identity.UserAccount;
 import com.speakeasy.identity.UserAccountRepository;
 import com.speakeasy.identity.UserProfileRepository;
+import com.speakeasy.identity.ratelimit.AuthRateLimitException;
 import com.speakeasy.ops.AccountDeletionJobRepository;
 import com.speakeasy.security.TokenHasher;
 import com.speakeasy.usage.UsageLedgerRepository;
 import com.speakeasy.usage.UsageReservationRepository;
 import java.time.Instant;
+import java.time.Duration;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -114,6 +116,18 @@ class AuthSessionLifecycleTest {
     assertThat(refreshed.refreshToken()).isNotEqualTo(login.refreshToken());
     assertThat(authService.authenticateAccessToken(login.accessToken())).isEmpty();
     assertThat(authService.authenticateAccessToken(refreshed.accessToken())).isPresent();
+  }
+
+  @Test
+  void refreshRateLimitGateRunsBeforeTokenRotation() {
+    AuthService.AuthSessionResult login = authService.loginPhone("+8613800138032", "123456", true);
+
+    assertThatThrownBy(() -> authService.refresh(login.refreshToken(), identity -> {
+      throw AuthRateLimitException.rejected("refresh", "family", Duration.ofSeconds(30));
+    })).isInstanceOf(AuthRateLimitException.class);
+
+    AuthService.AuthSessionResult refreshed = authService.refresh(login.refreshToken());
+    assertThat(refreshed.refreshToken()).isNotEqualTo(login.refreshToken());
   }
 
   @Test

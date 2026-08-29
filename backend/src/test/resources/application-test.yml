@@ -17,6 +17,10 @@ spring:
       fail-on-unknown-properties: true
 
 speakeasy:
+  auth:
+    providers:
+      mode: deterministic
+      deterministic-enabled: true
   ai:
     provider: deterministic
     media:

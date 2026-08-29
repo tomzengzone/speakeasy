@@ -27,6 +27,21 @@ class _MemoryTokenProvider implements TokenProvider, CredentialRepository {
   }
 
   @override
+  Future<bool> replaceIfCurrent({
+    required AuthCredentials expected,
+    required AuthCredentials replacement,
+  }) async {
+    final AuthCredentials? latest = credentials;
+    if (latest == null ||
+        latest.accessToken != expected.accessToken ||
+        latest.refreshToken != expected.refreshToken) {
+      return false;
+    }
+    await replace(replacement);
+    return true;
+  }
+
+  @override
   Future<void> clear() async {
     credentials = null;
   }
@@ -364,4 +379,55 @@ void main() {
       },
     );
   }
+
+  test(
+    'rate limit failure starts cooldown and preserves credentials',
+    () async {
+      final AuthCredentials current = credentials(
+        accessToken: 'access-token-1',
+        refreshToken: 'refresh-token-1',
+        expiresAt: now.add(const Duration(minutes: 20)),
+      );
+      final _MemoryTokenProvider provider = _MemoryTokenProvider(current);
+      var currentTime = now;
+      var refreshCount = 0;
+      const RateLimitedRefreshFailure failure = RateLimitedRefreshFailure(
+        message: 'Too many requests.',
+        retryAfter: Duration(seconds: 30),
+        httpStatus: 429,
+        backendCode: 'AUTH_RATE_LIMITED',
+      );
+      final RefreshCoordinator coordinator = RefreshCoordinator(
+        tokenProvider: provider,
+        credentialRepository: provider,
+        refreshCredentials: (String refreshToken) async {
+          refreshCount += 1;
+          throw failure;
+        },
+        now: () => currentTime,
+      );
+
+      await expectLater(
+        coordinator.refreshIfNeeded(failedAccessToken: 'access-token-1'),
+        throwsA(same(failure)),
+      );
+      await expectLater(
+        coordinator.refreshIfNeeded(
+          failedAccessToken: 'access-token-1',
+          force: true,
+        ),
+        throwsA(same(failure)),
+      );
+      expect(refreshCount, 1);
+      expect(provider.credentials, same(current));
+      expect(provider.replaceCount, 0);
+
+      currentTime = currentTime.add(const Duration(seconds: 30));
+      await expectLater(
+        coordinator.refreshIfNeeded(failedAccessToken: 'access-token-1'),
+        throwsA(same(failure)),
+      );
+      expect(refreshCount, 2);
+    },
+  );
 }

@@ -281,6 +281,7 @@ P02-API-001 到 P02-FUB-API-006 门禁结论：P0.2 实现级 endpoint 只允许
 ### Authority And Ownership / 权威与所有权
 
 - `Scenario` 仍是官方主题身份；`Course`、`CourseVersion` 与 `CourseContentBinding` 是同一 Content bounded context 内的一等 authored facts。`Course != Scenario`，且不得把 `ScenarioLevel` 重命名、复制或解释为 Course/CourseVersion alias。
+- `ScenarioId` 是 Content-owned、跨版本稳定且可扩展的 opaque identity，机器契约以 `1..80` 位 lowercase snake-case 字符串约束；`job_interview` 与 `onboarding_introduction` 只是当前库存和兼容常量，不是封闭值域。客户端必须原样保留并消费任何满足契约的后续官方主题 ID，不得以本地 allowlist 丢弃完整目录中的主题。
 - Publication 是 Content fact。当前学习者 visibility 是服务端读取投影，可以消费 entitlement decision，但 Course response、cache 或 Content persistence 不得复制 entitlement truth 或 per-user visibility truth。
 - `BE-CONTENT-SCENARIO` 负责 publication、visibility orchestration 与 exact-version/binding resolution；`FE-CONTENT` 必须经 `FE-API-CLIENT` 消费 generated DTO，并只把 `FE-LOCAL-CACHE` 用于展示/恢复上下文。
 - 读取投影遇到单条 published Course 的 binding/快照完整性故障时，必须使本次读取整体失败；不得省略损坏项后返回看似完整的集合。
@@ -297,6 +298,8 @@ P02-API-001 到 P02-FUB-API-006 门禁结论：P0.2 实现级 endpoint 只允许
 
 `GET /scenarios` 现有可选 `query` 与 `category` 参数为兼容性过滤输入。approved “全部”视图必须同时省略这两个参数；省略时服务端不得应用隐式 category、search、entitlement tier 或 Course-existence filter，因而不会遗漏任何 published+visible theme。参数存在时，只能在认证、publication 与 visibility 投影之后缩小结果，结果仍按 `scenario_id` 升序；无匹配仍是成功空集合。
 
+开放的 `ScenarioId` 只定义跨 API 复用的身份形状，不授权当前 Slice 之外的 Practice、Training 或其他能力支持新增主题；这些操作仍由各自已批准行为、内容可用性和 typed failure 约束。新增官方主题必须先来自 owning approved product/content source，本决策不创建内容 authoring 或默认库存。
+
 ### Success Envelope And Course Fields / 成功包络与 Course 字段
 
 - 三个操作的每个 `200` JSON body 都必须在顶层包含常量 `schema_version: 1` 和本次调用唯一的 `request_id`。`GET /scenarios` 保留既有主题集合字段；Course list 另外返回 path 对应的 `scenario_id` 与 `courses`；detail 返回单个 `course`。
@@ -310,6 +313,7 @@ P02-API-001 到 P02-FUB-API-006 门禁结论：P0.2 实现级 endpoint 只允许
 
 | External result / 外部结果 | Applies when / 适用情形 | Recovery / 恢复 |
 | --- | --- | --- |
+| `SCHEMA_VALIDATION_FAILED` / `400` | Course list path 的 `scenario_id` 不是 `1..80` 位 lowercase snake-case 格式。 | 修正请求；不得发起 Content repository lookup。 |
 | `UNAUTHENTICATED` / `401` | 缺少、失效或不可接受的 learner authentication。 | 重新认证后重试。 |
 | `RESOURCE_NOT_FOUND` / `404` | 请求的 theme、Course 或 exact CourseVersion 缺失、未发布、不可见，或 Course/version identity 不匹配。 | 返回不可用状态；不得探测 entitlement 或资源存在性。 |
 | `CONTENT_READ_UNAVAILABLE` / `503` | Content query/repository/依赖失败，或 `binding_missing`、`binding_cardinality_violation`、`binding_scenario_mismatch`、`binding_cefr_mismatch`、`bound_content_unavailable` 等读取完整性失败。 | `ErrorResponse.error.details.retryable = true`；保留上下文并按退避策略重试。 |
@@ -328,6 +332,7 @@ P02-API-001 到 P02-FUB-API-006 门禁结论：P0.2 实现级 endpoint 只允许
 ### Compatibility, Operations And Rollback / 兼容、运维与回滚
 
 - `GET /scenarios/{scenario_id}/courses`、`GET /courses/{course_id}/versions/{course_version_id}` 及其 schema 是 additive；`GET /scenarios` 保留既有 path、可选 query parameters 和已存在字段，只增加 approved “全部”语义、`request_id` 与缓存约束。能忽略未知字段的现有客户端继续兼容。
+- `ScenarioId` 从封闭 enum 扩展为受格式约束的稳定字符串，对服务端输入是 schema widening，但对把 enum 当作 exhaustive output 的旧客户端可能是输出兼容风险；必须先发布能保留任意合法 ID 的 generated client，再由 owning content release 引入第三个官方主题。过渡期间两个既有 ID 的 wire value 保持不变。
 - Rollout 采用 backend-first：服务端可以先以关闭的新 route/feature entry 部署，但 OpenAPI、generated Dart path/type registry、hash 和 drift manifest 必须在同一候选中更新并通过 gate 后，Flutter 才能启用入口。
 - Rollback 关闭两个新 route 与 learner entry，失效相应私有 cache，并继续保留既有 `GET /scenarios`、`ScenarioLevel`、practice/training flow 和 additive Course 数据；不得执行破坏性 down migration。
 - 不建立 `ScenarioLevel` alias、legacy Course path、dual-read、dual-write 或以现有 ScenarioLevel 合成 Course 的兼容轨道。回滚不依赖 runtime reinterpretation。

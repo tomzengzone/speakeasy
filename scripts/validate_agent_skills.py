@@ -10,7 +10,6 @@ SKILLS_ROOT = ROOT / ".agents" / "skills"
 
 REQUIRED_SKILL_SECTIONS = [
     "## Overview",
-    "## Contract",
     "## Inputs",
     "## Outputs",
     "## Process",
