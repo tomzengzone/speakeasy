@@ -20,6 +20,19 @@ servers:
   description: Versioned API base path
 security:
 - bearerAuth: []
+x-auth-token-context:
+  format: opaque
+  client_id: speakeasy-mobile
+  audience: speakeasy-api
+  authorized_scopes:
+  - user:read
+  - user:write
+  - course:read
+  - learning:read
+  - learning:write
+  - ai:use
+  - session:manage
+  enforcement: The authentication filter validates the opaque token registry, account and session state, client, audience, expiry, and Spring Security required scopes before controller execution.
 tags:
 - name: Auth
   description: Login, refresh, and logout.
@@ -3774,7 +3787,8 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+      bearerFormat: opaque
+      description: SpeakEasy high-entropy opaque access token bound to speakeasy-mobile, audience speakeasy-api, and server-authorized scopes.
     opsBearerAuth:
       type: http
       scheme: bearer
@@ -4161,6 +4175,7 @@ components:
       - AUTH_RATE_LIMITED
       - AUTH_SERVICE_UNAVAILABLE
       - FORBIDDEN
+      - INSUFFICIENT_SCOPE
       - ENTITLEMENT_REQUIRED
       - USAGE_LIMIT_EXCEEDED
       - INVALID_RECEIPT

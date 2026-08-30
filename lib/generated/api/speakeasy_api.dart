@@ -39,6 +39,7 @@ enum ErrorCode {
   authRateLimited('AUTH_RATE_LIMITED'),
   authServiceUnavailable('AUTH_SERVICE_UNAVAILABLE'),
   forbidden('FORBIDDEN'),
+  insufficientScope('INSUFFICIENT_SCOPE'),
   entitlementRequired('ENTITLEMENT_REQUIRED'),
   usageLimitExceeded('USAGE_LIMIT_EXCEEDED'),
   invalidReceipt('INVALID_RECEIPT'),
@@ -553,7 +554,7 @@ class SpeakeasyApiContract {
   const SpeakeasyApiContract._();
 
   static const String openApiSha256 =
-      'f78d1462e9d38d6c28028ce9338c9db5d5048d0e0d0f12b762603c7b6f1191b3';
+      '68a10b7e1efb2fb438407c9c61df7101a2defe651721128dd93353d47d72283d';
 
   static const List<String> courseSchemaNames = <String>[
     'CourseId',

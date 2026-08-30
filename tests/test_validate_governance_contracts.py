@@ -23,7 +23,7 @@ from validate_agent_skills import validate_skills
 
 class GovernanceContractValidationTest(unittest.TestCase):
     def copy_governance_fixture(self, target: Path):
-        for rel in ["docs/process/governance", ".codex", ".agents/skills", "codex/templates"]:
+        for rel in ["docs/process/governance", ".codex", ".agents/skills"]:
             shutil.copytree(ROOT / rel, target / rel)
         for rel in [
             ".gitignore",

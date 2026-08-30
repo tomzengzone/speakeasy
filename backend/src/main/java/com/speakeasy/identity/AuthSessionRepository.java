@@ -10,14 +10,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AuthSessionRepository extends JpaRepository<AuthSession, UUID> {
-  Optional<AuthSession> findByAccessTokenHash(String accessTokenHash);
-
-  @Lock(LockModeType.PESSIMISTIC_WRITE)
-  @Query("select s from AuthSession s where s.accessTokenHash = :accessTokenHash")
-  Optional<AuthSession> findByAccessTokenHashForUpdate(@Param("accessTokenHash") String accessTokenHash);
-
-  Optional<AuthSession> findByRefreshTokenHash(String refreshTokenHash);
-
   List<AuthSession> findByUserIdAndStatus(UUID userId, String status);
 
   List<AuthSession> findByUserIdOrderByLastActiveAtDesc(UUID userId);

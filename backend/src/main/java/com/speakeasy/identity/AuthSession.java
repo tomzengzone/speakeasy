@@ -13,13 +13,8 @@ import java.util.UUID;
 public class AuthSession {
   @Id @Column(name = "session_id", nullable = false) private UUID sessionId;
   @Column(name = "user_id", nullable = false) private UUID userId;
-  @Column(name = "access_token_hash", nullable = false) private String accessTokenHash;
-  @Column(name = "refresh_token_hash", nullable = false) private String refreshTokenHash;
   @Column(name = "refresh_token_family_id", nullable = false) private UUID refreshTokenFamilyId;
   @Column(name = "status", nullable = false) private String status;
-  @Column(name = "issued_at", nullable = false) private Instant issuedAt;
-  @Column(name = "expires_at", nullable = false) private Instant expiresAt;
-  @Column(name = "refresh_expires_at", nullable = false) private Instant refreshExpiresAt;
   @Column(name = "created_at", nullable = false) private Instant createdAt;
   @Column(name = "last_active_at", nullable = false) private Instant lastActiveAt;
   @Column(name = "idle_expires_at", nullable = false) private Instant idleExpiresAt;
@@ -35,28 +30,15 @@ public class AuthSession {
   protected AuthSession() {}
 
   public AuthSession(
-      UUID sessionId, UUID userId, String accessTokenHash, String refreshTokenHash,
-      Instant issuedAt, Instant expiresAt, Instant refreshExpiresAt) {
-    this(sessionId, userId, accessTokenHash, refreshTokenHash, sessionId, issuedAt, expiresAt,
-        refreshExpiresAt, refreshExpiresAt, null, "Unknown device", "unknown", null, 0);
-  }
-
-  public AuthSession(
-      UUID sessionId, UUID userId, String accessTokenHash, String refreshTokenHash,
-      UUID refreshTokenFamilyId, Instant issuedAt, Instant expiresAt, Instant idleExpiresAt,
+      UUID sessionId, UUID userId, UUID refreshTokenFamilyId, Instant createdAt, Instant idleExpiresAt,
       Instant absoluteExpiresAt, String deviceId, String deviceName, String platform,
       String appVersion, long securityEpoch) {
     this.sessionId = sessionId;
     this.userId = userId;
-    this.accessTokenHash = accessTokenHash;
-    this.refreshTokenHash = refreshTokenHash;
     this.refreshTokenFamilyId = refreshTokenFamilyId;
     this.status = "active";
-    this.issuedAt = issuedAt;
-    this.expiresAt = expiresAt;
-    this.refreshExpiresAt = idleExpiresAt;
-    this.createdAt = issuedAt;
-    this.lastActiveAt = issuedAt;
+    this.createdAt = createdAt;
+    this.lastActiveAt = createdAt;
     this.idleExpiresAt = idleExpiresAt;
     this.absoluteExpiresAt = absoluteExpiresAt;
     this.deviceId = clean(deviceId, null);
@@ -69,8 +51,6 @@ public class AuthSession {
   public UUID getSessionId() { return sessionId; }
   public UUID getUserId() { return userId; }
   public UUID getRefreshTokenFamilyId() { return refreshTokenFamilyId; }
-  public Instant getExpiresAt() { return expiresAt; }
-  public Instant getRefreshExpiresAt() { return refreshExpiresAt; }
   public Instant getCreatedAt() { return createdAt; }
   public Instant getLastActiveAt() { return lastActiveAt; }
   public Instant getIdleExpiresAt() { return idleExpiresAt; }
@@ -83,34 +63,14 @@ public class AuthSession {
   public String getRevokedReasonCode() { return revokedReasonCode; }
 
   public boolean isActive() { return "active".equals(status); }
-  public boolean isAccessExpiredAt(Instant now) { return !expiresAt.isAfter(now); }
   public boolean isSessionExpiredAt(Instant now) {
     return !idleExpiresAt.isAfter(now) || !absoluteExpiresAt.isAfter(now);
-  }
-  public boolean isActiveAt(Instant now) {
-    return isActive() && !isAccessExpiredAt(now) && !isSessionExpiredAt(now);
-  }
-  public boolean canRefreshAt(Instant now) {
-    return isActive() && refreshExpiresAt.isAfter(now) && !isSessionExpiredAt(now);
-  }
-
-  public void rotate(
-      String accessTokenHash, String refreshTokenHash, Instant issuedAt, Instant expiresAt,
-      Instant refreshExpiresAt) {
-    this.accessTokenHash = accessTokenHash;
-    this.refreshTokenHash = refreshTokenHash;
-    this.issuedAt = issuedAt;
-    this.expiresAt = expiresAt;
-    this.refreshExpiresAt = refreshExpiresAt;
-    this.lastActiveAt = issuedAt;
-    this.idleExpiresAt = refreshExpiresAt;
   }
 
   public void touch(Instant now, Duration idleTtl) {
     lastActiveAt = now;
     Instant candidate = now.plus(idleTtl);
     idleExpiresAt = candidate.isBefore(absoluteExpiresAt) ? candidate : absoluteExpiresAt;
-    refreshExpiresAt = idleExpiresAt;
   }
 
   public void revoke(Instant revokedAt) { revoke(revokedAt, "logout"); }

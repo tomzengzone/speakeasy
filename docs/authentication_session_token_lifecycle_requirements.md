@@ -7,6 +7,18 @@
 > 适用范围：SpeakEasy Flutter 客户端、认证后端、业务 API 与运维安全能力
 > 说明：本文不自动纳入项目现有 Story Map、Functional Requirement、Engineering Contract、Gate 或追溯治理体系；如后续决定实施，再按实际交付流程拆分。
 
+## Implementation Note — Phase 2 / Phase 3 Hardening（2026-08-30）
+
+本次实现保持本文需求不变，并采用与现有系统最匹配的 opaque token 演进路径：
+
+- `AuthAccessToken` registry 独立持有 Access Token hash、过期时间、`client_id`、`audience` 和 `scope`；正常 refresh 不再覆盖或撤销未过期旧 Access Token。
+- `AuthSession` 不再持有 Access/Refresh Token hash；Refresh Token 生命周期事实只存在于 `AuthRefreshToken`，授权 grant context 由对应 `AuthRefreshTokenFamily` 持有。
+- 当前第一方上下文为 `speakeasy-mobile` → `speakeasy-api`，最小 scope 集合为 `user:read`、`user:write`、`course:read`、`learning:read`、`learning:write`、`ai:use`、`session:manage`。
+- 统一认证过滤器先验证 opaque registry、token expiry、client/audience、Session/security epoch 和账号状态，再由 Spring Security 校验 endpoint 所需 scope；refresh 只继承原 grant，客户端不能扩大 scope。
+- Flutter 继续复用现有 SecureTokenStore、CredentialRepository、RefreshCoordinator 和 AuthenticatedRequestExecutor；本次后端模型调整不引入第二套客户端认证架构。
+
+该实现注记用于记录代码落地方式，不把本文 standalone baseline 自动转换为 Story/FR/Engineering Contract，也不修改下列 Requirement 的语义。
+
 ## 1. 文档目标
 
 建立一套适用于商业移动应用的统一身份认证、登录会话和 Token 生命周期管理体系，解决以下问题：

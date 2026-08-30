@@ -8,11 +8,13 @@ import static org.mockito.Mockito.reset;
 
 import com.speakeasy.common.ApiException;
 import com.speakeasy.identity.AccountSecurityService;
+import com.speakeasy.identity.AuthAccessTokenRepository;
 import com.speakeasy.identity.AuthService;
 import com.speakeasy.identity.AuthSessionRepository;
 import com.speakeasy.identity.UserAccountRepository;
 import com.speakeasy.ops.AuditLog;
 import com.speakeasy.ops.AuditLogRepository;
+import com.speakeasy.security.TokenHasher;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Timestamp;
 import java.time.Duration;
@@ -35,6 +37,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class AccountSecurityPhase3Test extends BackendIntegrationTestSupport {
   @Autowired AuthService authService;
+  @Autowired AuthAccessTokenRepository authAccessTokens;
   @Autowired AuthSessionRepository authSessions;
   @Autowired UserAccountRepository userAccounts;
   @Autowired AccountSecurityService accountSecurityService;
@@ -46,8 +49,9 @@ class AccountSecurityPhase3Test extends BackendIntegrationTestSupport {
   void defaultTokenAndSessionLifetimesMatchTheApprovedPolicy() {
     AuthService.AuthSessionResult login = login("+8613800138098", "phone-a");
     var session = authSessions.findById(login.sessionId()).orElseThrow();
+    var accessToken = authAccessTokens.findByTokenHash(TokenHasher.hash(login.accessToken())).orElseThrow();
 
-    assertThat(Duration.between(session.getCreatedAt(), session.getExpiresAt()))
+    assertThat(Duration.between(accessToken.getIssuedAt(), accessToken.getExpiresAt()))
         .isEqualTo(Duration.ofMinutes(15));
     assertThat(Duration.between(session.getCreatedAt(), session.getIdleExpiresAt()))
         .isEqualTo(Duration.ofDays(30));
@@ -59,7 +63,7 @@ class AccountSecurityPhase3Test extends BackendIntegrationTestSupport {
   void expiredAccessAndRefreshTokensReturnStableCodes() {
     AuthService.AuthSessionResult accessLogin = login("+8613800138099", "phone-a");
     jdbcTemplate.update(
-        "UPDATE auth_sessions SET expires_at = ? WHERE session_id = ?",
+        "UPDATE auth_access_tokens SET expires_at = ? WHERE session_id = ?",
         Timestamp.from(Instant.EPOCH), accessLogin.sessionId());
     assertThat(authService.inspectAccessToken(accessLogin.accessToken()).code())
         .isEqualTo("ACCESS_TOKEN_EXPIRED");

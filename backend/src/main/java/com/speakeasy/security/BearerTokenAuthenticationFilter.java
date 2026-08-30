@@ -65,8 +65,14 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
       return;
     }
 
+    List<SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
+    authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+    currentUser.scopes().stream()
+        .map(AuthScopes::authority)
+        .map(SimpleGrantedAuthority::new)
+        .forEach(authorities::add);
     UsernamePasswordAuthenticationToken authentication =
-        new UsernamePasswordAuthenticationToken(currentUser, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        new UsernamePasswordAuthenticationToken(currentUser, null, authorities);
     SecurityContextHolder.getContext().setAuthentication(authentication);
     filterChain.doFilter(request, response);
   }

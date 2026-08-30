@@ -6,6 +6,7 @@ import com.speakeasy.identity.provider.PhoneVerificationProvider;
 import com.speakeasy.identity.provider.SocialIdentityVerifier;
 import com.speakeasy.ops.AccountDeletionJobRepository;
 import com.speakeasy.ops.AuthAuditService;
+import com.speakeasy.security.AuthScopes;
 import com.speakeasy.security.CurrentUser;
 import com.speakeasy.security.TokenHasher;
 import java.security.SecureRandom;
@@ -14,6 +15,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +30,7 @@ public class AuthService {
   private final UserProfileRepository profiles;
   private final AuthIdentityRepository identities;
   private final AuthSessionRepository sessions;
+  private final AuthAccessTokenRepository accessTokens;
   private final AuthRefreshTokenFamilyRepository tokenFamilies;
   private final AuthRefreshTokenRepository refreshTokens;
   private final AccountDeletionJobRepository deletionJobs;
@@ -40,6 +43,9 @@ public class AuthService {
   private final Duration accessTokenTtl;
   private final Duration sessionIdleTtl;
   private final Duration sessionAbsoluteTtl;
+  private final String clientId;
+  private final String audience;
+  private final String authorizedScope;
   private final SecureRandom secureRandom = new SecureRandom();
 
   public AuthService(
@@ -47,6 +53,7 @@ public class AuthService {
       UserProfileRepository profiles,
       AuthIdentityRepository identities,
       AuthSessionRepository sessions,
+      AuthAccessTokenRepository accessTokens,
       AuthRefreshTokenFamilyRepository tokenFamilies,
       AuthRefreshTokenRepository refreshTokens,
       AccountDeletionJobRepository deletionJobs,
@@ -58,11 +65,16 @@ public class AuthService {
       Clock clock,
       @Value("${speakeasy.auth.access-token-ttl:15m}") Duration accessTokenTtl,
       @Value("${speakeasy.auth.session-idle-ttl:30d}") Duration sessionIdleTtl,
-      @Value("${speakeasy.auth.session-absolute-ttl:90d}") Duration sessionAbsoluteTtl) {
+      @Value("${speakeasy.auth.session-absolute-ttl:90d}") Duration sessionAbsoluteTtl,
+      @Value("${speakeasy.auth.client-id:speakeasy-mobile}") String clientId,
+      @Value("${speakeasy.auth.audience:speakeasy-api}") String audience,
+      @Value("${speakeasy.auth.authorized-scopes:ai:use course:read learning:read learning:write session:manage user:read user:write}")
+          String authorizedScopes) {
     this.users = users;
     this.profiles = profiles;
     this.identities = identities;
     this.sessions = sessions;
+    this.accessTokens = accessTokens;
     this.tokenFamilies = tokenFamilies;
     this.refreshTokens = refreshTokens;
     this.deletionJobs = deletionJobs;
@@ -75,6 +87,9 @@ public class AuthService {
     this.accessTokenTtl = accessTokenTtl;
     this.sessionIdleTtl = sessionIdleTtl;
     this.sessionAbsoluteTtl = sessionAbsoluteTtl;
+    this.clientId = clientId;
+    this.audience = audience;
+    this.authorizedScope = AuthScopes.serialize(AuthScopes.parse(authorizedScopes));
   }
 
   @Transactional
@@ -196,16 +211,19 @@ public class AuthService {
     }
 
     IssuedTokens issued = issueTokens();
+    Instant accessExpiresAt = now.plus(accessTokenTtl);
     Instant refreshExpiresAt = minimum(now.plus(sessionIdleTtl), session.getAbsoluteExpiresAt());
     token.markUsed(now);
     AuthRefreshToken nextToken = new AuthRefreshToken(
         UUID.randomUUID(), family.getFamilyId(), session.getSessionId(), user.getUserId(), token.getTokenId(),
         TokenHasher.hash(issued.refreshToken()), now, refreshExpiresAt);
     refreshTokens.save(nextToken);
-    session.rotate(TokenHasher.hash(issued.accessToken()), TokenHasher.hash(issued.refreshToken()), now,
-        now.plus(accessTokenTtl), refreshExpiresAt);
+    accessTokens.save(new AuthAccessToken(
+        UUID.randomUUID(), TokenHasher.hash(issued.accessToken()), session.getSessionId(), user.getUserId(),
+        family.getClientId(), family.getAudience(), family.getScope(), now, accessExpiresAt));
+    session.touch(now, sessionIdleTtl);
     metrics.refresh("success");
-    return result(user, issued, session);
+    return result(user, issued, session, accessExpiresAt, refreshExpiresAt);
   }
 
   @Transactional
@@ -219,8 +237,15 @@ public class AuthService {
   public AccessTokenInspection inspectAccessToken(String accessToken) {
     if (accessToken == null || accessToken.isBlank()) return failedAccess("ACCESS_TOKEN_INVALID");
     Instant now = Instant.now(clock);
-    AuthSession session = sessions.findByAccessTokenHashForUpdate(TokenHasher.hash(accessToken)).orElse(null);
-    if (session == null) return failedAccess("ACCESS_TOKEN_INVALID");
+    AuthAccessToken token = accessTokens.findByTokenHash(TokenHasher.hash(accessToken)).orElse(null);
+    if (token == null || !token.isActive()
+        || !clientId.equals(token.getClientId()) || !audience.equals(token.getAudience())) {
+      return failedAccess("ACCESS_TOKEN_INVALID");
+    }
+    AuthSession session = sessions.findByIdForUpdate(token.getSessionId()).orElse(null);
+    if (session == null || !token.getUserId().equals(session.getUserId())) {
+      return failedAccess("ACCESS_TOKEN_INVALID");
+    }
     UserAccount user = users.findById(session.getUserId()).orElse(null);
     if (user == null) return failedAccess("ACCESS_TOKEN_INVALID");
     if ("disabled".equals(user.getAccountStatus())) return failedAccess("ACCOUNT_DISABLED");
@@ -228,10 +253,10 @@ public class AuthService {
         || session.getSecurityEpoch() != user.getSecurityEpoch() || session.isSessionExpiredAt(now)) {
       return failedAccess("SESSION_REVOKED");
     }
-    if (session.isAccessExpiredAt(now)) return failedAccess("ACCESS_TOKEN_EXPIRED");
+    if (token.isExpiredAt(now)) return failedAccess("ACCESS_TOKEN_EXPIRED");
     session.touch(now, sessionIdleTtl);
     metrics.access("authenticated");
-    return new AccessTokenInspection("AUTHENTICATED", new CurrentUser(user.getUserId(), session.getSessionId()));
+    return new AccessTokenInspection("AUTHENTICATED", currentUser(token));
   }
 
   @Transactional
@@ -244,11 +269,14 @@ public class AuthService {
     if (accessToken == null || accessToken.isBlank() || idempotencyKey == null || idempotencyKey.isBlank()) {
       return Optional.empty();
     }
-    return sessions.findByAccessTokenHash(TokenHasher.hash(accessToken))
-        .flatMap(session -> users.findById(session.getUserId())
+    return accessTokens.findByTokenHash(TokenHasher.hash(accessToken))
+        .filter(token -> clientId.equals(token.getClientId()) && audience.equals(token.getAudience()))
+        .flatMap(token -> sessions.findById(token.getSessionId())
+            .filter(session -> token.getUserId().equals(session.getUserId()))
+            .flatMap(session -> users.findById(session.getUserId())
             .filter(user -> "deleted".equals(user.getAccountStatus()) || "deletion_requested".equals(user.getAccountStatus()))
             .filter(user -> deletionJobs.findByUserIdAndIdempotencyKey(user.getUserId(), idempotencyKey).isPresent())
-            .map(user -> new CurrentUser(user.getUserId(), session.getSessionId())));
+            .map(user -> currentUser(token))));
   }
 
   @Transactional
@@ -278,19 +306,23 @@ public class AuthService {
     UUID familyId = UUID.randomUUID();
     Instant absoluteExpiresAt = now.plus(sessionAbsoluteTtl);
     Instant refreshExpiresAt = minimum(now.plus(sessionIdleTtl), absoluteExpiresAt);
+    Instant accessExpiresAt = now.plus(accessTokenTtl);
     AuthSession session = new AuthSession(
-        sessionId, user.getUserId(), TokenHasher.hash(issued.accessToken()), TokenHasher.hash(issued.refreshToken()),
-        familyId, now, now.plus(accessTokenTtl), refreshExpiresAt, absoluteExpiresAt,
+        sessionId, user.getUserId(), familyId, now, refreshExpiresAt, absoluteExpiresAt,
         device.deviceId(), device.deviceName(), device.platform(), device.appVersion(), user.getSecurityEpoch());
     sessions.save(session);
-    tokenFamilies.save(new AuthRefreshTokenFamily(familyId, sessionId, user.getUserId(), now));
+    tokenFamilies.save(new AuthRefreshTokenFamily(
+        familyId, sessionId, user.getUserId(), clientId, audience, authorizedScope, now));
     refreshTokens.save(new AuthRefreshToken(
         UUID.randomUUID(), familyId, sessionId, user.getUserId(), null,
         TokenHasher.hash(issued.refreshToken()), now, refreshExpiresAt));
+    accessTokens.save(new AuthAccessToken(
+        UUID.randomUUID(), TokenHasher.hash(issued.accessToken()), sessionId, user.getUserId(),
+        clientId, audience, authorizedScope, now, accessExpiresAt));
     audit.recordUserEvent(user.getUserId(), "auth_session_created", user.getUserId(), sessionId,
         provider, 1, null);
     metrics.login(provider, "success");
-    return result(user, issued, session);
+    return result(user, issued, session, accessExpiresAt, refreshExpiresAt);
   }
 
   private void revokeFamilyForReuse(
@@ -305,11 +337,22 @@ public class AuthService {
     return new AccessTokenInspection(code, null);
   }
 
-  private AuthSessionResult result(UserAccount user, IssuedTokens issued, AuthSession session) {
+  private AuthSessionResult result(
+      UserAccount user,
+      IssuedTokens issued,
+      AuthSession session,
+      Instant accessExpiresAt,
+      Instant refreshExpiresAt) {
     Instant now = Instant.now(clock);
     return new AuthSessionResult(
         user, ensureProfile(user.getUserId(), user.getDisplayName(), now), session.getSessionId(),
-        issued.accessToken(), issued.refreshToken(), session.getExpiresAt(), session.getRefreshExpiresAt());
+        issued.accessToken(), issued.refreshToken(), accessExpiresAt, refreshExpiresAt);
+  }
+
+  private CurrentUser currentUser(AuthAccessToken token) {
+    Set<String> scopes = AuthScopes.parse(token.getScope());
+    return new CurrentUser(
+        token.getUserId(), token.getSessionId(), token.getClientId(), token.getAudience(), scopes);
   }
 
   private UserAccount createUser(String provider, String providerSubject, String defaultDisplayName, Instant now) {

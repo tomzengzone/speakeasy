@@ -14,6 +14,8 @@ import com.speakeasy.commerce.SubscriptionRepository;
 import com.speakeasy.commerce.SubscriptionPlan;
 import com.speakeasy.commerce.SubscriptionPlanRepository;
 import com.speakeasy.content.UserScenarioStateRepository;
+import com.speakeasy.identity.AuthAccessToken;
+import com.speakeasy.identity.AuthAccessTokenRepository;
 import com.speakeasy.identity.AuthIdentityRepository;
 import com.speakeasy.identity.AuthSession;
 import com.speakeasy.identity.AuthSessionRepository;
@@ -51,6 +53,7 @@ class CommercialFoundationControllerTest {
   @Autowired UserProfileRepository profiles;
   @Autowired AuthIdentityRepository identities;
   @Autowired AuthSessionRepository sessions;
+  @Autowired AuthAccessTokenRepository accessTokens;
   @Autowired SubscriptionPlanRepository plans;
   @Autowired PurchaseRepository purchases;
   @Autowired SubscriptionRepository subscriptions;
@@ -83,14 +86,30 @@ class CommercialFoundationControllerTest {
 
     Instant now = Instant.now();
     users.save(new UserAccount(USER_ID, "Sample Name", now));
+    UUID sessionId = UUID.randomUUID();
+    UUID familyId = UUID.randomUUID();
     sessions.save(new AuthSession(
-        UUID.randomUUID(),
+        sessionId,
         USER_ID,
-        TokenHasher.hash(ACCESS_TOKEN),
-        TokenHasher.hash("commercial-test-refresh-token"),
+        familyId,
         now,
-        now.plusSeconds(1800),
-        now.plusSeconds(86400)));
+        now.plusSeconds(86400),
+        now.plusSeconds(86400),
+        null,
+        "Commercial test device",
+        "unknown",
+        null,
+        0));
+    accessTokens.save(new AuthAccessToken(
+        UUID.randomUUID(),
+        TokenHasher.hash(ACCESS_TOKEN),
+        sessionId,
+        USER_ID,
+        "speakeasy-mobile",
+        "speakeasy-api",
+        "ai:use course:read learning:read learning:write session:manage user:read user:write",
+        now,
+        now.plusSeconds(1800)));
     plans.save(new SubscriptionPlan(UUID.randomUUID(), "apple", "speakeasy.monthly", "monthly"));
     entitlements.save(new EntitlementSnapshot(UUID.randomUUID(), USER_ID, "free", "{\"scenario\":true}", "{\"ai\":10}", now));
     ledgers.save(new UsageLedger(UUID.randomUUID(), USER_ID, "ai", "2026-05", 10));

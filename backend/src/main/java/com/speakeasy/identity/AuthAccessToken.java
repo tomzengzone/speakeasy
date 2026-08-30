@@ -8,49 +8,53 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "auth_refresh_token_families")
-public class AuthRefreshTokenFamily {
-  @Id @Column(name = "family_id", nullable = false) private UUID familyId;
+@Table(name = "auth_access_tokens")
+public class AuthAccessToken {
+  @Id @Column(name = "token_id", nullable = false) private UUID tokenId;
+  @Column(name = "token_hash", nullable = false) private String tokenHash;
   @Column(name = "session_id", nullable = false) private UUID sessionId;
   @Column(name = "user_id", nullable = false) private UUID userId;
   @Column(name = "client_id", nullable = false) private String clientId;
   @Column(name = "audience", nullable = false) private String audience;
   @Column(name = "scope", nullable = false) private String scope;
   @Column(name = "status", nullable = false) private String status;
-  @Column(name = "created_at", nullable = false) private Instant createdAt;
+  @Column(name = "issued_at", nullable = false) private Instant issuedAt;
+  @Column(name = "expires_at", nullable = false) private Instant expiresAt;
   @Column(name = "revoked_at") private Instant revokedAt;
-  @Column(name = "revoked_reason_code") private String revokedReasonCode;
 
-  protected AuthRefreshTokenFamily() {}
+  protected AuthAccessToken() {}
 
-  public AuthRefreshTokenFamily(
-      UUID familyId,
+  public AuthAccessToken(
+      UUID tokenId,
+      String tokenHash,
       UUID sessionId,
       UUID userId,
       String clientId,
       String audience,
       String scope,
-      Instant createdAt) {
-    this.familyId = familyId;
+      Instant issuedAt,
+      Instant expiresAt) {
+    this.tokenId = tokenId;
+    this.tokenHash = tokenHash;
     this.sessionId = sessionId;
     this.userId = userId;
     this.clientId = clientId;
     this.audience = audience;
     this.scope = scope;
     this.status = "active";
-    this.createdAt = createdAt;
+    this.issuedAt = issuedAt;
+    this.expiresAt = expiresAt;
   }
 
-  public UUID getFamilyId() { return familyId; }
+  public UUID getTokenId() { return tokenId; }
+  public UUID getSessionId() { return sessionId; }
+  public UUID getUserId() { return userId; }
   public String getClientId() { return clientId; }
   public String getAudience() { return audience; }
   public String getScope() { return scope; }
-  public boolean isActive() { return "active".equals(status); }
+  public Instant getIssuedAt() { return issuedAt; }
+  public Instant getExpiresAt() { return expiresAt; }
 
-  public void revoke(Instant now, String reasonCode) {
-    if (!isActive()) return;
-    status = "revoked";
-    revokedAt = now;
-    revokedReasonCode = reasonCode;
-  }
+  public boolean isActive() { return "active".equals(status); }
+  public boolean isExpiredAt(Instant now) { return !expiresAt.isAfter(now); }
 }

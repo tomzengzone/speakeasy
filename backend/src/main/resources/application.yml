@@ -31,6 +31,9 @@ speakeasy:
     access-token-ttl: ${SPEAKEASY_AUTH_ACCESS_TOKEN_TTL:15m}
     session-idle-ttl: ${SPEAKEASY_AUTH_SESSION_IDLE_TTL:30d}
     session-absolute-ttl: ${SPEAKEASY_AUTH_SESSION_ABSOLUTE_TTL:90d}
+    client-id: ${SPEAKEASY_AUTH_CLIENT_ID:speakeasy-mobile}
+    audience: ${SPEAKEASY_AUTH_AUDIENCE:speakeasy-api}
+    authorized-scopes: "${SPEAKEASY_AUTH_AUTHORIZED_SCOPES:ai:use course:read learning:read learning:write session:manage user:read user:write}"
     providers:
       mode: ${SPEAKEASY_AUTH_PROVIDER_MODE:disabled}
       deterministic-enabled: false

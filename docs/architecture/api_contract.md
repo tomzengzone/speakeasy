@@ -67,6 +67,14 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 - Breaking changes 必须记录 ADR 或 migration plan，并说明客户端兼容策略。
 - 不得从 stage、roadmap 或 future boundary 直接生成实现级 endpoint。
 
+## Authentication Token Context Hardening / 认证 Token 上下文加固
+
+当前 Business API 使用高熵 opaque Access Token，不使用 JWT。服务端 `AuthAccessToken` registry 是 Access Token hash、有效期和授权上下文的唯一事实源；`AuthSession` 只拥有设备会话、撤销状态、security epoch 和 idle/absolute expiry。正常 refresh 会创建新的 Access Token，但不会提前撤销尚未过期的旧 Access Token；logout、remote revoke、logout-all、账号禁用、高风险凭证变更和 refresh-token reuse 仍通过 Session 状态与 security epoch 立即关闭该 Session 的全部 Token。
+
+唯一的第一方授权上下文为 `client_id=speakeasy-mobile`、`audience=speakeasy-api`，并使用 `user:read`、`user:write`、`course:read`、`learning:read`、`learning:write`、`ai:use`、`session:manage` 七个实际 scope。Refresh grant context 由 `AuthRefreshTokenFamily` 持有，refresh 只继承原 grant，客户端不得提交或扩大 scope。缺少业务端点所需 scope 返回 `403 INSUFFICIENT_SCOPE`，错误不得触发客户端 refresh。
+
+Refresh Token hash、状态、parent、签发/使用/过期/撤销时间只由 `AuthRefreshToken` 持有；`AuthSession.refresh_token_hash` 和 `AuthSession.access_token_hash` 已通过追加 migration 退出。OpenAPI `bearerAuth` 的 `bearerFormat` 因此标记为 `opaque`，并通过 `x-auth-token-context` 记录 client、audience、scope 与统一校验入口。
+
 ## API Family Coverage / API 家族覆盖
 
 | Family / 家族 | OpenAPI tag | Product object source / 产品对象来源 | Implementation status / 实现状态 |

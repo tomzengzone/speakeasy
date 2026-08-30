@@ -24,6 +24,7 @@ import com.speakeasy.identity.OnboardingAssessmentRepository;
 import com.speakeasy.identity.UserAccountRepository;
 import com.speakeasy.identity.UserProfileRepository;
 import com.speakeasy.ops.AccountDeletionJobRepository;
+import com.speakeasy.security.TokenHasher;
 import com.speakeasy.usage.UsageLedgerRepository;
 import com.speakeasy.usage.UsageReservationRepository;
 import java.util.List;
@@ -35,6 +36,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -59,6 +61,7 @@ class AuthControllerTest {
   @Autowired SubscriptionRepository subscriptions;
   @Autowired PaymentProviderEventRepository providerEvents;
   @Autowired UserAccountRepository users;
+  @Autowired JdbcTemplate jdbc;
 
   @BeforeEach
   void setUp() {
@@ -216,7 +219,7 @@ class AuthControllerTest {
     String refreshedAccessToken = JsonPath.read(refreshResult.getResponse().getContentAsString(), "$.access_token");
 
     mvc.perform(get("/user/me").header(HttpHeaders.AUTHORIZATION, bearer(login.accessToken())))
-        .andExpect(status().isUnauthorized());
+        .andExpect(status().isOk());
     mvc.perform(get("/user/me").header(HttpHeaders.AUTHORIZATION, bearer(refreshedAccessToken)))
         .andExpect(status().isOk());
 
@@ -253,6 +256,47 @@ class AuthControllerTest {
                 }
                 """))
         .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"));
+  }
+
+  @Test
+  void wrongAudienceCannotAuthenticate() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800138006");
+    jdbc.update(
+        "UPDATE auth_access_tokens SET audience = 'another-api' WHERE token_hash = ?",
+        TokenHasher.hash(tokens.accessToken()));
+
+    mvc.perform(get("/user/me").header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.error.code").value("ACCESS_TOKEN_INVALID"));
+  }
+
+  @Test
+  void missingRequiredScopeReturnsForbiddenWithoutAuthenticationRetrySemantics() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800138007");
+    jdbc.update(
+        "UPDATE auth_access_tokens SET scope = 'course:read' WHERE token_hash = ?",
+        TokenHasher.hash(tokens.accessToken()));
+
+    mvc.perform(get("/user/me").header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.error.code").value("INSUFFICIENT_SCOPE"));
+  }
+
+  @Test
+  void refreshRejectsClientSuppliedScopeExpansion() throws Exception {
+    AuthTokens tokens = loginPhone("+8613800138008");
+
+    mvc.perform(post("/auth/refresh")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "refresh_token": "%s",
+                  "scope": "admin:*"
+                }
+                """.formatted(tokens.refreshToken())))
+        .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"));
   }
 

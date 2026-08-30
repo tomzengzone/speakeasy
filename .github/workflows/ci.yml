@@ -63,6 +63,9 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
+      - name: Backend compile and tests
+        run: mvn -f backend/pom.xml test
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -90,7 +93,6 @@ jobs:
         run: flutter test
 
       - name: Build Android APK
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         run: |
           API_BASE_URL="${APP_API_BASE_URL:-https://example.invalid}"

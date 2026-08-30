@@ -11,8 +11,9 @@ import com.speakeasy.commerce.SubscriptionRepository;
 import com.speakeasy.commerce.SubscriptionPlanRepository;
 import com.speakeasy.content.UserScenarioStateRepository;
 import com.speakeasy.identity.AuthIdentityRepository;
+import com.speakeasy.identity.AuthAccessTokenRepository;
+import com.speakeasy.identity.AuthRefreshTokenFamilyRepository;
 import com.speakeasy.identity.AuthService;
-import com.speakeasy.identity.AuthSession;
 import com.speakeasy.identity.AuthSessionRepository;
 import com.speakeasy.identity.LearningRouteRepository;
 import com.speakeasy.identity.OnboardingAssessmentRepository;
@@ -26,17 +27,19 @@ import com.speakeasy.usage.UsageLedgerRepository;
 import com.speakeasy.usage.UsageReservationRepository;
 import java.time.Instant;
 import java.time.Duration;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
 class AuthSessionLifecycleTest {
   @Autowired AuthService authService;
+  @Autowired AuthAccessTokenRepository accessTokens;
+  @Autowired AuthRefreshTokenFamilyRepository tokenFamilies;
   @Autowired AuthSessionRepository sessions;
   @Autowired AuthIdentityRepository identities;
   @Autowired UserScenarioStateRepository userScenarioStates;
@@ -52,6 +55,7 @@ class AuthSessionLifecycleTest {
   @Autowired SubscriptionRepository subscriptions;
   @Autowired PaymentProviderEventRepository providerEvents;
   @Autowired UserAccountRepository users;
+  @Autowired JdbcTemplate jdbc;
 
   @BeforeEach
   void setUp() {
@@ -74,48 +78,76 @@ class AuthSessionLifecycleTest {
 
   @Test
   void expiredAccessTokenCannotAuthenticate() {
-    String accessToken = "expired-access-token";
-    UserAccount user = users.save(new UserAccount(UUID.randomUUID(), "Expired Access", Instant.now()));
-    sessions.save(new AuthSession(
-        UUID.randomUUID(),
-        user.getUserId(),
-        TokenHasher.hash(accessToken),
-        TokenHasher.hash("refresh-still-valid"),
-        Instant.now().minusSeconds(7200),
-        Instant.now().minusSeconds(60),
-        Instant.now().plusSeconds(86400)));
+    AuthService.AuthSessionResult login = authService.loginPhone("+8613800138028", "123456", true);
+    jdbc.update(
+        "UPDATE auth_access_tokens SET expires_at = ? WHERE token_hash = ?",
+        Instant.EPOCH, TokenHasher.hash(login.accessToken()));
 
-    assertThat(authService.authenticateAccessToken(accessToken)).isEmpty();
+    assertThat(authService.inspectAccessToken(login.accessToken()).code()).isEqualTo("ACCESS_TOKEN_EXPIRED");
   }
 
   @Test
   void expiredRefreshTokenIsRejected() {
-    String refreshToken = "expired-refresh-token";
-    UserAccount user = users.save(new UserAccount(UUID.randomUUID(), "Expired Refresh", Instant.now()));
-    sessions.save(new AuthSession(
-        UUID.randomUUID(),
-        user.getUserId(),
-        TokenHasher.hash("access-still-valid"),
-        TokenHasher.hash(refreshToken),
-        Instant.now().minusSeconds(7200),
-        Instant.now().plusSeconds(1800),
-        Instant.now().minusSeconds(60)));
+    AuthService.AuthSessionResult login = authService.loginPhone("+8613800138029", "123456", true);
+    jdbc.update(
+        "UPDATE auth_refresh_tokens SET expires_at = ? WHERE token_hash = ?",
+        Instant.EPOCH, TokenHasher.hash(login.refreshToken()));
 
-    assertThatThrownBy(() -> authService.refresh(refreshToken))
-        .isInstanceOf(ApiException.class)
-        .hasMessageContaining("Refresh token is invalid");
+    assertThatThrownBy(() -> authService.refresh(login.refreshToken()))
+        .isInstanceOfSatisfying(ApiException.class,
+            exception -> assertThat(exception.getCode()).isEqualTo("REFRESH_TOKEN_EXPIRED"));
   }
 
   @Test
-  void refreshRotatesTokensAndInvalidatesPreviousAccessToken() {
+  void refreshRotatesRefreshTokenAndKeepsBothUnexpiredAccessTokensValid() {
     AuthService.AuthSessionResult login = authService.loginPhone("+8613800138030", "123456", true);
 
     AuthService.AuthSessionResult refreshed = authService.refresh(login.refreshToken());
 
     assertThat(refreshed.accessToken()).isNotEqualTo(login.accessToken());
     assertThat(refreshed.refreshToken()).isNotEqualTo(login.refreshToken());
-    assertThat(authService.authenticateAccessToken(login.accessToken())).isEmpty();
+    assertThat(authService.authenticateAccessToken(login.accessToken())).isPresent();
     assertThat(authService.authenticateAccessToken(refreshed.accessToken())).isPresent();
+  }
+
+  @Test
+  void oldAccessTokenExpiresNaturallyWithoutInvalidatingRefreshedAccessToken() {
+    AuthService.AuthSessionResult login = authService.loginPhone("+8613800138033", "123456", true);
+    AuthService.AuthSessionResult refreshed = authService.refresh(login.refreshToken());
+
+    jdbc.update(
+        "UPDATE auth_access_tokens SET expires_at = ? WHERE token_hash = ?",
+        Instant.EPOCH, TokenHasher.hash(login.accessToken()));
+
+    assertThat(authService.inspectAccessToken(login.accessToken()).code()).isEqualTo("ACCESS_TOKEN_EXPIRED");
+    assertThat(authService.authenticateAccessToken(refreshed.accessToken())).isPresent();
+  }
+
+  @Test
+  void logoutInvalidatesEveryAccessTokenAndTheActiveRefreshTokenForTheSession() {
+    AuthService.AuthSessionResult login = authService.loginPhone("+8613800138034", "123456", true);
+    AuthService.AuthSessionResult refreshed = authService.refresh(login.refreshToken());
+
+    authService.logout(login.sessionId());
+
+    assertThat(authService.authenticateAccessToken(login.accessToken())).isEmpty();
+    assertThat(authService.authenticateAccessToken(refreshed.accessToken())).isEmpty();
+    assertThatThrownBy(() -> authService.refresh(refreshed.refreshToken()))
+        .isInstanceOfSatisfying(ApiException.class,
+            exception -> assertThat(exception.getCode()).isEqualTo("SESSION_REVOKED"));
+  }
+
+  @Test
+  void refreshInheritsTheCanonicalGrantContextWithoutExpandingScope() {
+    AuthService.AuthSessionResult login = authService.loginPhone("+8613800138035", "123456", true);
+    var family = tokenFamilies.findBySessionId(login.sessionId()).orElseThrow();
+
+    AuthService.AuthSessionResult refreshed = authService.refresh(login.refreshToken());
+    var refreshedAccess = accessTokens.findByTokenHash(TokenHasher.hash(refreshed.accessToken())).orElseThrow();
+
+    assertThat(refreshedAccess.getClientId()).isEqualTo(family.getClientId());
+    assertThat(refreshedAccess.getAudience()).isEqualTo(family.getAudience());
+    assertThat(refreshedAccess.getScope()).isEqualTo(family.getScope());
   }
 
   @Test
