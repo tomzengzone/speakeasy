@@ -1,8 +1,6 @@
 # AI Evaluation Cases
 
-## PR-003 current lineage
-
-本次只切换来源链，不改变本文已有 fixture、rubric/threshold、provider/model 配置或已接受实现事实。本文仅持有由 Test Case Catalog 中 AI Contract-TC ID 关联的 AI 专用输入 fixture、评分 rubric/threshold 和 provider/model evaluation configuration；既有 `Input`/`Expected` 表格按 fixture/rubric 解读，既有 TC ID、validator 或 command 引用仅作 historical implementation provenance。AI Contract-TC 的稳定测试意图、oracle、scope、selector 和执行命令仅由 Test Case Catalog 持有。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability 或 Increment SWC Allocation 引用均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+本文保存 AI 专用输入 fixture、评分规则、阈值和 provider/model evaluation configuration；稳定测试意图与执行命令见 [测试用例目录](../quality/test_cases.md)。
 
 ## Case Format
 
@@ -94,9 +92,9 @@ Status: planned contract only. This section documents AI eval coverage required 
 
 状态：仅为 planned contract。本节记录实现前必须覆盖的 AI eval 范围；本步骤不创建可执行的 `tests/ai_eval/` fixtures。
 
-Owning increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`。
+Owning increment: `p0-2-followup-b-autopilot-control-planner-memory`。
 
-所属增量：`docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`。
+所属增量：`p0-2-followup-b-autopilot-control-planner-memory`。
 
 Traceability:
 - `AC-P02-FUB-007`
@@ -143,9 +141,9 @@ Status: local S001 backend policy/schema validation。
 
 状态：local S001 backend policy/schema validation。
 
-Owning increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`。
+Owning increment: `p0-2-followup-c-checkpoint-forecast-surfaces`。
 
-所属增量：`docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`。
+所属增量：`p0-2-followup-c-checkpoint-forecast-surfaces`。
 
 Traceability:
 - `AC-P02-FUC-001`
@@ -178,9 +176,9 @@ Status: local S005 backend guardrail validation.
 
 状态：local S005 backend guardrail validation。
 
-Owning increment: `docs/product/increments/p0-2-followup-d-release-gate-hardening/`。
+Owning increment: `p0-2-followup-d-release-gate-hardening`。
 
-所属增量：`docs/product/increments/p0-2-followup-d-release-gate-hardening/`。
+所属增量：`p0-2-followup-d-release-gate-hardening`。
 
 Traceability:
 - `AC-P02-FUD-005`
@@ -213,9 +211,9 @@ Status: planned contract only. This section documents AI/provider guardrail cove
 
 状态：仅为 planned contract。本节记录实现前必须覆盖的 AI/provider guardrail 范围；本阶段不创建可执行的 `tests/ai_eval/` fixtures。
 
-Owning increment: `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/`。
+Owning increment: `p0-2-followup-e-speaking-diagnostic-production`。
 
-所属增量：`docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/`。
+所属增量：`p0-2-followup-e-speaking-diagnostic-production`。
 
 Traceability:
 - Planned `AC-P02-FUE-006`

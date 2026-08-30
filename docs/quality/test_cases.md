@@ -2,12 +2,11 @@
 
 ## 文档状态
 
-- Artifact ID: `TEST_CASE_CATALOG`
 - Status: candidate
 
-本目录保存稳定的测试意图和 oracle，不保存运行时 `passed` / `failed` 状态。三类 TC 的直接上游互斥：FR-TC 只使用 `source_fr_id`，Contract-TC 只使用 `source_contract_id`，VS-TC 只使用 `source_vs_id`。跨层覆盖由 `TRACEABILITY` 从 owning sources 派生，不在 TC 中重复维护。
+本目录保存稳定的测试意图和 oracle，不保存运行时 `passed` / `failed` 状态。FR-TC 使用 `source_fr_id`，Contract-TC 使用 `source_contract_id`，VS-TC 使用 `source_vs_id`；每条用例同时给出可执行脚本和命令。
 
-当前用例为已批准 Vertical Slice、已存在的 approved FR 以及受影响 Engineering Contract 建立稳定测试意图；它不保存测试执行结果，也不以目录登记代替实现或运行证据。账号恢复的反馈顺序先执行最低成本的 backend/contract 测试，再执行选定的用户可见 widget-integration VS 路径；真实短信 provider、真机和 exact-commit 运行结果由 QA/G-TEST 单独保存，不属于本目录。
+账号恢复先执行最低成本的 backend/contract 测试，再执行用户可见 widget-integration 路径；真实短信 provider、真机和 exact-commit 运行结果保存在仓库外的测试证据中。
 
 ## FR-TC
 
@@ -505,7 +504,7 @@
 
 ## 账号恢复测试实现交接
 
-本节只路由可执行测试实现责任和稳定覆盖缺口，不记录测试是否执行、运行结果或 exact commit SHA。目录中的命令必须由对应代码 owner 在 G-TEST 中产生提交级证据。
+本节只记录可执行测试责任和稳定覆盖缺口，不记录测试是否执行、运行结果或 exact commit SHA。
 
 | TC IDs | executable test owner | target | implementation handoff |
 | --- | --- | --- | --- |
@@ -514,12 +513,12 @@
 | `TC-FR-ACC-003`, `TC-CONTRACT-AUTH-RECOVERY-006`, `TC-VS-ACC-009-1` | `frontend` | `test/pages/phone_account_recovery_page_test.dart` | 明确验证失败后 `account_recovery_back` 可用；返回前清空 recovery code，只回传手机号，且不调用 login-or-create、恢复 API 或本机成功清理。result-unknown 与 cleanup 状态继续锁定返回。 |
 | `TC-CONTRACT-AUTH-RECOVERY-006`, `TC-VS-ACC-009-1` | `frontend` | `test/services/api_client_contract_test.dart`, `test/pages/phone_account_recovery_page_test.dart` | 真实本地 HTTP server 驱动 typed `ApiClient` wrapper，覆盖 canonical path、payload、成功 envelope 和结构化 `401/503`；generated hash/registry 仍由同一 contract test 校验，不虚构 generated DTO/client class。 |
 | `TC-CONTRACT-AUTH-RECOVERY-008` | `backend` | `backend/src/test/java/com/speakeasy/AccountRecoveryCapabilityDisabledTest.java`, `backend/src/test/java/com/speakeasy/AccountRecoveryCapabilityInvalidConfigTest.java`, `backend/src/test/java/com/speakeasy/PhoneAccountRecoveryTest.java` | 保持缺失/显式关闭配置、非法或非显式 `true` 配置和显式 `true` 启用三组 fixture；关闭态必须在 provider/identity/session/audit 副作用前返回带 `no-store`、request id 的 `503`，客户端入口不能启用 backend capability。 |
-| `TC-VS-ACC-009-1` 的 provider/server 扩展 | `backend` | production-like SMS provider sandbox and backend multi-session integration suite | 另行建立真实短信 provider sandbox、验证码 purpose/消费互操作和多设备旧会话失效证据；相应套件未纳入 G-TEST 前，现有 deterministic provider/MockMvc/PostgreSQL 命令不得被解释为生产 provider 证据。 |
+| `TC-VS-ACC-009-1` 的 provider/server 扩展 | `backend` | production-like SMS provider sandbox and backend multi-session integration suite | 另行建立真实短信 provider sandbox、验证码 purpose/消费互操作和多设备旧会话失效证据；在相应套件形成提交级证据前，现有 deterministic provider/MockMvc/PostgreSQL 命令不得被解释为生产 provider 证据。 |
 | `TC-VS-ACC-009-1` 的真机扩展 | `frontend` | device integration suite | 另行建立真机/模拟器恢复、普通登录和原账号学习/订阅数据可见性路径；相应套件由 QA 绑定 exact commit 前，本目录中的 widget 命令不得被解释为真机 E2E 证据。 |
 
 ## 维护规则
 
-- FR 存在时，每条 approved FR 必须有适用的最低成本 FR-TC；例外必须记录 owner、原因、影响和失效期限。
-- 每个实施中的 VS 必须有一个用户可感知的 integration/E2E VS-TC。
-- Contract 事实变化必须新增或更新对应 Contract-TC，并选择 contract、integration、migration 或 AI-eval 等适用层级。
+- 每条保留的 FR 至少有一个最低成本 FR-TC。
+- 每条保留的 VS 至少有一个用户可感知的 integration/E2E VS-TC。
+- API 或 AI schema 事实变化时更新对应 Contract-TC。
 - selector、脚本路径和命令是可执行定位信息；运行结果由绑定 exact commit SHA 的测试或 CI 系统保存。

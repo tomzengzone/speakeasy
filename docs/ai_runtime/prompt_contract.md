@@ -1,23 +1,19 @@
 # Prompt Contract
 
-## PR-003 current lineage
-
-本次只切换来源链，不改变本文的 prompt 行为、约束、fallback 或已接受实现事实。当前产品上游仅由适用的 approved FR 解析；文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability 或 Increment SWC Allocation 引用均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
-
 ## Purpose
 Define how AI runtime prompts are structured and how responses are validated.
 
 定义 AI runtime prompt 的结构方式，以及 response 的验证方式。
 
 Owning increments:
-- `docs/product/increments/mvp-backend-practice-ai/` for Product Base coach feedback candidate generation.
-- `docs/product/increments/p0-1-expression-automation-training/` for P0.1 structured training feedback, hint, retry, next action candidate, and pressure prompt candidate generation.
-- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/` for Followup-B candidate-only mastery transition explanations and forbidden persistent-field rejection.
+- `mvp-backend-practice-ai` for Product Base coach feedback candidate generation.
+- `p0-1-expression-automation-training` for P0.1 structured training feedback, hint, retry, next action candidate, and pressure prompt candidate generation.
+- `p0-2-followup-b-autopilot-control-planner-memory` for Followup-B candidate-only mastery transition explanations and forbidden persistent-field rejection.
 
 所属增量：
-- `docs/product/increments/mvp-backend-practice-ai/` 用于 Product Base coach feedback candidate generation。
-- `docs/product/increments/p0-1-expression-automation-training/` 用于 P0.1 structured training feedback、hint、retry、next action candidate 和 pressure prompt candidate generation。
-- `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/` 用于 Followup-B candidate-only mastery transition explanations 与 forbidden persistent-field rejection。
+- `mvp-backend-practice-ai` 用于 Product Base coach feedback candidate generation。
+- `p0-1-expression-automation-training` 用于 P0.1 structured training feedback、hint、retry、next action candidate 和 pressure prompt candidate generation。
+- `p0-2-followup-b-autopilot-control-planner-memory` 用于 Followup-B candidate-only mastery transition explanations 与 forbidden persistent-field rejection。
 
 ## Inputs
 - user profile summary
@@ -73,12 +69,12 @@ P0.1 的 AI runtime 只生成训练反馈候选，不直接推进训练状态。
 ### Owning Product Object
 | 字段 | 值 |
 | --- | --- |
-| Increment | `docs/product/increments/p0-1-expression-automation-training/` |
-| Domain input | `docs/domain/training_model.md` |
+| Increment | `p0-1-expression-automation-training` |
+| Domain input | `Training model` |
 | Acceptance | `AC-P01-004`, `AC-P01-005`, `AC-P01-008`, `AC-P01-009`, `AC-P01-010`, `AC-P01-011` |
 | Closed gap | `P01-GAP-002` after schema/eval/fallback/state-machine updates |
 
-中文说明：该 product object 归属 `docs/product/increments/p0-1-expression-automation-training/`，domain input 来自 `docs/domain/training_model.md`，acceptance 覆盖列出的 AC，`P01-GAP-002` 在 schema、eval、fallback 和 state-machine 更新后关闭。
+中文说明：该 product object 归属 `p0-1-expression-automation-training`，domain input 来自 `Training model`，acceptance 覆盖列出的 AC，`P01-GAP-002` 在 schema、eval、fallback 和 state-machine 更新后关闭。
 
 ### Required Inputs
 - `schema_version`
@@ -199,13 +195,13 @@ Followup-B AI runtime 可以为 deterministic L0-L5 mastery transition decisions
 ### Owning Product Object
 | 字段 | 值 |
 | --- | --- |
-| Increment | `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/` |
+| Increment | `p0-2-followup-b-autopilot-control-planner-memory` |
 | Acceptance | `AC-P02-FUB-007`, `AC-P02-FUB-008` |
 | Test cases | `TC-P02-FUB-014` primary AI eval / forbidden persistent-field rejection; `TC-P02-FUB-015` supporting replay fixture input only, not an AI pass/fail substitute |
-| Domain input | `MasteryTransitionDecision`, `MemoryItemPolicyState`, `PlannerReplayAudit` in `docs/domain/domain_schema.md` |
+| Domain input | `MasteryTransitionDecision`, `MemoryItemPolicyState`, `PlannerReplayAudit` in `Domain schema` |
 | API input | `GET /goal-autopilot/mastery-transitions`, `GET /goal-autopilot/replay-audits` in `docs/architecture/openapi/speakeasy-api.yaml` |
 
-中文说明：Followup-B 的 product object 归属 `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`；`TC-P02-FUB-014` 是 primary AI eval 和 forbidden persistent-field rejection 覆盖，`TC-P02-FUB-015` 仅支持 replay fixture input，不替代 AI pass/fail；domain input 与 API input 均使用表中列出的对象和路径。
+中文说明：Followup-B 的 product object 归属 `p0-2-followup-b-autopilot-control-planner-memory`；`TC-P02-FUB-014` 是 primary AI eval 和 forbidden persistent-field rejection 覆盖，`TC-P02-FUB-015` 仅支持 replay fixture input，不替代 AI pass/fail；domain input 与 API input 均使用表中列出的对象和路径。
 
 ### Required Inputs
 - `schema_version`
@@ -326,13 +322,13 @@ Followup-C S001 使用 deterministic forecast policy 作为 gap、ETA range/unav
 ### Owning Product Object
 | 字段 | 值 |
 | --- | --- |
-| Increment | `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/` |
+| Increment | `p0-2-followup-c-checkpoint-forecast-surfaces` |
 | Acceptance | `AC-P02-FUC-001` |
 | Test cases | `TC-P02-FUC-003` |
-| Domain input | `ProgressForecast` in `docs/domain/domain_schema.md` |
+| Domain input | `ProgressForecast` in `Domain schema` |
 | API input | `GET /goal-autopilot/forecast` and summary forecast fragment in `docs/architecture/openapi/speakeasy-api.yaml` |
 
-中文说明：Followup-C S001 的 product object 归属 `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`，acceptance/test cases 使用表中列出的 AC 和 TC，domain input 是 `docs/domain/domain_schema.md` 中的 `ProgressForecast`，API input 是 `docs/architecture/openapi/speakeasy-api.yaml` 中的 `GET /goal-autopilot/forecast` 及 summary forecast fragment。
+中文说明：Followup-C S001 的 product object 归属 `p0-2-followup-c-checkpoint-forecast-surfaces`，acceptance/test cases 使用表中列出的 AC 和 TC，domain input 是 `Domain schema` 中的 `ProgressForecast`，API input 是 `docs/architecture/openapi/speakeasy-api.yaml` 中的 `GET /goal-autopilot/forecast` 及 summary forecast fragment。
 
 ### Required Inputs
 - `forecast_id`
@@ -422,13 +418,13 @@ Followup-E 可以使用 ASR、pronunciation/scoring 和 LLM providers，为短 S
 ### Owning Product Object
 | 字段 | 值 |
 | --- | --- |
-| Increment | `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/` |
+| Increment | `p0-2-followup-e-speaking-diagnostic-production` |
 | Requirements | `P02-FUE-FR-004`, `P02-FUE-FR-005`, `P02-FUE-FR-006`, `P02-FUE-FR-007`, `P02-FUE-FR-009` |
 | Spec | `P02-FUE-SPEC-004`, `P02-FUE-SPEC-005`, `P02-FUE-SPEC-006`, `P02-FUE-SPEC-007`, `P02-FUE-SPEC-009` |
-| Domain input | `DiagnosticAudioSample`, `DiagnosticQualityGate`, `SpeakingDiagnosticAssessment` in `docs/domain/domain_schema.md` |
+| Domain input | `DiagnosticAudioSample`, `DiagnosticQualityGate`, `SpeakingDiagnosticAssessment` in `Domain schema` |
 | API input | Planned diagnostic upload and assessment API family in `docs/architecture/api_contract.md` |
 
-中文说明：Followup-E 的 product object 归属 `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/`，requirements/spec 使用表中列出的 FR/SPEC，domain input 是 `docs/domain/domain_schema.md` 中的 diagnostic 对象，API input 是 `docs/architecture/api_contract.md` 中 planned diagnostic upload and assessment API family。
+中文说明：Followup-E 的 product object 归属 `p0-2-followup-e-speaking-diagnostic-production`，requirements/spec 使用表中列出的 FR/SPEC，domain input 是 `Domain schema` 中的 diagnostic 对象，API input 是 `docs/architecture/api_contract.md` 中 planned diagnostic upload and assessment API family。
 
 ### Required Inputs
 - `schema_version`

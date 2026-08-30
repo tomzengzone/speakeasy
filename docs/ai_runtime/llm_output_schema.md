@@ -1,9 +1,5 @@
 # LLM Output Schema
 
-## PR-003 current lineage
-
-本次只切换来源链，不改变本文的字段、schema、校验语义或已接受实现事实。当前产品上游仅由适用的 approved FR 解析；文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability 或 Increment SWC Allocation 引用均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
-
 ## Practice Turn Response
 
 ```json
@@ -84,9 +80,9 @@
 
 ## P0.1 Training Feedback Candidate
 
-Owning increment: `docs/product/increments/p0-1-expression-automation-training/`。
+Owning increment: `p0-1-expression-automation-training`。
 
-所属增量：`docs/product/increments/p0-1-expression-automation-training/`。
+所属增量：`p0-1-expression-automation-training`。
 
 ```json
 {
@@ -210,10 +206,10 @@ Owning increment: `docs/product/increments/p0-1-expression-automation-training/`
 
 ## P0.2 Goal Autopilot Candidate Schemas
 
-Owning stage: `docs/product/stages/p0-2-training-memory.md`。
+Owning stage: `p0-2-training-memory`。
 Owning increments: `p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy`, `p0-2-autopilot-progress-checkpoint`。
 
-所属阶段：`docs/product/stages/p0-2-training-memory.md`。
+所属阶段：`p0-2-training-memory`。
 所属增量：`p0-2-goal-diagnostic-foundation`, `p0-2-goal-backplan-memory-policy`, `p0-2-autopilot-progress-checkpoint`。
 
 P0.2 AI output is candidate-only. Backend deterministic rules own `GoalProfile`, `DiagnosticAssessment`, `DailyTrainingPlan`, `ProgressForecast`, `OutcomeCheckpoint`, L0-L5 transition, review schedule, entitlement and claim guard decisions.
@@ -348,10 +344,10 @@ Validation rules 中文说明：
 
 ### Followup-C Forecast Explanation Candidate
 
-Owning increment: `docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`。
+Owning increment: `p0-2-followup-c-checkpoint-forecast-surfaces`。
 Traceability: `AC-P02-FUC-001`, `TC-P02-FUC-003`。
 
-所属增量：`docs/product/increments/p0-2-followup-c-checkpoint-forecast-surfaces/`。
+所属增量：`p0-2-followup-c-checkpoint-forecast-surfaces`。
 可追溯项：`AC-P02-FUC-001`, `TC-P02-FUC-003`。
 
 S001 does not require a live LLM/provider call. If a provider-backed explanation is unavailable, blocked by policy, quota or cost, or intentionally not configured, backend must return deterministic explanation metadata on `ProgressForecast` and keep this candidate schema as the only allowed future provider shape.
@@ -412,9 +408,9 @@ Followup-C validation rules 中文说明：
 
 ## P0.2 Followup-B Mastery Transition Explanation Candidate
 
-Owning increment: `docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`。
+Owning increment: `p0-2-followup-b-autopilot-control-planner-memory`。
 
-所属增量：`docs/product/increments/p0-2-followup-b-autopilot-control-planner-memory/`。
+所属增量：`p0-2-followup-b-autopilot-control-planner-memory`。
 
 This schema is candidate-only. Backend deterministic rules own `MemoryItemPolicyState`, `MasteryTransitionDecision`, `PlannerReplayAudit`, review schedule, notification schedule, control state, recovery mode, entitlement, quota and official-score claim guards.
 
@@ -505,9 +501,9 @@ This schema is candidate-only. Backend deterministic rules own `MemoryItemPolicy
 
 ## P0.2 Followup-E Speaking Diagnostic Candidate
 
-Owning increment: `docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/`。
+Owning increment: `p0-2-followup-e-speaking-diagnostic-production`。
 
-所属增量：`docs/product/increments/p0-2-followup-e-speaking-diagnostic-production/`。
+所属增量：`p0-2-followup-e-speaking-diagnostic-production`。
 
 This schema is candidate-only. Backend deterministic validation owns accepted `DiagnosticAssessment`, `DiagnosticAudioSample`, `DiagnosticQualityGate`, `audio_ref`, diagnostic mode, confidence band, GoalProfile, GoalBackplan, forecast/checkpoint effects, entitlement, quota, billing, release and Product Base state.
 

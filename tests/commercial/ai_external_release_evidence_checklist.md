@@ -120,6 +120,6 @@ Strategy ready / external execution pending。本文定义 paid AI voice 对真�
 2. 执行 `P0-AI-STORAGE-001`，回填 `AI_MEDIA_STORAGE_EVIDENCE_REF`，运行 `python3 scripts/check_ai_external_release_evidence.py --strict-external`，写入 Security/DevOps review。
 3. 执行 `P0-AI-COST-001`，回填 `AI_COST_DASHBOARD_EVIDENCE_REF`，运行 `python3 scripts/check_ai_external_release_evidence.py --strict-external`，写入 PM/Ops unit-economics review。
 4. 执行 `P0-AI-RETENTION-001`，回填 `AI_RETENTION_POLICY_EVIDENCE_REF`，运行 `python3 scripts/check_ai_external_release_evidence.py --strict-external`，写入 Security/PM privacy review。
-5. 四项全部通过后，执行 `scripts/check_release_readiness.sh`，并更新 `docs/reports/test_report.md`、`docs/reports/quality_report.md`、`docs/release/release_checklist.md` 和 `docs/product/increments/commercial-ai-provider-hardening/traceability.md`。
+5. 四项全部通过后，执行 `scripts/check_release_readiness.sh`，并在本文结果字段、外部 evidence package 和 release vars 中记录最终结论。
 
 未提供四个 evidence refs 前，paid AI voice 和真实 DashScope provider release 必须保持 blocked。

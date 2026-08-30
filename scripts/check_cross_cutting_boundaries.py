@@ -13,8 +13,6 @@ GENERATED_DART_ROOT = "lib/generated/api/"
 MIGRATION_ROOT = "backend/src/main/resources/db/migration/"
 
 STATUS_DOC_PREFIXES = (
-    "docs/reports/",
-    "docs/release/",
     ".github/",
 )
 
@@ -232,10 +230,6 @@ XCB006_CODE_COVERAGE_PATHS = (
 )
 
 XCB006_EXCEPTION_DOC_PATHS = (
-    "docs/process/cross_cutting_boundary_registry.md",
-    "docs/domain/domain_schema.md",
-    "docs/domain/entity_relationship.md",
-    "docs/architecture/backend_db_foundation_contract.md",
     "docs/architecture/api_contract.md",
 )
 
@@ -669,10 +663,6 @@ def xcb006_governance_coverage() -> Xcb006GovernanceCoverage:
         path = ROOT / relative
         if path.exists():
             chunks.append(f"\n# {relative}\n{read_text(path)}")
-    product_increment_root = ROOT / "docs/product/increments"
-    if product_increment_root.exists():
-        for path in sorted(product_increment_root.rglob("*.md"), key=lambda item: rel(item)):
-            chunks.append(f"\n# {rel(path)}\n{read_text(path)}")
     return Xcb006GovernanceCoverage("\n".join(code_chunks), "\n".join(chunks))
 
 
@@ -684,16 +674,6 @@ def xcb006_staged_governance_coverage() -> Xcb006GovernanceCoverage:
             code_chunks.append(f"\n# {relative}\n{text}")
     chunks: list[str] = []
     for relative in XCB006_EXCEPTION_DOC_PATHS:
-        text = read_git_index_text(relative)
-        if text is not None:
-            chunks.append(f"\n# {relative}\n{text}")
-    product_increment_root = ROOT / "docs/product/increments"
-    staged_docs = [
-        path
-        for path in run_git(["ls-files", "docs/product/increments"])
-        if path.endswith(".md")
-    ]
-    for relative in sorted(staged_docs):
         text = read_git_index_text(relative)
         if text is not None:
             chunks.append(f"\n# {relative}\n{text}")

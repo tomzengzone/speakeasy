@@ -67,22 +67,6 @@ for public_url in PRIVACY_URL SUPPORT_URL; do
   fi
 done
 
-for doc in \
-  "docs/release/release_checklist.md" \
-  "docs/release/rollback_plan.md" \
-  "docs/release/version_log.md" \
-  "docs/release/commercial_release_runbook.md" \
-  "tests/commercial/manual_external_evidence_checklist.md"; do
-  if [[ ! -f "$ROOT_DIR/$doc" ]]; then
-    fail "missing release document: $doc"
-  fi
-done
-
-if [[ -f "$ROOT_DIR/docs/release/commercial_release_runbook.md" ]] &&
-  ! grep -q "TC-COM-019" "$ROOT_DIR/docs/release/commercial_release_runbook.md"; then
-  fail "commercial release runbook must preserve the TC-COM-019 external provider gate"
-fi
-
 if ((${#ERRORS[@]} > 0)); then
   printf 'release readiness check failed:\n' >&2
   for error in "${ERRORS[@]}"; do

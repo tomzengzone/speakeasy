@@ -14,8 +14,6 @@ MEMBERSHIP_PAGE = ROOT / "lib/pages/membership_page.dart"
 PROFILE_PAGE = ROOT / "lib/pages/profile_page.dart"
 GOAL_AUTOPILOT_PANEL = ROOT / "lib/features/goal_autopilot/goal_autopilot_panel.dart"
 PAYMENT_CONFIG = ROOT / "lib/config/payment_config.dart"
-RELEASE_CHECKLIST = ROOT / "docs/release/release_checklist.md"
-RELEASE_RUNBOOK = ROOT / "docs/release/commercial_release_runbook.md"
 
 REQUIRED_MEMBERSHIP_BENEFITS = (
     "高级场景 L3",
@@ -97,8 +95,6 @@ def main(argv: list[str]) -> int:
     profile = read(PROFILE_PAGE)
     goal_autopilot_panel = read(GOAL_AUTOPILOT_PANEL)
     payment_config = read(PAYMENT_CONFIG)
-    release_checklist = read(RELEASE_CHECKLIST)
-    release_runbook = read(RELEASE_RUNBOOK)
 
     for benefit in REQUIRED_MEMBERSHIP_BENEFITS:
         require_contains(membership, benefit, "MembershipPage")
@@ -120,12 +116,6 @@ def main(argv: list[str]) -> int:
 
     for product_id in REQUIRED_PRODUCT_IDS:
         require_contains(payment_config, product_id, "PaymentConfig")
-
-    require_contains(release_checklist, "TC-COM-015", "Release checklist")
-    require_contains(release_checklist, "TC-COM-016", "Release checklist")
-    require_contains(release_runbook, "scripts/check_commercial_copy_contract.py", "Release runbook")
-    require_contains(release_runbook, "TC-COM-015", "Release runbook")
-    require_contains(release_runbook, "TC-COM-016", "Release runbook")
 
     for key in EXTERNAL_EVIDENCE_KEYS:
         value = os.environ.get(key, "").strip()
