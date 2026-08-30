@@ -4257,3 +4257,66 @@ Result:
 
 Residual risk:
 - Exception validation remains line-oriented by design so changed-scope checks are deterministic; long-form rationale can still live in docs, but the machine gate requires the compact structured line.
+
+## 2026-08-30 - Authentication Phase 2 / Phase 3 Gap Closure and Chapter 8 Audit
+
+Owner: Codex Root
+
+Report ID:
+- `AUTH-PHASE2-PHASE3-GAP-CLOSURE-20260830`
+
+Change request:
+- Execute the supplied authentication remediation plan in order: restore the authoritative CI baseline, close the mutable-scope grant gap, audit SESSION-004 without inventing a password system, harden client refresh/storage behavior, and classify every Chapter 8 requirement with evidence.
+
+Requirement mapping:
+- Standalone baseline only: `docs/authentication_session_token_lifecycle_requirements.md`, Chapter 8.
+- Evidence projection: `docs/quality/authentication_requirement_coverage.md`.
+- No approved Story, Vertical Slice, FR, or Engineering Contract was created or changed by this work.
+
+Files changed:
+- CI baseline evidence: `backend/src/test/java/com/speakeasy/AuthConcurrencyPostgresTest.java`.
+- Server-owned grant policy: `backend/src/main/java/com/speakeasy/identity/AuthGrantPolicy.java`, `backend/src/main/java/com/speakeasy/identity/MobileClientGrantPolicy.java`, `backend/src/main/java/com/speakeasy/identity/AuthService.java`, `backend/src/main/resources/application.yml`, `backend/src/test/java/com/speakeasy/AuthGrantPolicyIntegrationTest.java`, `backend/src/test/java/com/speakeasy/MobileClientGrantPolicyTest.java`.
+- Client authentication core: `lib/application/session/session_lifecycle_coordinator.dart`, `lib/core/auth/credential_repository.dart`, `lib/core/auth/refresh_coordinator.dart`, `lib/core/auth/secure_token_store.dart`, `lib/services/api_client.dart`, `lib/services/authenticated_request_executor.dart`.
+- Flutter test evidence and compatibility updates: `test/application/session_lifecycle_coordinator_test.dart`, `test/core/auth/credential_repository_test.dart`, `test/core/auth/refresh_coordinator_test.dart`, `test/features/commercial/account_deletion_cleanup_test.dart`, `test/features/commercial/scenario_gating_consistency_test.dart`, `test/features/interview/interview_practice_page_widget_test.dart`, `test/services/api_client_credential_compatibility_test.dart`, `test/services/api_client_device_sessions_test.dart`, `test/services/api_client_session_security_test.dart`, `test/services/app_session_logout_security_test.dart`, `test/services/authenticated_request_executor_test.dart`, `integration_test/p0_1_training_loop_test.dart`.
+- Audit and implementation note: `docs/quality/authentication_requirement_coverage.md`, `docs/authentication_session_token_lifecycle_requirements.md`.
+
+Implementation summary:
+- Removed a Testcontainers no-pull override that made `AuthConcurrencyPostgresTest` depend on a locally cached PostgreSQL image; commit `d27f61e` restored the clean-runner baseline and GitHub run `33298692169` passed.
+- Replaced mutable configured scope grants with `MobileClientGrantPolicy`; login snapshots the server-owned client/audience/scope grant and refresh inherits that family grant without expansion.
+- Confirmed SESSION-004 is a real missing capability: no production password reset/change, account recovery, verified email replacement, or social relink invokes high-risk revocation. No speculative password/recovery implementation was added.
+- Changed Flutter reactive refresh routing from any 401 to exact structured `ACCESS_TOKEN_EXPIRED`; other terminal authentication codes bypass refresh and clear credentials through one session-security path.
+- Added refresh waiter count/time bounds, retained one single-flight owner, and preserved credentials on infrastructure failure/timeouts.
+- Removed legacy Hive access-token fallback from requests and session restoration, clear it once on first credential read, preserve the existing Android secure-storage namespace, and migrate secure-storage v1 to device-bound/non-synchronizing v2 before deleting v1.
+- Audited all 83 Chapter 8 requirements. Final classification is 66 PASS, 8 PARTIAL, 6 FAIL, and 3 N/A; the coverage projection records evidence and remaining work for every ID.
+
+Validation:
+- `python scripts/validate_governance_contracts.py`, `validate_story_slice_delivery.py`, both `validate_story_slice_cutover.py` modes, `validate_agent_skills.py`, and `validate_capability_registry.py` - passed.
+- Governance validator unit tests - passed: 114 core governance/story/cutover tests and 14 capability-registry tests.
+- `python scripts/check_authentication_alert_rules.py` and `python -m unittest tests.test_check_authentication_alert_rules -v` - passed, 4 tests.
+- `npm.cmd run check:api-contract` - OpenAPI lint passed, then the Windows shell rejected the POSIX `UV_CACHE_DIR=...` syntax. The equivalent Windows commands, `uv run --with PyYAML python3 scripts/check_openapi_contract.py` and `uv run --with PyYAML python3 scripts/check_openapi_dart_drift.py` with `UV_CACHE_DIR` set in the process environment, both passed.
+- `mvn -f backend/pom.xml test` - passed: 367 tests, 0 failures, 0 errors, 0 skipped.
+- Authentication-specific backend and Flutter tests for grant snapshotting, refresh routing, concurrency, secure credentials, terminal errors, logout, and lifecycle restoration - passed.
+- `flutter pub get` - passed.
+- Initial `flutter analyze` found one obsolete integration-test override after removal of the legacy interface; the override was removed. Final `flutter analyze` - passed with no issues.
+- `flutter test` - passed: 394 tests.
+- `flutter build apk --debug --dart-define=API_BASE_URL=https://example.invalid --dart-define=ENV=ci` - passed and produced `build/app/outputs/flutter-apk/app-debug.apk`.
+- Chapter 8 matrix count check - passed: 83 rows = 66 PASS + 8 PARTIAL + 6 FAIL + 3 N/A.
+
+Checks not run:
+- Device/emulator `integration_test` suites were not executed; the final GitHub workflow also does not run them. Their compile-time compatibility is covered by full analysis, but no real foreground/background, Keychain, Keystore, or network-interruption device evidence was produced.
+- Browser OAuth/PKCE, JWT signing-key rotation, and certificate pinning checks were not run because those conditional mechanisms are not adopted by the current architecture.
+- SESSION-004 credential-recovery tests were not run because there is no approved or wired production credential-recovery use case to test.
+
+Result:
+- The authoritative CI baseline and implemented server/client authentication paths are locally release-ready for their declared scope.
+- The standalone Chapter 8 baseline is not fully satisfied; the audit remains at 66/83 PASS and explicitly retains 6 FAIL requirements.
+- No second auth architecture, JWT migration, new token store, or speculative password recovery subsystem was introduced.
+
+Rollback context:
+- Revert `835d246` to remove the upgrade-safe v1/v2 secure-credential migration, `9b26ecd` to remove client refresh/storage hardening, `c750d9b` to remove server-owned grant policy, and `d27f61e` to restore the previous Testcontainers behavior. Reverting the client storage changes re-enables legacy access-token fallback or upgrade-loss risk and is not recommended without a replacement migration decision.
+- The audit/document commit is evidence-only and can be reverted independently without changing runtime behavior.
+
+Residual risk and follow-up:
+- P1: SESSION-004 credential recovery/high-risk revocation, explicit startup `INITIALIZING`, and auth-first TTS error presentation remain open.
+- P2: cancelled refresh waiters, foreground resume refresh, authoritative offline/degraded auth state, navigation-target recovery, metadata retention, force-logout counting, and platform/app-version/API-family aggregation remain open.
+- The aggregate npm API-contract script remains non-portable on Windows because it embeds POSIX environment assignment; its constituent contract checks pass locally and the Linux CI command remains valid.

@@ -15,7 +15,10 @@
 - `AuthSession` 不再持有 Access/Refresh Token hash；Refresh Token 生命周期事实只存在于 `AuthRefreshToken`，授权 grant context 由对应 `AuthRefreshTokenFamily` 持有。
 - 当前第一方上下文为 `speakeasy-mobile` → `speakeasy-api`，最小 scope 集合为 `user:read`、`user:write`、`course:read`、`learning:read`、`learning:write`、`ai:use`、`session:manage`。
 - 统一认证过滤器先验证 opaque registry、token expiry、client/audience、Session/security epoch 和账号状态，再由 Spring Security 校验 endpoint 所需 scope；refresh 只继承原 grant，客户端不能扩大 scope。
-- Flutter 继续复用现有 SecureTokenStore、CredentialRepository、RefreshCoordinator 和 AuthenticatedRequestExecutor；本次后端模型调整不引入第二套客户端认证架构。
+- 登录 grant 由服务端 `MobileClientGrantPolicy` 决定并在 Token Family 中快照；请求 header 或后续配置变化不能扩大既有会话 scope。
+- Flutter 继续复用现有 SecureTokenStore、CredentialRepository、RefreshCoordinator 和 AuthenticatedRequestExecutor；仅 `ACCESS_TOKEN_EXPIRED` 可触发一次 refresh/retry，等待队列限制为 64 个调用方和 15 秒。
+- 跨启动凭证只从 Secure Storage 恢复；首次凭证读取会清除旧 Hive Access Token，且不再将其作为认证回退。安全存储 v1 凭证会先写入设备绑定且不参与同步的 v2 Keychain 条目再删除旧条目；Android 禁止备份迁移并保留历史命名空间以兼容升级。
+- Chapter 8 整改后审计结果为 `66 PASS / 8 PARTIAL / 6 FAIL / 3 N/A`；逐项证据和剩余路线见 `docs/quality/authentication_requirement_coverage.md`。其中 `SESSION-004` 仍为 FAIL，未用未接线 helper 冒充密码/账号恢复能力。
 
 该实现注记用于记录代码落地方式，不把本文 standalone baseline 自动转换为 Story/FR/Engineering Contract，也不修改下列 Requirement 的语义。
 
