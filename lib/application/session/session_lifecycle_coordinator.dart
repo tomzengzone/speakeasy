@@ -57,11 +57,13 @@ class StoredSessionSnapshot {
     required this.user,
     required this.onboardingDone,
     required this.themeMode,
-  });
+    bool? hasCredentials,
+  }) : hasCredentials = hasCredentials ?? user != null;
 
   final AppUser? user;
   final bool onboardingDone;
   final ThemeMode themeMode;
+  final bool hasCredentials;
 }
 
 abstract class SessionRemoteApi {
@@ -93,6 +95,20 @@ abstract class SessionCredentialStore {
   Future<AuthCredentials?> read();
 
   Future<void> replace(AuthCredentials credentials);
+}
+
+abstract class SessionCredentialRefresher {
+  Future<AuthCredentials> refreshIfNeeded();
+}
+
+class ApiClientSessionCredentialRefresher
+    implements SessionCredentialRefresher {
+  const ApiClientSessionCredentialRefresher();
+
+  @override
+  Future<AuthCredentials> refreshIfNeeded() {
+    return ApiClient.refreshCredentialsIfNeeded();
+  }
 }
 
 class ApiClientSessionCredentialStore implements SessionCredentialStore {
@@ -133,17 +149,21 @@ class SessionLifecycleCoordinator {
     SessionRemoteApi remoteApi = const ApiClientSessionRemoteApi(),
     SessionCredentialStore credentialStore =
         const ApiClientSessionCredentialStore(),
+    SessionCredentialRefresher credentialRefresher =
+        const ApiClientSessionCredentialRefresher(),
     SessionLocalStore localStore = const StorageServiceSessionLocalStore(),
     DateTime Function()? now,
   }) : _authService = authService,
        _remoteApi = remoteApi,
        _credentialStore = credentialStore,
+       _credentialRefresher = credentialRefresher,
        _localStore = localStore,
        _now = now ?? _utcNow;
 
   final AuthService _authService;
   final SessionRemoteApi _remoteApi;
   final SessionCredentialStore _credentialStore;
+  final SessionCredentialRefresher _credentialRefresher;
   final SessionLocalStore _localStore;
   final DateTime Function() _now;
 
@@ -231,6 +251,7 @@ class SessionLifecycleCoordinator {
       user: user,
       onboardingDone: preferences.onboardingDone,
       themeMode: preferences.themeMode,
+      hasCredentials: credentials != null,
     );
   }
 
@@ -245,27 +266,31 @@ class SessionLifecycleCoordinator {
     }
 
     try {
-      final Map<String, dynamic> refreshRes = await _remoteApi.refreshToken(
-        credentials.refreshToken,
-      );
-      if (refreshRes['code'] != 0) {
-        throw StateError('Refresh API returned an unsuccessful envelope');
-      }
-      final Map<String, dynamic> data = _asMap(refreshRes['data']);
-      final AuthCredentials refreshedCredentials = AuthCredentials.fromJson(
-        data,
-      );
-      await _credentialStore.replace(refreshedCredentials);
-      return ResolvedAuthenticatedSession(
-        credentials: refreshedCredentials,
-        userJson: _asMap(data['user']),
-      );
+      final AuthCredentials refreshedCredentials = await _credentialRefresher
+          .refreshIfNeeded();
+      return _hydrateWithCurrentAccessToken(credentials: refreshedCredentials);
     } on RefreshFailure catch (failure) {
       if (failure.kind == RefreshFailureKind.authentication ||
           credentials.isExpiredAt(_now())) {
         rethrow;
       }
       return _hydrateWithCurrentAccessToken(credentials: credentials);
+    }
+  }
+
+  Future<AuthCredentials?> refreshForForeground() async {
+    final AuthCredentials? credentials = await _credentialStore.read();
+    if (credentials == null || credentials.accessToken.isEmpty) {
+      return null;
+    }
+    try {
+      return await _credentialRefresher.refreshIfNeeded();
+    } on RefreshFailure catch (failure) {
+      if (failure.kind == RefreshFailureKind.authentication ||
+          credentials.isExpiredAt(_now())) {
+        rethrow;
+      }
+      return credentials;
     }
   }
 

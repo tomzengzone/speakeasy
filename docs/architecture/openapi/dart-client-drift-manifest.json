@@ -7,7 +7,7 @@
     "lib/generated/api/speakeasy_api.dart",
     "lib/generated/api/.openapi-sha256"
   ],
-  "openapi_sha256": "68a10b7e1efb2fb438407c9c61df7101a2defe651721128dd93353d47d72283d",
+  "openapi_sha256": "5659ffc01a2599b087e47dea6cdc6060edaacd27aa870222392ee58ec50bad20",
   "status": "Generated Dart OpenAPI boundary is committed under lib/generated/api with path constants, strict typed values, and Scenario/Course catalog, exact Course detail, and error DTO decoders. ScenarioId is an open format-constrained value object with two compatibility constants, not a closed enum. The catalog/detail DTO section is reproducibly generated and drift-checked by the project-local script, while the whole boundary remains pinned by .openapi-sha256. Active MVP backend calls must use generated path constants or be listed as explicit handwritten client exceptions.",
   "handwritten_client_exceptions": {
     "/user/stats": "Legacy local learning-stats sync retained until frontend migrates to learning history/report APIs.",

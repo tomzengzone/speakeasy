@@ -61,6 +61,7 @@ void main() {
         'expiresAt': '2026-08-27T00:00:00Z',
       }),
     );
+    when(() => storage.delete(key: any(named: 'key'))).thenAnswer((_) async {});
 
     final AuthCredentials? credentials = await tokenStore.read();
 
@@ -68,6 +69,33 @@ void main() {
     expect(credentials!.accessToken, 'access-token');
     expect(credentials.refreshToken, 'refresh-token');
   });
+
+  test(
+    'v2 read retries legacy cleanup without invalidating credentials',
+    () async {
+      int cleanupAttempts = 0;
+      when(() => storage.read(key: any(named: 'key'))).thenAnswer(
+        (_) async => jsonEncode(<String, dynamic>{
+          'accessToken': 'access-token',
+          'refreshToken': 'refresh-token',
+          'expiresAt': '2026-08-27T00:00:00Z',
+        }),
+      );
+      when(() => storage.delete(key: any(named: 'key'))).thenAnswer((_) async {
+        cleanupAttempts += 1;
+        if (cleanupAttempts == 1) {
+          throw Exception('keychain cleanup unavailable');
+        }
+      });
+
+      final AuthCredentials? first = await tokenStore.read();
+      final AuthCredentials? second = await tokenStore.read();
+
+      expect(first!.accessToken, 'access-token');
+      expect(second!.accessToken, 'access-token');
+      expect(cleanupAttempts, 2);
+    },
+  );
 
   test('read migrates v1 credentials before deleting the old item', () async {
     final MockFlutterSecureStorage currentStorage = MockFlutterSecureStorage();

@@ -49,13 +49,29 @@ class GatewayPhoneVerificationProviderTest {
     assertThat(requests.get(0).path()).isEqualTo("/request");
     assertThat(requests.get(0).authorization()).isEqualTo("Bearer runtime-secret");
     assertThat(requests.get(0).body()).contains("\"phone_number\":\"+8613800000000\"");
+    assertThat(requests.get(0).body()).contains("\"purpose\":\"login\"");
     assertThat(requests.get(1).body()).contains("\"verification_code\":\"123456\"");
+    assertThat(requests.get(1).body()).contains("\"purpose\":\"login\"");
 
     verificationResponse.set("{\"valid\":false}");
     assertThatThrownBy(() -> provider.verify("+8613800000000", "000000"))
         .isInstanceOf(ApiException.class)
         .extracting("code")
         .isEqualTo("UNAUTHENTICATED");
+  }
+
+  @Test
+  void sendsThePurposeOnRecoveryRequestsAndVerification() {
+    GatewayPhoneVerificationProvider provider = provider();
+
+    provider.requestCode(
+        "+8613800000001", PhoneVerificationPurpose.ACCOUNT_RECOVERY);
+    provider.verify(
+        "+8613800000001", "654321", PhoneVerificationPurpose.ACCOUNT_RECOVERY);
+
+    assertThat(requests).hasSize(2);
+    assertThat(requests.get(0).body()).contains("\"purpose\":\"account_recovery\"");
+    assertThat(requests.get(1).body()).contains("\"purpose\":\"account_recovery\"");
   }
 
   private GatewayPhoneVerificationProvider provider() {

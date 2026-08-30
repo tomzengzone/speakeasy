@@ -1,15 +1,18 @@
 package com.speakeasy.api;
 
-import com.speakeasy.common.SchemaResponse;
+import com.speakeasy.common.ApiException;
 import com.speakeasy.common.CefrLevel;
-import com.speakeasy.identity.AuthService;
+import com.speakeasy.common.SchemaResponse;
+import com.speakeasy.identity.AccountRecoveryCapabilityPolicy;
 import com.speakeasy.identity.AccountSecurityService;
-import com.speakeasy.identity.ratelimit.AuthRateLimitService;
+import com.speakeasy.identity.AuthService;
 import com.speakeasy.identity.IdentityService;
+import com.speakeasy.identity.ratelimit.AuthRateLimitService;
 import com.speakeasy.ops.AccountDeletionService;
 import com.speakeasy.security.CurrentUser;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -41,18 +44,21 @@ public class AuthController {
   private final AccountDeletionService accountDeletionService;
   private final AccountSecurityService accountSecurityService;
   private final AuthRateLimitService rateLimits;
+  private final AccountRecoveryCapabilityPolicy accountRecoveryCapability;
 
   public AuthController(
       AuthService authService,
       IdentityService identityService,
       AccountDeletionService accountDeletionService,
       AccountSecurityService accountSecurityService,
-      AuthRateLimitService rateLimits) {
+      AuthRateLimitService rateLimits,
+      AccountRecoveryCapabilityPolicy accountRecoveryCapability) {
     this.authService = authService;
     this.identityService = identityService;
     this.accountDeletionService = accountDeletionService;
     this.accountSecurityService = accountSecurityService;
     this.rateLimits = rateLimits;
+    this.accountRecoveryCapability = accountRecoveryCapability;
   }
 
   @PostMapping("/auth/login/phone")
@@ -73,6 +79,43 @@ public class AuthController {
         dimensions("device", request.deviceId(), "account", request.phoneNumber()));
     authService.requestPhoneVerificationCode(request.phoneNumber());
     return new PhoneVerificationCodeResponse(1, "sent");
+  }
+
+  @PostMapping("/auth/account-recovery/phone/verification-codes")
+  @ResponseStatus(HttpStatus.ACCEPTED)
+  public PhoneAccountRecoveryCodeResponse requestPhoneAccountRecoveryCode(
+      @RequestBody PhoneAccountRecoveryCodeRequest request,
+      HttpServletRequest servletRequest,
+      HttpServletResponse servletResponse) {
+    requireAccountRecoveryEnabled(servletResponse);
+    validateRecoverySchema(request.schemaVersion(), request.phoneNumber(), null, request.deviceId());
+    rateLimits.check("phone-account-recovery-code-request", servletRequest,
+        dimensions("device", request.deviceId(), "account", request.phoneNumber()));
+    authService.requestPhoneAccountRecoveryCode(request.phoneNumber());
+    servletResponse.setHeader("Cache-Control", "no-store");
+    return new PhoneAccountRecoveryCodeResponse(1, "accepted");
+  }
+
+  @PostMapping("/auth/account-recovery/phone")
+  public PhoneAccountRecoveryResponse recoverAccountByPhone(
+      @RequestBody PhoneAccountRecoveryRequest request,
+      @RequestHeader(value = "X-Request-Id", required = false) String requestId,
+      HttpServletRequest servletRequest,
+      HttpServletResponse servletResponse) {
+    requireAccountRecoveryEnabled(servletResponse);
+    validateRecoverySchema(
+        request.schemaVersion(), request.phoneNumber(), request.verificationCode(), request.deviceId());
+    rateLimits.check("phone-account-recovery", servletRequest,
+        dimensions("device", request.deviceId(), "account", request.phoneNumber()));
+    authService.recoverPhoneAccount(
+        request.phoneNumber(), request.verificationCode(), requestId);
+    servletResponse.setHeader("Cache-Control", "no-store");
+    return new PhoneAccountRecoveryResponse(1, "recovered", "login_phone");
+  }
+
+  private void requireAccountRecoveryEnabled(HttpServletResponse response) {
+    response.setHeader("Cache-Control", "no-store");
+    accountRecoveryCapability.requireEnabled();
   }
 
   @PostMapping("/auth/login/apple")
@@ -214,6 +257,25 @@ public class AuthController {
 
   public record PhoneVerificationCodeResponse(int schemaVersion, String status) implements SchemaResponse {}
 
+  public record PhoneAccountRecoveryCodeRequest(
+      Integer schemaVersion,
+      String phoneNumber,
+      String deviceId) {}
+
+  public record PhoneAccountRecoveryCodeResponse(int schemaVersion, String status)
+      implements SchemaResponse {}
+
+  public record PhoneAccountRecoveryRequest(
+      Integer schemaVersion,
+      String phoneNumber,
+      String verificationCode,
+      String deviceId) {}
+
+  public record PhoneAccountRecoveryResponse(
+      int schemaVersion,
+      String status,
+      String nextAction) implements SchemaResponse {}
+
   public record SocialLoginRequest(
       @NotNull @Min(1) @Max(1) Integer schemaVersion,
       @NotBlank String providerToken,
@@ -246,6 +308,20 @@ public class AuthController {
       }
     }
     return result;
+  }
+
+  private static void validateRecoverySchema(
+      Integer schemaVersion, String phoneNumber, String verificationCode, String deviceId) {
+    if (!Integer.valueOf(1).equals(schemaVersion)
+        || phoneNumber == null || phoneNumber.isBlank() || phoneNumber.trim().length() > 32
+        || (verificationCode != null
+            && (verificationCode.isBlank() || verificationCode.trim().length() > 32))
+        || (deviceId != null && deviceId.length() > 120)) {
+      throw new com.speakeasy.common.ApiException(
+          HttpStatus.BAD_REQUEST,
+          "SCHEMA_VALIDATION_FAILED",
+          "Account recovery request is invalid.");
+    }
   }
 
   public record UpdateUserProfileRequest(

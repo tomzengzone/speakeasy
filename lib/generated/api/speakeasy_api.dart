@@ -38,6 +38,7 @@ enum ErrorCode {
   accountDisabled('ACCOUNT_DISABLED'),
   authRateLimited('AUTH_RATE_LIMITED'),
   authServiceUnavailable('AUTH_SERVICE_UNAVAILABLE'),
+  accountRecoveryVerificationFailed('ACCOUNT_RECOVERY_VERIFICATION_FAILED'),
   forbidden('FORBIDDEN'),
   insufficientScope('INSUFFICIENT_SCOPE'),
   entitlementRequired('ENTITLEMENT_REQUIRED'),
@@ -554,7 +555,7 @@ class SpeakeasyApiContract {
   const SpeakeasyApiContract._();
 
   static const String openApiSha256 =
-      '68a10b7e1efb2fb438407c9c61df7101a2defe651721128dd93353d47d72283d';
+      '5659ffc01a2599b087e47dea6cdc6060edaacd27aa870222392ee58ec50bad20';
 
   static const List<String> courseSchemaNames = <String>[
     'CourseId',
@@ -590,6 +591,8 @@ class SpeakeasyApiContract {
     '/ai/pronunciation',
     '/ai/transcribe',
     '/ai/tts',
+    '/auth/account-recovery/phone',
+    '/auth/account-recovery/phone/verification-codes',
     '/auth/login/apple',
     '/auth/login/phone',
     '/auth/login/wechat',
@@ -694,6 +697,8 @@ class SpeakeasyApiPaths {
   static const String authLogout = '/auth/logout';
   static const String authRefresh = '/auth/refresh';
   // BEGIN GENERATED AUTH SESSION PATHS
+  static const String authPhoneAccountRecovery = '/auth/account-recovery/phone';
+  static const String authPhoneAccountRecoveryCode = '/auth/account-recovery/phone/verification-codes';
   static const String authLogoutAll = '/auth/logout-all';
   static const String authLogoutOthers = '/auth/logout-others';
   static const String authPhoneVerificationCode = '/auth/verification-codes/phone';

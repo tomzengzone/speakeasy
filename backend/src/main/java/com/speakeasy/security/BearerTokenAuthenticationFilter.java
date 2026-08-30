@@ -3,6 +3,7 @@ package com.speakeasy.security;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.speakeasy.common.ErrorResponse;
 import com.speakeasy.identity.AuthService;
+import com.speakeasy.identity.AuthMetrics;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,16 +24,19 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
   private final AuthService authService;
   private final ObjectMapper objectMapper;
+  private final AuthMetrics metrics;
   private final String opsBearerTokenHash;
   private final String opsPrincipalId;
 
   public BearerTokenAuthenticationFilter(
       AuthService authService,
       ObjectMapper objectMapper,
+      AuthMetrics metrics,
       @Value("${speakeasy.ops.bearer-token:}") String opsBearerToken,
       @Value("${speakeasy.ops.principal-id:shared-ops-token}") String opsPrincipalId) {
     this.authService = authService;
     this.objectMapper = objectMapper;
+    this.metrics = metrics;
     this.opsBearerTokenHash = opsBearerToken == null || opsBearerToken.isBlank() ? "" : TokenHasher.hash(opsBearerToken.trim());
     this.opsPrincipalId = opsPrincipalId == null || opsPrincipalId.isBlank() ? "shared-ops-token" : opsPrincipalId.trim();
   }
@@ -58,6 +62,11 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
     AuthService.AccessTokenInspection inspection = authService.inspectAccessToken(token);
     CurrentUser currentUser = inspection.currentUser();
     if (currentUser == null) currentUser = deletionRetryUser(request, token);
+    metrics.accessHttp(
+        currentUser == null ? inspection.code() : "AUTHENTICATED",
+        inspection.platform(),
+        inspection.appVersion(),
+        request.getRequestURI());
 
     if (currentUser == null) {
       SecurityContextHolder.clearContext();

@@ -1,11 +1,82 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:speakeasy/generated/api/speakeasy_api.dart';
 import 'package:speakeasy/services/api_client.dart';
 
+class _RealHttpOverrides extends HttpOverrides {}
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  const String installationId = '12345678-1234-4abc-8def-1234567890ab';
+  late HttpServer accountRecoveryServer;
+  final List<
+    ({
+      String method,
+      String path,
+      String? authorization,
+      Map<String, dynamic> body,
+    })
+  >
+  accountRecoveryRequests =
+      <
+        ({
+          String method,
+          String path,
+          String? authorization,
+          Map<String, dynamic> body,
+        })
+      >[];
+  final List<({int status, Map<String, dynamic> body})>
+  accountRecoveryResponses = <({int status, Map<String, dynamic> body})>[];
+
+  setUpAll(() async {
+    HttpOverrides.global = _RealHttpOverrides();
+    accountRecoveryServer = await HttpServer.bind(
+      InternetAddress.loopbackIPv4,
+      0,
+    );
+    dotenv.testLoad(
+      fileInput:
+          'API_BASE_URL=http://${accountRecoveryServer.address.host}:${accountRecoveryServer.port}',
+    );
+    accountRecoveryServer.listen((HttpRequest request) async {
+      final String rawBody = await utf8.decoder.bind(request).join();
+      accountRecoveryRequests.add((
+        method: request.method,
+        path: request.uri.path,
+        authorization: request.headers.value(HttpHeaders.authorizationHeader),
+        body: rawBody.isEmpty
+            ? <String, dynamic>{}
+            : (jsonDecode(rawBody) as Map).cast<String, dynamic>(),
+      ));
+      final ({int status, Map<String, dynamic> body}) response =
+          accountRecoveryResponses.removeAt(0);
+      request.response
+        ..statusCode = response.status
+        ..headers.contentType = ContentType.json
+        ..write(jsonEncode(response.body));
+      await request.response.close();
+    });
+  });
+
+  setUp(() {
+    accountRecoveryRequests.clear();
+    accountRecoveryResponses.clear();
+    FlutterSecureStorage.setMockInitialValues(<String, String>{
+      'speakeasy.authentication.installation.v1': installationId,
+    });
+  });
+
+  tearDownAll(() async {
+    await accountRecoveryServer.close(force: true);
+    HttpOverrides.global = null;
+  });
+
   test('generated OpenAPI Dart boundary pins the canonical hash', () {
     final Map<String, dynamic> manifest =
         jsonDecode(
@@ -133,6 +204,7 @@ void main() {
       'ACCOUNT_DISABLED',
       'AUTH_RATE_LIMITED',
       'AUTH_SERVICE_UNAVAILABLE',
+      'ACCOUNT_RECOVERY_VERIFICATION_FAILED',
       'FORBIDDEN',
       'INSUFFICIENT_SCOPE',
       'ENTITLEMENT_REQUIRED',
@@ -159,6 +231,202 @@ void main() {
       'C2',
     ]);
   });
+
+  test(
+    'typed account recovery wrapper posts canonical payloads and parses success',
+    () async {
+      accountRecoveryResponses.addAll(
+        <({int status, Map<String, dynamic> body})>[
+          (
+            status: HttpStatus.accepted,
+            body: <String, dynamic>{
+              'schema_version': 1,
+              'status': 'accepted',
+              'request_id': 'recovery-code-request',
+            },
+          ),
+          (
+            status: HttpStatus.ok,
+            body: <String, dynamic>{
+              'schema_version': 1,
+              'status': 'recovered',
+              'next_action': 'login_phone',
+              'request_id': 'recovery-complete-request',
+            },
+          ),
+        ],
+      );
+      const ApiClientAccountRecoveryApi api = ApiClientAccountRecoveryApi();
+
+      await api.requestPhoneRecoveryCode(' +8613800138600 ');
+      await api.recoverPhoneAccount(
+        phone: ' +8613800138600 ',
+        verificationCode: ' 654321 ',
+      );
+
+      expect(accountRecoveryRequests, hasLength(2));
+      expect(
+        accountRecoveryRequests.map((request) => request.method),
+        everyElement('POST'),
+      );
+      expect(accountRecoveryRequests.map((request) => request.path), <String>[
+        SpeakeasyApiPaths.authPhoneAccountRecoveryCode,
+        SpeakeasyApiPaths.authPhoneAccountRecovery,
+      ]);
+      expect(
+        accountRecoveryRequests.map((request) => request.authorization),
+        everyElement(isNull),
+      );
+      expect(accountRecoveryRequests[0].body, <String, dynamic>{
+        'schema_version': 1,
+        'phone_number': '+8613800138600',
+        'device_id': installationId,
+      });
+      expect(accountRecoveryRequests[1].body, <String, dynamic>{
+        'schema_version': 1,
+        'phone_number': '+8613800138600',
+        'verification_code': '654321',
+        'device_id': installationId,
+      });
+    },
+  );
+
+  test(
+    'typed account recovery wrapper rejects noncanonical success envelopes',
+    () async {
+      accountRecoveryResponses.addAll(
+        <({int status, Map<String, dynamic> body})>[
+          (
+            status: HttpStatus.accepted,
+            body: <String, dynamic>{
+              'schema_version': 1,
+              'status': 'sent',
+              'request_id': 'unexpected-code-status',
+            },
+          ),
+          (
+            status: HttpStatus.ok,
+            body: <String, dynamic>{
+              'schema_version': 1,
+              'status': 'recovered',
+              'next_action': 'login_email',
+              'request_id': 'unexpected-next-action',
+            },
+          ),
+        ],
+      );
+      const ApiClientAccountRecoveryApi api = ApiClientAccountRecoveryApi();
+
+      await expectLater(
+        api.requestPhoneRecoveryCode('+8613800138602'),
+        throwsA(
+          isA<AccountRecoveryFailure>().having(
+            (AccountRecoveryFailure failure) => failure.kind,
+            'kind',
+            AccountRecoveryFailureKind.unknownResult,
+          ),
+        ),
+      );
+      await expectLater(
+        api.recoverPhoneAccount(
+          phone: '+8613800138602',
+          verificationCode: '654321',
+        ),
+        throwsA(
+          isA<AccountRecoveryFailure>().having(
+            (AccountRecoveryFailure failure) => failure.kind,
+            'kind',
+            AccountRecoveryFailureKind.unknownResult,
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
+    'typed account recovery wrapper preserves registered error details',
+    () async {
+      accountRecoveryResponses.addAll(
+        <({int status, Map<String, dynamic> body})>[
+          (
+            status: HttpStatus.unauthorized,
+            body: <String, dynamic>{
+              'error': <String, dynamic>{
+                'code': 'ACCOUNT_RECOVERY_VERIFICATION_FAILED',
+                'message': '无法验证账号恢复信息。',
+                'request_id': 'recovery-verification-failed',
+                'details': <String, dynamic>{'retryable': false},
+              },
+            },
+          ),
+          (
+            status: HttpStatus.serviceUnavailable,
+            body: <String, dynamic>{
+              'error': <String, dynamic>{
+                'code': 'AUTH_SERVICE_UNAVAILABLE',
+                'message': '账号恢复服务暂时不可用。',
+                'request_id': 'recovery-service-unavailable',
+                'details': <String, dynamic>{'retryable': true},
+              },
+            },
+          ),
+        ],
+      );
+      const ApiClientAccountRecoveryApi api = ApiClientAccountRecoveryApi();
+
+      await expectLater(
+        api.recoverPhoneAccount(
+          phone: '+8613800138601',
+          verificationCode: '000000',
+        ),
+        throwsA(
+          isA<AccountRecoveryFailure>()
+              .having(
+                (AccountRecoveryFailure failure) => failure.kind,
+                'kind',
+                AccountRecoveryFailureKind.verificationFailed,
+              )
+              .having(
+                (AccountRecoveryFailure failure) => failure.message,
+                'privacy-safe message',
+                '无法验证账号恢复信息。',
+              )
+              .having(
+                (AccountRecoveryFailure failure) => failure.requestId,
+                'requestId',
+                'recovery-verification-failed',
+              ),
+        ),
+      );
+      await expectLater(
+        api.requestPhoneRecoveryCode('+8613800138601'),
+        throwsA(
+          isA<AccountRecoveryFailure>()
+              .having(
+                (AccountRecoveryFailure failure) => failure.kind,
+                'kind',
+                AccountRecoveryFailureKind.serviceUnavailable,
+              )
+              .having(
+                (AccountRecoveryFailure failure) => failure.message,
+                'message',
+                '账号恢复服务暂时不可用。',
+              )
+              .having(
+                (AccountRecoveryFailure failure) => failure.requestId,
+                'requestId',
+                'recovery-service-unavailable',
+              ),
+        ),
+      );
+
+      expect(accountRecoveryRequests, hasLength(2));
+      expect(accountRecoveryRequests.map((request) => request.path), <String>[
+        SpeakeasyApiPaths.authPhoneAccountRecovery,
+        SpeakeasyApiPaths.authPhoneAccountRecoveryCode,
+      ]);
+    },
+  );
 
   test('generated ScenarioId accepts future canonical values', () {
     final ScenarioId futureScenario = ScenarioId.parse('travel_planning');

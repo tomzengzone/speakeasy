@@ -4308,7 +4308,7 @@ Checks not run:
 - SESSION-004 credential-recovery tests were not run because there is no approved or wired production credential-recovery use case to test.
 
 Result:
-- The authoritative CI baseline and implemented server/client authentication paths are locally release-ready for their declared scope.
+- The authoritative CI baseline and implemented server/client authentication paths passed local validation for their declared scope; this is not release or Product Base approval.
 - The standalone Chapter 8 baseline is not fully satisfied; the audit remains at 66/83 PASS and explicitly retains 6 FAIL requirements.
 - No second auth architecture, JWT migration, new token store, or speculative password recovery subsystem was introduced.
 
@@ -4320,3 +4320,113 @@ Residual risk and follow-up:
 - P1: SESSION-004 credential recovery/high-risk revocation, explicit startup `INITIALIZING`, and auth-first TTS error presentation remain open.
 - P2: cancelled refresh waiters, foreground resume refresh, authoritative offline/degraded auth state, navigation-target recovery, metadata retention, force-logout counting, and platform/app-version/API-family aggregation remain open.
 - The aggregate npm API-contract script remains non-portable on Windows because it embeds POSIX environment assignment; its constituent contract checks pass locally and the Linux CI command remains valid.
+
+## 2026-08-30 - Authentication Six-Risk Closure
+
+Owner: Codex Root
+
+Report ID:
+- `AUTH-SIX-RISK-CLOSURE-20260830`
+
+Change request:
+- 实施已审查的 `SESSION-004`、`RESTORE-001`、`RESTORE-005`、`CLIENT-009`、`ERROR-008` 和 `OBS-002` 解决方案，保留现有 opaque token 架构，验证相关测试与架构，并更新 Chapter 8 证据投影。
+
+Requirement and contract mapping:
+- 产品谱系：`US-ACC-009`、`VS-ACC-009-1`、`FR-ACC-001` 至 `FR-ACC-003`。
+- 工程契约：`AUTH-ACCOUNT-RECOVERY-API-001` 及对应的 OpenAPI 操作。
+- 测试谱系：`docs/quality/test_cases.md` 中的账号恢复 FR-TC、Contract-TC 和 VS-TC，并由 `docs/quality/traceability.md` 派生投影。
+- 独立审计基线：`docs/authentication_session_token_lifecycle_requirements.md` Chapter 8。
+
+Files changed by purpose:
+- 产品、契约、UX 与追溯事实：`docs/product/story_map.md`、`docs/product/functional_requirements.md`、`docs/architecture/api_contract.md`、`docs/architecture/openapi/speakeasy-api.yaml`、`docs/architecture/software_component_architecture.md`、`docs/architecture/swc_catalog.md`、`docs/architecture/data_flow.md`、`docs/quality/test_cases.md`、`docs/quality/traceability.md` 和 `docs/ux/screen_spec.md`。
+- 账号恢复后端：`backend/src/main/java/com/speakeasy/api/AuthController.java`、`backend/src/main/java/com/speakeasy/identity/AuthService.java`、手机号验证 provider 实现与 purpose 枚举、`SecurityConfig.java` 和 `application.yml`。
+- 客户端认证生命周期与取消：`lib/application/session/session_lifecycle_coordinator.dart`、`lib/services/app_session.dart`、`lib/core/bootstrap/app_root.dart`、`lib/services/api_client.dart`、`lib/services/authenticated_request_executor.dart` 和 `lib/core/auth/secure_token_store.dart`。
+- 账号恢复与 TTS UI/运行时：`lib/pages/login_page.dart`、`lib/pages/phone_account_recovery_page.dart`、`lib/services/audio_service.dart`、`lib/services/tts_request_executor.dart`、`lib/config/app_config.dart` 和 `.env.example`。
+- 可观测性与授权回归：`backend/src/main/java/com/speakeasy/identity/AuthMetrics.java`、`backend/src/main/java/com/speakeasy/security/BearerTokenAuthenticationFilter.java` 和 `backend/src/test/java/com/speakeasy/AuthGrantPolicyIntegrationTest.java`。
+- 生成客户端与工具：`lib/generated/api`、`docs/architecture/openapi/dart-client-drift-manifest.json` 和 `scripts/check_openapi_dart_drift.py`。
+- 可执行证据：新增或更新恢复、恢复状态、前台刷新、取消、安全存储清理重试、TTS 认证优先、指标、生成契约兼容和全套件隔离的后端及 Flutter 测试。
+- 审计更新：`docs/authentication_session_token_lifecycle_requirements.md` 和 `docs/quality/authentication_requirement_coverage.md`。
+
+Implementation summary:
+- 新增已批准的手机号账号恢复流程。恢复验证码按 purpose 隔离且一次性使用；完成时只解析现有手机号身份，以事务方式撤销全部现有 Session、推进 security epoch、不创建替代 Token/Session、保留账号数据与权益，并要求重新手机号登录。隐私安全响应不泄露手机号是否已注册。
+- 以单一显式会话状态机替换独立启动认证任务。应用在 `initializing` 状态阻断认证 UI，基础设施失败进入可恢复的 `offlineDegraded`，前台恢复与启动、业务请求共用同一 single-flight refresh owner。
+- 将调用方局部取消信号贯穿 Token 读取、共享 refresh 等待、HTTP abort 和重放边界。取消等待方不会取消共享 refresh owner，已取消调用也不会重放。
+- 新增认证优先的 TTS 执行边界：终止型 `SessionSecurityFailure` 立即向上传播，不执行 TTS 重试或播放错误重映射；普通传输失败保留有界重试策略。
+- 为认证指标新增有界的平台、APP 主次版本和服务端分类 API family 维度；原始 Token 和任意 header 值不会成为指标标签。
+- v2 读取时若先前旧凭据清理失败，会在不使可用 v2 凭据失效的前提下重试清理；旧 Token Family 的授权回归测试也强化为策略扩展后执行真实 refresh。
+- Chapter 8 投影更新为 `74 PASS / 6 PARTIAL / 0 FAIL / 3 N/A`。额外两项 PASS 为 `RESTORE-002` 和 `RESTORE-006`，均由同一权威启动/离线状态实现补齐。
+
+Validation:
+- 账号恢复、授权继承、指标、provider fail-closed、生命周期、取消、安全存储、恢复页面和 TTS 的定向后端/Flutter 套件均通过。
+- 首次完整 `flutter test` 发现生成错误码期望值过期，以及根组件测试等待设计上持续运行的初始化动画；两项测试已与新契约/状态行为对齐。最终 `flutter test` 通过：407 项。
+- 首次完整后端套件发现 `AuthRateLimitHttpTest` 预存的“全局数据库为空”假设；断言现改为证明被拒请求前后用户数不变。最终 `mvn -q test` 通过：377 项，0 failure、0 error、0 skipped，并包含 PostgreSQL 并发证据。
+- `flutter analyze` 通过，无问题。
+- `flutter build apk --debug --dart-define=API_BASE_URL=https://example.invalid --dart-define=ENV=ci` 通过并生成 `build/app/outputs/flutter-apk/app-debug.apk`；Flutter 自动产生的无关 `android/gradle.properties` 迁移随后已从候选变更中移除。
+- `python scripts/check_openapi_contract.py`、`python scripts/check_openapi_dart_drift.py` 和 `npm run lint:openapi` 通过：98 个 path、104 个 operation、47 个请求示例、96 个成功示例、159 个错误示例，生成客户端 hash 为 `5659ffc01a2599b087e47dea6cdc6060edaacd27aa870222392ee58ec50bad20`。
+- `python scripts/validate_governance_contracts.py`、`validate_story_slice_delivery.py`、两个受支持的 `validate_story_slice_cutover.py` 调用、`validate_agent_skills.py` 和 `validate_capability_registry.py` 均通过。
+- 治理校验器单测通过：114 项核心治理/Story/cutover 测试和 14 项 capability registry 测试。
+- `python scripts/check_document_language.py --scope changed --include-worktree`、`python scripts/check_cross_cutting_boundaries.py --scope changed --base-ref HEAD --include-worktree` 和 `git diff --check` 在本追加记录写入前通过。
+- Chapter 8 计数校验通过：83 行 = 74 PASS + 6 PARTIAL + 0 FAIL + 3 N/A。
+
+Checks not run:
+- 未执行设备/模拟器 `integration_test` 套件；Android/iOS 前台切换、Keychain/Keystore 升级清理、HTTP abort 时序及 TTS 中断播放尚无真机证据。
+- 未调用真实短信/provider 环境；provider purpose 透传仅由确定性测试和 gateway adapter 测试覆盖。
+- 本地候选未请求或执行远端 CI、生产部署或 release readiness 审批。
+- Browser OAuth/PKCE、JWT 签名密钥轮换、证书固定、密码重置/修改检查仍不适用，因为这些机制不属于已批准的生产架构。
+
+Result:
+- Chapter 8 中原有六项 FAIL 现均具备生产路径和可执行证据；Chapter 8 已无 FAIL 项。
+- 认证架构继续采用现有 opaque access/refresh Token Family、服务端授权、Secure Credential Repository 和单一共享 refresh owner；未引入 JWT、第二套 Token 存储、密码子系统或 API v2。
+- 仍有六项 PARTIAL：统一后端邮箱身份（`AUTH-001`、`AUTH-007`）、导航及 401/403 恢复 UX（`ERROR-006`、`ERROR-007`）、元数据保留（`SECURITY-007`）和 force-logout 计数（`OBS-001`）。
+
+Rollback context:
+- `ENABLE_ACCOUNT_RECOVERY=false` 可隐藏新增的 Flutter 恢复入口。完整回滚还必须一并移除两个新增后端恢复端点、purpose 专用 provider 调用、生成客户端操作及其契约/追溯记录；不支持只保留客户端入口而缺少后端契约。
+- 启动/前台变更可作为一个客户端生命周期单元回滚，但会重新引入已审查的双 refresh 竞态，并移除显式初始化/离线门控。
+- 取消与 TTS 执行边界仅能连同调用方和测试独立回滚；回滚会重新打开无条件重放或认证错误映射为播放错误的问题。
+- 可观测性标签变更为新增维度；回滚或向前部署前，仪表盘必须兼容这些有界维度。
+
+Residual risk and follow-up:
+- 在把相关平台行为视为生产已证实之前，仍需补充真机生命周期、安全存储升级、请求 abort 和 TTS 中断证据。
+- 真实手机号验证 provider 必须支持并执行所传 recovery purpose；在 provider 与限流配置证据齐备前，生产发布应继续受 `ENABLE_ACCOUNT_RECOVERY` 控制。
+- 按 `docs/quality/authentication_requirement_coverage.md` 记录的顺序完成剩余六项 PARTIAL；它们不属于本次六项风险闭环范围。
+
+## 2026-08-30 - Authentication Six-Risk Closure Review Corrections
+
+Owner: Codex Root
+
+Report ID:
+- `AUTH-SIX-RISK-CLOSURE-REVIEW-CORRECTIONS-20260830`
+
+Purpose:
+- 记录 `AUTH-SIX-RISK-CLOSURE-20260830` 首轮独立产品治理、软件架构和代码质量审查指出的阻断项，以及在同一未发布候选上完成的修正与最终本地证据。
+- 本节补充并在冲突处取代前一记录中的指标基数、测试计数和账号恢复回滚说明；不改写历史记录。
+
+Review corrections:
+- 账号恢复能力现在由后端 `speakeasy.auth.account-recovery-enabled` 和客户端 `ENABLE_ACCOUNT_RECOVERY` 双重控制，二者默认均为关闭。后端只有对大小写和空白规范化后明确等于 `true` 时才启用；缺失、`false` 或非法值均在参数校验、provider、身份查询和会话变更之前以无缓存的可重试 `503 AUTH_SERVICE_UNAVAILABLE` 失败关闭。
+- “完成结果未知”不再进入普通手机号登录或登录即注册路径。页面锁定手机号、验证码、发送、提交和返回操作，只允许重新获取 recovery-purpose 验证码后重走恢复流程；任何只有明确 `200 recovered` 的完成响应才允许显示重新登录入口。
+- 明确的服务端恢复成功与本地凭据清理分离。若本地清理失败，页面进入锁定的 cleanup-pending 状态，只允许重试本地清理，绝不重复服务端恢复请求，也不把已成功的服务端撤销重新分类为结果未知。
+- 工程契约已按仓库真实生成边界修正：OpenAPI path、schema、错误示例和 hash/drift manifest 由生成投影覆盖；Flutter 通过唯一的强类型 `ApiClient` wrapper 暴露恢复操作，不再声称存在并未生成的独立 DTO/client 类。
+- 确定性 provider 的 recovery-purpose 验证码在发放后和消费后都不能用于 LOGIN purpose；HTTP 回归测试覆盖消费后的跨 purpose 拒绝。
+- `app_version` 指标标签只接受配置的有限 `major.minor` allowlist；未配置或任意客户端值统一折叠为 `unknown`。平台和 API family 同样由服务端有限分类产生，不使用原始 Token、请求路径或任意 header 值。
+- 渐进式 TTS 预取现在立即观察每个 sibling Future。任一终止型认证错误会取消共享 TTS 信号、等待并排空已启动的 sibling 结果，然后原样向上传播 `SessionSecurityFailure`；不会留下未观察异常或继续重试、播放。
+- 账号恢复测试目录已替换全部不存在的类名和脚本引用，并补充默认关闭、非法配置失败关闭、恢复后 purpose 隔离和 PostgreSQL 事务原子性/审计回滚证据。
+
+Final local validation:
+- `mvn -q test` 通过：382 项，0 failure、0 error、0 skipped。
+- `PhoneAccountRecoveryPostgresTest` 在 PostgreSQL 15 Testcontainers 上通过 2 项：成功路径同时推进 security epoch、撤销全部 Session、使 access token 失效并写入一条审计；审计失败路径回滚 epoch、Session 和审计事实。
+- `flutter test` 通过：412 项；其中恢复页面覆盖结果未知锁定、无自动创建/登录、cleanup-pending 仅本地重试，TTS 覆盖 sibling 取消与终止型认证错误原样传播。
+- `flutter analyze` 通过，无问题。
+- `flutter build apk --debug --dart-define=API_BASE_URL=https://example.invalid --dart-define=ENV=ci` 通过并生成 `build/app/outputs/flutter-apk/app-debug.apk`；Flutter 构建器自动写入的无关 Android 配置未纳入候选。
+- OpenAPI contract gate、Dart drift gate 和 Redocly lint 均通过：98 个 path、104 个 operation、47 个请求示例、96 个成功示例、159 个错误示例，drift hash 为 `5659ffc01a2599b087e47dea6cdc6060edaacd27aa870222392ee58ec50bad20`。
+- 治理契约、Story/Slice/FR/TC 交付、两个 cutover 模式、Agent/Skill、Capability Registry、文档语言和 cross-cutting boundary 校验均通过；治理测试为 114 项核心测试和 14 项 Capability Registry 测试。
+- 认证告警规则检查及其 4 项校验测试通过。
+- Chapter 8 计数保持为 83 行：74 PASS、6 PARTIAL、0 FAIL、3 N/A。
+
+Rollback correction:
+- 紧急关闭顺序是先将后端 `SPEAKEASY_AUTH_ACCOUNT_RECOVERY_ENABLED=false`，再保持或设置客户端 `ENABLE_ACCOUNT_RECOVERY=false` 隐藏入口。新增 OpenAPI 端点保持为向后兼容的可加契约面，不需要在紧急关闭时删除，也不应回滚已经完成的 Session 撤销或 security epoch。
+- 若后续彻底退役该能力，应另行批准契约弃用与删除计划；不得通过删除数据库事实、恢复已撤销 Session 或降回 security epoch 来“回滚”安全事件。
+
+Residual evidence limits:
+- 本地测试使用确定性/gateway provider 和 Testcontainers；真实短信 provider 的 purpose enforcement、时延、重放和失败语义仍需在供应商环境验证。
+- Android/iOS 真机的前后台切换、Keychain/Keystore 升级清理、HTTP abort 时序及 TTS 播放中断仍缺设备证据。
+- 本候选没有执行远端 CI、生产部署、release readiness 或 Product Base 审批；本地 PASS 不能替代这些外部 Gate。

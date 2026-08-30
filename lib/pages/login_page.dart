@@ -7,6 +7,7 @@ import 'package:speakeasy/application/login/login_actions_coordinator.dart';
 import 'package:speakeasy/config/app_config.dart';
 import 'package:speakeasy/core/routing/app_routes.dart';
 import 'package:speakeasy/models/app_models.dart';
+import 'package:speakeasy/pages/phone_account_recovery_page.dart';
 import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/l10n/l10n.dart';
 
@@ -259,6 +260,24 @@ class _LoginPageState extends State<LoginPage> {
       phone: phone,
       signIn: AppSessionScope.of(context).signInWithTestPhone,
     );
+  }
+
+  Future<void> _openAccountRecovery() async {
+    final String? phone = await Navigator.of(context).push<String>(
+      MaterialPageRoute<String>(
+        builder: (BuildContext context) => PhoneAccountRecoveryPage(
+          initialPhone: _phoneController.text.trim(),
+        ),
+      ),
+    );
+    if (!mounted || phone == null) return;
+    setState(() {
+      _method = LoginMethod.phone;
+      _phoneController.text = phone;
+      _codeController.clear();
+      _codeSent = false;
+      _localErrorMessage = null;
+    });
   }
 
   void _openPrivacyPolicy() {
@@ -590,6 +609,16 @@ class _LoginPageState extends State<LoginPage> {
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
         ),
+        if (AppConfig.enableAccountRecovery) ...<Widget>[
+          const SizedBox(height: 12),
+          TextButton(
+            key: const ValueKey<String>('login_account_recovery_entry'),
+            onPressed: widget.isLoading || _isSendingCode
+                ? null
+                : _openAccountRecovery,
+            child: const Text('无法登录？恢复账号'),
+          ),
+        ],
       ],
     );
   }

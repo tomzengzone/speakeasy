@@ -28,7 +28,7 @@ class RedisAuthRateLimitAuditTest {
     when(values.setIfAbsent(any(), eq("1"), eq(Duration.ofMinutes(15))))
         .thenReturn(true, false);
     RedisAuthRateLimitAudit deduplicator = new RedisAuthRateLimitAudit(
-        redis, properties, audit, new AuthMetrics(new SimpleMeterRegistry()));
+        redis, properties, audit, new AuthMetrics(new SimpleMeterRegistry(), ""));
 
     deduplicator.record(
         "phone-login", "account", "blocked", "authrl:v1:opaque", "request-1");
@@ -49,7 +49,7 @@ class RedisAuthRateLimitAuditTest {
     when(values.setIfAbsent(any(), eq("1"), any(Duration.class)))
         .thenThrow(new IllegalStateException("offline"));
     RedisAuthRateLimitAudit deduplicator = new RedisAuthRateLimitAudit(
-        redis, new AuthRateLimitProperties(), audit, new AuthMetrics(new SimpleMeterRegistry()));
+        redis, new AuthRateLimitProperties(), audit, new AuthMetrics(new SimpleMeterRegistry(), ""));
 
     deduplicator.record(
         "refresh", "network", "blocked", "authrl:v1:opaque", "request-1");

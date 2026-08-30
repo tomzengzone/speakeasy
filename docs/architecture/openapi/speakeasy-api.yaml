@@ -1,13 +1,13 @@
-# PR-003 current lineage
-# This lineage-only marker does not change API behavior, schemas, compatibility,
-# or accepted implementation facts. Current product lineage is resolved from
-# applicable approved Functional Requirements; legacy Product Base, Increment,
-# Spec/AC, test-case, and traceability labels below are historical provenance.
+# Current lineage
+# Current product lineage is resolved from applicable approved Stories, Vertical
+# Slices, and Functional Requirements. AUTH-ACCOUNT-RECOVERY-API-001 is an
+# additive compatibility decision; legacy Product Base, Increment, Spec/AC,
+# test-case, and traceability labels below are historical provenance.
 openapi: 3.0.3
 info:
   title: SpeakEasy API
   version: 0.1.0
-  description: 'Machine-readable OpenAPI source of truth for SpeakEasy server-backed Product Base behavior, P0 commercial
+  description: 'Machine-readable OpenAPI source of truth for SpeakEasy server-backed Product Base behavior, approved phone account recovery, P0 commercial
     subscription readiness, P0.1 expression automation training, and P0.2 goal-driven learning autopilot including
     Followup-B control/planner/memory hardening. P1/P2
     roadmap items are intentionally excluded from implementation-level paths until they have owning increments.
@@ -35,7 +35,7 @@ x-auth-token-context:
   enforcement: The authentication filter validates the opaque token registry, account and session state, client, audience, expiry, and Spring Security required scopes before controller execution.
 tags:
 - name: Auth
-  description: Login, refresh, and logout.
+  description: Login, purpose-bound phone account recovery, refresh, and logout.
 - name: User
   description: User profile and account lifecycle.
 - name: Onboarding
@@ -77,6 +77,7 @@ tags:
 x-product-scope:
   implementation_level:
   - product-base
+  - approved-phone-account-recovery
   - p0-commercial-readiness
   - commercial-ai-provider-hardening
   - p0-1-expression-automation-training
@@ -178,6 +179,107 @@ paths:
                   $ref: '#/components/examples/PhoneVerificationCodeResponseExample'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/AuthRateLimited'
+        '503':
+          $ref: '#/components/responses/AuthServiceUnavailable'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /auth/account-recovery/phone/verification-codes:
+    post:
+      tags:
+      - Auth
+      operationId: requestPhoneAccountRecoveryCode
+      summary: Request a purpose-bound phone account recovery verification code.
+      description: Accepts the request without revealing whether the phone number exists, is bound, or is recoverable. A recovery code is isolated from ordinary login and every other verification purpose.
+      security: []
+      x-traceability:
+        product_objects:
+        - US-ACC-009
+        - VS-ACC-009-1
+        requirements:
+        - FR-ACC-001
+        - FR-ACC-003
+        contracts:
+        - AUTH-ACCOUNT-RECOVERY-API-001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhoneAccountRecoveryCodeRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/PhoneAccountRecoveryCodeRequestExample'
+      responses:
+        '202':
+          description: Recovery-code request accepted without disclosing account or binding state.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/ResponseRequestId'
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhoneAccountRecoveryCodeResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/PhoneAccountRecoveryCodeResponseExample'
+        '400':
+          $ref: '#/components/responses/AccountRecoveryBadRequest'
+        '429':
+          $ref: '#/components/responses/AuthRateLimited'
+        '503':
+          $ref: '#/components/responses/AuthServiceUnavailable'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /auth/account-recovery/phone:
+    post:
+      tags:
+      - Auth
+      operationId: recoverAccountByPhone
+      summary: Confirm an existing account and revoke all of its sessions.
+      description: Consumes a purpose-bound one-time recovery code, resolves only an existing active phone identity, advances the account security epoch, and revokes every existing session and token family. It never creates an account, changes an identity binding, creates a session, or returns a token.
+      security: []
+      x-traceability:
+        product_objects:
+        - US-ACC-009
+        - VS-ACC-009-1
+        requirements:
+        - FR-ACC-001
+        - FR-ACC-002
+        - FR-ACC-003
+        contracts:
+        - AUTH-ACCOUNT-RECOVERY-API-001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhoneAccountRecoveryRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/PhoneAccountRecoveryRequestExample'
+      responses:
+        '200':
+          description: Existing account confirmed and all existing sessions revoked; the client must log in again.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/ResponseRequestId'
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhoneAccountRecoveryResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/PhoneAccountRecoveryResponseExample'
+        '400':
+          $ref: '#/components/responses/AccountRecoveryBadRequest'
+        '401':
+          $ref: '#/components/responses/AccountRecoveryVerificationFailed'
         '429':
           $ref: '#/components/responses/AuthRateLimited'
         '503':
@@ -3930,7 +4032,7 @@ components:
         - Authorization
       example: Authorization
     ResponseRequestId:
-      description: Unique request identifier for this authenticated call, including a 304 response.
+      description: Unique request identifier for this API call, including unauthenticated authentication flows and a 304 response.
       required: true
       schema:
         type: string
@@ -4001,6 +4103,20 @@ components:
           examples:
             default:
               $ref: '#/components/examples/ErrorResponseExample'
+    AccountRecoveryBadRequest:
+      description: Phone account recovery request validation failed. The response does not disclose account existence, phone binding, or verification state.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/ResponseRequestId'
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              $ref: '#/components/examples/ErrorResponseExample'
     Unauthenticated:
       description: Missing or invalid authentication.
       content:
@@ -4010,6 +4126,20 @@ components:
           examples:
             default:
               $ref: '#/components/examples/ErrorResponseExample'
+    AccountRecoveryVerificationFailed:
+      description: Account recovery could not be verified. Account existence, phone binding, account state, and verification-code failure reasons intentionally share this privacy-safe response.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/ResponseRequestId'
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              $ref: '#/components/examples/AccountRecoveryVerificationFailedExample'
     AuthRateLimited:
       description: Authentication request rejected because at least one bounded security rate limit was exceeded.
       headers:
@@ -4174,6 +4304,7 @@ components:
       - ACCOUNT_DISABLED
       - AUTH_RATE_LIMITED
       - AUTH_SERVICE_UNAVAILABLE
+      - ACCOUNT_RECOVERY_VERIFICATION_FAILED
       - FORBIDDEN
       - INSUFFICIENT_SCOPE
       - ENTITLEMENT_REQUIRED
@@ -4360,6 +4491,76 @@ components:
           type: string
           enum:
           - sent
+    PhoneAccountRecoveryCodeRequest:
+      type: object
+      required:
+      - schema_version
+      - phone_number
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 32
+          description: Phone number normalized by the server for purpose-bound recovery verification and privacy-safe identity lookup.
+        device_id:
+          type: string
+          maxLength: 120
+          description: Optional installation-scoped signal used only as one bounded rate-limit input; it is never an account identity.
+    PhoneAccountRecoveryCodeResponse:
+      type: object
+      required:
+      - schema_version
+      - status
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        status:
+          type: string
+          enum:
+          - accepted
+          description: Privacy-safe acceptance state that does not disclose account existence, phone binding, or delivery.
+    PhoneAccountRecoveryRequest:
+      type: object
+      required:
+      - schema_version
+      - phone_number
+      - verification_code
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 32
+        verification_code:
+          type: string
+          minLength: 1
+          maxLength: 32
+          description: Unused and unexpired one-time code issued only for phone account recovery; login or other-purpose codes are rejected.
+        device_id:
+          type: string
+          maxLength: 120
+          description: Optional installation-scoped signal used only as one bounded rate-limit input; it is never an account identity.
+    PhoneAccountRecoveryResponse:
+      type: object
+      required:
+      - schema_version
+      - status
+      - next_action
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        status:
+          type: string
+          enum:
+          - recovered
+        next_action:
+          type: string
+          enum:
+          - login_phone
+          description: The recovery operation never creates a session or returns tokens; the verified phone must be used for a new login.
     PhoneLoginRequest:
       type: object
       required:
@@ -8890,6 +9091,14 @@ components:
           request_id: req_auth_unavailable_sample
           details:
             retryable: true
+    AccountRecoveryVerificationFailedExample:
+      summary: Privacy-safe phone account recovery verification failure
+      value:
+        error:
+          code: ACCOUNT_RECOVERY_VERIFICATION_FAILED
+          message: Account recovery could not be verified.
+          request_id: req_account_recovery_failed_sample
+          details: {}
     ContentNotFoundErrorExample:
       summary: Privacy-safe unavailable content response
       value:
@@ -8917,6 +9126,30 @@ components:
       value:
         schema_version: 1
         status: sent
+    PhoneAccountRecoveryCodeRequestExample:
+      summary: requestPhoneAccountRecoveryCode request example
+      value:
+        schema_version: 1
+        phone_number: '+8613800138000'
+        device_id: install-0001
+    PhoneAccountRecoveryCodeResponseExample:
+      summary: requestPhoneAccountRecoveryCode response 202 example
+      value:
+        schema_version: 1
+        status: accepted
+    PhoneAccountRecoveryRequestExample:
+      summary: recoverAccountByPhone request example
+      value:
+        schema_version: 1
+        phone_number: '+8613800138000'
+        verification_code: SAMPLE_RECOVERY_CODE
+        device_id: install-0001
+    PhoneAccountRecoveryResponseExample:
+      summary: recoverAccountByPhone response 200 example without session or token data
+      value:
+        schema_version: 1
+        status: recovered
+        next_action: login_phone
     PhoneLoginRequestExample:
       summary: loginPhone request example
       value:

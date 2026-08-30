@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:speakeasy/application/session/session_lifecycle_coordinator.dart';
 import 'package:speakeasy/application/session/session_profile_coordinator.dart';
 import 'package:speakeasy/application/session/session_stats_coordinator.dart';
+import 'package:speakeasy/core/auth/auth_credentials.dart';
 import 'package:speakeasy/features/commercial/commercial_entitlement_client.dart';
 import 'package:speakeasy/models/learning_stats_model.dart';
 import 'package:speakeasy/services/app_session.dart';
@@ -31,7 +32,21 @@ class _StaticSessionLifecycleCoordinator extends SessionLifecycleCoordinator {
   }
 
   @override
-  Future<ResolvedAuthenticatedSession?> hydrateExistingSession() async => null;
+  Future<ResolvedAuthenticatedSession?> hydrateExistingSession() async {
+    return ResolvedAuthenticatedSession(
+      credentials: AuthCredentials(
+        accessToken: 'stored-access-token',
+        refreshToken: 'stored-refresh-token',
+        expiresAt: DateTime.utc(2099),
+      ),
+      userJson: <String, dynamic>{
+        'nickname': user.nickname,
+        'avatarUrl': user.avatarUrl,
+        'memberPlan': user.memberPlan,
+        'onboardingDone': user.onboardingDone,
+      },
+    );
+  }
 }
 
 class _FakePaymentService implements PaymentService {

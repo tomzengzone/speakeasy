@@ -1,8 +1,8 @@
 # Data Flow
 
-## PR-003 current lineage
+## Current lineage
 
-本次只切换来源链，不改变本文的数据流、事实源边界或已接受实现事实。当前产品 lineage 仅由适用的 approved FR 解析；Engineering Artifact 之间的 direct/conditional inputs 和适用 Gate 继续仅由 Governance Contract 解析。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+当前产品 lineage 由适用的 approved Story/VS/FR 解析；Engineering Artifact 之间的 direct/conditional inputs 和适用 Gate 继续仅由 Governance Contract 解析。手机号账号恢复与单一认证生命周期是本次新增的稳定跨组件流，依据已批准 `US-ACC-009` / `VS-ACC-009-1` 与 `FR-ACC-001..003`；它不改变用户、身份、会话/token 和审计的既有事实归属。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability 仅为 historical provenance。
 
 ## 状态
 Proposed - whole-app architecture。本文描述跨模块数据流，不替代 API schema、domain schema 或 AI output schema。
@@ -15,6 +15,52 @@ SWC 级完整拓扑、稳定 `SWC-FLOW-*` 和局部变更参考基准在 `docs/a
 - Provider payload 不直接进入客户端；后端只返回经过 schema validation 和脱敏后的字段。
 - 所有高成本 provider 调用先经过 entitlement/usage check。
 - 学习证据写回必须保留 rule trace，不由 LLM 自由文本直接修改最终掌握状态。
+
+## Authentication Lifecycle And Phone Account Recovery Flow
+
+Authority boundary：账号恢复只承接已批准 `US-ACC-009`、`VS-ACC-009-1`、`FR-ACC-001`、`FR-ACC-002` 和 `FR-ACC-003`。启动/前台恢复、caller cancellation、TTS auth-error precedence 和认证观测是既有认证与复用边界的安全加固，不新增产品行为或公共 API。
+
+```text
+App cold start or foreground resume
+  -> FE-BOOTSTRAP-ROUTING enters one explicit initializing/resume lifecycle
+  -> FE-LOCAL-CACHE may provide display-only cached profile/credential material
+  -> FE-API-CLIENT authenticated executor checks the caller cancellation signal
+  -> the single shared RefreshCoordinator owns any near-expiry refresh
+  -> concurrent startup/resume/feature waiters join that one refresh without owning it
+  -> cancellation removes only that caller before send, after refresh wait, or before replay
+  -> typed authenticated / unauthenticated / offline-degraded / terminal state returns to routing
+
+Learner selects phone account recovery
+  -> FE-AUTH-PROFILE requests a purpose-bound recovery code through the sole FE-API-CLIENT typed recovery wrapper
+  -> the wrapper consumes generated path/schema/error/hash artifacts; this generator emits no callable recovery operation, recovery DTO or recovery client
+  -> BE-API-CONTROLLERS validates the request
+  -> BE-IDENTITY checks the default-off account-recovery capability before provider, identity or session effects
+      -> missing, invalid or non-enabled release configuration fails closed with the existing typed 503 response and no side effects
+      -> only explicit release configuration enables the remaining recovery flow
+  -> BE-API-CONTROLLERS and BE-IDENTITY apply bounded rate limits
+  -> BE-IDENTITY uses the existing phone verification provider boundary
+  -> backend returns the same privacy-safe 202 accepted shape without exposing account/binding state
+  -> learner submits phone number plus the one-time recovery code
+  -> BE-IDENTITY verifies recovery purpose and resolves only an existing active AuthIdentity
+  -> under the locked UserAccount, existing AccountSecurityService advances security epoch and revokes all sessions/token families in one DB transaction
+  -> BE-OPS-AUDIT-DELETION records a redacted success event
+  -> only an explicitly received 200 recovered/login_phone response establishes client-visible completion
+      -> FE-AUTH-PROFILE clears local credentials and renders login-required state
+      -> the learner may then perform ordinary phone login
+  -> timeout, cancellation, connection loss, or another missing 200 produces result-unknown
+      -> FE-AUTH-PROFILE remains in recovery, requests a new purpose-bound code, and repeats only-existing-identity recovery
+      -> it must not invoke ordinary phone login or depend on a new recovery-status/no-create-login endpoint
+```
+
+Security, reliability and rollback rules：
+- Cached profile/user data never proves authentication. Startup and resume may not call refresh transport directly, and no second coordinator may compete with the shared refresh-token rotation owner.
+- Cancelling a waiting or replaying caller aborts only that caller's transport/work; it never cancels the owner refresh needed by other callers. Cancellation is checked before initial send, after the refresh wait and before replay.
+- Recovery verification codes are purpose-bound, single-use and provider-owned. The recovery service may resolve `AuthIdentity`, but it may not invoke login-or-create, create a session or issue tokens.
+- Security epoch advance, all-session/family revocation and redacted success audit form the backend success boundary. If provider verification is consumed but the database transaction fails, no identity/session fact changes and the learner requests a new code.
+- Client-visible recovery completion requires an explicitly received `200 recovered`; transport-level result-unknown remains inside the recovery flow and repeats it with a new purpose-bound code. Ordinary phone login is allowed only after explicit success because its login-or-create semantics cannot safely resolve an unknown recovery outcome. This rule does not authorize a status endpoint or no-create login variant.
+- Failures intentionally collapse account-not-found, unbound/unavailable phone, account state and code failure into one public response; logs and metrics contain no raw phone/code/token or user/session/device identifier labels.
+- Rollout is backend-first and additive. The backend capability switch is fail-closed and default-off; only explicit release configuration enables it, while the client feature flag controls entry visibility only. Rollback disables the backend capability and client entry without removing the additive OpenAPI method/path/schema/error surface, running a destructive migration or reactivating revoked sessions.
+- The flow reuses `FE-BOOTSTRAP-ROUTING`, `FE-AUTH-PROFILE`, the sole `FE-API-CLIENT` typed wrapper plus generated path/schema/error/hash, `BE-API-CONTROLLERS`, `BE-IDENTITY`, `BE-OPS-AUDIT-DELETION`, `OPS-RELEASE-GATES` and existing identity/session persistence. A recovery-specific auth store, duplicate RefreshCoordinator, duplicate token revoker, feature-local recovery wrapper/DTO semantics or claim that a generated recovery DTO/client exists is forbidden.
 
 ## Approved Content Catalog And Version-Pinned Detail Flow
 
@@ -215,7 +261,7 @@ FE-SCENARIO-PRACTICE or FE-LEGACY-SCENARIO-SANDBOX
 - Interview/onboarding expression graph、mastery、wiki、daily queue、reviewed content、listening/shadowing 和 domain-specific review rules 在单独 domain migration 获批前仍归 `FE-SCENARIO-PRACTICE`。
 - Practice history 必须复用现有 `AppSession -> SessionStatsCoordinator -> StatsService -> FE-API-CLIENT` 路径；禁止第二套 practice history/statistics store。当前 `/user/stats*` 调用是 legacy non-OpenAPI client path，在单独 API Contract / OpenAPI increment 批准前不能视为稳定 cross-end contract。
 - 远程调用必须保持现有 OpenAPI 和 backend source-of-truth 边界。此 flow 不授权 backend、DB、provider、entitlement、usage、media trust 或 learning evidence ownership 变更。
-- Voice/ASR/TTS 失败必须映射到 recoverable runtime state 和 text/audio fallback；Flutter 不得创建 trusted `media://audio/...`、provider-readable signed URL、provider credential、final mastery 或 accepted server evidence。
+- Voice/ASR/TTS 业务/播放失败必须映射到 recoverable runtime state 和 text/audio fallback；typed auth/session 失败必须原样越过 `FE-AUDIO-PLATFORM` 交给统一 session-security 路由，其优先级高于普通 TTS/播放文案，不得被吞掉或映射为 `false`。Flutter 不得创建 trusted `media://audio/...`、provider-readable signed URL、provider credential、final mastery 或 accepted server evidence。
 
 ## AI Provider Fallback Flow
 ```text
@@ -375,16 +421,20 @@ Flutter request
 ```
 
 Minimum attributes:
-- app version, platform, feature area, request_id;
+- bounded app-version major/minor-or-release bucket, platform allowlist, server-owned API-family allowlist, feature area, request_id;
 - provider label, not raw provider secret or raw audio;
 - entitlement status class, not full payment credential;
 - schema version and validation result.
 
+Metric dimensions must be finite and server-normalized. Raw path, query, token, phone number, verification code, user/session/device id, free-form app version and other unbounded request values are forbidden as metric labels. `request_id` remains trace/log correlation context and must not become a metric label. Valid authenticated requests may obtain normalized platform/app-version buckets from existing session metadata; unauthenticated requests use bounded request metadata or `unknown`, never caller-controlled arbitrary labels.
+
 最小 attributes：
-- app version、platform、feature area、request_id；
+- 有限集合的 app-version major/minor-or-release bucket、platform allowlist、服务端 API-family allowlist、feature area、request_id；
 - provider label，而不是 raw provider secret 或 raw audio；
 - entitlement status class，而不是 full payment credential；
 - schema version 和 validation result。
+
+Metric dimension 必须有限且由服务端标准化。raw path/query/token/phone/verification code/user/session/device id、自由格式 app version 及其他无界请求值禁止作为 metric label；`request_id` 只用于 trace/log 关联，不是 metric label。有效认证请求可从既有 session metadata 取标准化 platform/app-version bucket；未认证请求只能使用有界请求 metadata 或 `unknown`。
 
 ## Release Flow
 ```text

@@ -12,7 +12,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest(properties = "speakeasy.auth.providers.mode=disabled")
+@SpringBootTest(properties = {
+    "speakeasy.auth.providers.mode=disabled",
+    "speakeasy.auth.account-recovery-enabled=true"
+})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class AuthProviderFailClosedHttpTest {
@@ -32,5 +35,20 @@ class AuthProviderFailClosedHttpTest {
                 """))
         .andExpect(status().isServiceUnavailable())
         .andExpect(jsonPath("$.error.code").value("PROVIDER_UNAVAILABLE"));
+  }
+
+  @Test
+  void disabledProviderKeepsAccountRecoveryUnavailableWithoutLeakingAccountState() throws Exception {
+    mvc.perform(post("/auth/account-recovery/phone/verification-codes")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "schema_version": 1,
+                  "phone_number": "+8613800138001"
+                }
+                """))
+        .andExpect(status().isServiceUnavailable())
+        .andExpect(jsonPath("$.error.code").value("AUTH_SERVICE_UNAVAILABLE"))
+        .andExpect(jsonPath("$.error.details.retryable").value(true));
   }
 }

@@ -29,7 +29,8 @@ public class SecurityConfig {
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(HttpMethod.POST, "/auth/login/phone", "/auth/login/apple", "/auth/login/wechat",
-                "/auth/refresh", "/auth/verification-codes/phone")
+                "/auth/refresh", "/auth/verification-codes/phone",
+                "/auth/account-recovery/phone/verification-codes", "/auth/account-recovery/phone")
             .permitAll()
             .requestMatchers(HttpMethod.POST, "/subscriptions/webhook/apple", "/subscriptions/webhook/google")
             .permitAll()

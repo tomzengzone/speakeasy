@@ -30,6 +30,9 @@ class AppConfig {
   static const String _enableContentCourseDetailDefine = String.fromEnvironment(
     'ENABLE_CONTENT_COURSE_DETAIL',
   );
+  static const String _enableAccountRecoveryDefine = String.fromEnvironment(
+    'ENABLE_ACCOUNT_RECOVERY',
+  );
 
   static String get apiBaseUrl => _getRequired('API_BASE_URL');
 
@@ -83,6 +86,14 @@ class AppConfig {
       ).toLowerCase() ==
       'true';
 
+  /// Additive rollback switch for the phone account recovery entry.
+  static bool get enableAccountRecovery =>
+      _getOptional(
+        'ENABLE_ACCOUNT_RECOVERY',
+        fallback: 'false',
+      ).toLowerCase() ==
+      'true';
+
   static String _getRequired(String key) {
     final String value = _getOptional(key);
     if (value.isEmpty) {
@@ -122,6 +133,7 @@ class AppConfig {
       'ENABLE_TEST_PHONE_LOGIN' => _enableTestPhoneLoginDefine,
       'ENABLE_BACKEND_TRAINING' => _enableBackendTrainingDefine,
       'ENABLE_CONTENT_COURSE_DETAIL' => _enableContentCourseDetailDefine,
+      'ENABLE_ACCOUNT_RECOVERY' => _enableAccountRecoveryDefine,
       _ => '',
     };
   }

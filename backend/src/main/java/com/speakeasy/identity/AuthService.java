@@ -3,6 +3,7 @@ package com.speakeasy.identity;
 import com.speakeasy.common.ApiException;
 import com.speakeasy.common.CefrLevel;
 import com.speakeasy.identity.provider.PhoneVerificationProvider;
+import com.speakeasy.identity.provider.PhoneVerificationPurpose;
 import com.speakeasy.identity.provider.SocialIdentityVerifier;
 import com.speakeasy.ops.AccountDeletionJobRepository;
 import com.speakeasy.ops.AuthAuditService;
@@ -46,6 +47,7 @@ public class AuthService {
   private final String clientId;
   private final String audience;
   private final AuthGrantPolicy grantPolicy;
+  private final AccountRecoveryCapabilityPolicy accountRecoveryCapability;
   private final SecureRandom secureRandom = new SecureRandom();
 
   public AuthService(
@@ -68,7 +70,8 @@ public class AuthService {
       @Value("${speakeasy.auth.session-absolute-ttl:90d}") Duration sessionAbsoluteTtl,
       @Value("${speakeasy.auth.client-id:speakeasy-mobile}") String clientId,
       @Value("${speakeasy.auth.audience:speakeasy-api}") String audience,
-      AuthGrantPolicy grantPolicy) {
+      AuthGrantPolicy grantPolicy,
+      AccountRecoveryCapabilityPolicy accountRecoveryCapability) {
     this.users = users;
     this.profiles = profiles;
     this.identities = identities;
@@ -89,6 +92,7 @@ public class AuthService {
     this.clientId = clientId;
     this.audience = audience;
     this.grantPolicy = grantPolicy;
+    this.accountRecoveryCapability = accountRecoveryCapability;
   }
 
   @Transactional
@@ -106,7 +110,8 @@ public class AuthService {
       throw new ApiException(HttpStatus.BAD_REQUEST, "SCHEMA_VALIDATION_FAILED", "Phone number and verification code are required.");
     }
     String normalizedPhone = phoneNumber.trim();
-    phoneVerification.verify(normalizedPhone, verificationCode.trim());
+    phoneVerification.verify(
+        normalizedPhone, verificationCode.trim(), PhoneVerificationPurpose.LOGIN);
     return loginOrCreate("phone", TokenHasher.hash(normalizedPhone), "Phone User", device);
   }
 
@@ -114,7 +119,45 @@ public class AuthService {
     if (phoneNumber == null || phoneNumber.isBlank()) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "SCHEMA_VALIDATION_FAILED", "Phone number is required.");
     }
-    phoneVerification.requestCode(phoneNumber.trim());
+    phoneVerification.requestCode(phoneNumber.trim(), PhoneVerificationPurpose.LOGIN);
+  }
+
+  public void requestPhoneAccountRecoveryCode(String phoneNumber) {
+    accountRecoveryCapability.requireEnabled();
+    String normalizedPhone = validateRecoveryPhone(phoneNumber);
+    try {
+      phoneVerification.requestCode(
+          normalizedPhone, PhoneVerificationPurpose.ACCOUNT_RECOVERY);
+    } catch (ApiException exception) {
+      throw recoveryProviderFailure(exception);
+    }
+  }
+
+  @Transactional
+  public void recoverPhoneAccount(
+      String phoneNumber, String verificationCode, String requestId) {
+    accountRecoveryCapability.requireEnabled();
+    String normalizedPhone = validateRecoveryPhone(phoneNumber);
+    if (verificationCode == null || verificationCode.isBlank()
+        || verificationCode.trim().length() > 32) {
+      throw schemaError("Verification code is required and must not exceed 32 characters.");
+    }
+    try {
+      phoneVerification.verify(
+          normalizedPhone,
+          verificationCode.trim(),
+          PhoneVerificationPurpose.ACCOUNT_RECOVERY);
+    } catch (ApiException exception) {
+      throw recoveryProviderFailure(exception);
+    }
+
+    UserAccount user = identities
+        .findByProviderAndProviderSubject("phone", TokenHasher.hash(normalizedPhone))
+        .flatMap(identity -> users.findByIdForUpdate(identity.getUserId()))
+        .filter(account -> "active".equals(account.getAccountStatus()))
+        .orElseThrow(AuthService::accountRecoveryFailed);
+    accountSecurity.revokeForHighRiskCredentialChange(
+        user.getUserId(), "account_recovery", requestId);
   }
 
   @Transactional
@@ -243,19 +286,20 @@ public class AuthService {
     }
     AuthSession session = sessions.findByIdForUpdate(token.getSessionId()).orElse(null);
     if (session == null || !token.getUserId().equals(session.getUserId())) {
-      return failedAccess("ACCESS_TOKEN_INVALID");
+      return failedAccess("ACCESS_TOKEN_INVALID", session);
     }
     UserAccount user = users.findById(session.getUserId()).orElse(null);
-    if (user == null) return failedAccess("ACCESS_TOKEN_INVALID");
-    if ("disabled".equals(user.getAccountStatus())) return failedAccess("ACCOUNT_DISABLED");
+    if (user == null) return failedAccess("ACCESS_TOKEN_INVALID", session);
+    if ("disabled".equals(user.getAccountStatus())) return failedAccess("ACCOUNT_DISABLED", session);
     if (!"active".equals(user.getAccountStatus()) || !session.isActive()
         || session.getSecurityEpoch() != user.getSecurityEpoch() || session.isSessionExpiredAt(now)) {
-      return failedAccess("SESSION_REVOKED");
+      return failedAccess("SESSION_REVOKED", session);
     }
-    if (token.isExpiredAt(now)) return failedAccess("ACCESS_TOKEN_EXPIRED");
+    if (token.isExpiredAt(now)) return failedAccess("ACCESS_TOKEN_EXPIRED", session);
     session.touch(now, sessionIdleTtl);
     metrics.access("authenticated");
-    return new AccessTokenInspection("AUTHENTICATED", currentUser(token));
+    return new AccessTokenInspection(
+        "AUTHENTICATED", currentUser(token), session.getPlatform(), session.getAppVersion());
   }
 
   @Transactional
@@ -287,7 +331,7 @@ public class AuthService {
       String provider, String providerSubject, String defaultDisplayName, DeviceMetadata rawDevice) {
     Instant now = Instant.now(clock);
     UserAccount user = identities.findByProviderAndProviderSubject(provider, providerSubject)
-        .flatMap(identity -> users.findById(identity.getUserId()))
+        .flatMap(identity -> users.findByIdForUpdate(identity.getUserId()))
         .orElseGet(() -> createUser(provider, providerSubject, defaultDisplayName, now));
 
     if ("disabled".equals(user.getAccountStatus())) {
@@ -334,8 +378,16 @@ public class AuthService {
   }
 
   private AccessTokenInspection failedAccess(String code) {
+    return failedAccess(code, null);
+  }
+
+  private AccessTokenInspection failedAccess(String code, AuthSession session) {
     metrics.access(code.toLowerCase());
-    return new AccessTokenInspection(code, null);
+    return new AccessTokenInspection(
+        code,
+        null,
+        session == null ? "unknown" : session.getPlatform(),
+        session == null ? null : session.getAppVersion());
   }
 
   private AuthSessionResult result(
@@ -386,6 +438,36 @@ public class AuthService {
     return new ApiException(HttpStatus.UNAUTHORIZED, code, message);
   }
 
+  private String validateRecoveryPhone(String phoneNumber) {
+    if (phoneNumber == null || phoneNumber.isBlank()
+        || phoneNumber.trim().length() > 32) {
+      throw schemaError("Phone number is required and must not exceed 32 characters.");
+    }
+    return phoneNumber.trim();
+  }
+
+  private static ApiException recoveryProviderFailure(ApiException exception) {
+    if (exception.getStatus().is5xxServerError()) {
+      return new ApiException(
+          HttpStatus.SERVICE_UNAVAILABLE,
+          "AUTH_SERVICE_UNAVAILABLE",
+          "Authentication service is temporarily unavailable.",
+          java.util.Map.of("retryable", true));
+    }
+    return accountRecoveryFailed();
+  }
+
+  private static ApiException accountRecoveryFailed() {
+    return new ApiException(
+        HttpStatus.UNAUTHORIZED,
+        "ACCOUNT_RECOVERY_VERIFICATION_FAILED",
+        "Account recovery could not be verified.");
+  }
+
+  private static ApiException schemaError(String message) {
+    return new ApiException(HttpStatus.BAD_REQUEST, "SCHEMA_VALIDATION_FAILED", message);
+  }
+
   public record DeviceMetadata(String deviceId, String deviceName, String platform, String appVersion) {
     public static DeviceMetadata unknown() {
       return new DeviceMetadata(null, "Unknown device", "unknown", null);
@@ -412,7 +494,8 @@ public class AuthService {
     }
   }
 
-  public record AccessTokenInspection(String code, CurrentUser currentUser) {}
+  public record AccessTokenInspection(
+      String code, CurrentUser currentUser, String platform, String appVersion) {}
 
   public record RefreshRateLimitIdentity(UUID userId, UUID familyId) {}
 

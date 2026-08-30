@@ -87,7 +87,7 @@ class AuthRateLimitServiceTest {
         new AuthRateLimitKeyFactory("test-secret"),
         new ClientNetworkResolver(List.of()),
         store,
-        new AuthMetrics(new SimpleMeterRegistry()),
+        new AuthMetrics(new SimpleMeterRegistry(), ""),
         (endpoint, dimension, outcome, bucketKey, requestId) -> {});
   }
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speakeasy/application/session/session_lifecycle_coordinator.dart';
+import 'package:speakeasy/core/auth/auth_credentials.dart';
 import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
 import 'package:speakeasy/features/commercial/commercial_scenario_gate.dart';
 import 'package:speakeasy/features/interview/interview_llm_scheduler.dart';
@@ -49,7 +50,21 @@ class _StaticSessionLifecycleCoordinator extends SessionLifecycleCoordinator {
   }
 
   @override
-  Future<ResolvedAuthenticatedSession?> hydrateExistingSession() async => null;
+  Future<ResolvedAuthenticatedSession?> hydrateExistingSession() async {
+    return ResolvedAuthenticatedSession(
+      credentials: AuthCredentials(
+        accessToken: 'stored-access-token',
+        refreshToken: 'stored-refresh-token',
+        expiresAt: DateTime.utc(2099),
+      ),
+      userJson: <String, dynamic>{
+        'nickname': 'Test learner',
+        'avatarUrl': '',
+        'memberPlan': memberPlan,
+        'onboardingDone': true,
+      },
+    );
+  }
 }
 
 class _NoopSessionRemoteApi implements SessionRemoteApi {

@@ -46,6 +46,12 @@ class AuthRateLimitPropertiesTest {
     assertBucket(properties, "phone-code-request", "network", 20, 1, Duration.ofSeconds(3));
     assertBucket(properties, "phone-code-request", "device", 5, 1, Duration.ofSeconds(120));
     assertBucket(properties, "phone-code-request", "account", 3, 1, Duration.ofSeconds(300));
+    assertBucket(properties, "phone-account-recovery-code-request", "network", 20, 1, Duration.ofSeconds(3));
+    assertBucket(properties, "phone-account-recovery-code-request", "device", 5, 1, Duration.ofSeconds(120));
+    assertBucket(properties, "phone-account-recovery-code-request", "account", 3, 1, Duration.ofSeconds(300));
+    assertBucket(properties, "phone-account-recovery", "network", 30, 1, Duration.ofSeconds(2));
+    assertBucket(properties, "phone-account-recovery", "device", 10, 1, Duration.ofSeconds(60));
+    assertBucket(properties, "phone-account-recovery", "account", 5, 1, Duration.ofSeconds(120));
   }
 
   @Test

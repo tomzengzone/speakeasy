@@ -1,8 +1,8 @@
 # Software Component Architecture
 
-## PR-003 current lineage
+## Current lineage
 
-本次只切换来源链，不改变本文的 SWC 拓扑、数据流、边界或已接受实现事实。当前产品 lineage 仅由适用的 approved FR 解析；Engineering Artifact 之间的 direct/conditional inputs 和适用 Gate 继续仅由 Governance Contract 解析。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述均为 historical provenance，不是当前 authority、prerequisite 或 fallback。局部实现按事实影响引用当前 SWC/Flow，无需创建 increment allocation 文档。
+当前产品 lineage 由适用的 approved Story/VS/FR 解析；Engineering Artifact 之间的 direct/conditional inputs 和适用 Gate 继续仅由 Governance Contract 解析。`SWC-FLOW-ACCOUNT-RECOVERY` 是由已批准 `US-ACC-009` / `VS-ACC-009-1` 与 `FR-ACC-001..003` 导致的 additive 稳定流；它不新增 SWC 或改变事实归属。文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述均为 historical provenance，不是当前 authority、prerequisite 或 fallback。
 
 ## 状态
 Proposed - global SWC architecture baseline. 本文是全局软件组件架构基准，用于汇总稳定 SWC 拓扑、全局 SWC 间数据流、跨层复用边界和局部变更参考规则。本文不替代 `docs/architecture/swc_catalog.md`、`docs/architecture/data_flow.md`、Domain Schema、OpenAPI、AI runtime、UX、测试或实现报告。
@@ -53,6 +53,7 @@ FE-BOOTSTRAP-ROUTING
       -> BE-API-CONTROLLERS
           -> backend application/domain SWCs
               -> DB-* SWCs
+              -> BE-IDENTITY -> phone/social identity provider boundaries
               -> BE-AI-GATEWAY -> AI-* provider/runtime SWCs
               -> BE-MEDIA-STORAGE -> provider/object-storage boundary
               -> BE-OPS-AUDIT-DELETION / BE-AI-OPS
@@ -65,13 +66,16 @@ FE-BOOTSTRAP-ROUTING
 - `FE-CONTENT` 只拥有 catalog/detail UI orchestration，必须复用 `FE-API-CLIENT` 与 `FE-LOCAL-CACHE`；不得创建 feature-local Course DTO/client/store/version resolver。
 - `FE-PRACTICE-RUNTIME` 只拥有可复用 frontend mechanics；`FE-SCENARIO-PRACTICE` 拥有 official scenario practice domain logic；`FE-LEGACY-SCENARIO-SANDBOX` 保持 non-main-flow。
 - Backend controller 必须委托给 service/domain SWC；不得绕过 domain、usage、entitlement、media、AI gateway、audit、retention 或 data-governance boundary。
+- 启动、恢复与前台 resume 必须共用 `FE-API-CLIENT` 的单一 authenticated request/`RefreshCoordinator` 边界；禁止在 bootstrap、session lifecycle 或 feature 层新建第二个 refresh owner。
+- 手机号账号恢复必须复用 `BE-IDENTITY` 的既有 phone identity、security epoch 和全会话撤销路径，并通过 `BE-OPS-AUDIT-DELETION` 写脱敏审计；禁止 recovery-specific auth/session store 或 login-or-create fallback。
 - DB SWC 只能通过 owning backend service/repository 访问，不允许 direct cross-domain write。
 - 适用时，provider call 必须经过 `BE-AI-GATEWAY`、`BE-MEDIA-STORAGE`、`BE-USAGE-CONTROL` 以及相关 provider/ops boundary。
 
 ## Canonical SWC Flow Library
 | Flow ID | Flow | Stable SWC sequence | Canonical source |
 | --- | --- | --- | --- |
-| SWC-FLOW-AUTH-PROFILE | Login/profile/session bootstrap | `FE-BOOTSTRAP-ROUTING -> FE-AUTH-PROFILE -> FE-API-CLIENT -> BE-API-CONTROLLERS -> BE-IDENTITY -> DB-IDENTITY-CONTENT -> response -> FE-LOCAL-CACHE/display` | `module_boundary.md`, `api_contract.md` |
+| SWC-FLOW-AUTH-PROFILE | Login/profile/single-owner session bootstrap and foreground refresh | `FE-BOOTSTRAP-ROUTING -> FE-AUTH-PROFILE -> FE-API-CLIENT authenticated request/RefreshCoordinator -> BE-API-CONTROLLERS -> BE-IDENTITY -> DB-IDENTITY-CONTENT -> response or typed auth failure -> FE-LOCAL-CACHE/display` | `data_flow.md` Authentication Lifecycle And Phone Account Recovery Flow; `module_boundary.md`; `api_contract.md` |
+| SWC-FLOW-ACCOUNT-RECOVERY | Purpose-bound phone account recovery and all-session revocation | `FE-AUTH-PROFILE -> FE-API-CLIENT -> BE-API-CONTROLLERS -> BE-IDENTITY -> phone verification provider -> existing AuthIdentity/UserAccount/session-token persistence -> BE-OPS-AUDIT-DELETION -> no-token recovery result -> FE-AUTH-PROFILE login-required state` | `data_flow.md` Authentication Lifecycle And Phone Account Recovery Flow; `api_contract.md` `AUTH-ACCOUNT-RECOVERY-API-001` |
 | SWC-FLOW-CONTENT-CATALOG | Approved catalog and version-pinned Course detail | `FE-CONTENT -> FE-API-CLIENT -> BE-API-CONTROLLERS -> BE-CONTENT-SCENARIO -> (DB-IDENTITY-CONTENT; BE-COMMERCE-ENTITLEMENT visibility decision when applicable) -> exact-version response or typed failure -> FE-CONTENT -> FE-LOCAL-CACHE/display` | `data_flow.md` Approved Content Catalog And Version-Pinned Detail Flow; `module_boundary.md` Content Catalog And Course Detail Boundary |
 | SWC-FLOW-SUBSCRIPTION-ENTITLEMENT | Purchase, restore, entitlement refresh | `FE-COMMERCIAL -> FE-API-CLIENT -> BE-API-CONTROLLERS -> BE-COMMERCE-ENTITLEMENT -> DB-COMMERCE-USAGE -> BE-OPS-AUDIT-DELETION -> response -> FE-COMMERCIAL display cache` | `data_flow.md` P0 Subscription Purchase / Restore Flow |
 | SWC-FLOW-USAGE-AI | Usage-gated AI/ASR/TTS/scoring call | `feature FE SWC -> FE-API-CLIENT -> BE-API-CONTROLLERS -> BE-USAGE-CONTROL -> BE-AI-GATEWAY -> AI-* provider -> BE-AI-OPS -> BE-USAGE-CONTROL commit/release -> response -> feature FE SWC` | `data_flow.md` P0 Commercial Usage Flow |

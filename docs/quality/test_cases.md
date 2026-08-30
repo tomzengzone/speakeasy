@@ -7,7 +7,7 @@
 
 本目录保存稳定的测试意图和 oracle，不保存运行时 `passed` / `failed` 状态。三类 TC 的直接上游互斥：FR-TC 只使用 `source_fr_id`，Contract-TC 只使用 `source_contract_id`，VS-TC 只使用 `source_vs_id`。跨层覆盖由 `TRACEABILITY` 从 owning sources 派生，不在 TC 中重复维护。
 
-当前用例为已批准 Vertical Slice、已存在的 approved FR 以及受影响 Engineering Contract 建立稳定测试意图；它不保存测试执行结果，也不以目录登记代替实现或运行证据。
+当前用例为已批准 Vertical Slice、已存在的 approved FR 以及受影响 Engineering Contract 建立稳定测试意图；它不保存测试执行结果，也不以目录登记代替实现或运行证据。账号恢复的反馈顺序先执行最低成本的 backend/contract 测试，再执行选定的用户可见 widget-integration VS 路径；真实短信 provider、真机和 exact-commit 运行结果由 QA/G-TEST 单独保存，不属于本目录。
 
 ## FR-TC
 
@@ -52,6 +52,51 @@
 - When: 学习者分别从两个入口打开该课程。
 - Then: 两个入口解析到同一课程及同一发布版本，并展示一致的必备基本信息；缺少背景图时仍可查看其他信息。
 - Boundary/negative: 缺少任一发布必备字段或无法解析同一版本时不得用其他课程、其他版本或错误占位值替代。
+
+### TC-FR-ACC-001 — 既有手机号身份与恢复专用一次性验证
+
+- type: `FR-TC`
+- source_fr_id: `FR-ACC-001`
+- layer: `backend-integration`
+- scope: `phone account recovery / eligibility and verified account resolution`
+- selector: `PhoneAccountRecoveryTest / existing-identity-purpose-bound-one-time-code`
+- script_path: `backend/src/test/java/com/speakeasy/PhoneAccountRecoveryTest.java`
+- command: `mvn -f backend/pom.xml -Dtest=PhoneAccountRecoveryTest test`
+- execution_owner: `backend`
+- Given: 一个 active 既有账号唯一绑定标准化且仍可用的手机号，provider 为该手机号签发一枚未过期、未使用且 purpose 为 `account_recovery` 的验证码；另有账号不存在、手机号未绑定或不可用、普通登录 purpose、错误、过期和已使用验证码 fixture。
+- When: 学习者主动选择账号恢复并提交手机号与验证码，service 只通过 existing-identity resolver 处理各 fixture。
+- Then: 只有恢复专用有效验证码解析到该手机号已绑定的唯一既有账号并消费验证码一次；同一验证码再次提交不能再次完成恢复，且整个路径不调用 login-or-create。
+- Boundary/negative: 任一不符合资格或验证码约束的 fixture 都必须返回恢复验证失败，不得解析其他账号、创建账号、改绑身份或把普通登录验证码接受为恢复凭据；已签发或已消费的恢复码不得被普通手机号登录接受。
+
+### TC-FR-ACC-002 — 恢复保留原账号并撤销全部会话
+
+- type: `FR-TC`
+- source_fr_id: `FR-ACC-002`
+- layer: `backend-integration`
+- scope: `phone account recovery / successful state transition`
+- selector: `PhoneAccountRecoveryTest / recoveryPreservesTheAccountRevokesEverySessionAndIssuesNoSession`
+- script_path: `backend/src/test/java/com/speakeasy/PhoneAccountRecoveryTest.java`
+- command: `mvn -f backend/pom.xml -Dtest=PhoneAccountRecoveryTest test`
+- execution_owner: `backend`
+- Given: 经恢复专用验证确认的既有账号具有固定 user、profile、学习数据和订阅权益快照，并在发起恢复的设备及其他设备上各有 active Session、Refresh Token family/token 和 Access Token。
+- When: service 成功完成该账号的恢复状态转换。
+- Then: 同一账号及其 profile、学习数据和订阅权益快照保持不变，security epoch 只推进一次，全部既有 Session 与 token family/token 均被撤销，结果只指示 `recovered` 和 `login_phone`，且不创建新 Session 或签发 Access/Refresh Token。
+- Boundary/negative: 发起恢复的当前 Session 不得被保留；成功结果不得包含 session、token、user 或 revoked-count，学习者未重新完成手机号登录前不得恢复认证访问。
+
+### TC-FR-ACC-003 — 恢复失败零身份与会话副作用
+
+- type: `FR-TC`
+- source_fr_id: `FR-ACC-003`
+- layer: `backend-integration`
+- scope: `phone account recovery / recoverable failure invariants`
+- selector: `PhoneAccountRecoveryTest / privacy-safe-failure-and-transaction-rollback`
+- script_path: `backend/src/test/java/com/speakeasy/PhoneAccountRecoveryTest.java`
+- command: `mvn -f backend/pom.xml -Dtest=PhoneAccountRecoveryTest test`
+- execution_owner: `backend`
+- Given: 分别构造账号不存在、手机号未绑定或不可用、验证码发送失败、验证错误、验证码过期以及完成恢复前中断，并记录尝试前的账号数、身份绑定、security epoch、Session 与 token family/token 快照。
+- When: 每种失败或中断发生在恢复成功提交之前，随后学习者重新进入恢复入口。
+- Then: 本次尝试整体失败，账号数、身份绑定、security epoch、Session 与全部 token 快照均与尝试前一致；明确、隐私安全的验证失败允许重新申请验证码、重试恢复，或由学习者主动返回手机号登录，返回时只保留手机号表单值并清空 recovery code。
+- Boundary/negative: 失败不得创建占位账号、部分改绑身份、局部撤销会话、清理客户端 token 来伪造成功，或因上一次失败阻止一次新的显式恢复尝试；明确失败不得自动跳转、自动调用或自动提交 login-or-create，用户主动返回这一导航动作本身不得创建账号/identity/Session/Token。
 
 ## Contract-TC
 
@@ -279,6 +324,126 @@
 - Then: 既有 `GET /scenarios`、ScenarioLevel API 与 practice/training 流程保持可用，mastery/hint namespace 不变，账号删除不删除非用户 authored Course/CourseVersion/binding；回滚保留 additive Course 数据并不需要重解释 ScenarioLevel。
 - Boundary/negative: 不得执行破坏性 down migration、dual-read/dual-write、legacy Course path、ScenarioLevel 重命名/复制/alias 或按 ScenarioLevel 合成 Course；Task Plan、OpenAPI example、seed 数量/内容不得被测试接受为 authored content authority，空 Course 库存必须仍是合法部署状态。
 
+### TC-CONTRACT-AUTH-RECOVERY-001 — 恢复码申请不枚举账号
+
+- type: `Contract-TC`
+- source_contract_id: `API_CONTRACT`
+- layer: `api-contract`
+- scope: `AUTH-ACCOUNT-RECOVERY-API-001 / POST recovery verification-codes`
+- selector: `AUTH-ACCOUNT-RECOVERY-API-001/request-code-privacy -> PhoneAccountRecoveryTest`
+- script_path: `backend/src/test/java/com/speakeasy/PhoneAccountRecoveryTest.java`
+- command: `mvn -f backend/pom.xml -Dtest=PhoneAccountRecoveryTest test`
+- execution_owner: `backend`
+- Given: 相同 schema 的恢复码申请分别携带已绑定 active 账号的手机号、未绑定手机号和不存在账号的手机号，provider 对可接受申请返回接收结果。
+- When: 未认证调用方请求 `POST /auth/account-recovery/phone/verification-codes`。
+- Then: 三种账号事实均返回外形一致的 `202`、`{schema_version: 1, status: accepted}`、`Cache-Control: no-store` 和本次请求的 `X-Request-Id`，响应时序分类与可观察字段不暴露手机号是否存在或已绑定。
+- Boundary/negative: 响应不得包含 user、identity、session、token、发送目标或存在性提示；格式错误只能以登记的 `400 SCHEMA_VALIDATION_FAILED` 拒绝，不得借错误差异泄漏账号事实。
+
+### TC-CONTRACT-AUTH-RECOVERY-002 — Purpose 隔离、一次性消费与 at-most-once
+
+- type: `Contract-TC`
+- source_contract_id: `API_CONTRACT`
+- layer: `provider-contract-integration`
+- scope: `AUTH-ACCOUNT-RECOVERY-API-001 / verification purpose and replay boundary`
+- selector: `AUTH-ACCOUNT-RECOVERY-API-001/purpose-bound-at-most-once -> PhoneAccountRecoveryTest, PhoneAccountRecoveryProviderFailureTest`
+- script_path: `backend/src/test/java/com/speakeasy/PhoneAccountRecoveryTest.java`, `backend/src/test/java/com/speakeasy/PhoneAccountRecoveryProviderFailureTest.java`
+- command: `mvn -f backend/pom.xml "-Dtest=PhoneAccountRecoveryTest,PhoneAccountRecoveryProviderFailureTest" test`
+- execution_owner: `backend`
+- Given: 同一标准化手机号分别具有 recovery purpose 的有效、错误、过期、已使用验证码和普通 phone-login purpose 的有效验证码；完成请求不声明 `Idempotency-Key`，并可在请求中额外携带不同的未登记 `Idempotency-Key` header 以验证其不改变语义。
+- When: 各验证码调用 `POST /auth/account-recovery/phone`，并对唯一成功的恢复验证码使用相同或不同 header 重放。
+- Then: 只有未过期、未使用且 purpose 为 recovery 的验证码恰好成功一次；普通登录 purpose、错误、过期、已使用及所有重放统一返回 privacy-safe `401 ACCOUNT_RECOVERY_VERIFICATION_FAILED`，更换 `Idempotency-Key` 不能产生第二次成功。
+- Boundary/negative: 恢复验证码在签发后、恢复成功消费后及重放时均不得用于普通登录，登录验证码不得用于恢复；服务端不得把 `Idempotency-Key` 变成恢复成功事实、缓存成功响应或在重放时再次推进 security epoch/写入第二个成功审计。
+
+### TC-CONTRACT-AUTH-RECOVERY-003 — 原子推进 epoch、全会话失效且不签发凭据
+
+- type: `Contract-TC`
+- source_contract_id: `API_CONTRACT`
+- layer: `postgres-integration`
+- scope: `AUTH-ACCOUNT-RECOVERY-API-001 / successful transactional revocation`
+- selector: `AUTH-ACCOUNT-RECOVERY-API-001/atomic-all-session-revocation`
+- script_path: `backend/src/test/java/com/speakeasy/PhoneAccountRecoveryPostgresTest.java`
+- command: `mvn -f backend/pom.xml -Dtest=PhoneAccountRecoveryPostgresTest test`
+- execution_owner: `backend`
+- Given: 一个经恢复验证码唯一确认的既有账号具有固定 user/profile、学习数据和订阅权益快照，多个设备 Session、多个 Refresh Token family/token 及相应 opaque Access Token 均为 active。
+- When: 恢复完成请求在真实 PostgreSQL 事务中提交，并随后分别使用所有旧 Access Token 访问受保护资源、使用所有旧 Refresh Token 刷新。
+- Then: 同一 user/profile、学习数据和订阅权益快照保持不变；security epoch 在一次提交中恰好推进，所有 Session、Refresh family/token 被撤销，全部旧 Access/Refresh Token 立即失效；`200` 响应精确为 `schema_version: 1`、`status: recovered`、`next_action: login_phone` 并携带 `no-store` 与 `X-Request-Id`。
+- Boundary/negative: 响应不得包含 user、session、Access/Refresh Token、revoked-count 或其他 runtime identity；不得保留当前设备 Session、只撤销部分 family，或在事务提交前返回成功。
+
+### TC-CONTRACT-AUTH-RECOVERY-004 — 失败与事务回滚零副作用
+
+- type: `Contract-TC`
+- source_contract_id: `API_CONTRACT`
+- layer: `fault-injection-integration`
+- scope: `AUTH-ACCOUNT-RECOVERY-API-001 / failure atomicity and retry recovery`
+- selector: `AUTH-ACCOUNT-RECOVERY-API-001/rollback-zero-side-effects`
+- script_path: `backend/src/test/java/com/speakeasy/PhoneAccountRecoveryPostgresTest.java`
+- command: `mvn -f backend/pom.xml -Dtest=PhoneAccountRecoveryPostgresTest test`
+- execution_owner: `backend`
+- Given: 已记录账号数、AuthIdentity、user/profile、学习/订阅、security epoch、Session、Refresh family/token 和审计快照，并在 provider 已消费有效恢复码之后、数据库提交之前分别注入身份解析、撤销持久化或审计写入失败。
+- When: 完成恢复请求进入故障点，之后重放已消费验证码并申请一枚新的 recovery 验证码重试。
+- Then: 故障请求返回登记的可重试失败，所有数据库与审计快照保持原值且没有成功响应；已消费验证码不能重放，新验证码可重新启动一次独立恢复尝试。
+- Boundary/negative: 回滚不得遗留新账号、身份变化、epoch 推进、部分 Session/token 撤销或成功审计；客户端 token 清理不得被服务端测试接受为撤销证据，也不得把已消费验证码恢复为可用。
+
+### TC-CONTRACT-AUTH-RECOVERY-005 — 隐私安全错误、限流与脱敏观测
+
+- type: `Contract-TC`
+- source_contract_id: `API_CONTRACT`
+- layer: `security-integration`
+- scope: `AUTH-ACCOUNT-RECOVERY-API-001 / errors, bounded rate limits and observability`
+- selector: `AUTH-ACCOUNT-RECOVERY-API-001/privacy-errors-rate-limit-observability -> PhoneAccountRecoveryTest, PhoneAccountRecoveryProviderFailureTest, PhoneAccountRecoveryRateLimitHttpTest`
+- script_path: `backend/src/test/java/com/speakeasy/PhoneAccountRecoveryTest.java`, `backend/src/test/java/com/speakeasy/PhoneAccountRecoveryProviderFailureTest.java`, `backend/src/test/java/com/speakeasy/PhoneAccountRecoveryRateLimitHttpTest.java`
+- command: `mvn -f backend/pom.xml "-Dtest=PhoneAccountRecoveryTest,PhoneAccountRecoveryProviderFailureTest,PhoneAccountRecoveryRateLimitHttpTest" test`
+- execution_owner: `backend`
+- Given: 对两个 endpoint 构造账号不存在、手机号未绑定或不可用、验证码错误/过期/已使用/purpose 不匹配、格式错误、provider 暂时不可用，并超过标准化手机号 hash、device 与 network bucket 的各维限流阈值；同时捕获外部响应、日志、metrics 与审计字段。
+- When: 依次发送恢复码申请和完成恢复请求直至触发各错误与限流分支。
+- Then: 所有恢复验证失败具有相同 `401 ACCOUNT_RECOVERY_VERIFICATION_FAILED` message/details 外形；格式错误为 `400 SCHEMA_VALIDATION_FAILED` 且响应体携带 request_id，限流为 `429 AUTH_RATE_LIMITED` 且有有效 `Retry-After`，临时依赖失败为 `503 AUTH_SERVICE_UNAVAILABLE` 且明确可重试；`401/429/503` 均携带 `Cache-Control: no-store` 和 `X-Request-Id`。
+- Boundary/negative: 响应、日志和 metrics 不得出现 raw phone、验证码、token、user/session/device id、任意 app-version 或 raw path 高基数 label；错误差异不得暴露账号存在性，限流不得只依赖单一可绕过维度，失败审计不得记录秘密或被计作成功恢复。
+
+### TC-CONTRACT-AUTH-RECOVERY-006 — Generated 边界、typed wrapper 与明确成功结果一致
+
+- type: `Contract-TC`
+- source_contract_id: `API_CONTRACT`
+- layer: `contract-and-widget-integration`
+- scope: `AUTH-ACCOUNT-RECOVERY-API-001 / OpenAPI, generated path/schema/error/hash, typed ApiClient wrapper and explicit-success client boundary`
+- selector: `AUTH-ACCOUNT-RECOVERY-API-001/generated-drift-and-result-unknown -> account_recovery_back | account_recovery_retry_after_unknown | account_recovery_retry_local_cleanup`
+- script_path: `test/services/api_client_contract_test.dart; test/pages/phone_account_recovery_page_test.dart`
+- command: `flutter test test/services/api_client_contract_test.dart test/pages/phone_account_recovery_page_test.dart`
+- execution_owner: `frontend`
+- Given: OpenAPI、generated Dart path/schema/error registry、hash marker 和 drift manifest 来自同一候选版本，typed `ApiClient` wrapper 只负责构造请求和解析机器契约已有字段；恢复完成请求可能明确收到 `200 recovered`、明确失败，或因 timeout、cancellation、connection/response loss 没有收到明确 `200`。
+- When: Flutter contract test 比对 method/path、request/response schema、headers、typed ErrorCode 与 OpenAPI SHA-256，验证 typed wrapper 的成功/错误映射，并让 widget 分别处理明确成功、明确失败和 result-unknown。
+- Then: generated 边界登记两个 canonical path、相关 schema/error 定义和当前 OpenAPI hash；typed wrapper 将申请成功限制为 `202 accepted`、将完成成功限制为明确 `200 recovered + login_phone`，并保留登记的 `400/401/429/503` 错误语义；明确验证失败不得自动跳转或调用 login-or-create，但学习者可主动返回手机号登录，返回时清空 recovery code 且只携带非认证手机号表单值；result-unknown 必须锁定返回并在申请新 recovery code 后只重跑 existing-identity 恢复，cleanup in-progress/pending 也必须锁定返回且只允许完成本机清理。
+- Boundary/negative: 不宣称或要求项目不存在的 generated DTO/client class；完成 request/operation 不得声明 `Idempotency-Key`，成功响应不得出现 user/session/token/revoked-count；wrapper 不得手写第二套 path、重复定义 DTO 语义、复用普通登录 request 或改变既有 phone login/verification schema；明确失败的主动返回动作不得创建账号/identity/Session/Token，result-unknown 不得返回普通登录、复用验证码或依赖 recovery-status/no-create-login endpoint，本机清理失败不得返回登录或重发已成功的服务端恢复。
+
+### TC-CONTRACT-AUTH-RECOVERY-007 — Additive 上线、能力回滚与既有手机号登录隔离
+
+- type: `Contract-TC`
+- source_contract_id: `API_CONTRACT`
+- layer: `compatibility-regression`
+- scope: `AUTH-ACCOUNT-RECOVERY-API-001 / backend-first rollout and rollback`
+- selector: `AUTH-ACCOUNT-RECOVERY-API-001/additive-compatibility-rollback -> PhoneAccountRecoveryTest`
+- script_path: `backend/src/test/java/com/speakeasy/PhoneAccountRecoveryTest.java`
+- command: `mvn -f backend/pom.xml -Dtest=PhoneAccountRecoveryTest test`
+- execution_owner: `backend`
+- Given: 旧版客户端只调用既有 phone verification/login endpoint，账号恢复以显式启用的 additive backend capability 部署，且只复用既有身份、security epoch、Session、token 与审计结构。
+- When: 在账号恢复 endpoint 存在且显式启用时运行既有手机号发码/登录、恢复 purpose 隔离和未参与恢复的已签发会话回归，再关闭客户端恢复入口但不改变旧版客户端请求。
+- Then: 两个恢复 endpoint 作为 additive OpenAPI 面存在；既有 phone verification/login 的 method、path、schema、purpose 与成功/错误语义保持不变，恢复码不被普通登录接受，未参与恢复的账号与会话保持有效，关闭客户端入口不改变旧版客户端行为。
+- Boundary/negative: additive 上线或入口回滚不得执行破坏性 down migration、恢复已撤销会话、删除 additive OpenAPI 面、改写普通登录验证码 purpose，或引入 recovery-specific auth store、第二套 token revoker 和 dual-read/dual-write；backend capability 自身的 fail-closed 配置行为由独立 selector 验证，不得以客户端入口开关替代。
+
+### TC-CONTRACT-AUTH-RECOVERY-008 — Backend capability 配置默认关闭并 fail-closed
+
+- type: `Contract-TC`
+- source_contract_id: `API_CONTRACT`
+- layer: `configuration-and-api-integration`
+- scope: `AUTH-ACCOUNT-RECOVERY-API-001 / backend capability default-off and fail-closed release configuration`
+- selector: `AUTH-ACCOUNT-RECOVERY-API-001/capability-fail-closed`
+- script_path: `backend/src/test/java/com/speakeasy/AccountRecoveryCapabilityDisabledTest.java; backend/src/test/java/com/speakeasy/AccountRecoveryCapabilityInvalidConfigTest.java; backend/src/test/java/com/speakeasy/PhoneAccountRecoveryTest.java`
+- command: `mvn -f backend/pom.xml -Dtest=AccountRecoveryCapabilityDisabledTest,AccountRecoveryCapabilityInvalidConfigTest,PhoneAccountRecoveryTest test`
+- execution_owner: `backend`
+- Given: 分别以缺失配置、显式 `false`、非法/无法解析值、任何非显式 `true` 值以及经过发布流程显式配置 `true` 启动 backend；记录调用前的 phone verification provider 交互、账号/identity、security epoch、Session/token 与审计快照。
+- When: 在每种配置下分别调用恢复码申请和完成恢复两个 endpoint，并仅在显式 `true` 配置下提交有效的 existing-identity recovery fixture。
+- Then: 缺失、`false`、非法或任意非显式 `true` 配置均在 provider 调用、identity 解析和 session/token 变更之前返回 `503 AUTH_SERVICE_UNAVAILABLE`，响应携带 `Cache-Control: no-store`、`X-Request-Id` 和可重试信号，且 provider、账号/identity、epoch、Session/token 与审计快照完全不变；只有显式 `true` 才启用既有账号恢复语义。
+- Boundary/negative: 客户端 feature flag、truthy 字符串、数字或无法解析值不得启用 backend capability；关闭能力不得消费验证码、创建账号、撤销会话或写成功审计，也不得删除 additive OpenAPI method/path/schema/error 面或改变既有 phone login/verification 行为。
+
 ## VS-TC
 
 ### TC-VS-TRAIN-001-1 — 官方场景练习结束全链路验证
@@ -322,6 +487,35 @@
 - When: 学习者从课程卡片打开课程。
 - Then: 详情标题区展示同一课程版本的英文标题、中文简介、CEFR 等级和典型完成时间，学习者可据此判断是否开始。
 - Boundary/negative: 背景图缺失不阻断信息展示；课程或版本无法解析时不得显示其他课程或过期版本的数据。
+
+### TC-VS-ACC-009-1 — 手机号账号恢复用户可见闭环验证
+
+- type: `VS-TC`
+- source_vs_id: `VS-ACC-009-1`
+- layer: `widget-integration`
+- scope: `approved phone account recovery user-visible slice`
+- selector: `account_recovery_phone_input -> account_recovery_code_request_accepted -> account_recovery_submit -> account_recovery_back | account_recovery_success | account_recovery_retry_after_unknown | account_recovery_retry_local_cleanup`
+- script_path: `test/pages/phone_account_recovery_page_test.dart`
+- command: `flutter test test/pages/phone_account_recovery_page_test.dart`
+- execution_owner: `frontend`
+- Given: 无法正常登录的学习者仍可使用原账号已绑定手机号；widget 通过 typed account-recovery API seam 接收隐私安全的发码受理、明确 `200 recovered`、明确恢复失败、result-unknown 和明确成功后本机清理失败结果。
+- When: 学习者填写手机号、申请并提交 recovery 专用验证码，随后分别经历明确成功、明确失败、result-unknown 或本机清理失败。
+- Then: 发码受理不暴露账号是否存在；恢复过程不提前进入已登录界面；明确失败显示统一可重试状态，不自动导航或调用普通手机号登录，学习者可通过页头/系统返回主动回到手机号登录，返回时清空 recovery code 且只保留手机号表单值；result-unknown 留在本页重新获取恢复码，cleanup in-progress/pending 留在本页完成本机清理；只有明确 `200 recovered` 且本机清理完成才显示成功态的“返回手机号登录”动作。
+- Boundary/negative: 明确失败的主动返回动作本身不得创建账号/identity/Session/Token，也不得自动提交具有 auto-create 语义的普通手机号登录；result-unknown 与 cleanup in-progress/pending 必须禁用页头返回并拦截系统返回，result-unknown 不得复用验证码或推测成功，本机清理重试不得重复服务端恢复；该 widget-integration 命令不替代真实短信 provider、真机、多设备旧会话失效或重新登录后原学习/订阅数据可见性的独立 QA 证据。
+
+## 账号恢复测试实现交接
+
+本节只路由可执行测试实现责任和稳定覆盖缺口，不记录测试是否执行、运行结果或 exact commit SHA。目录中的命令必须由对应代码 owner 在 G-TEST 中产生提交级证据。
+
+| TC IDs | executable test owner | target | implementation handoff |
+| --- | --- | --- | --- |
+| `TC-FR-ACC-001..003`, `TC-CONTRACT-AUTH-RECOVERY-001`, `002`, `005`, `007` | `backend` | `PhoneAccountRecoveryTest.java`, `PhoneAccountRecoveryProviderFailureTest.java`, `PhoneAccountRecoveryRateLimitHttpTest.java` | H2/MockMvc 覆盖存在/不存在/未绑定发码外形一致、purpose 双向隔离及消费后仍不可登录、统一隐私错误、限流/临时不可用 headers、日志与指标标签脱敏，以及显式启用时既有手机号登录兼容回归。 |
+| `TC-CONTRACT-AUTH-RECOVERY-003`, `004` | `backend` | `backend/src/test/java/com/speakeasy/PhoneAccountRecoveryPostgresTest.java` | 真实 PostgreSQL 直接查询并证明 epoch、全 Session/Refresh family/token 撤销与旧 opaque token 失效处于一次提交；身份、学习和订阅事实保持不变，身份解析、会话持久化和审计故障均完整回滚，新验证码可重试。 |
+| `TC-FR-ACC-003`, `TC-CONTRACT-AUTH-RECOVERY-006`, `TC-VS-ACC-009-1` | `frontend` | `test/pages/phone_account_recovery_page_test.dart` | 明确验证失败后 `account_recovery_back` 可用；返回前清空 recovery code，只回传手机号，且不调用 login-or-create、恢复 API 或本机成功清理。result-unknown 与 cleanup 状态继续锁定返回。 |
+| `TC-CONTRACT-AUTH-RECOVERY-006`, `TC-VS-ACC-009-1` | `frontend` | `test/services/api_client_contract_test.dart`, `test/pages/phone_account_recovery_page_test.dart` | 真实本地 HTTP server 驱动 typed `ApiClient` wrapper，覆盖 canonical path、payload、成功 envelope 和结构化 `401/503`；generated hash/registry 仍由同一 contract test 校验，不虚构 generated DTO/client class。 |
+| `TC-CONTRACT-AUTH-RECOVERY-008` | `backend` | `backend/src/test/java/com/speakeasy/AccountRecoveryCapabilityDisabledTest.java`, `backend/src/test/java/com/speakeasy/AccountRecoveryCapabilityInvalidConfigTest.java`, `backend/src/test/java/com/speakeasy/PhoneAccountRecoveryTest.java` | 保持缺失/显式关闭配置、非法或非显式 `true` 配置和显式 `true` 启用三组 fixture；关闭态必须在 provider/identity/session/audit 副作用前返回带 `no-store`、request id 的 `503`，客户端入口不能启用 backend capability。 |
+| `TC-VS-ACC-009-1` 的 provider/server 扩展 | `backend` | production-like SMS provider sandbox and backend multi-session integration suite | 另行建立真实短信 provider sandbox、验证码 purpose/消费互操作和多设备旧会话失效证据；相应套件未纳入 G-TEST 前，现有 deterministic provider/MockMvc/PostgreSQL 命令不得被解释为生产 provider 证据。 |
+| `TC-VS-ACC-009-1` 的真机扩展 | `frontend` | device integration suite | 另行建立真机/模拟器恢复、普通登录和原账号学习/订阅数据可见性路径；相应套件由 QA 绑定 exact commit 前，本目录中的 widget 命令不得被解释为真机 E2E 证据。 |
 
 ## 维护规则
 

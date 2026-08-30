@@ -84,13 +84,19 @@ class AuthGrantPolicyIntegrationTest extends BackendIntegrationTestSupport {
     AuthTokens oldTokens = loginPhone("+8613800138502");
 
     grantPolicy.addScope(FUTURE_SCOPE);
+    AuthService.AuthSessionResult refreshedOldFamily =
+        authService.refresh(oldTokens.refreshToken());
     AuthTokens newTokens = loginPhone("+8613800138503");
 
     CurrentUser oldCurrentUser = authService.inspectAccessToken(oldTokens.accessToken()).currentUser();
+    CurrentUser refreshedOldCurrentUser =
+        authService.inspectAccessToken(refreshedOldFamily.accessToken()).currentUser();
     CurrentUser newCurrentUser = authService.inspectAccessToken(newTokens.accessToken()).currentUser();
     assertThat(oldCurrentUser).isNotNull();
+    assertThat(refreshedOldCurrentUser).isNotNull();
     assertThat(newCurrentUser).isNotNull();
     assertThat(oldCurrentUser.scopes()).doesNotContain(FUTURE_SCOPE);
+    assertThat(refreshedOldCurrentUser.scopes()).doesNotContain(FUTURE_SCOPE);
     assertThat(newCurrentUser.scopes()).contains(FUTURE_SCOPE);
   }
 

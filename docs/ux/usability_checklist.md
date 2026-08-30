@@ -22,6 +22,31 @@
 - [ ] 空状态包含有用的下一步。
 - [ ] MVP 范围不会引入隐藏工作流。
 
+## Phone Account Recovery
+
+- [ ] `login_account_recovery_entry` 只在恢复 feature flag 开启且普通登录未在提交时可用；它是可独立聚焦、可理解名称为“恢复账号”的次级操作，不与普通登录或发码合并。
+- [ ] 从手机号登录进入恢复页时只带入学习者输入的手机号表单值，不带入普通登录 code、错误、协议状态或任何认证事实。
+- [ ] 首屏同时说明“使用已绑定且仍可接收短信的手机号”和“恢复成功后所有设备退出”，但不展示账号是否存在、手机号是否绑定/可用或短信是否实际投递。
+- [ ] 恢复发码 `202 accepted` 始终使用同一“请求已受理”外形；文案不包含“账号存在”、“已绑定”、“短信已发送”或“未注册”等可枚举信息。
+- [ ] 恢复页只请求和提交 purpose-bound recovery code，不复用普通登录验证码，不调用 login-or-create，不建立或替换账号/身份。
+- [ ] 发码和恢复提交在途时都有明确 loading 文案，禁用重复操作；恢复提交在途时页头和系统返回均被拦截。
+- [ ] 发码请求在途时返回只取消当前 UI caller 并清空恢复 code；恢复完成请求的 cancellation、timeout 或 connection loss 不作为失败或成功，而是进入 result-unknown。
+- [ ] `400`、privacy-safe `401`、`429`、`503` 和网络失败均有明确且可操作的文案；账号不存在、手机号未绑定/不可用、code 错误/过期/已使用/用途不匹配共用同一验证失败文案。
+- [ ] `Retry-After` 倒计时不每秒向辅助技术宣告，未到期不可操作，到期只恢复可操作状态，不自动发码或提交。
+- [ ] 恢复成功前的所有失败、返回和重试分支都不创建新账号、不改变身份凭据或任何会话，页面也不声称这些事实已变更。
+- [ ] result-unknown 显示“为避免误建新账号”的明确原因和唯一下一步 `account_recovery_retry_after_unknown`；页头/系统返回和 `account_recovery_return_to_phone_login` 均不可用。
+- [ ] result-unknown 重试会清空原 code、由学习者明确请求新的 purpose-bound code，并只重跑 only-existing-identity 恢复；不重放原 code，不调用普通 login-or-create、recovery-status 或 no-create-login 探测。
+- [ ] 只有客户端明确收到 `200 { status: recovered, next_action: login_phone }` 才显示服务端恢复已成功；响应和 UI 不含或产生新 Session、Access Token 或 Refresh Token，也不自动登录。
+- [ ] 明确成功文案告知“已安全退出所有设备”，但不暴露 user/session/token 标识或被撤销数量。
+- [ ] 明确 `200 recovered` 后本机清理在途时显示独立进度；清理失败显示“服务端恢复已成功，本机清理未完成”，只提供 `account_recovery_retry_local_cleanup`，不把它误报为 result-unknown。
+- [ ] 本机清理失败后的重试只清理旧 credential、learner-specific body 和恢复 code，不再调用恢复 API 或重放 code；清理完成前不显示返回普通登录入口。
+- [ ] 只有明确 `200 recovered` 且本机清理完成后，`account_recovery_return_to_phone_login` 才可用；返回只带入非认证手机号表单值，学习者必须另行登录。
+- [ ] 恢复页没有伪空状态：首屏为完整表单，code 和提交在发码受理前禁用；loading、accepted、error、rate-limited、result-unknown、local-cleanup 和 success 状态都不以空页替代。
+- [ ] heading、持续可见 field label、field-error 关联、phone keyboard、one-time-code autofill、dynamic text、软键盘避让、非仅颜色状态和平台最小触控目标均可用。
+- [ ] `202`、错误、result-unknown、本机清理失败和成功都使用适度 live region 且只宣告一次；焦点分别进入 code field、首个错误/无效 field、安全重试动作、本机清理重试动作和 success heading。
+- [ ] 稳定 selector 可定位恢复入口、页面、返回、表单、loading、隐私说明、受理、限流、错误、result-unknown 重试、本机清理/重试、成功和返回登录状态。
+- [ ] 如果发送 UX event，只使用有界 result allowlist，不包含 raw/hashed phone、verification code、token、user/session/device identifier、任意 backend message 或 raw path。
+
 ## Content Catalog And Version-Pinned Course Detail
 
 - [ ] `content_asset_entry` 的“全部主题”请求省略 `query` 与 `category`，页面完整呈现 API 返回的 published+visible themes，并保持 API 顺序。

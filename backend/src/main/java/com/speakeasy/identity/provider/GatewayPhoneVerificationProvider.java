@@ -29,15 +29,20 @@ final class GatewayPhoneVerificationProvider implements PhoneVerificationProvide
   }
 
   @Override
-  public void requestCode(String phoneNumber) {
-    HttpResponse<String> response = post(properties.getRequestUrl(), Map.of("phone_number", phoneNumber));
+  public void requestCode(String phoneNumber, PhoneVerificationPurpose purpose) {
+    HttpResponse<String> response = post(properties.getRequestUrl(), Map.of(
+        "phone_number", phoneNumber,
+        "purpose", purpose.wireValue()));
     if (response.statusCode() < 200 || response.statusCode() >= 300) throw unavailable();
   }
 
   @Override
-  public void verify(String phoneNumber, String verificationCode) {
+  public void verify(
+      String phoneNumber, String verificationCode, PhoneVerificationPurpose purpose) {
     HttpResponse<String> response = post(properties.getVerifyUrl(), Map.of(
-        "phone_number", phoneNumber, "verification_code", verificationCode));
+        "phone_number", phoneNumber,
+        "verification_code", verificationCode,
+        "purpose", purpose.wireValue()));
     if (response.statusCode() == 400 || response.statusCode() == 401) throw invalidCode();
     if (response.statusCode() < 200 || response.statusCode() >= 300) throw unavailable();
     try {

@@ -2,7 +2,7 @@
 
 ## Current lineage and compatibility decision
 
-当前产品 lineage 由适用的 approved VS 与 FR 解析；Engineering Artifact 之间的 direct/conditional inputs 和适用 Gate 继续仅由 Governance Contract 解析。`CONTENT-CEFR-API-001` 与 `CONTENT-COURSE-CATALOG-API-001` 是当前 active compatibility decisions；文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述仅为 historical provenance，不是当前 authority、prerequisite 或 fallback。
+当前产品 lineage 由适用的 approved VS 与 FR 解析；Engineering Artifact 之间的 direct/conditional inputs 和适用 Gate 继续仅由 Governance Contract 解析。`CONTENT-CEFR-API-001`、`CONTENT-COURSE-CATALOG-API-001` 与 `AUTH-ACCOUNT-RECOVERY-API-001` 是当前 active compatibility decisions；文内旧 Product Base、Increment、Spec/AC、旧 TC/traceability、Increment SWC Allocation 及与旧链路绑定的 Gate/checker 表述仅为 historical provenance，不是当前 authority、prerequisite 或 fallback。
 
 ## 状态
 
@@ -36,6 +36,8 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | Path governance and traceability findings | `docs/reports/quality_report.md` | OpenAPI path decision and Product Base/P0/P0.1 eligibility |
 | Approved content browsing and course-detail behavior | `docs/product/story_map.md` (`VS-CONTENT-001-1`, `VS-CONTENT-002-1`) | 已发布可见内容、真实空状态、课程基本信息与严格 CEFR 等级边界 |
 | Approved content requirements | `docs/product/functional_requirements.md` (`FR-CONTENT-001`, `FR-CONTENT-002`) | CEFR 六值约束、一次性等级迁移、课程/内容版本一致性与失败语义 |
+| Approved phone account recovery behavior | `docs/product/story_map.md` (`US-ACC-009`, `VS-ACC-009-1`) | 通过已绑定手机号恢复既有账号、成功后撤销全部会话且不直接建立新会话 |
+| Approved phone account recovery requirements | `docs/product/functional_requirements.md` (`FR-ACC-001`, `FR-ACC-002`, `FR-ACC-003`) | 恢复资格、一次性验证、原账号保留、全会话撤销和失败零副作用 |
 | First-class Course architecture decision | `docs/architecture/adr/0008-first-class-course-version.md` | Course/Scenario 身份分离、SWC 复用、精确版本读取、灰度与回滚边界 |
 | Content Course domain model | `docs/domain/content_model.md` | Course/CourseVersion/binding 身份、发布、不变量、类型化结果与 API 交接 |
 
@@ -51,6 +53,7 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 | P1 notebook/scoring/content expansion<br>P1 笔记/评分/内容扩展 | Deferred boundary only<br>仅保留 deferred boundary | Roadmap/future V2 Capability boundary only<br>仅属于 roadmap/future V2 Capability 边界 |
 | Existing content/scenario CEFR contract<br>现有内容/场景 CEFR 契约 | Active compatibility decision for existing API fields and `ScenarioLevel` paths<br>现有 API 字段与 `ScenarioLevel` path 的当前兼容性决策 | Approved `VS-CONTENT-001-1`, `VS-CONTENT-002-1`, `FR-CONTENT-001`, `FR-CONTENT-002` |
 | Course catalog and version-pinned detail<br>Course 目录与版本固定详情 | Active additive API decision for approved catalog/detail only<br>仅为已批准目录/详情启用 additive API 决策 | Approved `VS-CONTENT-001-1`, `VS-CONTENT-002-1`, `FR-CONTENT-001`, `FR-CONTENT-002`; no inventory commitment<br>依据已批准 001/002，且不承诺具体库存 |
+| Phone account recovery<br>手机号账号恢复 | Active additive API decision for the approved recovery slice only<br>仅为已批准账号恢复切片启用 additive API 决策 | Approved `US-ACC-009`, `VS-ACC-009-1`, `FR-ACC-001..003`; no password, new identity provider, or new session model<br>依据已批准恢复行为；不引入密码、新身份 provider 或新会话模型 |
 | Remaining Course/CMS/content production<br>其余 Course/CMS/内容生产 | Deferred boundary only<br>仅保留 deferred boundary | CMS/authoring、具体库存、A1/C1/C2 Course 承诺和 003-012 runtime/endpoints 未获批准 |
 
 ## Contract Rules / 契约规则
@@ -75,11 +78,79 @@ Proposed - API Contract/OpenAPI source-of-truth 已建立。本文是人读的 A
 
 Refresh Token hash、状态、parent、签发/使用/过期/撤销时间只由 `AuthRefreshToken` 持有；`AuthSession.refresh_token_hash` 和 `AuthSession.access_token_hash` 已通过追加 migration 退出。OpenAPI `bearerAuth` 的 `bearerFormat` 因此标记为 `opaque`，并通过 `x-auth-token-context` 记录 client、audience、scope 与统一校验入口。
 
+## AUTH-ACCOUNT-RECOVERY-API-001 Phone Account Recovery / 手机号账号恢复
+
+### Authority And Purpose / 权威来源与目的
+
+- Selected approved Story/Slice: `US-ACC-009`, `VS-ACC-009-1`.
+- Applicable approved requirements: `FR-ACC-001`, `FR-ACC-002`, `FR-ACC-003`.
+- 该契约只恢复由已绑定且仍可用手机号唯一确认的既有账号；不创建账号、不变更身份绑定、不引入密码，也不签发 Access Token、Refresh Token 或新 Session。
+
+### Endpoint Semantics / Endpoint 语义
+
+| Method / path | Auth | Request purpose | Success |
+| --- | --- | --- | --- |
+| `POST /auth/account-recovery/phone/verification-codes` | unauthenticated | 为账号恢复申请一枚 purpose-bound 手机验证码；该验证码不得用于普通登录或其他用途 | `202` + `PhoneAccountRecoveryCodeResponse { schema_version: 1, status: accepted }`；无论手机号是否存在或已绑定，成功接受响应均不暴露该事实 |
+| `POST /auth/account-recovery/phone` | unauthenticated | 使用同一标准化手机号和未使用、未过期的恢复专用验证码确认唯一既有账号 | `200` + `PhoneAccountRecoveryResponse { schema_version: 1, status: recovered, next_action: login_phone }`；响应不包含 user/session/token/revoked-count 信息 |
+
+OpenAPI 中的精确 schema 是机器事实源。两个 request 都包含 `schema_version`、`phone_number` 和可选 `device_id`；完成 request 额外包含 `verification_code`。恢复不接受 `terms_accepted`，因为它不创建账号或登录态。两个 recovery endpoint 的所有响应，包括 `400`、`401`、`429` 和 `503`，都必须携带 `Cache-Control: no-store` 和 `X-Request-Id`。
+
+### Atomicity, Failure And Recovery / 原子性、失败与恢复
+
+- 只有恢复专用一次性验证成功后，backend 才能解析 `provider=phone` 的既有 active `AuthIdentity`。解析不得调用 login-or-create 路径。
+- Backend 必须锁定该 `UserAccount`，并在同一数据库事务中推进 security epoch、撤销全部 `AuthSession` 及其 Refresh Token family/token，并写入脱敏审计。事务提交前不得返回成功。既有 opaque Access Token 通过 session/security-epoch 校验立即失效。
+- Provider 一次性验证与本地数据库无法组成分布式事务。如验证已消费但数据库事务失败，本次不改变身份或会话，客户端可申请新验证码重试；不得用局部撤销或本地 token 清理伪造成功。
+- 账号不存在、手机号未绑定/不可用、验证码错误/过期/已使用/用途不匹配、或账号不允许恢复，统一返回 `401 ACCOUNT_RECOVERY_VERIFICATION_FAILED`；message 和 details 不得暴露具体原因。
+- 格式错误返回 `400 SCHEMA_VALIDATION_FAILED`；有界限流返回 `429 AUTH_RATE_LIMITED` 与 `Retry-After`；provider/依赖临时不可用返回 `503 AUTH_SERVICE_UNAVAILABLE` 与可重试信号。所有失败均不得创建账号、改变身份或改变任何会话。
+
+### Idempotency, Security And Operations / 幂等、安全与运维
+
+- 申请验证码不声明 HTTP 幂等；合法的重复申请可替换上一枚未使用恢复码，但必须经过按标准化手机号 hash、device 与 network bucket 的多维有界限流。客户端不得在未获得 `Retry-After` 或明确用户意图时自动重试发送。
+- 完成恢复不使用 `Idempotency-Key`；一次性验证码提供 at-most-once 成功边界。已成功的验证码重放必须返回隐私安全失败，不得再次推进 security epoch 或产生第二个成功审计事件。如客户端因 timeout、cancellation、connection loss 或其他 transport failure 未明确收到 `200 { status: recovered, next_action: login_phone }`，必须把结果视为 result-unknown 并留在 recovery 流程：重新申请一枚 purpose-bound recovery code，再次执行 only-existing-identity 恢复。result-unknown 不得进入普通手机号登录，也不得新增 no-create login 或 recovery-status endpoint 来推测结果；只有明确收到上述 `200 recovered` 后才允许执行 `next_action=login_phone`。
+- 请求/失败日志和 metrics 不记录 raw phone、verification code、token、user id 或 session id。成功审计可在既有受限审计存储中引用 user/session 对象，但不得把这些引用变成 metric label。
+- Rollout 使用 backend-first additive endpoint。Backend account-recovery capability switch 必须默认关闭并 fail-closed：release configuration 缺失、无法解析或不是显式 `enabled=true` 时，必须在调用 phone verification provider、解析 identity 或改变 session/token 前返回既有 `503 AUTH_SERVICE_UNAVAILABLE` 外形且不产生副作用；只有经过发布流程显式配置才能启用。客户端 feature flag 只控制入口可见性，不能启用 backend capability。关闭或 rollback 时同时关闭客户端入口与 backend capability，但保留 additive OpenAPI method/path/schema/error surface；不执行破坏性 down migration，也不恢复已安全撤销的会话。
+
+### Persistence And Reuse Decision / 持久化与复用决策
+
+本契约不需要新表或 Flyway migration。手机身份解析复用既有 `AuthIdentity`；高风险撤销复用 `UserAccount.security_epoch`、`AuthSession`、`AuthRefreshTokenFamily`、`AuthRefreshToken` 和既有 Access Token registry/session 校验；审计复用既有 audit store。验证码的签发、purpose binding、过期和一次性消费仍属于既有 phone verification provider boundary，不在应用库中创建第二套验证码或恢复任务存储。
+
+受影响的稳定 SWC 是 `FE-AUTH-PROFILE`、`FE-API-CLIENT`、`BE-API-CONTROLLERS`、`BE-IDENTITY`、`BE-OPS-AUDIT-DELETION`、`OPS-RELEASE-GATES` 和既有 `DB-IDENTITY-CONTENT`。禁止新建 recovery-specific auth store、第二套 token/session revocation service、Flutter 本地撤销事实或绕过 `FE-API-CLIENT` typed wrapper 的 feature-local 请求实现。
+
+### Generated Boundary And Frontend Wrapper / 生成边界与前端 Wrapper
+
+- 本项目当前生成器对 account recovery 只生成并校验 OpenAPI path、schema、error 与 contract hash；它不生成可调用的 recovery operation、recovery request/response DTO class 或 recovery client method。
+- `FE-API-CLIENT` 拥有唯一的 typed recovery wrapper。该 wrapper 必须使用生成的 path/schema/error/hash artifacts，把本节已批准的 request/response/error 语义映射到 transport；`FE-AUTH-PROFILE` 只能调用该 wrapper，不得直接拼接 path 或重定义 wire semantics。
+- “生成边界复用”不得被解释为存在 generated recovery DTO/client。禁止 feature-local 第二套 wrapper、重复 recovery DTO 语义、绕过生成 path/error registry 的 raw transport，或与 OpenAPI hash 不一致的手写常量。
+
+### Required Contract-TC Handoff / 必需 Contract-TC 交接
+
+Contract-TC 必须以 `source_contract_id=API_CONTRACT` 覆盖：
+
+1. 恢复码申请对存在/不存在/未绑定手机号均返回相同 `202 accepted` 外形，且不泄漏账号事实。
+2. 只有 purpose-bound、未过期、未使用的验证码可完成恢复；普通登录码、错误/过期/已使用码和重放均失败。
+3. 成功保留同一 user/profile/学习/订阅事实，原子推进 security epoch，撤销所有设备的 Session/Refresh family/token，使旧 Access/Refresh Token 全部失效，且响应不包含任何新 token/session。
+4. 任一失败分支不创建账号、不改变身份或会话；provider 验证后数据库失败时仅消费本次验证码，可重新申请恢复码。
+5. 隐私安全错误响应、`no-store`、`X-Request-Id`、限流/`Retry-After`、provider 不可用、审计脱敏和禁止高基数 label 通过 contract/security tests。
+6. 完成请求在 timeout、cancellation 或 connection loss 后进入 result-unknown；客户端必须留在 recovery、申请新的 purpose-bound code 并重新执行 only-existing-identity 恢复，不得调用普通手机号登录或依赖新的 status/no-create login endpoint；只有明确 `200 recovered` 可进入 `login_phone`。
+7. 旧版客户端与现有 phone login/验证码 endpoint 在 additive rollout/rollback 前后均保持不变；生成的 path/schema/error/hash artifacts 与 OpenAPI drift 检查通过，`FE-API-CLIENT` 唯一 typed recovery wrapper 的 contract tests 证明其映射保持同一 wire 语义。测试不得假设存在 generated recovery DTO/client。
+8. Backend capability switch 在配置缺失、非法或未显式启用时 fail-closed，并在 provider/identity/session 副作用前返回既有 `503 AUTH_SERVICE_UNAVAILABLE`；显式 release configuration 启用后才可执行恢复。关闭开关时 additive OpenAPI surface 与旧客户端行为保持不变。
+
+### Remaining Authentication Remediation Gate Decisions / 其余认证修复门禁决策
+
+| Change | G-CONTRACT | G-SWC and reuse decision |
+| --- | --- | --- |
+| Startup/restore and foreground refresh | 不改变公共 API；无额外 Contract delta | 复用 `FE-BOOTSTRAP-ROUTING -> FE-AUTH-PROFILE/FE-API-CLIENT`的单一 session lifecycle 与现有 `RefreshCoordinator`；禁止 startup/resume 直接调用 refresh transport 或启动第二个 refresh owner |
+| Caller-aware cancellation | 不改变 HTTP method/path/DTO/error；取消是客户端请求执行语义 | 只扩展 `FE-API-CLIENT` 的 authenticated request execution boundary；取消 waiter 不得取消共享 refresh owner，也不得引入第二套 HTTP/token coordinator |
+| TTS auth-error precedence | 不改变 API 错误码；保留既有 typed auth error | `FE-AUDIO-PLATFORM` 必须向功能 UI/runtime 传播 `SessionSecurityFailure`，不得吞掉或映射成普通播放失败；禁止音频层实现第二套 auth 解释器 |
+| Authentication metric dimensions | 不新增业务 header/DTO；使用已有会话/请求 metadata 的有界限分类 | `BE-IDENTITY`/`OPS-RELEASE-GATES` 共享有限 `platform`、app-version major/minor-or-release-bucket 和 server-owned `api_family` allowlist；禁止 raw path、token、phone、user/session/device id 或任意 app-version 作 label |
+
+`AUTH-ACCOUNT-RECOVERY-API-001` 触发 `G-CONTRACT` 与 `G-SWC`；本节定义兼容性和复用边界，OpenAPI validator 与后续 Contract-TC 通过后可评为 pass。其余四项不改变公共 API 或 SWC 拓扑，但必须依上表复用既有 SWC；出现第二套 coordinator/store/error interpreter 或新业务 metadata 时必须重新打开相应 Gate。
+
 ## API Family Coverage / API 家族覆盖
 
 | Family / 家族 | OpenAPI tag | Product object source / 产品对象来源 | Implementation status / 实现状态 |
 | --- | --- | --- | --- |
-| Auth / Identity<br>认证/身份 | `Auth`, `User` | Product Base FR-001, FR-010; P0 FR-COM-004, FR-COM-005, FR-COM-008 | In OpenAPI<br>已进入 OpenAPI |
+| Auth / Identity<br>认证/身份 | `Auth`, `User` | `US-ACC-009`, `VS-ACC-009-1`, `FR-ACC-001..003`; Product Base FR-001, FR-010; P0 FR-COM-004, FR-COM-005, FR-COM-008 | In OpenAPI, including additive phone account recovery without token issuance<br>已进入 OpenAPI，包含不签发 token 的 additive 手机号账号恢复 |
 | Onboarding<br>新手引导 | `Onboarding` | Product Base FR-002 | In OpenAPI, including assessment and route creation<br>已进入 OpenAPI，覆盖评估和路线创建 |
 | Scenario / Content<br>场景/内容 | `Scenario`, `Home` | `VS-CONTENT-001-1`, `VS-CONTENT-002-1`; `FR-CONTENT-001`, `FR-CONTENT-002`; existing Product Base/P0.1 sources | In OpenAPI for existing official content, `ScenarioLevel`, user scenario state and home summary; approved Course catalog/detail is the active additive contract increment, while remaining Course/CMS paths stay deferred<br>现有官方内容、`ScenarioLevel`、用户场景状态与首页摘要已进入 OpenAPI；已批准 Course 目录/详情为当前 additive contract increment，其余 Course/CMS path 仍延后 |
 | Product Base practice<br>Product Base 练习 | `Practice` | Product Base FR-007, FR-008, FR-009; `mvp-backend-practice-ai` MVP-SI-008/MVP-SI-009 | In OpenAPI, including start/resume/get/turn/complete, recoverable provider failure, and summary candidate input<br>已进入 OpenAPI，覆盖 start/resume/get/turn/complete、可恢复 provider failure 和 summary candidate input |
@@ -381,6 +452,7 @@ OpenAPI component / OpenAPI 组件：`ErrorResponse`。
 | Code / 代码 | Meaning / 含义 | Typical status / 常见状态码 |
 | --- | --- | --- |
 | `UNAUTHENTICATED` | 未登录、token 缺失或 token 失效 | 401 |
+| `ACCOUNT_RECOVERY_VERIFICATION_FAILED` | 账号恢复资格或一次性验证未通过；不暴露账号/绑定/验证码具体原因 | 401 |
 | `FORBIDDEN` | 已登录但无权限、账号状态不允许或 admin 权限不足 | 403 |
 | `ENTITLEMENT_REQUIRED` | 需要付费权益或当前 plan 不满足 | 402 / 403 |
 | `USAGE_LIMIT_EXCEEDED` | AI/ASR/TTS/评分/训练额度耗尽 | 429 |
@@ -420,6 +492,8 @@ OpenAPI component / OpenAPI 组件：`ErrorResponse`。
 | Usage reserve/commit/release<br>用量 reserve/commit/release | `Idempotency-Key` or reservation id | Reserve cannot be double-counted; commit/release are terminal transitions<br>Reserve 不得重复计数；commit/release 是终态转换 |
 | Account deletion<br>账号删除 | `Idempotency-Key` | Duplicate deletion request returns current deletion job<br>重复删除请求返回当前删除 job |
 | Training/practice turn<br>训练/练习 turn | `Idempotency-Key` + session id | Replay cannot create duplicate turn/evidence<br>Replay 不得创建重复 turn/evidence |
+| Phone account recovery code request<br>手机号账号恢复码申请 | No HTTP idempotency claim; bounded rate limits apply<br>不声明 HTTP 幂等；适用有界限流 | A legitimate repeat may replace the prior unused recovery code; the client must not auto-retry without user intent or `Retry-After`.<br>合法重复可替换旧恢复码；客户端不得无用户意图或 `Retry-After` 自动重试 |
+| Phone account recovery completion<br>手机号账号恢复完成 | Purpose-bound one-time verification code; no `Idempotency-Key`<br>恢复专用一次性验证码；无 `Idempotency-Key` | The first successful consumption is the only success; replay fails without another epoch advance or audit success.<br>首次成功消费是唯一成功；重放失败且不再推进 epoch/审计 |
 | Media upload create<br>媒体上传创建 | `Idempotency-Key` + user + client_upload_id/checksum | Replay returns the same pending or validated media asset without creating duplicate provider-accessible refs<br>Replay 返回同一个 pending 或 validated media asset，不创建重复 provider-accessible ref |
 | AI retention job<br>AI 保留任务 | `Idempotency-Key` + scope + reason + user_ref/deletion job ref | Replay returns the same retention job status and does not double-delete or double-count evidence<br>Replay 返回同一 retention job 状态，不重复删除或重复统计 evidence |
 | Autopilot control update/pause/resume<br>Autopilot control 更新/暂停/恢复 | `Idempotency-Key` + user + active goal revision + requested control transition | Replay returns the same control result, deduped audit note and notification impact without duplicate cancellation or replan effects<br>Replay 返回相同 control result、去重后的 audit note 和 notification impact，不产生重复取消或 replan effect |
@@ -526,10 +600,12 @@ Implementation may not start until:
 - `npm run check:dart-client-drift` passes for generated Dart client drift.
 - `npm run check:api-contract` passes as the combined local gate.
 - OpenAPI paths and value contracts map to approved product behavior, including `VS-CONTENT-001-1`, `VS-CONTENT-002-1`, `FR-CONTENT-001`, and `FR-CONTENT-002` for both active `CONTENT-CEFR-API-001` and `CONTENT-COURSE-CATALOG-API-001` decisions.
+- `AUTH-ACCOUNT-RECOVERY-API-001` maps only to approved `US-ACC-009`, `VS-ACC-009-1`, `FR-ACC-001`, `FR-ACC-002`, and `FR-ACC-003`, and keeps existing phone login/verification schemas unchanged.
 - Each implementation-level endpoint defines auth, request, response, errors, examples, and traceability metadata.
 - Payment, usage, deletion and turn replay define idempotency behavior.
 - P0.2 Goal Autopilot paths remain limited to the approved owning P0.2 increments, including Followup-B, and P02 policy gates; approved Course catalog/detail is active, remaining Course/CMS paths stay deferred, and the existing `ScenarioLevel` CEFR value contract remains active.
 - Contract-TC evidence for `CONTENT-CEFR-API-001` proves strict six-value validation, legacy rejection, empty/not-found behavior, migration integrity, generated-client agreement, and mastery/hint isolation; evidence for `CONTENT-COURSE-CATALOG-API-001` proves list/detail/schema/error/privacy/ETag/binding/exact-version/generated-drift and rollback behavior.
+- Contract-TC evidence for `AUTH-ACCOUNT-RECOVERY-API-001` proves privacy-safe code request, purpose-bound one-time verification, no-create identity resolution, atomic epoch/all-session revocation, no token issuance, failure zero side effects, bounded rate limits, redacted observability, additive compatibility and rollback.
 - Product Object Governance Check returns pass after OpenAPI generation.
 
 - `docs/architecture/openapi/speakeasy-api.yaml` 已存在，并且能按 OpenAPI 解析。
@@ -538,10 +614,12 @@ Implementation may not start until:
 - `npm run check:dart-client-drift` 针对 generated Dart client drift 通过。
 - `npm run check:api-contract` 作为组合本地门禁通过。
 - OpenAPI path 与值契约能映射到 approved product behavior；`CONTENT-CEFR-API-001` 与 `CONTENT-COURSE-CATALOG-API-001` 都映射到 `VS-CONTENT-001-1`、`VS-CONTENT-002-1`、`FR-CONTENT-001` 和 `FR-CONTENT-002`。
+- `AUTH-ACCOUNT-RECOVERY-API-001` 只映射到已批准的 `US-ACC-009`、`VS-ACC-009-1`、`FR-ACC-001`、`FR-ACC-002` 和 `FR-ACC-003`，并保持既有手机登录/验证码 schema 不变。
 - 每个实现级 endpoint 都定义 auth、request、response、errors、examples 和 traceability metadata。
 - Payment、usage、deletion 和 turn replay 都定义 idempotency behavior。
 - P0.2 Goal Autopilot path 必须限定在已批准的 P0.2 归属增量（含 Followup-B）和 P02 policy gate 内；已批准 Course 目录/详情 active，其余 Course/CMS path 保持 deferred，既有 `ScenarioLevel` 的 CEFR 值契约继续 active。
 - `CONTENT-CEFR-API-001` 的 Contract-TC 必须证明严格六值校验、旧值拒绝、空/不存在语义、迁移完整性、generated client 一致性和 mastery/hint 隔离；`CONTENT-COURSE-CATALOG-API-001` 的 Contract-TC 必须证明 list/detail/schema/error/privacy/ETag/binding/exact-version/generated-drift 与回滚语义。
+- `AUTH-ACCOUNT-RECOVERY-API-001` 的 Contract-TC 必须证明隐私安全发码、purpose-bound 一次性验证、仅解析既有身份、epoch/全会话原子撤销、不签发 token、失败零副作用、有界限流、观测脱敏、additive 兼容与回滚。
 - OpenAPI 生成后，Product Object Governance Check 返回 pass。
 
 ## P0.2 Followup-E Speaking Diagnostic Production API Contract / P0.2 Followup-E 口语诊断生产 API 契约

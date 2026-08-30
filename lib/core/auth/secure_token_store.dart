@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:speakeasy/core/auth/auth_credentials.dart';
 
@@ -31,7 +32,9 @@ class SecureTokenStore {
   Future<AuthCredentials?> read() async {
     final String? raw = await _storage.read(key: _credentialsKey);
     if (raw != null && raw.trim().isNotEmpty) {
-      return _decode(raw);
+      final AuthCredentials credentials = _decode(raw);
+      await _deleteLegacyCredentialBestEffort();
+      return credentials;
     }
 
     final String? legacyRaw = await _legacyStorage.read(
@@ -46,8 +49,18 @@ class SecureTokenStore {
       key: _credentialsKey,
       value: jsonEncode(migrated.toJson()),
     );
-    await _legacyStorage.delete(key: _legacyCredentialsKey);
+    await _deleteLegacyCredentialBestEffort();
     return migrated;
+  }
+
+  Future<void> _deleteLegacyCredentialBestEffort() async {
+    try {
+      await _legacyStorage.delete(key: _legacyCredentialsKey);
+    } catch (error) {
+      debugPrint(
+        '[SecureTokenStore] legacy credential cleanup deferred: $error',
+      );
+    }
   }
 
   AuthCredentials _decode(String raw) {

@@ -247,6 +247,102 @@ void main() {
     expect(requests.last['Authorization'], 'Bearer access-token-2');
   });
 
+  test(
+    'cancelling a refresh waiter does not cancel the shared refresh owner',
+    () async {
+      final AuthCredentials current = credentials(
+        accessToken: 'access-token-1',
+        refreshToken: 'refresh-token-1',
+        expiresAt: now.add(const Duration(seconds: 30)),
+      );
+      final AuthCredentials rotated = credentials(
+        accessToken: 'access-token-2',
+        refreshToken: 'refresh-token-2',
+        expiresAt: now.add(const Duration(hours: 1)),
+      );
+      final _MemoryTokenProvider provider = _MemoryTokenProvider(current);
+      final Completer<AuthCredentials> refreshCompleter =
+          Completer<AuthCredentials>();
+      final AuthenticatedRequestExecutor requestExecutor = executor(
+        provider: provider,
+        refresh: (String refreshToken) => refreshCompleter.future,
+      );
+      final RequestCancellationToken waiterCancellation =
+          RequestCancellationToken();
+      int ownerSends = 0;
+      int waiterSends = 0;
+
+      final Future<http.Response> owner = requestExecutor.execute(
+        send: (Map<String, String> headers) async {
+          ownerSends += 1;
+          return http.Response('{}', 200);
+        },
+      );
+      final Future<http.Response> waiter = requestExecutor.execute(
+        cancellation: waiterCancellation,
+        send: (Map<String, String> headers) async {
+          waiterSends += 1;
+          return http.Response('{}', 200);
+        },
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      waiterCancellation.cancel();
+      await expectLater(waiter, throwsA(isA<RequestCancelledException>()));
+      expect(ownerSends, 0);
+      expect(waiterSends, 0);
+
+      refreshCompleter.complete(rotated);
+      await owner;
+      expect(ownerSends, 1);
+      expect(waiterSends, 0);
+      expect(provider.replaceCount, 1);
+    },
+  );
+
+  test(
+    'cancellation while refreshing after 401 prevents request replay',
+    () async {
+      final AuthCredentials current = credentials(
+        accessToken: 'access-token-1',
+        refreshToken: 'refresh-token-1',
+        expiresAt: now.add(const Duration(minutes: 20)),
+      );
+      final AuthCredentials rotated = credentials(
+        accessToken: 'access-token-2',
+        refreshToken: 'refresh-token-2',
+        expiresAt: now.add(const Duration(hours: 1)),
+      );
+      final _MemoryTokenProvider provider = _MemoryTokenProvider(current);
+      final Completer<AuthCredentials> refreshCompleter =
+          Completer<AuthCredentials>();
+      final AuthenticatedRequestExecutor requestExecutor = executor(
+        provider: provider,
+        refresh: (String refreshToken) => refreshCompleter.future,
+      );
+      final RequestCancellationToken cancellation = RequestCancellationToken();
+      int requestCount = 0;
+
+      final Future<http.Response> request = requestExecutor.execute(
+        cancellation: cancellation,
+        send: (Map<String, String> headers) async {
+          requestCount += 1;
+          return expiredAccessTokenResponse();
+        },
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(requestCount, 1);
+
+      cancellation.cancel();
+      await expectLater(request, throwsA(isA<RequestCancelledException>()));
+      refreshCompleter.complete(rotated);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(requestCount, 1);
+      expect(provider.replaceCount, 1);
+    },
+  );
+
   for (final String code in <String>[
     'ACCESS_TOKEN_INVALID',
     'SESSION_REVOKED',

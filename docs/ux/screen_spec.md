@@ -53,6 +53,67 @@ Every new screen must define:
 - 状态：idle, submitting, analyzing, feedback_shown, retry_needed, completed, error。
 - 主要动作：提交学习者当前轮回答。
 
+## Phone Account Recovery Screen
+
+本节只细化已批准的 `VS-ACC-009-1` 与适用的 `FR-ACC-001`、`FR-ACC-002`、`FR-ACC-003`，并消费 `AUTH-ACCOUNT-RECOVERY-API-001`。它只允许学习者使用账号已绑定且仍可接收短信的手机号恢复原账号；不增加密码、邮箱、社交账号或客服恢复路径，不创建账号、不变更身份绑定，也不把恢复成功当作登录成功。
+
+### Phone Login Recovery Entry
+
+- Purpose: 让无法完成普通手机号登录的学习者主动进入恢复流程，不影响现有登录主动作。
+- Placement and action: 在现有“手机号登录”页的登录主按钮下方提供次级文本按钮“无法登录？恢复账号”。打开恢复页不要求先勾选登录/注册协议，也不触发普通登录验证码。
+- Availability: 恢复 capability 的既有客户端 feature flag 开启时才显示入口。普通登录请求正在提交时，入口与其他登录操作一起禁用，不允许两条身份流程并行。
+- Form handoff: 从手机号登录页进入时，可将学习者已输入的手机号作为纯表单便利值带入恢复页；普通登录验证码、登录错误和协议勾选状态不带入。
+- Accessibility: 入口是独立可聚焦按钮，可理解名称为“恢复账号”，语义上不与“登录”或“获取登录验证码”合并。
+- Stable selector: `login_account_recovery_entry`.
+- Requirement mapping: `VS-ACC-009-1`; `FR-ACC-001`.
+
+### Phone Account Recovery
+
+- Purpose: 通过恢复专用手机验证码确认唯一的既有账号，在成功后明确告知全部设备已安全退出并引导学习者重新手机号登录。
+- Entry points: 仅从“手机号登录”页的 `login_account_recovery_entry` 进入。其他身份方式、Profile 设置或客服入口不在本切片范围。
+- Primary user action: 输入手机号，主动请求恢复专用验证码，再提交同一手机号与收到的一次性验证码。
+- Core components: 页面 heading、恢复后果说明、手机号输入框、“获取恢复验证码”按钮、验证码输入框、“确认恢复账号”按钮、隐私安全说明、状态/live region、页头返回操作。本页不显示密码、邮箱、社交登录或协议勾选。
+- Data boundary: Flutter 只在当前表单内短暂保有学习者输入的手机号、验证码和有界重发倒计时，不持久化验证码、不推断账号存在/绑定状态，不把 `accepted`、`recovered` 或手机号当作登录态。手机号格式化与基础校验复用现有手机号登录规则，最终标准化和身份裁决仍归 backend。
+- API dependencies: 通过现有 `FE-API-CLIENT` 和 OpenAPI 声明的 path/schema 调用 unauthenticated `POST /auth/account-recovery/phone/verification-codes` 与 `POST /auth/account-recovery/phone`。两个请求使用恢复 purpose，不得复用普通登录发码 endpoint、绕过统一 client boundary 或建立第二套请求语义。
+- Initial copy: heading 为“恢复账号”；说明为“使用账号已绑定且仍可接收短信的手机号验证。恢复成功后，所有设备都会退出登录。”隐私说明为“为了保护账号安全，无论手机号是否存在或已绑定，页面都不会显示相关信息。”
+- Privacy-safe accepted copy: 发码请求获得 `202 accepted` 后只显示“请求已受理。如果该手机号可用于账号恢复，请留意可能收到的验证码短信；收到后继续。”不使用“账号存在”、“已绑定”、“短信已发送”或“未注册”等可枚举文案，也不承诺实际投递。
+- Empty state: 不适用；这是有限表单而非集合页。首次进入显示完整表单，验证码输入和恢复提交在发码请求被受理前保持禁用，不使用空状态占位。
+- Duplicate and retry: 任一请求在途时禁用重复发码和重复提交。发码只能由明确用户操作触发，不自动重试；服务端接受新的发码请求后，当前表单中的旧验证码文本必须清空。完成请求不使用同一验证码自动重放；result-unknown 只能由学习者明确触发“重新获取恢复验证码”，再使用新的 purpose-bound code 重跑 only-existing-identity 恢复。
+- Back behavior: 表单闲置、发码失败或明确验证失败时，页头和系统返回均回到手机号登录页，仅可保留学习者自己输入的手机号，必须清空恢复验证码。发码请求在途时返回只取消当前 UI caller，服务端若已受理也不改变账号或会话。恢复提交在途、result-unknown、本机清理在途或本机清理失败时，禁用页头返回并拦截系统返回；只有明确收到 `200 recovered` 且本机登录数据清理完成后才显示“返回手机号登录”。
+- Accessibility: 进入页面后焦点先到 heading，然后按视觉顺序移动到说明、手机号、发码、验证码和提交。手机号使用 phone keyboard，验证码支持 one-time-code autofill；每个 field 有持续可见 label，不仅依赖 hint。field error 与对应输入框语义关联。loading、accepted、error、result-unknown、本机清理与 success 使用适度 live region 且每次状态只宣告一次；倒计时不每秒宣告，只在“可重新获取”时宣告。`202` 后焦点移到验证码输入框，输入错误后移到首个无效 field，其他错误后移到状态标题，result-unknown 后移到“重新获取恢复验证码”，本机清理失败后移到“重试本机登录数据清理”，成功后移到 success heading。支持 dynamic text，软键盘不遮挡当前主操作，焦点标识、禁用和错误状态不只依赖颜色，交互目标至少满足平台最小触控尺寸。
+- Requirement mapping: `FR-ACC-001`, `FR-ACC-002`, `FR-ACC-003`; `VS-ACC-009-1`.
+
+| State | User sees | Enabled actions | Data and transition |
+| --- | --- | --- | --- |
+| `recovery_form_idle` | heading、恢复后果和隐私说明、手机号输入；验证码和提交保持禁用 | 返回；手机号本地校验通过后获取恢复验证码 | 获取 -> `recovery_code_requesting`；格式无效留在本状态并在 field 旁显示“请输入正确的手机号”，不发请求 |
+| `recovery_code_requesting` | 发码按钮显示“正在请求…”与进度，当前手机号和恢复提交禁用 | 返回可取消当前 caller | `202` -> `recovery_code_requested`；`400` -> `recovery_form_idle`；`429` -> `recovery_code_rate_limited`；`503`/网络失败 -> `recovery_code_request_error` |
+| `recovery_code_requested` | 隐私安全的“请求已受理”文案、可编辑验证码 field、重发倒计时 | 返回；输入验证码；有效输入后确认恢复；倒计时/限流到期后才可重新获取 | 提交 -> `recovery_submitting`；明确重新获取 -> `recovery_code_requesting` 并清空旧 code |
+| `recovery_code_rate_limited` | “请求过于频繁，请在 {remaining_time} 后重试。”和不逐秒宣告的倒计时 | 返回；`Retry-After` 到期后重新获取 | 首次发码被限流时 code field 继续禁用，到期 -> `recovery_form_idle`；重新获取被限流时保留上一次已受理 code 的可提交状态，到期 -> `recovery_code_requested`；两者都不自动发码 |
+| `recovery_code_request_error` | 网络失败显示“网络连接失败，请检查网络后重试。”；`503` 显示“暂时无法请求验证码，请稍后重试。”；两者都不描述账号事实 | 返回；明确重试 | 重试 -> `recovery_code_requesting`；不自动发码 |
+| `recovery_submitting` | “正在安全恢复账号…”和进度；手机号、code、发码和提交全部禁用 | 无重复提交或返回 | 明确 `200 recovered/login_phone` -> `recovery_local_cleanup`；`400` -> `recovery_input_error`；`401` -> `recovery_verification_failed`；`429` -> `recovery_submit_rate_limited`；`503` -> `recovery_service_unavailable`；timeout、caller cancellation、connection loss 或其他无法确认是否收到 `200` 的 transport 失败 -> `recovery_result_unknown` |
+| `recovery_input_error` | 字段级格式错误，不显示任何账号/绑定事实 | 修改输入、返回、重新提交 | 有效提交 -> `recovery_submitting` |
+| `recovery_verification_failed` | 所有 account-not-found、unbound/unavailable phone、错误/过期/已使用/用途不匹配 code 共用“无法验证账号恢复信息。验证码可能无效或已过期，请重试或重新获取验证码。” | 修改 code 后重试；明确重新获取；返回 | 提交 -> `recovery_submitting`；重新获取 -> `recovery_code_requesting` 并清空旧 code |
+| `recovery_submit_rate_limited` | 与发码限流相同的隐私安全文案和 `Retry-After` 倒计时 | 返回；到期后重新提交或获取新 code | 到期 -> `recovery_code_requested`；不自动提交 |
+| `recovery_service_unavailable` | “账号恢复服务暂时不可用，请稍后重试。”；保留当前手机号，code 只留在当前未持久化表单 | 重试、重新获取 code、返回 | 重试 -> `recovery_submitting`；重新获取 -> `recovery_code_requesting` |
+| `recovery_result_unknown` | “暂时无法确认恢复结果。为避免误建新账号，请在本页重新获取恢复验证码并再次完成恢复。” | 仅可重新获取恢复 code；不可返回普通手机号登录 | 清空原 code；明确操作 -> `recovery_code_requesting`，获得新的 purpose-bound code 后只重跑 only-existing-identity 恢复。禁止原 code 重放、普通 login-or-create、recovery-status 或 no-create-login 探测 |
+| `recovery_local_cleanup` | “账号已恢复，正在清理本机登录数据…”和进度；不展示普通登录入口 | 无返回或重复服务端恢复 | 仅在明确 `200 recovered` 后清理本地旧 credential、learner-specific body 和恢复 code；清理成功 -> `recovery_succeeded`，清理失败 -> `recovery_local_cleanup_failed` |
+| `recovery_local_cleanup_failed` | “账号已恢复，所有设备已退出。本机登录数据清理未完成，请重试清理后再登录。” | 仅可“重试本机登录数据清理”；不可返回普通登录 | 重试只执行本机清理，不再调用恢复 API、不重放 code；成功 -> `recovery_succeeded`，再失败留在本状态 |
+| `recovery_succeeded` | success heading 和精确文案“账号已恢复。已安全退出所有设备，请重新登录。”，主按钮为“返回手机号登录” | 返回手机号登录 | 只有明确 `200 recovered` 且本机清理完成后可进入。只可把本次输入的手机号作为非认证表单值带回；不接收、保存或创建 token/session，不自动登录 |
+
+### Stable Selectors And Redacted UX Events
+
+- Screen and navigation: `phone_account_recovery_screen`, `account_recovery_heading`, `account_recovery_back`.
+- Form: `account_recovery_phone_input`, `account_recovery_send_code`, `account_recovery_code_input`, `account_recovery_submit`.
+- Status and recovery: `account_recovery_send_progress`, `account_recovery_privacy_notice`, `account_recovery_code_request_accepted`, `account_recovery_resend_countdown`, `account_recovery_submit_progress`, `account_recovery_error`, `account_recovery_rate_limit`, `account_recovery_retry`, `account_recovery_retry_after_unknown`, `account_recovery_local_cleanup_progress`, `account_recovery_local_cleanup_error`, `account_recovery_retry_local_cleanup`.
+- Success: `account_recovery_success`, `account_recovery_return_to_phone_login`.
+- If UX events are emitted, use only `account_recovery_screen_opened`, `account_recovery_code_request_result` and `account_recovery_submit_result`. Result values must come from a finite allowlist such as `accepted`, `local_invalid`, `verification_failed`, `rate_limited`, `service_unavailable`, `network_or_unknown`, `recovered`; events and logs must not contain raw/hashed phone number, verification code, token, user/session/device identifier, arbitrary backend message or raw request path.
+
+### Account Recovery Scope Non-goals
+
+- 不增加密码重置/修改、邮箱替换、Apple/微信重绑、其他身份 provider 或客服恢复界面。
+- 不展示账号是否存在、手机号是否绑定/可用、短信是否实际投递，也不展示撤销 session/token 数量。
+- 不调用 login-or-create，不创建或替换账号/身份，不在 Flutter 保存撤销事实，不从恢复响应建立会话。
+
 ## Content Catalog And Version-Pinned Course Detail Screens
 
 本节只细化 `VS-CONTENT-001-1`、`VS-CONTENT-002-1` 与适用的 `FR-CONTENT-001`、`FR-CONTENT-002`。数据只来自 `GET /scenarios`、`GET /scenarios/{scenario_id}/courses` 和 `GET /courses/{course_id}/versions/{course_version_id}`；现有 Scenario/Practice 导航与 ExpressionCard 数据不能作为 Course screen 或 Course 数据的替代来源。

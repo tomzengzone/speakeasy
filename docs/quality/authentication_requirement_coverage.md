@@ -6,7 +6,8 @@
 - Audit date: 2026-08-30.
 - Code baseline before this closure: `209139905220c268f6144df3c2df6b8dc6e3949a`.
 - Remediation commits: `d27f61e` (CI baseline), `c750d9b` (server-owned grant policy), `9b26ecd` (client token recovery hardening), `835d246` (upgrade-safe secure credential migration).
-- Scope rule: this is an evidence projection over the standalone requirement baseline. It does not approve a Story, FR, Engineering Contract, or new product behavior.
+- 后续闭环候选：当前工作区，覆盖之前六项 FAIL，以及本轮状态机实现同时补齐的恢复状态证据。
+- 范围规则：本文是独立需求基线的证据投影。手机号账号恢复的产品行为由 `US-ACC-009` / `VS-ACC-009-1`、`FR-ACC-001` 至 `FR-ACC-003` 及 `AUTH-ACCOUNT-RECOVERY-API-001` 负责；本文不审批或重定义这些事实。
 
 Status semantics:
 
@@ -19,13 +20,13 @@ Status semantics:
 
 | Status | Count | Share |
 | --- | ---: | ---: |
-| PASS | 66 | 79.5% |
-| PARTIAL | 8 | 9.6% |
-| FAIL | 6 | 7.2% |
+| PASS | 74 | 89.2% |
+| PARTIAL | 6 | 7.2% |
+| FAIL | 0 | 0.0% |
 | N/A | 3 | 3.6% |
 | Total | 83 | 100% |
 
-The implementation is not a full Phase 2 / Phase 3 maturity closure. The remaining failures require product, lifecycle, UX, cancellation, or observability decisions rather than another broad authentication rewrite.
+Chapter 8 中原有六项 FAIL 现均具备生产路径和可执行证据。由于仍有六项 PARTIAL，整体 Phase 2 / Phase 3 成熟度尚未达到 100%。
 
 ## 8.1 Login and identity normalization
 
@@ -78,7 +79,7 @@ The implementation is not a full Phase 2 / Phase 3 maturity closure. The remaini
 | CLIENT-006 | PASS | Executor retry count is capped at one and refresh calls use `AuthPolicy.none`; loop-prevention tests cover both boundaries. | — |
 | CLIENT-007 | PASS | 403 responses bypass refresh; scope/entitlement handling remains outside the authentication retry path. | — |
 | CLIENT-008 | PASS | Authentication retry reuses the original headers/body callback, including any Idempotency-Key; backend authentication occurs before controller writes. | — |
-| CLIENT-009 | FAIL | No cancellation token or disposed-request signal is propagated through `AuthenticatedRequestExecutor` and the refresh wait path. | Define a client cancellation contract and prove a cancelled waiter is not replayed. |
+| CLIENT-009 | PASS | `RequestCancellationToken` propagates through `ApiClient` and `AuthenticatedRequestExecutor`; cancellation-aware waits stop the cancelled caller before send/replay without cancelling the shared refresh owner. Executor tests cover cancellation while waiting for refresh and after a 401 before replay. | — |
 | CLIENT-010 | PASS | `RefreshCoordinator` bounds waiting callers (default 64) and wait time (default 15 seconds); queue-limit and timeout tests prove rejection without cancelling the owner refresh. | — |
 
 ## 8.5 Single-flight refresh
@@ -95,12 +96,12 @@ The implementation is not a full Phase 2 / Phase 3 maturity closure. The remaini
 
 | ID | Status | Current evidence | Gap or decision |
 | --- | --- | --- | --- |
-| RESTORE-001 | FAIL | Startup restoration exists in `SessionLifecycleCoordinator`, but the application has no explicit `INITIALIZING` auth state that gates authenticated UI until resolution. | Add an approved startup state-machine/UI contract before implementation. |
-| RESTORE-002 | PARTIAL | Hydration checks secure credential expiry and refreshes when needed; legacy Hive access-token recovery was removed. | `loadStoredSession` may project a cached user before server hydration and lacks a single explicit authoritative auth state. |
+| RESTORE-001 | PASS | `AppSession` starts in explicit `SessionAuthState.initializing`; `AppRoot` gates authenticated UI behind the single hydration chain, and widget tests prove cached user projection cannot start authenticated work early. | — |
+| RESTORE-002 | PASS | Cached profile data is display-only during initialization; the authoritative auth state changes only after secure credential inspection and server hydration through one serialized chain. | — |
 | RESTORE-003 | PASS | Healthy secure credentials restore through `/user/me`; lifecycle tests verify no unnecessary refresh and current-user validation. | — |
 | RESTORE-004 | PASS | Expired credentials refresh before session hydration; authentication failure does not fall back to the old access token. | — |
-| RESTORE-005 | FAIL | No app lifecycle observer calls the shared coordinator on foreground resume. | Define foreground-refresh ownership and add lifecycle/widget evidence. |
-| RESTORE-006 | PARTIAL | Refresh infrastructure failure preserves valid credentials and may fall back to `/user/me`; expired credentials are not erased solely for a network error. | The UI lacks an explicit recoverable offline/degraded auth state and end-to-end evidence. |
+| RESTORE-005 | PASS | `AppSessionLifecycleObserver` routes foreground resume to a single-flight `AppSession.handleForegroundResume`, which delegates near-expiry checking to the same shared refresh coordinator used by requests and startup. | — |
+| RESTORE-006 | PASS | Infrastructure failure preserves eligible credentials and moves the app to explicit `offlineDegraded`; `AppRoot` presents a recoverable offline gate, and state tests cover the transition without terminal credential clearing. | — |
 
 ## 8.7 Logout and session revocation
 
@@ -120,7 +121,7 @@ The implementation is not a full Phase 2 / Phase 3 maturity closure. The remaini
 | SESSION-001 | PASS | Installation ID and device metadata create independent server sessions; account-security tests create multiple devices. | — |
 | SESSION-002 | PASS | Session list API and `DeviceSessionsPage` expose current/other devices with minimized metadata. | — |
 | SESSION-003 | PASS | The user can revoke one device or all other devices through the canonical session endpoints and Flutter coordinator. | — |
-| SESSION-004 | FAIL | No production password reset/change, verified email replacement, social relink, or account recovery use case invokes full session revocation. `revokeForHighRiskCredentialChange` is an unconnected helper. | Product Manager must first approve credential-recovery behavior and decide whether password change preserves the current session; then backend/test ownership can implement CR001-CR004 evidence. |
+| SESSION-004 | PASS | The approved phone-only recovery path (`VS-ACC-009-1`, `FR-ACC-001`–`003`) purpose-binds and consumes a one-time verification code, resolves only an existing phone identity, and invokes the high-risk credential-change boundary transactionally. Success revokes every existing session including the caller, increments the security epoch, creates no replacement session/token, and requires a fresh phone login. `PhoneAccountRecoveryTest` covers privacy-safe success/failure, replay and cross-purpose rejection; `PhoneAccountRecoveryPostgresTest` proves all-session revocation and fault rollback on PostgreSQL; capability tests prove missing/invalid configuration fails closed before provider or persistence effects. Password-specific behavior remains conditional because the backend has no production password credential. | — |
 | SESSION-005 | PASS | Account disable increments security state and revokes all sessions; Phase 3 tests verify existing credentials fail. | — |
 | SESSION-006 | PASS | Refresh-token reuse revokes the affected family and session and publishes a security event. | — |
 | SESSION-007 | PASS | Admin revocation records actor, reason, time, and audit reference through account-security/audit boundaries without tokens. | — |
@@ -147,7 +148,7 @@ The implementation is not a full Phase 2 / Phase 3 maturity closure. The remaini
 | ERROR-005 | PASS | Successful proactive/reactive refresh is transparent; executor tests complete without emitting an auth error. | — |
 | ERROR-006 | PARTIAL | Distinct terminal failures publish safe re-login copy and clear the session. | The application does not preserve and restore an intended navigation target after re-authentication. |
 | ERROR-007 | PARTIAL | 401 security failures and 403 authorization/entitlement failures take different lower-level paths. | Cross-screen UX evidence for a consistent recovery path is incomplete. |
-| ERROR-008 | FAIL | TTS/audio presentation can still surface playback failure after an upstream authentication failure. | Route terminal auth state ahead of feature error copy and add TTS/widget end-to-end tests. |
+| ERROR-008 | PASS | `TtsRequestExecutor` rethrows `SessionSecurityFailure` before ordinary retry/error mapping; `AudioService` preserves that terminal auth signal instead of converting it to playback failure, while cancellation remains caller-local. Tests prove one-attempt auth failure propagation and bounded retry for ordinary TTS failures. | — |
 
 ## 8.11 Security, privacy, and observability
 
@@ -162,26 +163,21 @@ The implementation is not a full Phase 2 / Phase 3 maturity closure. The remaini
 | SECURITY-007 | PARTIAL | Session device metadata is constrained and network identifiers are hashed/minimized. | No authoritative retention period for device/network metadata is recorded. |
 | SECURITY-008 | N/A | Certificate pinning is not adopted. | If risk review later adopts it, add rotation and failure-recovery design before implementation. |
 | OBS-001 | PARTIAL | `AuthMetrics` covers login, refresh outcome/reason, unauthorized access, token reuse, revocation, security operations, and rate limits. | There is no explicit Force Logout counter that distinguishes client terminal logout volume. |
-| OBS-002 | FAIL | Authentication HTTP metrics hard-code `api_family=bearer` and do not include bounded app-version or platform labels. | Define safe-cardinality labels and propagate trusted platform/app-version/API-family context. |
+| OBS-002 | PASS | Bearer-request metrics use bounded platform (`android`/`ios`/`unknown`), a server-configured finite allowlist of supported major.minor releases with all other values collapsed to `unknown`, and a server-owned API-family classifier; raw header/token values are never labels. Unit and HTTP integration tests prove allowlist normalization and propagation. | — |
 | OBS-003 | PASS | Prometheus rules, runbook, checker, and checker tests cover refresh-failure spikes, 401 spikes, token reuse, revocation/audit failures, and rate-limit store failures. Signature-validation alerts are inapplicable to opaque access tokens. | — |
 
-## Remaining work ordered by severity
+## Remaining partial work ordered by severity
 
 ### P0
 
-No open P0 item was found after restoring the authoritative GitHub CI baseline.
+当前没有未关闭的 P0 项。
 
 ### P1
 
-1. `SESSION-004`: Product Manager approval for password reset/change and high-risk credential recovery semantics, followed by full-session revocation implementation and CR001-CR004 tests.
-2. `RESTORE-001`: approved startup authentication state machine with explicit `INITIALIZING` gating.
-3. `ERROR-008`: auth-first TTS/business error routing so terminal authentication never degrades into playback copy.
+1. `AUTH-001` / `AUTH-007`：删除本地演示邮箱/密码路径，或以已批准的后端统一身份流程替换。
+2. `ERROR-006` / `ERROR-007`：重新认证时保留安全的导航目标，并补齐跨页面一致的 401/403 恢复 UX 证据。
 
 ### P2
 
-1. `CLIENT-009`: cancellation-aware refresh wait and replay contract.
-2. `RESTORE-005`: foreground-resume token check through the existing coordinator.
-3. `RESTORE-002` / `RESTORE-006`: one authoritative restored/offline/degraded auth state and end-to-end evidence.
-4. `ERROR-006` / `ERROR-007`: preserved navigation target and consistent 401/403 recovery UX.
-5. `SECURITY-007`: authoritative device/network metadata retention period.
-6. `OBS-001` / `OBS-002`: explicit force-logout metric and bounded platform/app-version/API-family aggregation.
+1. `SECURITY-007`：定义权威的设备/网络元数据保留期。
+2. `OBS-001`：增加显式 force-logout 计数器，以区分客户端终止型退出量。

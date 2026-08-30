@@ -108,6 +108,72 @@ class ContentApiFailure implements Exception {
   String toString() => 'ContentApiFailure($kind, $message)';
 }
 
+enum AccountRecoveryFailureKind {
+  invalidInput,
+  verificationFailed,
+  rateLimited,
+  serviceUnavailable,
+  unknownResult,
+}
+
+class AccountRecoveryFailure implements Exception {
+  const AccountRecoveryFailure({
+    required this.kind,
+    required this.message,
+    this.retryAfter,
+    this.requestId,
+  });
+
+  final AccountRecoveryFailureKind kind;
+  final String message;
+  final Duration? retryAfter;
+  final String? requestId;
+
+  @override
+  String toString() => 'AccountRecoveryFailure($kind, $message)';
+}
+
+abstract interface class AccountRecoveryApi {
+  Future<void> requestPhoneRecoveryCode(
+    String phone, {
+    RequestCancellationToken? cancellation,
+  });
+
+  Future<void> recoverPhoneAccount({
+    required String phone,
+    required String verificationCode,
+    RequestCancellationToken? cancellation,
+  });
+}
+
+class ApiClientAccountRecoveryApi implements AccountRecoveryApi {
+  const ApiClientAccountRecoveryApi();
+
+  @override
+  Future<void> requestPhoneRecoveryCode(
+    String phone, {
+    RequestCancellationToken? cancellation,
+  }) {
+    return ApiClient.requestPhoneAccountRecoveryCode(
+      phone,
+      cancellation: cancellation,
+    );
+  }
+
+  @override
+  Future<void> recoverPhoneAccount({
+    required String phone,
+    required String verificationCode,
+    RequestCancellationToken? cancellation,
+  }) {
+    return ApiClient.recoverPhoneAccount(
+      phone: phone,
+      verificationCode: verificationCode,
+      cancellation: cancellation,
+    );
+  }
+}
+
 abstract interface class CourseCatalogApi {
   Future<ScenarioListResponse> listContentThemes();
 
@@ -193,6 +259,10 @@ class ApiClient {
 
   static Future<void> saveCredentials(AuthCredentials credentials) async {
     await _credentialRepository.replace(credentials);
+  }
+
+  static Future<AuthCredentials> refreshCredentialsIfNeeded() {
+    return _refreshCoordinator.refreshIfNeeded();
   }
 
   static Future<String?> getToken() async {
@@ -381,8 +451,15 @@ class ApiClient {
     };
   }
 
-  static Future<Map<String, dynamic>> _get(String path) async {
-    return _executeRequest(method: _HttpMethod.get, path: path);
+  static Future<Map<String, dynamic>> _get(
+    String path, {
+    RequestCancellationToken? cancellation,
+  }) async {
+    return _executeRequest(
+      method: _HttpMethod.get,
+      path: path,
+      cancellation: cancellation,
+    );
   }
 
   static Future<T> _readContent<T>(
@@ -459,6 +536,7 @@ class ApiClient {
     AuthPolicy authPolicy = AuthPolicy.required,
     Duration timeout = const Duration(seconds: 15),
     Map<String, String> headers = const <String, String>{},
+    RequestCancellationToken? cancellation,
   }) async {
     return _executeRequest(
       method: _HttpMethod.post,
@@ -468,6 +546,7 @@ class ApiClient {
       authPolicy: authPolicy,
       timeout: timeout,
       headers: headers,
+      cancellation: cancellation,
     );
   }
 
@@ -482,12 +561,14 @@ class ApiClient {
     String path,
     Map<String, dynamic> body, {
     Map<String, String> headers = const <String, String>{},
+    RequestCancellationToken? cancellation,
   }) async {
     return _executeRequest(
       method: _HttpMethod.patch,
       path: path,
       body: body,
       headers: headers,
+      cancellation: cancellation,
     );
   }
 
@@ -495,12 +576,14 @@ class ApiClient {
     String path, {
     bool allowEmpty = false,
     Map<String, String> headers = const <String, String>{},
+    RequestCancellationToken? cancellation,
   }) async {
     return _executeRequest(
       method: _HttpMethod.delete,
       path: path,
       allowEmpty: allowEmpty,
       headers: headers,
+      cancellation: cancellation,
     );
   }
 
@@ -512,6 +595,7 @@ class ApiClient {
     AuthPolicy authPolicy = AuthPolicy.required,
     Duration timeout = const Duration(seconds: 15),
     Map<String, String> headers = const <String, String>{},
+    RequestCancellationToken? cancellation,
   }) async {
     final Uri uri = Uri.parse('${AppConfig.apiBaseUrl}$path');
     final String? encodedBody = body == null ? null : jsonEncode(body);
@@ -523,31 +607,51 @@ class ApiClient {
       authPolicy: authPolicy,
       headers: requestHeaders,
       send: (Map<String, String> resolvedHeaders) async {
-        final Future<http.Response> request = switch (method) {
-          _HttpMethod.get => http.get(uri, headers: resolvedHeaders),
-          _HttpMethod.post => http.post(
-            uri,
-            headers: resolvedHeaders,
-            body: encodedBody,
-          ),
-          _HttpMethod.put => http.put(
-            uri,
-            headers: resolvedHeaders,
-            body: encodedBody,
-          ),
-          _HttpMethod.patch => http.patch(
-            uri,
-            headers: resolvedHeaders,
-            body: encodedBody,
-          ),
-          _HttpMethod.delete => http.delete(uri, headers: resolvedHeaders),
-        };
-        final http.Response response = await request.timeout(timeout);
+        final http.Response response = await _sendHttpRequest(
+          method: method,
+          uri: uri,
+          headers: resolvedHeaders,
+          encodedBody: encodedBody,
+          cancellation: cancellation,
+        ).timeout(timeout);
         await _throwIfTerminalSessionResponse(response);
         return response;
       },
+      cancellation: cancellation,
     );
     return _decodeResponse(response, allowEmpty: allowEmpty);
+  }
+
+  static Future<http.Response> _sendHttpRequest({
+    required _HttpMethod method,
+    required Uri uri,
+    required Map<String, String> headers,
+    required String? encodedBody,
+    required RequestCancellationToken? cancellation,
+  }) async {
+    cancellation?.throwIfCancelled();
+    final http.Client client = http.Client();
+    final String methodName = method.name.toUpperCase();
+    final http.Request request = cancellation == null
+        ? http.Request(methodName, uri)
+        : http.AbortableRequest(
+            methodName,
+            uri,
+            abortTrigger: cancellation.whenCancelled,
+          );
+    request.headers.addAll(headers);
+    if (encodedBody != null) {
+      request.body = encodedBody;
+    }
+    try {
+      final http.StreamedResponse streamed = await client.send(request);
+      return await http.Response.fromStream(streamed);
+    } catch (_) {
+      cancellation?.throwIfCancelled();
+      rethrow;
+    } finally {
+      client.close();
+    }
   }
 
   static Future<Map<String, dynamic>> sendSmsCode(String phone) async {
@@ -566,6 +670,110 @@ class ApiClient {
       'status': response['status'],
       'phoneNumber': phone.trim(),
     });
+  }
+
+  static Future<void> requestPhoneAccountRecoveryCode(
+    String phone, {
+    RequestCancellationToken? cancellation,
+  }) async {
+    final String? installationId = await _installationId();
+    late final Map<String, dynamic> response;
+    try {
+      response = await _post(
+        SpeakeasyApiPaths.authPhoneAccountRecoveryCode,
+        <String, dynamic>{
+          'schema_version': 1,
+          'phone_number': phone.trim(),
+          'device_id': ?installationId,
+        },
+        authPolicy: AuthPolicy.none,
+        cancellation: cancellation,
+      );
+    } on AccountRecoveryFailure {
+      rethrow;
+    } on RequestCancelledException {
+      rethrow;
+    } catch (error) {
+      throw AccountRecoveryFailure(
+        kind: AccountRecoveryFailureKind.unknownResult,
+        message: '暂时无法确认验证码请求结果。',
+      );
+    }
+    final int statusCode = (response['_httpStatus'] as num?)?.toInt() ?? 0;
+    if (statusCode != 202 || response['status'] != 'accepted') {
+      throw _accountRecoveryFailure(response, statusCode);
+    }
+  }
+
+  static Future<void> recoverPhoneAccount({
+    required String phone,
+    required String verificationCode,
+    RequestCancellationToken? cancellation,
+  }) async {
+    final String? installationId = await _installationId();
+    late final Map<String, dynamic> response;
+    try {
+      response = await _post(
+        SpeakeasyApiPaths.authPhoneAccountRecovery,
+        <String, dynamic>{
+          'schema_version': 1,
+          'phone_number': phone.trim(),
+          'verification_code': verificationCode.trim(),
+          'device_id': ?installationId,
+        },
+        authPolicy: AuthPolicy.none,
+        cancellation: cancellation,
+      );
+    } on AccountRecoveryFailure {
+      rethrow;
+    } on RequestCancelledException {
+      rethrow;
+    } catch (error) {
+      throw AccountRecoveryFailure(
+        kind: AccountRecoveryFailureKind.unknownResult,
+        message: '暂时无法确认账号恢复结果。',
+      );
+    }
+    final int statusCode = (response['_httpStatus'] as num?)?.toInt() ?? 0;
+    if (statusCode != 200 ||
+        response['status'] != 'recovered' ||
+        response['next_action'] != 'login_phone') {
+      throw _accountRecoveryFailure(response, statusCode);
+    }
+  }
+
+  static AccountRecoveryFailure _accountRecoveryFailure(
+    Map<String, dynamic> response,
+    int statusCode,
+  ) {
+    ApiError? error;
+    try {
+      error = ErrorResponse.fromJson(response).error;
+    } on FormatException {
+      error = null;
+    }
+    final AccountRecoveryFailureKind kind = switch (error?.code) {
+      ErrorCode.schemaValidationFailed =>
+        AccountRecoveryFailureKind.invalidInput,
+      ErrorCode.accountRecoveryVerificationFailed =>
+        AccountRecoveryFailureKind.verificationFailed,
+      ErrorCode.authRateLimited => AccountRecoveryFailureKind.rateLimited,
+      ErrorCode.authServiceUnavailable || ErrorCode.providerUnavailable =>
+        AccountRecoveryFailureKind.serviceUnavailable,
+      _ when statusCode == 400 => AccountRecoveryFailureKind.invalidInput,
+      _ when statusCode == 401 => AccountRecoveryFailureKind.verificationFailed,
+      _ when statusCode == 429 => AccountRecoveryFailureKind.rateLimited,
+      _ when statusCode >= 500 => AccountRecoveryFailureKind.serviceUnavailable,
+      _ => AccountRecoveryFailureKind.unknownResult,
+    };
+    return AccountRecoveryFailure(
+      kind: kind,
+      message: error?.message ?? '账号恢复请求失败。',
+      retryAfter: kind == AccountRecoveryFailureKind.rateLimited
+          ? _retryAfter(response)
+          : null,
+      requestId: error?.requestId,
+    );
   }
 
   static Future<Map<String, dynamic>> verifySmsCode(
@@ -1692,6 +1900,7 @@ class ApiClient {
     String text, {
     String? voice,
     Duration timeout = const Duration(seconds: 20),
+    RequestCancellationToken? cancellation,
   }) async {
     final String resolvedVoice = (voice?.trim().isNotEmpty ?? false)
         ? voice!.trim()
@@ -1704,6 +1913,7 @@ class ApiClient {
         'voice': resolvedVoice,
       },
       timeout: timeout,
+      cancellation: cancellation,
     );
     final String status = (response['status'] as String? ?? '').trim();
     if (status != 'available') {
@@ -1720,6 +1930,7 @@ class ApiClient {
     String? sceneId,
     String? targetLevel,
     String? nodeId,
+    RequestCancellationToken? cancellation,
   }) async {
     final String cleanedText = text.trim();
     if (cleanedText.isEmpty) {
@@ -1736,6 +1947,7 @@ class ApiClient {
         'voice': resolvedVoice,
       },
       timeout: const Duration(seconds: 25),
+      cancellation: cancellation,
     );
     _ensureSuccess(response, fallback: 'TTS 缓存获取失败');
     final String audioUrl = (response['audio_ref'] as String? ?? '').trim();

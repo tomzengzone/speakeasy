@@ -46,8 +46,7 @@ class PostgresFoundationMigrationTest {
           new PostgreSQLContainer("postgres:15")
               .withDatabaseName("speakeasy_test")
               .withUsername("speakeasy")
-              .withPassword("speakeasy")
-              .withImagePullPolicy(imageName -> false);
+              .withPassword("speakeasy");
       postgres.start();
       return Optional.of(new ContainerPostgresTarget(postgres));
     } catch (RuntimeException | Error ignored) {

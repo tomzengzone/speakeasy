@@ -5,10 +5,13 @@ import org.springframework.http.HttpStatus;
 
 final class DisabledAuthProviders implements PhoneVerificationProvider, SocialIdentityVerifier {
   @Override
-  public void requestCode(String phoneNumber) { throw unavailable(); }
+  public void requestCode(String phoneNumber, PhoneVerificationPurpose purpose) { throw unavailable(); }
 
   @Override
-  public void verify(String phoneNumber, String verificationCode) { throw unavailable(); }
+  public void verify(
+      String phoneNumber, String verificationCode, PhoneVerificationPurpose purpose) {
+    throw unavailable();
+  }
 
   @Override
   public VerifiedIdentity verify(String provider, String credential, String nonce) { throw unavailable(); }

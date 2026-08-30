@@ -9,7 +9,9 @@ import 'package:speakeasy/application/session/device_session_models.dart';
 import 'package:speakeasy/application/session/session_lifecycle_coordinator.dart';
 import 'package:speakeasy/application/session/session_profile_coordinator.dart';
 import 'package:speakeasy/application/session/session_stats_coordinator.dart';
+import 'package:speakeasy/core/auth/auth_credentials.dart';
 import 'package:speakeasy/features/commercial/commercial_entitlement_client.dart';
+import 'package:speakeasy/models/learning_stats_model.dart';
 import 'package:speakeasy/services/api_client.dart';
 import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/services/auth_service.dart';
@@ -41,7 +43,20 @@ class _StoredSessionCoordinator extends SessionLifecycleCoordinator {
   }
 
   @override
-  Future<ResolvedAuthenticatedSession?> hydrateExistingSession() async => null;
+  Future<ResolvedAuthenticatedSession?> hydrateExistingSession() async {
+    return ResolvedAuthenticatedSession(
+      credentials: AuthCredentials(
+        accessToken: 'stored-access-token',
+        refreshToken: 'stored-refresh-token',
+        expiresAt: DateTime.utc(2099),
+      ),
+      userJson: const <String, dynamic>{
+        'nickname': 'Tester',
+        'memberPlan': 'free',
+        'onboardingDone': true,
+      },
+    );
+  }
 }
 
 class _RecordingDeviceApi implements DeviceSessionsRemoteApi {
@@ -87,6 +102,13 @@ void main() {
   late _MockStatsCoordinator statsCoordinator;
   late List<String> events;
 
+  setUpAll(() {
+    registerFallbackValue(
+      const AppUser(nickname: 'fallback', avatarUrl: '', memberPlan: 'free'),
+    );
+    registerFallbackValue(const LearningStatsModel());
+  });
+
   setUp(() {
     profileCoordinator = _MockProfileCoordinator();
     statsCoordinator = _MockStatsCoordinator();
@@ -94,12 +116,21 @@ void main() {
     when(
       () => profileCoordinator.clearSessionData(),
     ).thenAnswer((_) async => events.add('profile-clear'));
+    when(() => profileCoordinator.persistUser(any())).thenAnswer((_) async {});
     when(
       () => statsCoordinator.clearCache(),
     ).thenAnswer((_) async => events.add('stats-clear'));
     when(
       () => statsCoordinator.loadCachedStats(),
     ).thenAnswer((_) async => null);
+    when(
+      () => statsCoordinator.refreshStats(
+        currentStats: any(named: 'currentStats'),
+      ),
+    ).thenAnswer(
+      (Invocation invocation) async =>
+          invocation.namedArguments[#currentStats] as LearningStatsModel,
+    );
   });
 
   AppSession createSession({

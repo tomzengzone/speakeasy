@@ -33,6 +33,8 @@ speakeasy:
     session-absolute-ttl: ${SPEAKEASY_AUTH_SESSION_ABSOLUTE_TTL:90d}
     client-id: ${SPEAKEASY_AUTH_CLIENT_ID:speakeasy-mobile}
     audience: ${SPEAKEASY_AUTH_AUDIENCE:speakeasy-api}
+    account-recovery-enabled: ${SPEAKEASY_AUTH_ACCOUNT_RECOVERY_ENABLED:false}
+    metrics-supported-app-versions: ${SPEAKEASY_AUTH_METRICS_SUPPORTED_APP_VERSIONS:}
     providers:
       mode: ${SPEAKEASY_AUTH_PROVIDER_MODE:disabled}
       deterministic-enabled: false
@@ -85,6 +87,14 @@ speakeasy:
           network: { capacity: 20, refill-tokens: 1, refill-period: 3s }
           device: { capacity: 5, refill-tokens: 1, refill-period: 120s }
           account: { capacity: 3, refill-tokens: 1, refill-period: 300s }
+        phone-account-recovery-code-request:
+          network: { capacity: 20, refill-tokens: 1, refill-period: 3s }
+          device: { capacity: 5, refill-tokens: 1, refill-period: 120s }
+          account: { capacity: 3, refill-tokens: 1, refill-period: 300s }
+        phone-account-recovery:
+          network: { capacity: 30, refill-tokens: 1, refill-period: 2s }
+          device: { capacity: 10, refill-tokens: 1, refill-period: 60s }
+          account: { capacity: 5, refill-tokens: 1, refill-period: 120s }
   ops:
     principal-id: ${SPEAKEASY_OPS_PRINCIPAL_ID:shared-ops-token}
   content:

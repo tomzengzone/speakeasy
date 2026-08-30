@@ -37,6 +37,7 @@ class AuthRateLimitHttpTest {
   void returnsTheStandard429ContractBeforeAuthenticationWork() throws Exception {
     when(store.consume(anyList())).thenReturn(
         new AuthRateLimitStore.Decision(false, Duration.ofSeconds(1), "account"));
+    long usersBeforeRequest = users.count();
 
     mvc.perform(post("/auth/login/phone")
             .header("X-Request-Id", "rate-limit-http-test")
@@ -59,7 +60,7 @@ class AuthRateLimitHttpTest {
         .andExpect(jsonPath("$.error.details.endpoint").value("phone-login"))
         .andExpect(jsonPath("$.error.details.dimension").value("account"));
 
-    org.assertj.core.api.Assertions.assertThat(users.count()).isZero();
+    org.assertj.core.api.Assertions.assertThat(users.count()).isEqualTo(usersBeforeRequest);
   }
 
   @Test

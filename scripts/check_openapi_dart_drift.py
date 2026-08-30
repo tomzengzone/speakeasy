@@ -815,6 +815,8 @@ def generated_error_code_section(spec):
 def generated_auth_path_section():
     return "\n".join([
         "  // BEGIN GENERATED AUTH SESSION PATHS",
+        "  static const String authPhoneAccountRecovery = '/auth/account-recovery/phone';",
+        "  static const String authPhoneAccountRecoveryCode = '/auth/account-recovery/phone/verification-codes';",
         "  static const String authLogoutAll = '/auth/logout-all';",
         "  static const String authLogoutOthers = '/auth/logout-others';",
         "  static const String authPhoneVerificationCode = '/auth/verification-codes/phone';",

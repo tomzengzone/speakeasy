@@ -17,12 +17,16 @@ class MockSessionRemoteApi extends Mock implements SessionRemoteApi {}
 class MockSessionCredentialStore extends Mock
     implements SessionCredentialStore {}
 
+class MockSessionCredentialRefresher extends Mock
+    implements SessionCredentialRefresher {}
+
 class MockSessionLocalStore extends Mock implements SessionLocalStore {}
 
 void main() {
   late MockAuthService authService;
   late MockSessionRemoteApi remoteApi;
   late MockSessionCredentialStore credentialStore;
+  late MockSessionCredentialRefresher credentialRefresher;
   late MockSessionLocalStore localStore;
   late SessionLifecycleCoordinator coordinator;
   final DateTime now = DateTime.utc(2026, 8, 26, 12);
@@ -41,11 +45,13 @@ void main() {
     authService = MockAuthService();
     remoteApi = MockSessionRemoteApi();
     credentialStore = MockSessionCredentialStore();
+    credentialRefresher = MockSessionCredentialRefresher();
     localStore = MockSessionLocalStore();
     coordinator = SessionLifecycleCoordinator(
       authService: authService,
       remoteApi: remoteApi,
       credentialStore: credentialStore,
+      credentialRefresher: credentialRefresher,
       localStore: localStore,
       now: () => now,
     );
@@ -224,7 +230,7 @@ void main() {
     expect(session, isNotNull);
     expect(session!.credentials, same(credentials));
     expect(session.userJson['nickname'], '健康会话用户');
-    verifyNever(() => remoteApi.refreshToken(any()));
+    verifyNever(() => credentialRefresher.refreshIfNeeded());
     verify(() => remoteApi.getMe()).called(1);
     verifyNever(() => credentialStore.replace(any()));
   });
@@ -236,26 +242,28 @@ void main() {
       expiresAt: now.add(const Duration(seconds: 30)),
     );
     when(() => credentialStore.read()).thenAnswer((_) async => oldCredentials);
-    when(() => remoteApi.refreshToken('old-refresh-token')).thenAnswer(
+    final AuthCredentials refreshedCredentials = AuthCredentials(
+      accessToken: 'new-token',
+      refreshToken: 'new-refresh-token',
+      expiresAt: DateTime.utc(2026, 8, 26, 12, 30),
+    );
+    when(
+      () => credentialRefresher.refreshIfNeeded(),
+    ).thenAnswer((_) async => refreshedCredentials);
+    when(() => remoteApi.getMe()).thenAnswer(
       (_) async => <String, dynamic>{
         'code': 0,
-        'data': <String, dynamic>{
-          'token': 'new-token',
-          'refreshToken': 'new-refresh-token',
-          'expiresAt': '2026-08-26T12:30:00Z',
-          'user': <String, dynamic>{'nickname': '刷新后的用户'},
-        },
+        'data': <String, dynamic>{'nickname': '刷新后的用户'},
       },
     );
-    when(() => credentialStore.replace(any())).thenAnswer((_) async {});
 
     final ResolvedAuthenticatedSession? session = await coordinator
         .hydrateExistingSession();
 
     expect(session!.token, 'new-token');
-    verify(() => remoteApi.refreshToken('old-refresh-token')).called(1);
-    verify(() => credentialStore.replace(any())).called(1);
-    verifyNever(() => remoteApi.getMe());
+    verify(() => credentialRefresher.refreshIfNeeded()).called(1);
+    verify(() => remoteApi.getMe()).called(1);
+    verifyNever(() => credentialStore.replace(any()));
   });
 
   test('hydrateExistingSession 在过期 AT refresh 成功时原子替换完整凭证', () async {
@@ -265,18 +273,20 @@ void main() {
       expiresAt: now.subtract(const Duration(seconds: 1)),
     );
     when(() => credentialStore.read()).thenAnswer((_) async => oldCredentials);
-    when(() => remoteApi.refreshToken('old-refresh-token')).thenAnswer(
+    final AuthCredentials refreshedCredentials = AuthCredentials(
+      accessToken: 'new-token',
+      refreshToken: 'new-refresh-token',
+      expiresAt: DateTime.utc(2026, 8, 27),
+    );
+    when(
+      () => credentialRefresher.refreshIfNeeded(),
+    ).thenAnswer((_) async => refreshedCredentials);
+    when(() => remoteApi.getMe()).thenAnswer(
       (_) async => <String, dynamic>{
         'code': 0,
-        'data': <String, dynamic>{
-          'token': 'new-token',
-          'refreshToken': 'new-refresh-token',
-          'expiresAt': '2026-08-27T00:00:00Z',
-          'user': <String, dynamic>{'nickname': '刷新后的用户'},
-        },
+        'data': <String, dynamic>{'nickname': '刷新后的用户'},
       },
     );
-    when(() => credentialStore.replace(any())).thenAnswer((_) async {});
 
     final ResolvedAuthenticatedSession? session = await coordinator
         .hydrateExistingSession();
@@ -285,25 +295,9 @@ void main() {
     expect(session!.token, 'new-token');
     expect(session.credentials.refreshToken, 'new-refresh-token');
     expect(session.userJson['nickname'], '刷新后的用户');
-    verify(
-      () => credentialStore.replace(
-        any(
-          that: isA<AuthCredentials>()
-              .having(
-                (AuthCredentials value) => value.accessToken,
-                'accessToken',
-                'new-token',
-              )
-              .having(
-                (AuthCredentials value) => value.refreshToken,
-                'refreshToken',
-                'new-refresh-token',
-              ),
-        ),
-      ),
-    ).called(1);
-    verify(() => remoteApi.refreshToken('old-refresh-token')).called(1);
-    verifyNever(() => remoteApi.getMe());
+    verify(() => credentialRefresher.refreshIfNeeded()).called(1);
+    verify(() => remoteApi.getMe()).called(1);
+    verifyNever(() => credentialStore.replace(any()));
   });
 
   test('hydrateExistingSession 在 refresh 认证失败时不回退旧 AT', () async {
@@ -319,7 +313,7 @@ void main() {
       backendCode: 'UNAUTHENTICATED',
     );
     when(() => credentialStore.read()).thenAnswer((_) async => credentials);
-    when(() => remoteApi.refreshToken('old-refresh-token')).thenThrow(failure);
+    when(() => credentialRefresher.refreshIfNeeded()).thenThrow(failure);
 
     await expectLater(
       coordinator.hydrateExistingSession(),
@@ -341,7 +335,7 @@ void main() {
       message: 'refresh timeout',
     );
     when(() => credentialStore.read()).thenAnswer((_) async => credentials);
-    when(() => remoteApi.refreshToken('old-refresh-token')).thenThrow(failure);
+    when(() => credentialRefresher.refreshIfNeeded()).thenThrow(failure);
 
     await expectLater(
       coordinator.hydrateExistingSession(),
@@ -364,7 +358,7 @@ void main() {
       httpStatus: 503,
     );
     when(() => credentialStore.read()).thenAnswer((_) async => credentials);
-    when(() => remoteApi.refreshToken('old-refresh-token')).thenThrow(failure);
+    when(() => credentialRefresher.refreshIfNeeded()).thenThrow(failure);
     when(() => remoteApi.getMe()).thenAnswer(
       (_) async => <String, dynamic>{
         'code': 0,
@@ -387,7 +381,7 @@ void main() {
 
     expect(session, isNull);
     verifyNever(() => remoteApi.getMe());
-    verifyNever(() => remoteApi.refreshToken(any()));
+    verifyNever(() => credentialRefresher.refreshIfNeeded());
     verifyNever(() => credentialStore.replace(any()));
   });
 }

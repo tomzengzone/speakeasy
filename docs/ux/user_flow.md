@@ -10,6 +10,82 @@ open app -> onboarding -> scenario list -> scenario detail -> practice -> correc
 read prompt -> answer -> receive feedback -> retry or continue -> complete scenario -> review summary
 ```
 
+## 手机号账号恢复跨屏流程
+
+```text
+手机号登录页（恢复 feature flag 开启）
+  -> 学习者主动选择“无法登录？恢复账号”
+  -> 恢复页只带入手机号表单值，不带入登录 code、错误或协议状态
+  -> 学习者输入手机号并明确请求 purpose-bound 恢复验证码
+  -> 202 accepted 对存在、不存在或未绑定手机号显示相同的“请求已受理”文案
+  -> 学习者输入恢复专用验证码并确认恢复
+  -> 完成请求在途时禁用重复提交和返回
+```
+
+## 恢复成功、本机清理与重新登录
+
+```text
+客户端明确收到 200 { status: recovered, next_action: login_phone }
+  -> 页面确认原账号已恢复且所有设备已退出
+  -> 恢复响应不含 user/session/token，客户端不建立新会话且不自动登录
+  -> 清理本机旧 credential、learner-specific body 和恢复 code
+      -> 清理成功：显示“账号已恢复。已安全退出所有设备，请重新登录。”
+          -> 允许返回手机号登录页，只带入非认证的手机号表单值
+          -> 学习者另行完成普通手机号登录
+      -> 清理失败：明确告知服务端恢复已成功，但本机登录数据清理未完成
+          -> 禁用返回普通登录，只提供“重试本机登录数据清理”
+          -> 重试只执行本机清理，不重复恢复 API 或 code
+          -> 清理成功后才进入上述成功页和手机号登录
+```
+
+## 恢复失败、限流与取消流程
+
+```text
+手机号本地格式无效
+  -> 字段错误，不发请求
+
+发码或完成恢复返回 429 + Retry-After
+  -> 显示不逐秒宣告的倒计时
+  -> 到期前不自动发码或提交；到期后由学习者重试
+
+发码网络失败或 503
+  -> 显示不包含账号事实的可重试错误
+  -> 只有明确用户操作才重试发码
+
+完成恢复返回 400 / 503
+  -> 分别显示字段错误 / 服务暂不可用
+  -> 保留安全表单上下文并提供恢复页内重试、重新获取 code 或返回
+
+完成恢复返回 privacy-safe 401 明确验证失败
+  -> 对账号不存在、手机号未绑定/不可用、code 错误/过期/已使用/用途不匹配显示同一验证失败文案
+  -> 学习者可在恢复页内重试、重新获取 code，或主动返回手机号登录
+  -> 主动返回时清空恢复 code，只可保留非认证的手机号表单值
+  -> 返回动作只导航到手机号登录页，不自动调用 login-or-create，不创建账号、Session、Access Token 或 Refresh Token
+
+上述明确失败分支
+  -> 不显示账号存在、绑定、可用性或会话数量
+  -> 恢复成功前不创建账号、不改变身份或会话
+
+发码请求在途时学习者返回
+  -> 取消当前 UI caller 并回到手机号登录，清空恢复 code
+
+恢复完成请求在途时发生 cancellation / timeout / connection loss
+  -> 不返回手机号登录，进入 result-unknown 流程
+```
+
+## 恢复结果未知流程
+
+```text
+完成请求没有明确的 200 recovered
+  -> 显示“暂时无法确认恢复结果。为避免误建新账号，请在本页重新获取恢复验证码并再次完成恢复。”
+  -> 拦截页头/系统返回，不显示“返回手机号登录”
+  -> 不使用原 code，不调用普通 login-or-create，不调用 recovery-status 或 no-create-login 探测
+  -> 学习者明确选择“重新获取恢复验证码”
+  -> 清空原 code，请求新的 purpose-bound recovery code
+  -> 再次执行 only-existing-identity 恢复
+  -> 只有明确 200 recovered 才进入本机清理与后续手机号登录
+```
+
 ## Content 001/002 目录与精确版本详情流程
 
 ```text

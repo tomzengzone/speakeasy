@@ -18,7 +18,11 @@
 - 登录 grant 由服务端 `MobileClientGrantPolicy` 决定并在 Token Family 中快照；请求 header 或后续配置变化不能扩大既有会话 scope。
 - Flutter 继续复用现有 SecureTokenStore、CredentialRepository、RefreshCoordinator 和 AuthenticatedRequestExecutor；仅 `ACCESS_TOKEN_EXPIRED` 可触发一次 refresh/retry，等待队列限制为 64 个调用方和 15 秒。
 - 跨启动凭证只从 Secure Storage 恢复；首次凭证读取会清除旧 Hive Access Token，且不再将其作为认证回退。安全存储 v1 凭证会先写入设备绑定且不参与同步的 v2 Keychain 条目再删除旧条目；Android 禁止备份迁移并保留历史命名空间以兼容升级。
-- Chapter 8 整改后审计结果为 `66 PASS / 8 PARTIAL / 6 FAIL / 3 N/A`；逐项证据和剩余路线见 `docs/quality/authentication_requirement_coverage.md`。其中 `SESSION-004` 仍为 FAIL，未用未接线 helper 冒充密码/账号恢复能力。
+- Flutter 认证生命周期现由单一状态机负责：冷启动先进入 `INITIALIZING`，服务器水合完成后才开放认证业务；基础设施失败进入可恢复的离线降级状态，前台恢复与业务请求共用同一 RefreshCoordinator。
+- 请求取消信号贯穿 token 读取、共享 refresh 等待和请求重放；取消某个等待方不会取消 refresh owner，也不会继续发送或重放该调用方请求。
+- 已批准的手机号账号恢复路径通过用途隔离、一次性验证码和现有身份解析接入高风险凭据变更事务；成功后撤销全部旧 Session 且不创建新 Session/Token，失败与回滚不改变账号、身份或会话。服务端 capability 默认关闭并在 provider、身份或会话副作用前 fail-closed，只有发布配置显式启用后才开放。当前后端没有生产密码凭据，因此 SESSION-004 中密码重置/修改分支仍属于条件性条款，不据此虚构密码子系统。
+- TTS 认证终止错误先于播放错误传播；认证 HTTP 指标使用有界的平台、服务端支持版本白名单和 API family 标签，且不记录原始 Token 或任意 header 值。
+- Chapter 8 当前审计结果为 `74 PASS / 6 PARTIAL / 0 FAIL / 3 N/A`；逐项证据和剩余路线见 `docs/quality/authentication_requirement_coverage.md`。
 
 该实现注记用于记录代码落地方式，不把本文 standalone baseline 自动转换为 Story/FR/Engineering Contract，也不修改下列 Requirement 的语义。
 
