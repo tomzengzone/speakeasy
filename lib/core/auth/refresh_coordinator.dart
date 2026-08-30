@@ -19,6 +19,20 @@ class CredentialContextChanged implements Exception {
   }
 }
 
+class RefreshQueueLimitExceeded implements Exception {
+  const RefreshQueueLimitExceeded();
+
+  @override
+  String toString() => 'RefreshQueueLimitExceeded()';
+}
+
+class RefreshQueueWaitTimeout implements Exception {
+  const RefreshQueueWaitTimeout();
+
+  @override
+  String toString() => 'RefreshQueueWaitTimeout()';
+}
+
 DateTime _utcNow() => DateTime.now().toUtc();
 
 class RefreshCoordinator {
@@ -26,18 +40,27 @@ class RefreshCoordinator {
     required TokenProvider tokenProvider,
     required CredentialRepository credentialRepository,
     required RefreshCredentials refreshCredentials,
+    int maxWaitingRequests = 64,
+    Duration refreshWaitTimeout = const Duration(seconds: 15),
     DateTime Function()? now,
-  }) : _tokenProvider = tokenProvider,
+  }) : assert(maxWaitingRequests >= 0),
+       assert(refreshWaitTimeout > Duration.zero),
+       _tokenProvider = tokenProvider,
        _credentialRepository = credentialRepository,
        _refreshCredentials = refreshCredentials,
+       _maxWaitingRequests = maxWaitingRequests,
+       _refreshWaitTimeout = refreshWaitTimeout,
        _now = now ?? _utcNow;
 
   final TokenProvider _tokenProvider;
   final CredentialRepository _credentialRepository;
   final RefreshCredentials _refreshCredentials;
+  final int _maxWaitingRequests;
+  final Duration _refreshWaitTimeout;
   final DateTime Function() _now;
 
   Future<AuthCredentials>? _inFlightRefresh;
+  int _waitingRequests = 0;
   DateTime? _cooldownUntil;
   String? _cooldownRefreshToken;
   Object? _cooldownFailure;
@@ -61,7 +84,18 @@ class RefreshCoordinator {
 
     final Future<AuthCredentials>? inFlight = _inFlightRefresh;
     if (inFlight != null) {
-      return inFlight;
+      if (_waitingRequests >= _maxWaitingRequests) {
+        throw const RefreshQueueLimitExceeded();
+      }
+      _waitingRequests += 1;
+      try {
+        return await inFlight.timeout(
+          _refreshWaitTimeout,
+          onTimeout: () => throw const RefreshQueueWaitTimeout(),
+        );
+      } finally {
+        _waitingRequests -= 1;
+      }
     }
 
     final bool reactiveRefresh = failedToken.isNotEmpty;

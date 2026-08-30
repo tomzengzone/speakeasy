@@ -59,9 +59,6 @@ class _NoopSessionRemoteApi implements SessionRemoteApi {
   Future<Map<String, dynamic>> getMe() async => <String, dynamic>{'code': 401};
 
   @override
-  Future<String?> getToken() async => null;
-
-  @override
   Future<Map<String, dynamic>> refreshToken(String refreshToken) async =>
       <String, dynamic>{'code': 401};
 
@@ -72,9 +69,6 @@ class _NoopSessionRemoteApi implements SessionRemoteApi {
 
 class _EmptySessionLocalStore implements SessionLocalStore {
   const _EmptySessionLocalStore();
-
-  @override
-  AuthSessionStorageModel? getAuthSession() => null;
 
   @override
   StoredUserProfileModel? getUserProfile() => null;

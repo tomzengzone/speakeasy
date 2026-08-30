@@ -167,6 +167,11 @@ void main() {
       scenario
       in <({SessionSecurityReason reason, String code, String message})>[
         (
+          reason: SessionSecurityReason.accessTokenInvalid,
+          code: 'ACCESS_TOKEN_INVALID',
+          message: '登录凭证无效，请重新登录。',
+        ),
+        (
           reason: SessionSecurityReason.sessionRevoked,
           code: 'SESSION_REVOKED',
           message: '此设备的登录已被退出，请重新登录。',

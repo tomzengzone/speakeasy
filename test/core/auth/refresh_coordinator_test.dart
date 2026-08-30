@@ -171,6 +171,82 @@ void main() {
     },
   );
 
+  test(
+    'refresh wait queue rejects callers beyond its configured bound',
+    () async {
+      final AuthCredentials current = credentials(
+        accessToken: 'access-token-1',
+        refreshToken: 'refresh-token-1',
+        expiresAt: now.add(const Duration(seconds: 30)),
+      );
+      final AuthCredentials rotated = credentials(
+        accessToken: 'access-token-2',
+        refreshToken: 'refresh-token-2',
+        expiresAt: now.add(const Duration(hours: 1)),
+      );
+      final _MemoryTokenProvider provider = _MemoryTokenProvider(current);
+      final Completer<AuthCredentials> refreshCompleter =
+          Completer<AuthCredentials>();
+      final RefreshCoordinator coordinator = RefreshCoordinator(
+        tokenProvider: provider,
+        credentialRepository: provider,
+        refreshCredentials: (String refreshToken) => refreshCompleter.future,
+        maxWaitingRequests: 1,
+        refreshWaitTimeout: const Duration(seconds: 5),
+        now: () => now,
+      );
+
+      final Future<AuthCredentials> owner = coordinator.refreshIfNeeded();
+      await Future<void>.delayed(Duration.zero);
+      final Future<AuthCredentials> firstWaiter = coordinator.refreshIfNeeded();
+      await Future<void>.delayed(Duration.zero);
+
+      await expectLater(
+        coordinator.refreshIfNeeded(),
+        throwsA(isA<RefreshQueueLimitExceeded>()),
+      );
+
+      refreshCompleter.complete(rotated);
+      expect(await owner, same(rotated));
+      expect(await firstWaiter, same(rotated));
+    },
+  );
+
+  test('refresh wait queue times out without cancelling the owner', () async {
+    final AuthCredentials current = credentials(
+      accessToken: 'access-token-1',
+      refreshToken: 'refresh-token-1',
+      expiresAt: now.add(const Duration(seconds: 30)),
+    );
+    final AuthCredentials rotated = credentials(
+      accessToken: 'access-token-2',
+      refreshToken: 'refresh-token-2',
+      expiresAt: now.add(const Duration(hours: 1)),
+    );
+    final _MemoryTokenProvider provider = _MemoryTokenProvider(current);
+    final Completer<AuthCredentials> refreshCompleter =
+        Completer<AuthCredentials>();
+    final RefreshCoordinator coordinator = RefreshCoordinator(
+      tokenProvider: provider,
+      credentialRepository: provider,
+      refreshCredentials: (String refreshToken) => refreshCompleter.future,
+      maxWaitingRequests: 2,
+      refreshWaitTimeout: const Duration(milliseconds: 1),
+      now: () => now,
+    );
+
+    final Future<AuthCredentials> owner = coordinator.refreshIfNeeded();
+    await Future<void>.delayed(Duration.zero);
+
+    await expectLater(
+      coordinator.refreshIfNeeded(),
+      throwsA(isA<RefreshQueueWaitTimeout>()),
+    );
+
+    refreshCompleter.complete(rotated);
+    expect(await owner, same(rotated));
+  });
+
   test('logout during refresh discards the stale result', () async {
     final AuthCredentials current = credentials(
       accessToken: 'access-token-1',

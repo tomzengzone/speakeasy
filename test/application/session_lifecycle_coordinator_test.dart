@@ -60,7 +60,6 @@ void main() {
         expiresAt: DateTime.parse('2026-08-27T00:00:00Z'),
       ),
     );
-    when(() => localStore.getAuthSession()).thenReturn(null);
     when(() => localStore.getUserProfile()).thenReturn(
       const StoredUserProfileModel(
         nickname: '缓存用户',
@@ -284,7 +283,7 @@ void main() {
 
     expect(session, isNotNull);
     expect(session!.token, 'new-token');
-    expect(session.credentials!.refreshToken, 'new-refresh-token');
+    expect(session.credentials.refreshToken, 'new-refresh-token');
     expect(session.userJson['nickname'], '刷新后的用户');
     verify(
       () => credentialStore.replace(
@@ -382,21 +381,12 @@ void main() {
     verifyNever(() => credentialStore.replace(any()));
   });
 
-  test('hydrateExistingSession 对 legacy Hive AT 只通过 getMe 恢复', () async {
-    when(() => remoteApi.getToken()).thenAnswer((_) async => 'legacy-token');
-    when(() => remoteApi.getMe()).thenAnswer(
-      (_) async => <String, dynamic>{
-        'code': 0,
-        'data': <String, dynamic>{'nickname': 'Legacy 用户'},
-      },
-    );
-
+  test('hydrateExistingSession 不再使用 legacy Hive AT 恢复', () async {
     final ResolvedAuthenticatedSession? session = await coordinator
         .hydrateExistingSession();
 
-    expect(session!.credentials, isNull);
-    expect(session.legacyAccessToken, 'legacy-token');
-    expect(session.userJson['nickname'], 'Legacy 用户');
+    expect(session, isNull);
+    verifyNever(() => remoteApi.getMe());
     verifyNever(() => remoteApi.refreshToken(any()));
     verifyNever(() => credentialStore.replace(any()));
   });

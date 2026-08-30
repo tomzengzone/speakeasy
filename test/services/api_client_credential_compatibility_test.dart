@@ -63,14 +63,11 @@ void main() {
     expect(await ApiClient.getToken(), 'secure-access-token');
   });
 
-  test(
-    'ApiClient.getToken preserves legacy-only access token fallback',
-    () async {
-      await StorageService.instance.saveAuthSession(
-        const AuthSessionStorageModel(token: 'legacy-access-token'),
-      );
+  test('ApiClient.getToken rejects a legacy-only access token', () async {
+    await StorageService.instance.saveAuthSession(
+      const AuthSessionStorageModel(token: 'legacy-access-token'),
+    );
 
-      expect(await ApiClient.getToken(), 'legacy-access-token');
-    },
-  );
+    expect(await ApiClient.getToken(), isNull);
+  });
 }

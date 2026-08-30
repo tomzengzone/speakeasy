@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 
 import 'package:speakeasy/core/auth/auth_credentials.dart';
@@ -13,14 +15,11 @@ class AuthenticatedRequestExecutor {
   AuthenticatedRequestExecutor({
     required TokenProvider tokenProvider,
     required RefreshCoordinator refreshCoordinator,
-    Future<String?> Function()? legacyAccessToken,
   }) : _tokenProvider = tokenProvider,
-       _refreshCoordinator = refreshCoordinator,
-       _legacyAccessToken = legacyAccessToken;
+       _refreshCoordinator = refreshCoordinator;
 
   final TokenProvider _tokenProvider;
   final RefreshCoordinator _refreshCoordinator;
-  final Future<String?> Function()? _legacyAccessToken;
 
   Future<http.Response> execute({
     AuthPolicy authPolicy = AuthPolicy.required,
@@ -36,8 +35,6 @@ class AuthenticatedRequestExecutor {
     if (credentials != null) {
       credentials = await _refreshCoordinator.refreshIfNeeded();
       accessToken = credentials.accessToken;
-    } else {
-      accessToken = await _legacyAccessToken?.call();
     }
 
     int authRetryCount = 0;
@@ -45,7 +42,7 @@ class AuthenticatedRequestExecutor {
       final http.Response response = await send(
         _authenticatedHeaders(headers, accessToken),
       );
-      if (response.statusCode != 401 ||
+      if (!_isAccessTokenExpired(response) ||
           credentials == null ||
           authRetryCount >= 1) {
         return response;
@@ -56,6 +53,25 @@ class AuthenticatedRequestExecutor {
       );
       accessToken = credentials.accessToken;
       authRetryCount += 1;
+    }
+  }
+
+  bool _isAccessTokenExpired(http.Response response) {
+    if (response.statusCode != 401 || response.body.trim().isEmpty) {
+      return false;
+    }
+    try {
+      final Object? decoded = jsonDecode(response.body);
+      if (decoded is! Map) {
+        return false;
+      }
+      final Object? rawError = decoded['error'];
+      if (rawError is! Map) {
+        return false;
+      }
+      return rawError['code'] == 'ACCESS_TOKEN_EXPIRED';
+    } on FormatException {
+      return false;
     }
   }
 

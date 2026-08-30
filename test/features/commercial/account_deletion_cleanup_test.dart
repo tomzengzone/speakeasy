@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:speakeasy/application/session/session_lifecycle_coordinator.dart';
 import 'package:speakeasy/application/session/session_profile_coordinator.dart';
 import 'package:speakeasy/application/session/session_stats_coordinator.dart';
+import 'package:speakeasy/core/auth/auth_credentials.dart';
 import 'package:speakeasy/features/commercial/commercial_entitlement_client.dart';
 import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
 import 'package:speakeasy/models/learning_stats_model.dart';
@@ -44,9 +45,13 @@ void main() {
       ),
     );
     when(() => sessionCoordinator.hydrateExistingSession()).thenAnswer(
-      (_) async => const ResolvedAuthenticatedSession(
-        legacyAccessToken: 'jwt-token',
-        userJson: <String, dynamic>{
+      (_) async => ResolvedAuthenticatedSession(
+        credentials: AuthCredentials(
+          accessToken: 'jwt-token',
+          refreshToken: 'refresh-token',
+          expiresAt: DateTime.utc(2099),
+        ),
+        userJson: const <String, dynamic>{
           'nickname': '付费用户',
           'avatarUrl': '',
           'memberPlan': 'yearly',

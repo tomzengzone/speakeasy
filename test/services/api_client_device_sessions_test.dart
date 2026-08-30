@@ -70,8 +70,8 @@ void main() {
         request.response.write(
           jsonEncode(<String, dynamic>{
             'error': <String, dynamic>{
-              'code': 'UNAUTHENTICATED',
-              'message': 'access token rejected',
+              'code': 'ACCESS_TOKEN_EXPIRED',
+              'message': 'access token expired',
             },
           }),
         );
@@ -168,6 +168,30 @@ void main() {
       expect(await ApiClient.getCredentials(), isNull);
       expect(requests, hasLength(1));
       expect(requests.single.path, SpeakeasyApiPaths.authSessions);
+    },
+  );
+
+  test(
+    'ACCESS_TOKEN_INVALID clears credentials without refresh retry',
+    () async {
+      terminalCode = 'ACCESS_TOKEN_INVALID';
+      final Future<SessionSecurityFailure> event =
+          ApiClient.sessionSecurityFailures.first;
+
+      await expectLater(
+        ApiClient.listAuthSessions(),
+        throwsA(
+          isA<SessionSecurityFailure>().having(
+            (SessionSecurityFailure failure) => failure.reason,
+            'reason',
+            SessionSecurityReason.accessTokenInvalid,
+          ),
+        ),
+      );
+
+      expect((await event).backendCode, 'ACCESS_TOKEN_INVALID');
+      expect(await ApiClient.getCredentials(), isNull);
+      expect(requests, hasLength(1));
     },
   );
 

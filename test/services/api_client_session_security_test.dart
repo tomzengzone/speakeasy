@@ -13,6 +13,11 @@ void main() {
         ({String code, SessionSecurityReason reason, String messageFragment})
       >[
         (
+          code: 'ACCESS_TOKEN_INVALID',
+          reason: SessionSecurityReason.accessTokenInvalid,
+          messageFragment: '登录凭证无效',
+        ),
+        (
           code: 'SESSION_REVOKED',
           reason: SessionSecurityReason.sessionRevoked,
           messageFragment: '重新登录',

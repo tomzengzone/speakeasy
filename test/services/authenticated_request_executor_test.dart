@@ -72,7 +72,6 @@ void main() {
   AuthenticatedRequestExecutor executor({
     required _MemoryTokenProvider provider,
     required Future<AuthCredentials> Function(String refreshToken) refresh,
-    Future<String?> Function()? legacyAccessToken,
   }) {
     final RefreshCoordinator coordinator = RefreshCoordinator(
       tokenProvider: provider,
@@ -83,8 +82,11 @@ void main() {
     return AuthenticatedRequestExecutor(
       tokenProvider: provider,
       refreshCoordinator: coordinator,
-      legacyAccessToken: legacyAccessToken,
     );
+  }
+
+  http.Response expiredAccessTokenResponse() {
+    return http.Response('{"error":{"code":"ACCESS_TOKEN_EXPIRED"}}', 401);
   }
 
   test('healthy AT sends one request with the current bearer token', () async {
@@ -232,7 +234,9 @@ void main() {
       authPolicy: AuthPolicy.required,
       send: (Map<String, String> headers) async {
         requests.add(headers);
-        return http.Response('{}', requests.length == 1 ? 401 : 200);
+        return requests.length == 1
+            ? expiredAccessTokenResponse()
+            : http.Response('{}', 200);
       },
     );
 
@@ -242,6 +246,38 @@ void main() {
     expect(requests.first['Authorization'], 'Bearer access-token-1');
     expect(requests.last['Authorization'], 'Bearer access-token-2');
   });
+
+  for (final String code in <String>[
+    'ACCESS_TOKEN_INVALID',
+    'SESSION_REVOKED',
+    'ACCOUNT_DISABLED',
+    'UNAUTHENTICATED',
+  ]) {
+    test('$code does not trigger refresh', () async {
+      final AuthCredentials current = credentials(
+        accessToken: 'access-token-1',
+        refreshToken: 'refresh-token-1',
+        expiresAt: now.add(const Duration(minutes: 20)),
+      );
+      final _MemoryTokenProvider provider = _MemoryTokenProvider(current);
+      int refreshCount = 0;
+      final AuthenticatedRequestExecutor requestExecutor = executor(
+        provider: provider,
+        refresh: (String refreshToken) async {
+          refreshCount += 1;
+          throw StateError('unexpected refresh');
+        },
+      );
+
+      final http.Response response = await requestExecutor.execute(
+        send: (Map<String, String> headers) async =>
+            http.Response('{"error":{"code":"$code"}}', 401),
+      );
+
+      expect(response.statusCode, 401);
+      expect(refreshCount, 0);
+    });
+  }
 
   test(
     'three concurrent 401 requests refresh once and all retry with AT2',
@@ -279,10 +315,9 @@ void main() {
               authPolicy: AuthPolicy.required,
               send: (Map<String, String> headers) async {
                 requestHeaders[index].add(headers);
-                return http.Response(
-                  '{}',
-                  requestHeaders[index].length == 1 ? 401 : 200,
-                );
+                return requestHeaders[index].length == 1
+                    ? expiredAccessTokenResponse()
+                    : http.Response('{}', 200);
               },
             );
           });
@@ -335,7 +370,7 @@ void main() {
         requestB.add(headers);
         if (requestB.length == 1) {
           await delayed401.future;
-          return http.Response('{}', 401);
+          return expiredAccessTokenResponse();
         }
         return http.Response('{}', 200);
       },
@@ -346,7 +381,9 @@ void main() {
       authPolicy: AuthPolicy.required,
       send: (Map<String, String> headers) async {
         requestA.add(headers);
-        return http.Response('{}', requestA.length == 1 ? 401 : 200);
+        return requestA.length == 1
+            ? expiredAccessTokenResponse()
+            : http.Response('{}', 200);
       },
     );
     expect(responseA.statusCode, 200);
@@ -389,7 +426,7 @@ void main() {
       authPolicy: AuthPolicy.required,
       send: (Map<String, String> headers) async {
         requestCount += 1;
-        return http.Response('{}', 401);
+        return expiredAccessTokenResponse();
       },
     );
 
@@ -489,7 +526,7 @@ void main() {
             authPolicy: AuthPolicy.required,
             send: (Map<String, String> headers) async {
               requestCount += 1;
-              return http.Response('{}', 401);
+              return expiredAccessTokenResponse();
             },
           ),
           throwsA(same(failure)),
@@ -608,31 +645,4 @@ void main() {
       expect(refreshCount, 0);
     },
   );
-
-  test('legacy-only AT sends once but a 401 cannot trigger refresh', () async {
-    final _MemoryTokenProvider provider = _MemoryTokenProvider(null);
-    int refreshCount = 0;
-    int requestCount = 0;
-    final AuthenticatedRequestExecutor requestExecutor = executor(
-      provider: provider,
-      legacyAccessToken: () async => 'legacy-access-token',
-      refresh: (String refreshToken) async {
-        refreshCount += 1;
-        throw StateError('legacy credentials cannot refresh');
-      },
-    );
-
-    final http.Response response = await requestExecutor.execute(
-      authPolicy: AuthPolicy.required,
-      send: (Map<String, String> headers) async {
-        requestCount += 1;
-        expect(headers['Authorization'], 'Bearer legacy-access-token');
-        return http.Response('{}', 401);
-      },
-    );
-
-    expect(response.statusCode, 401);
-    expect(requestCount, 1);
-    expect(refreshCount, 0);
-  });
 }

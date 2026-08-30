@@ -30,6 +30,7 @@ enum _HttpMethod { get, post, put, patch, delete }
 enum RefreshFailureKind { authentication, rateLimited, infrastructure }
 
 enum SessionSecurityReason {
+  accessTokenInvalid,
   sessionRevoked,
   refreshTokenExpired,
   refreshTokenInvalid,
@@ -181,8 +182,6 @@ class ApiClient {
       AuthenticatedRequestExecutor(
         tokenProvider: _tokenProvider,
         refreshCoordinator: _refreshCoordinator,
-        legacyAccessToken: () async =>
-            StorageService.instance.getAuthSession()?.token,
       );
 
   static Stream<SessionSecurityFailure> get sessionSecurityFailures =>
@@ -198,10 +197,7 @@ class ApiClient {
 
   static Future<String?> getToken() async {
     final AuthCredentials? credentials = await getCredentials();
-    if (credentials != null) {
-      return credentials.accessToken;
-    }
-    return StorageService.instance.getAuthSession()?.token;
+    return credentials?.accessToken;
   }
 
   @Deprecated('Persist complete AuthCredentials through CredentialRepository.')
@@ -223,6 +219,11 @@ class ApiClient {
     final Map<String, dynamic> error = _asMap(response['error']);
     final ErrorCode? code = ErrorCode.tryParse(error['code']);
     return switch (code) {
+      ErrorCode.accessTokenInvalid => const SessionSecurityFailure(
+        reason: SessionSecurityReason.accessTokenInvalid,
+        backendCode: 'ACCESS_TOKEN_INVALID',
+        userMessage: '登录凭证无效，请重新登录。',
+      ),
       ErrorCode.sessionRevoked => const SessionSecurityFailure(
         reason: SessionSecurityReason.sessionRevoked,
         backendCode: 'SESSION_REVOKED',

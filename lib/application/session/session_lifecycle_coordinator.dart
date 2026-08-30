@@ -42,16 +42,14 @@ class SessionSignInResult {
 
 class ResolvedAuthenticatedSession {
   const ResolvedAuthenticatedSession({
-    this.credentials,
-    this.legacyAccessToken,
+    required this.credentials,
     required this.userJson,
   });
 
-  final AuthCredentials? credentials;
-  final String? legacyAccessToken;
+  final AuthCredentials credentials;
   final Map<String, dynamic> userJson;
 
-  String get token => credentials?.accessToken ?? legacyAccessToken ?? '';
+  String get token => credentials.accessToken;
 }
 
 class StoredSessionSnapshot {
@@ -67,8 +65,6 @@ class StoredSessionSnapshot {
 }
 
 abstract class SessionRemoteApi {
-  Future<String?> getToken();
-
   Future<Map<String, dynamic>> refreshToken(String refreshToken);
 
   Future<Map<String, dynamic>> getMe();
@@ -81,9 +77,6 @@ class ApiClientSessionRemoteApi implements SessionRemoteApi {
 
   @override
   Future<Map<String, dynamic>> getMe() => ApiClient.getMe();
-
-  @override
-  Future<String?> getToken() => ApiClient.getToken();
 
   @override
   Future<Map<String, dynamic>> refreshToken(String refreshToken) {
@@ -115,8 +108,6 @@ class ApiClientSessionCredentialStore implements SessionCredentialStore {
 }
 
 abstract class SessionLocalStore {
-  AuthSessionStorageModel? getAuthSession();
-
   StoredUserProfileModel? getUserProfile();
 
   UserPreferencesStorageModel getUserPreferences();
@@ -124,11 +115,6 @@ abstract class SessionLocalStore {
 
 class StorageServiceSessionLocalStore implements SessionLocalStore {
   const StorageServiceSessionLocalStore();
-
-  @override
-  AuthSessionStorageModel? getAuthSession() {
-    return StorageService.instance.getAuthSession();
-  }
 
   @override
   UserPreferencesStorageModel getUserPreferences() {
@@ -224,13 +210,12 @@ class SessionLifecycleCoordinator {
 
   Future<StoredSessionSnapshot> loadStoredSession() async {
     final AuthCredentials? credentials = await _credentialStore.read();
-    final AuthSessionStorageModel? authSession = _localStore.getAuthSession();
     final StoredUserProfileModel? userProfile = _localStore.getUserProfile();
     final UserPreferencesStorageModel preferences = _localStore
         .getUserPreferences();
 
     AppUser? user;
-    final String? token = credentials?.accessToken ?? authSession?.token;
+    final String? token = credentials?.accessToken;
     if (token != null && token.isNotEmpty && userProfile != null) {
       final String nickname = userProfile.nickname.trim();
       if (nickname.isNotEmpty) {
@@ -251,17 +236,8 @@ class SessionLifecycleCoordinator {
 
   Future<ResolvedAuthenticatedSession?> hydrateExistingSession() async {
     final AuthCredentials? credentials = await _credentialStore.read();
-    final String? token =
-        credentials?.accessToken ?? await _remoteApi.getToken();
-    if (token == null || token.isEmpty) {
+    if (credentials == null || credentials.accessToken.isEmpty) {
       return null;
-    }
-
-    if (credentials == null) {
-      return _hydrateWithCurrentAccessToken(
-        credentials: null,
-        legacyAccessToken: token,
-      );
     }
 
     if (!credentials.needsRefreshAt(_now())) {
@@ -294,8 +270,7 @@ class SessionLifecycleCoordinator {
   }
 
   Future<ResolvedAuthenticatedSession> _hydrateWithCurrentAccessToken({
-    required AuthCredentials? credentials,
-    String? legacyAccessToken,
+    required AuthCredentials credentials,
   }) async {
     final Map<String, dynamic> meRes = await _remoteApi.getMe();
     if (meRes['code'] != 0) {
@@ -303,7 +278,6 @@ class SessionLifecycleCoordinator {
     }
     return ResolvedAuthenticatedSession(
       credentials: credentials,
-      legacyAccessToken: legacyAccessToken,
       userJson: _asMap(meRes['data']),
     );
   }

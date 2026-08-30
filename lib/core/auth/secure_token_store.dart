@@ -6,7 +6,18 @@ import 'package:speakeasy/core/auth/auth_credentials.dart';
 
 class SecureTokenStore {
   SecureTokenStore({FlutterSecureStorage? storage})
-    : _storage = storage ?? const FlutterSecureStorage();
+    : _storage =
+          storage ??
+          const FlutterSecureStorage(
+            iOptions: IOSOptions(
+              accessibility: KeychainAccessibility.first_unlock_this_device,
+              synchronizable: false,
+            ),
+            aOptions: AndroidOptions(
+              migrateWithBackup: false,
+              storageNamespace: 'speakeasy.authentication',
+            ),
+          );
 
   static const String _credentialsKey =
       'speakeasy.authentication.credentials.v1';
