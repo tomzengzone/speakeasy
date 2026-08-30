@@ -27,6 +27,9 @@ void main() {
           value: any(named: 'value'),
         ),
       ).thenAnswer((_) async {});
+      when(
+        () => storage.delete(key: any(named: 'key')),
+      ).thenAnswer((_) async {});
 
       await tokenStore.replace(
         AuthCredentials(
@@ -64,5 +67,47 @@ void main() {
     expect(credentials, isNotNull);
     expect(credentials!.accessToken, 'access-token');
     expect(credentials.refreshToken, 'refresh-token');
+  });
+
+  test('read migrates v1 credentials before deleting the old item', () async {
+    final MockFlutterSecureStorage currentStorage = MockFlutterSecureStorage();
+    final MockFlutterSecureStorage legacyStorage = MockFlutterSecureStorage();
+    final SecureTokenStore migratingStore = SecureTokenStore(
+      storage: currentStorage,
+      legacyStorage: legacyStorage,
+    );
+    when(
+      () => currentStorage.read(key: any(named: 'key')),
+    ).thenAnswer((_) async => null);
+    when(() => legacyStorage.read(key: any(named: 'key'))).thenAnswer(
+      (_) async => jsonEncode(<String, dynamic>{
+        'accessToken': 'legacy-access-token',
+        'refreshToken': 'legacy-refresh-token',
+        'expiresAt': '2026-08-27T00:00:00Z',
+      }),
+    );
+    when(
+      () => currentStorage.write(
+        key: any(named: 'key'),
+        value: any(named: 'value'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => legacyStorage.delete(key: any(named: 'key')),
+    ).thenAnswer((_) async {});
+
+    final AuthCredentials? credentials = await migratingStore.read();
+
+    expect(credentials!.accessToken, 'legacy-access-token');
+    verifyInOrder(<dynamic Function()>[
+      () => currentStorage.read(key: 'speakeasy.authentication.credentials.v2'),
+      () => legacyStorage.read(key: 'speakeasy.authentication.credentials.v1'),
+      () => currentStorage.write(
+        key: 'speakeasy.authentication.credentials.v2',
+        value: any(named: 'value'),
+      ),
+      () =>
+          legacyStorage.delete(key: 'speakeasy.authentication.credentials.v1'),
+    ]);
   });
 }

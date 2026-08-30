@@ -102,9 +102,6 @@ class _NoopSessionRemoteApi implements SessionRemoteApi {
   Future<Map<String, dynamic>> getMe() async => const <String, dynamic>{};
 
   @override
-  Future<String?> getToken() async => null;
-
-  @override
   Future<Map<String, dynamic>> refreshToken(String refreshToken) async =>
       const <String, dynamic>{};
 

@@ -83,6 +83,24 @@ void main() {
     expect(legacyCleanupCount, 1);
   });
 
+  test('first read clears a legacy-only access token exactly once', () async {
+    final MockSecureTokenStore tokenStore = MockSecureTokenStore();
+    int legacyCleanupCount = 0;
+    when(tokenStore.read).thenAnswer((_) async => null);
+    final SecureCredentialRepository repository = SecureCredentialRepository(
+      tokenStore: tokenStore,
+      clearLegacyAuthSession: () async {
+        legacyCleanupCount += 1;
+      },
+    );
+
+    expect(await repository.read(), isNull);
+    expect(await repository.read(), isNull);
+
+    verify(tokenStore.read).called(2);
+    expect(legacyCleanupCount, 1);
+  });
+
   test('SecureTokenProvider reads through CredentialRepository', () async {
     final MockCredentialRepository repository = MockCredentialRepository();
     when(repository.read).thenAnswer((_) async => credentials);

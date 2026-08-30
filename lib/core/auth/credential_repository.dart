@@ -24,10 +24,15 @@ class SecureCredentialRepository implements CredentialRepository {
   final SecureTokenStore _tokenStore;
   final Future<void> Function()? _clearLegacyAuthSession;
   Future<void> _pendingOperation = Future<void>.value();
+  bool _legacyAuthSessionCleared = false;
 
   @override
   Future<AuthCredentials?> read() {
-    return _serialized(_tokenStore.read);
+    return _serialized(() async {
+      final AuthCredentials? credentials = await _tokenStore.read();
+      await _clearLegacyOnce();
+      return credentials;
+    });
   }
 
   @override
@@ -57,12 +62,24 @@ class SecureCredentialRepository implements CredentialRepository {
 
   Future<void> _replace(AuthCredentials credentials) async {
     await _tokenStore.replace(credentials);
-    await _clearLegacyAuthSession?.call();
+    await _clearLegacyNow();
   }
 
   Future<void> _clear() async {
     await _tokenStore.clear();
+    await _clearLegacyNow();
+  }
+
+  Future<void> _clearLegacyOnce() async {
+    if (_legacyAuthSessionCleared) {
+      return;
+    }
+    await _clearLegacyNow();
+  }
+
+  Future<void> _clearLegacyNow() async {
     await _clearLegacyAuthSession?.call();
+    _legacyAuthSessionCleared = true;
   }
 
   Future<T> _serialized<T>(Future<T> Function() operation) {
