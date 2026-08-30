@@ -28,8 +28,7 @@ class AuthConcurrencyPostgresTest extends BackendIntegrationTestSupport {
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:15")
       .withDatabaseName("speakeasy_auth_test")
       .withUsername("speakeasy")
-      .withPassword("speakeasy")
-      .withImagePullPolicy(imageName -> false);
+      .withPassword("speakeasy");
 
   @DynamicPropertySource
   static void postgresProperties(DynamicPropertyRegistry registry) {
