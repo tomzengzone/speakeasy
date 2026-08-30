@@ -35,6 +35,18 @@ public class UserAccount {
   @Column(name = "updated_at", nullable = false)
   private Instant updatedAt;
 
+  @Column(name = "security_epoch", nullable = false)
+  private long securityEpoch;
+
+  @Column(name = "disabled_at")
+  private Instant disabledAt;
+
+  @Column(name = "disabled_reason_code")
+  private String disabledReasonCode;
+
+  @Column(name = "status_changed_at")
+  private Instant statusChangedAt;
+
   protected UserAccount() {}
 
   public UserAccount(UUID userId, String displayName, Instant now) {
@@ -43,6 +55,7 @@ public class UserAccount {
     this.locale = "zh-CN";
     this.accountStatus = "active";
     this.onboardingStatus = "incomplete";
+    this.securityEpoch = 0;
     this.createdAt = now;
     this.updatedAt = now;
   }
@@ -69,6 +82,35 @@ public class UserAccount {
 
   public String getOnboardingStatus() {
     return onboardingStatus;
+  }
+
+  public long getSecurityEpoch() {
+    return securityEpoch;
+  }
+
+  public void disable(String reasonCode, Instant now) {
+    if (!"disabled".equals(accountStatus)) {
+      securityEpoch++;
+    }
+    accountStatus = "disabled";
+    disabledAt = now;
+    disabledReasonCode = reasonCode;
+    statusChangedAt = now;
+    updatedAt = now;
+  }
+
+  public void enable(Instant now) {
+    accountStatus = "active";
+    disabledAt = null;
+    disabledReasonCode = null;
+    statusChangedAt = now;
+    updatedAt = now;
+  }
+
+  public void advanceSecurityEpoch(Instant now) {
+    securityEpoch++;
+    statusChangedAt = now;
+    updatedAt = now;
   }
 
   public void updateDisplayName(String displayName, Instant updatedAt) {

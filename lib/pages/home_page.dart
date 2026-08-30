@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:speakeasy/config/app_config.dart';
 import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
 import 'package:speakeasy/features/commercial/commercial_scenario_gate.dart';
+import 'package:speakeasy/features/content/content_catalog_page.dart';
 import 'package:speakeasy/features/goal_autopilot/goal_autopilot_adapter.dart';
 import 'package:speakeasy/features/goal_autopilot/goal_autopilot_models.dart';
 import 'package:speakeasy/features/goal_autopilot/goal_autopilot_panel.dart';
@@ -21,17 +22,40 @@ import 'package:speakeasy/features/training/training_backend_adapter.dart';
 import 'package:speakeasy/features/training/training_session_loop_page.dart';
 import 'package:speakeasy/features/interview/interview_wiki_store.dart';
 import 'package:speakeasy/models/app_models.dart';
+import 'package:speakeasy/models/cefr_level.dart';
 import 'package:speakeasy/models/learning_stats_model.dart';
 import 'package:speakeasy/models/storage_models.dart';
 import 'package:speakeasy/services/audio_service.dart';
+import 'package:speakeasy/services/api_client.dart';
 import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/services/storage_service.dart';
 import 'package:speakeasy/l10n/l10n.dart';
 import 'package:speakeasy/pages/profile_page.dart';
 import 'package:speakeasy/utils/app_cached_network_image.dart';
 
+String resolveInterviewHomeTargetLevel(
+  InterviewSceneGraph graph,
+  String preferredTargetLevel,
+) {
+  final String targetLevel = requireCefrLevel(
+    preferredTargetLevel,
+    fieldName: 'targetLevel',
+  );
+  for (final InterviewSceneTrack track in graph.tracks) {
+    if (track.targetLevel == targetLevel) {
+      return track.targetLevel;
+    }
+  }
+  return targetLevel;
+}
+
 class SpeakEasyHomePage extends StatefulWidget {
-  const SpeakEasyHomePage({super.key});
+  const SpeakEasyHomePage({
+    super.key,
+    this.courseCatalogApi = const ApiClientCourseCatalogApi(),
+  });
+
+  final CourseCatalogApi courseCatalogApi;
 
   @override
   State<SpeakEasyHomePage> createState() => _SpeakEasyHomePageState();
@@ -87,8 +111,8 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
           final InterviewWikiStore store = InterviewWikiStore(
             sceneId: entry.id,
           );
-          final String storedTargetLevel = _safeLoadSelectedTargetLevel(store);
-          final String selectedTargetLevel = _availableTargetLevel(
+          final String storedTargetLevel = store.loadSelectedTargetLevel();
+          final String selectedTargetLevel = resolveInterviewHomeTargetLevel(
             graph,
             storedTargetLevel,
           );
@@ -249,15 +273,6 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
     }
   }
 
-  String _safeLoadSelectedTargetLevel(InterviewWikiStore store) {
-    try {
-      return store.loadSelectedTargetLevel();
-    } catch (error) {
-      debugPrint('[Home] ignored invalid scene target level storage: $error');
-      return '';
-    }
-  }
-
   List<InterviewPersonalWikiExpression> _safeLoadMasteredExpressions(
     InterviewWikiStore store,
     String sceneId,
@@ -405,23 +420,6 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
       }
     }
     return true;
-  }
-
-  String _availableTargetLevel(
-    InterviewSceneGraph graph,
-    String preferredTargetLevel,
-  ) {
-    for (final InterviewSceneTrack track in graph.tracks) {
-      if (track.targetLevel == preferredTargetLevel) {
-        return track.targetLevel;
-      }
-    }
-    if (graph.tracks.isNotEmpty) {
-      return graph.tracks.first.targetLevel;
-    }
-    return preferredTargetLevel.trim().isEmpty
-        ? 'beginner'
-        : preferredTargetLevel.trim();
   }
 
   String _nodeIdForHomeExpression(InterviewPersonalWikiExpression item) {
@@ -874,6 +872,23 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
     );
   }
 
+  Future<void> _openContentCatalog() async {
+    final AppSession session = AppSessionScope.of(context);
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext routeContext) => ContentCatalogPage(
+          api: widget.courseCatalogApi,
+          onReauthenticate: () async {
+            Navigator.of(
+              context,
+            ).popUntil((Route<dynamic> route) => route.isFirst);
+            await session.logout();
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final double learnTopChromeHeight = MediaQuery.paddingOf(context).top + 76;
@@ -998,6 +1013,18 @@ class _SpeakEasyHomePageState extends State<SpeakEasyHomePage> {
             key: const ValueKey<String>('home_learn_scroll'),
             padding: const EdgeInsets.fromLTRB(14, 34, 14, 100),
             children: [
+              Card(
+                clipBehavior: Clip.antiAlias,
+                child: ListTile(
+                  key: const ValueKey<String>('content_asset_entry'),
+                  leading: const Icon(Icons.library_books_outlined),
+                  title: const Text('浏览官方内容'),
+                  subtitle: const Text('按场景主题比较课程方向'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => unawaited(_openContentCatalog()),
+                ),
+              ),
+              const SizedBox(height: 16),
               const _ActiveLearningSceneSectionHeader(),
               const SizedBox(height: 10),
               _ActiveLearningSceneCarousel(
@@ -1520,9 +1547,9 @@ const String _allDifficultyTargetLevel = 'all';
 const List<({String label, String targetLevel})> _wikiDifficultyFilters =
     <({String label, String targetLevel})>[
       (label: '全部', targetLevel: _allDifficultyTargetLevel),
-      (label: 'L1 入门', targetLevel: 'beginner'),
-      (label: 'L2 进阶', targetLevel: 'intermediate'),
-      (label: 'L3 精通', targetLevel: 'advanced'),
+      (label: 'A2 基础', targetLevel: 'A2'),
+      (label: 'B1 中级', targetLevel: 'B1'),
+      (label: 'B2 中高级', targetLevel: 'B2'),
     ];
 
 class _InterviewSceneLevelOption {

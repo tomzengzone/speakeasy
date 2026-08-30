@@ -35,8 +35,8 @@ void main() {
       expressions: <InterviewExpression>[
         InterviewExpression(
           id: 'intro_1',
-          level: 'beginner',
-          levelLabel: 'Beginner',
+          level: 'A2',
+          levelLabel: 'A2',
           section: 'Self intro',
           text: 'I have a background in operations.',
           tag: '自我介绍',
@@ -44,8 +44,8 @@ void main() {
         ),
         InterviewExpression(
           id: 'strength_1',
-          level: 'beginner',
-          levelLabel: 'Beginner',
+          level: 'A2',
+          levelLabel: 'A2',
           section: 'Strength',
           text: 'I am good at breaking down complex problems.',
           tag: '优势说明',
@@ -53,8 +53,8 @@ void main() {
         ),
         InterviewExpression(
           id: 'pressure_1',
-          level: 'beginner',
-          levelLabel: 'Beginner',
+          level: 'A2',
+          levelLabel: 'A2',
           section: 'Pressure',
           text: 'I stayed calm and focused on the next concrete action.',
           tag: '压力回应',
@@ -313,8 +313,8 @@ void main() {
       final InterviewExpressionLearningProgress progress =
           InterviewExpressionLearningProgress(
             sceneId: defaultInterviewSceneId,
-            nodeId: 'L1_01',
-            targetLevel: 'beginner',
+            nodeId: 'A2_01',
+            targetLevel: 'A2',
             status: InterviewExpressionLearningStatus.prepared,
             currentStep: InterviewExpressionLearningStep.recall,
             attempts: 3,
@@ -328,8 +328,8 @@ void main() {
 
       final InterviewExpressionLearningProgress? restored = store
           .loadExpressionLearningProgressFor(
-            nodeId: 'L1_01',
-            targetLevel: 'beginner',
+            nodeId: 'A2_01',
+            targetLevel: 'A2',
           );
       expect(restored?.status, InterviewExpressionLearningStatus.prepared);
       expect(restored?.isPrepared, isTrue);
@@ -341,8 +341,9 @@ void main() {
   test('expression learning material parses speaking tasks', () {
     final InterviewExpressionNode node = InterviewExpressionNode.fromJson(
       <String, dynamic>{
-        'id': 'L1_01',
-        'targetLevel': 'beginner',
+        'id': 'A2_01',
+        'level': 'A2',
+        'targetLevel': 'A2',
         'targetText': 'Thank you for having me.',
         'learningMaterial': <String, dynamic>{
           'intentCn': '表达感谢',
@@ -378,8 +379,9 @@ void main() {
   test('expression learning material falls back for legacy nodes', () {
     final InterviewExpressionNode node = InterviewExpressionNode.fromJson(
       <String, dynamic>{
-        'id': 'L1_02',
-        'targetLevel': 'beginner',
+        'id': 'A2_02',
+        'level': 'A2',
+        'targetLevel': 'A2',
         'targetText': 'I am currently working as a designer.',
         'meaning': '说明当前岗位。',
         'question': 'What do you currently do?',
@@ -400,8 +402,8 @@ void main() {
     const InterviewExpressionLearningProgress listenOnly =
         InterviewExpressionLearningProgress(
           sceneId: defaultInterviewSceneId,
-          nodeId: 'L1_01',
-          targetLevel: 'beginner',
+          nodeId: 'A2_01',
+          targetLevel: 'A2',
           currentStep: InterviewExpressionLearningStep.shadow,
           completedWarmupSteps: <String>['listen'],
         );
@@ -426,23 +428,20 @@ void main() {
     await store.saveExpressionLearningProgress(
       const InterviewExpressionLearningProgress(
         sceneId: defaultInterviewSceneId,
-        nodeId: 'L1_01',
-        targetLevel: 'beginner',
+        nodeId: 'A2_01',
+        targetLevel: 'A2',
         status: InterviewExpressionLearningStatus.prepared,
         currentStep: InterviewExpressionLearningStep.recall,
       ),
     );
 
     await store.markExpressionLearningMasteredLinked(
-      nodeId: 'L1_01',
-      targetLevel: 'beginner',
+      nodeId: 'A2_01',
+      targetLevel: 'A2',
     );
 
     final InterviewExpressionLearningProgress? restored = store
-        .loadExpressionLearningProgressFor(
-          nodeId: 'L1_01',
-          targetLevel: 'beginner',
-        );
+        .loadExpressionLearningProgressFor(nodeId: 'A2_01', targetLevel: 'A2');
     expect(restored?.status, InterviewExpressionLearningStatus.masteredLinked);
     expect(restored?.isMasteredLinked, isTrue);
   });
@@ -584,20 +583,20 @@ void main() {
     expect(graph.schemaVersion, 2);
     expect(graph.nodes, hasLength(39));
     expect(graph.tracks, hasLength(3));
-    expect(graph.flowNodeIds.first, 'L1_01');
-    expect(graph.flowNodeIds.last, 'L1_13');
-    expect(graph.flowNodeIdsForLevel('intermediate').first, 'L2_01');
-    expect(graph.flowNodeIdsForLevel('advanced').last, 'L3_13');
+    expect(graph.flowNodeIds.first, 'A2_01');
+    expect(graph.flowNodeIds.last, 'A2_13');
+    expect(graph.flowNodeIdsForLevel('B1').first, 'B1_01');
+    expect(graph.flowNodeIdsForLevel('B2').last, 'B2_13');
     expect(graph.toLibrary().expressions, hasLength(39));
-    expect(graph.nodeById('L1_06')?.tag, '优势说明');
-    expect(graph.nodeById('L1_01')?.nearMissVariants, isNotEmpty);
-    expect(graph.nodeById('L2_01')?.targetLevel, 'intermediate');
-    expect(graph.nodeById('L1_06')?.hintTree.l4, contains('complex ideas'));
-    expect(graph.nodeById('L1_01')?.coachRubric.mustCover, isNotEmpty);
-    expect(graph.nodeById('L1_01')?.coachMoves.retryInstruction, isNotEmpty);
-    expect(graph.nodeById('L1_01')?.speechFocus.tone, contains('Confident'));
+    expect(graph.nodeById('A2_06')?.tag, '优势说明');
+    expect(graph.nodeById('A2_01')?.nearMissVariants, isNotEmpty);
+    expect(graph.nodeById('B1_01')?.targetLevel, 'B1');
+    expect(graph.nodeById('A2_06')?.hintTree.l4, contains('complex ideas'));
+    expect(graph.nodeById('A2_01')?.coachRubric.mustCover, isNotEmpty);
+    expect(graph.nodeById('A2_01')?.coachMoves.retryInstruction, isNotEmpty);
+    expect(graph.nodeById('A2_01')?.speechFocus.tone, contains('Confident'));
     expect(
-      graph.nodeById('L1_01')?.toExpression().coachContext,
+      graph.nodeById('A2_01')?.toExpression().coachContext,
       contains('rubric must cover'),
     );
   });
@@ -616,21 +615,21 @@ void main() {
     expect(graph.titleCn, '入职介绍');
     expect(graph.nodes, hasLength(39));
     expect(graph.tracks, hasLength(3));
-    expect(graph.flowNodeIds.first, 'ONB_L1_1');
-    expect(graph.flowNodeIds.last, 'ONB_L1_13');
-    expect(graph.flowNodeIdsForLevel('intermediate').first, 'ONB_L2_1');
-    expect(graph.flowNodeIdsForLevel('advanced').last, 'ONB_L3_13');
-    expect(graph.nodeById('ONB_L1_7')?.targetText, contains('focus on first'));
+    expect(graph.flowNodeIds.first, 'ONB_A2_1');
+    expect(graph.flowNodeIds.last, 'ONB_A2_13');
+    expect(graph.flowNodeIdsForLevel('B1').first, 'ONB_B1_1');
+    expect(graph.flowNodeIdsForLevel('B2').last, 'ONB_B2_13');
+    expect(graph.nodeById('ONB_A2_7')?.targetText, contains('focus on first'));
     expect(
-      graph.nodeById('ONB_L1_1')?.expectedVariants.first.text,
-      graph.nodeById('ONB_L1_1')?.targetText,
+      graph.nodeById('ONB_A2_1')?.expectedVariants.first.text,
+      graph.nodeById('ONB_A2_1')?.targetText,
     );
     expect(
-      graph.nodeById('ONB_L1_1')?.coachMoves.ifStuck,
+      graph.nodeById('ONB_A2_1')?.coachMoves.ifStuck,
       contains('hint ladder'),
     );
     expect(
-      graph.nodeById('ONB_L1_1')?.toExpression().coachContext,
+      graph.nodeById('ONB_A2_1')?.toExpression().coachContext,
       contains('Warm'),
     );
     expect(graph.toLibrary().expressions, hasLength(39));
@@ -755,11 +754,11 @@ void main() {
       masteredWikiExpressions: const <InterviewPersonalWikiExpression>[],
     );
 
-    expect(session.currentStage, 'L1_01');
+    expect(session.currentStage, 'A2_01');
     expect(session.publicSceneId, defaultInterviewSceneId);
-    expect(session.stageExpressionTargets['L1_01']?.id, 'L1_01');
-    expect(plan.stage, 'L1_01');
-    expect(plan.targetExpression?.id, 'L1_01');
+    expect(session.stageExpressionTargets['A2_01']?.id, 'A2_01');
+    expect(plan.stage, 'A2_01');
+    expect(plan.targetExpression?.id, 'A2_01');
     expect(plan.localFallbackQuestion, contains('Welcome'));
     expect(
       plan.localFallbackQuestion,
@@ -776,20 +775,20 @@ void main() {
 
     final InterviewPracticeSession session = engine.startSession(
       userId: 'u1',
-      targetLevel: 'advanced',
+      targetLevel: 'B2',
     );
     final InterviewQuestionPlan plan = engine.openingQuestionPlanForSession(
       session: session,
       masteredWikiExpressions: const <InterviewPersonalWikiExpression>[],
     );
 
-    expect(session.targetLevel, 'advanced');
-    expect(session.currentStage, 'L3_01');
+    expect(session.targetLevel, 'B2');
+    expect(session.currentStage, 'B2_01');
     expect(
       session.plannedStages.where((String stage) => stage != 'wrap_up'),
-      everyElement(startsWith('L3_')),
+      everyElement(startsWith('B2_')),
     );
-    expect(plan.targetExpression?.id, 'L3_01');
+    expect(plan.targetExpression?.id, 'B2_01');
   });
 
   test('scene graph expected variant counts as mastered', () async {
@@ -807,10 +806,10 @@ void main() {
 
     expect(
       reply.masteredExpressions.map((InterviewExpression item) => item.id),
-      contains('L1_01'),
+      contains('A2_01'),
     );
-    expect(session.masteredExpressionIds, contains('L1_01'));
-    expect(session.currentStage, 'L1_02');
+    expect(session.masteredExpressionIds, contains('A2_01'));
+    expect(session.currentStage, 'A2_02');
   });
 
   test(
@@ -822,14 +821,14 @@ void main() {
         sceneGraph: graph,
       );
       final InterviewExpression target = graph
-          .nodeById('L1_01')!
+          .nodeById('A2_01')!
           .toExpression();
 
       final InterviewExpressionMasteryResult result = engine
           .evaluateExpressionMastery(
             expression: target,
             userText: "Thank you for inviting me. I'm happy to be here.",
-            question: graph.nodeById('L1_01')!.question,
+            question: graph.nodeById('A2_01')!.question,
           );
 
       expect(result.status, InterviewExpressionMasteryStatus.mastered);
@@ -845,14 +844,14 @@ void main() {
         sceneGraph: graph,
       );
       final InterviewExpression target = graph
-          .nodeById('L1_01')!
+          .nodeById('A2_01')!
           .toExpression();
 
       final InterviewExpressionMasteryResult result = engine
           .evaluateExpressionMastery(
             expression: target,
             userText: 'Thanks, I am Alex.',
-            question: graph.nodeById('L1_01')!.question,
+            question: graph.nodeById('A2_01')!.question,
           );
 
       expect(result.status, InterviewExpressionMasteryStatus.nearMiss);
@@ -878,12 +877,12 @@ void main() {
 
       expect(
         reply.masteredExpressions.map((InterviewExpression item) => item.id),
-        isNot(contains('L1_01')),
+        isNot(contains('A2_01')),
       );
-      expect(session.masteredExpressionIds, isNot(contains('L1_01')));
+      expect(session.masteredExpressionIds, isNot(contains('A2_01')));
       expect(session.pendingReuseTarget, isNull);
       expect(session.delayedReuseTarget, isNull);
-      expect(session.currentStage, 'L1_01');
+      expect(session.currentStage, 'A2_01');
       expect(reply.nextAction, 'coach_retry');
       expect(reply.assistantMessage, contains('方向是对的'));
       expect(reply.assistantMessage, contains("I'm excited to be here today"));
@@ -919,7 +918,7 @@ void main() {
       );
 
       expect(masteredReply.nextAction, 'next_question');
-      expect(session.currentStage, 'L1_02');
+      expect(session.currentStage, 'A2_02');
     },
   );
 
@@ -932,14 +931,14 @@ void main() {
         sceneGraph: graph,
       );
       final InterviewExpression target = graph
-          .nodeById('L1_01')!
+          .nodeById('A2_01')!
           .toExpression();
 
       final InterviewExpressionMasteryResult result = engine
           .evaluateExpressionMastery(
             expression: target,
             userText: 'What are the next steps?',
-            question: graph.nodeById('L1_01')!.question,
+            question: graph.nodeById('A2_01')!.question,
           );
 
       expect(result.status, InterviewExpressionMasteryStatus.missed);
@@ -956,14 +955,14 @@ void main() {
         library: graph.toLibrary(),
         sceneGraph: graph,
       );
-      final InterviewExpressionNode targetNode = graph.nodeById('ONB_L1_8')!;
+      final InterviewExpressionNode targetNode = graph.nodeById('ONB_A2_8')!;
       final InterviewExpression target = targetNode.toExpression();
 
       final InterviewExpressionMasteryResult result = engine
           .evaluateExpressionMastery(
             expression: target,
             userText: targetNode.targetText,
-            question: graph.nodeById('ONB_L1_7')!.question,
+            question: graph.nodeById('ONB_A2_7')!.question,
           );
 
       expect(result.status, InterviewExpressionMasteryStatus.mastered);
@@ -979,7 +978,7 @@ void main() {
     );
     const InterviewExpression target = InterviewExpression(
       id: 'custom_based_in',
-      level: 'beginner',
+      level: 'A2',
       levelLabel: 'test',
       section: 'self intro',
       text: "I'm [Name], and I'm based in [City].",
@@ -1007,7 +1006,7 @@ void main() {
 
     final InterviewHint l1 = engine.requestHint(
       session,
-      question: graph.nodeById('L1_01')!.question,
+      question: graph.nodeById('A2_01')!.question,
     );
     final InterviewHint l2 = engine.requestHint(session);
     final InterviewHint l3 = engine.requestHint(session);
@@ -1029,12 +1028,12 @@ void main() {
     );
     final InterviewPersonalWikiExpression dueStrength =
         InterviewPersonalWikiExpression(
-          id: 'L1_06',
-          sourceExpressionId: 'L1_06',
-          sourceNodeId: 'L1_06',
+          id: 'A2_06',
+          sourceExpressionId: 'A2_06',
+          sourceNodeId: 'A2_06',
           text: "I'm good at explaining difficult things in a simple way.",
           tag: '优势说明',
-          stage: 'L1_06',
+          stage: 'A2_06',
           masteredAt: now.subtract(const Duration(days: 4)),
           userExample:
               "I'm good at explaining difficult things in a simple way.",
@@ -1051,8 +1050,8 @@ void main() {
       masteredWikiExpressions: <InterviewPersonalWikiExpression>[dueStrength],
     );
 
-    expect(session.currentStage, 'L1_06');
-    expect(session.stageExpressionTargets['L1_06']?.id, 'L1_06');
+    expect(session.currentStage, 'A2_06');
+    expect(session.stageExpressionTargets['A2_06']?.id, 'A2_06');
   });
 
   test('scene graph new lesson starts from unresolved weak node', () async {
@@ -1068,8 +1067,8 @@ void main() {
       weakExpressions: <InterviewWeakExpressionState>[
         InterviewWeakExpressionState(
           sourceSceneId: defaultInterviewSceneId,
-          sourceNodeId: 'L1_06',
-          sourceExpressionId: 'L1_06',
+          sourceNodeId: 'A2_06',
+          sourceExpressionId: 'A2_06',
           targetText:
               "One of my strengths is explaining complex ideas in a simple way.",
           tag: '优势说明',
@@ -1082,8 +1081,8 @@ void main() {
       ],
     );
 
-    expect(session.currentStage, 'L1_06');
-    expect(session.stageExpressionTargets['L1_06']?.id, 'L1_06');
+    expect(session.currentStage, 'A2_06');
+    expect(session.stageExpressionTargets['A2_06']?.id, 'A2_06');
   });
 
   test('scene graph skips weak node resolved by expression practice', () async {
@@ -1099,8 +1098,8 @@ void main() {
       preparedLearningProgress: <InterviewExpressionLearningProgress>[
         InterviewExpressionLearningProgress(
           sceneId: defaultInterviewSceneId,
-          nodeId: 'L1_06',
-          targetLevel: 'beginner',
+          nodeId: 'A2_06',
+          targetLevel: 'A2',
           status: InterviewExpressionLearningStatus.prepared,
           currentStep: InterviewExpressionLearningStep.recall,
           attempts: 1,
@@ -1112,8 +1111,8 @@ void main() {
       weakExpressions: <InterviewWeakExpressionState>[
         InterviewWeakExpressionState(
           sourceSceneId: defaultInterviewSceneId,
-          sourceNodeId: 'L1_06',
-          sourceExpressionId: 'L1_06',
+          sourceNodeId: 'A2_06',
+          sourceExpressionId: 'A2_06',
           targetText:
               "One of my strengths is explaining complex ideas in a simple way.",
           tag: '优势说明',
@@ -1126,7 +1125,7 @@ void main() {
       ],
     );
 
-    expect(session.currentStage, isNot('L1_06'));
+    expect(session.currentStage, isNot('A2_06'));
   });
 
   test(
@@ -1140,13 +1139,13 @@ void main() {
       );
       final InterviewPersonalWikiExpression otherSceneDue =
           InterviewPersonalWikiExpression(
-            id: 'other_scene_L1_06',
+            id: 'other_scene_A2_06',
             sourceSceneId: 'other_scene',
-            sourceExpressionId: 'L1_06',
-            sourceNodeId: 'L1_06',
+            sourceExpressionId: 'A2_06',
+            sourceNodeId: 'A2_06',
             text: "I'm good at explaining difficult things in a simple way.",
             tag: '优势说明',
-            stage: 'L1_06',
+            stage: 'A2_06',
             masteredAt: now.subtract(const Duration(days: 4)),
             userExample:
                 "I'm good at explaining difficult things in a simple way.",
@@ -1165,7 +1164,7 @@ void main() {
         ],
       );
 
-      expect(session.currentStage, 'L1_01');
+      expect(session.currentStage, 'A2_01');
     },
   );
 
@@ -1334,7 +1333,7 @@ void main() {
       jobFamily: 'general',
       mode: 'full_mock',
       userTier: 'newbie',
-      targetLevel: 'beginner',
+      targetLevel: 'A2',
       plannedStages: const <String>['pressure', 'wrap_up'],
       roundMode: InterviewNextRoundMode.review,
     );
@@ -1369,7 +1368,7 @@ void main() {
     final InterviewLlmScheduler scheduler = InterviewLlmScheduler();
     final InterviewQuestionPlan plan = InterviewQuestionPlan(
       action: 'expand_new_expression',
-      stage: 'L1_06',
+      stage: 'A2_06',
       questionIntent:
           'open a context where the learner can describe a strength',
       mustAskAbout: 'one key strength',
@@ -1392,7 +1391,7 @@ void main() {
     final InterviewLlmScheduler scheduler = InterviewLlmScheduler();
     final InterviewQuestionPlan plan = InterviewQuestionPlan(
       action: 'expand_new_expression',
-      stage: 'L1_06',
+      stage: 'A2_06',
       questionIntent:
           'open a context where the learner can describe a strength',
       mustAskAbout: 'one key strength',
@@ -1507,7 +1506,7 @@ void main() {
       jobFamily: 'general',
       mode: 'full_mock',
       userTier: 'newbie',
-      targetLevel: 'beginner',
+      targetLevel: 'A2',
       plannedStages: const <String>['open', 'background', 'wrap_up'],
       roundMode: InterviewNextRoundMode.newLesson,
     );

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speakeasy/application/session/session_lifecycle_coordinator.dart';
+import 'package:speakeasy/core/auth/auth_credentials.dart';
 import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
 import 'package:speakeasy/features/commercial/commercial_scenario_gate.dart';
 import 'package:speakeasy/features/interview/interview_llm_scheduler.dart';
@@ -14,6 +15,8 @@ import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/services/audio_service.dart';
 import 'package:speakeasy/services/auth_service.dart';
 import 'package:speakeasy/services/storage_service.dart';
+
+import '../../support/hive_test_support.dart';
 
 class _StaticSessionLifecycleCoordinator extends SessionLifecycleCoordinator {
   _StaticSessionLifecycleCoordinator(this.memberPlan)
@@ -47,28 +50,32 @@ class _StaticSessionLifecycleCoordinator extends SessionLifecycleCoordinator {
   }
 
   @override
-  Future<ResolvedAuthenticatedSession?> hydrateExistingSession() async => null;
+  Future<ResolvedAuthenticatedSession?> hydrateExistingSession() async {
+    return ResolvedAuthenticatedSession(
+      credentials: AuthCredentials(
+        accessToken: 'stored-access-token',
+        refreshToken: 'stored-refresh-token',
+        expiresAt: DateTime.utc(2099),
+      ),
+      userJson: <String, dynamic>{
+        'nickname': 'Test learner',
+        'avatarUrl': '',
+        'memberPlan': memberPlan,
+        'onboardingDone': true,
+      },
+    );
+  }
 }
 
 class _NoopSessionRemoteApi implements SessionRemoteApi {
   const _NoopSessionRemoteApi();
 
   @override
-  Future<void> clearToken() async {}
-
-  @override
   Future<Map<String, dynamic>> getMe() async => <String, dynamic>{'code': 401};
 
   @override
-  Future<String?> getToken() async => null;
-
-  @override
-  Future<Map<String, dynamic>> refreshToken() async => <String, dynamic>{
-    'code': 401,
-  };
-
-  @override
-  Future<void> saveToken(String token) async {}
+  Future<Map<String, dynamic>> refreshToken(String refreshToken) async =>
+      <String, dynamic>{'code': 401};
 
   @override
   Future<Map<String, dynamic>> testPhoneLogin(String phone) async =>
@@ -77,9 +84,6 @@ class _NoopSessionRemoteApi implements SessionRemoteApi {
 
 class _EmptySessionLocalStore implements SessionLocalStore {
   const _EmptySessionLocalStore();
-
-  @override
-  AuthSessionStorageModel? getAuthSession() => null;
 
   @override
   StoredUserProfileModel? getUserProfile() => null;
@@ -133,12 +137,15 @@ void main() {
 
   late Directory hiveDir;
 
-  setUp(() async {
+  setUpAll(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     hiveDir = await Directory.systemTemp.createTemp(
       'speakeasy_interview_widget_test_',
     );
     await StorageService.instance.init(hivePath: hiveDir.path);
+  });
+
+  setUp(() async {
     await StorageService.instance.remove('interview_personal_wiki_expressions');
     await StorageService.instance.remove('interview_compiled_wiki');
     await StorageService.instance.remove('interview_user_growth_wiki');
@@ -146,15 +153,13 @@ void main() {
     await StorageService.instance.remove('interview_useful_wiki_items');
   });
 
-  tearDown(() async {
-    if (await hiveDir.exists()) {
-      await hiveDir.delete(recursive: true);
-    }
+  tearDownAll(() async {
+    await deleteHiveTestDirectory(hiveDir);
   });
 
   Future<void> pumpInterviewPage(
     WidgetTester tester, {
-    String targetLevel = 'beginner',
+    String targetLevel = 'A2',
     String memberPlan = 'free',
     CommercialEntitlementProjection? entitlementProjection,
   }) async {
@@ -261,8 +266,8 @@ void main() {
     expect(find.text('场景导航'), findsWidgets);
     expect(find.text('英语面试 · 13 个表达'), findsOneWidget);
     expect(find.text('英语面试'), findsOneWidget);
-    expect(find.textContaining('L2 进阶'), findsNothing);
-    expect(find.textContaining('L3 精通'), findsNothing);
+    expect(find.textContaining('B1 中级'), findsNothing);
+    expect(find.textContaining('B2 中高级'), findsNothing);
     expect(find.textContaining('本轮待练'), findsWidgets);
   });
 
@@ -271,7 +276,7 @@ void main() {
   ) async {
     await pumpInterviewPage(
       tester,
-      targetLevel: 'advanced',
+      targetLevel: 'B2',
       memberPlan: 'yearly',
       entitlementProjection: _proEntitlement(),
     );
@@ -295,12 +300,12 @@ void main() {
       findsWidgets,
     );
     expect(find.textContaining('Thank you for having me'), findsNothing);
-    expect(find.textContaining('L1 入门'), findsNothing);
-    expect(find.textContaining('L2 进阶'), findsNothing);
+    expect(find.textContaining('A2 基础'), findsNothing);
+    expect(find.textContaining('B1 中级'), findsNothing);
   });
 
   testWidgets(
-    'advanced scene gate ignores local paid memberPlan without entitlement',
+    'B2 scene gate ignores local paid memberPlan without entitlement',
     (WidgetTester tester) async {
       final AppSession session = AppSession(
         sessionCoordinator: _StaticSessionLifecycleCoordinator('yearly'),
@@ -336,7 +341,7 @@ void main() {
   );
 
   testWidgets(
-    'advanced scene gate unlocks from backend entitlement despite local free plan',
+    'B2 scene gate unlocks from backend entitlement despite local free plan',
     (WidgetTester tester) async {
       await pumpInterviewPage(
         tester,
@@ -380,12 +385,10 @@ void main() {
       find.byKey(const ValueKey<String>('scene_map_level_dropdown')),
     );
     await tester.pumpAndSettle();
-    await tester.tap(
-      find.byKey(const ValueKey<String>('scene_map_level_intermediate')),
-    );
+    await tester.tap(find.byKey(const ValueKey<String>('scene_map_level_B1')));
     for (int i = 0; i < 30; i += 1) {
       await tester.pump(const Duration(milliseconds: 100));
-      if (find.text('L2 进阶').evaluate().isNotEmpty &&
+      if (find.text('B1 中级').evaluate().isNotEmpty &&
           find
               .byKey(const ValueKey<String>('interview_scene_map_page'))
               .evaluate()
@@ -420,9 +423,7 @@ void main() {
       find.byKey(const ValueKey<String>('scene_map_level_dropdown')),
     );
     await tester.pumpAndSettle();
-    await tester.tap(
-      find.byKey(const ValueKey<String>('scene_map_level_advanced')),
-    );
+    await tester.tap(find.byKey(const ValueKey<String>('scene_map_level_B2')));
     for (int i = 0; i < 30; i += 1) {
       await tester.pump(const Duration(milliseconds: 100));
       if (find

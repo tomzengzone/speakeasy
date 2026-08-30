@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Entity
@@ -74,6 +75,7 @@ public class GoalAutopilotControl {
       String missedDayPolicy,
       String ruleVersion,
       Instant now) {
+    Instant persistedNow = persistedPrecision(now);
     this.controlId = controlId;
     this.userId = userId;
     this.goalProfileId = goalProfileId;
@@ -85,8 +87,8 @@ public class GoalAutopilotControl {
     this.intensityOverride = intensityOverride;
     this.missedDayPolicy = missedDayPolicy;
     this.ruleVersion = ruleVersion;
-    this.createdAt = now;
-    this.updatedAt = now;
+    this.createdAt = persistedNow;
+    this.updatedAt = persistedNow;
   }
 
   public void updateSettings(
@@ -98,6 +100,7 @@ public class GoalAutopilotControl {
       String intensityOverride,
       String missedDayPolicy,
       Instant now) {
+    Instant persistedNow = persistedPrecision(now);
     this.controlStatus = controlStatus;
     this.quietHoursStart = quietHoursStart;
     this.quietHoursEnd = quietHoursEnd;
@@ -105,18 +108,19 @@ public class GoalAutopilotControl {
     this.notificationConsent = notificationConsent;
     this.intensityOverride = intensityOverride;
     this.missedDayPolicy = missedDayPolicy;
-    this.updatedAt = now;
+    this.updatedAt = persistedNow;
   }
 
   public boolean pause(String pauseReason, Instant now) {
     if ("paused".equals(controlStatus)) {
       return false;
     }
+    Instant persistedNow = persistedPrecision(now);
     this.controlStatus = "paused";
-    this.pausedAt = now;
+    this.pausedAt = persistedNow;
     this.pauseReason = pauseReason;
     this.resumedAt = null;
-    this.updatedAt = now;
+    this.updatedAt = persistedNow;
     return true;
   }
 
@@ -124,19 +128,24 @@ public class GoalAutopilotControl {
     if (!"paused".equals(this.controlStatus) && this.pausedAt == null && this.pauseReason == null) {
       return false;
     }
+    Instant persistedNow = persistedPrecision(now);
     this.controlStatus = controlStatus;
-    this.resumedAt = now;
+    this.resumedAt = persistedNow;
     this.pausedAt = null;
     this.pauseReason = null;
-    this.updatedAt = now;
+    this.updatedAt = persistedNow;
     return true;
   }
 
   public void setPolicyStatus(String controlStatus, Instant now) {
     if (!"paused".equals(this.controlStatus) && !this.controlStatus.equals(controlStatus)) {
       this.controlStatus = controlStatus;
-      this.updatedAt = now;
+      this.updatedAt = persistedPrecision(now);
     }
+  }
+
+  private static Instant persistedPrecision(Instant value) {
+    return value.truncatedTo(ChronoUnit.MICROS);
   }
 
   public UUID getControlId() {

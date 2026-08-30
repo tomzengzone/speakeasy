@@ -24,7 +24,7 @@ class LearningRouteMappingTest extends BackendIntegrationTestSupport {
     submitAssessment(tokens, "job_interview")
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.route.current_scenario_id").value("job_interview"))
-        .andExpect(jsonPath("$.route.target_level").value("L2"))
+        .andExpect(jsonPath("$.route.target_level").value("B1"))
         .andExpect(jsonPath("$.route.scenario_ids[0]").value("job_interview"));
 
     mvc.perform(get("/home/summary").header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
@@ -72,7 +72,7 @@ class LearningRouteMappingTest extends BackendIntegrationTestSupport {
               "schema_version": 1,
               "goal_direction": "%s",
               "pain_points": ["opening"],
-              "output_level": "L2",
+              "output_level": "B1",
               "daily_minutes": 15
             }
             """.formatted(goalDirection)));

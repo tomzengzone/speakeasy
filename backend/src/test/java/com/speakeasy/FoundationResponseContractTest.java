@@ -95,7 +95,8 @@ class FoundationResponseContractTest {
         .andExpect(jsonPath("$.access_token", not(blankOrNullString())))
         .andExpect(jsonPath("$.refresh_token", not(blankOrNullString())))
         .andExpect(jsonPath("$.expires_at", not(blankOrNullString())))
-        .andExpect(jsonPath("$.session_id").doesNotExist())
+        .andExpect(jsonPath("$.session_id", not(blankOrNullString())))
+        .andExpect(jsonPath("$.refresh_expires_at", not(blankOrNullString())))
         .andExpect(jsonPath("$.access_token_hash").doesNotExist())
         .andExpect(jsonPath("$.refresh_token_hash").doesNotExist())
         .andExpect(jsonPath("$.issued_at").doesNotExist());
@@ -110,7 +111,7 @@ class FoundationResponseContractTest {
         .andExpect(jsonPath("$.schema_version").value(1))
         .andExpect(jsonPath("$.user.user_id").value(tokens.userId()))
         .andExpect(jsonPath("$.user.display_name").value("Phone User"))
-        .andExpect(jsonPath("$.user.target_level").value("L1"))
+        .andExpect(jsonPath("$.user.target_level").value("A2"))
         .andExpect(jsonPath("$.user.daily_minutes").value(10))
         .andExpect(jsonPath("$.user.created_at").doesNotExist())
         .andExpect(jsonPath("$.user.updated_at").doesNotExist())

@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import 'package:speakeasy/application/contracts/app_repository.dart';
+import 'package:speakeasy/application/session/device_session_coordinator.dart';
+import 'package:speakeasy/application/session/device_session_models.dart';
 import 'package:speakeasy/application/session/session_lifecycle_coordinator.dart';
 import 'package:speakeasy/application/session/session_profile_coordinator.dart';
 import 'package:speakeasy/application/session/session_stats_coordinator.dart';
@@ -19,6 +21,7 @@ import 'package:speakeasy/models/app_models.dart';
 import 'package:speakeasy/services/apple_auth_service.dart';
 import 'package:speakeasy/services/apple_payment_service.dart';
 import 'package:speakeasy/services/android_payment_service.dart';
+import 'package:speakeasy/services/api_client.dart';
 import 'package:speakeasy/services/auth_service.dart';
 import 'package:speakeasy/services/payment_service.dart';
 import 'package:speakeasy/services/stats_service.dart';
@@ -30,6 +33,14 @@ export 'package:speakeasy/core/constants/avatar_defaults.dart'
     show defaultAvatarUrls;
 export 'package:speakeasy/domain/auth/auth_models.dart';
 export 'package:speakeasy/domain/scene/scene_models.dart';
+
+enum SessionAuthState {
+  initializing,
+  authenticated,
+  unauthenticated,
+  offlineDegraded,
+  terminal,
+}
 
 AppRepository _defaultRepository() {
   // 所有 AI 调用通过后端代理（DashScope），apiKey 参数已不再使用直连
@@ -56,6 +67,8 @@ class AppSession extends ChangeNotifier {
     SessionLifecycleCoordinator? sessionCoordinator,
     SessionProfileCoordinator? profileCoordinator,
     SessionStatsCoordinator? statsCoordinator,
+    DeviceSessionCoordinator? deviceSessionCoordinator,
+    Stream<SessionSecurityFailure>? sessionSecurityFailures,
   }) {
     final AppRepository resolvedRepository = repository ?? _defaultRepository();
     final StatsService resolvedStatsService =
@@ -73,6 +86,10 @@ class AppSession extends ChangeNotifier {
       statsCoordinator:
           statsCoordinator ??
           SessionStatsCoordinator(statsService: resolvedStatsService),
+      deviceSessionCoordinator:
+          deviceSessionCoordinator ?? const DeviceSessionCoordinator(),
+      sessionSecurityFailures:
+          sessionSecurityFailures ?? ApiClient.sessionSecurityFailures,
     );
   }
 
@@ -83,15 +100,22 @@ class AppSession extends ChangeNotifier {
     required SessionLifecycleCoordinator sessionCoordinator,
     required SessionProfileCoordinator profileCoordinator,
     required SessionStatsCoordinator statsCoordinator,
+    required DeviceSessionCoordinator deviceSessionCoordinator,
+    required Stream<SessionSecurityFailure> sessionSecurityFailures,
   }) : _repository = repository,
        _paymentService = paymentService,
        _entitlementClient = entitlementClient,
        _sessionCoordinator = sessionCoordinator,
        _profileCoordinator = profileCoordinator,
-       _statsCoordinator = statsCoordinator {
-    Future.microtask(_loadFromStorage);
+       _statsCoordinator = statsCoordinator,
+       _deviceSessionCoordinator = deviceSessionCoordinator {
+    _securityFailureSubscription = sessionSecurityFailures.listen((
+      SessionSecurityFailure failure,
+    ) {
+      unawaited(_handleSessionSecurityFailure(failure));
+    });
+    unawaited(initializeSession());
     Future.microtask(_loadCachedStats);
-    Future.microtask(_hydrateFromBackend);
   }
 
   final AppRepository _repository;
@@ -100,8 +124,16 @@ class AppSession extends ChangeNotifier {
   final SessionLifecycleCoordinator _sessionCoordinator;
   final SessionProfileCoordinator _profileCoordinator;
   final SessionStatsCoordinator _statsCoordinator;
+  final DeviceSessionCoordinator _deviceSessionCoordinator;
+  late final StreamSubscription<SessionSecurityFailure>
+  _securityFailureSubscription;
+  Future<void>? _localSessionClearInFlight;
+  Future<void>? _sessionInitializationInFlight;
+  Future<void>? _foregroundRefreshInFlight;
 
   AppUser? _user;
+  AppUser? _cachedUser;
+  SessionAuthState _authState = SessionAuthState.initializing;
   CommercialEntitlementProjection _entitlementProjection =
       CommercialEntitlementProjection.unknown();
   Future<CommercialEntitlementProjection>? _entitlementRefreshInFlight;
@@ -117,7 +149,8 @@ class AppSession extends ChangeNotifier {
   String? _membershipErrorMessage;
   String? _statsErrorMessage;
 
-  bool get isLoggedIn => _user != null;
+  bool get isLoggedIn => _authState == SessionAuthState.authenticated;
+  SessionAuthState get authState => _authState;
   bool get onboardingDone => _onboardingDone;
   bool get isAuthenticating => _isAuthenticating;
   bool get isUpdatingMembership => _isUpdatingMembership;
@@ -176,6 +209,8 @@ class AppSession extends ChangeNotifier {
       } else {
         _resetEntitlementProjection();
         _user = result.user;
+        _cachedUser = result.user;
+        _authState = SessionAuthState.authenticated;
         unawaited(_persistUserState());
       }
     } catch (error) {
@@ -683,25 +718,110 @@ class AppSession extends ChangeNotifier {
     );
   }
 
-  Future<void> logout() async {
+  Future<DeviceLogoutResult> logout() async {
+    final DeviceLogoutResult result = await _deviceSessionCoordinator
+        .logoutCurrent(clearLocalSession: _clearLocalSession);
+    if (result.userMessage != null) {
+      _authErrorMessage = result.userMessage;
+      notifyListeners();
+    }
+    return result;
+  }
+
+  Future<DeviceLogoutResult> logoutAll() async {
+    final DeviceLogoutResult result = await _deviceSessionCoordinator.logoutAll(
+      clearLocalSession: _clearLocalSession,
+    );
+    if (result.userMessage != null) {
+      _authErrorMessage = result.userMessage;
+      notifyListeners();
+    }
+    return result;
+  }
+
+  Future<void> clearSessionAfterAccountRecovery() {
+    return _clearLocalSession();
+  }
+
+  Future<void> _handleSessionSecurityFailure(
+    SessionSecurityFailure failure,
+  ) async {
+    _authState = SessionAuthState.terminal;
+    notifyListeners();
+    try {
+      await _clearLocalSession(authMessage: failure.userMessage);
+    } catch (error, stackTrace) {
+      ErrorHandler.handleError(
+        error,
+        stackTrace: stackTrace,
+        context: 'Terminal authentication failure cleanup failed',
+      );
+    }
+  }
+
+  Future<void> _clearLocalSession({String? authMessage}) async {
+    if (authMessage != null && _authErrorMessage != authMessage) {
+      _authErrorMessage = authMessage;
+      notifyListeners();
+    }
+    final Future<void>? pending = _localSessionClearInFlight;
+    if (pending != null) {
+      return pending;
+    }
+
+    late final Future<void> clearFuture;
+    clearFuture = _performLocalSessionClear(authMessage);
+    _localSessionClearInFlight = clearFuture;
+    try {
+      await clearFuture;
+    } finally {
+      if (identical(_localSessionClearInFlight, clearFuture)) {
+        _localSessionClearInFlight = null;
+      }
+    }
+  }
+
+  Future<void> _performLocalSessionClear(String? authMessage) async {
     _user = null;
+    _cachedUser = null;
+    _authState = authMessage == null
+        ? SessionAuthState.unauthenticated
+        : SessionAuthState.terminal;
     _resetEntitlementProjection();
     _stats = const LearningStatsModel();
     _onboardingDone = false;
     _themeMode = ThemeMode.light;
     _isStatsLoading = false;
     _isUpdatingMembership = false;
-    _authErrorMessage = null;
+    _authErrorMessage = authMessage;
     _membershipErrorMessage = null;
     _statsErrorMessage = null;
     notifyListeners();
-    await _profileCoordinator.clearSessionData();
-    await _statsCoordinator.clearCache();
+
+    Object? firstError;
+    StackTrace? firstStackTrace;
+    try {
+      await _profileCoordinator.clearSessionData();
+    } catch (error, stackTrace) {
+      firstError = error;
+      firstStackTrace = stackTrace;
+    }
+    try {
+      await _statsCoordinator.clearCache();
+    } catch (error, stackTrace) {
+      firstError ??= error;
+      firstStackTrace ??= stackTrace;
+    }
+    if (firstError != null) {
+      Error.throwWithStackTrace(firstError, firstStackTrace!);
+    }
   }
 
   Future<void> deleteAccount() async {
     await _profileCoordinator.deleteAccount();
     _user = null;
+    _cachedUser = null;
+    _authState = SessionAuthState.unauthenticated;
     _resetEntitlementProjection();
     _stats = const LearningStatsModel();
     _onboardingDone = false;
@@ -785,16 +905,22 @@ class AppSession extends ChangeNotifier {
     _displayProductPlan = normalizedPlan;
   }
 
-  Future<void> _loadFromStorage() async {
-    final StoredSessionSnapshot snapshot = await _sessionCoordinator
-        .loadStoredSession();
-    _user = snapshot.user;
-    _onboardingDone = snapshot.onboardingDone;
-    _themeMode = snapshot.themeMode;
-    notifyListeners();
-    if (_user != null) {
-      unawaited(refreshEntitlementProjection());
+  Future<void> initializeSession() {
+    final Future<void>? pending = _sessionInitializationInFlight;
+    if (pending != null) {
+      return pending;
     }
+
+    _authState = SessionAuthState.initializing;
+    notifyListeners();
+    late final Future<void> initialization;
+    initialization = _initializeSession();
+    _sessionInitializationInFlight = initialization;
+    return initialization.whenComplete(() {
+      if (identical(_sessionInitializationInFlight, initialization)) {
+        _sessionInitializationInFlight = null;
+      }
+    });
   }
 
   Future<void> _loadCachedStats() async {
@@ -816,25 +942,60 @@ class AppSession extends ChangeNotifier {
     }
   }
 
-  Future<void> _hydrateFromBackend() async {
-    final ResolvedAuthenticatedSession? session;
+  Future<void> _initializeSession() async {
+    late final StoredSessionSnapshot snapshot;
     try {
-      session = await _sessionCoordinator.hydrateExistingSession();
+      snapshot = await _sessionCoordinator.loadStoredSession();
     } catch (error, stackTrace) {
       ErrorHandler.handleError(
         error,
         stackTrace: stackTrace,
-        context: 'Session hydration from backend failed',
+        context: 'Stored session could not be loaded',
       );
+      _authState = SessionAuthState.unauthenticated;
+      notifyListeners();
+      return;
+    }
+
+    _cachedUser = snapshot.user;
+    _onboardingDone = snapshot.onboardingDone;
+    _themeMode = snapshot.themeMode;
+
+    final ResolvedAuthenticatedSession? session;
+    try {
+      session = await _sessionCoordinator.hydrateExistingSession();
+    } catch (error, stackTrace) {
+      if (error is! RefreshFailure && error is! SessionSecurityFailure) {
+        ErrorHandler.handleError(
+          error,
+          stackTrace: stackTrace,
+          context: 'Session hydration from backend failed',
+        );
+      }
+      _user = null;
+      if (error is SessionSecurityFailure) {
+        _authState = SessionAuthState.terminal;
+        _authErrorMessage = error.userMessage;
+      } else if (snapshot.hasCredentials) {
+        _authState = SessionAuthState.offlineDegraded;
+      } else {
+        _authState = SessionAuthState.unauthenticated;
+      }
+      notifyListeners();
       return;
     }
     if (session == null) {
+      _user = null;
+      _authState = SessionAuthState.unauthenticated;
+      notifyListeners();
       return;
     }
 
     try {
       _resetEntitlementProjection();
       _applyUserJson(session.userJson);
+      _cachedUser = _user;
+      _authState = SessionAuthState.authenticated;
       final bool hadStats = _stats.hasOverviewData;
       if (!hadStats) {
         _isStatsLoading = true;
@@ -858,7 +1019,56 @@ class AppSession extends ChangeNotifier {
         stackTrace: stackTrace,
         context: 'Session hydration from backend failed',
       );
-      // Keep the local cache when the backend is temporarily unavailable.
+      _user = null;
+      _authState = snapshot.hasCredentials
+          ? SessionAuthState.offlineDegraded
+          : SessionAuthState.unauthenticated;
+      notifyListeners();
+    }
+  }
+
+  Future<void> handleForegroundResume() {
+    final Future<void>? pending = _foregroundRefreshInFlight;
+    if (pending != null) {
+      return pending;
+    }
+    if (_authState != SessionAuthState.authenticated &&
+        _authState != SessionAuthState.offlineDegraded) {
+      return Future<void>.value();
+    }
+
+    late final Future<void> refresh;
+    refresh = _performForegroundRefresh();
+    _foregroundRefreshInFlight = refresh;
+    return refresh.whenComplete(() {
+      if (identical(_foregroundRefreshInFlight, refresh)) {
+        _foregroundRefreshInFlight = null;
+      }
+    });
+  }
+
+  Future<void> _performForegroundRefresh() async {
+    try {
+      final credentials = await _sessionCoordinator.refreshForForeground();
+      if (credentials == null) {
+        await _clearLocalSession();
+        return;
+      }
+      if (_authState == SessionAuthState.offlineDegraded) {
+        await initializeSession();
+      }
+    } on SessionSecurityFailure catch (failure) {
+      await _handleSessionSecurityFailure(failure);
+    } catch (error, stackTrace) {
+      ErrorHandler.handleError(
+        error,
+        stackTrace: stackTrace,
+        context: 'Foreground authentication refresh failed',
+      );
+      _cachedUser ??= _user;
+      _user = null;
+      _authState = SessionAuthState.offlineDegraded;
+      notifyListeners();
     }
   }
 
@@ -869,6 +1079,8 @@ class AppSession extends ChangeNotifier {
         .resolveAuthenticatedSession(payload);
     _resetEntitlementProjection();
     _applyUserJson(session.userJson);
+    _cachedUser = _user;
+    _authState = SessionAuthState.authenticated;
     final bool hadStats = _stats.hasOverviewData;
     if (!hadStats) {
       _isStatsLoading = true;
@@ -1082,12 +1294,12 @@ class AppSession extends ChangeNotifier {
 
   String _outputLevelFromAssessmentLevel(int level) {
     if (level <= 1) {
-      return 'L1';
+      return 'A2';
     }
     if (level == 2) {
-      return 'L2';
+      return 'B1';
     }
-    return 'L3';
+    return 'B2';
   }
 
   void _applyUserJson(Map<String, dynamic> json) {
@@ -1127,6 +1339,12 @@ class AppSession extends ChangeNotifier {
       return text.substring('Exception: '.length);
     }
     return text.isEmpty ? fallback : text;
+  }
+
+  @override
+  void dispose() {
+    unawaited(_securityFailureSubscription.cancel());
+    super.dispose();
   }
 }
 

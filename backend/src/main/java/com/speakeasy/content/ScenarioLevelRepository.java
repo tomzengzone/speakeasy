@@ -1,5 +1,6 @@
 package com.speakeasy.content;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -9,4 +10,6 @@ public interface ScenarioLevelRepository extends JpaRepository<ScenarioLevel, UU
   List<ScenarioLevel> findByScenarioIdOrderByLevelCodeAsc(String scenarioId);
 
   Optional<ScenarioLevel> findByScenarioIdAndLevelCode(String scenarioId, String levelCode);
+
+  List<ScenarioLevel> findByScenarioIdInOrderByScenarioIdAscLevelCodeAsc(Collection<String> scenarioIds);
 }

@@ -1,13 +1,13 @@
-# PR-003 current lineage
-# This lineage-only marker does not change API behavior, schemas, compatibility,
-# or accepted implementation facts. Current product lineage is resolved from
-# applicable approved Functional Requirements; legacy Product Base, Increment,
-# Spec/AC, test-case, and traceability labels below are historical provenance.
+# Current lineage
+# Current product lineage is resolved from applicable approved Stories, Vertical
+# Slices, and Functional Requirements. AUTH-ACCOUNT-RECOVERY-API-001 is an
+# additive compatibility decision; legacy Product Base, Increment, Spec/AC,
+# test-case, and traceability labels below are historical provenance.
 openapi: 3.0.3
 info:
   title: SpeakEasy API
   version: 0.1.0
-  description: 'Machine-readable OpenAPI source of truth for SpeakEasy server-backed Product Base behavior, P0 commercial
+  description: 'Machine-readable OpenAPI source of truth for SpeakEasy server-backed Product Base behavior, approved phone account recovery, P0 commercial
     subscription readiness, P0.1 expression automation training, and P0.2 goal-driven learning autopilot including
     Followup-B control/planner/memory hardening. P1/P2
     roadmap items are intentionally excluded from implementation-level paths until they have owning increments.
@@ -20,15 +20,30 @@ servers:
   description: Versioned API base path
 security:
 - bearerAuth: []
+x-auth-token-context:
+  format: opaque
+  client_id: speakeasy-mobile
+  audience: speakeasy-api
+  authorized_scopes:
+  - user:read
+  - user:write
+  - course:read
+  - learning:read
+  - learning:write
+  - ai:use
+  - session:manage
+  enforcement: The authentication filter validates the opaque token registry, account and session state, client, audience, expiry, and Spring Security required scopes before controller execution.
 tags:
 - name: Auth
-  description: Login, refresh, and logout.
+  description: Login, purpose-bound phone account recovery, refresh, and logout.
 - name: User
   description: User profile and account lifecycle.
 - name: Onboarding
   description: Assessment and initial learning route.
 - name: Scenario
   description: Official scenario content and levels.
+- name: Course
+  description: Learner-visible course catalog and exact published course versions.
 - name: Home
   description: Server-backed home summary and learning entry state.
 - name: Practice
@@ -62,6 +77,7 @@ tags:
 x-product-scope:
   implementation_level:
   - product-base
+  - approved-phone-account-recovery
   - p0-commercial-readiness
   - commercial-ai-provider-hardening
   - p0-1-expression-automation-training
@@ -122,6 +138,152 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '429':
+          $ref: '#/components/responses/AuthRateLimited'
+        '503':
+          $ref: '#/components/responses/AuthServiceUnavailable'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /auth/verification-codes/phone:
+    post:
+      tags:
+      - Auth
+      operationId: requestPhoneVerificationCode
+      summary: Request a phone verification code.
+      security: []
+      x-traceability:
+        product_objects:
+        - product-base
+        - p0-commercial-readiness
+        requirements:
+        - FR-001
+        - FR-COM-004
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhoneVerificationCodeRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/PhoneVerificationCodeRequestExample'
+      responses:
+        '202':
+          description: Verification code request accepted by the configured provider.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhoneVerificationCodeResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/PhoneVerificationCodeResponseExample'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/AuthRateLimited'
+        '503':
+          $ref: '#/components/responses/AuthServiceUnavailable'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /auth/account-recovery/phone/verification-codes:
+    post:
+      tags:
+      - Auth
+      operationId: requestPhoneAccountRecoveryCode
+      summary: Request a purpose-bound phone account recovery verification code.
+      description: Accepts the request without revealing whether the phone number exists, is bound, or is recoverable. A recovery code is isolated from ordinary login and every other verification purpose.
+      security: []
+      x-traceability:
+        product_objects:
+        - US-ACC-009
+        - VS-ACC-009-1
+        requirements:
+        - FR-ACC-001
+        - FR-ACC-003
+        contracts:
+        - AUTH-ACCOUNT-RECOVERY-API-001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhoneAccountRecoveryCodeRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/PhoneAccountRecoveryCodeRequestExample'
+      responses:
+        '202':
+          description: Recovery-code request accepted without disclosing account or binding state.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/ResponseRequestId'
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhoneAccountRecoveryCodeResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/PhoneAccountRecoveryCodeResponseExample'
+        '400':
+          $ref: '#/components/responses/AccountRecoveryBadRequest'
+        '429':
+          $ref: '#/components/responses/AuthRateLimited'
+        '503':
+          $ref: '#/components/responses/AuthServiceUnavailable'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /auth/account-recovery/phone:
+    post:
+      tags:
+      - Auth
+      operationId: recoverAccountByPhone
+      summary: Confirm an existing account and revoke all of its sessions.
+      description: Consumes a purpose-bound one-time recovery code, resolves only an existing active phone identity, advances the account security epoch, and revokes every existing session and token family. It never creates an account, changes an identity binding, creates a session, or returns a token.
+      security: []
+      x-traceability:
+        product_objects:
+        - US-ACC-009
+        - VS-ACC-009-1
+        requirements:
+        - FR-ACC-001
+        - FR-ACC-002
+        - FR-ACC-003
+        contracts:
+        - AUTH-ACCOUNT-RECOVERY-API-001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhoneAccountRecoveryRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/PhoneAccountRecoveryRequestExample'
+      responses:
+        '200':
+          description: Existing account confirmed and all existing sessions revoked; the client must log in again.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/ResponseRequestId'
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhoneAccountRecoveryResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/PhoneAccountRecoveryResponseExample'
+        '400':
+          $ref: '#/components/responses/AccountRecoveryBadRequest'
+        '401':
+          $ref: '#/components/responses/AccountRecoveryVerificationFailed'
+        '429':
+          $ref: '#/components/responses/AuthRateLimited'
+        '503':
+          $ref: '#/components/responses/AuthServiceUnavailable'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /auth/login/apple:
@@ -159,8 +321,10 @@ paths:
                   $ref: '#/components/examples/AuthSessionResponseExample'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '429':
+          $ref: '#/components/responses/AuthRateLimited'
         '503':
-          $ref: '#/components/responses/ProviderUnavailable'
+          $ref: '#/components/responses/AuthServiceUnavailable'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /auth/login/wechat:
@@ -198,8 +362,10 @@ paths:
                   $ref: '#/components/examples/AuthSessionResponseExample'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '429':
+          $ref: '#/components/responses/AuthRateLimited'
         '503':
-          $ref: '#/components/responses/ProviderUnavailable'
+          $ref: '#/components/responses/AuthServiceUnavailable'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /auth/refresh:
@@ -237,6 +403,10 @@ paths:
                   $ref: '#/components/examples/AuthSessionResponseExample'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '429':
+          $ref: '#/components/responses/AuthRateLimited'
+        '503':
+          $ref: '#/components/responses/AuthServiceUnavailable'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /auth/logout:
@@ -256,6 +426,109 @@ paths:
           description: Logout completed.
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '429':
+          $ref: '#/components/responses/AuthRateLimited'
+        '503':
+          $ref: '#/components/responses/AuthServiceUnavailable'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /auth/logout-others:
+    post:
+      tags:
+      - Auth
+      operationId: logoutOtherSessions
+      summary: Revoke every active session except the current session.
+      x-traceability:
+        product_objects:
+        - authentication-session-lifecycle
+        requirements:
+        - SESSION-003
+      responses:
+        '204':
+          description: Other sessions were revoked or were already inactive.
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '429':
+          $ref: '#/components/responses/AuthRateLimited'
+        '503':
+          $ref: '#/components/responses/AuthServiceUnavailable'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /auth/logout-all:
+    post:
+      tags:
+      - Auth
+      operationId: logoutAllSessions
+      summary: Revoke every active session including the current session.
+      x-traceability:
+        product_objects:
+        - authentication-session-lifecycle
+        requirements:
+        - LOGOUT-004
+      responses:
+        '204':
+          description: All sessions were revoked or were already inactive.
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '429':
+          $ref: '#/components/responses/AuthRateLimited'
+        '503':
+          $ref: '#/components/responses/AuthServiceUnavailable'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /auth/sessions:
+    get:
+      tags:
+      - Auth
+      operationId: listAuthSessions
+      summary: List the current user's active device sessions.
+      x-traceability:
+        product_objects:
+        - authentication-session-lifecycle
+        requirements:
+        - SESSION-002
+      responses:
+        '200':
+          description: Active device sessions with the current session identified by the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSessionListResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/AuthSessionListResponseExample'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '429':
+          $ref: '#/components/responses/AuthRateLimited'
+        '503':
+          $ref: '#/components/responses/AuthServiceUnavailable'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /auth/sessions/{auth_session_id}:
+    delete:
+      tags:
+      - Auth
+      operationId: revokeAuthSession
+      summary: Revoke one session owned by the current user.
+      x-traceability:
+        product_objects:
+        - authentication-session-lifecycle
+        requirements:
+        - LOGOUT-005
+      parameters:
+      - $ref: '#/components/parameters/AuthSessionId'
+      responses:
+        '204':
+          description: Session revoked or already inactive.
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/AuthRateLimited'
+        '503':
+          $ref: '#/components/responses/AuthServiceUnavailable'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /user/me:
@@ -407,28 +680,46 @@ paths:
       tags:
       - Scenario
       operationId: listScenarios
-      summary: List official scenarios visible to current user.
+      summary: List published official scenarios visible to the current learner.
+      description: When query and category are both omitted, returns every published and visible theme ordered by scenario_id ascending. Themes with zero visible courses remain in the result. Optional filters only narrow that authenticated publication and visibility projection; no match is a successful empty list.
       x-traceability:
         product_objects:
         - product-base
         - p0-commercial-readiness
+        - US-CONTENT-001
+        - VS-CONTENT-001-1
         requirements:
         - FR-003
         - FR-COM-007
+        - FR-CONTENT-001
+        contracts:
+        - CONTENT-COURSE-CATALOG-API-001
       parameters:
+      - $ref: '#/components/parameters/IfNoneMatch'
       - name: query
         in: query
         required: false
+        description: Optional search filter applied after authentication, publication, and visibility projection. Omit with category to request all published and visible themes.
         schema:
           type: string
       - name: category
         in: query
         required: false
+        description: Optional category filter applied after authentication, publication, and visibility projection. Omit with query to request all published and visible themes.
         schema:
           type: string
       responses:
         '200':
-          description: Scenario list.
+          description: Complete matching scenario projection ordered by scenario_id ascending; zero-course themes are not filtered.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ContentETag'
+            Cache-Control:
+              $ref: '#/components/headers/PrivateNoCache'
+            Vary:
+              $ref: '#/components/headers/VaryAuthorization'
+            X-Request-Id:
+              $ref: '#/components/headers/ResponseRequestId'
           content:
             application/json:
               schema:
@@ -436,15 +727,109 @@ paths:
               examples:
                 default:
                   $ref: '#/components/examples/ScenarioListResponseExample'
+        '304':
+          $ref: '#/components/responses/ContentNotModified'
         '401':
-          description: Authentication required.
+          $ref: '#/components/responses/Unauthenticated'
+        '503':
+          $ref: '#/components/responses/ContentReadUnavailable'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /scenarios/{scenario_id}/courses:
+    get:
+      tags:
+      - Course
+      operationId: listScenarioCourses
+      summary: List current published courses visible under a scenario.
+      description: Returns every current published and learner-visible Course summary for the scenario, deterministically ordered by Content-owned Course.sort_order. A 200 response with courses set to an empty array is a true zero-course result, never a query, dependency, binding, or integrity failure.
+      x-traceability:
+        product_objects:
+        - US-CONTENT-001
+        - VS-CONTENT-001-1
+        requirements:
+        - FR-CONTENT-001
+        contracts:
+        - CONTENT-COURSE-CATALOG-API-001
+      parameters:
+      - $ref: '#/components/parameters/ScenarioId'
+      - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Complete visible course projection ordered by Course.sort_order; an empty courses array is a successful true empty result.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ContentETag'
+            Cache-Control:
+              $ref: '#/components/headers/PrivateNoCache'
+            Vary:
+              $ref: '#/components/headers/VaryAuthorization'
+            X-Request-Id:
+              $ref: '#/components/headers/ResponseRequestId'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/CourseListResponse'
               examples:
                 default:
-                  $ref: '#/components/examples/ErrorResponseExample'
+                  $ref: '#/components/examples/CourseListResponseExample'
+        '304':
+          $ref: '#/components/responses/ContentNotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/ContentNotFound'
+        '503':
+          $ref: '#/components/responses/ContentReadUnavailable'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /courses/{course_id}/versions/{course_version_id}:
+    get:
+      tags:
+      - Course
+      operationId: getCourseVersionDetail
+      summary: Get an exact current published course version.
+      description: Resolves the requested course_id and course_version_id as an exact current published, visible CourseVersion with its validated binding. Missing, unpublished, invisible, or mismatched identities never fall back to a latest version, another course, another bound content version, or a neighboring CEFR level.
+      x-traceability:
+        product_objects:
+        - US-CONTENT-002
+        - VS-CONTENT-002-1
+        requirements:
+        - FR-CONTENT-002
+        contracts:
+        - CONTENT-COURSE-CATALOG-API-001
+      parameters:
+      - $ref: '#/components/parameters/CourseId'
+      - $ref: '#/components/parameters/CourseVersionId'
+      - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Exact current published and visible course version with its validated content binding.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ContentETag'
+            Cache-Control:
+              $ref: '#/components/headers/PrivateNoCache'
+            Vary:
+              $ref: '#/components/headers/VaryAuthorization'
+            X-Request-Id:
+              $ref: '#/components/headers/ResponseRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseDetailResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/CourseDetailResponseExample'
+        '304':
+          $ref: '#/components/responses/ContentNotModified'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/ContentNotFound'
+        '503':
+          $ref: '#/components/responses/ContentReadUnavailable'
     parameters:
     - $ref: '#/components/parameters/RequestId'
   /scenarios/{scenario_id}:
@@ -3336,6 +3721,96 @@ paths:
           $ref: '#/components/responses/ValidationFailed'
     parameters:
     - $ref: '#/components/parameters/RequestId'
+  /admin/users/{user_id}/disable:
+    post:
+      tags:
+      - Admin
+      operationId: disableUserAccount
+      summary: Disable a user account and revoke every active session.
+      security:
+      - opsBearerAuth: []
+      x-traceability:
+        product_objects:
+        - authentication-session-lifecycle
+        requirements:
+        - SESSION-005
+        - SESSION-007
+      parameters:
+      - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountSecurityActionRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/AccountSecurityActionRequestExample'
+      responses:
+        '200':
+          description: Account disabled and active sessions revoked.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountSecurityActionResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/AccountDisabledResponseExample'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
+  /admin/users/{user_id}/enable:
+    post:
+      tags:
+      - Admin
+      operationId: enableUserAccount
+      summary: Enable a disabled user account without restoring old sessions.
+      security:
+      - opsBearerAuth: []
+      x-traceability:
+        product_objects:
+        - authentication-session-lifecycle
+        requirements:
+        - SESSION-005
+        - SESSION-007
+      parameters:
+      - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountSecurityActionRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/AccountSecurityActionRequestExample'
+      responses:
+        '200':
+          description: Account enabled; all previously revoked sessions remain invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountSecurityActionResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/AccountEnabledResponseExample'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+    parameters:
+    - $ref: '#/components/parameters/RequestId'
   /admin/release-health:
     get:
       tags:
@@ -3414,7 +3889,8 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+      bearerFormat: opaque
+      description: SpeakEasy high-entropy opaque access token bound to speakeasy-mobile, audience speakeasy-api, and server-authorized scopes.
     opsBearerAuth:
       type: http
       scheme: bearer
@@ -3439,15 +3915,31 @@ components:
       required: false
       schema:
         type: string
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      description: Learner-private opaque validator from a previous response. Authentication and publication/visibility are revalidated before a matching validator can produce 304.
+      schema:
+        type: string
     ScenarioId:
       name: scenario_id
       in: path
       required: true
       schema:
-        type: string
-        enum:
-        - job_interview
-        - onboarding_introduction
+        $ref: '#/components/schemas/ScenarioId'
+    CourseId:
+      name: course_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/CourseId'
+    CourseVersionId:
+      name: course_version_id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/CourseVersionId'
     LevelCode:
       name: level_code
       in: path
@@ -3460,6 +3952,20 @@ components:
       required: true
       schema:
         type: string
+    AuthSessionId:
+      name: auth_session_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    UserId:
+      name: user_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     QueueItemId:
       name: queue_item_id
       in: path
@@ -3502,9 +4008,108 @@ components:
       required: true
       schema:
         type: string
+  headers:
+    ContentETag:
+      description: Learner-private opaque representation validator. It never contains a raw user id, entitlement payload, or secret; request_id and other per-call metadata do not participate in its representation fingerprint.
+      required: true
+      schema:
+        type: string
+      example: '"content-sample-validator"'
+    PrivateNoCache:
+      description: Required learner-private cache policy for content reads.
+      required: true
+      schema:
+        type: string
+        enum:
+        - 'private, no-cache'
+      example: 'private, no-cache'
+    VaryAuthorization:
+      description: Required authentication-context cache isolation.
+      required: true
+      schema:
+        type: string
+        enum:
+        - Authorization
+      example: Authorization
+    ResponseRequestId:
+      description: Unique request identifier for this API call, including unauthenticated authentication flows and a 304 response.
+      required: true
+      schema:
+        type: string
+      example: req_content_sample
+    RetryAfter:
+      description: Optional delay in seconds before retrying the temporarily unavailable content read.
+      schema:
+        type: integer
+        minimum: 0
+      example: 5
+    AuthRetryAfter:
+      description: Required whole-second cooldown before another authentication request may be attempted.
+      required: true
+      schema:
+        type: integer
+        minimum: 5
+        maximum: 300
+      example: 30
+    NoStore:
+      description: Authentication failures and credentials must never be stored by an intermediary cache.
+      required: true
+      schema:
+        type: string
+        enum:
+        - no-store
+      example: no-store
   responses:
+    ContentNotModified:
+      description: Representation unchanged after the server reauthenticates the learner and revalidates current publication and visibility. No response body is returned; cached content is never itself publication or visibility authority.
+      headers:
+        ETag:
+          $ref: '#/components/headers/ContentETag'
+        Cache-Control:
+          $ref: '#/components/headers/PrivateNoCache'
+        Vary:
+          $ref: '#/components/headers/VaryAuthorization'
+        X-Request-Id:
+          $ref: '#/components/headers/ResponseRequestId'
+    ContentNotFound:
+      description: Requested content is unavailable. Missing, unpublished, invisible, and mismatched identities intentionally share this privacy-safe response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              $ref: '#/components/examples/ContentNotFoundErrorExample'
+    ContentReadUnavailable:
+      description: Content query, dependency, binding, or data-integrity failure prevented a complete safe read. The failure is retryable and is never converted to an empty or partial success.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+        X-Request-Id:
+          $ref: '#/components/headers/ResponseRequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              $ref: '#/components/examples/ContentReadUnavailableErrorExample'
     BadRequest:
       description: Bad request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              $ref: '#/components/examples/ErrorResponseExample'
+    AccountRecoveryBadRequest:
+      description: Phone account recovery request validation failed. The response does not disclose account existence, phone binding, or verification state.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/ResponseRequestId'
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
       content:
         application/json:
           schema:
@@ -3521,6 +4126,52 @@ components:
           examples:
             default:
               $ref: '#/components/examples/ErrorResponseExample'
+    AccountRecoveryVerificationFailed:
+      description: Account recovery could not be verified. Account existence, phone binding, account state, and verification-code failure reasons intentionally share this privacy-safe response.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/ResponseRequestId'
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              $ref: '#/components/examples/AccountRecoveryVerificationFailedExample'
+    AuthRateLimited:
+      description: Authentication request rejected because at least one bounded security rate limit was exceeded.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/AuthRetryAfter'
+        X-Request-Id:
+          $ref: '#/components/headers/ResponseRequestId'
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              $ref: '#/components/examples/AuthRateLimitedErrorExample'
+    AuthServiceUnavailable:
+      description: Authentication dependency unavailable; credentials remain valid and the client may retry later.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/AuthRetryAfter'
+        X-Request-Id:
+          $ref: '#/components/headers/ResponseRequestId'
+        Cache-Control:
+          $ref: '#/components/headers/NoStore'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              $ref: '#/components/examples/AuthServiceUnavailableErrorExample'
     Forbidden:
       description: Authenticated but forbidden.
       content:
@@ -3568,15 +4219,6 @@ components:
               $ref: '#/components/examples/ErrorResponseExample'
     ValidationFailed:
       description: Schema validation failed.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          examples:
-            default:
-              $ref: '#/components/examples/ErrorResponseExample'
-    ProviderUnavailable:
-      description: External provider unavailable.
       content:
         application/json:
           schema:
@@ -3640,13 +4282,31 @@ components:
             request_id:
               type: string
             details:
-              type: object
-              additionalProperties: true
+              $ref: '#/components/schemas/ErrorDetails'
+    ErrorDetails:
+      type: object
+      properties:
+        retryable:
+          type: boolean
+          description: Stable client-consumable retry signal when the error contract defines retry behavior.
+      additionalProperties: true
     ErrorCode:
       type: string
       enum:
       - UNAUTHENTICATED
+      - ACCESS_TOKEN_EXPIRED
+      - ACCESS_TOKEN_INVALID
+      - REFRESH_TOKEN_EXPIRED
+      - REFRESH_TOKEN_INVALID
+      - SESSION_REVOKED
+      - SESSION_NOT_FOUND
+      - TOKEN_REUSE_DETECTED
+      - ACCOUNT_DISABLED
+      - AUTH_RATE_LIMITED
+      - AUTH_SERVICE_UNAVAILABLE
+      - ACCOUNT_RECOVERY_VERIFICATION_FAILED
       - FORBIDDEN
+      - INSUFFICIENT_SCOPE
       - ENTITLEMENT_REQUIRED
       - USAGE_LIMIT_EXCEEDED
       - INVALID_RECEIPT
@@ -3655,20 +4315,41 @@ components:
       - IDEMPOTENCY_CONFLICT
       - SCHEMA_VALIDATION_FAILED
       - PROVIDER_UNAVAILABLE
+      - CONTENT_READ_UNAVAILABLE
       - DELETE_IN_PROGRESS
       - RESOURCE_NOT_FOUND
       - CONFLICT
     LevelCode:
       type: string
       enum:
-      - L1
-      - L2
-      - L3
+      - A1
+      - A2
+      - B1
+      - B2
+      - C1
+      - C2
     ScenarioId:
       type: string
-      enum:
-      - job_interview
-      - onboarding_introduction
+      description: Stable Content-owned scenario identity. Current examples are not an exhaustive value set.
+      minLength: 1
+      maxLength: 80
+      pattern: '^[a-z0-9]+(?:_[a-z0-9]+)*$'
+      example: job_interview
+    CourseId:
+      type: string
+      format: uuid
+    CourseVersionId:
+      type: string
+      format: uuid
+    CourseContentBindingId:
+      type: string
+      format: uuid
+    ScenarioVersionId:
+      type: string
+      format: uuid
+    ScenarioLevelId:
+      type: string
+      format: uuid
     AuthSessionResponse:
       type: object
       required:
@@ -3677,6 +4358,8 @@ components:
       - access_token
       - refresh_token
       - expires_at
+      - session_id
+      - refresh_expires_at
       properties:
         schema_version:
           $ref: '#/components/schemas/SchemaVersion'
@@ -3689,6 +4372,195 @@ components:
         expires_at:
           type: string
           format: date-time
+        session_id:
+          type: string
+          format: uuid
+        refresh_expires_at:
+          type: string
+          format: date-time
+    AuthSessionListResponse:
+      type: object
+      required:
+      - schema_version
+      - sessions
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthDeviceSession'
+    AuthDeviceSession:
+      type: object
+      required:
+      - session_id
+      - current
+      - device_name
+      - platform
+      - created_at
+      - last_active_at
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        current:
+          type: boolean
+        device_name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        platform:
+          type: string
+          enum:
+          - ios
+          - android
+          - unknown
+        app_version:
+          type: string
+          nullable: true
+          maxLength: 40
+        created_at:
+          type: string
+          format: date-time
+        last_active_at:
+          type: string
+          format: date-time
+    AccountSecurityActionRequest:
+      type: object
+      required:
+      - schema_version
+      - reason_code
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        reason_code:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: '^[a-z0-9]+(?:_[a-z0-9]+)*$'
+        case_reference:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 120
+          pattern: '^[A-Za-z0-9_.:-]+$'
+          description: Sanitized support or security case reference; free-form operator notes are not accepted.
+    AccountSecurityActionResponse:
+      type: object
+      required:
+      - schema_version
+      - user_id
+      - account_status
+      - revoked_session_count
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        user_id:
+          type: string
+          format: uuid
+        account_status:
+          type: string
+          enum:
+          - active
+          - disabled
+        revoked_session_count:
+          type: integer
+          minimum: 0
+    PhoneVerificationCodeRequest:
+      type: object
+      required:
+      - schema_version
+      - phone_number
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        phone_number:
+          type: string
+        device_id:
+          type: string
+          maxLength: 120
+    PhoneVerificationCodeResponse:
+      type: object
+      required:
+      - schema_version
+      - status
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        status:
+          type: string
+          enum:
+          - sent
+    PhoneAccountRecoveryCodeRequest:
+      type: object
+      required:
+      - schema_version
+      - phone_number
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 32
+          description: Phone number normalized by the server for purpose-bound recovery verification and privacy-safe identity lookup.
+        device_id:
+          type: string
+          maxLength: 120
+          description: Optional installation-scoped signal used only as one bounded rate-limit input; it is never an account identity.
+    PhoneAccountRecoveryCodeResponse:
+      type: object
+      required:
+      - schema_version
+      - status
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        status:
+          type: string
+          enum:
+          - accepted
+          description: Privacy-safe acceptance state that does not disclose account existence, phone binding, or delivery.
+    PhoneAccountRecoveryRequest:
+      type: object
+      required:
+      - schema_version
+      - phone_number
+      - verification_code
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        phone_number:
+          type: string
+          minLength: 1
+          maxLength: 32
+        verification_code:
+          type: string
+          minLength: 1
+          maxLength: 32
+          description: Unused and unexpired one-time code issued only for phone account recovery; login or other-purpose codes are rejected.
+        device_id:
+          type: string
+          maxLength: 120
+          description: Optional installation-scoped signal used only as one bounded rate-limit input; it is never an account identity.
+    PhoneAccountRecoveryResponse:
+      type: object
+      required:
+      - schema_version
+      - status
+      - next_action
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        status:
+          type: string
+          enum:
+          - recovered
+        next_action:
+          type: string
+          enum:
+          - login_phone
+          description: The recovery operation never creates a session or returns tokens; the verified phone must be used for a new login.
     PhoneLoginRequest:
       type: object
       required:
@@ -3705,6 +4577,21 @@ components:
           type: string
         terms_accepted:
           type: boolean
+        device_id:
+          type: string
+          maxLength: 120
+        device_name:
+          type: string
+          maxLength: 120
+        platform:
+          type: string
+          enum:
+          - ios
+          - android
+          - unknown
+        app_version:
+          type: string
+          maxLength: 40
     SocialLoginRequest:
       type: object
       required:
@@ -3720,6 +4607,21 @@ components:
           type: string
         terms_accepted:
           type: boolean
+        device_id:
+          type: string
+          maxLength: 120
+        device_name:
+          type: string
+          maxLength: 120
+        platform:
+          type: string
+          enum:
+          - ios
+          - android
+          - unknown
+        app_version:
+          type: string
+          maxLength: 40
     RefreshTokenRequest:
       type: object
       required:
@@ -3730,6 +4632,9 @@ components:
           $ref: '#/components/schemas/SchemaVersion'
         refresh_token:
           type: string
+        device_id:
+          type: string
+          maxLength: 120
     UserProfile:
       type: object
       required:
@@ -3906,14 +4811,114 @@ components:
       type: object
       required:
       - schema_version
+      - request_id
       - scenarios
       properties:
         schema_version:
           $ref: '#/components/schemas/SchemaVersion'
+        request_id:
+          type: string
         scenarios:
           type: array
           items:
             $ref: '#/components/schemas/ScenarioSummary'
+    CourseListResponse:
+      type: object
+      required:
+      - schema_version
+      - request_id
+      - scenario_id
+      - courses
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        request_id:
+          type: string
+        scenario_id:
+          $ref: '#/components/schemas/ScenarioId'
+        courses:
+          type: array
+          description: Current published and visible Course summaries in deterministic Content-owned Course.sort_order.
+          items:
+            $ref: '#/components/schemas/CourseSummary'
+    CourseDetailResponse:
+      type: object
+      required:
+      - schema_version
+      - request_id
+      - course
+      properties:
+        schema_version:
+          $ref: '#/components/schemas/SchemaVersion'
+        request_id:
+          type: string
+        course:
+          $ref: '#/components/schemas/CourseDetail'
+    CourseContentBindingRef:
+      type: object
+      required:
+      - course_content_binding_id
+      - scenario_version_id
+      - scenario_level_id
+      properties:
+        course_content_binding_id:
+          $ref: '#/components/schemas/CourseContentBindingId'
+        scenario_version_id:
+          $ref: '#/components/schemas/ScenarioVersionId'
+        scenario_level_id:
+          $ref: '#/components/schemas/ScenarioLevelId'
+    CourseSummary:
+      type: object
+      required:
+      - course_id
+      - course_version_id
+      - title_en
+      - summary_zh
+      - level_code
+      - content_binding_ref
+      properties:
+        course_id:
+          $ref: '#/components/schemas/CourseId'
+        course_version_id:
+          $ref: '#/components/schemas/CourseVersionId'
+        title_en:
+          type: string
+          minLength: 1
+          pattern: '.*\S.*'
+        summary_zh:
+          type: string
+          minLength: 1
+          pattern: '.*\S.*'
+        level_code:
+          $ref: '#/components/schemas/LevelCode'
+        content_binding_ref:
+          $ref: '#/components/schemas/CourseContentBindingRef'
+    TypicalDuration:
+      type: object
+      required:
+      - value
+      - unit
+      properties:
+        value:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+        unit:
+          type: string
+          minLength: 1
+          pattern: '.*\S.*'
+    CourseDetail:
+      allOf:
+      - $ref: '#/components/schemas/CourseSummary'
+      - type: object
+        required:
+        - typical_duration
+        properties:
+          typical_duration:
+            $ref: '#/components/schemas/TypicalDuration'
+          background_asset_ref:
+            type: string
+            nullable: true
     ScenarioResponse:
       type: object
       required:
@@ -4013,7 +5018,9 @@ components:
         schema_version:
           $ref: '#/components/schemas/SchemaVersion'
         target_level:
-          $ref: '#/components/schemas/LevelCode'
+          default: A2
+          allOf:
+          - $ref: '#/components/schemas/LevelCode'
         set_current:
           type: boolean
           default: true
@@ -4028,7 +5035,9 @@ components:
         scenario_id:
           $ref: '#/components/schemas/ScenarioId'
         target_level:
-          $ref: '#/components/schemas/LevelCode'
+          default: A2
+          allOf:
+          - $ref: '#/components/schemas/LevelCode'
     UserScenarioStateResponse:
       type: object
       required:
@@ -4156,9 +5165,12 @@ components:
           type: string
           nullable: true
           enum:
-          - L1
-          - L2
-          - L3
+          - A1
+          - A2
+          - B1
+          - B2
+          - C1
+          - C2
         label:
           type: string
     DialogueAsset:
@@ -8062,6 +9074,82 @@ components:
           details:
             field: schema_version
             reason: Unsupported schema version.
+    AuthRateLimitedErrorExample:
+      summary: Authentication request rate limited without exposing the triggering dimension
+      value:
+        error:
+          code: AUTH_RATE_LIMITED
+          message: Too many authentication requests.
+          request_id: req_auth_rate_limited_sample
+          details: {}
+    AuthServiceUnavailableErrorExample:
+      summary: Authentication dependency temporarily unavailable
+      value:
+        error:
+          code: AUTH_SERVICE_UNAVAILABLE
+          message: Authentication service is temporarily unavailable.
+          request_id: req_auth_unavailable_sample
+          details:
+            retryable: true
+    AccountRecoveryVerificationFailedExample:
+      summary: Privacy-safe phone account recovery verification failure
+      value:
+        error:
+          code: ACCOUNT_RECOVERY_VERIFICATION_FAILED
+          message: Account recovery could not be verified.
+          request_id: req_account_recovery_failed_sample
+          details: {}
+    ContentNotFoundErrorExample:
+      summary: Privacy-safe unavailable content response
+      value:
+        error:
+          code: RESOURCE_NOT_FOUND
+          message: Content resource is unavailable.
+          request_id: req_content_not_found_sample
+    ContentReadUnavailableErrorExample:
+      summary: Retryable content read failure
+      value:
+        error:
+          code: CONTENT_READ_UNAVAILABLE
+          message: Content is temporarily unavailable.
+          request_id: req_content_unavailable_sample
+          details:
+            retryable: true
+    PhoneVerificationCodeRequestExample:
+      summary: requestPhoneVerificationCode request example
+      value:
+        schema_version: 1
+        phone_number: '+8613800138000'
+        device_id: install-0001
+    PhoneVerificationCodeResponseExample:
+      summary: requestPhoneVerificationCode response 202 example
+      value:
+        schema_version: 1
+        status: sent
+    PhoneAccountRecoveryCodeRequestExample:
+      summary: requestPhoneAccountRecoveryCode request example
+      value:
+        schema_version: 1
+        phone_number: '+8613800138000'
+        device_id: install-0001
+    PhoneAccountRecoveryCodeResponseExample:
+      summary: requestPhoneAccountRecoveryCode response 202 example
+      value:
+        schema_version: 1
+        status: accepted
+    PhoneAccountRecoveryRequestExample:
+      summary: recoverAccountByPhone request example
+      value:
+        schema_version: 1
+        phone_number: '+8613800138000'
+        verification_code: SAMPLE_RECOVERY_CODE
+        device_id: install-0001
+    PhoneAccountRecoveryResponseExample:
+      summary: recoverAccountByPhone response 200 example without session or token data
+      value:
+        schema_version: 1
+        status: recovered
+        next_action: login_phone
     PhoneLoginRequestExample:
       summary: loginPhone request example
       value:
@@ -8069,6 +9157,10 @@ components:
         phone_number: '+8613800138000'
         verification_code: SAMPLE_CODE
         terms_accepted: true
+        device_id: install-0001
+        device_name: iPhone
+        platform: ios
+        app_version: 2.4.0
     AuthSessionResponseExample:
       summary: loginPhone response 200 example
       value:
@@ -8078,13 +9170,54 @@ components:
           display_name: Sample Name
           avatar_ref: assets/images/avatars/default_avatar_1.png
           locale: zh-CN
-          target_level: L1
+          target_level: A2
           daily_minutes: 1
           account_status: active
           onboarding_status: incomplete
         access_token: sample-token
         refresh_token: sample-token
         expires_at: '2026-05-26T12:00:00Z'
+        session_id: 00000000-0000-0000-0000-000000000001
+        refresh_expires_at: '2026-06-25T12:00:00Z'
+    AuthSessionListResponseExample:
+      summary: listAuthSessions response 200 example
+      value:
+        schema_version: 1
+        sessions:
+        - session_id: 00000000-0000-0000-0000-000000000001
+          current: true
+          device_name: iPhone
+          platform: ios
+          app_version: 2.4.0
+          created_at: '2026-08-20T08:00:00Z'
+          last_active_at: '2026-08-29T08:00:00Z'
+        - session_id: 00000000-0000-0000-0000-000000000002
+          current: false
+          device_name: Android device
+          platform: android
+          app_version: 2.3.0
+          created_at: '2026-08-18T08:00:00Z'
+          last_active_at: '2026-08-28T08:00:00Z'
+    AccountSecurityActionRequestExample:
+      summary: Named operator account security action
+      value:
+        schema_version: 1
+        reason_code: confirmed_abuse
+        case_reference: CASE-2026-0001
+    AccountDisabledResponseExample:
+      summary: disableUserAccount response 200 example
+      value:
+        schema_version: 1
+        user_id: 00000000-0000-0000-0000-000000000010
+        account_status: disabled
+        revoked_session_count: 3
+    AccountEnabledResponseExample:
+      summary: enableUserAccount response 200 example
+      value:
+        schema_version: 1
+        user_id: 00000000-0000-0000-0000-000000000010
+        account_status: active
+        revoked_session_count: 0
     SocialLoginRequestExample:
       summary: loginApple request example
       value:
@@ -8092,11 +9225,16 @@ components:
         provider_token: sample-token
         nonce: sample
         terms_accepted: true
+        device_id: install-0001
+        device_name: iPhone
+        platform: ios
+        app_version: 2.4.0
     RefreshTokenRequestExample:
       summary: refreshAuth request example
       value:
         schema_version: 1
         refresh_token: sample-token
+        device_id: install-0001
     UserProfileResponseExample:
       summary: getMe response 200 example
       value:
@@ -8106,7 +9244,7 @@ components:
           display_name: Sample Name
           avatar_ref: assets/images/avatars/default_avatar_1.png
           locale: zh-CN
-          target_level: L1
+          target_level: A2
           daily_minutes: 1
           account_status: active
           onboarding_status: incomplete
@@ -8116,7 +9254,7 @@ components:
         schema_version: 1
         display_name: Sample Name
         avatar_ref: assets/images/avatars/default_avatar_1.png
-        target_level: L1
+        target_level: A2
         daily_minutes: 1
         reminder_enabled: true
         reminder_time: 09:00
@@ -8137,7 +9275,7 @@ components:
         goal_direction: job_interview
         pain_points:
         - sample
-        output_level: L1
+        output_level: A2
         daily_minutes: 1
     OnboardingAssessmentResponseExample:
       summary: submitOnboardingAssessment response 200 example
@@ -8145,13 +9283,14 @@ components:
         schema_version: 1
         route:
           current_scenario_id: job_interview
-          target_level: L1
+          target_level: A2
           scenario_ids:
           - job_interview
     ScenarioListResponseExample:
       summary: listScenarios response 200 example
       value:
         schema_version: 1
+        request_id: req_scenario_list_sample
         scenarios:
         - scenario_id: job_interview
           title: Sample Name
@@ -8159,11 +9298,46 @@ components:
           tags:
           - sample
           levels:
-          - L1
+          - A2
           status: available
           access:
             allowed: true
             reason_code: ENTITLEMENT_REQUIRED
+    CourseListResponseExample:
+      summary: listScenarioCourses response 200 contract sample
+      value:
+        schema_version: 1
+        request_id: req_course_list_sample
+        scenario_id: job_interview
+        courses:
+        - course_id: 11111111-1111-4111-8111-111111111111
+          course_version_id: 22222222-2222-4222-8222-222222222222
+          title_en: Sample-only Course
+          summary_zh: 仅用于机器契约展示的虚构示例课程。
+          level_code: A2
+          content_binding_ref:
+            course_content_binding_id: 33333333-3333-4333-8333-333333333333
+            scenario_version_id: 44444444-4444-4444-8444-444444444444
+            scenario_level_id: 55555555-5555-4555-8555-555555555555
+    CourseDetailResponseExample:
+      summary: getCourseVersionDetail response 200 contract sample
+      value:
+        schema_version: 1
+        request_id: req_course_detail_sample
+        course:
+          course_id: 11111111-1111-4111-8111-111111111111
+          course_version_id: 22222222-2222-4222-8222-222222222222
+          title_en: Sample-only Course
+          summary_zh: 仅用于机器契约展示的虚构示例课程。
+          level_code: A2
+          content_binding_ref:
+            course_content_binding_id: 33333333-3333-4333-8333-333333333333
+            scenario_version_id: 44444444-4444-4444-8444-444444444444
+            scenario_level_id: 55555555-5555-4555-8555-555555555555
+          typical_duration:
+            value: 1.5
+            unit: sample_units
+          background_asset_ref: null
     ScenarioResponseExample:
       summary: getScenario response 200 example
       value:
@@ -8175,7 +9349,7 @@ components:
           tags:
           - sample
           levels:
-          - L1
+          - A2
           status: available
           access:
             allowed: true
@@ -8188,7 +9362,7 @@ components:
       value:
         schema_version: 1
         scenario_id: job_interview
-        level_code: L1
+        level_code: A2
         dialogue_assets:
         - dialogue_asset_id: dialogue_asset_id_sample
           role: system
@@ -8211,14 +9385,14 @@ components:
       summary: joinScenario request example
       value:
         schema_version: 1
-        target_level: L2
+        target_level: B1
         set_current: true
     CurrentScenarioRequestExample:
       summary: setCurrentScenario request example
       value:
         schema_version: 1
         scenario_id: onboarding_introduction
-        target_level: L2
+        target_level: B1
     UserScenarioStateResponseExample:
       summary: user scenario state response example
       value:
@@ -8227,20 +9401,20 @@ components:
           scenario_id: onboarding_introduction
           state: joined
           current: true
-          target_level: L2
+          target_level: B1
           updated_at: '2026-05-26T12:00:00Z'
         home_summary:
           onboarding_status: complete
           current_scenario:
             scenario_id: onboarding_introduction
             title: 入职介绍
-            target_level: L2
+            target_level: B1
             current: true
             version: 2026.05-mvp-seed
           joined_scenarios:
           - scenario_id: onboarding_introduction
             title: 入职介绍
-            target_level: L2
+            target_level: B1
             current: true
             version: 2026.05-mvp-seed
           review_status: not_available
@@ -8249,7 +9423,7 @@ components:
           next_action:
             action_type: start_practice
             scenario_id: onboarding_introduction
-            level_code: L2
+            level_code: B1
             label: 开始当前场景练习
     UserScenarioRemovedResponseExample:
       summary: removeScenario response example
@@ -8259,7 +9433,7 @@ components:
           scenario_id: job_interview
           state: removed
           current: false
-          target_level: L1
+          target_level: A2
           updated_at: '2026-05-26T12:00:00Z'
         home_summary:
           onboarding_status: complete
@@ -8279,13 +9453,13 @@ components:
           current_scenario:
             scenario_id: job_interview
             title: 英语面试
-            target_level: L1
+            target_level: A2
             current: true
             version: 2026.05-mvp-seed
           joined_scenarios:
           - scenario_id: job_interview
             title: 英语面试
-            target_level: L1
+            target_level: A2
             current: true
             version: 2026.05-mvp-seed
           review_status: not_available
@@ -8294,14 +9468,14 @@ components:
           next_action:
             action_type: start_practice
             scenario_id: job_interview
-            level_code: L1
+            level_code: A2
             label: 开始当前场景练习
     StartSessionRequestExample:
       summary: startPracticeSession request example
       value:
         schema_version: 1
         scenario_id: job_interview
-        level_code: L1
+        level_code: A2
         resume_existing: true
     PracticeSessionResponseExample:
       summary: startPracticeSession response 200 example
@@ -8310,7 +9484,7 @@ components:
         session:
           session_id: session_id_sample
           scenario_id: job_interview
-          level_code: L1
+          level_code: A2
           status: active
           current_turn_index: 1
           messages:
@@ -9226,7 +10400,7 @@ components:
         session:
           session_id: session_id_sample
           scenario_id: job_interview
-          level_code: L1
+          level_code: A2
           status: loading
           current_action_step_id: current_action_step_id_sample
           current_micro_action: ListenOne

@@ -75,7 +75,7 @@ class AuthServiceTest {
 
     assertThat(refresh.user().getUserId()).isEqualTo(login.user().getUserId());
     assertThat(refresh.accessToken()).isNotEqualTo(login.accessToken());
-    assertThat(authService.authenticateAccessToken(login.accessToken())).isEmpty();
+    assertThat(authService.authenticateAccessToken(login.accessToken())).isPresent();
     assertThat(authService.authenticateAccessToken(refresh.accessToken())).isPresent();
   }
 

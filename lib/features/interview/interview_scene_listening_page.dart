@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:speakeasy/config/app_config.dart';
 import 'package:speakeasy/features/interview/interview_engine.dart';
 import 'package:speakeasy/features/interview/interview_scene_dialogue_builder.dart';
+import 'package:speakeasy/models/cefr_level.dart';
 import 'package:speakeasy/features/interview/interview_models.dart';
 import 'package:speakeasy/services/audio_service.dart';
 
@@ -1766,11 +1767,7 @@ class _ListeningErrorState extends StatelessWidget {
 }
 
 String _levelLabel(String targetLevel) {
-  return switch (targetLevel) {
-    'intermediate' || 'L2' => 'L2 进阶',
-    'advanced' || 'L3' => 'L3 精通',
-    _ => 'L1 入门',
-  };
+  return cefrLevelLabel(targetLevel, fieldName: 'targetLevel');
 }
 
 String _ttsVoiceForTurn(InterviewSceneDialogueTurn turn) {

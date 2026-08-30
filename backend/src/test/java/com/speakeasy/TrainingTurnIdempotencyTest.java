@@ -58,7 +58,7 @@ class TrainingTurnIdempotencyTest extends BackendIntegrationTestSupport {
                 {
                   "schema_version": 1,
                   "scenario_id": "job_interview",
-                  "level_code": "L1",
+                  "level_code": "A2",
                   "resume_existing": true
                 }
                 """))

@@ -12,7 +12,7 @@ void main() {
           requests.add(request);
           return _sessionEnvelope(
             scenarioId: 'future_business_pitch',
-            levelCode: 'L1',
+            levelCode: 'A2',
             scenarioVersionId: 'server-version-2026-06',
             currentStepKey: 'opening',
             currentMicroAction: 'SayOne',
@@ -23,13 +23,13 @@ void main() {
       final TrainingSessionStartResult result = await adapter.startSession(
         userId: 'user-1',
         sceneId: 'future_business_pitch',
-        levelCode: 'beginner',
+        levelCode: 'A2',
       );
 
       expect(requests.single.operation, TrainingBackendOperation.startSession);
       expect(requests.single.path, '/training/sessions');
       expect(requests.single.body['scenario_id'], 'future_business_pitch');
-      expect(requests.single.body['level_code'], 'L1');
+      expect(requests.single.body['level_code'], 'A2');
       expect(result.session?.sceneId, 'future_business_pitch');
       expect(result.session?.scenarioVersionId, 'server-version-2026-06');
       expect(result.session?.currentStep, TrainingActionStep.opening);

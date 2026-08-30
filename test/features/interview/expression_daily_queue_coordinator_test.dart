@@ -14,6 +14,8 @@ import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/services/audio_service.dart';
 import 'package:speakeasy/services/storage_service.dart';
 
+import '../../support/hive_test_support.dart';
+
 class _QueuePlaybackAudioService extends AudioService {
   final List<String> playedTexts = <String>[];
   int stopCount = 0;
@@ -67,9 +69,7 @@ void main() {
   });
 
   tearDownAll(() async {
-    if (await hiveDir.exists()) {
-      await hiveDir.delete(recursive: true);
-    }
+    await deleteHiveTestDirectory(hiveDir);
   });
 
   const ExpressionDailyQueueCoordinator coordinator =
@@ -77,14 +77,14 @@ void main() {
 
   const ExpressionDailyQueueScene jobScene = ExpressionDailyQueueScene(
     sceneId: defaultInterviewSceneId,
-    targetLevel: 'beginner',
+    targetLevel: 'A2',
     title: '英语面试',
     order: 0,
   );
 
   const ExpressionDailyQueueScene variantScene = ExpressionDailyQueueScene(
     sceneId: 'practice_variant_scene',
-    targetLevel: 'beginner',
+    targetLevel: 'A2',
     title: '变体场景',
     order: 0,
   );
@@ -97,11 +97,20 @@ void main() {
         'titleCn': variantScene.title,
         'titleEn': 'Practice Variant Scene',
       },
+      'tracks': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'id': 'A2',
+          'title': 'A2',
+          'targetLevel': 'A2',
+          'nodeIds': <String>['PV_01'],
+        },
+      ],
       'flow': <String>['PV_01'],
       'nodes': <Map<String, dynamic>>[
         <String, dynamic>{
           'id': 'PV_01',
-          'targetLevel': 'beginner',
+          'level': 'A2',
+          'targetLevel': 'A2',
           'slot': 1,
           'targetText':
               "Thank you for having me. I'm excited to be here today.",
@@ -184,7 +193,7 @@ void main() {
         masteredExpression(
           now: now,
           sceneId: 'onboarding_introduction',
-          nodeId: 'ONB_L1_1',
+          nodeId: 'ONB_A2_1',
           nextReviewAt: now.subtract(const Duration(hours: 1)),
         ),
       ],
@@ -221,7 +230,7 @@ void main() {
         masteredExpression(
           now: now,
           sceneId: defaultInterviewSceneId,
-          nodeId: 'L1_06',
+          nodeId: 'A2_06',
           nextReviewAt: now.subtract(const Duration(hours: 2)),
         ),
       ],
@@ -235,8 +244,8 @@ void main() {
         weakExpressions: <InterviewWeakExpressionState>[
           InterviewWeakExpressionState(
             sourceSceneId: defaultInterviewSceneId,
-            sourceNodeId: 'L1_01',
-            sourceExpressionId: 'L1_01',
+            sourceNodeId: 'A2_01',
+            sourceExpressionId: 'A2_01',
             targetText:
                 "Thank you for having me. I'm excited to be here today.",
             tag: '自我介绍',
@@ -256,9 +265,9 @@ void main() {
     );
 
     expect(queue[0].kind, ExpressionDailyQueueItem.kindReview);
-    expect(queue[0].nodeId, 'L1_06');
+    expect(queue[0].nodeId, 'A2_06');
     expect(queue[1].kind, ExpressionDailyQueueItem.kindWeak);
-    expect(queue[1].nodeId, 'L1_01');
+    expect(queue[1].nodeId, 'A2_01');
     expect(queue[2].kind, ExpressionDailyQueueItem.kindVariant);
     expect(
       queue[0].practiceMode,
@@ -305,8 +314,8 @@ void main() {
         weakExpressions: <InterviewWeakExpressionState>[
           InterviewWeakExpressionState(
             sourceSceneId: defaultInterviewSceneId,
-            sourceNodeId: 'L1_01',
-            sourceExpressionId: 'L1_01',
+            sourceNodeId: 'A2_01',
+            sourceExpressionId: 'A2_01',
             targetText:
                 "Thank you for having me. I'm excited to be here today.",
             tag: '自我介绍',
@@ -318,8 +327,8 @@ void main() {
           ),
           InterviewWeakExpressionState(
             sourceSceneId: defaultInterviewSceneId,
-            sourceNodeId: 'L1_02',
-            sourceExpressionId: 'L1_02',
+            sourceNodeId: 'A2_02',
+            sourceExpressionId: 'A2_02',
             targetText:
                 'I currently work as a product manager on internal tools.',
             tag: '当前岗位',
@@ -337,8 +346,8 @@ void main() {
       <InterviewExpressionLearningProgress>[
         InterviewExpressionLearningProgress(
           sceneId: defaultInterviewSceneId,
-          nodeId: 'L1_02',
-          targetLevel: 'beginner',
+          nodeId: 'A2_02',
+          targetLevel: 'A2',
           status: InterviewExpressionLearningStatus.learning,
           currentStep: InterviewExpressionLearningStep.shadow,
           attempts: 3,
@@ -361,7 +370,7 @@ void main() {
         .toList(growable: false);
 
     expect(weakItems, hasLength(2));
-    expect(weakItems.first.nodeId, 'L1_02');
+    expect(weakItems.first.nodeId, 'A2_02');
   });
 
   test(
@@ -376,8 +385,8 @@ void main() {
           weakExpressions: <InterviewWeakExpressionState>[
             InterviewWeakExpressionState(
               sourceSceneId: defaultInterviewSceneId,
-              sourceNodeId: 'L1_01',
-              sourceExpressionId: 'L1_01',
+              sourceNodeId: 'A2_01',
+              sourceExpressionId: 'A2_01',
               targetText:
                   "Thank you for having me. I'm excited to be here today.",
               tag: '自我介绍',
@@ -396,8 +405,8 @@ void main() {
             <InterviewExpressionLearningProgress>[
               InterviewExpressionLearningProgress(
                 sceneId: defaultInterviewSceneId,
-                nodeId: 'L1_01',
-                targetLevel: 'beginner',
+                nodeId: 'A2_01',
+                targetLevel: 'A2',
                 status: InterviewExpressionLearningStatus.prepared,
                 currentStep: InterviewExpressionLearningStep.recall,
                 attempts: 1,
@@ -419,7 +428,7 @@ void main() {
         queue.any(
           (ExpressionDailyQueueItem item) =>
               item.kind == ExpressionDailyQueueItem.kindWeak &&
-              item.nodeId == 'L1_01',
+              item.nodeId == 'A2_01',
         ),
         isFalse,
       );
@@ -435,7 +444,7 @@ void main() {
       for (int index = 0; index < 10; index += 1)
         ExpressionDailyQueueScene(
           sceneId: 'variant_scene_$index',
-          targetLevel: 'beginner',
+          targetLevel: 'A2',
           title: '变体场景 $index',
           order: index,
         ),
@@ -501,7 +510,7 @@ void main() {
             for (int index = 0; index < 3; index += 1)
               ExpressionDailyQueueScene(
                 sceneId: 'variant_scene_$index',
-                targetLevel: 'beginner',
+                targetLevel: 'A2',
                 title: '变体场景 $index',
                 order: index,
               ),
@@ -637,8 +646,8 @@ void main() {
         InterviewExpressionLearningProgress.fromJson(
           InterviewExpressionLearningProgress(
             sceneId: defaultInterviewSceneId,
-            nodeId: 'L1_01',
-            targetLevel: 'beginner',
+            nodeId: 'A2_01',
+            targetLevel: 'A2',
             attempts: 4,
             bestScore: 91,
             lastTranscript:
@@ -679,12 +688,12 @@ void main() {
               child: const Scaffold(
                 body: InterviewExpressionWarmupDeckView(
                   sceneId: defaultInterviewSceneId,
-                  targetLevel: 'beginner',
+                  targetLevel: 'A2',
                   queueItems: <ExpressionDailyQueueItem>[
                     ExpressionDailyQueueItem(
                       sceneId: defaultInterviewSceneId,
-                      targetLevel: 'beginner',
-                      nodeId: 'L1_01',
+                      targetLevel: 'A2',
+                      nodeId: 'A2_01',
                       kind: ExpressionDailyQueueItem.kindNew,
                       practiceText:
                           "Thank you for having me. I'm excited to be here today.",
@@ -814,12 +823,12 @@ void main() {
               child: Scaffold(
                 body: InterviewExpressionWarmupDeckView(
                   sceneId: defaultInterviewSceneId,
-                  targetLevel: 'beginner',
+                  targetLevel: 'A2',
                   queueItems: <ExpressionDailyQueueItem>[
                     ExpressionDailyQueueItem(
                       sceneId: defaultInterviewSceneId,
-                      targetLevel: 'beginner',
-                      nodeId: 'L1_01',
+                      targetLevel: 'A2',
+                      nodeId: 'A2_01',
                       kind: ExpressionDailyQueueItem.kindNew,
                       practiceText:
                           "Thank you for having me. I'm excited to be here today.",
@@ -902,12 +911,12 @@ void main() {
             child: const Scaffold(
               body: InterviewExpressionWarmupDeckView(
                 sceneId: defaultInterviewSceneId,
-                targetLevel: 'beginner',
+                targetLevel: 'A2',
                 queueItems: <ExpressionDailyQueueItem>[
                   ExpressionDailyQueueItem(
                     sceneId: defaultInterviewSceneId,
-                    targetLevel: 'beginner',
-                    nodeId: 'L1_01',
+                    targetLevel: 'A2',
+                    nodeId: 'A2_01',
                     kind: ExpressionDailyQueueItem.kindNew,
                     practiceText:
                         "Thank you for having me. I'm excited to be here today.",
@@ -917,15 +926,15 @@ void main() {
                   ),
                   ExpressionDailyQueueItem(
                     sceneId: defaultInterviewSceneId,
-                    targetLevel: 'beginner',
-                    nodeId: 'L1_02#variant_natural',
+                    targetLevel: 'A2',
+                    nodeId: 'A2_02#variant_natural',
                     kind: ExpressionDailyQueueItem.kindVariant,
                     practiceText:
                         "Right now, I'm a designer at a growing company.",
                     translation: '我目前在一家小公司做设计师。',
                     sourceLabel: '英语面试 · 当前职位',
                     priorityDueAt: null,
-                    variantOfNodeId: 'L1_02',
+                    variantOfNodeId: 'A2_02',
                   ),
                 ],
               ),
@@ -988,12 +997,12 @@ void main() {
               child: const Scaffold(
                 body: InterviewExpressionWarmupDeckView(
                   sceneId: defaultInterviewSceneId,
-                  targetLevel: 'beginner',
+                  targetLevel: 'A2',
                   queueItems: <ExpressionDailyQueueItem>[
                     ExpressionDailyQueueItem(
                       sceneId: defaultInterviewSceneId,
-                      targetLevel: 'beginner',
-                      nodeId: 'L1_01',
+                      targetLevel: 'A2',
+                      nodeId: 'A2_01',
                       kind: ExpressionDailyQueueItem.kindNew,
                       practiceText:
                           "Thank you for having me. I'm excited to be here today.",
@@ -1003,15 +1012,15 @@ void main() {
                     ),
                     ExpressionDailyQueueItem(
                       sceneId: defaultInterviewSceneId,
-                      targetLevel: 'beginner',
-                      nodeId: 'L1_02#variant_natural',
+                      targetLevel: 'A2',
+                      nodeId: 'A2_02#variant_natural',
                       kind: ExpressionDailyQueueItem.kindVariant,
                       practiceText:
                           "Right now, I'm a designer at a growing company.",
                       translation: '我目前在一家小公司做设计师。',
                       sourceLabel: '英语面试 · 当前职位',
                       priorityDueAt: null,
-                      variantOfNodeId: 'L1_02',
+                      variantOfNodeId: 'A2_02',
                     ),
                   ],
                 ),
@@ -1065,8 +1074,8 @@ void main() {
     queueItems = const <ExpressionDailyQueueItem>[
       ExpressionDailyQueueItem(
         sceneId: defaultInterviewSceneId,
-        targetLevel: 'beginner',
-        nodeId: 'L1_01',
+        targetLevel: 'A2',
+        nodeId: 'A2_01',
         kind: ExpressionDailyQueueItem.kindVariant,
         practiceText: "Thank you for having me. I'm excited to be here today.",
         translation: '感谢您邀请我来。我很高兴今天能来到这里。',
@@ -1075,8 +1084,8 @@ void main() {
       ),
       ExpressionDailyQueueItem(
         sceneId: defaultInterviewSceneId,
-        targetLevel: 'beginner',
-        nodeId: 'L1_06',
+        targetLevel: 'A2',
+        nodeId: 'A2_06',
         kind: ExpressionDailyQueueItem.kindReview,
         practiceText:
             'One of my strengths is explaining complex ideas in a simple way.',
@@ -1098,7 +1107,7 @@ void main() {
                 return Scaffold(
                   body: InterviewExpressionWarmupDeckView(
                     sceneId: defaultInterviewSceneId,
-                    targetLevel: 'beginner',
+                    targetLevel: 'A2',
                     queueItems: queueItems,
                     onRefreshQueue: () async {
                       refreshCount += 1;
@@ -1187,12 +1196,12 @@ void main() {
             child: Scaffold(
               body: InterviewExpressionWarmupDeckView(
                 sceneId: defaultInterviewSceneId,
-                targetLevel: 'beginner',
+                targetLevel: 'A2',
                 queueItems: <ExpressionDailyQueueItem>[
                   ExpressionDailyQueueItem(
                     sceneId: defaultInterviewSceneId,
-                    targetLevel: 'beginner',
-                    nodeId: 'L1_01',
+                    targetLevel: 'A2',
+                    nodeId: 'A2_01',
                     kind: ExpressionDailyQueueItem.kindNew,
                     practiceText:
                         "Thank you for having me. I'm excited to be here today.",
@@ -1252,8 +1261,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
       wrongProgress = InterviewWikiStore(sceneId: defaultInterviewSceneId)
           .loadExpressionLearningProgressFor(
-            nodeId: 'L1_01',
-            targetLevel: 'beginner',
+            nodeId: 'A2_01',
+            targetLevel: 'A2',
             sourceSceneId: defaultInterviewSceneId,
           );
       if (wrongProgress?.lastPassed == false) {
@@ -1280,8 +1289,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
       savedProgress = InterviewWikiStore(sceneId: defaultInterviewSceneId)
           .loadExpressionLearningProgressFor(
-            nodeId: 'L1_01',
-            targetLevel: 'beginner',
+            nodeId: 'A2_01',
+            targetLevel: 'A2',
             sourceSceneId: defaultInterviewSceneId,
           );
       if (savedProgress?.lastPassed == true) {

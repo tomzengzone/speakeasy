@@ -42,7 +42,7 @@ void main() {
           await _postJson('/practice/sessions', <String, dynamic>{
             'schema_version': 1,
             'scenario_id': 'job_interview',
-            'level_code': 'L1',
+            'level_code': 'A2',
             'resume_existing': false,
           });
       final Map<String, dynamic> session = (start['session'] as Map)

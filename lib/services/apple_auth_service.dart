@@ -1,16 +1,22 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import 'package:speakeasy/core/auth/auth_credentials.dart';
 import 'package:speakeasy/services/api_client.dart';
 
 class AppleAuthResult {
-  const AppleAuthResult({required this.token, required this.userJson});
+  const AppleAuthResult({required this.credentials, required this.userJson});
 
-  final String token;
+  final AuthCredentials credentials;
   final Map<String, dynamic> userJson;
+
+  String get token => credentials.accessToken;
 }
 
 class AppleAuthService {
@@ -27,6 +33,7 @@ class AppleAuthService {
     }
 
     try {
+      final String rawNonce = _randomNonce();
       final bool isAvailable = await SignInWithApple.isAvailable();
       if (!isAvailable) {
         throw Exception('当前设备暂不支持 Apple 登录');
@@ -38,6 +45,7 @@ class AppleAuthService {
               AppleIDAuthorizationScopes.email,
               AppleIDAuthorizationScopes.fullName,
             ],
+            nonce: sha256.convert(utf8.encode(rawNonce)).toString(),
           );
 
       final String authorizationCode = credential.authorizationCode.trim();
@@ -53,18 +61,24 @@ class AppleAuthService {
         email: credential.email,
         givenName: credential.givenName,
         familyName: credential.familyName,
+        nonce: rawNonce,
       );
       if (res['code'] != 0) {
         throw Exception(res['message'] ?? 'Apple 登录失败');
       }
 
       final Map<String, dynamic> data = _asMap(res['data']);
-      final String token = (data['token'] as String?)?.trim() ?? '';
-      if (token.isEmpty) {
+      final AuthCredentials credentials;
+      try {
+        credentials = AuthCredentials.fromJson(data);
+      } on FormatException {
         throw Exception('服务器未返回登录凭证');
       }
 
-      return AppleAuthResult(token: token, userJson: _asMap(data['user']));
+      return AppleAuthResult(
+        credentials: credentials,
+        userJson: _asMap(data['user']),
+      );
     } on SignInWithAppleAuthorizationException catch (error) {
       if (error.code == AuthorizationErrorCode.canceled) {
         throw Exception('已取消 Apple 登录');
@@ -91,5 +105,15 @@ class AppleAuthService {
       return value.cast<String, dynamic>();
     }
     return <String, dynamic>{};
+  }
+
+  String _randomNonce() {
+    const String alphabet =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final Random random = Random.secure();
+    return List<String>.generate(
+      32,
+      (_) => alphabet[random.nextInt(alphabet.length)],
+    ).join();
   }
 }

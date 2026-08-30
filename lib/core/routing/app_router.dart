@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:speakeasy/core/routing/app_routes.dart';
 import 'package:speakeasy/pages/achievements_page.dart';
+import 'package:speakeasy/pages/device_sessions_page.dart';
 import 'package:speakeasy/pages/edit_profile_page.dart';
 import 'package:speakeasy/pages/favorites_page.dart';
 import 'package:speakeasy/features/interview/interview_practice_page.dart';
@@ -29,6 +30,8 @@ class AppRouter {
         (BuildContext context) => const TermsOfServicePage(),
       AppRoutes.editProfile =>
         (BuildContext context) => const EditProfilePage(),
+      AppRoutes.deviceSessions =>
+        (BuildContext context) => const DeviceSessionsPage(),
       AppRoutes.learningReport =>
         (BuildContext context) => const LearningReportPage(),
       AppRoutes.favorites => (BuildContext context) => const FavoritesPage(),

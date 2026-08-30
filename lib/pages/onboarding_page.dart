@@ -74,7 +74,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           subtitle: '知道想表达什么，但还组不成完整句',
           signal: '需要先建立可套用句架',
           level: 1,
-          targetLevel: 'L1',
+          targetLevel: 'A2',
           color: Color(0xFF7A5C3A),
         ),
         _DiagnosticLevelOption(
@@ -82,7 +82,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           subtitle: '能回答，但停顿多，遇到追问容易卡住',
           signal: '需要补连续回答结构',
           level: 2,
-          targetLevel: 'L2',
+          targetLevel: 'B1',
           color: Color(0xFF4A607A),
         ),
         _DiagnosticLevelOption(
@@ -90,7 +90,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           subtitle: '意思说得清，但语气和连接不够自然',
           signal: '需要练地道连接和追问承接',
           level: 3,
-          targetLevel: 'L3',
+          targetLevel: 'B2',
           color: Color(0xFF4A6741),
         ),
         _DiagnosticLevelOption(
@@ -98,7 +98,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           subtitle: '表达基本流畅，想提升说服力和细节层次',
           signal: '需要强化高级表达和个性化素材',
           level: 4,
-          targetLevel: 'L3+',
+          targetLevel: 'B2',
           color: Color(0xFF7B4EA0),
         ),
       ];
@@ -379,9 +379,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
       return;
     }
     final String targetLevel = switch (diagnostic.level) {
-      1 => 'beginner',
-      2 => 'intermediate',
-      _ => 'advanced',
+      1 => 'A2',
+      2 => 'B1',
+      _ => 'B2',
     };
     await InterviewWikiStore(
       sceneId: sceneId,

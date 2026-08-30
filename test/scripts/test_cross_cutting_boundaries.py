@@ -28,7 +28,7 @@ class CrossCuttingBoundaryCheckTest(unittest.TestCase):
         final blocked = memberPlan != 'free';
         final current = currentPlan == 'free';
         final legacy = hasProEntitlement;
-        CommercialScenarioGate.canAccess(targetLevel: 'L3', isPro: allowed);
+        CommercialScenarioGate.canAccess(targetLevel: 'B2', isPro: allowed);
         """
 
         violations = ccb.check_flutter_commercial_gate_sources(path, text)

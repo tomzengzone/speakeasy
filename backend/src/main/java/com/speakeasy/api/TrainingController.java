@@ -1,6 +1,7 @@
 package com.speakeasy.api;
 
 import com.speakeasy.common.SchemaResponse;
+import com.speakeasy.common.CefrLevel;
 import com.speakeasy.security.CurrentUser;
 import com.speakeasy.training.TrainingService;
 import jakarta.validation.Valid;
@@ -8,6 +9,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -86,7 +88,7 @@ public class TrainingController {
   public record StartTrainingSessionRequest(
       @NotNull @Min(1) @Max(1) Integer schemaVersion,
       @NotBlank String scenarioId,
-      @NotBlank String levelCode,
+      @NotBlank @Pattern(regexp = CefrLevel.REGEXP) String levelCode,
       Boolean resumeExisting) {}
 
   public record SubmitTrainingTurnRequest(

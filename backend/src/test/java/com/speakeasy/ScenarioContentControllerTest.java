@@ -27,7 +27,7 @@ class ScenarioContentControllerTest extends BackendIntegrationTestSupport {
         .andExpect(jsonPath("$.schema_version").value(1))
         .andExpect(jsonPath("$.scenario.scenario_id").value("job_interview"))
         .andExpect(jsonPath("$.scenario.title").value("英语面试"))
-        .andExpect(jsonPath("$.scenario.levels", containsInAnyOrder("L1", "L2", "L3")))
+        .andExpect(jsonPath("$.scenario.levels", containsInAnyOrder("A2", "B1", "B2")))
         .andExpect(jsonPath("$.scenario.version").value("2026.05-mvp-seed"))
         .andExpect(jsonPath("$.scenario.expression_count", greaterThanOrEqualTo(6)))
         .andExpect(jsonPath("$.scenario.access.allowed").value(true));
@@ -37,12 +37,12 @@ class ScenarioContentControllerTest extends BackendIntegrationTestSupport {
   void scenarioLevelReturnsTargetExpressionsForValidLevels() throws Exception {
     AuthTokens tokens = loginPhone("+8613800138081");
 
-    mvc.perform(get("/scenarios/onboarding_introduction/levels/L2")
+    mvc.perform(get("/scenarios/onboarding_introduction/levels/B1")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.schema_version").value(1))
         .andExpect(jsonPath("$.scenario_id").value("onboarding_introduction"))
-        .andExpect(jsonPath("$.level_code").value("L2"))
+        .andExpect(jsonPath("$.level_code").value("B1"))
         .andExpect(jsonPath("$.target_expressions.length()").value(2))
         .andExpect(jsonPath("$.target_expressions[0].target_expression_id", not(blankOrNullString())))
         .andExpect(jsonPath("$.dialogue_assets.length()").value(0))
@@ -50,12 +50,12 @@ class ScenarioContentControllerTest extends BackendIntegrationTestSupport {
   }
 
   @Test
-  void invalidLevelReturnsDeterministicNotFound() throws Exception {
+  void invalidLevelReturnsSchemaValidationFailure() throws Exception {
     AuthTokens tokens = loginPhone("+8613800138082");
 
     mvc.perform(get("/scenarios/job_interview/levels/L9")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
-        .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.error.code").value("RESOURCE_NOT_FOUND"));
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(jsonPath("$.error.code").value("SCHEMA_VALIDATION_FAILED"));
   }
 }

@@ -14,10 +14,10 @@ Manual plan ready / external execution pending。本文把剩余外部 provider�
 | 聚合发布门禁 | TC-COM-022 | AC-COM-014 | COM-TR-012 | `scripts/check_release_readiness.sh` | release-blocked |
 
 ## 证据和安全规则
-- 所有截图、provider console 日志、backend verification/webhook 日志、商店配置截图、审核账号 vault 引用、symbol upload 记录和 rollback 演练记录必须存储在仓库外，只在 release vars 或报告中引用。
+- 所有截图、provider console 日志、backend verification/webhook 日志、商店配置截图、审核账号 vault 引用、symbol upload 记录和 rollback 演练记录必须存储在仓库外，只在 release vars 或本文结果字段中引用。
 - 不得把 Apple、Google、WeChat、Sentry、签名、审核账号、沙盒账号或用户账号密钥提交到仓库。
 - 日志证据必须脱敏：保留 provider transaction id / purchase token hash / event id / backend request id / user id hash，移除完整 token、邮箱、手机号、真实姓名和支付敏感字段。
-- 每个场景执行后必须在本文的结果字段、`docs/reports/test_report.md` 和对应 release var 中记录 evidence ref；未执行只能标记为 `blocked`，不得标记为 `passed`。
+- 每个场景执行后必须在本文的结果字段和对应 release var 中记录 evidence ref；未执行只能标记为 `blocked`，不得标记为 `passed`。
 - DashScope AI evidence 必须使用脱敏文本、脱敏短音频和 hash/media ref；不得上传真实用户音频或完整 signed media URL 到仓库。
 - 独立审查人必须复核证据可访问性、截图/日志时间、build tag/commit、账号隔离和 gate 命令结果。
 
@@ -60,7 +60,7 @@ Manual plan ready / external execution pending。本文把剩余外部 provider�
 ### TC-COM-015 通过条件
 - `COPY-IN-APP`、`COPY-STORE`、`COPY-PRIVACY-SUPPORT` 和 `COPY-STRICT-GATE` 全部 `passed`。
 - 独立审查确认截图/文案和 release candidate build 对齐。
-- `docs/reports/test_report.md` 记录执行日期、evidence ref 和 reviewer。
+- 本文结果字段记录执行日期、evidence ref 和 reviewer。
 
 ## TC-COM-019：真实 provider 沙盒/内测商业边界
 
@@ -176,22 +176,18 @@ Manual plan ready / external execution pending。本文把剩余外部 provider�
 | REL-SECRETS | 1. 检查 `APP_API_BASE_URL` / `API_BASE_URL`、`ENV=production`、`ENABLE_TEST_PHONE_LOGIN=false`、Sentry、Android signing、WeChat、provider/store refs。2. 确认没有 example/local/test login。 | release secrets/vars 完整且不使用测试值；敏感值只在 CI/secret store。 | CI secret 配置截图或审批记录；脱敏变量清单。 | pending |
 | REL-SIGNING | 1. 触发或 dry-run release signing。2. 确认 Android keystore、iOS signing profile/certificate 使用 release 配置。 | 签名配置可用；不会产出 debug/test 签名包。 | CI 日志、签名配置审批或外部证据。 | pending |
 | REL-SYMBOLS | 1. 构建 release artifact。2. 上传或验证 dSYM / ProGuard mapping。3. 记录 Sentry 或符号平台 artifact。 | 符号表上传完成，可用于崩溃解析。 | `SYMBOL_UPLOAD_EVIDENCE_REF`、CI 日志、Sentry artifact 截图。 | pending |
-| REL-ROLLBACK | 1. 按 `docs/release/rollback_plan.md` 执行演练或发布负责人审批。2. 验证关闭发布、回滚版本、禁用付费入口或撤回商店提交的路径。 | 回滚责任人、步骤、触发条件和证据明确。 | `ROLLBACK_REHEARSAL_REF`、演练记录或审批记录。 | pending |
+| REL-ROLLBACK | 1. 按已批准的外部回滚方案执行演练或取得发布负责人审批。2. 验证关闭发布、回滚版本、禁用付费入口或撤回商店提交的路径。 | 回滚责任人、步骤、触发条件和证据明确。 | `ROLLBACK_REHEARSAL_REF`、演练记录或审批记录。 | pending |
 | REL-STRICT-GATE | 1. 设置所有 required release vars 和 evidence refs。2. 运行 `scripts/check_release_readiness.sh` strict mode。3. 保存完整命令输出。 | strict release readiness 通过；任一外部/native 证据缺失时失败。 | 命令输出、CI gate 日志。 | pending |
-| REL-FINAL-REVIEW | 1. 独立审查人核对 TC-COM-012/015/019/021/022 的结果记录。2. 确认 `docs/reports/test_report.md`、`quality_report.md` 和 release vars 一致。3. 出具 release approval 或 blocker list。 | 没有 pending/blocked 结果时才可进入 PM release approval；否则保持 blocker closure。 | 独立审查记录、最终 blocker list 或 approval 记录。 | pending |
+| REL-FINAL-REVIEW | 1. 独立审查人核对 TC-COM-012/015/019/021/022 的结果记录。2. 确认本文结果字段、外部 evidence refs 和 release vars 一致。3. 出具 release approval 或 blocker list。 | 没有 pending/blocked 结果时才可进入 release approval；否则保持 blocker closure。 | 独立审查记录、最终 blocker list 或 approval 记录。 | pending |
 
 ### TC-COM-022 通过条件
 - `REL-SECRETS`、`REL-SIGNING`、`REL-SYMBOLS`、`REL-ROLLBACK`、`REL-STRICT-GATE` 和 `REL-FINAL-REVIEW` 全部 `passed`。
 - `scripts/check_release_readiness.sh` strict mode 通过。
-- PM release approval 明确引用通过后的证据 refs。
+- release approval 明确引用通过后的证据 refs。
 
 ## 执行后回填要求
-| Document | Required update |
+| Location | Required update |
 | --- | --- |
-| `docs/reports/test_report.md` | 记录每个 TC 的执行日期、实际结果、evidence ref、失败/阻断原因。 |
-| `docs/product/increments/commercial-subscription-readiness/test_cases.md` | 把对应 TC 的 `结果状态` 从 pending/blocked 更新为 passed/failed，并保留证据报告。 |
-| `docs/product/increments/commercial-subscription-readiness/traceability.md` | 更新 Test Evidence / Release Evidence 和 Gap status；不得在证据缺失时关闭 COM-GAP-010。 |
-| `docs/product/increments/commercial-ai-provider-hardening/test_cases.md` | 把 TC-COM-AI-004 和相关 AI provider TC 的 `结果状态` 从 pending/blocked 更新为 passed/failed，并保留证据报告。 |
-| `docs/product/increments/commercial-ai-provider-hardening/traceability.md` | 更新 Test Evidence / Release Evidence 和 Gap status；不得在证据缺失时关闭 COM-AI-GAP-003 或 P01-GAP-008。 |
-| `docs/reports/quality_report.md` | 记录独立审查结果、发现、残余风险和是否允许进入 PM release approval。 |
-| `docs/release/release_checklist.md` | 勾选对应 release checklist 项。 |
+| 本文对应 TC 与 Scenario 行 | 记录执行日期、实际结果、evidence ref、失败/阻断原因。 |
+| 外部 evidence package | 保存截图、日志、审批与 reviewer 结论，并使用稳定 ref。 |
+| Release vars | 回填已通过独立审查的 evidence ref；缺失证据时保持 blocked。 |

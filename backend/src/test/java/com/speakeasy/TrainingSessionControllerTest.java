@@ -26,12 +26,12 @@ class TrainingSessionControllerTest extends BackendIntegrationTestSupport {
   void tcP01021TrainingSessionStartsFromServerSourceOfTruthAndResumes() throws Exception {
     AuthTokens tokens = loginPhone("+8613800138500");
 
-    MvcResult first = startTraining(tokens, "job_interview", "L1", true)
+    MvcResult first = startTraining(tokens, "job_interview", "A2", true)
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.schema_version").value(1))
         .andExpect(jsonPath("$.session.session_id", not(blankOrNullString())))
         .andExpect(jsonPath("$.session.scenario_id").value("job_interview"))
-        .andExpect(jsonPath("$.session.level_code").value("L1"))
+        .andExpect(jsonPath("$.session.level_code").value("A2"))
         .andExpect(jsonPath("$.session.status").value("ready"))
         .andExpect(jsonPath("$.session.current_step_key").value("opening"))
         .andExpect(jsonPath("$.session.current_micro_action").value("SayOne"))
@@ -43,7 +43,7 @@ class TrainingSessionControllerTest extends BackendIntegrationTestSupport {
         .andReturn();
     String sessionId = JsonPath.read(first.getResponse().getContentAsString(), "$.session.session_id");
 
-    startTraining(tokens, "job_interview", "L1", true)
+    startTraining(tokens, "job_interview", "A2", true)
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.session.session_id").value(sessionId));
 
@@ -58,7 +58,7 @@ class TrainingSessionControllerTest extends BackendIntegrationTestSupport {
   void tcP01021UnknownScenarioFailsClosedWithoutTwoScenePatternValidation() throws Exception {
     AuthTokens tokens = loginPhone("+8613800138501");
 
-    startTraining(tokens, "future_business_pitch", "L1", false)
+    startTraining(tokens, "future_business_pitch", "A2", false)
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.error.code").value("RESOURCE_NOT_FOUND"));
   }

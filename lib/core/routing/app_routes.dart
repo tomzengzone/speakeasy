@@ -4,6 +4,7 @@ class AppRoutes {
   static const String privacyPolicy = '/privacy-policy';
   static const String termsOfService = '/terms-of-service';
   static const String editProfile = '/edit-profile';
+  static const String deviceSessions = '/device-sessions';
   static const String learningReport = '/learning-report';
   static const String favorites = '/favorites';
   static const String offlineContent = '/offline-content';

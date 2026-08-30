@@ -13,6 +13,8 @@ import 'package:record/record.dart';
 
 import 'package:speakeasy/config/app_config.dart';
 import 'package:speakeasy/services/api_client.dart';
+import 'package:speakeasy/services/authenticated_request_executor.dart';
+import 'package:speakeasy/services/tts_request_executor.dart';
 import 'package:speakeasy/services/voice_chat_service.dart';
 
 typedef AudioStreamCallback = void Function(Uint8List pcmBytes);
@@ -35,9 +37,9 @@ class AudioService extends ChangeNotifier {
   );
 
   AudioRecorder? _recorder;
-  final AudioPlayer _player = AudioPlayer();
-  final AudioPlayer _feedbackPlayer = AudioPlayer();
-  final FlutterTts _tts = FlutterTts();
+  final AudioPlayer _player;
+  final AudioPlayer _feedbackPlayer;
+  final FlutterTts _tts;
   bool _systemTtsAvailable = true;
   bool _nativeRecorderActive = false;
   final Map<String, String> _ttsAudioFileCache = <String, String>{};
@@ -48,6 +50,8 @@ class AudioService extends ChangeNotifier {
   bool _isStreamRecording = false;
   bool _isPlaying = false;
   int _playbackTicket = 0;
+  final TtsRequestExecutor _ttsRequests;
+  RequestCancellationToken? _activeTtsCancellation;
 
   /// 实时音频缓冲区
   final List<int> _realtimeAudioBuffer = [];
@@ -70,7 +74,15 @@ class AudioService extends ChangeNotifier {
   static const int _realtimeStartByteThreshold = 48000;
   static const int _maxManagedTempAudioFiles = 120;
 
-  AudioService() {
+  AudioService({
+    TtsRequestExecutor? ttsRequests,
+    AudioPlayer? player,
+    AudioPlayer? feedbackPlayer,
+    FlutterTts? systemTts,
+  }) : _player = player ?? AudioPlayer(),
+       _feedbackPlayer = feedbackPlayer ?? AudioPlayer(),
+       _tts = systemTts ?? FlutterTts(),
+       _ttsRequests = ttsRequests ?? TtsRequestExecutor() {
     _tts.setCompletionHandler(() {
       _isPlaying = false;
       _playingUrl = null;
@@ -325,6 +337,7 @@ class AudioService extends ChangeNotifier {
       await stopPlayback(clearRealtimeBuffer: false);
       return false;
     }
+    final RequestCancellationToken cancellation = _beginTtsRequest();
 
     await _player.stop();
     await _stopSystemTts();
@@ -339,6 +352,7 @@ class AudioService extends ChangeNotifier {
         sceneId: sceneId,
         targetLevel: targetLevel,
         nodeId: nodeId,
+        cancellation: cancellation,
       );
       if (_playbackTicket != ticket) {
         return false;
@@ -347,6 +361,10 @@ class AudioService extends ChangeNotifier {
         await playUrl(audioUrl);
         return true;
       }
+    } on SessionSecurityFailure {
+      rethrow;
+    } on RequestCancelledException {
+      return false;
     } catch (error) {
       debugPrint('[AudioService] cached TTS url failed: $error');
     } finally {
@@ -355,6 +373,7 @@ class AudioService extends ChangeNotifier {
         _playingUrl = null;
         notifyListeners();
       }
+      _releaseTtsRequest(cancellation);
     }
 
     if (_playbackTicket != ticket) {
@@ -386,6 +405,7 @@ class AudioService extends ChangeNotifier {
 
     // 再次点击同一段文字 → 停止
     if (_isPlaying && _playingUrl == ttsKey) {
+      _activeTtsCancellation?.cancel();
       await _player.stop();
       await _stopSystemTts();
       _isPlaying = false;
@@ -393,6 +413,7 @@ class AudioService extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+    final RequestCancellationToken cancellation = _beginTtsRequest();
 
     // 停止其他正在播放的内容
     await _player.stop();
@@ -409,6 +430,7 @@ class AudioService extends ChangeNotifier {
         voice: resolvedVoice,
         maxAttempts: maxAttempts,
         requestTimeout: requestTimeout,
+        cancellation: cancellation,
       );
       if (audioBytes.isNotEmpty) {
         debugPrint(
@@ -447,6 +469,10 @@ class AudioService extends ChangeNotifier {
           );
         }
       }
+    } on SessionSecurityFailure {
+      rethrow;
+    } on RequestCancelledException {
+      return false;
     } catch (error) {
       // CosyVoice 失败，回退到系统 TTS
       debugPrint('[AudioService] TTS backend failed: $error');
@@ -462,6 +488,7 @@ class AudioService extends ChangeNotifier {
         _playingUrl = null;
         notifyListeners();
       }
+      _releaseTtsRequest(cancellation);
     }
     return false;
   }
@@ -500,6 +527,7 @@ class AudioService extends ChangeNotifier {
     );
 
     if (_isPlaying && _playingUrl == ttsKey) {
+      _activeTtsCancellation?.cancel();
       await _player.stop();
       await _stopSystemTts();
       _isPlaying = false;
@@ -507,6 +535,7 @@ class AudioService extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+    final RequestCancellationToken cancellation = _beginTtsRequest();
 
     await _player.stop();
     await _stopSystemTts();
@@ -515,17 +544,27 @@ class AudioService extends ChangeNotifier {
     _playingUrl = ttsKey;
     notifyListeners();
 
-    final List<Future<String?>?> pendingFiles = List<Future<String?>?>.filled(
-      chunks.length,
-      null,
-    );
-    Future<String?> requestChunkFile(int index) {
-      return createTtsAudioFile(
-        chunks[index],
-        voice: resolvedVoice,
-        maxAttempts: maxAttempts,
-        requestTimeout: requestTimeout,
-      );
+    final List<
+      Future<({Object? error, String? filePath, StackTrace? stackTrace})>?
+    >
+    pendingFiles =
+        List<
+          Future<({Object? error, String? filePath, StackTrace? stackTrace})>?
+        >.filled(chunks.length, null);
+    Future<({Object? error, String? filePath, StackTrace? stackTrace})>
+    requestChunkFile(int index) async {
+      try {
+        final String? filePath = await createTtsAudioFile(
+          chunks[index],
+          voice: resolvedVoice,
+          maxAttempts: maxAttempts,
+          requestTimeout: requestTimeout,
+          cancellation: cancellation,
+        );
+        return (error: null, filePath: filePath, stackTrace: null);
+      } catch (error, stackTrace) {
+        return (error: error, filePath: null, stackTrace: stackTrace);
+      }
     }
 
     if (prefetchAllChunks) {
@@ -544,10 +583,21 @@ class AudioService extends ChangeNotifier {
         }
         String? filePath;
         try {
-          final Future<String?> pendingFile = pendingFiles[index]!;
-          filePath = chunkWaitTimeout == null
+          final Future<
+            ({Object? error, String? filePath, StackTrace? stackTrace})
+          >
+          pendingFile = pendingFiles[index]!;
+          final ({Object? error, String? filePath, StackTrace? stackTrace})
+          result = chunkWaitTimeout == null
               ? await pendingFile
               : await pendingFile.timeout(chunkWaitTimeout);
+          if (result.error case final Object error) {
+            Error.throwWithStackTrace(
+              error,
+              result.stackTrace ?? StackTrace.current,
+            );
+          }
+          filePath = result.filePath;
         } on TimeoutException {
           debugPrint(
             '[AudioService] playTtsProgressive chunk timeout index=$index played=$playedAny wait=${chunkWaitTimeout?.inMilliseconds ?? 0}ms',
@@ -583,6 +633,20 @@ class AudioService extends ChangeNotifier {
           await _player.stop();
         }
       }
+    } on SessionSecurityFailure {
+      cancellation.cancel();
+      await Future.wait(
+        pendingFiles
+            .whereType<
+              Future<
+                ({Object? error, String? filePath, StackTrace? stackTrace})
+              >
+            >()
+            .toList(growable: false),
+      );
+      rethrow;
+    } on RequestCancelledException {
+      return playedAny;
     } catch (error) {
       debugPrint('[AudioService] playTtsProgressive backend failed: $error');
     } finally {
@@ -594,6 +658,7 @@ class AudioService extends ChangeNotifier {
       debugPrint(
         '[AudioService] playTtsProgressive done played=$playedAny elapsed=${watch.elapsedMilliseconds}ms',
       );
+      _releaseTtsRequest(cancellation);
     }
     return playedAny;
   }
@@ -627,6 +692,9 @@ class AudioService extends ChangeNotifier {
               maxAttempts: 1,
               requestTimeout: _autoTtsRequestTimeout,
             ).catchError((Object error) {
+              if (error is SessionSecurityFailure) {
+                throw error;
+              }
               debugPrint('[AudioService] auto TTS prewarm skipped: $error');
               return null;
             }),
@@ -639,36 +707,15 @@ class AudioService extends ChangeNotifier {
     required String voice,
     int maxAttempts = 2,
     Duration requestTimeout = _defaultTtsRequestTimeout,
+    RequestCancellationToken? cancellation,
   }) async {
-    final int safeMaxAttempts = math.max(1, maxAttempts);
-    Object? lastError;
-    for (int attempt = 1; attempt <= safeMaxAttempts; attempt++) {
-      try {
-        final Uint8List audioBytes = await ApiClient.tts(
-          text,
-          voice: voice,
-          timeout: requestTimeout,
-        );
-        if (audioBytes.isNotEmpty) {
-          return audioBytes;
-        }
-        debugPrint(
-          '[AudioService] TTS request returned empty bytes on attempt $attempt/$safeMaxAttempts',
-        );
-      } catch (error) {
-        lastError = error;
-        debugPrint(
-          '[AudioService] TTS request failed on attempt $attempt/$safeMaxAttempts: $error',
-        );
-      }
-      if (attempt < safeMaxAttempts) {
-        await Future<void>.delayed(const Duration(milliseconds: 350));
-      }
-    }
-    if (lastError != null) {
-      throw lastError;
-    }
-    return Uint8List(0);
+    return _ttsRequests.request(
+      text,
+      voice: voice,
+      maxAttempts: maxAttempts,
+      requestTimeout: requestTimeout,
+      cancellation: cancellation,
+    );
   }
 
   Future<String?> createTtsAudioFile(
@@ -676,6 +723,7 @@ class AudioService extends ChangeNotifier {
     String? voice,
     int maxAttempts = 2,
     Duration requestTimeout = _defaultTtsRequestTimeout,
+    RequestCancellationToken? cancellation,
   }) async {
     final String cleanedText = text.trim();
     if (cleanedText.isEmpty) {
@@ -698,6 +746,7 @@ class AudioService extends ChangeNotifier {
       voice: resolvedVoice,
       maxAttempts: maxAttempts,
       requestTimeout: requestTimeout,
+      cancellation: cancellation,
     );
     if (audioBytes.isEmpty) {
       return null;
@@ -973,6 +1022,8 @@ class AudioService extends ChangeNotifier {
 
   Future<void> stopPlayback({bool clearRealtimeBuffer = true}) async {
     _playbackTicket++;
+    _activeTtsCancellation?.cancel();
+    _activeTtsCancellation = null;
     await _player.stop();
     await _stopSystemTts();
     if (_shouldUseNativeRealtimePcm) {
@@ -992,6 +1043,19 @@ class AudioService extends ChangeNotifier {
     _isPlaying = false;
     _playingUrl = null;
     notifyListeners();
+  }
+
+  RequestCancellationToken _beginTtsRequest() {
+    _activeTtsCancellation?.cancel();
+    final RequestCancellationToken cancellation = RequestCancellationToken();
+    _activeTtsCancellation = cancellation;
+    return cancellation;
+  }
+
+  void _releaseTtsRequest(RequestCancellationToken cancellation) {
+    if (identical(_activeTtsCancellation, cancellation)) {
+      _activeTtsCancellation = null;
+    }
   }
 
   @override

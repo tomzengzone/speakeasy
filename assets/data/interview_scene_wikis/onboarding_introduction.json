@@ -11,9 +11,9 @@
       "自我介绍",
       "团队沟通",
       "工作",
-      "L1",
-      "L2",
-      "L3"
+      "A2",
+      "B1",
+      "B2"
     ],
     "coachProfile": {
       "persona": "Patient personal workplace English speaking coach for onboarding conversations.",
@@ -31,167 +31,167 @@
       "id": "welcome",
       "title": "欢迎与自我介绍",
       "nodeIds": [
-        "ONB_L1_1",
-        "ONB_L2_1",
-        "ONB_L3_1"
+        "ONB_A2_1",
+        "ONB_B1_1",
+        "ONB_B2_1"
       ]
     },
     {
       "id": "role",
       "title": "岗位与职责说明",
       "nodeIds": [
-        "ONB_L1_2",
-        "ONB_L1_4",
-        "ONB_L2_2",
-        "ONB_L2_4",
-        "ONB_L3_2",
-        "ONB_L3_4"
+        "ONB_A2_2",
+        "ONB_A2_4",
+        "ONB_B1_2",
+        "ONB_B1_4",
+        "ONB_B2_2",
+        "ONB_B2_4"
       ]
     },
     {
       "id": "background",
       "title": "背景与经验连接",
       "nodeIds": [
-        "ONB_L1_3",
-        "ONB_L1_5",
-        "ONB_L2_3",
-        "ONB_L2_5",
-        "ONB_L3_3",
-        "ONB_L3_5"
+        "ONB_A2_3",
+        "ONB_A2_5",
+        "ONB_B1_3",
+        "ONB_B1_5",
+        "ONB_B2_3",
+        "ONB_B2_5"
       ]
     },
     {
       "id": "expectations",
       "title": "学习与协作期待",
       "nodeIds": [
-        "ONB_L1_6",
-        "ONB_L2_6",
-        "ONB_L3_6"
+        "ONB_A2_6",
+        "ONB_B1_6",
+        "ONB_B2_6"
       ]
     },
     {
       "id": "priorities",
       "title": "优先事项确认",
       "nodeIds": [
-        "ONB_L1_7",
-        "ONB_L2_7",
-        "ONB_L3_7"
+        "ONB_A2_7",
+        "ONB_B1_7",
+        "ONB_B2_7"
       ]
     },
     {
       "id": "workflow",
       "title": "工具流程了解",
       "nodeIds": [
-        "ONB_L1_8",
-        "ONB_L2_8",
-        "ONB_L3_8"
+        "ONB_A2_8",
+        "ONB_B1_8",
+        "ONB_B2_8"
       ]
     },
     {
       "id": "contribution",
       "title": "主动贡献表达",
       "nodeIds": [
-        "ONB_L1_9",
-        "ONB_L2_9",
-        "ONB_L3_9"
+        "ONB_A2_9",
+        "ONB_B1_9",
+        "ONB_B2_9"
       ]
     },
     {
       "id": "collaboration",
       "title": "协作关系建立",
       "nodeIds": [
-        "ONB_L1_10",
-        "ONB_L2_10",
-        "ONB_L3_10"
+        "ONB_A2_10",
+        "ONB_B1_10",
+        "ONB_B2_10"
       ]
     },
     {
       "id": "next_steps",
       "title": "下一步确认",
       "nodeIds": [
-        "ONB_L1_11",
-        "ONB_L2_11",
-        "ONB_L3_11"
+        "ONB_A2_11",
+        "ONB_B1_11",
+        "ONB_B2_11"
       ]
     },
     {
       "id": "support",
       "title": "不确定时求助",
       "nodeIds": [
-        "ONB_L1_12",
-        "ONB_L2_12",
-        "ONB_L3_12"
+        "ONB_A2_12",
+        "ONB_B1_12",
+        "ONB_B2_12"
       ]
     },
     {
       "id": "wrap_up",
       "title": "感谢收尾",
       "nodeIds": [
-        "ONB_L1_13",
-        "ONB_L2_13",
-        "ONB_L3_13"
+        "ONB_A2_13",
+        "ONB_B1_13",
+        "ONB_B2_13"
       ]
     }
   ],
   "tracks": [
     {
-      "id": "L1",
-      "title": "L1 入门",
-      "targetLevel": "beginner",
+      "id": "A2",
+      "title": "A2 基础",
+      "targetLevel": "A2",
       "nodeIds": [
-        "ONB_L1_1",
-        "ONB_L1_2",
-        "ONB_L1_3",
-        "ONB_L1_4",
-        "ONB_L1_5",
-        "ONB_L1_6",
-        "ONB_L1_7",
-        "ONB_L1_8",
-        "ONB_L1_9",
-        "ONB_L1_10",
-        "ONB_L1_11",
-        "ONB_L1_12",
-        "ONB_L1_13"
+        "ONB_A2_1",
+        "ONB_A2_2",
+        "ONB_A2_3",
+        "ONB_A2_4",
+        "ONB_A2_5",
+        "ONB_A2_6",
+        "ONB_A2_7",
+        "ONB_A2_8",
+        "ONB_A2_9",
+        "ONB_A2_10",
+        "ONB_A2_11",
+        "ONB_A2_12",
+        "ONB_A2_13"
       ]
     },
     {
-      "id": "L2",
-      "title": "L2 进阶",
-      "targetLevel": "intermediate",
+      "id": "B1",
+      "title": "B1 中级",
+      "targetLevel": "B1",
       "nodeIds": [
-        "ONB_L2_1",
-        "ONB_L2_2",
-        "ONB_L2_3",
-        "ONB_L2_4",
-        "ONB_L2_5",
-        "ONB_L2_6",
-        "ONB_L2_7",
-        "ONB_L2_8",
-        "ONB_L2_9",
-        "ONB_L2_10",
-        "ONB_L2_11",
-        "ONB_L2_12",
-        "ONB_L2_13"
+        "ONB_B1_1",
+        "ONB_B1_2",
+        "ONB_B1_3",
+        "ONB_B1_4",
+        "ONB_B1_5",
+        "ONB_B1_6",
+        "ONB_B1_7",
+        "ONB_B1_8",
+        "ONB_B1_9",
+        "ONB_B1_10",
+        "ONB_B1_11",
+        "ONB_B1_12",
+        "ONB_B1_13"
       ]
     },
     {
-      "id": "L3",
-      "title": "L3 精通",
-      "targetLevel": "advanced",
+      "id": "B2",
+      "title": "B2 中高级",
+      "targetLevel": "B2",
       "nodeIds": [
-        "ONB_L3_1",
-        "ONB_L3_2",
-        "ONB_L3_3",
-        "ONB_L3_4",
-        "ONB_L3_5",
-        "ONB_L3_6",
-        "ONB_L3_7",
-        "ONB_L3_8",
-        "ONB_L3_9",
-        "ONB_L3_10",
-        "ONB_L3_11",
-        "ONB_L3_12",
-        "ONB_L3_13"
+        "ONB_B2_1",
+        "ONB_B2_2",
+        "ONB_B2_3",
+        "ONB_B2_4",
+        "ONB_B2_5",
+        "ONB_B2_6",
+        "ONB_B2_7",
+        "ONB_B2_8",
+        "ONB_B2_9",
+        "ONB_B2_10",
+        "ONB_B2_11",
+        "ONB_B2_12",
+        "ONB_B2_13"
       ]
     }
   ],
@@ -200,125 +200,125 @@
       "slot": 1,
       "label": "欢迎回应",
       "levels": {
-        "L1": "ONB_L1_1",
-        "L2": "ONB_L2_1",
-        "L3": "ONB_L3_1"
+        "A2": "ONB_A2_1",
+        "B1": "ONB_B1_1",
+        "B2": "ONB_B2_1"
       }
     },
     {
       "slot": 2,
       "label": "岗位说明",
       "levels": {
-        "L1": "ONB_L1_2",
-        "L2": "ONB_L2_2",
-        "L3": "ONB_L3_2"
+        "A2": "ONB_A2_2",
+        "B1": "ONB_B1_2",
+        "B2": "ONB_B2_2"
       }
     },
     {
       "slot": 3,
       "label": "背景经历",
       "levels": {
-        "L1": "ONB_L1_3",
-        "L2": "ONB_L2_3",
-        "L3": "ONB_L3_3"
+        "A2": "ONB_A2_3",
+        "B1": "ONB_B1_3",
+        "B2": "ONB_B2_3"
       }
     },
     {
       "slot": 4,
       "label": "职责范围",
       "levels": {
-        "L1": "ONB_L1_4",
-        "L2": "ONB_L2_4",
-        "L3": "ONB_L3_4"
+        "A2": "ONB_A2_4",
+        "B1": "ONB_B1_4",
+        "B2": "ONB_B2_4"
       }
     },
     {
       "slot": 5,
       "label": "相关经验",
       "levels": {
-        "L1": "ONB_L1_5",
-        "L2": "ONB_L2_5",
-        "L3": "ONB_L3_5"
+        "A2": "ONB_A2_5",
+        "B1": "ONB_B1_5",
+        "B2": "ONB_B2_5"
       }
     },
     {
       "slot": 6,
       "label": "学习态度",
       "levels": {
-        "L1": "ONB_L1_6",
-        "L2": "ONB_L2_6",
-        "L3": "ONB_L3_6"
+        "A2": "ONB_A2_6",
+        "B1": "ONB_B1_6",
+        "B2": "ONB_B2_6"
       }
     },
     {
       "slot": 7,
       "label": "优先事项",
       "levels": {
-        "L1": "ONB_L1_7",
-        "L2": "ONB_L2_7",
-        "L3": "ONB_L3_7"
+        "A2": "ONB_A2_7",
+        "B1": "ONB_B1_7",
+        "B2": "ONB_B2_7"
       }
     },
     {
       "slot": 8,
       "label": "工具流程",
       "levels": {
-        "L1": "ONB_L1_8",
-        "L2": "ONB_L2_8",
-        "L3": "ONB_L3_8"
+        "A2": "ONB_A2_8",
+        "B1": "ONB_B1_8",
+        "B2": "ONB_B2_8"
       }
     },
     {
       "slot": 9,
       "label": "主动贡献",
       "levels": {
-        "L1": "ONB_L1_9",
-        "L2": "ONB_L2_9",
-        "L3": "ONB_L3_9"
+        "A2": "ONB_A2_9",
+        "B1": "ONB_B1_9",
+        "B2": "ONB_B2_9"
       }
     },
     {
       "slot": 10,
       "label": "协作方式",
       "levels": {
-        "L1": "ONB_L1_10",
-        "L2": "ONB_L2_10",
-        "L3": "ONB_L3_10"
+        "A2": "ONB_A2_10",
+        "B1": "ONB_B1_10",
+        "B2": "ONB_B2_10"
       }
     },
     {
       "slot": 11,
       "label": "下一步安排",
       "levels": {
-        "L1": "ONB_L1_11",
-        "L2": "ONB_L2_11",
-        "L3": "ONB_L3_11"
+        "A2": "ONB_A2_11",
+        "B1": "ONB_B1_11",
+        "B2": "ONB_B2_11"
       }
     },
     {
       "slot": 12,
       "label": "不确定求助",
       "levels": {
-        "L1": "ONB_L1_12",
-        "L2": "ONB_L2_12",
-        "L3": "ONB_L3_12"
+        "A2": "ONB_A2_12",
+        "B1": "ONB_B1_12",
+        "B2": "ONB_B2_12"
       }
     },
     {
       "slot": 13,
       "label": "感谢收尾",
       "levels": {
-        "L1": "ONB_L1_13",
-        "L2": "ONB_L2_13",
-        "L3": "ONB_L3_13"
+        "A2": "ONB_A2_13",
+        "B1": "ONB_B1_13",
+        "B2": "ONB_B2_13"
       }
     }
   ],
   "nodes": [
     {
-      "id": "ONB_L1_1",
-      "level": "L1",
-      "targetLevel": "beginner",
+      "id": "ONB_A2_1",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 1,
       "isRescue": false,
       "targetText": "Hi everyone, I'm excited to join the team.",
@@ -334,7 +334,7 @@
       "dependencies": [],
       "previousIds": [],
       "nextIds": [
-        "ONB_L1_2"
+        "ONB_A2_2"
       ],
       "phaseId": "welcome",
       "hooks": [
@@ -405,8 +405,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L2_1",
-        "ONB_L3_1"
+        "ONB_B1_1",
+        "ONB_B2_1"
       ],
       "slots": [
         {
@@ -564,7 +564,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For beginners, accept simple correct English first, then guide one short retry instead of over-explaining.",
+        "For A2 learners, accept simple correct English first, then guide one short retry instead of over-explaining.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own team, today instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -647,7 +647,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -765,9 +765,9 @@
       }
     },
     {
-      "id": "ONB_L1_2",
-      "level": "L1",
-      "targetLevel": "beginner",
+      "id": "ONB_A2_2",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 2,
       "isRescue": false,
       "targetText": "I'll be working as a product operations specialist.",
@@ -781,13 +781,13 @@
       "usage": "入职介绍时说明自己加入后的职位和工作方向。可替换职位名和职责方向。",
       "pragmaticNote": "用 I'll be working as 或 I'll be joining as 比 I am a 更贴近入职当天语境。",
       "dependencies": [
-        "ONB_L1_1"
+        "ONB_A2_1"
       ],
       "previousIds": [
-        "ONB_L1_1"
+        "ONB_A2_1"
       ],
       "nextIds": [
-        "ONB_L1_3"
+        "ONB_A2_3"
       ],
       "phaseId": "role",
       "hooks": [
@@ -858,8 +858,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L2_2",
-        "ONB_L3_2"
+        "ONB_B1_2",
+        "ONB_B2_2"
       ],
       "slots": [
         {
@@ -1017,7 +1017,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For beginners, accept simple correct English first, then guide one short retry instead of over-explaining.",
+        "For A2 learners, accept simple correct English first, then guide one short retry instead of over-explaining.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own product operations specialist, process support instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -1095,7 +1095,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -1213,9 +1213,9 @@
       }
     },
     {
-      "id": "ONB_L1_3",
-      "level": "L1",
-      "targetLevel": "beginner",
+      "id": "ONB_A2_3",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 3,
       "isRescue": false,
       "targetText": "Before this, I worked in customer support for two years.",
@@ -1229,13 +1229,13 @@
       "usage": "入职介绍中用于补充过往经验。避免讲太长，只给团队建立基本认知。",
       "pragmaticNote": "Before joining 比 before this 更正式一点，适合入职介绍。",
       "dependencies": [
-        "ONB_L1_2"
+        "ONB_A2_2"
       ],
       "previousIds": [
-        "ONB_L1_2"
+        "ONB_A2_2"
       ],
       "nextIds": [
-        "ONB_L1_4"
+        "ONB_A2_4"
       ],
       "phaseId": "background",
       "hooks": [
@@ -1306,8 +1306,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L2_3",
-        "ONB_L3_3"
+        "ONB_B1_3",
+        "ONB_B2_3"
       ],
       "slots": [
         {
@@ -1464,7 +1464,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For beginners, accept simple correct English first, then guide one short retry instead of over-explaining.",
+        "For A2 learners, accept simple correct English first, then guide one short retry instead of over-explaining.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own customer support, two years instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -1542,7 +1542,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -1660,9 +1660,9 @@
       }
     },
     {
-      "id": "ONB_L1_4",
-      "level": "L1",
-      "targetLevel": "beginner",
+      "id": "ONB_A2_4",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 4,
       "isRescue": false,
       "targetText": "My main responsibility will be helping the team track and improve our processes.",
@@ -1676,13 +1676,13 @@
       "usage": "入职介绍中说明职责边界，帮助团队知道未来可以在哪些事情上找你。",
       "pragmaticNote": "My main responsibility will be... 清晰直接，适合新员工介绍职责。",
       "dependencies": [
-        "ONB_L1_3"
+        "ONB_A2_3"
       ],
       "previousIds": [
-        "ONB_L1_3"
+        "ONB_A2_3"
       ],
       "nextIds": [
-        "ONB_L1_5"
+        "ONB_A2_5"
       ],
       "phaseId": "role",
       "hooks": [
@@ -1753,8 +1753,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L2_4",
-        "ONB_L3_4"
+        "ONB_B1_4",
+        "ONB_B2_4"
       ],
       "slots": [
         {
@@ -1912,7 +1912,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For beginners, accept simple correct English first, then guide one short retry instead of over-explaining.",
+        "For A2 learners, accept simple correct English first, then guide one short retry instead of over-explaining.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own track priorities, document processes instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -1995,7 +1995,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -2113,9 +2113,9 @@
       }
     },
     {
-      "id": "ONB_L1_5",
-      "level": "L1",
-      "targetLevel": "beginner",
+      "id": "ONB_A2_5",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 5,
       "isRescue": false,
       "targetText": "In my last role, I helped organize team updates and solve customer issues.",
@@ -2129,13 +2129,13 @@
       "usage": "用于说明自己过去做过的事如何帮助新岗位。控制在一句话内即可。",
       "pragmaticNote": "In my last role 是非常自然的经历引入，比 in my old job 更职业。",
       "dependencies": [
-        "ONB_L1_4"
+        "ONB_A2_4"
       ],
       "previousIds": [
-        "ONB_L1_4"
+        "ONB_A2_4"
       ],
       "nextIds": [
-        "ONB_L1_6"
+        "ONB_A2_6"
       ],
       "phaseId": "background",
       "hooks": [
@@ -2206,8 +2206,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L2_5",
-        "ONB_L3_5"
+        "ONB_B1_5",
+        "ONB_B2_5"
       ],
       "slots": [
         {
@@ -2364,7 +2364,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For beginners, accept simple correct English first, then guide one short retry instead of over-explaining.",
+        "For A2 learners, accept simple correct English first, then guide one short retry instead of over-explaining.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own weekly updates, customer issues instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -2447,7 +2447,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -2565,9 +2565,9 @@
       }
     },
     {
-      "id": "ONB_L1_6",
-      "level": "L1",
-      "targetLevel": "beginner",
+      "id": "ONB_A2_6",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 6,
       "isRescue": false,
       "targetText": "I know I have a lot to learn, and I'm ready to ask questions.",
@@ -2581,13 +2581,13 @@
       "usage": "入职初期常用，用来降低团队对你马上全懂的期待，同时展示主动性。",
       "pragmaticNote": "learning curve 是职场中常见说法，表示适应新环境需要学习过程。",
       "dependencies": [
-        "ONB_L1_5"
+        "ONB_A2_5"
       ],
       "previousIds": [
-        "ONB_L1_5"
+        "ONB_A2_5"
       ],
       "nextIds": [
-        "ONB_L1_7"
+        "ONB_A2_7"
       ],
       "phaseId": "expectations",
       "hooks": [
@@ -2658,8 +2658,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L2_6",
-        "ONB_L3_6"
+        "ONB_B1_6",
+        "ONB_B2_6"
       ],
       "slots": [
         {
@@ -2816,7 +2816,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For beginners, accept simple correct English first, then guide one short retry instead of over-explaining.",
+        "For A2 learners, accept simple correct English first, then guide one short retry instead of over-explaining.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own ask questions, take notes instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -2894,7 +2894,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -3012,9 +3012,9 @@
       }
     },
     {
-      "id": "ONB_L1_7",
-      "level": "L1",
-      "targetLevel": "beginner",
+      "id": "ONB_A2_7",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 7,
       "isRescue": false,
       "targetText": "Could you help me understand what I should focus on first?",
@@ -3028,13 +3028,13 @@
       "usage": "入职第一天或第一周向主管提问，帮助自己快速对齐优先级。",
       "pragmaticNote": "Could you help me understand... 比 What should I do? 更礼貌，也更适合向主管提问。",
       "dependencies": [
-        "ONB_L1_6"
+        "ONB_A2_6"
       ],
       "previousIds": [
-        "ONB_L1_6"
+        "ONB_A2_6"
       ],
       "nextIds": [
-        "ONB_L1_8"
+        "ONB_A2_8"
       ],
       "phaseId": "priorities",
       "hooks": [
@@ -3105,8 +3105,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L2_7",
-        "ONB_L3_7"
+        "ONB_B1_7",
+        "ONB_B2_7"
       ],
       "slots": [
         {
@@ -3262,7 +3262,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For beginners, accept simple correct English first, then guide one short retry instead of over-explaining.",
+        "For A2 learners, accept simple correct English first, then guide one short retry instead of over-explaining.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own this week, highest-priority areas instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -3340,7 +3340,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -3457,9 +3457,9 @@
       }
     },
     {
-      "id": "ONB_L1_8",
-      "level": "L1",
-      "targetLevel": "beginner",
+      "id": "ONB_A2_8",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 8,
       "isRescue": false,
       "targetText": "Which tools should I use for daily communication and tasks?",
@@ -3473,13 +3473,13 @@
       "usage": "入职初期了解工作方式时使用，适合问 mentor、manager 或同事。",
       "pragmaticNote": "tools and channels 比 apps 更职业；task tracking 和 documentation 是常见工作流词。",
       "dependencies": [
-        "ONB_L1_7"
+        "ONB_A2_7"
       ],
       "previousIds": [
-        "ONB_L1_7"
+        "ONB_A2_7"
       ],
       "nextIds": [
-        "ONB_L1_9"
+        "ONB_A2_9"
       ],
       "phaseId": "workflow",
       "hooks": [
@@ -3550,8 +3550,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L2_8",
-        "ONB_L3_8"
+        "ONB_B1_8",
+        "ONB_B2_8"
       ],
       "slots": [
         {
@@ -3707,7 +3707,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For beginners, accept simple correct English first, then guide one short retry instead of over-explaining.",
+        "For A2 learners, accept simple correct English first, then guide one short retry instead of over-explaining.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own daily communication, task tracking instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -3785,7 +3785,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -3902,9 +3902,9 @@
       }
     },
     {
-      "id": "ONB_L1_9",
-      "level": "L1",
-      "targetLevel": "beginner",
+      "id": "ONB_A2_9",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 9,
       "isRescue": false,
       "targetText": "If there is anything I can help with, please let me know.",
@@ -3918,13 +3918,13 @@
       "usage": "入职初期表达主动性。适合在介绍结尾或跟主管对齐后说。",
       "pragmaticNote": "If there is anything I can help with 非常稳妥；add value early 更有成熟职场感。",
       "dependencies": [
-        "ONB_L1_8"
+        "ONB_A2_8"
       ],
       "previousIds": [
-        "ONB_L1_8"
+        "ONB_A2_8"
       ],
       "nextIds": [
-        "ONB_L1_10"
+        "ONB_A2_10"
       ],
       "phaseId": "contribution",
       "hooks": [
@@ -3995,8 +3995,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L2_9",
-        "ONB_L3_9"
+        "ONB_B1_9",
+        "ONB_B2_9"
       ],
       "slots": [
         {
@@ -4154,7 +4154,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For beginners, accept simple correct English first, then guide one short retry instead of over-explaining.",
+        "For A2 learners, accept simple correct English first, then guide one short retry instead of over-explaining.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own take on early, take ownership instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -4232,7 +4232,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -4350,9 +4350,9 @@
       }
     },
     {
-      "id": "ONB_L1_10",
-      "level": "L1",
-      "targetLevel": "beginner",
+      "id": "ONB_A2_10",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 10,
       "isRescue": false,
       "targetText": "I'd love to get to know how everyone works.",
@@ -4366,13 +4366,13 @@
       "usage": "适合和同事介绍时说，展示尊重对方协作方式。",
       "pragmaticNote": "working style 是职场高频词，表示工作习惯和偏好。",
       "dependencies": [
-        "ONB_L1_9"
+        "ONB_A2_9"
       ],
       "previousIds": [
-        "ONB_L1_9"
+        "ONB_A2_9"
       ],
       "nextIds": [
-        "ONB_L1_11"
+        "ONB_A2_11"
       ],
       "phaseId": "collaboration",
       "hooks": [
@@ -4443,8 +4443,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L2_10",
-        "ONB_L3_10"
+        "ONB_B1_10",
+        "ONB_B2_10"
       ],
       "slots": [
         {
@@ -4601,7 +4601,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For beginners, accept simple correct English first, then guide one short retry instead of over-explaining.",
+        "For A2 learners, accept simple correct English first, then guide one short retry instead of over-explaining.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own working style, collaborate smoothly instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -4679,7 +4679,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -4797,9 +4797,9 @@
       }
     },
     {
-      "id": "ONB_L1_11",
-      "level": "L1",
-      "targetLevel": "beginner",
+      "id": "ONB_A2_11",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 11,
       "isRescue": false,
       "targetText": "What should I do after this introduction?",
@@ -4813,13 +4813,13 @@
       "usage": "入职沟通收尾时使用，避免结束后不知道下一步动作。",
       "pragmaticNote": "best next step 比 next step 更柔和，听起来是在寻求建议。",
       "dependencies": [
-        "ONB_L1_10"
+        "ONB_A2_10"
       ],
       "previousIds": [
-        "ONB_L1_10"
+        "ONB_A2_10"
       ],
       "nextIds": [
-        "ONB_L1_12"
+        "ONB_A2_12"
       ],
       "phaseId": "next_steps",
       "hooks": [
@@ -4890,8 +4890,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L2_11",
-        "ONB_L3_11"
+        "ONB_B1_11",
+        "ONB_B2_11"
       ],
       "slots": [
         {
@@ -5047,7 +5047,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For beginners, accept simple correct English first, then guide one short retry instead of over-explaining.",
+        "For A2 learners, accept simple correct English first, then guide one short retry instead of over-explaining.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own today's introduction, best next step instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -5125,7 +5125,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -5243,9 +5243,9 @@
       }
     },
     {
-      "id": "ONB_L1_12",
-      "level": "L1",
-      "targetLevel": "beginner",
+      "id": "ONB_A2_12",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 12,
       "isRescue": true,
       "targetText": "If I'm not sure about something, who should I ask?",
@@ -5259,13 +5259,13 @@
       "usage": "入职初期避免自己乱猜流程时使用。适合问主管、mentor 或项目负责人。",
       "pragmaticNote": "run into ambiguity 是成熟表达，表示遇到不明确的地方。align with 表示先对齐再行动。",
       "dependencies": [
-        "ONB_L1_11"
+        "ONB_A2_11"
       ],
       "previousIds": [
-        "ONB_L1_11"
+        "ONB_A2_11"
       ],
       "nextIds": [
-        "ONB_L1_13"
+        "ONB_A2_13"
       ],
       "phaseId": "support",
       "hooks": [
@@ -5336,8 +5336,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L2_12",
-        "ONB_L3_12"
+        "ONB_B1_12",
+        "ONB_B2_12"
       ],
       "slots": [
         {
@@ -5495,7 +5495,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For beginners, accept simple correct English first, then guide one short retry instead of over-explaining.",
+        "For A2 learners, accept simple correct English first, then guide one short retry instead of over-explaining.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own process or decision, align with instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -5573,7 +5573,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -5691,9 +5691,9 @@
       }
     },
     {
-      "id": "ONB_L1_13",
-      "level": "L1",
-      "targetLevel": "beginner",
+      "id": "ONB_A2_13",
+      "level": "A2",
+      "targetLevel": "A2",
       "slot": 13,
       "isRescue": false,
       "targetText": "Thank you for the warm welcome. I'm happy to be here.",
@@ -5707,10 +5707,10 @@
       "usage": "入职介绍结束时使用，也适合 welcome meeting 或团队群里回复。",
       "pragmaticNote": "warm welcome 是固定搭配；looking forward to 后面接动名词 working。",
       "dependencies": [
-        "ONB_L1_12"
+        "ONB_A2_12"
       ],
       "previousIds": [
-        "ONB_L1_12"
+        "ONB_A2_12"
       ],
       "nextIds": [],
       "phaseId": "wrap_up",
@@ -5782,8 +5782,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L2_13",
-        "ONB_L3_13"
+        "ONB_B1_13",
+        "ONB_B2_13"
       ],
       "slots": [
         {
@@ -5941,7 +5941,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For beginners, accept simple correct English first, then guide one short retry instead of over-explaining.",
+        "For A2 learners, accept simple correct English first, then guide one short retry instead of over-explaining.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own warm welcome, working with everyone instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -6024,7 +6024,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -6142,9 +6142,9 @@
       }
     },
     {
-      "id": "ONB_L2_1",
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "id": "ONB_B1_1",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 1,
       "isRescue": false,
       "targetText": "Hi everyone, I'm really excited to be joining the team today.",
@@ -6160,7 +6160,7 @@
       "dependencies": [],
       "previousIds": [],
       "nextIds": [
-        "ONB_L2_2"
+        "ONB_B1_2"
       ],
       "phaseId": "welcome",
       "hooks": [
@@ -6231,8 +6231,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_1",
-        "ONB_L3_1"
+        "ONB_A2_1",
+        "ONB_B2_1"
       ],
       "slots": [
         {
@@ -6390,7 +6390,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For intermediate learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
+        "For B1 learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own team, today instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -6473,7 +6473,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -6591,9 +6591,9 @@
       }
     },
     {
-      "id": "ONB_L2_2",
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "id": "ONB_B1_2",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 2,
       "isRescue": false,
       "targetText": "I'll be joining as a product operations specialist, focusing on day-to-day process support.",
@@ -6607,13 +6607,13 @@
       "usage": "入职介绍时说明自己加入后的职位和工作方向。可替换职位名和职责方向。",
       "pragmaticNote": "用 I'll be working as 或 I'll be joining as 比 I am a 更贴近入职当天语境。",
       "dependencies": [
-        "ONB_L2_1"
+        "ONB_B1_1"
       ],
       "previousIds": [
-        "ONB_L2_1"
+        "ONB_B1_1"
       ],
       "nextIds": [
-        "ONB_L2_3"
+        "ONB_B1_3"
       ],
       "phaseId": "role",
       "hooks": [
@@ -6684,8 +6684,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_2",
-        "ONB_L3_2"
+        "ONB_A2_2",
+        "ONB_B2_2"
       ],
       "slots": [
         {
@@ -6844,7 +6844,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For intermediate learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
+        "For B1 learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own product operations specialist, process support instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -6922,7 +6922,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -7040,9 +7040,9 @@
       }
     },
     {
-      "id": "ONB_L2_3",
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "id": "ONB_B1_3",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 3,
       "isRescue": false,
       "targetText": "Before joining, I spent two years in customer support, where I worked closely with users and internal teams.",
@@ -7056,13 +7056,13 @@
       "usage": "入职介绍中用于补充过往经验。避免讲太长，只给团队建立基本认知。",
       "pragmaticNote": "Before joining 比 before this 更正式一点，适合入职介绍。",
       "dependencies": [
-        "ONB_L2_2"
+        "ONB_B1_2"
       ],
       "previousIds": [
-        "ONB_L2_2"
+        "ONB_B1_2"
       ],
       "nextIds": [
-        "ONB_L2_4"
+        "ONB_B1_4"
       ],
       "phaseId": "background",
       "hooks": [
@@ -7133,8 +7133,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_3",
-        "ONB_L3_3"
+        "ONB_A2_3",
+        "ONB_B2_3"
       ],
       "slots": [
         {
@@ -7292,7 +7292,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For intermediate learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
+        "For B1 learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own customer support, two years instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -7370,7 +7370,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -7488,9 +7488,9 @@
       }
     },
     {
-      "id": "ONB_L2_4",
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "id": "ONB_B1_4",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 4,
       "isRescue": false,
       "targetText": "My main responsibility will be helping the team track priorities, document processes, and follow up on open items.",
@@ -7504,13 +7504,13 @@
       "usage": "入职介绍中说明职责边界，帮助团队知道未来可以在哪些事情上找你。",
       "pragmaticNote": "My main responsibility will be... 清晰直接，适合新员工介绍职责。",
       "dependencies": [
-        "ONB_L2_3"
+        "ONB_B1_3"
       ],
       "previousIds": [
-        "ONB_L2_3"
+        "ONB_B1_3"
       ],
       "nextIds": [
-        "ONB_L2_5"
+        "ONB_B1_5"
       ],
       "phaseId": "role",
       "hooks": [
@@ -7581,8 +7581,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_4",
-        "ONB_L3_4"
+        "ONB_A2_4",
+        "ONB_B2_4"
       ],
       "slots": [
         {
@@ -7741,7 +7741,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For intermediate learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
+        "For B1 learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own track priorities, document processes instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -7824,7 +7824,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -7942,9 +7942,9 @@
       }
     },
     {
-      "id": "ONB_L2_5",
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "id": "ONB_B1_5",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 5,
       "isRescue": false,
       "targetText": "In my last role, I helped organize weekly updates and coordinate solutions for recurring customer issues.",
@@ -7958,13 +7958,13 @@
       "usage": "用于说明自己过去做过的事如何帮助新岗位。控制在一句话内即可。",
       "pragmaticNote": "In my last role 是非常自然的经历引入，比 in my old job 更职业。",
       "dependencies": [
-        "ONB_L2_4"
+        "ONB_B1_4"
       ],
       "previousIds": [
-        "ONB_L2_4"
+        "ONB_B1_4"
       ],
       "nextIds": [
-        "ONB_L2_6"
+        "ONB_B1_6"
       ],
       "phaseId": "background",
       "hooks": [
@@ -8035,8 +8035,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_5",
-        "ONB_L3_5"
+        "ONB_A2_5",
+        "ONB_B2_5"
       ],
       "slots": [
         {
@@ -8195,7 +8195,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For intermediate learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
+        "For B1 learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own weekly updates, customer issues instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -8278,7 +8278,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -8396,9 +8396,9 @@
       }
     },
     {
-      "id": "ONB_L2_6",
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "id": "ONB_B1_6",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 6,
       "isRescue": false,
       "targetText": "I know there will be a learning curve, so I'll ask questions and take notes as I get up to speed.",
@@ -8412,13 +8412,13 @@
       "usage": "入职初期常用，用来降低团队对你马上全懂的期待，同时展示主动性。",
       "pragmaticNote": "learning curve 是职场中常见说法，表示适应新环境需要学习过程。",
       "dependencies": [
-        "ONB_L2_5"
+        "ONB_B1_5"
       ],
       "previousIds": [
-        "ONB_L2_5"
+        "ONB_B1_5"
       ],
       "nextIds": [
-        "ONB_L2_7"
+        "ONB_B1_7"
       ],
       "phaseId": "expectations",
       "hooks": [
@@ -8489,8 +8489,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_6",
-        "ONB_L3_6"
+        "ONB_A2_6",
+        "ONB_B2_6"
       ],
       "slots": [
         {
@@ -8649,7 +8649,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For intermediate learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
+        "For B1 learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own ask questions, take notes instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -8727,7 +8727,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -8845,9 +8845,9 @@
       }
     },
     {
-      "id": "ONB_L2_7",
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "id": "ONB_B1_7",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 7,
       "isRescue": false,
       "targetText": "Could you help me understand the first priorities I should focus on this week?",
@@ -8861,13 +8861,13 @@
       "usage": "入职第一天或第一周向主管提问，帮助自己快速对齐优先级。",
       "pragmaticNote": "Could you help me understand... 比 What should I do? 更礼貌，也更适合向主管提问。",
       "dependencies": [
-        "ONB_L2_6"
+        "ONB_B1_6"
       ],
       "previousIds": [
-        "ONB_L2_6"
+        "ONB_B1_6"
       ],
       "nextIds": [
-        "ONB_L2_8"
+        "ONB_B1_8"
       ],
       "phaseId": "priorities",
       "hooks": [
@@ -8938,8 +8938,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_7",
-        "ONB_L3_7"
+        "ONB_A2_7",
+        "ONB_B2_7"
       ],
       "slots": [
         {
@@ -9098,7 +9098,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For intermediate learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
+        "For B1 learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own this week, highest-priority areas instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -9176,7 +9176,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -9294,9 +9294,9 @@
       }
     },
     {
-      "id": "ONB_L2_8",
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "id": "ONB_B1_8",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 8,
       "isRescue": false,
       "targetText": "Which tools and channels should I use for daily communication, task tracking, and documentation?",
@@ -9310,13 +9310,13 @@
       "usage": "入职初期了解工作方式时使用，适合问 mentor、manager 或同事。",
       "pragmaticNote": "tools and channels 比 apps 更职业；task tracking 和 documentation 是常见工作流词。",
       "dependencies": [
-        "ONB_L2_7"
+        "ONB_B1_7"
       ],
       "previousIds": [
-        "ONB_L2_7"
+        "ONB_B1_7"
       ],
       "nextIds": [
-        "ONB_L2_9"
+        "ONB_B1_9"
       ],
       "phaseId": "workflow",
       "hooks": [
@@ -9387,8 +9387,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_8",
-        "ONB_L3_8"
+        "ONB_A2_8",
+        "ONB_B2_8"
       ],
       "slots": [
         {
@@ -9547,7 +9547,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For intermediate learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
+        "For B1 learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own daily communication, task tracking instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -9625,7 +9625,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -9743,9 +9743,9 @@
       }
     },
     {
-      "id": "ONB_L2_9",
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "id": "ONB_B1_9",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 9,
       "isRescue": false,
       "targetText": "If there is anything useful I can take on early, please let me know.",
@@ -9759,13 +9759,13 @@
       "usage": "入职初期表达主动性。适合在介绍结尾或跟主管对齐后说。",
       "pragmaticNote": "If there is anything I can help with 非常稳妥；add value early 更有成熟职场感。",
       "dependencies": [
-        "ONB_L2_8"
+        "ONB_B1_8"
       ],
       "previousIds": [
-        "ONB_L2_8"
+        "ONB_B1_8"
       ],
       "nextIds": [
-        "ONB_L2_10"
+        "ONB_B1_10"
       ],
       "phaseId": "contribution",
       "hooks": [
@@ -9836,8 +9836,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_9",
-        "ONB_L3_9"
+        "ONB_A2_9",
+        "ONB_B2_9"
       ],
       "slots": [
         {
@@ -9995,7 +9995,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For intermediate learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
+        "For B1 learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own take on early, take ownership instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -10073,7 +10073,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -10191,9 +10191,9 @@
       }
     },
     {
-      "id": "ONB_L2_10",
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "id": "ONB_B1_10",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 10,
       "isRescue": false,
       "targetText": "I'd love to learn how everyone prefers to work and communicate.",
@@ -10207,13 +10207,13 @@
       "usage": "适合和同事介绍时说，展示尊重对方协作方式。",
       "pragmaticNote": "working style 是职场高频词，表示工作习惯和偏好。",
       "dependencies": [
-        "ONB_L2_9"
+        "ONB_B1_9"
       ],
       "previousIds": [
-        "ONB_L2_9"
+        "ONB_B1_9"
       ],
       "nextIds": [
-        "ONB_L2_11"
+        "ONB_B1_11"
       ],
       "phaseId": "collaboration",
       "hooks": [
@@ -10284,8 +10284,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_10",
-        "ONB_L3_10"
+        "ONB_A2_10",
+        "ONB_B2_10"
       ],
       "slots": [
         {
@@ -10443,7 +10443,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For intermediate learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
+        "For B1 learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own working style, collaborate smoothly instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -10521,7 +10521,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -10639,9 +10639,9 @@
       }
     },
     {
-      "id": "ONB_L2_11",
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "id": "ONB_B1_11",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 11,
       "isRescue": false,
       "targetText": "What would be the best next step after today's introduction?",
@@ -10655,13 +10655,13 @@
       "usage": "入职沟通收尾时使用，避免结束后不知道下一步动作。",
       "pragmaticNote": "best next step 比 next step 更柔和，听起来是在寻求建议。",
       "dependencies": [
-        "ONB_L2_10"
+        "ONB_B1_10"
       ],
       "previousIds": [
-        "ONB_L2_10"
+        "ONB_B1_10"
       ],
       "nextIds": [
-        "ONB_L2_12"
+        "ONB_B1_12"
       ],
       "phaseId": "next_steps",
       "hooks": [
@@ -10732,8 +10732,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_11",
-        "ONB_L3_11"
+        "ONB_A2_11",
+        "ONB_B2_11"
       ],
       "slots": [
         {
@@ -10891,7 +10891,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For intermediate learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
+        "For B1 learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own today's introduction, best next step instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -10969,7 +10969,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -11087,9 +11087,9 @@
       }
     },
     {
-      "id": "ONB_L2_12",
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "id": "ONB_B1_12",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 12,
       "isRescue": true,
       "targetText": "If I'm unsure about a process or decision, who would be the best person to check with?",
@@ -11103,13 +11103,13 @@
       "usage": "入职初期避免自己乱猜流程时使用。适合问主管、mentor 或项目负责人。",
       "pragmaticNote": "run into ambiguity 是成熟表达，表示遇到不明确的地方。align with 表示先对齐再行动。",
       "dependencies": [
-        "ONB_L2_11"
+        "ONB_B1_11"
       ],
       "previousIds": [
-        "ONB_L2_11"
+        "ONB_B1_11"
       ],
       "nextIds": [
-        "ONB_L2_13"
+        "ONB_B1_13"
       ],
       "phaseId": "support",
       "hooks": [
@@ -11180,8 +11180,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_12",
-        "ONB_L3_12"
+        "ONB_A2_12",
+        "ONB_B2_12"
       ],
       "slots": [
         {
@@ -11340,7 +11340,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For intermediate learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
+        "For B1 learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own process or decision, align with instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -11418,7 +11418,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -11536,9 +11536,9 @@
       }
     },
     {
-      "id": "ONB_L2_13",
-      "level": "L2",
-      "targetLevel": "intermediate",
+      "id": "ONB_B1_13",
+      "level": "B1",
+      "targetLevel": "B1",
       "slot": 13,
       "isRescue": false,
       "targetText": "Thank you for the warm welcome. I'm looking forward to working with everyone.",
@@ -11552,10 +11552,10 @@
       "usage": "入职介绍结束时使用，也适合 welcome meeting 或团队群里回复。",
       "pragmaticNote": "warm welcome 是固定搭配；looking forward to 后面接动名词 working。",
       "dependencies": [
-        "ONB_L2_12"
+        "ONB_B1_12"
       ],
       "previousIds": [
-        "ONB_L2_12"
+        "ONB_B1_12"
       ],
       "nextIds": [],
       "phaseId": "wrap_up",
@@ -11627,8 +11627,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_13",
-        "ONB_L3_13"
+        "ONB_A2_13",
+        "ONB_B2_13"
       ],
       "slots": [
         {
@@ -11787,7 +11787,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For intermediate learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
+        "For B1 learners, ask for one concrete detail and upgrade the sentence to a more natural workplace tone.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own warm welcome, working with everyone instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -11870,7 +11870,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -11988,9 +11988,9 @@
       }
     },
     {
-      "id": "ONB_L3_1",
-      "level": "L3",
-      "targetLevel": "advanced",
+      "id": "ONB_B2_1",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 1,
       "isRescue": false,
       "targetText": "Hi everyone, I'm thrilled to be joining the team and getting started with you all.",
@@ -12006,7 +12006,7 @@
       "dependencies": [],
       "previousIds": [],
       "nextIds": [
-        "ONB_L3_2"
+        "ONB_B2_2"
       ],
       "phaseId": "welcome",
       "hooks": [
@@ -12077,8 +12077,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_1",
-        "ONB_L2_1"
+        "ONB_A2_1",
+        "ONB_B1_1"
       ],
       "slots": [
         {
@@ -12237,7 +12237,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For advanced learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
+        "For B2 learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own team, today instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -12320,7 +12320,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -12438,9 +12438,9 @@
       }
     },
     {
-      "id": "ONB_L3_2",
-      "level": "L3",
-      "targetLevel": "advanced",
+      "id": "ONB_B2_2",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 2,
       "isRescue": false,
       "targetText": "I'll be joining as a product operations specialist, with a focus on keeping cross-functional workflows clear and efficient.",
@@ -12454,13 +12454,13 @@
       "usage": "入职介绍时说明自己加入后的职位和工作方向。可替换职位名和职责方向。",
       "pragmaticNote": "用 I'll be working as 或 I'll be joining as 比 I am a 更贴近入职当天语境。",
       "dependencies": [
-        "ONB_L3_1"
+        "ONB_B2_1"
       ],
       "previousIds": [
-        "ONB_L3_1"
+        "ONB_B2_1"
       ],
       "nextIds": [
-        "ONB_L3_3"
+        "ONB_B2_3"
       ],
       "phaseId": "role",
       "hooks": [
@@ -12531,8 +12531,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_2",
-        "ONB_L2_2"
+        "ONB_A2_2",
+        "ONB_B1_2"
       ],
       "slots": [
         {
@@ -12691,7 +12691,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For advanced learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
+        "For B2 learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own product operations specialist, process support instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -12769,7 +12769,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -12887,9 +12887,9 @@
       }
     },
     {
-      "id": "ONB_L3_3",
-      "level": "L3",
-      "targetLevel": "advanced",
+      "id": "ONB_B2_3",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 3,
       "isRescue": false,
       "targetText": "Before joining, I spent two years in customer support, which gave me a solid understanding of user needs and internal coordination.",
@@ -12903,13 +12903,13 @@
       "usage": "入职介绍中用于补充过往经验。避免讲太长，只给团队建立基本认知。",
       "pragmaticNote": "Before joining 比 before this 更正式一点，适合入职介绍。",
       "dependencies": [
-        "ONB_L3_2"
+        "ONB_B2_2"
       ],
       "previousIds": [
-        "ONB_L3_2"
+        "ONB_B2_2"
       ],
       "nextIds": [
-        "ONB_L3_4"
+        "ONB_B2_4"
       ],
       "phaseId": "background",
       "hooks": [
@@ -12980,8 +12980,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_3",
-        "ONB_L2_3"
+        "ONB_A2_3",
+        "ONB_B1_3"
       ],
       "slots": [
         {
@@ -13140,7 +13140,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For advanced learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
+        "For B2 learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own customer support, two years instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -13218,7 +13218,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -13336,9 +13336,9 @@
       }
     },
     {
-      "id": "ONB_L3_4",
-      "level": "L3",
-      "targetLevel": "advanced",
+      "id": "ONB_B2_4",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 4,
       "isRescue": false,
       "targetText": "My main responsibility will be to support the team in turning priorities into clear processes, owners, and follow-up actions.",
@@ -13352,13 +13352,13 @@
       "usage": "入职介绍中说明职责边界，帮助团队知道未来可以在哪些事情上找你。",
       "pragmaticNote": "My main responsibility will be... 清晰直接，适合新员工介绍职责。",
       "dependencies": [
-        "ONB_L3_3"
+        "ONB_B2_3"
       ],
       "previousIds": [
-        "ONB_L3_3"
+        "ONB_B2_3"
       ],
       "nextIds": [
-        "ONB_L3_5"
+        "ONB_B2_5"
       ],
       "phaseId": "role",
       "hooks": [
@@ -13429,8 +13429,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_4",
-        "ONB_L2_4"
+        "ONB_A2_4",
+        "ONB_B1_4"
       ],
       "slots": [
         {
@@ -13589,7 +13589,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For advanced learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
+        "For B2 learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own track priorities, document processes instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -13672,7 +13672,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -13790,9 +13790,9 @@
       }
     },
     {
-      "id": "ONB_L3_5",
-      "level": "L3",
-      "targetLevel": "advanced",
+      "id": "ONB_B2_5",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 5,
       "isRescue": false,
       "targetText": "In my previous role, I coordinated weekly updates and helped turn recurring customer issues into actionable improvements.",
@@ -13806,13 +13806,13 @@
       "usage": "用于说明自己过去做过的事如何帮助新岗位。控制在一句话内即可。",
       "pragmaticNote": "In my last role 是非常自然的经历引入，比 in my old job 更职业。",
       "dependencies": [
-        "ONB_L3_4"
+        "ONB_B2_4"
       ],
       "previousIds": [
-        "ONB_L3_4"
+        "ONB_B2_4"
       ],
       "nextIds": [
-        "ONB_L3_6"
+        "ONB_B2_6"
       ],
       "phaseId": "background",
       "hooks": [
@@ -13883,8 +13883,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_5",
-        "ONB_L2_5"
+        "ONB_A2_5",
+        "ONB_B1_5"
       ],
       "slots": [
         {
@@ -14043,7 +14043,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For advanced learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
+        "For B2 learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own weekly updates, customer issues instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -14126,7 +14126,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -14244,9 +14244,9 @@
       }
     },
     {
-      "id": "ONB_L3_6",
-      "level": "L3",
-      "targetLevel": "advanced",
+      "id": "ONB_B2_6",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 6,
       "isRescue": false,
       "targetText": "I expect a learning curve, and I'll be proactive about asking questions, taking notes, and turning feedback into action.",
@@ -14260,13 +14260,13 @@
       "usage": "入职初期常用，用来降低团队对你马上全懂的期待，同时展示主动性。",
       "pragmaticNote": "learning curve 是职场中常见说法，表示适应新环境需要学习过程。",
       "dependencies": [
-        "ONB_L3_5"
+        "ONB_B2_5"
       ],
       "previousIds": [
-        "ONB_L3_5"
+        "ONB_B2_5"
       ],
       "nextIds": [
-        "ONB_L3_7"
+        "ONB_B2_7"
       ],
       "phaseId": "expectations",
       "hooks": [
@@ -14337,8 +14337,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_6",
-        "ONB_L2_6"
+        "ONB_A2_6",
+        "ONB_B1_6"
       ],
       "slots": [
         {
@@ -14497,7 +14497,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For advanced learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
+        "For B2 learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own ask questions, take notes instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -14575,7 +14575,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -14693,9 +14693,9 @@
       }
     },
     {
-      "id": "ONB_L3_7",
-      "level": "L3",
-      "targetLevel": "advanced",
+      "id": "ONB_B2_7",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 7,
       "isRescue": false,
       "targetText": "Could you help me understand the highest-priority areas I should focus on during my first few weeks?",
@@ -14709,13 +14709,13 @@
       "usage": "入职第一天或第一周向主管提问，帮助自己快速对齐优先级。",
       "pragmaticNote": "Could you help me understand... 比 What should I do? 更礼貌，也更适合向主管提问。",
       "dependencies": [
-        "ONB_L3_6"
+        "ONB_B2_6"
       ],
       "previousIds": [
-        "ONB_L3_6"
+        "ONB_B2_6"
       ],
       "nextIds": [
-        "ONB_L3_8"
+        "ONB_B2_8"
       ],
       "phaseId": "priorities",
       "hooks": [
@@ -14786,8 +14786,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_7",
-        "ONB_L2_7"
+        "ONB_A2_7",
+        "ONB_B1_7"
       ],
       "slots": [
         {
@@ -14945,7 +14945,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For advanced learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
+        "For B2 learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own this week, highest-priority areas instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -15023,7 +15023,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -15141,9 +15141,9 @@
       }
     },
     {
-      "id": "ONB_L3_8",
-      "level": "L3",
-      "targetLevel": "advanced",
+      "id": "ONB_B2_8",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 8,
       "isRescue": false,
       "targetText": "Could you walk me through the main tools and communication channels the team uses to manage work and decisions?",
@@ -15157,13 +15157,13 @@
       "usage": "入职初期了解工作方式时使用，适合问 mentor、manager 或同事。",
       "pragmaticNote": "tools and channels 比 apps 更职业；task tracking 和 documentation 是常见工作流词。",
       "dependencies": [
-        "ONB_L3_7"
+        "ONB_B2_7"
       ],
       "previousIds": [
-        "ONB_L3_7"
+        "ONB_B2_7"
       ],
       "nextIds": [
-        "ONB_L3_9"
+        "ONB_B2_9"
       ],
       "phaseId": "workflow",
       "hooks": [
@@ -15234,8 +15234,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_8",
-        "ONB_L2_8"
+        "ONB_A2_8",
+        "ONB_B1_8"
       ],
       "slots": [
         {
@@ -15394,7 +15394,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For advanced learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
+        "For B2 learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own daily communication, task tracking instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -15472,7 +15472,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -15590,9 +15590,9 @@
       }
     },
     {
-      "id": "ONB_L3_9",
-      "level": "L3",
-      "targetLevel": "advanced",
+      "id": "ONB_B2_9",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 9,
       "isRescue": false,
       "targetText": "If there is an area where I can add value early, I'd be happy to take ownership and support the team.",
@@ -15606,13 +15606,13 @@
       "usage": "入职初期表达主动性。适合在介绍结尾或跟主管对齐后说。",
       "pragmaticNote": "If there is anything I can help with 非常稳妥；add value early 更有成熟职场感。",
       "dependencies": [
-        "ONB_L3_8"
+        "ONB_B2_8"
       ],
       "previousIds": [
-        "ONB_L3_8"
+        "ONB_B2_8"
       ],
       "nextIds": [
-        "ONB_L3_10"
+        "ONB_B2_10"
       ],
       "phaseId": "contribution",
       "hooks": [
@@ -15683,8 +15683,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_9",
-        "ONB_L2_9"
+        "ONB_A2_9",
+        "ONB_B1_9"
       ],
       "slots": [
         {
@@ -15843,7 +15843,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For advanced learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
+        "For B2 learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own take on early, take ownership instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -15921,7 +15921,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -16039,9 +16039,9 @@
       }
     },
     {
-      "id": "ONB_L3_10",
-      "level": "L3",
-      "targetLevel": "advanced",
+      "id": "ONB_B2_10",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 10,
       "isRescue": false,
       "targetText": "I'd love to understand each person's working style so I can collaborate with the team more smoothly.",
@@ -16055,13 +16055,13 @@
       "usage": "适合和同事介绍时说，展示尊重对方协作方式。",
       "pragmaticNote": "working style 是职场高频词，表示工作习惯和偏好。",
       "dependencies": [
-        "ONB_L3_9"
+        "ONB_B2_9"
       ],
       "previousIds": [
-        "ONB_L3_9"
+        "ONB_B2_9"
       ],
       "nextIds": [
-        "ONB_L3_11"
+        "ONB_B2_11"
       ],
       "phaseId": "collaboration",
       "hooks": [
@@ -16132,8 +16132,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_10",
-        "ONB_L2_10"
+        "ONB_A2_10",
+        "ONB_B1_10"
       ],
       "slots": [
         {
@@ -16292,7 +16292,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For advanced learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
+        "For B2 learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own working style, collaborate smoothly instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -16370,7 +16370,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -16488,9 +16488,9 @@
       }
     },
     {
-      "id": "ONB_L3_11",
-      "level": "L3",
-      "targetLevel": "advanced",
+      "id": "ONB_B2_11",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 11,
       "isRescue": false,
       "targetText": "What would you suggest as the best next step for me after today's onboarding conversation?",
@@ -16504,13 +16504,13 @@
       "usage": "入职沟通收尾时使用，避免结束后不知道下一步动作。",
       "pragmaticNote": "best next step 比 next step 更柔和，听起来是在寻求建议。",
       "dependencies": [
-        "ONB_L3_10"
+        "ONB_B2_10"
       ],
       "previousIds": [
-        "ONB_L3_10"
+        "ONB_B2_10"
       ],
       "nextIds": [
-        "ONB_L3_12"
+        "ONB_B2_12"
       ],
       "phaseId": "next_steps",
       "hooks": [
@@ -16581,8 +16581,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_11",
-        "ONB_L2_11"
+        "ONB_A2_11",
+        "ONB_B1_11"
       ],
       "slots": [
         {
@@ -16741,7 +16741,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For advanced learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
+        "For B2 learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own today's introduction, best next step instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -16819,7 +16819,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -16937,9 +16937,9 @@
       }
     },
     {
-      "id": "ONB_L3_12",
-      "level": "L3",
-      "targetLevel": "advanced",
+      "id": "ONB_B2_12",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 12,
       "isRescue": true,
       "targetText": "If I run into ambiguity around a process or decision, who should I align with before moving forward?",
@@ -16953,13 +16953,13 @@
       "usage": "入职初期避免自己乱猜流程时使用。适合问主管、mentor 或项目负责人。",
       "pragmaticNote": "run into ambiguity 是成熟表达，表示遇到不明确的地方。align with 表示先对齐再行动。",
       "dependencies": [
-        "ONB_L3_11"
+        "ONB_B2_11"
       ],
       "previousIds": [
-        "ONB_L3_11"
+        "ONB_B2_11"
       ],
       "nextIds": [
-        "ONB_L3_13"
+        "ONB_B2_13"
       ],
       "phaseId": "support",
       "hooks": [
@@ -17030,8 +17030,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_12",
-        "ONB_L2_12"
+        "ONB_A2_12",
+        "ONB_B1_12"
       ],
       "slots": [
         {
@@ -17189,7 +17189,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For advanced learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
+        "For B2 learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own process or decision, align with instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -17267,7 +17267,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -17385,9 +17385,9 @@
       }
     },
     {
-      "id": "ONB_L3_13",
-      "level": "L3",
-      "targetLevel": "advanced",
+      "id": "ONB_B2_13",
+      "level": "B2",
+      "targetLevel": "B2",
       "slot": 13,
       "isRescue": false,
       "targetText": "Thank you for the warm welcome. I'm looking forward to contributing and building momentum with the team.",
@@ -17401,10 +17401,10 @@
       "usage": "入职介绍结束时使用，也适合 welcome meeting 或团队群里回复。",
       "pragmaticNote": "warm welcome 是固定搭配；looking forward to 后面接动名词 working。",
       "dependencies": [
-        "ONB_L3_12"
+        "ONB_B2_12"
       ],
       "previousIds": [
-        "ONB_L3_12"
+        "ONB_B2_12"
       ],
       "nextIds": [],
       "phaseId": "wrap_up",
@@ -17476,8 +17476,8 @@
         }
       ],
       "equivalentIds": [
-        "ONB_L1_13",
-        "ONB_L2_13"
+        "ONB_A2_13",
+        "ONB_B1_13"
       ],
       "slots": [
         {
@@ -17636,7 +17636,7 @@
         "Slack or written onboarding follow-up; keep the wording clear and low-pressure."
       ],
       "personalizationCues": [
-        "For advanced learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
+        "For B2 learners, coach nuance, confidence, and executive-sounding phrasing before small grammar details.",
         "Prioritize warmth, clarity, collaboration, and asking for alignment without sounding passive.",
         "Personalize with the learner's own warm welcome, working with everyone instead of generic placeholders.",
         "Use learner memory when available: reuse their real role, project, weakness, pronunciation notes, and recurring grammar patterns."
@@ -17719,7 +17719,7 @@
         ],
         "hiddenWhen": [
           "target_completed",
-          "advanced_level",
+          "B2_level",
           "conversation_flow_ok"
         ]
       },
@@ -17838,19 +17838,19 @@
     }
   ],
   "flow": [
-    "ONB_L1_1",
-    "ONB_L1_2",
-    "ONB_L1_3",
-    "ONB_L1_4",
-    "ONB_L1_5",
-    "ONB_L1_6",
-    "ONB_L1_7",
-    "ONB_L1_8",
-    "ONB_L1_9",
-    "ONB_L1_10",
-    "ONB_L1_11",
-    "ONB_L1_12",
-    "ONB_L1_13"
+    "ONB_A2_1",
+    "ONB_A2_2",
+    "ONB_A2_3",
+    "ONB_A2_4",
+    "ONB_A2_5",
+    "ONB_A2_6",
+    "ONB_A2_7",
+    "ONB_A2_8",
+    "ONB_A2_9",
+    "ONB_A2_10",
+    "ONB_A2_11",
+    "ONB_A2_12",
+    "ONB_A2_13"
   ],
   "transitionPolicy": {
     "afterEvery": 2,

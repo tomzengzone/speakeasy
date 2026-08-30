@@ -1,6 +1,7 @@
 package com.speakeasy.identity;
 
 import com.speakeasy.common.ApiException;
+import com.speakeasy.common.CefrLevel;
 import com.speakeasy.ops.AccountDeletionJob;
 import com.speakeasy.ops.AccountDeletionJobRepository;
 import java.time.Clock;
@@ -54,8 +55,13 @@ public class IdentityService {
     user.updateDisplayName(command.displayName(), now);
     user.updateAvatarRef(validatedAvatarRef(command.avatarRef()), now);
     UserProfile profile = profiles.findById(userId)
-        .orElseGet(() -> profiles.save(new UserProfile(userId, user.getDisplayName(), "L1", 10, now)));
-    profile.update(command.targetLevel(), command.dailyMinutes(), command.reminderEnabled(), command.reminderTime(), now);
+        .orElseGet(() -> profiles.save(new UserProfile(userId, user.getDisplayName(), CefrLevel.DEFAULT, 10, now)));
+    profile.update(
+        CefrLevel.requireIfPresent(command.targetLevel(), "target_level"),
+        command.dailyMinutes(),
+        command.reminderEnabled(),
+        command.reminderTime(),
+        now);
     return UserProfileView.from(user, profile);
   }
 

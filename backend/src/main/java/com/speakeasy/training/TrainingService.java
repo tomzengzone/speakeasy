@@ -3,6 +3,7 @@ package com.speakeasy.training;
 import com.speakeasy.ai.AiGatewayService;
 import com.speakeasy.commerce.EntitlementGateService;
 import com.speakeasy.common.ApiException;
+import com.speakeasy.common.CefrLevel;
 import com.speakeasy.content.ScenarioLevelRepository;
 import com.speakeasy.content.ScenarioRepository;
 import com.speakeasy.content.ScenarioVersion;
@@ -94,7 +95,7 @@ public class TrainingService {
   public TrainingSessionView startOrResume(UUID userId, String scenarioId, String levelCode, boolean resumeExisting) {
     requireUser(userId);
     String canonicalScenarioId = cleanRequired(scenarioId, "scenario_id");
-    String canonicalLevelCode = canonicalLevelCode(levelCode);
+    String canonicalLevelCode = CefrLevel.require(levelCode, "level_code");
     ScenarioVersion version = requireTrainingContent(canonicalScenarioId, canonicalLevelCode);
     entitlementGate.requireScenarioLevel(userId, canonicalScenarioId, canonicalLevelCode);
     if (resumeExisting) {
@@ -699,21 +700,6 @@ public class TrainingService {
         1,
         "training:" + (sessionId == null ? "none" : sessionId.toString().replace("-", "").substring(0, 12)),
         Instant.now(clock)));
-  }
-
-  private String canonicalLevelCode(String levelCode) {
-    String cleaned = cleanRequired(levelCode, "level_code");
-    return switch (cleaned) {
-      case "beginner" -> "L1";
-      case "intermediate" -> "L2";
-      case "advanced" -> "L3";
-      default -> {
-        if (!List.of("L1", "L2", "L3").contains(cleaned)) {
-          throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "SCHEMA_VALIDATION_FAILED", "Unsupported level_code.");
-        }
-        yield cleaned;
-      }
-    };
   }
 
   private String mappingVersion(ScenarioVersion version) {

@@ -8,6 +8,8 @@ import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/services/audio_service.dart';
 import 'package:speakeasy/services/storage_service.dart';
 
+import 'support/hive_test_support.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -27,9 +29,7 @@ ENV=test
   });
 
   tearDownAll(() async {
-    if (await hiveDir.exists()) {
-      await hiveDir.delete(recursive: true);
-    }
+    await deleteHiveTestDirectory(hiveDir);
   });
 
   testWidgets('renders the static home UI', (tester) async {
@@ -38,7 +38,6 @@ ENV=test
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
-    await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
     expect(find.byType(SpeakEasyAppRoot), findsOneWidget);

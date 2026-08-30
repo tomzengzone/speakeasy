@@ -23,7 +23,7 @@ class EntitlementGateServiceTest extends BackendIntegrationTestSupport {
   void freeUsersAreBlockedFromPaidScenarioLevelsAndPaidUsersAreAllowed() throws Exception {
     AuthTokens tokens = loginPhone("+8613800138420");
 
-    mvc.perform(get("/scenarios/job_interview/levels/L3")
+    mvc.perform(get("/scenarios/job_interview/levels/B2")
             .header(HttpHeaders.AUTHORIZATION, bearer(tokens.accessToken())))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.error.code").value("ENTITLEMENT_REQUIRED"));
@@ -43,11 +43,11 @@ class EntitlementGateServiceTest extends BackendIntegrationTestSupport {
                 {
                   "schema_version": 1,
                   "scenario_id": "job_interview",
-                  "level_code": "L3",
+                  "level_code": "B2",
                   "resume_existing": true
                 }
                 """))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.session.level_code").value("L3"));
+        .andExpect(jsonPath("$.session.level_code").value("B2"));
   }
 }

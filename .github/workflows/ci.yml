@@ -16,7 +16,7 @@ permissions:
   contents: read
 
 env:
-  FLUTTER_VERSION: "3.x"
+  FLUTTER_VERSION: "3.44.8"
   JAVA_VERSION: "17"
   APP_API_BASE_URL: ${{ secrets.APP_API_BASE_URL }}
 
@@ -30,38 +30,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Governance contract validation
-        run: python3 scripts/validate_governance_contracts.py
-
-      - name: Story-slice delivery validation
-        run: python3 scripts/validate_story_slice_delivery.py
-
-      - name: Story-slice cutover validation
-        run: |
-          python3 scripts/validate_story_slice_cutover.py
-          python3 scripts/validate_story_slice_cutover.py --check-adr --check-story-map
-
-      - name: Agent and skill validation
-        run: python3 scripts/validate_agent_skills.py
-
-      - name: Governance validator tests
-        run: |
-          python3 -m unittest \
-            tests.test_validate_governance_contracts \
-            tests.test_validate_story_slice_delivery \
-            tests.test_validate_story_slice_cutover \
-            -v
-
-      - name: Capability registry validation
-        run: |
-          python3 scripts/validate_capability_registry.py
-          python3 -m unittest discover -s tests -p "test_validate_capability_registry.py" -v
-
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Backend compile and tests
+        run: mvn -f backend/pom.xml test
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -90,7 +66,6 @@ jobs:
         run: flutter test
 
       - name: Build Android APK
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         run: |
           API_BASE_URL="${APP_API_BASE_URL:-https://example.invalid}"

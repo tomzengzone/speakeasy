@@ -10,6 +10,7 @@ import 'package:speakeasy/features/training/training_session_view.dart';
 import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/services/storage_service.dart';
 
+import '../../support/hive_test_support.dart';
 import 'training_test_helpers.dart';
 
 void main() {
@@ -28,9 +29,7 @@ void main() {
   });
 
   tearDownAll(() async {
-    if (await hiveDir.exists()) {
-      await hiveDir.delete(recursive: true);
-    }
+    await deleteHiveTestDirectory(hiveDir);
   });
 
   testWidgets('TC-P01-001 backend session start renders server state', (
@@ -53,7 +52,7 @@ void main() {
         child: MaterialApp(
           home: TrainingSessionLoopPage(
             sceneId: 'future_official_scene',
-            levelCode: 'advanced',
+            levelCode: 'B2',
             backendAdapter: adapter,
           ),
         ),
@@ -84,7 +83,7 @@ void main() {
         child: MaterialApp(
           home: TrainingSessionLoopPage(
             sceneId: 'job_interview',
-            levelCode: 'beginner',
+            levelCode: 'A2',
             backendAdapter: adapter,
           ),
         ),

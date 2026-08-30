@@ -1,6 +1,8 @@
 package com.speakeasy.api;
 
 import com.speakeasy.common.SchemaResponse;
+import com.speakeasy.common.CefrLevel;
+import com.speakeasy.content.CourseCatalogService;
 import com.speakeasy.content.OnboardingContentService;
 import com.speakeasy.security.CurrentUser;
 import jakarta.validation.Valid;
@@ -12,6 +14,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,14 +25,23 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class OnboardingContentController {
   private final OnboardingContentService service;
+  private final CourseCatalogService courseCatalogService;
+  private final boolean courseReadEnabled;
 
-  public OnboardingContentController(OnboardingContentService service) {
+  public OnboardingContentController(
+      OnboardingContentService service,
+      CourseCatalogService courseCatalogService,
+      @Value("${speakeasy.content.course-read.enabled:true}") boolean courseReadEnabled) {
     this.service = service;
+    this.courseCatalogService = courseCatalogService;
+    this.courseReadEnabled = courseReadEnabled;
   }
 
   @PostMapping("/onboarding/assessment")
@@ -42,8 +56,31 @@ public class OnboardingContentController {
   }
 
   @GetMapping("/scenarios")
-  public ScenarioListResponse listScenarios(@AuthenticationPrincipal CurrentUser currentUser) {
-    return new ScenarioListResponse(1, service.listScenarios(currentUser.userId()).stream().map(ScenarioSummaryDto::from).toList());
+  public ResponseEntity<?> listScenarios(
+      @AuthenticationPrincipal CurrentUser currentUser,
+      @RequestParam(required = false) String query,
+      @RequestParam(required = false) String category,
+      @RequestHeader(name = "X-Request-Id", required = false) String suppliedRequestId,
+      @RequestHeader(name = "If-None-Match", required = false) String ifNoneMatch) {
+    if (!courseReadEnabled) {
+      return ResponseEntity.ok(new LegacyScenarioListResponse(
+          1, service.listScenarios(currentUser.userId()).stream().map(ScenarioSummaryDto::from).toList()));
+    }
+
+    String requestId = suppliedRequestId;
+    CourseCatalogService.ThemeListView result =
+        courseCatalogService.listThemes(currentUser.userId(), query, category, requestId);
+    List<CourseCatalogService.ThemeView> themes = result.themes();
+    ScenarioListResponse body = new ScenarioListResponse(
+        1, requestId, themes.stream().map(ScenarioSummaryDto::from).toList());
+    String projectionFingerprint = themes.stream()
+        .map(CourseCatalogService.ThemeView::fingerprint)
+        .reduce((left, right) -> left + ";" + right)
+        .orElse("");
+    String normalizedRequest = "GET|/scenarios|query=" + normalizeFilter(query) + "|category=" + normalizeFilter(category);
+    String etag = CourseReadHttpSupport.etag(
+        currentUser, normalizedRequest, result.visibilityRevision(), projectionFingerprint);
+    return CourseReadHttpSupport.response(etag, ifNoneMatch, body);
   }
 
   @GetMapping("/scenarios/{scenarioId}")
@@ -87,18 +124,18 @@ public class OnboardingContentController {
       @NotNull @Min(1) @Max(1) Integer schemaVersion,
       @NotBlank @Pattern(regexp = "job_interview|onboarding_introduction|work_communication|daily_service") String goalDirection,
       @NotNull @Size(min = 1) List<@NotBlank String> painPoints,
-      @NotBlank @Pattern(regexp = "L1|L2|L3") String outputLevel,
+      @NotBlank @Pattern(regexp = CefrLevel.REGEXP) String outputLevel,
       @NotNull @Min(1) Integer dailyMinutes) {}
 
   public record UserScenarioStateRequest(
       @NotNull @Min(1) @Max(1) Integer schemaVersion,
-      @Pattern(regexp = "L1|L2|L3") String targetLevel,
+      @Pattern(regexp = CefrLevel.REGEXP) String targetLevel,
       Boolean setCurrent) {}
 
   public record CurrentScenarioRequest(
       @NotNull @Min(1) @Max(1) Integer schemaVersion,
       @NotBlank @Pattern(regexp = "job_interview|onboarding_introduction") String scenarioId,
-      @Pattern(regexp = "L1|L2|L3") String targetLevel) {}
+      @Pattern(regexp = CefrLevel.REGEXP) String targetLevel) {}
 
   public record OnboardingAssessmentResponse(int schemaVersion, LearningRouteDto route) implements SchemaResponse {
     static OnboardingAssessmentResponse from(OnboardingContentService.AssessmentResult result) {
@@ -112,7 +149,10 @@ public class OnboardingContentController {
     }
   }
 
-  public record ScenarioListResponse(int schemaVersion, List<ScenarioSummaryDto> scenarios) implements SchemaResponse {}
+  public record LegacyScenarioListResponse(int schemaVersion, List<ScenarioSummaryDto> scenarios) implements SchemaResponse {}
+
+  public record ScenarioListResponse(int schemaVersion, String requestId, List<ScenarioSummaryDto> scenarios)
+      implements SchemaResponse {}
 
   public record ScenarioResponse(int schemaVersion, ScenarioDetailDto scenario) implements SchemaResponse {}
 
@@ -128,6 +168,21 @@ public class OnboardingContentController {
           scenario.status(),
           new AccessStateDto(scenario.accessAllowed(), scenario.accessReasonCode()));
     }
+
+    static ScenarioSummaryDto from(CourseCatalogService.ThemeView scenario) {
+      return new ScenarioSummaryDto(
+          scenario.scenarioId(),
+          scenario.title(),
+          scenario.summary(),
+          scenario.tags(),
+          scenario.levels(),
+          scenario.status(),
+          new AccessStateDto(scenario.accessAllowed(), scenario.accessReasonCode()));
+    }
+  }
+
+  private static String normalizeFilter(String value) {
+    return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
   }
 
   public record ScenarioDetailDto(

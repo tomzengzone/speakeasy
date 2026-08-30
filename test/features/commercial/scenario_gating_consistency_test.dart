@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speakeasy/application/session/session_lifecycle_coordinator.dart';
+import 'package:speakeasy/core/auth/auth_credentials.dart';
 import 'package:speakeasy/features/commercial/commercial_entitlement_projection.dart';
 import 'package:speakeasy/features/commercial/commercial_scenario_gate.dart';
 import 'package:speakeasy/features/interview/interview_llm_scheduler.dart';
@@ -14,6 +15,8 @@ import 'package:speakeasy/services/app_session.dart';
 import 'package:speakeasy/services/audio_service.dart';
 import 'package:speakeasy/services/auth_service.dart';
 import 'package:speakeasy/services/storage_service.dart';
+
+import '../../support/hive_test_support.dart';
 
 class _StaticSessionLifecycleCoordinator extends SessionLifecycleCoordinator {
   _StaticSessionLifecycleCoordinator(this.memberPlan)
@@ -47,28 +50,32 @@ class _StaticSessionLifecycleCoordinator extends SessionLifecycleCoordinator {
   }
 
   @override
-  Future<ResolvedAuthenticatedSession?> hydrateExistingSession() async => null;
+  Future<ResolvedAuthenticatedSession?> hydrateExistingSession() async {
+    return ResolvedAuthenticatedSession(
+      credentials: AuthCredentials(
+        accessToken: 'stored-access-token',
+        refreshToken: 'stored-refresh-token',
+        expiresAt: DateTime.utc(2099),
+      ),
+      userJson: <String, dynamic>{
+        'nickname': 'Commercial tester',
+        'avatarUrl': '',
+        'memberPlan': memberPlan,
+        'onboardingDone': true,
+      },
+    );
+  }
 }
 
 class _NoopSessionRemoteApi implements SessionRemoteApi {
   const _NoopSessionRemoteApi();
 
   @override
-  Future<void> clearToken() async {}
-
-  @override
   Future<Map<String, dynamic>> getMe() async => <String, dynamic>{'code': 401};
 
   @override
-  Future<String?> getToken() async => null;
-
-  @override
-  Future<Map<String, dynamic>> refreshToken() async => <String, dynamic>{
-    'code': 401,
-  };
-
-  @override
-  Future<void> saveToken(String token) async {}
+  Future<Map<String, dynamic>> refreshToken(String refreshToken) async =>
+      <String, dynamic>{'code': 401};
 
   @override
   Future<Map<String, dynamic>> testPhoneLogin(String phone) async =>
@@ -77,9 +84,6 @@ class _NoopSessionRemoteApi implements SessionRemoteApi {
 
 class _EmptySessionLocalStore implements SessionLocalStore {
   const _EmptySessionLocalStore();
-
-  @override
-  AuthSessionStorageModel? getAuthSession() => null;
 
   @override
   StoredUserProfileModel? getUserProfile() => null;
@@ -117,12 +121,15 @@ void main() {
 
   late Directory hiveDir;
 
-  setUp(() async {
+  setUpAll(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     hiveDir = await Directory.systemTemp.createTemp(
       'speakeasy_commercial_scenario_gate_',
     );
     await StorageService.instance.init(hivePath: hiveDir.path);
+  });
+
+  setUp(() async {
     await StorageService.instance.remove('interview_personal_wiki_expressions');
     await StorageService.instance.remove('interview_compiled_wiki');
     await StorageService.instance.remove('interview_user_growth_wiki');
@@ -130,10 +137,8 @@ void main() {
     await StorageService.instance.remove('interview_useful_wiki_items');
   });
 
-  tearDown(() async {
-    if (await hiveDir.exists()) {
-      await hiveDir.delete(recursive: true);
-    }
+  tearDownAll(() async {
+    await deleteHiveTestDirectory(hiveDir);
   });
 
   Future<AppSession> sessionForPlan(String memberPlan) async {
@@ -145,7 +150,7 @@ void main() {
   Future<void> pumpPractice(
     WidgetTester tester, {
     required String memberPlan,
-    String targetLevel = 'beginner',
+    String targetLevel = 'A2',
     CommercialEntitlementProjection? entitlementProjection,
   }) async {
     await tester.binding.setSurfaceSize(const Size(1200, 800));
@@ -196,7 +201,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 320));
   }
 
-  testWidgets('TC-COM-010 免费用户训练入口阻断 L3 高级场景', (WidgetTester tester) async {
+  testWidgets('TC-COM-010 免费用户训练入口阻断 B2 场景', (WidgetTester tester) async {
     await pumpPractice(
       tester,
       memberPlan: 'free',
@@ -207,7 +212,7 @@ void main() {
     expect(find.text('点击说话'), findsNothing);
   });
 
-  testWidgets('TC-COM-010 免费用户场景导航展示同一 L3 锁定状态', (WidgetTester tester) async {
+  testWidgets('TC-COM-010 免费用户场景导航展示同一 B2 锁定状态', (WidgetTester tester) async {
     await pumpPractice(tester, memberPlan: 'free');
 
     expect(find.text('点击说话'), findsOneWidget);
@@ -218,7 +223,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.byKey(const ValueKey<String>('scene_map_level_advanced')),
+      find.byKey(const ValueKey<String>('scene_map_level_B2')),
       findsOneWidget,
     );
     expect(find.text(CommercialScenarioGate.lockedBadge), findsOneWidget);
@@ -252,7 +257,7 @@ void main() {
     expect(find.text(CommercialScenarioGate.lockedMessage), findsNothing);
   });
 
-  testWidgets('TC-COM-010 Pro 用户列表、详情和训练入口一致解锁 L3', (
+  testWidgets('TC-COM-010 Pro 用户列表、详情和训练入口一致解锁 B2', (
     WidgetTester tester,
   ) async {
     await pumpPractice(
@@ -266,9 +271,7 @@ void main() {
       find.byKey(const ValueKey<String>('scene_map_level_dropdown')),
     );
     await tester.pumpAndSettle();
-    await tester.tap(
-      find.byKey(const ValueKey<String>('scene_map_level_advanced')),
-    );
+    await tester.tap(find.byKey(const ValueKey<String>('scene_map_level_B2')));
     for (int i = 0; i < 30; i += 1) {
       await tester.pump(const Duration(milliseconds: 100));
       if (find

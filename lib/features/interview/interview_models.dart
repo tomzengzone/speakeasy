@@ -1,4 +1,5 @@
 import 'package:speakeasy/features/interview/interview_coach_schema.dart';
+import 'package:speakeasy/models/cefr_level.dart';
 
 enum InterviewNextRoundMode {
   review,
@@ -20,17 +21,6 @@ enum InterviewNextRoundMode {
 }
 
 const String defaultInterviewSceneId = 'job_interview';
-
-String _normalizeSceneTargetLevel(dynamic raw) {
-  final String value = raw is String ? raw.trim() : '';
-  return switch (value) {
-    'L1' || 'beginner' => 'beginner',
-    'L2' || 'intermediate' => 'intermediate',
-    'L3' || 'advanced' => 'advanced',
-    'scene_wiki' => 'beginner',
-    _ => 'beginner',
-  };
-}
 
 class InterviewSceneCatalog {
   const InterviewSceneCatalog({
@@ -171,12 +161,13 @@ class InterviewSceneGraph {
   }
 
   List<String> flowNodeIdsForLevel(String targetLevel) {
-    final String normalizedLevel = _normalizeSceneTargetLevel(targetLevel);
-    final InterviewSceneTrack? matchedTrack = _trackForTargetLevel(
-      normalizedLevel,
+    final String level = requireCefrLevel(
+      targetLevel,
+      fieldName: 'targetLevel',
     );
+    final InterviewSceneTrack? matchedTrack = _trackForTargetLevel(level);
     if (matchedTrack == null) {
-      return flowNodeIds;
+      return const <String>[];
     }
     return matchedTrack.nodeIds
         .where((String id) => nodeById(id) != null)
@@ -186,16 +177,6 @@ class InterviewSceneGraph {
   InterviewSceneTrack? _trackForTargetLevel(String targetLevel) {
     for (final InterviewSceneTrack track in tracks) {
       if (track.targetLevel == targetLevel || track.id == targetLevel) {
-        return track;
-      }
-    }
-    final String wikiLevel = switch (targetLevel) {
-      'intermediate' => 'L2',
-      'advanced' => 'L3',
-      _ => 'L1',
-    };
-    for (final InterviewSceneTrack track in tracks) {
-      if (track.id == wikiLevel) {
         return track;
       }
     }
@@ -241,10 +222,20 @@ class InterviewSceneTrack {
   final List<String> nodeIds;
 
   factory InterviewSceneTrack.fromJson(Map<String, dynamic> json) {
+    final String id = requireCefrLevel(json['id'], fieldName: 'track.id');
+    final String targetLevel = requireCefrLevel(
+      json['targetLevel'],
+      fieldName: 'track.targetLevel',
+    );
+    if (id != targetLevel) {
+      throw FormatException(
+        'track.id and track.targetLevel must match; received $id and $targetLevel',
+      );
+    }
     return InterviewSceneTrack(
-      id: (json['id'] as String? ?? '').trim(),
+      id: id,
       title: (json['title'] as String? ?? '').trim(),
-      targetLevel: _normalizeSceneTargetLevel(json['targetLevel']),
+      targetLevel: targetLevel,
       nodeIds: List<String>.unmodifiable(_stringList(json['nodeIds'])),
     );
   }
@@ -416,10 +407,23 @@ class InterviewExpressionNode {
         InterviewCoachSchema.safeCoachMoveIds(
           _stringList(json['allowedMoves']),
         );
+    final String level = requireCefrLevel(
+      json['level'],
+      fieldName: 'node.level',
+    );
+    final String targetLevel = requireCefrLevel(
+      json['targetLevel'],
+      fieldName: 'node.targetLevel',
+    );
+    if (level != targetLevel) {
+      throw FormatException(
+        'node.level and node.targetLevel must match; received $level and $targetLevel',
+      );
+    }
     return InterviewExpressionNode(
       id: (json['id'] as String? ?? '').trim(),
-      level: (json['level'] as String? ?? '').trim(),
-      targetLevel: _normalizeSceneTargetLevel(json['targetLevel']),
+      level: level,
+      targetLevel: targetLevel,
       slot: ((json['slot'] as num?)?.round() ?? 0).toInt(),
       isRescue: json['isRescue'] == true,
       targetText: (json['targetText'] as String? ?? '').trim(),
@@ -1700,7 +1704,7 @@ class InterviewExpressionLearningProgress {
     required String nodeId,
     required String targetLevel,
   }) {
-    return '${sceneId.trim().isEmpty ? defaultInterviewSceneId : sceneId.trim()}|${nodeId.trim()}|${_normalizeSceneTargetLevel(targetLevel)}';
+    return '${sceneId.trim().isEmpty ? defaultInterviewSceneId : sceneId.trim()}|${nodeId.trim()}|${requireCefrLevel(targetLevel, fieldName: 'targetLevel')}';
   }
 
   factory InterviewExpressionLearningProgress.fromJson(
@@ -1709,7 +1713,10 @@ class InterviewExpressionLearningProgress {
     return InterviewExpressionLearningProgress(
       sceneId: (json['sceneId'] as String? ?? defaultInterviewSceneId).trim(),
       nodeId: (json['nodeId'] as String? ?? '').trim(),
-      targetLevel: _normalizeSceneTargetLevel(json['targetLevel']),
+      targetLevel: requireCefrLevel(
+        json['targetLevel'],
+        fieldName: 'targetLevel',
+      ),
       status: InterviewExpressionLearningStatus.fromJson(json['status']),
       currentStep: InterviewExpressionLearningStep.fromJson(
         json['currentStep'],
@@ -1916,21 +1923,19 @@ class InterviewLibrary {
 
   List<InterviewExpression> expressionsForTag(
     String tag, {
-    String targetLevel = 'beginner',
+    String targetLevel = defaultCefrLevel,
     int limit = 4,
   }) {
+    final String level = requireCefrLevel(
+      targetLevel,
+      fieldName: 'targetLevel',
+    );
     final List<InterviewExpression> exactLevel = expressions
         .where(
-          (InterviewExpression item) =>
-              item.tag == tag && item.level == targetLevel,
+          (InterviewExpression item) => item.tag == tag && item.level == level,
         )
         .toList(growable: false);
-    final List<InterviewExpression> candidates = exactLevel.isNotEmpty
-        ? exactLevel
-        : expressions
-              .where((InterviewExpression item) => item.tag == tag)
-              .toList(growable: false);
-    return candidates.take(limit).toList(growable: false);
+    return exactLevel.take(limit).toList(growable: false);
   }
 
   InterviewCorrection? correctionById(String id) {
@@ -2082,10 +2087,10 @@ class InterviewPracticeSession {
     required this.jobFamily,
     required this.mode,
     required this.userTier,
-    required this.targetLevel,
+    required String targetLevel,
     required this.plannedStages,
     this.roundMode = InterviewNextRoundMode.newLesson,
-  });
+  }) : targetLevel = requireCefrLevel(targetLevel, fieldName: 'targetLevel');
 
   final String sessionId;
   final String userId;
@@ -2142,7 +2147,7 @@ class InterviewPracticeSession {
       jobFamily: (json['jobFamily'] as String? ?? 'general').trim(),
       mode: (json['mode'] as String? ?? 'full_mock').trim(),
       userTier: (json['userTier'] as String? ?? 'newbie').trim(),
-      targetLevel: (json['targetLevel'] as String? ?? 'beginner').trim(),
+      targetLevel: json['targetLevel'] ?? defaultCefrLevel,
       plannedStages: _stringList(json['plannedStages']),
       roundMode: _roundModeFromJson(json['roundMode']),
     );

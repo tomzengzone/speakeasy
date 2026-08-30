@@ -4,19 +4,22 @@ import 'dart:io';
 import 'package:fluwx/fluwx.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:speakeasy/services/api_client.dart';
 import 'package:speakeasy/config/social_config.dart';
+import 'package:speakeasy/core/auth/auth_credentials.dart';
+import 'package:speakeasy/services/api_client.dart';
 
 class WeChatAuthResult {
   const WeChatAuthResult({
     required this.code,
-    required this.token,
+    required this.credentials,
     required this.userJson,
   });
 
   final String code;
-  final String token;
+  final AuthCredentials credentials;
   final Map<String, dynamic> userJson;
+
+  String get token => credentials.accessToken;
 }
 
 class WeChatAuthService {
@@ -125,14 +128,16 @@ class WeChatAuthService {
       }
 
       final Map<String, dynamic> data = _asMap(res['data']);
-      final String token = (data['token'] as String?)?.trim() ?? '';
-      if (token.isEmpty) {
+      final AuthCredentials credentials;
+      try {
+        credentials = AuthCredentials.fromJson(data);
+      } on FormatException {
         throw Exception('服务器未返回登录凭证');
       }
 
       return WeChatAuthResult(
         code: code,
-        token: token,
+        credentials: credentials,
         userJson: _asMap(data['user']),
       );
     } on SocketException {
