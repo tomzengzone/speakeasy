@@ -45,7 +45,7 @@ public class AuthService {
   private final Duration sessionAbsoluteTtl;
   private final String clientId;
   private final String audience;
-  private final String authorizedScope;
+  private final AuthGrantPolicy grantPolicy;
   private final SecureRandom secureRandom = new SecureRandom();
 
   public AuthService(
@@ -68,8 +68,7 @@ public class AuthService {
       @Value("${speakeasy.auth.session-absolute-ttl:90d}") Duration sessionAbsoluteTtl,
       @Value("${speakeasy.auth.client-id:speakeasy-mobile}") String clientId,
       @Value("${speakeasy.auth.audience:speakeasy-api}") String audience,
-      @Value("${speakeasy.auth.authorized-scopes:ai:use course:read learning:read learning:write session:manage user:read user:write}")
-          String authorizedScopes) {
+      AuthGrantPolicy grantPolicy) {
     this.users = users;
     this.profiles = profiles;
     this.identities = identities;
@@ -89,7 +88,7 @@ public class AuthService {
     this.sessionAbsoluteTtl = sessionAbsoluteTtl;
     this.clientId = clientId;
     this.audience = audience;
-    this.authorizedScope = AuthScopes.serialize(AuthScopes.parse(authorizedScopes));
+    this.grantPolicy = grantPolicy;
   }
 
   @Transactional
@@ -307,6 +306,8 @@ public class AuthService {
     Instant absoluteExpiresAt = now.plus(sessionAbsoluteTtl);
     Instant refreshExpiresAt = minimum(now.plus(sessionIdleTtl), absoluteExpiresAt);
     Instant accessExpiresAt = now.plus(accessTokenTtl);
+    String authorizedScope = AuthScopes.serialize(
+        grantPolicy.scopesFor(new AuthGrantPolicy.LoginContext(clientId, provider)));
     AuthSession session = new AuthSession(
         sessionId, user.getUserId(), familyId, now, refreshExpiresAt, absoluteExpiresAt,
         device.deviceId(), device.deviceName(), device.platform(), device.appVersion(), user.getSecurityEpoch());
